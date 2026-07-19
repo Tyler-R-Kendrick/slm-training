@@ -257,6 +257,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Override: inject placeholder inventory (SLOT_CONTRACT) into context.",
     )
     parser.add_argument(
+        "--semantic-role-contract-in-context",
+        action="store_true",
+        help=(
+            "Normalize prompt-mentioned components and visible slots into the "
+            "semantic-role contract used by E530 training."
+        ),
+    )
+    parser.add_argument(
         "--slot-contract-constrained-decode",
         action="store_true",
         help="Override: constrain placeholder decode to slot contract.",
@@ -445,6 +453,9 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
+        semantic_role_contract_in_context=(
+            args.semantic_role_contract_in_context
+        ),
         slot_contract_constrained_decode=(
             args.slot_contract_constrained_decode or args.ship_gates
         ),

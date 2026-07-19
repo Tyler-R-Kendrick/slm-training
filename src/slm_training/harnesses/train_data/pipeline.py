@@ -1589,7 +1589,7 @@ def build_train_data(
         or config.prompt_slot_contract
         or config.prompt_semantic_role_contract
     ):
-        from slm_training.data.quality import component_counts
+        from slm_training.data.quality import component_counts, semantic_role_contract
         from slm_training.models.template_fill import ensure_prompt_inventory
 
         component_mode = config.prompt_component_contract_mode
@@ -1617,7 +1617,7 @@ def build_train_data(
             if config.prompt_semantic_role_contract and not any(
                 line.startswith("Semantic roles:") for line in prompt.splitlines()
             ):
-                roles = _semantic_role_contract(
+                roles = semantic_role_contract(
                     list(record.placeholders or []),
                     [name for name, _count in counts],
                 )
@@ -1920,35 +1920,6 @@ def _diffusion_config():
     from slm_training.data.diffusion import DiffusionConfig
 
     return DiffusionConfig()
-
-
-def _semantic_role_contract(
-    placeholders: list[str], component_names: list[str]
-) -> str:
-    """Describe prompt-visible slot roles without exposing the gold graph."""
-    from slm_training.dsl.lang_core import library_schema
-
-    definitions = library_schema().get("$defs", {})
-    groups: dict[str, dict[str, tuple[str, ...]]] = {}
-    for placeholder in sorted(set(placeholders)):
-        parts = placeholder.removeprefix(":").split(".")
-        namespace = ".".join(parts[:-1]) or parts[0]
-        role = parts[-1] if len(parts) > 1 else "value"
-        candidates = tuple(
-            name
-            for name in sorted(set(component_names))
-            if role in (definitions.get(name, {}).get("properties") or {})
-        )
-        groups.setdefault(namespace, {})[role] = candidates
-    return "; ".join(
-        f"{namespace}("
-        + ", ".join(
-            f"{role} -> {'|'.join(candidates)}" if candidates else role
-            for role, candidates in sorted(roles.items())
-        )
-        + ")"
-        for namespace, roles in sorted(groups.items())
-    )
 
 
 def _component_histogram(records: list[ExampleRecord]) -> dict[str, int]:

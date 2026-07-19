@@ -110,6 +110,35 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     return frozenset(found)
 
 
+def semantic_role_contract(
+    placeholders: list[str], component_names: list[str]
+) -> str:
+    """Describe visible slot roles using only visible schema component mentions."""
+    from slm_training.dsl.lang_core import library_schema
+
+    definitions = library_schema().get("$defs", {})
+    groups: dict[str, dict[str, tuple[str, ...]]] = {}
+    for placeholder in sorted(set(placeholders)):
+        parts = placeholder.removeprefix(":").split(".")
+        namespace = ".".join(parts[:-1]) or parts[0]
+        role = parts[-1] if len(parts) > 1 else "value"
+        candidates = tuple(
+            name
+            for name in sorted(set(component_names))
+            if role in (definitions.get(name, {}).get("properties") or {})
+        )
+        groups.setdefault(namespace, {})[role] = candidates
+    return "; ".join(
+        f"{namespace}("
+        + ", ".join(
+            f"{role} -> {'|'.join(candidates)}" if candidates else role
+            for role, candidates in sorted(roles.items())
+        )
+        + ")"
+        for namespace, roles in sorted(groups.items())
+    )
+
+
 def _prompt_component_requirements(prompt: str) -> tuple[str, ...]:
     """Find positive component requirements, retaining explicit multiplicity.
 

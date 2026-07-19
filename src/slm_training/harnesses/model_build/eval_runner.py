@@ -362,6 +362,9 @@ def _effective_evaluation_policy(
         ),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
+        "semantic_role_contract_in_context": bool(
+            value("semantic_role_contract_in_context")
+        ),
         "slot_contract_constrained_decode": bool(
             value("slot_contract_constrained_decode")
         ),

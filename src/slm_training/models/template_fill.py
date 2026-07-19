@@ -76,6 +76,30 @@ def ensure_prompt_inventory(prompt: str, placeholders: list[str] | None) -> str:
     return f"{base}\nPlaceholders: {joined}"
 
 
+def ensure_prompt_semantic_roles(
+    prompt: str, placeholders: list[str] | None
+) -> str:
+    """Normalize prompt-mentioned component types into an honest role contract."""
+    if any(line.startswith("Semantic roles:") for line in prompt.splitlines()):
+        return prompt
+    slots = normalize_placeholders(placeholders)
+    if not slots:
+        return prompt
+    from slm_training.data.quality import (
+        _prompt_component_mentions,
+        semantic_role_contract,
+    )
+
+    components = sorted(_prompt_component_mentions(prompt))
+    if not components:
+        return prompt
+    base = prompt.rstrip()
+    if not any(line.startswith("Components:") for line in base.splitlines()):
+        base = f"{base}\nComponents: {', '.join(components)}"
+    roles = semantic_role_contract(slots, components)
+    return f"{base}\nSemantic roles: {roles}" if roles else base
+
+
 def inventory_from_prompt(
     prompt: str | None,
     design_md: str | None = None,

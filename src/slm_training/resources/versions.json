@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,7 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v4", "date": "2026-07-19", "note": "add honest inference-time semantic-role contract projection from prompt-mentioned components and visible slots"},
         {"version": "v3", "date": "2026-07-19", "note": "merge SDE3-01 suite-level eval cache integration on top of decode-weight override CLI"},
         {"version": "v2", "date": "2026-07-19", "note": "add SDE3-01 suite-level content-addressed eval cache integration (EvalCache, --eval-cache-mode, --eval-cache-root)"},
         {"version": "v2", "date": "2026-07-19", "note": "expose the existing slot-to-component decode-weight override in the canonical evaluation CLI"},
@@ -55,6 +56,7 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {"version": "v7", "date": "2026-07-19", "note": "no-bump: reuse the semantic-role formatter from the shared quality owner without changing projected training records"},
         {"version": "v7", "date": "2026-07-19", "note": "add an opt-in visible semantic-role contract derived only from visible slots, visible component types, and generated schema compatibility"},
         {"version": "v6", "date": "2026-07-19", "note": "support a type-only visible component prompt contract for matched count-ablation data"},
         {"version": "v5", "date": "2026-07-19", "note": "add diversity fingerprinting module (diversity.py), corpus audit script, and regression tests for canonical-root, topology, type/action, prompt-intent, and lineage diversity metrics"},
