@@ -237,6 +237,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's choice-root reference arity bias.",
     )
     parser.add_argument(
+        "--root-reference-identity-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's choice-root reference identity bias.",
+    )
+    parser.add_argument(
         "--compiler-search-mode",
         choices=("greedy", "lattice", "ptrm", "gram"),
         default="greedy",
@@ -511,6 +517,9 @@ def main(argv: list[str] | None = None) -> int:
         binder_topology_decode_weight=args.binder_topology_decode_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
+        root_reference_identity_decode_weight=(
+            args.root_reference_identity_decode_weight
+        ),
         compiler_search_mode=args.compiler_search_mode,
         compiler_search_trigger=args.compiler_search_trigger,
         compiler_search_width=max(1, args.compiler_search_width),

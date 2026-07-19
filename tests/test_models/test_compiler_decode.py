@@ -374,7 +374,10 @@ def test_choice_phase_evidence_separates_root_and_nested_lists() -> None:
 
 
 def test_structural_root_reference_arity_ignores_nested_lists() -> None:
-    from slm_training.models.choice_tokenizer import structural_root_reference_arity
+    from slm_training.models.choice_tokenizer import (
+        structural_root_reference_arity,
+        structural_root_reference_identity_target,
+    )
 
     model = _model(output_tokenizer="choice")
     tokenizer = model.tokenizer
@@ -387,6 +390,11 @@ def test_structural_root_reference_arity_ignores_nested_lists() -> None:
     )
 
     assert structural_root_reference_arity(tokenizer, ids, slot_count=2) == 2
+    references, bound = structural_root_reference_identity_target(
+        tokenizer, ids, slot_count=2
+    )
+    assert len(references) == 2
+    assert bound == 3
 
 
 def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
@@ -446,6 +454,65 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
     assert state.advance_id(tokenizer.token_to_id["&1"])
     stop_bias = model._root_reference_arity_bias(ctx, ctx_pad, state, candidates)
     assert stop_bias is not None and stop_bias[1] > stop_bias[0]
+
+
+def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        root_reference_identity_loss_weight=1.0,
+        root_reference_identity_decode_weight=2.0,
+    )
+    model.train()
+    assert model.root_reference_identity_head is not None
+    with torch.no_grad():
+        model.root_reference_identity_head.weight.zero_()
+        model.root_reference_identity_head.bias.fill_(-4.0)
+        model.root_reference_identity_head.bias[:2] = 4.0
+        model.root_reference_identity_head.bias[-1] = 20.0
+    record = ExampleRecord(
+        id="root-reference-identity",
+        prompt="stack with title and body",
+        openui=(
+            "root = Stack([title, body])\n"
+            'title = TextContent(":title")\n'
+            'body = TextContent(":body")'
+        ),
+        placeholders=[":title", ":body"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+    assert model.root_reference_identity_head.weight.grad is not None
+    assert model.root_reference_identity_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["root_reference_identity_rows"] == 1
+    assert model.last_training_metrics["root_reference_identity_exact_accuracy"] == 1
+    assert model.last_training_metrics["root_reference_identity_classes_mean"] == 2
+
+    tokenizer = model.tokenizer
+    with torch.no_grad():
+        model.root_reference_identity_head.weight.zero_()
+        model.root_reference_identity_head.bias.fill_(-4.0)
+        model.root_reference_identity_head.bias[1] = 4.0
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    for token in ("+TextContent", "@0", "-", "+TextContent", "@1", "-", "["):
+        assert state.advance_id(tokenizer.token_to_id[token])
+    ctx, ctx_pad = model._encode_context(["stack with title and body"])
+    candidates = (tokenizer.token_to_id["&0"], tokenizer.token_to_id["&1"])
+    first = model._root_reference_identity_bias(
+        ctx, ctx_pad, state, [], candidates
+    )
+    assert first is not None and first[1] > first[0]
+    prefix = [tokenizer.token_to_id["&1"]]
+    second = model._root_reference_identity_bias(
+        ctx, ctx_pad, state, prefix, candidates
+    )
+    assert second is not None and second[0] > second[1]
 
 
 def test_projection_with_features_accepts_sliced_hidden() -> None:

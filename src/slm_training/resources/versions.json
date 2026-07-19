@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,7 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v13", "date": "2026-07-19", "note": "expose learned terminal-root reference identity bias and intervention telemetry in canonical evaluation"},
         {"version": "v12", "date": "2026-07-19", "note": "bound learned root-reference arity partitioning by the available generated sections so impossible tokenizer-tail classes cannot force continuation"},
         {"version": "v11", "date": "2026-07-19", "note": "add learned choice-codec terminal-root reference arity decoding and bounded intervention telemetry"},
         {"version": "v10", "date": "2026-07-19", "note": "restrict structural generated-reference completeness bias to the terminal root list"},
@@ -37,12 +38,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
         {"version": "v9", "date": "2026-07-19", "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"},
         {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
@@ -247,7 +249,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -257,6 +259,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v3", "date": "2026-07-19", "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"},
         {"version": "v2", "date": "2026-07-19", "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"},
         {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
       ]

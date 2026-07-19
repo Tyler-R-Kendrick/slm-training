@@ -249,6 +249,8 @@ class TwoTowerConfig:
     binder_arity_decode_weight: float = 0.0
     root_reference_arity_loss_weight: float = 0.0
     root_reference_arity_decode_weight: float = 0.0
+    root_reference_identity_loss_weight: float = 0.0
+    root_reference_identity_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -493,6 +495,9 @@ def _load_checkpoint_state(
     allowed_missing |= {key for key in missing if key.startswith("survival_head.")}
     allowed_missing |= {
         key for key in missing if key.startswith("root_reference_arity_head.")
+    }
+    allowed_missing |= {
+        key for key in missing if key.startswith("root_reference_identity_head.")
     }
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
@@ -773,6 +778,29 @@ class TwoTowerModel(nn.Module):
             if root_reference_arity_enabled and _is_choice_output(self.config)
             else None
         )
+        root_reference_identity_enabled = (
+            float(
+                getattr(self.config, "root_reference_identity_loss_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "root_reference_identity_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.root_reference_identity_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    int(getattr(tokenizer, "ref_slots", 64)),
+                ),
+                110,
+            )
+            if root_reference_identity_enabled and _is_choice_output(self.config)
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -950,6 +978,7 @@ class TwoTowerModel(nn.Module):
             "binder_topology_head.",
             "binder_arity_head.",
             "root_reference_arity_head.",
+            "root_reference_identity_head.",
             "trust_gate.",
             "survival_head.",
         )
@@ -2583,6 +2612,85 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        root_identity_w = float(
+            getattr(self.config, "root_reference_identity_loss_weight", 0.0) or 0.0
+        )
+        if (
+            root_identity_w > 0.0
+            and self.root_reference_identity_head is not None
+        ):
+            from slm_training.models.choice_tokenizer import (
+                structural_root_reference_identity_target,
+            )
+
+            identity_logits = self.root_reference_identity_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            )
+            identity_losses: list[torch.Tensor] = []
+            identity_exact_hits: list[torch.Tensor] = []
+            identity_positive_recalls: list[torch.Tensor] = []
+            identity_class_counts: list[int] = []
+            for row, record in enumerate(batch):
+                target_and_bound = structural_root_reference_identity_target(
+                    self.tokenizer,
+                    target_ids[row].tolist(),
+                    slot_count=len(record.placeholders or ()),
+                )
+                if target_and_bound is None:
+                    continue
+                references, section_count = target_and_bound
+                valid_count = min(int(section_count), identity_logits.size(1))
+                if valid_count <= 0:
+                    continue
+                target = identity_logits.new_zeros(valid_count)
+                for reference in references:
+                    if 0 <= reference < valid_count:
+                        target[reference] = 1.0
+                scores = identity_logits[row, :valid_count]
+                prediction = scores >= 0.0
+                identity_losses.append(
+                    F.binary_cross_entropy_with_logits(scores, target)
+                )
+                identity_exact_hits.append(prediction.eq(target.bool()).all().float())
+                positives = target.sum()
+                identity_positive_recalls.append(
+                    (prediction & target.bool()).float().sum()
+                    / positives.clamp_min(1.0)
+                )
+                identity_class_counts.append(valid_count)
+            identity_loss = (
+                torch.stack(identity_losses).mean()
+                if identity_losses
+                else identity_logits.sum() * 0.0
+            )
+            detached = root_identity_w * identity_loss
+            if self._detached_auxiliary_loss is not None:
+                detached = detached + self._detached_auxiliary_loss
+            self._detached_auxiliary_loss = detached
+            self.last_training_metrics.update(
+                {
+                    "root_reference_identity_loss": float(
+                        identity_loss.detach().cpu()
+                    ),
+                    "root_reference_identity_exact_accuracy": float(
+                        torch.stack(identity_exact_hits).mean().detach().cpu()
+                        if identity_exact_hits
+                        else 0.0
+                    ),
+                    "root_reference_identity_positive_recall": float(
+                        torch.stack(identity_positive_recalls).mean().detach().cpu()
+                        if identity_positive_recalls
+                        else 0.0
+                    ),
+                    "root_reference_identity_rows": len(identity_losses),
+                    "root_reference_identity_classes_mean": (
+                        sum(identity_class_counts) / len(identity_class_counts)
+                        if identity_class_counts
+                        else 0.0
+                    ),
+                }
+            )
+
         edge_alignment_w = float(
             getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
         )
@@ -3934,6 +4042,66 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _root_reference_identity_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Bias terminal-root references by learned inclusion probability."""
+        weight = float(
+            getattr(self.config, "root_reference_identity_decode_weight", 0.0)
+            or 0.0
+        )
+        if (
+            weight <= 0.0
+            or self.root_reference_identity_head is None
+            or getattr(state, "mode", None) != "structural"
+            or len(getattr(state, "frames", ())) != 1
+            or state.frames[-1].kind != "variadic"
+            or state.frames[-1].expr_type != "array"
+        ):
+            return None
+        valid_count = min(
+            len(getattr(state, "section_types", ())),
+            self.root_reference_identity_head.out_features,
+        )
+        if valid_count <= 0:
+            return None
+        logits = self.root_reference_identity_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0, :valid_count]
+        used: set[int] = set()
+        for token_id in prefix:
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if token.startswith("&"):
+                try:
+                    used.add(int(token[1:]))
+                except ValueError:
+                    continue
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if not token.startswith("&"):
+                continue
+            try:
+                reference = int(token[1:])
+            except ValueError:
+                continue
+            if not 0 <= reference < valid_count:
+                continue
+            log_probability = (
+                logits.new_tensor(-20.0)
+                if reference in used
+                else F.logsigmoid(logits[reference])
+            )
+            bias[position] = weight * log_probability
+            applied = True
+        return bias if applied else None
+
     @staticmethod
     def _choice_phase_evidence(state: Any) -> dict[str, object]:
         """Describe the bounded generated-state phase around a choice."""
@@ -5242,6 +5410,44 @@ class TwoTowerModel(nn.Module):
                                         ),
                                         "choice_changed": (
                                             after_root_arity != before_root_arity
+                                        ),
+                                        **self._choice_phase_evidence(states[row]),
+                                    }
+                                )
+                    root_identity_bias = self._root_reference_identity_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                    )
+                    if root_identity_bias is not None:
+                        before_root_identity = int(scores.argmax().item())
+                        scores = scores + root_identity_bias
+                        after_root_identity = int(scores.argmax().item())
+                        if stats is not None:
+                            stats.root_reference_identity_applications += 1
+                            stats.root_reference_identity_choice_changes += int(
+                                after_root_identity != before_root_identity
+                            )
+                            if len(stats.constrained_selection_traces) < 64:
+                                stats.constrained_selection_traces.append(
+                                    {
+                                        "phase": "root_reference_identity",
+                                        "position": position,
+                                        "before_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[before_root_identity], ""
+                                            )
+                                        ),
+                                        "chosen_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[after_root_identity], ""
+                                            )
+                                        ),
+                                        "choice_changed": (
+                                            after_root_identity
+                                            != before_root_identity
                                         ),
                                         **self._choice_phase_evidence(states[row]),
                                     }
