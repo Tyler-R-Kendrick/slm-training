@@ -18,6 +18,7 @@ def test_strict_profile_is_default_and_fills_curation_knobs() -> None:
     assert config.semantic_cluster_cap == 8
     assert config.min_verification_tier == "Bronze"
     assert config.max_records_per_parent == 6
+    assert config.sanitize_mode == "enforce"
 
 
 def test_explicit_values_survive_profile_resolution() -> None:
@@ -42,6 +43,7 @@ def test_permissive_profile_keeps_legacy_defaults() -> None:
     assert config.semantic_cluster_cap is None
     assert config.min_verification_tier is None
     assert config.max_records_per_parent is None
+    assert config.sanitize_mode is None  # resolves to "off" at build time
 
 
 def test_unknown_profile_fails_closed() -> None:

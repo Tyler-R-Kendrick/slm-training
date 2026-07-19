@@ -48,6 +48,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--max-children", type=int, default=6)
     parser.add_argument(
+        "--sanitize-mode",
+        choices=["off", "audit", "enforce"],
+        default="enforce",
+        help=(
+            "Deterministic target sanitization shared with the train build "
+            "(eval gold matches the sanitized train distribution). Default: "
+            "enforce."
+        ),
+    )
+    parser.add_argument(
         "--output-root",
         type=Path,
         default=Path("outputs/data/eval"),
@@ -107,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             rico_hf_cache_path=args.rico_hf_cache,
             target_records=args.target_records,
             max_children=args.max_children,
+            sanitize_mode=args.sanitize_mode,
         )
     )
     print(json.dumps(result["stats"], indent=2))
