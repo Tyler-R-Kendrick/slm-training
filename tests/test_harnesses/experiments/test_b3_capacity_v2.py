@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+import textwrap
 from pathlib import Path
 
 from slm_training.harnesses.experiments.b3_capacity_v2 import (
@@ -25,6 +28,27 @@ def test_default_manifest() -> None:
     assert {a.representation for a in manifest.arms} == {"lexer", "choice"}
     assert manifest.status == "not_run"
     assert manifest.claim_class == "wiring"
+
+
+def test_package_import_does_not_require_torch() -> None:
+    source = textwrap.dedent(
+        """
+        import builtins
+
+        real_import = builtins.__import__
+        def without_torch(name, *args, **kwargs):
+            if name == "torch" or name.startswith("torch."):
+                raise ModuleNotFoundError("No module named 'torch'", name="torch")
+            return real_import(name, *args, **kwargs)
+
+        builtins.__import__ = without_torch
+        import slm_training.harnesses.experiments as experiments
+        from slm_training.harnesses.experiments.promotion import PromotionCriteria
+        assert "B3CapacityV2Manifest" not in vars(experiments)
+        assert PromotionCriteria is not None
+        """
+    )
+    subprocess.run([sys.executable, "-c", source], check=True)
 
 
 def test_manifest_with_parent_is_pending() -> None:

@@ -199,12 +199,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v21", "date": "2026-07-19", "note": "lazy-load B3 capacity exports so importing the experiment package and Vercel web entrypoint does not require optional torch"},
         {"version": "v20", "date": "2026-07-19", "note": "add SLM-124 EFS3-03 B3 surface-vs-choice capacity-ladder v2 manifest, fixture runner, and CLI wiring"},
         {"version": "v19", "date": "2026-07-19", "note": "add SLM-121 LDI1-02 causal PEFT FTPO manifest, fixture runner, and CLI wiring"},
         {"version": "v18", "date": "2026-07-19", "note": "add SLM-120 near-solved semantic corruption-curriculum manifest, fixture runner, and CLI wiring"},
