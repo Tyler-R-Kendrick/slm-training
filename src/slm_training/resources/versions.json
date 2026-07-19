@@ -171,12 +171,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v17", "date": "2026-07-19", "note": "add SLM-109 E228 exposure-ladder manifest, recipe-freeze hash, and plan/fixture CLI"},
         {"version": "v16", "date": "2026-07-19", "note": "add SLM-108 external-ceiling matrix manifest, fixture runner, and report rendering"},
         {"version": "v15", "date": "2026-07-19", "note": "no-bump: relocate efficiency_gain/scaling_fit to harness_core (old modules are sys.modules alias shims) and delegate promotion checks to harness_core.promotion_engine; HARD_CATEGORIES, the OpenUI ship-gate binding, and all public signatures unchanged"},
         {"version": "v15", "date": "2026-07-19", "note": "lazy-load torch-backed ladder re-exports so the read-only Vercel web entrypoint remains torch-free"},
