@@ -78,12 +78,13 @@
       ]
     },
     "evals.scoring": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v2", "date": "2026-07-19", "note": "add SDE0-02 metric-gaming stress suite (metric_gaming.py) with deterministic adversarial cases scored by binding_aware_meaningful_v2"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (catch-all for eval scoring helpers not claimed by a narrower component)"}
       ]
     },
