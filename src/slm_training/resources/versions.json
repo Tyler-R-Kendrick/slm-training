@@ -172,13 +172,34 @@
         {"version": "vss4-02-v1", "date": "2026-07-18", "note": "initial registration; mirrors verified_solver_matrix.MATRIX_VERSION"}
       ]
     },
+    "matrix.corruption_curriculum": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_corruption_curriculum.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-120 near-solved semantic corruption-curriculum plan/fixture CLI"}
+      ]
+    },
+    "data.corrupt.trace": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/corrupt/trace.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; CorruptionTraceV2 severity taxonomy and fail-closed validation for SLM-120"}
+      ]
+    },
     "harness.experiments": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v18", "date": "2026-07-19", "note": "add SLM-120 near-solved semantic corruption-curriculum manifest, fixture runner, and CLI wiring"},
         {"version": "v17", "date": "2026-07-19", "note": "add SLM-109 E228 exposure-ladder manifest, recipe-freeze hash, and plan/fixture CLI"},
         {"version": "v16", "date": "2026-07-19", "note": "add SLM-108 external-ceiling matrix manifest, fixture runner, and report rendering"},
         {"version": "v15", "date": "2026-07-19", "note": "no-bump: relocate efficiency_gain/scaling_fit to harness_core (old modules are sys.modules alias shims) and delegate promotion checks to harness_core.promotion_engine; HARD_CATEGORIES, the OpenUI ship-gate binding, and all public signatures unchanged"},

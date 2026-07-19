@@ -851,6 +851,33 @@ checkpoint provenance.
 a 128× run completes with paired confidence intervals. Fixture/planning evidence
 is not treated as a result.
 
+## Near-solved semantic corruption curriculum (EFS3-02 / SLM-120)
+
+**Fidelity label: adapted.** SLM-120 tests whether a controlled share of
+one- and two-error states improves recovery and fixed-point stability. The
+curriculum idea is borrowed from curriculum learning and targeted repair
+literature, but narrowed to a **frozen base recipe** and a representation-
+independent severity taxonomy so that the intervention is isolated from the
+model architecture and corruption policy.
+
+| | |
+| --- | --- |
+| **Lineage** | Curriculum learning; targeted repair corpora; corruption severity taxonomies |
+| **Fidelity** | **Adapted** — frozen-recipe factorial over near-solved share (0%, 5%, 10%, 15%, 30%) with S0–S4 severity levels and CorruptionTraceV2 provenance |
+| **Code** | `src/slm_training/data/corrupt/trace.py`, `src/slm_training/harnesses/experiments/corruption_curriculum.py`, `scripts/run_corruption_curriculum.py` |
+| **Config** | `--mode fixture|plan-only|frontier`, `--parent-checkpoint-uri`, `--near-solved-shares` |
+
+**What we took:** a preregistered factorial over near-solved share, a severity
+schema (S0 clean, S1 one semantic error, S2 two semantic errors, S3 medium,
+S4 heavy), and a trace dataclass that can be produced by any representation
+(topology diffusion, tree-edit diffusion, token diffusion, or the formal
+corruption oracle).
+
+**What we did not take:** any claim that a particular near-solved share helps
+until matched A–D arm trains complete with S0 stability, S1/S2 recovery, and
+end-to-end binding-aware meaningful v2 metrics. Fixture/planning evidence is
+not treated as a result.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

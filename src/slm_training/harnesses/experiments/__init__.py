@@ -32,6 +32,18 @@ from slm_training.harnesses.experiments.external_ceiling_matrix import (
     run_fixture_matrix as run_external_ceiling_fixture_matrix,
     validate_external_ceiling_manifest,
 )
+from slm_training.harnesses.experiments.corruption_curriculum import (
+    CORRUPTION_CURRICULUM_ID,
+    MATRIX_SET as CORRUPTION_CURRICULUM_MATRIX_SET,
+    MATRIX_VERSION as CORRUPTION_CURRICULUM_MATRIX_VERSION,
+    CorruptionCurriculumManifest,
+    CorruptionCurriculumReport,
+    CurriculumArmResult,
+    build_corruption_curriculum_manifest,
+    render_markdown as render_corruption_curriculum_markdown,
+    run_fixture_curriculum,
+    validate_manifest as validate_corruption_curriculum_manifest,
+)
 from slm_training.harnesses.experiments.e228_exposure_ladder import (
     LADDER_ID as E228_EXPOSURE_LADDER_ID,
     MATRIX_SET as E228_EXPOSURE_MATRIX_SET,
@@ -188,6 +200,12 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "CORRUPTION_CURRICULUM_ID",
+    "CORRUPTION_CURRICULUM_MATRIX_SET",
+    "CORRUPTION_CURRICULUM_MATRIX_VERSION",
+    "CorruptionCurriculumManifest",
+    "CorruptionCurriculumReport",
+    "CurriculumArmResult",
     "E228_EXPOSURE_LADDER_ID",
     "E228_EXPOSURE_MATRIX_SET",
     "E228_EXPOSURE_MATRIX_VERSION",
@@ -237,6 +255,7 @@ __all__ = [
     "TeacherTraceContract",
     "build_cap5_campaign_manifest",
     "build_constraint_backend_benchmark_manifest",
+    "build_corruption_curriculum_manifest",
     "build_e228_exposure_ladder",
     "build_e228_recipe_config",
     "build_external_ceiling_manifest",
@@ -244,10 +263,13 @@ __all__ = [
     "build_proxy_metric_calibration_manifest",
     "build_scaffold_distillation_activation_manifest",
     "build_teacher_paraphrase_activation_manifest",
+    "render_corruption_curriculum_markdown",
     "render_e228_exposure_markdown",
     "render_external_ceiling_markdown",
     "run_e228_fixture_ladder",
+    "run_fixture_curriculum",
     "run_external_ceiling_fixture_matrix",
+    "validate_corruption_curriculum_manifest",
     "validate_e228_exposure_manifest",
     "validate_external_ceiling_manifest",
     "validate_cap5_campaign_manifest",
