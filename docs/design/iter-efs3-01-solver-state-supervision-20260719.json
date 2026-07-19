@@ -1,0 +1,43 @@
+{
+  "fixture": "efs3-01-solver-state-supervision",
+  "gold": {
+    "rejected_rows": 0,
+    "rows": 85,
+    "source_counts": {
+      "gold": 85
+    }
+  },
+  "held_out_group_ids": [
+    "group-0",
+    "group-1",
+    "group-2",
+    "group-3",
+    "group-4",
+    "group-5"
+  ],
+  "mixed": {
+    "rejected_rows": 0,
+    "rows": 170,
+    "source_counts": {
+      "mixed": 170
+    }
+  },
+  "on_policy": {
+    "rejected_rows": 0,
+    "rows": 85,
+    "source_counts": {
+      "on_policy": 85
+    }
+  },
+  "run_id": "iter-efs3-01-20260719",
+  "synthetic_rows": 200,
+  "version_stamp": {
+    "code_commit": "5b91fa678aaa936b52575450c05f262e5a113b8f",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T03:48:47.143151+00:00"
+  }
+}
