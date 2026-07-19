@@ -99,6 +99,8 @@ def classify_evidence(path: Path) -> str:
     joined = "/".join(path.parts).lower()
     if name == "run_insights.json":
         return "run_insight"
+    if "rejected_lever" in joined or name.startswith("rejected-lever"):
+        return "rejected_lever"
     if "research-lineage" in name or "experiment-matrix" in name:
         return "repo_lineage"
     if "agentv" in joined or name.endswith(".eval.jsonl"):
@@ -153,6 +155,19 @@ def summarize_evidence(path: Path, raw: bytes) -> tuple[str, dict[str, float]]:
                                 f"hypothesis={cause.get('title', '')}: {cause.get('rationale', '')} suggestion={cause.get('suggestion', '')}"
                             )
                 return " | ".join(lines)[:6000], dict(sorted(metrics.items())[:100])
+            if "rejected_lever" in path.name and isinstance(value, dict):
+                entries = value.get("entries") or []
+                closed = sum(
+                    1
+                    for entry in entries
+                    if isinstance(entry, dict)
+                    and entry.get("status") in ("closed", "invalidated")
+                )
+                summary = (
+                    f"rejected_lever_registry id={value.get('registry_id', '')} "
+                    f"entries={len(entries)} closed={closed}"
+                )
+                return summary[:1500], dict(sorted(metrics.items())[:100])
             summary = _json_summary(value)
             return summary[:1500], dict(sorted(metrics.items())[:100])
         except json.JSONDecodeError:

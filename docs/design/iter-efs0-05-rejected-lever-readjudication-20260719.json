@@ -1,0 +1,422 @@
+{
+  "schema_version": "efs0-05-fixture-summary/v1",
+  "registry_id": "efs0-05-fixture",
+  "campaign_rows": [
+    {
+      "row_id": "efs0-05-fixture-E175_retrieval",
+      "lever_id": "E175_retrieval",
+      "control_run_id": "E175_run_20260710",
+      "treatment_run_id": "E175_retrieval_treatment",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "primary_metric": "binding_aware_meaningful_v2",
+      "min_effect": 0.05,
+      "cost_metric": "wall_seconds",
+      "equivalence_margin": 0.02,
+      "decoder_path": "current_exact_or_compiler",
+      "eval_policy": {
+        "decoder_path": "current_exact_or_compiler",
+        "metric": "binding_aware_meaningful_v2"
+      },
+      "status": "planned"
+    },
+    {
+      "row_id": "efs0-05-fixture-E255_E256_ar_diffusion",
+      "lever_id": "E255_E256_ar_diffusion",
+      "control_run_id": "E255_run_20260711",
+      "treatment_run_id": "E255_E256_ar_diffusion_treatment",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "primary_metric": "binding_aware_meaningful_v2",
+      "min_effect": 0.05,
+      "cost_metric": "wall_seconds",
+      "equivalence_margin": 0.02,
+      "decoder_path": "current_exact_or_compiler",
+      "eval_policy": {
+        "decoder_path": "current_exact_or_compiler",
+        "metric": "binding_aware_meaningful_v2"
+      },
+      "status": "planned"
+    },
+    {
+      "row_id": "efs0-05-fixture-X9_X14_typed_topology",
+      "lever_id": "X9_X14_typed_topology",
+      "control_run_id": "X9_run_20260712",
+      "treatment_run_id": "X9_X14_typed_topology_treatment",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "primary_metric": "binding_aware_meaningful_v2",
+      "min_effect": 0.05,
+      "cost_metric": "wall_seconds",
+      "equivalence_margin": 0.02,
+      "decoder_path": "current_exact_or_compiler",
+      "eval_policy": {
+        "decoder_path": "current_exact_or_compiler",
+        "metric": "binding_aware_meaningful_v2"
+      },
+      "status": "planned"
+    },
+    {
+      "row_id": "efs0-05-fixture-E263_set_preference",
+      "lever_id": "E263_set_preference",
+      "control_run_id": "E263_run_20260713",
+      "treatment_run_id": "E263_set_preference_treatment",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "primary_metric": "binding_aware_meaningful_v2",
+      "min_effect": 0.05,
+      "cost_metric": "wall_seconds",
+      "equivalence_margin": 0.02,
+      "decoder_path": "current_exact_or_compiler",
+      "eval_policy": {
+        "decoder_path": "current_exact_or_compiler",
+        "metric": "binding_aware_meaningful_v2"
+      },
+      "status": "planned"
+    }
+  ],
+  "paired_results": [
+    {
+      "row_id": "efs0-05-fixture-E175_retrieval",
+      "observations": [
+        {
+          "seed": 0,
+          "control_value": 0.4127,
+          "treatment_value": 0.47952,
+          "control_cost": 0.97286,
+          "treatment_cost": 0.92916,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 1,
+          "control_value": 0.44015,
+          "treatment_value": 0.49347,
+          "control_cost": 1.08413,
+          "treatment_cost": 1.13312,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 2,
+          "control_value": 0.41479,
+          "treatment_value": 0.48886,
+          "control_cost": 1.03357,
+          "treatment_cost": 1.06244,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 3,
+          "control_value": 0.43678,
+          "treatment_value": 0.5019,
+          "control_cost": 0.92461,
+          "treatment_cost": 0.94547,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 4,
+          "control_value": 0.42146,
+          "treatment_value": 0.50125,
+          "control_cost": 0.99385,
+          "treatment_cost": 0.96782,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        }
+      ],
+      "mean_delta": 0.06782400000000001,
+      "std_delta": 0.010011035410985202,
+      "ci_low": 0.05983000000000003,
+      "ci_high": 0.07521400000000002,
+      "p_value": 0.0,
+      "cost_mean_delta": 0.00579799999999997,
+      "verdict": "reopened_positive"
+    },
+    {
+      "row_id": "efs0-05-fixture-E255_E256_ar_diffusion",
+      "observations": [
+        {
+          "seed": 0,
+          "control_value": 0.46743,
+          "treatment_value": 0.46975,
+          "control_cost": 0.99955,
+          "treatment_cost": 0.97087,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 1,
+          "control_value": 0.46495,
+          "treatment_value": 0.46728,
+          "control_cost": 1.05643,
+          "treatment_cost": 1.02307,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 2,
+          "control_value": 0.44756,
+          "treatment_value": 0.44669,
+          "control_cost": 1.1045,
+          "treatment_cost": 1.03779,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 3,
+          "control_value": 0.46537,
+          "treatment_value": 0.4749,
+          "control_cost": 1.0551,
+          "treatment_cost": 1.05909,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 4,
+          "control_value": 0.46859,
+          "treatment_value": 0.49258,
+          "control_cost": 1.02154,
+          "treatment_cost": 0.94829,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        }
+      ],
+      "mean_delta": 0.007459999999999989,
+      "std_delta": 0.009995639049105378,
+      "ci_low": 0.0010459999999999803,
+      "ci_high": 0.016125999999999995,
+      "p_value": 0.09515018700545674,
+      "cost_mean_delta": -0.039601999999999984,
+      "verdict": "equivalent"
+    },
+    {
+      "row_id": "efs0-05-fixture-X9_X14_typed_topology",
+      "observations": [
+        {
+          "seed": 0,
+          "control_value": 0.38456,
+          "treatment_value": 0.36295,
+          "control_cost": 0.95205,
+          "treatment_cost": 0.94778,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 1,
+          "control_value": 0.38565,
+          "treatment_value": 0.36221,
+          "control_cost": 0.90943,
+          "treatment_cost": 0.88865,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 2,
+          "control_value": 0.40224,
+          "treatment_value": 0.37481,
+          "control_cost": 0.894,
+          "treatment_cost": 0.85658,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 3,
+          "control_value": 0.39832,
+          "treatment_value": 0.38468,
+          "control_cost": 1.04536,
+          "treatment_cost": 1.08554,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 4,
+          "control_value": 0.40409,
+          "treatment_value": 0.39913,
+          "control_cost": 1.00141,
+          "treatment_cost": 0.99807,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        }
+      ],
+      "mean_delta": -0.01821600000000001,
+      "std_delta": 0.008949420651639972,
+      "ci_low": -0.024670000000000015,
+      "ci_high": -0.01119000000000001,
+      "p_value": 5.329518839136682e-06,
+      "cost_mean_delta": -0.0051259999999999865,
+      "verdict": "confirmed_negative"
+    },
+    {
+      "row_id": "efs0-05-fixture-E263_set_preference",
+      "observations": [
+        {
+          "seed": 0,
+          "control_value": 0.40827,
+          "treatment_value": 0.44151,
+          "control_cost": 1.08833,
+          "treatment_cost": 1.0861,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 1,
+          "control_value": 0.4218,
+          "treatment_value": 0.43107,
+          "control_cost": 1.0399,
+          "treatment_cost": 1.13604,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 2,
+          "control_value": 0.42178,
+          "treatment_value": 0.45658,
+          "control_cost": 1.06598,
+          "treatment_cost": 1.12982,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 3,
+          "control_value": 0.41857,
+          "treatment_value": 0.43926,
+          "control_cost": 1.01042,
+          "treatment_cost": 1.03657,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        },
+        {
+          "seed": 4,
+          "control_value": 0.40557,
+          "treatment_value": 0.42393,
+          "control_cost": 0.99586,
+          "treatment_cost": 1.01151,
+          "failed": false,
+          "timeout": false,
+          "notes": ""
+        }
+      ],
+      "mean_delta": 0.023271999999999994,
+      "std_delta": 0.010713382752426984,
+      "ci_low": 0.015189999999999992,
+      "ci_high": 0.03135399999999999,
+      "p_value": 1.190163040121206e-06,
+      "cost_mean_delta": 0.03990999999999998,
+      "verdict": "confirmed_negative"
+    }
+  ],
+  "evidence_items": [
+    {
+      "path": "rejected_lever_registry/efs0-05-fixture/E175_retrieval.json",
+      "kind": "rejected_lever",
+      "sha256": "5b9a26711b5d81bd0508cb4d3abbe4af4338488363e084c10c3af937638a5427",
+      "size_bytes": 990,
+      "summary": "lever=E175_retrieval matrix=quality status=reopen_candidate confounds=representation_mismatch,underexposure signature=efa10b9b2f1e55280bc79e75b6d19de3 evidence=rerun with corrected decoder and five seeds at 64+ suite size",
+      "metrics": {
+        "original_primary_value": 0.42,
+        "observed_effect": -0.01,
+        "observed_cost": 1.2
+      }
+    },
+    {
+      "path": "rejected_lever_registry/efs0-05-fixture/E255_E256_ar_diffusion.json",
+      "kind": "rejected_lever",
+      "sha256": "32f369681804fdfab0b81ac50c541b2546b2f012e5402f88aa2c998f5327e019",
+      "size_bytes": 992,
+      "summary": "lever=E255_E256_ar_diffusion matrix=quality status=reopen_candidate confounds=tiny_n,underexposure signature=831b78b59832875b67a6616139e9e808 evidence=matched five-seed run at equal wall/verifier budget",
+      "metrics": {
+        "original_primary_value": 0.45,
+        "observed_effect": 0.005,
+        "observed_cost": 2.1
+      }
+    },
+    {
+      "path": "rejected_lever_registry/efs0-05-fixture/X9_X14_typed_topology.json",
+      "kind": "rejected_lever",
+      "sha256": "83b0452d2287e647a6a7b56367a911783fc5579b0546c29bca65ad673d96d086",
+      "size_bytes": 958,
+      "summary": "lever=X9_X14_typed_topology matrix=grammar status=reopen_candidate confounds=tiny_n,seed_instability signature=2c15ec208da277398d863046d3b8134f evidence=five seeds vs X22 family with corrected decoder",
+      "metrics": {
+        "original_primary_value": 0.38,
+        "observed_effect": -0.02,
+        "observed_cost": 1.5
+      }
+    },
+    {
+      "path": "rejected_lever_registry/efs0-05-fixture/E263_set_preference.json",
+      "kind": "rejected_lever",
+      "sha256": "47b2f07a86f73e523c0d4ffeacb498bba569d0e121bec5ae3698a14244ce0c9c",
+      "size_bytes": 998,
+      "summary": "lever=E263_set_preference matrix=quality status=reopen_candidate confounds=harness_interference,tiny_n signature=ccad7c06d11eee3cae6369f91e9c7fca evidence=non-interfering preference harness with five seeds",
+      "metrics": {
+        "original_primary_value": 0.4,
+        "observed_effect": -0.015,
+        "observed_cost": 1.8
+      }
+    },
+    {
+      "path": "rejected_lever_registry/efs0-05-fixture/E244_ptrm_sentinel.json",
+      "kind": "rejected_lever",
+      "sha256": "559df59443e9fe510c21008e4c66f169ad99ee5db93e6ff967a944b308869d7d",
+      "size_bytes": 993,
+      "summary": "lever=E244_ptrm_sentinel matrix=quality status=closed confounds=strong_negative_control,decoder_bug signature=a879d7d8ddcb117d698fbe0da1ecf287 evidence=equal-wall-time and equal-forward-pass replication only",
+      "metrics": {
+        "original_primary_value": 0.3,
+        "observed_effect": -0.08,
+        "observed_cost": 4.0
+      }
+    }
+  ],
+  "closed_signatures": [
+    "a879d7d8ddcb117d698fbe0da1ecf287"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a6b27e9d893c1056f85996bfcae4ec6c33ed3ace",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v4"
+    },
+    "stamped_at": "2026-07-19T05:00:49.856123+00:00"
+  }
+}
