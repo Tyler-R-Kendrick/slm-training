@@ -1,5 +1,12 @@
 """Experiment runners: ladders, scaling fits, promotion protocol."""
 
+from slm_training.harnesses.experiments.cap5_02_campaign import (
+    CAMPAIGN_ID as CAP5_CAMPAIGN_ID,
+    CampaignArm,
+    Cap5CampaignManifest,
+    build_cap5_campaign_manifest,
+    validate_cap5_campaign_manifest,
+)
 from slm_training.harnesses.experiments.efficiency_gain import (
     efficiency_gain,
     efficiency_gain_lcb,
@@ -90,6 +97,11 @@ except Exception:  # pragma: no cover - optional if torch unavailable
     run_matrix = None  # type: ignore[misc,assignment]
 
 __all__ = [
+    "CAP5_CAMPAIGN_ID",
+    "CampaignArm",
+    "Cap5CampaignManifest",
+    "build_cap5_campaign_manifest",
+    "validate_cap5_campaign_manifest",
     "ArmConfig",
     "ArmResult",
     "BottleneckArm",

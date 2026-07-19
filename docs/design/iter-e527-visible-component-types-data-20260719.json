@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E527",
+  "run_id": "e527_visible_component_types_slot_contract_r1_20260719",
+  "date": "2026-07-19",
+  "hypothesis": "A type-only component inventory can retain E525's component-recall signal without the overconstraint introduced by exact output counts.",
+  "recipe": {
+    "device": "CPU",
+    "source": "src/slm_training/resources/data/train/e521_visible_slot_contract_r2_20260719/records.jsonl",
+    "profile": "strict",
+    "synthesizer": "none",
+    "prompt_slot_contract": true,
+    "prompt_component_contract": true,
+    "prompt_component_contract_mode": "types",
+    "semantic_dedup": false,
+    "ngram_decontam": false,
+    "projection_only_reason": "The immutable E521 source already passed these gates; this matched projection must preserve its admitted membership.",
+    "hard_process_cap_seconds": 170,
+    "elapsed_seconds": 4.39
+  },
+  "result": {
+    "version": "e527_visible_component_types_slot_contract_r1_20260719",
+    "published_path": "src/slm_training/resources/data/train/e527_visible_component_types_slot_contract_r1_20260719",
+    "content_fingerprint": "84c4ee8e5b1f18f1a09b1ebf14eb4dcdda33533cb0071807e76fa0e7fe90fc5a",
+    "records": 244,
+    "same_ids_as_e521": true,
+    "same_openui_as_e521": true,
+    "records_with_exact_type_contract": 244,
+    "records_with_all_declared_placeholders_visible": 244,
+    "mean_quality_score": 0.9643,
+    "quality_rejected": 0,
+    "warnings": [],
+    "synthesis_recommendations": 0
+  },
+  "feedback_action": {
+    "recommendation": null,
+    "decision": "No producer or gate change; the projection emits no warnings, recommendations, or experiment candidates."
+  },
+  "decision": "Publish E527 for one matched bounded continuation against E522 and E525. This remains conditional-contract data evidence, not a ship claim.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4e7f594e2d4fe8e51c73f9b487fc3e1d8f5162c8",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v5"
+    },
+    "stamped_at": "2026-07-19T16:07:21.040960+00:00"
+  }
+}

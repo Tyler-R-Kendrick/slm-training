@@ -1,0 +1,33 @@
+{
+  "schema_version": "diversity_fingerprints/v1",
+  "audit_date": "20260719",
+  "records_path": "src/slm_training/resources/train_seeds.jsonl",
+  "n_records": 20,
+  "unique_counts": {
+    "canonical_root_id": 20,
+    "binding_aware_sketch": 20,
+    "topology_sketch": 20,
+    "type_action_multiset": 20,
+    "prompt_intent_fingerprint": 20,
+    "source_lineage_id": 20,
+    "exact_structure_fingerprint": 20
+  },
+  "per_source": {
+    "fixture": {
+      "n": 20,
+      "canonical_root_id": 20,
+      "binding_aware_sketch": 20,
+      "topology_sketch": 20,
+      "type_action_multiset": 20,
+      "prompt_intent_fingerprint": 20,
+      "source_lineage_id": 20
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "75fb3f22a5ac3b3bb047ffcf5cc864a3fa17574c",
+    "code_dirty": true,
+    "components": {},
+    "stamped_at": "2026-07-19T15:35:12.321497+00:00"
+  }
+}

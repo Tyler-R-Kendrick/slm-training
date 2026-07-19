@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "version": "e521_visible_slot_contract_r2_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T15:17:18.982261+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 1,
+      "by_stage": {
+        "verification": 1
+      },
+      "by_reason": {
+        "quarantine": 1
+      },
+      "candidates": 14,
+      "yield": 0.9286
+    },
+    "human_curated": {
+      "admitted": 15,
+      "rejected": 4,
+      "by_stage": {
+        "verification": 4
+      },
+      "by_reason": {
+        "quarantine": 4
+      },
+      "candidates": 19,
+      "yield": 0.7895
+    },
+    "language_contract": {
+      "admitted": 53,
+      "rejected": 4,
+      "by_stage": {
+        "dedup": 4
+      },
+      "by_reason": {
+        "semantic_cosine": 4
+      },
+      "candidates": 57,
+      "yield": 0.9298
+    },
+    "layout_augment": {
+      "admitted": 156,
+      "rejected": 6,
+      "by_stage": {
+        "dedup": 6
+      },
+      "by_reason": {
+        "semantic_cosine": 6
+      },
+      "candidates": 162,
+      "yield": 0.963
+    },
+    "programspec_generated": {
+      "admitted": 6,
+      "rejected": 10,
+      "by_stage": {
+        "dedup": 7,
+        "verification": 3
+      },
+      "by_reason": {
+        "semantic_cosine": 7,
+        "quarantine": 3
+      },
+      "candidates": 16,
+      "yield": 0.375
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "web_distilled": {
+      "admitted": 0,
+      "rejected": 1,
+      "by_stage": {
+        "dedup": 1
+      },
+      "by_reason": {
+        "semantic_cosine": 1
+      },
+      "candidates": 1,
+      "yield": 0.0
+    }
+  },
+  "synthesizers": {
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 1,
+      "by_stage": {
+        "verification": 1
+      },
+      "by_reason": {
+        "quarantine": 1
+      },
+      "candidates": 14,
+      "yield": 0.9286
+    },
+    "layout_augment": {
+      "admitted": 156,
+      "rejected": 10,
+      "by_stage": {
+        "dedup": 6,
+        "verification": 4
+      },
+      "by_reason": {
+        "semantic_cosine": 6,
+        "quarantine": 4
+      },
+      "candidates": 166,
+      "yield": 0.9398
+    }
+  },
+  "warnings": [],
+  "recommendations": [
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "yield": 0.375,
+        "top_reason": "semantic_cosine",
+        "candidates": 16
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: semantic_cosine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated raises its yield above 0.4",
+      "rationale": "build e521_visible_slot_contract_r2_20260719: {'yield': 0.375, 'top_reason': 'semantic_cosine', 'candidates': 16}",
+      "expected_effect": "family:programspec_generated yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "60e14b8e93933de6090ce5c036e6b542e8983075",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v2"
+    },
+    "stamped_at": "2026-07-19T15:17:18.992625+00:00"
+  }
+}

@@ -5,16 +5,24 @@ The gate/promotion evaluation endpoints are pure math (no subprocess, no FS
 writes) so the Checkpoints gate editor is fully live even in read-only mode.
 Exec endpoints (jobs, comparisons) require ``capabilities.execution`` and 403
 otherwise. State (readers / capabilities / jobs registry) lives on ``app.state``.
+
+``otel_ingest_router`` has no ``/api`` prefix: it serves the standard OTLP/HTTP
+paths (``/v1/traces``, ``/v1/logs``) that ``RunTrace._mirror`` derives from a
+base endpoint URL, so any app instance can act as a telemetry peer.
 """
 
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+
+from slm_training.web.otel_hub import MAX_INGEST_BYTES
 
 from slm_training.autoresearch.run_insights import RunInsightSubmission
 from slm_training.harnesses.experiments.promotion import (
@@ -28,10 +36,15 @@ from slm_training.harnesses.model_build.ship_gates import (
 
 observability_router = APIRouter(prefix="/api")
 actions_router = APIRouter(prefix="/api")
+otel_ingest_router = APIRouter()
 
 
 def _readers(request: Request):
     return request.app.state.readers
+
+
+def _otel(request: Request):
+    return request.app.state.otel
 
 
 def _require_execution(request: Request):
@@ -55,6 +68,12 @@ def capabilities(request: Request) -> dict[str, Any]:
     caps["run_insights"] = {
         "browser": True,
         "openai_available": bool(os.getenv("OPENAI_API_KEY")),
+    }
+    hub = getattr(request.app.state, "otel", None)
+    caps["otel"] = {
+        "hub": bool(hub and hub.enabled),
+        "peers_configured": bool(hub and hub.peers),
+        "auth_mode": hub.auth_mode if hub else "open",
     }
     return caps
 
@@ -201,6 +220,84 @@ def system(request: Request) -> dict[str, Any]:
 @observability_router.get("/dispatches")
 def dispatches(request: Request) -> dict[str, Any]:
     return _readers(request).dispatches()
+
+
+# --------------------------------------------------------------------------- #
+# OTel hub: active runs across peers + lazy per-run event streams
+# --------------------------------------------------------------------------- #
+@observability_router.get("/otel/runs")
+def otel_runs(request: Request, local: int = Query(default=0)) -> dict[str, Any]:
+    # Sync handler on purpose: peer fetches are blocking urllib calls and must
+    # run on the threadpool, never on the event loop. ``local=1`` is the
+    # federation contract — peers only ever serve their own ingested state.
+    return _otel(request).merged_runs(local_only=bool(local))
+
+
+@observability_router.get("/otel/runs/{run_id}/events")
+def otel_events(
+    request: Request,
+    run_id: str,
+    since: int = Query(default=0, ge=0),
+    limit: int = Query(default=200, ge=1, le=500),
+) -> dict[str, Any]:
+    return _otel(request).events(run_id, since=since, limit=limit)
+
+
+@observability_router.get("/otel/runs/{run_id}/stream")
+async def otel_stream(
+    request: Request, run_id: str, since: int = Query(default=0, ge=0)
+) -> StreamingResponse:
+    hub = _otel(request)
+    if hub.enabled and hub.has_local(run_id):
+        generator = hub.stream(run_id, since=since)
+    else:
+        loop = asyncio.get_running_loop()
+        peer = await loop.run_in_executor(None, hub.find_peer_for, run_id)
+        if peer is not None:
+            generator = hub.stream_remote(run_id, peer, since=since)
+        elif hub.enabled:
+            # Not seen anywhere yet: subscribe locally so a run that starts
+            # after the viewer opens the page streams from its first event.
+            generator = hub.stream(run_id, since=since)
+        else:
+            raise HTTPException(
+                status_code=503,
+                detail="otel streaming unavailable on this deployment",
+            )
+    return StreamingResponse(
+        generator,
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@otel_ingest_router.post("/v1/{signal}")
+async def otel_ingest(signal: str, request: Request) -> dict[str, Any]:
+    if signal not in {"traces", "logs"}:
+        raise HTTPException(status_code=404, detail=f"unknown OTLP signal: {signal}")
+    hub = _otel(request)
+    if not hub.enabled:
+        raise HTTPException(
+            status_code=503, detail="otel hub disabled on this deployment"
+        )
+    ok, user = await hub.authorize(request.headers.get("authorization"))
+    if not ok:
+        raise HTTPException(status_code=401, detail="valid bearer token required")
+    declared = request.headers.get("content-length")
+    if declared is not None and declared.isdigit() and int(declared) > MAX_INGEST_BYTES:
+        raise HTTPException(status_code=413, detail="payload too large")
+    # Stream with an incremental cap instead of request.body(): an oversized
+    # or lying upload 413s at the threshold rather than buffering fully first.
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_INGEST_BYTES:
+            raise HTTPException(status_code=413, detail="payload too large")
+    try:
+        payload = json.loads(bytes(body))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+    return hub.ingest(signal, payload, user=user)
 
 
 # --------------------------------------------------------------------------- #

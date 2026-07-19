@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E519",
+  "run_id": "e519-e396-e500-replay050-slotrole1-honest-context-r1-5k",
+  "evaluation_run_id": "e520-e519-ood160-component-plan4-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Replacing gold-derived training slot contracts with prompt-visible honest contracts removes train/eval context mismatch and improves OOD role generalization.",
+  "conclusion": "The honest authority path changes 102 of 106 checkpoint tensors but produces exact parity with E517 on every OOD quality metric and decoder counter. The harness fix is retained to close the privileged context channel; the checkpoint is not promoted.",
+  "harness_change": {
+    "entrypoint": "scripts.train_model",
+    "argument": "--honest-slot-contract",
+    "behavior": "When slot-contract context is enabled, inventory is derived only from visible prompt/DESIGN input and never from gold record placeholders.",
+    "train_summary_fields": [
+      "recipe.slot_contract_in_context",
+      "recipe.honest_slot_contract"
+    ],
+    "component_version": "harness.model_build.train/v7"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "code_commit": "950007fc150c73391bd1023928ae0e9e8e1cf065",
+    "code_dirty": false,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e500_documentized_expression_candidate_r2_20260718",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_effective": 0.504950495049505,
+    "steps": 101,
+    "seen_target_tokens": 5000,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 103.21701783800017,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 9.959418296813965,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_focal_gamma": 0.0,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_contract_in_context": true,
+    "honest_slot_contract": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "sha256": "d82155b03531c2d852ec8d497d3fdb0878ac1f678c0c5d247e272bc36c91805f",
+    "full_state_sha256": "a4ed4300cd43fdf1c8767988f4861630fa69a9347600c1448bf9cc2574fb51f7",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T15:03:01Z"
+  },
+  "matched_runs": [
+    {
+      "label": "honest_prompt_derived_slot_context",
+      "run_id": "e519-e396-e500-replay050-slotrole1-honest-context-r1-5k",
+      "evaluation_run_id": "e520-e519-ood160-component-plan4-r1",
+      "checkpoint_sha256": "d82155b03531c2d852ec8d497d3fdb0878ac1f678c0c5d247e272bc36c91805f",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.4083333333333333,
+          "structural_similarity": 0.225,
+          "component_type_recall": 0.20833333333333331,
+          "reward_score": 0.7444999999999999,
+          "ast_node_f1": 0.2833333333333333,
+          "ast_edge_f1": 0.0625,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "latency_ms_p50": 5083.67,
+          "latency_ms_p95": 10691.48
+        }
+      }
+    }
+  ],
+  "comparison_to_e517_gold_derived_context": {
+    "quality_metric_deltas_all_zero": true,
+    "decoder_counter_deltas_all_zero": true,
+    "tensor_keys": 106,
+    "changed_tensor_keys": 102,
+    "max_abs_tensor_delta": 0.00009671971201896667,
+    "latency_ms_p50_delta": -743.53,
+    "latency_ms_p95_delta": -1856.12,
+    "latency_interpretation": "Unreplicated runtime variance; not a performance claim."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaningful rate and strict binding-aware meaning are zero, and AgentV remains red."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "950007fc150c73391bd1023928ae0e9e8e1cf065",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v7",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-19T15:03:52.512560+00:00"
+  },
+  "decision": "Retain honest training authority as the canonical safe path, reject E519 for promotion, and improve visible role-label coverage in prompts rather than reintroducing gold placeholder context."
+}

@@ -1,0 +1,100 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "dataType": {
+      "@id": "cr:dataType",
+      "@type": "@vocab"
+    },
+    "dct": "http://purl.org/dc/terms/",
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileObject": "cr:fileObject",
+    "jsonPath": "cr:jsonPath",
+    "recordSet": "cr:recordSet",
+    "sc": "https://schema.org/",
+    "source": "cr:source"
+  },
+  "@type": "sc:Dataset",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "description": "Governed OpenUI training records.",
+  "distribution": [
+    {
+      "@id": "records.jsonl",
+      "@type": "cr:FileObject",
+      "contentUrl": "records.jsonl",
+      "encodingFormat": "application/jsonl",
+      "name": "records.jsonl",
+      "sha256": "10393eaecbce3eff7768fb2f52138cbf79dc1a542213fc6ac835e507b7b12c8a"
+    }
+  ],
+  "name": "OpenUI training corpus",
+  "recordSet": [
+    {
+      "@id": "records",
+      "@type": "cr:RecordSet",
+      "field": [
+        {
+          "@id": "records/id",
+          "@type": "cr:Field",
+          "dataType": "sc:Text",
+          "name": "id",
+          "source": {
+            "extract": {
+              "jsonPath": "$.id"
+            },
+            "fileObject": {
+              "@id": "records.jsonl"
+            }
+          }
+        },
+        {
+          "@id": "records/prompt",
+          "@type": "cr:Field",
+          "dataType": "sc:Text",
+          "name": "prompt",
+          "source": {
+            "extract": {
+              "jsonPath": "$.prompt"
+            },
+            "fileObject": {
+              "@id": "records.jsonl"
+            }
+          }
+        },
+        {
+          "@id": "records/openui",
+          "@type": "cr:Field",
+          "dataType": "sc:Text",
+          "name": "openui",
+          "source": {
+            "extract": {
+              "jsonPath": "$.openui"
+            },
+            "fileObject": {
+              "@id": "records.jsonl"
+            }
+          }
+        },
+        {
+          "@id": "records/meta",
+          "@type": "cr:Field",
+          "dataType": "sc:StructuredValue",
+          "name": "meta",
+          "source": {
+            "extract": {
+              "jsonPath": "$.meta"
+            },
+            "fileObject": {
+              "@id": "records.jsonl"
+            }
+          }
+        }
+      ],
+      "name": "records"
+    }
+  ],
+  "url": "https://github.com/Tyler-R-Kendrick/slm-training",
+  "version": "e527_visible_component_types_slot_contract_r1_20260719"
+}

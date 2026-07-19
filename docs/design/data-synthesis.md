@@ -218,3 +218,72 @@ examples remain about 14–15% harder than E357 replay examples. This falsifies
 simple primary-loss divergence but does not resolve gradient alignment. The
 next lever belongs in optimizer/decode attribution, not data admission. See
 [E505](iter-e505-replay-loss-attribution-20260719.md).
+
+### E521 visible-inventory follow-up
+
+E521 audits the prompt authority mismatch exposed by E519. Only 13/260 E500
+records—and 0/209 generation records—made every declared placeholder visible,
+versus 998/998 E357 replay records. Rebuilding through the existing
+`--prompt-slot-contract` path admits 244 strict-profile rows, all 244 with full
+visible inventory, mean quality 0.9643, and zero quality rejects or warnings.
+
+The immutable snapshot is committed at
+`src/slm_training/resources/data/train/e521_visible_slot_contract_r2_20260719/`
+with fingerprint `b6a44a1b…a853b7d5`. Semantic dedup removes 18 near-duplicate
+variants and produces one ProgramSpec yield recommendation; the gate remains
+unchanged and the emitted producer-yield hypothesis is retained for a future
+matched synthesis experiment. See
+[E521](iter-e521-visible-slot-contract-data-20260719.md).
+
+### E522 visible-inventory train follow-up
+
+The matched E522 continuation confirms that the E521 representation changes
+learned behavior: OOD placeholder fidelity rises from 0.4083 to 0.8667 and
+component recall from 0.2083 to 0.2708. The gain does not compose with
+hierarchy—structure falls from 0.2250 to 0.1955, reward falls to 0.2093, and
+meaningful rate and AgentV remain zero. Keep visible inventories, but pair them
+with component-hierarchy supervision or data rather than stronger slot loss.
+See [E522](iter-e522-visible-slot-continuation-20260719.md).
+
+### E524 visible component-contract follow-up
+
+E524 projects an exact component type/count inventory onto immutable E521
+without changing its 244 IDs or OpenUI targets. All 244 component contracts are
+exact, all declared placeholders remain visible, mean quality remains 0.9643,
+and the projection emits zero rejects, warnings, recommendations, or experiment
+candidates.
+
+Semantic deduplication and n-gram decontamination are not rerun because E521
+already passed them and reapplying content-sensitive dedup changed membership
+in a diagnostic candidate. The gates are not weakened for new synthesis; this
+is a projection-only matched snapshot. See
+[E524](iter-e524-visible-component-contract-data-20260719.md).
+
+### E525 visible component-contract train follow-up
+
+The matched E525 continuation confirms that exact component counts are learned:
+OOD component recall rises from 0.2708 to 0.4167. The signal does not compose
+with E522’s slot grounding—fidelity falls from 0.8667 to 0.4667, structure to
+0.1452, meaningful and strict meaning remain zero, and AgentV remains 0/1.
+Keep E524 as conditional-contract data evidence, but reject stronger count
+prompting and the E525 checkpoint. See
+[E525](iter-e525-visible-component-continuation-20260719.md).
+
+### E527 visible component-types follow-up
+
+E527 weakens E524 from exact type/count inventory to unique component types
+only. It preserves all 244 E521 IDs and targets, exposes exact type inventories
+and all declared slots in 244/244 prompts, retains mean quality 0.9643, and
+emits zero rejects, warnings, recommendations, or experiment candidates. See
+[E527](iter-e527-visible-component-types-data-20260719.md).
+
+### E528 visible component-types train follow-up
+
+The matched E528 continuation recovers OOD meaningful rate from 0.0 to 0.25,
+fidelity from 0.4667 to 0.55, and reward from 0.1668 to 0.5778 versus E525.
+The weaker contract still does not compose into hierarchy: structure falls to
+0.1136, strict meaning remains zero, and AgentV remains 0/1. Keep E527 as
+conditional-contract evidence, reject the E528 checkpoint, and move the next
+lever to semantic-role/reference-graph supervision rather than synthesis gates
+or stronger inventory prompting. See
+[E528](iter-e528-visible-component-types-continuation-20260719.md).

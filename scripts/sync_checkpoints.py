@@ -17,6 +17,20 @@ from slm_training.harnesses.model_build.checkpoint_bucket import (
 CLAIM_CLASSES = ("fixture", "diagnostic", "frontier", "ship_candidate")
 
 
+def persist_sync_report(run_dir: Path, report: dict[str, object]) -> None:
+    """Record a verified rescue sync in the same files as automatic sync."""
+    summary_path = run_dir / "train_summary.json"
+    if summary_path.is_file():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary["checkpoint_bucket"] = report
+        summary_path.write_text(
+            json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+        )
+    (run_dir / "checkpoint_bucket.json").write_text(
+        json.dumps(report, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def _git_head() -> str | None:
     """Best-effort current commit; ``None`` outside a git checkout."""
     try:
@@ -126,6 +140,8 @@ def main(argv: list[str] | None = None) -> int:
         claim_class=args.claim_class,
         provenance=provenance,
     )
+    if not args.dry_run and bool((report.get("verification") or {}).get("verified")):
+        persist_sync_report(run_dir, report)
     print(json.dumps(report, indent=2))
     return 0
 

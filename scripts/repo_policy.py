@@ -29,6 +29,7 @@ ALLOWED_ROOTS = {
     ".rtk",
     ".serena",
     ".vscode",
+    ".vercelignore",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
