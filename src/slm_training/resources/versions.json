@@ -88,12 +88,13 @@
       ]
     },
     "evals.scoring": {
-      "version": "v6",
+      "version": "v7",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v7", "date": "2026-07-19", "note": "add EFS3-01 solver-state supervision source comparison schema and mixer on top of verifier-cascade/score-policy/eval-cache stack"},
         {"version": "v6", "date": "2026-07-19", "note": "add cached cheap-to-expensive verifier cascade scaffolding (VerifierStageSpec, VerifierResultV1, VerifierCascade) on top of score-policy/eval-cache/trigger-telemetry stack"},
         {"version": "v5", "date": "2026-07-19", "note": "add EFS1-03 eval-only score-policy interface for constrained-decode candidate ranking on top of eval cache/trigger telemetry/metric-gaming stack"},
         {"version": "v4", "date": "2026-07-19", "note": "merge SDE3-01 eval cache and sharding on top of EFS2-02 trigger telemetry and SDE0-02 metric-gaming suite"},
