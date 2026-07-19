@@ -609,6 +609,20 @@ red and the 96-token canvas is below every suite's gold p95. This updates the
 leading diagnostic inference policy only; it is not checkpoint promotion or a
 ship claim.
 
+### E507 length-safe OOD contract-decode diagnostic
+
+Both rows evaluate the same E505 checkpoint on all four OOD records with a
+160-token canvas, above gold p95 143. All other settings are matched.
+
+| Decode | n | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AST node F1 | p50 latency | AgentV | Promote |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Contract off | 4 | 1.0 | 0.0 | 0.0 | 0.0729 | 0.0 | 0.0 | 0.0313 | 4,571 ms | 0/1 | No |
+| Contract on | 4 | 1.0 | 0.25 | 0.2583 | 0.2281 | 0.3333 | 0.692 | 0.3389 | 6,966 ms | 0/1 | No |
+
+Quality metrics exactly match E506's 96-token OOD rows, ruling out canvas
+truncation as the source of the gain. AgentV remains red; no checkpoint was
+created or promoted.
+
 ---
 
 ## Limitations & honesty

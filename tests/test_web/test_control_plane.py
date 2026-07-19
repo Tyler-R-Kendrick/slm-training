@@ -203,6 +203,19 @@ def test_e506_multi_suite_eval_runs_are_persisted() -> None:
         assert set(scoreboard["suites"]) == {"held_out", "ood", "adversarial"}
 
 
+def test_e507_length_safe_ood_runs_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    expected = {
+        "e507-e505-ood160-contract-off-r1",
+        "e507-e505-ood160-contract-on-r2",
+    }
+    assert expected <= {row.get("run_id") for row in readers.runs()["runs"]}
+    for run_id in expected:
+        scoreboard = readers.run(run_id)["scoreboard"]
+        assert set(scoreboard["suites"]) == {"ood"}
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
