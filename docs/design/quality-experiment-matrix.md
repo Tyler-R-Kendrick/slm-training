@@ -2264,6 +2264,27 @@ Data evidence only; no learned-behavior or ship claim. Full evidence:
 [narrative](iter-e530-visible-semantic-roles-data-20260719.md) and
 [JSON](iter-e530-visible-semantic-roles-data-20260719.json).
 
+## E531 visible semantic-role continuation
+
+E531 holds E528's E396 parent, exact E357 replay, 50% replay, 5k token budget,
+objectives, authority, tokenizer, and evaluator fixed while replacing E527
+type-only prompts with membership-identical E530 semantic-role prompts. The
+clean CPU HF-context train completes 99 steps / 5,059 target tokens in 99.72
+seconds under the three-minute cap and persists a verified nine-file bucket
+bundle.
+
+Matched E532 OOD n=4 improves structure 0.1136→0.1431 and AST node F1
+0.2270→0.2543, but meaningful falls 0.25→0.0, fidelity 0.55→0.4667,
+component recall 0.3542→0.2917, reward 0.5778→0.3685, and AST edge F1
+0.0801→0.0455. Strict meaning remains 0.0 and AgentV remains 0/1.
+
+**Verdict:** reject E531. Prompt-visible semantic grouping alone does not
+construct correct reference graphs. Target an explicit visible-contract
+reference-edge lever next without exposing gold topology or weakening gates.
+Full evidence:
+[narrative](iter-e531-visible-semantic-roles-continuation-20260719.md) and
+[JSON](iter-e531-visible-semantic-roles-continuation-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

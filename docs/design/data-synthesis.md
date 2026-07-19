@@ -302,3 +302,14 @@ E521 IDs, targets, and placeholder lists. Every prompt gains a role contract,
 and the strict reports contain zero rejects, warnings, recommendations, or
 experiment candidates. No gate or producer changes are warranted by the valid
 projection. See [E530](iter-e530-visible-semantic-roles-data-20260719.md).
+
+### E531 visible semantic-role train follow-up
+
+The matched continuation does not validate role grouping as the missing
+hierarchy lever. E532 structure rises slightly from 0.1136 to 0.1431 and AST
+node F1 from 0.2270 to 0.2543, but meaningful rate falls to zero, fidelity to
+0.4667, component recall to 0.2917, reward to 0.3685, and AgentV remains 0/1.
+Keep E530's clean projection as diagnostic evidence, reject E531, and move
+future work to explicit visible-contract reference-edge learning or decoding
+rather than synthesis admission changes. See
+[E531](iter-e531-visible-semantic-roles-continuation-20260719.md).

@@ -141,6 +141,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E522 visible-inventory continuation | `e522-e396-e521-replay050-slotrole1-honest-context-r2-5k` | CPU frozen SmolLM2 data-authority diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e522-e396-e521-replay050-slotrole1-honest-context-r2-5k/` | 99 steps / 5,059 target tokens in 120.7s; bucket verified, SHA `97cb10f4…bf420ce`. E523 fidelity rises to 0.8667 and recall to 0.2708, but meaningful remains 0.0, structure falls to 0.1955, and AgentV is 0/1; **not promotable or ship** ([results](design/iter-e522-visible-slot-continuation-20260719.md)) |
 | E525 visible-component continuation | `e525-e396-e524-replay050-slotrole1-honest-context-r2-5k` | CPU frozen SmolLM2 conditional-contract diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k/` | 99 steps / 5,059 target tokens in 76.7s; bucket verified, SHA `dbd11811…e55e4b9`. E526 recall rises to 0.4167, but fidelity falls to 0.4667, structure to 0.1452, meaningful remains 0.0, and AgentV is 0/1; **not promotable or ship** ([results](design/iter-e525-visible-component-continuation-20260719.md)) |
 | E528 visible-component-types continuation | `e528-e396-e527-replay050-slotrole1-honest-context-r1-5k` | CPU frozen SmolLM2 type-contract diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k/` | 99 steps / 5,059 target tokens in 146.8s; bucket verified, SHA `6a2180d7…306976d5`. E529 meaningful reaches 0.25 and reward 0.5778, but structure falls to 0.1136, strict meaning is 0.0, and AgentV is 0/1; **not promotable or ship** ([results](design/iter-e528-visible-component-types-continuation-20260719.md)) |
+| E531 visible-semantic-role continuation | `e531-e396-e530-replay050-slotrole1-honest-context-r1-5k` | CPU frozen SmolLM2 semantic-role diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k/` | 99 steps / 5,059 target tokens in 99.72s; bucket verified, SHA `6b8c1abc…74a6154`. E532 structure reaches 0.1431, but meaningful is 0.0, fidelity 0.4667, reward 0.3685, strict meaning 0.0, and AgentV 0/1; **not promotable or ship** ([results](design/iter-e531-visible-semantic-roles-continuation-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -779,6 +780,23 @@ structure 0.1452→0.1136, and AST node F1 0.3041→0.2270. Strict meaning remai
 zero and AgentV remains 0/1. The weaker inventory signal is retained as
 diagnostic evidence, but the checkpoint is rejected.
 
+### E531 visible-semantic-role continuation
+
+E531 replaces E527 type-only prompts with membership-identical E530 semantic
+role contracts derived exclusively from already-visible slots, already-visible
+types, and schema compatibility. All other E528 train/eval levers remain
+fixed. The CPU HF-context run completes 99 steps / 5,059 target tokens in
+99.72 seconds; serving SHA
+`6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154`
+and full state are uploaded, independently listed, and verified.
+
+Matched E532 OOD structure rises 0.1136→0.1431 and AST node F1
+0.2270→0.2543, but meaningful falls 0.25→0.0, fidelity 0.55→0.4667,
+component recall 0.3542→0.2917, reward 0.5778→0.3685, and AST edge F1
+0.0801→0.0455. Strict meaning remains zero and AgentV remains 0/1. The
+semantic-role signal is retained as negative diagnostic evidence, and the
+checkpoint is rejected.
+
 ---
 
 ## Limitations & honesty
@@ -926,6 +944,7 @@ diagnostic evidence, but the checkpoint is rejected.
 | 2026-07-19 | `e522-e396-e521-replay050-slotrole1-honest-context-r2-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e522-e396-e521-replay050-slotrole1-honest-context-r2-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 120.7s from clean commit `ba86b71`; loss 17.5728; SHA `97cb10f43d229b1a15403295f71fa425e844ee4865c31761f3e529b24bf420ce` | Bucket upload and resync verification pass; visible inventory improves fidelity and recall but regresses structure/reward, with meaningful 0.0 and AgentV 0/1; checkpoint rejected |
 | 2026-07-19 | `e525-e396-e524-replay050-slotrole1-honest-context-r2-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 76.7s from clean commit `f6d7695`; loss 17.4623; SHA `dbd11811d826fdf7efd8b22557fb3bd48f879e84ec7484bc0a2680198e55e4b9` | Rescue upload, report persistence, resync verification, and independent bucket listing pass; recall improves but fidelity/hierarchy regress, meaningful 0.0 and AgentV 0/1; checkpoint rejected |
 | 2026-07-19 | `e528-e396-e527-replay050-slotrole1-honest-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 146.8s from clean commit `5cbbb5e`; loss 17.6792; SHA `6a2180d76c366a282a74d1d27ae2b2fcf4c1b5f2b4d298cf4cef35bc306976d5` | Automatic upload, resync verification, and independent nine-file listing pass; meaningful/reward recover but hierarchy regresses, strict meaning 0.0 and AgentV 0/1; checkpoint rejected |
+| 2026-07-19 | `e531-e396-e530-replay050-slotrole1-honest-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k/` | 99 CPU HF-context steps / 5,059 target tokens in 99.72s from clean commit `e74e27c`; loss 17.0918; SHA `6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154` | Canonical direct rescue sync, report reconciliation, resync verification, and independent nine-file listing pass; slight structure gain does not offset semantic/fidelity/reward regressions, strict meaning 0.0 and AgentV 0/1; checkpoint rejected |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 
