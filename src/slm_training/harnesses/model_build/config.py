@@ -100,6 +100,9 @@ class ModelBuildConfig:
     # Warm-start weights/tokenizers from a serving checkpoint while resetting
     # optimizer, RNG, step, and token counters for a new corpus or recipe.
     initialize_from: Path | None = None
+    # Optional immutable parent corpus mixed into warm-start continuation batches.
+    replay_train_dir: Path | None = None
+    replay_fraction: float = 0.0
     # After each optimizer step, contract trainable weights toward their
     # initialize_from values (0 = off, 1 = exact retention).
     initialization_weight_retention: float = 0.0

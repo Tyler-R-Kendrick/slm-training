@@ -1927,6 +1927,28 @@ matched lever. Every process was capped at 170 seconds and every train records
 [narrative](iter-e503-initialized-weight-retention-20260719.md) and
 [JSON](iter-e503-initialized-weight-retention-20260719.json).
 
+## E504 provenance-preserving parent replay
+
+E504 adds deterministic parent-corpus replay to the canonical training loop,
+with namespaced replay IDs, full-state fingerprints for both corpora, and
+requested-versus-effective exposure telemetry. Four matched replay fractions
+and one adaptive replay-plus-retention follow-up use E396 initialization, the
+E500 primary corpus, and honest smoke `n=3`.
+
+Fifty-percent replay reduces RMS drift from `0.003123` to `0.002796` and raises
+structure from `0.0927` to `0.2469`, but component recall falls from `0.1667`
+to `0.0833`; meaningful rate, fidelity, reward, and AgentV remain zero. Adding
+1% retention to that arm cuts drift to `0.001775` but collapses structure to
+`0.0634` and recall to zero.
+
+**Verdict:** keep exact replay provenance and exposure telemetry; reject all
+five E504 checkpoints. High replay restores hierarchy but not semantics, and
+retention compounds the failure. Measure primary-versus-replay objective
+conflict before changing synthesis or adding another regularizer. Every process
+was capped at 170 seconds and every train records `max_wall_minutes=3.0`. Full
+evidence: [narrative](iter-e504-parent-corpus-replay-20260719.md) and
+[JSON](iter-e504-parent-corpus-replay-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

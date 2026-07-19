@@ -99,6 +99,18 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--replay-train-dir",
+        type=Path,
+        default=None,
+        help="Optional immutable parent corpus mixed into continuation batches.",
+    )
+    parser.add_argument(
+        "--replay-fraction",
+        type=_probability,
+        default=0.0,
+        help="Fraction of each replay sampling window drawn from --replay-train-dir.",
+    )
+    parser.add_argument(
         "--initialization-weight-retention",
         type=_probability,
         default=0.0,
@@ -549,8 +561,16 @@ def main(argv: list[str] | None = None) -> int:
         default="off",
         help="Compiler-drafted decode hierarchy used by in-run evaluations.",
     )
-    parser.add_argument("--compiler-search-mode", choices=("greedy", "lattice", "ptrm", "gram"), default="greedy")
-    parser.add_argument("--compiler-search-trigger", choices=("bottom", "stagnation", "always"), default="stagnation")
+    parser.add_argument(
+        "--compiler-search-mode",
+        choices=("greedy", "lattice", "ptrm", "gram"),
+        default="greedy",
+    )
+    parser.add_argument(
+        "--compiler-search-trigger",
+        choices=("bottom", "stagnation", "always"),
+        default="stagnation",
+    )
     parser.add_argument("--compiler-search-width", type=int, default=1)
     parser.add_argument("--compiler-search-noise", type=float, default=0.0)
     parser.add_argument("--compiler-search-stagnation-patience", type=int, default=2)
@@ -773,187 +793,181 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     config = ModelBuildConfig(
-            train_dir=args.train_dir,
-            test_dir=args.test_dir,
-            suite=args.eval_suite,
-            run_root=args.run_root,
-            run_id=args.run_id,
-            steps=args.steps,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            seed=args.seed,
-            device=device,
-            model_name=args.model,
-            d_model=args.d_model,
-            n_heads=args.n_heads,
-            context_layers=args.context_layers,
-            denoiser_layers=args.denoiser_layers,
-            mask_min=args.mask_min,
-            mask_max=args.mask_max,
-            mask_pattern=args.mask_pattern,
-            output_tokenizer=args.output_tokenizer,
-            bind_encoding=args.bind_encoding,
-            denoiser_backend=args.denoiser_backend,
-            decode_min_content=max(-1, args.decode_min_content),
-            asap_decode=bool(args.asap_decode),
-            runtime_symbol_features=args.runtime_symbol_features,
-            symbol_slot_augmentation=args.symbol_slot_augmentation,
-            semantic_candidate_masks=args.semantic_candidate_masks,
-            constraint_graph_mode=args.constraint_graph_mode,
-            grammar_completion_bounds=args.grammar_completion_bounds,
-            grammar_equivalence_cache=args.grammar_equivalence_cache,
-            grammar_active_symbol_bitsets=args.grammar_active_symbol_bitsets,
-            compact_active_canvas=args.compact_active_canvas,
-            diffusion_policies=tuple(
-                value.strip()
-                for value in args.diffusion_policies.split(",")
-                if value.strip()
-            ),
-            diffusion_length_buckets=tuple(
-                int(value.strip())
-                for value in args.diffusion_length_buckets.split(",")
-                if value.strip()
-            ),
-            diffusion_overallocate=args.diffusion_overallocate,
-            diffusion_length_loss_weight=args.diffusion_length_loss_weight,
-            gen_steps=args.gen_steps,
-            topology_actions=args.topology_actions,
-            topology_structural_embeddings=args.topology_structural_embeddings,
-            topology_heterogeneous_noise=args.topology_heterogeneous_noise,
-            topology_critic_decode=args.topology_critic_decode,
-            topology_bounded_buffer=args.topology_bounded_buffer,
-            scope_contracts=args.scope_contracts,
-            scope_independent_noise=args.scope_independent_noise,
-            scope_local_oracle=args.scope_local_oracle,
-            scope_contract_negatives=args.scope_contract_negatives,
-            topology_max_nodes=args.topology_max_nodes,
-            topology_max_active=args.topology_max_active,
-            topology_max_arity=args.topology_max_arity,
-            topology_max_depth=args.topology_max_depth,
-            topology_max_phases=args.topology_max_phases,
-            topology_global_sync_interval=args.topology_global_sync_interval,
-            topology_accept_threshold=args.topology_accept_threshold,
-            topology_contract_threshold=args.topology_contract_threshold,
-            context_backend=args.context_backend,
-            hf_model_name=args.hf_model,
-            hf_model_revision=args.hf_revision,
-            freeze_context=freeze,
-            local_files_only=args.local_files_only,
-            grammar_constrained=not args.no_grammar,
-            grammar_dsl=args.grammar_dsl,
-            grammar_top_k=args.grammar_top_k,
-            structural_bias=args.structural_bias,
-            design_md_in_context=not args.no_design_md_context,
-            design_md_dropout=args.design_md_dropout,
-            emit_record_nll=bool(args.emit_record_nll),
-            ltr_loss_weight=args.ltr_loss_weight,
-            ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
-            compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
-            compiler_alignment_margin=args.compiler_alignment_margin,
-            compiler_alignment_stratified=args.compiler_alignment_stratified,
-            compiler_alignment_semantic_exhaustive=(
-                args.compiler_alignment_semantic_exhaustive
-            ),
-            component_inventory_loss_weight=args.component_inventory_loss_weight,
-            component_inventory_decode_weight=args.component_inventory_decode_weight,
-            component_plan_loss_weight=args.component_plan_loss_weight,
-            component_plan_decode_weight=args.component_plan_decode_weight,
-            slot_component_loss_weight=args.slot_component_loss_weight,
-            slot_component_focal_gamma=args.slot_component_focal_gamma,
-            slot_component_class_balance_power=(
-                args.slot_component_class_balance_power
-            ),
-            slot_component_decode_weight=args.slot_component_decode_weight,
-            slot_component_prompt_context=args.slot_component_prompt_context,
-            slot_component_next_context=args.slot_component_next_context,
-            slot_component_pair_interaction=args.slot_component_pair_interaction,
-            slot_component_lexeme_prior_weight=(
-                args.slot_component_lexeme_prior_weight
-            ),
-            slot_component_span_prior_weight=(
-                args.slot_component_span_prior_weight
-            ),
-            slot_component_content_arity=args.slot_component_content_arity,
-            component_edge_loss_weight=args.component_edge_loss_weight,
-            component_edge_alignment_loss_weight=(
-                args.component_edge_alignment_loss_weight
-            ),
-            component_edge_decode_weight=args.component_edge_decode_weight,
-            binder_component_plan_loss_weight=(
-                args.binder_component_plan_loss_weight
-            ),
-            binder_component_plan_decode_weight=(
-                args.binder_component_plan_decode_weight
-            ),
-            binder_topology_loss_weight=args.binder_topology_loss_weight,
-            binder_topology_decode_weight=args.binder_topology_decode_weight,
-            binder_arity_loss_weight=args.binder_arity_loss_weight,
-            binder_arity_decode_weight=args.binder_arity_decode_weight,
-            fidelity_loss_weight=args.fidelity_loss_weight,
-            grammar_ltr_primary=args.grammar_ltr_primary,
-            grammar_ltr_repair=args.grammar_ltr_repair,
-            compiler_decode_mode=args.compiler_decode_mode,
-            compiler_search_mode=args.compiler_search_mode,
-            compiler_search_trigger=args.compiler_search_trigger,
-            compiler_search_width=max(1, args.compiler_search_width),
-            compiler_search_noise=max(0.0, args.compiler_search_noise),
-            compiler_search_stagnation_patience=max(1, args.compiler_search_stagnation_patience),
-            compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
-            grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
-            schema_in_context=args.schema_in_context,
-            slot_contract_in_context=args.slot_contract_in_context,
-            slot_contract_constrained_decode=args.slot_contract_constrained_decode,
-            retrieval_k=args.retrieval_k,
-            best_of_n=args.best_of_n,
-            use_curriculum=args.curriculum,
-            mix_curriculum=not bool(args.hard_curriculum),
-            use_amp=use_amp,
-            use_compile=use_compile,
-            compile_mode=compile_mode,
-            grad_accum_steps=args.grad_accum,
-            parallel_unmask=args.parallel_unmask,
-            cache_context=cache_context,
-            fuse_ltr_loss=fuse_ltr,
-            grammar_fastpath=True,
-            fastpath_aux_weight=args.fastpath_aux_weight,
-            grammar_trust_model=args.grammar_trust_model,
-            noise_rate=args.noise_rate,
-            eval_every=args.eval_every,
-            eval_suite=args.eval_suite,
-            eval_suites=args.eval_suites,
-            loss_eval_every=args.loss_eval_every,
-            loss_suite_version=args.loss_suite_version,
-            loss_mask_seed=args.loss_mask_seed,
-            target_token_budget=args.target_token_budget,
-            resume_from=args.resume_from,
-            initialize_from=args.initialize_from,
-            initialization_weight_retention=args.initialization_weight_retention,
-            full_state_checkpoint=not bool(args.no_full_state_checkpoint),
-            mixture_manifest=args.mixture_manifest,
-            mixture_min_quality_score=args.mixture_min_quality_score,
-            mixture_sampling_policy=args.mixture_sampling_policy,
-            register_promoted=bool(args.register_promoted),
-            telemetry=not bool(args.no_telemetry),
-            checkpoint_bucket=(
-                args.checkpoint_bucket
-                if args.checkpoint_bucket is not None
-                else (
-                    DEFAULT_CHECKPOINT_BUCKET_URI
-                    if (
-                        not args.no_sync_checkpoints
-                        and (args.sync_checkpoints or args.context_backend == "hf")
-                    )
-                    else None
+        train_dir=args.train_dir,
+        test_dir=args.test_dir,
+        suite=args.eval_suite,
+        run_root=args.run_root,
+        run_id=args.run_id,
+        steps=args.steps,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        seed=args.seed,
+        device=device,
+        model_name=args.model,
+        d_model=args.d_model,
+        n_heads=args.n_heads,
+        context_layers=args.context_layers,
+        denoiser_layers=args.denoiser_layers,
+        mask_min=args.mask_min,
+        mask_max=args.mask_max,
+        mask_pattern=args.mask_pattern,
+        output_tokenizer=args.output_tokenizer,
+        bind_encoding=args.bind_encoding,
+        denoiser_backend=args.denoiser_backend,
+        decode_min_content=max(-1, args.decode_min_content),
+        asap_decode=bool(args.asap_decode),
+        runtime_symbol_features=args.runtime_symbol_features,
+        symbol_slot_augmentation=args.symbol_slot_augmentation,
+        semantic_candidate_masks=args.semantic_candidate_masks,
+        constraint_graph_mode=args.constraint_graph_mode,
+        grammar_completion_bounds=args.grammar_completion_bounds,
+        grammar_equivalence_cache=args.grammar_equivalence_cache,
+        grammar_active_symbol_bitsets=args.grammar_active_symbol_bitsets,
+        compact_active_canvas=args.compact_active_canvas,
+        diffusion_policies=tuple(
+            value.strip()
+            for value in args.diffusion_policies.split(",")
+            if value.strip()
+        ),
+        diffusion_length_buckets=tuple(
+            int(value.strip())
+            for value in args.diffusion_length_buckets.split(",")
+            if value.strip()
+        ),
+        diffusion_overallocate=args.diffusion_overallocate,
+        diffusion_length_loss_weight=args.diffusion_length_loss_weight,
+        gen_steps=args.gen_steps,
+        topology_actions=args.topology_actions,
+        topology_structural_embeddings=args.topology_structural_embeddings,
+        topology_heterogeneous_noise=args.topology_heterogeneous_noise,
+        topology_critic_decode=args.topology_critic_decode,
+        topology_bounded_buffer=args.topology_bounded_buffer,
+        scope_contracts=args.scope_contracts,
+        scope_independent_noise=args.scope_independent_noise,
+        scope_local_oracle=args.scope_local_oracle,
+        scope_contract_negatives=args.scope_contract_negatives,
+        topology_max_nodes=args.topology_max_nodes,
+        topology_max_active=args.topology_max_active,
+        topology_max_arity=args.topology_max_arity,
+        topology_max_depth=args.topology_max_depth,
+        topology_max_phases=args.topology_max_phases,
+        topology_global_sync_interval=args.topology_global_sync_interval,
+        topology_accept_threshold=args.topology_accept_threshold,
+        topology_contract_threshold=args.topology_contract_threshold,
+        context_backend=args.context_backend,
+        hf_model_name=args.hf_model,
+        hf_model_revision=args.hf_revision,
+        freeze_context=freeze,
+        local_files_only=args.local_files_only,
+        grammar_constrained=not args.no_grammar,
+        grammar_dsl=args.grammar_dsl,
+        grammar_top_k=args.grammar_top_k,
+        structural_bias=args.structural_bias,
+        design_md_in_context=not args.no_design_md_context,
+        design_md_dropout=args.design_md_dropout,
+        emit_record_nll=bool(args.emit_record_nll),
+        ltr_loss_weight=args.ltr_loss_weight,
+        ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+        compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
+        compiler_alignment_margin=args.compiler_alignment_margin,
+        compiler_alignment_stratified=args.compiler_alignment_stratified,
+        compiler_alignment_semantic_exhaustive=(
+            args.compiler_alignment_semantic_exhaustive
+        ),
+        component_inventory_loss_weight=args.component_inventory_loss_weight,
+        component_inventory_decode_weight=args.component_inventory_decode_weight,
+        component_plan_loss_weight=args.component_plan_loss_weight,
+        component_plan_decode_weight=args.component_plan_decode_weight,
+        slot_component_loss_weight=args.slot_component_loss_weight,
+        slot_component_focal_gamma=args.slot_component_focal_gamma,
+        slot_component_class_balance_power=(args.slot_component_class_balance_power),
+        slot_component_decode_weight=args.slot_component_decode_weight,
+        slot_component_prompt_context=args.slot_component_prompt_context,
+        slot_component_next_context=args.slot_component_next_context,
+        slot_component_pair_interaction=args.slot_component_pair_interaction,
+        slot_component_lexeme_prior_weight=(args.slot_component_lexeme_prior_weight),
+        slot_component_span_prior_weight=(args.slot_component_span_prior_weight),
+        slot_component_content_arity=args.slot_component_content_arity,
+        component_edge_loss_weight=args.component_edge_loss_weight,
+        component_edge_alignment_loss_weight=(
+            args.component_edge_alignment_loss_weight
+        ),
+        component_edge_decode_weight=args.component_edge_decode_weight,
+        binder_component_plan_loss_weight=(args.binder_component_plan_loss_weight),
+        binder_component_plan_decode_weight=(args.binder_component_plan_decode_weight),
+        binder_topology_loss_weight=args.binder_topology_loss_weight,
+        binder_topology_decode_weight=args.binder_topology_decode_weight,
+        binder_arity_loss_weight=args.binder_arity_loss_weight,
+        binder_arity_decode_weight=args.binder_arity_decode_weight,
+        fidelity_loss_weight=args.fidelity_loss_weight,
+        grammar_ltr_primary=args.grammar_ltr_primary,
+        grammar_ltr_repair=args.grammar_ltr_repair,
+        compiler_decode_mode=args.compiler_decode_mode,
+        compiler_search_mode=args.compiler_search_mode,
+        compiler_search_trigger=args.compiler_search_trigger,
+        compiler_search_width=max(1, args.compiler_search_width),
+        compiler_search_noise=max(0.0, args.compiler_search_noise),
+        compiler_search_stagnation_patience=max(
+            1, args.compiler_search_stagnation_patience
+        ),
+        compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
+        grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
+        schema_in_context=args.schema_in_context,
+        slot_contract_in_context=args.slot_contract_in_context,
+        slot_contract_constrained_decode=args.slot_contract_constrained_decode,
+        retrieval_k=args.retrieval_k,
+        best_of_n=args.best_of_n,
+        use_curriculum=args.curriculum,
+        mix_curriculum=not bool(args.hard_curriculum),
+        use_amp=use_amp,
+        use_compile=use_compile,
+        compile_mode=compile_mode,
+        grad_accum_steps=args.grad_accum,
+        parallel_unmask=args.parallel_unmask,
+        cache_context=cache_context,
+        fuse_ltr_loss=fuse_ltr,
+        grammar_fastpath=True,
+        fastpath_aux_weight=args.fastpath_aux_weight,
+        grammar_trust_model=args.grammar_trust_model,
+        noise_rate=args.noise_rate,
+        eval_every=args.eval_every,
+        eval_suite=args.eval_suite,
+        eval_suites=args.eval_suites,
+        loss_eval_every=args.loss_eval_every,
+        loss_suite_version=args.loss_suite_version,
+        loss_mask_seed=args.loss_mask_seed,
+        target_token_budget=args.target_token_budget,
+        resume_from=args.resume_from,
+        initialize_from=args.initialize_from,
+        replay_train_dir=args.replay_train_dir,
+        replay_fraction=args.replay_fraction,
+        initialization_weight_retention=args.initialization_weight_retention,
+        full_state_checkpoint=not bool(args.no_full_state_checkpoint),
+        mixture_manifest=args.mixture_manifest,
+        mixture_min_quality_score=args.mixture_min_quality_score,
+        mixture_sampling_policy=args.mixture_sampling_policy,
+        register_promoted=bool(args.register_promoted),
+        telemetry=not bool(args.no_telemetry),
+        checkpoint_bucket=(
+            args.checkpoint_bucket
+            if args.checkpoint_bucket is not None
+            else (
+                DEFAULT_CHECKPOINT_BUCKET_URI
+                if (
+                    not args.no_sync_checkpoints
+                    and (args.sync_checkpoints or args.context_backend == "hf")
                 )
-            ),
-            sync_checkpoints=(
-                False
-                if args.no_sync_checkpoints
-                else True
-                if args.sync_checkpoints or args.context_backend == "hf"
-                else False
-            ),
-            checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
+                else None
+            )
+        ),
+        sync_checkpoints=(
+            False
+            if args.no_sync_checkpoints
+            else True
+            if args.sync_checkpoints or args.context_backend == "hf"
+            else False
+        ),
+        checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
     )
     from slm_training.runtime.telemetry import run_trace
 
@@ -967,7 +981,9 @@ def main(argv: list[str] | None = None) -> int:
         summary["trace_id"] = trace.trace_id
         summary_path = config.run_dir / "train_summary.json"
         if summary_path.is_file():
-            summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+            summary_path.write_text(
+                json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+            )
     print(json.dumps(summary, indent=2))
     return 0
 

@@ -192,3 +192,20 @@ anchoring recovers structure only by losing component recall; the data conclusio
 is unchanged. Future parent replay must retain source and parent provenance and
 report effective exposure separately from the E500 mixture policy. See
 [E503](iter-e503-initialized-weight-retention-20260719.md).
+
+### E504 parent-replay follow-up
+
+E504 uses the exact 998-row E357 parent corpus rather than regenerating an
+approximation. The eight-file snapshot is persisted at
+`hf://buckets/TKendrick/OpenUI/data/train/e357_card_hierarchy_v1/`; an
+independent download reproduced semantic manifest SHA
+`a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51`
+and records SHA
+`b1b2c3d0c1965bd9829edfc6ae34b5dce916a68c33bb17497a6392c80d7ea6ef`.
+
+The E500 and E357 feedback remains clean, so E504 changes no producer or
+acceptance gate. Fifty-percent replay restores hierarchy but not placeholder or
+semantic behavior; adding retention makes the interaction worse. This localizes
+the next investigation to primary-versus-replay objective or output-codec
+conflict rather than synthesis admission. See
+[E504](iter-e504-parent-corpus-replay-20260719.md).
