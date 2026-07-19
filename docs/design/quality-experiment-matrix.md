@@ -2061,6 +2061,21 @@ supervision and anti-spam behavior next. The process was capped at 170 seconds.
 Full evidence: [narrative](iter-e511-three-suite-component-plan-20260719.md)
 and [JSON](iter-e511-three-suite-component-plan-20260719.json).
 
+## E512 slot-to-component decode-weight ablation
+
+E512 exposes the existing slot-to-component bias through the canonical eval CLI
+and compares weight 8 with E510's weight 4 on the same four OOD records. Spam
+prevalence falls `3→1`, but role mismatch stays `4→4`; meaningful regresses
+`0.50→0.25`, fidelity `0.6583→0.3417`, structure `0.3446→0.2869`, reward
+`0.8405→0.7245`, and AST edge F1 `0.1625→0.10`.
+
+**Verdict:** reject weight 8 and retain weight 4. Improve slot-role supervision
+and anti-spam calibration during training rather than increasing decode bias.
+Strict binding-aware meaning remains zero and AgentV remains 0/1. The process
+was capped at 170 seconds. Full evidence:
+[narrative](iter-e512-slot-component-weight-20260719.md) and
+[JSON](iter-e512-slot-component-weight-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

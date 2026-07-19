@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,7 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v2", "date": "2026-07-19", "note": "expose the existing slot-to-component decode-weight override in the canonical evaluation CLI"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
       ]
     },

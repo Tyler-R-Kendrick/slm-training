@@ -255,6 +255,17 @@ def test_e511_component_plan_three_suite_run_is_persisted() -> None:
     }
 
 
+def test_e512_slot_component_weight_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e512-e505-ood160-component-plan4-slot8-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert set(listed["suites"]) == {"ood"}
+    assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
