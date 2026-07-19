@@ -525,6 +525,21 @@ def test_e535_visible_reference_completeness_run_is_persisted() -> None:
     assert ood["ref_graph_exact"] == 0.0
 
 
+def test_e536_choice_decision_evidence_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e536-e531-ood160-choice-evidence-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert listed["pass"] is False
+    detail = readers.run(run_id)
+    ood = detail["scoreboard"]["suites"]["ood"]
+    assert ood["n"] == 4
+    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v1"]
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
