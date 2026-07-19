@@ -2045,6 +2045,22 @@ meaning remains zero and AgentV remains 0/1. The process was capped at 170
 seconds. Full evidence: [narrative](iter-e510-component-plan-decode-20260719.md)
 and [JSON](iter-e510-component-plan-decode-20260719.json).
 
+## E511 length-safe three-suite component-plan decode
+
+E511 expands component-plan weight 4 to all 13 held-out, OOD, and adversarial
+records with a 192-token canvas above every suite's gold p95. Aggregate
+meaningful is `0.3846`, fidelity `0.6718`, structure `0.3440`, recall `0.4615`,
+reward `0.6272`, AST node F1 `0.4654`, and AST edge F1 `0.1748`. OOD exactly
+reproduces E510 quality; held-out and adversarial reach meaningful `0.20` and
+`0.50`.
+
+**Verdict:** the component-plan gain generalizes, so retain weight 4 as the
+leading diagnostic policy. Do not promote: strict binding-aware meaning remains
+zero across all suites and AgentV remains 0/3. Target placeholder semantic-role
+supervision and anti-spam behavior next. The process was capped at 170 seconds.
+Full evidence: [narrative](iter-e511-three-suite-component-plan-20260719.md)
+and [JSON](iter-e511-three-suite-component-plan-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
