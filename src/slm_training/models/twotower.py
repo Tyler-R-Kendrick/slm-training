@@ -3897,6 +3897,12 @@ class TwoTowerModel(nn.Module):
         logits = self.root_reference_arity_head(
             self._pool_context(ctx, ctx_pad)
         )[0]
+        max_reference_count = min(
+            len(getattr(state, "section_types", ())), logits.numel() - 1
+        )
+        if max_reference_count <= 0:
+            return None
+        logits = logits[: max_reference_count + 1]
         split = min(emitted + 1, logits.numel())
         stop_score = torch.logsumexp(logits[:split], dim=0)
         continue_score = (

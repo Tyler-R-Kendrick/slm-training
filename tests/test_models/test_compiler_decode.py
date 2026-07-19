@@ -423,8 +423,9 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
     tokenizer = model.tokenizer
     with torch.no_grad():
         model.root_reference_arity_head.weight.zero_()
-        model.root_reference_arity_head.bias.fill_(-10.0)
+        model.root_reference_arity_head.bias.zero_()
         model.root_reference_arity_head.bias[2] = 4.0
+        model.root_reference_arity_head.bias[-1] = 20.0
     state = ChoiceDecodeState(tokenizer, slot_count=2)
     for token in ("+TextContent", "@0", "-", "+TextContent", "@1", "-", "["):
         assert state.advance_id(tokenizer.token_to_id[token])
