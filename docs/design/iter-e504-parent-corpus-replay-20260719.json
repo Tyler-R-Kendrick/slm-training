@@ -55,7 +55,7 @@
     "hard_process_cap_seconds": 170,
     "suite": "smoke",
     "suite_n": 3,
-    "honesty_mode": "no DESIGN context; honest prompt-derived slot contract; constrained decode; no fallback; scratch diagnostic; no checkpoint sync"
+    "honesty_mode": "no DESIGN context; honest slot-contract scoring with slot-contract decode bias off; grammar-constrained LTR decode; no fallback; scratch diagnostic; no checkpoint sync"
   },
   "data": {
     "primary": {

@@ -353,6 +353,13 @@ def test_parent_replay_is_deterministic_and_provenanced(
     assert replay["replay_data_manifest_sha"]
     assert summary["data_manifest_sha"] == replay["combined_data_manifest_sha"]
     assert summary["recipe"]["replay_fraction"] == 0.5
+    loss_proxy = replay["example_token_loss_proxy"]
+    assert loss_proxy["primary"]["count"] == 8
+    assert loss_proxy["replay"]["count"] == 8
+    assert loss_proxy["primary"]["mean"] > 0
+    assert loss_proxy["replay"]["mean"] > 0
+    assert loss_proxy["primary"]["first_20_mean"] == loss_proxy["primary"]["mean"]
+    assert loss_proxy["replay"]["last_20_mean"] == loss_proxy["replay"]["mean"]
 
 
 def test_parent_replay_requires_a_corpus(train_dir: Path, tmp_path: Path) -> None:

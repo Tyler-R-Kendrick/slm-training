@@ -1949,6 +1949,27 @@ was capped at 170 seconds and every train records `max_wall_minutes=3.0`. Full
 evidence: [narrative](iter-e504-parent-corpus-replay-20260719.md) and
 [JSON](iter-e504-parent-corpus-replay-20260719.json).
 
+## E505 source-stratified replay loss attribution
+
+E505 adds bounded primary-versus-replay masked-token loss summaries without
+changing the training objective. A matched replication of E504's 50% replay arm
+records primary proxy `3.8422→3.3724` and replay proxy `3.4087→2.9217` from the
+first to last 20 examples. Both improve; the primary-minus-replay gap widens
+3.95% from `0.4335` to `0.4506`.
+
+The matched decode exactly reproduces E504 structure `0.2469`, recall `0.0833`,
+and zero meaningful/fidelity/reward. A same-checkpoint decode ablation enabling
+slot-contract constraint raises fidelity to `0.1667` and reward to `0.2623`,
+but structure falls to `0.2039` and meaningful rate/AgentV remain zero.
+
+**Verdict:** keep source-loss telemetry; reject the E505 checkpoint. Simple
+primary-loss divergence is falsified, while scalar loss cannot establish
+gradient conflict. Validate constrained slot-contract decode on a larger capped
+diagnostic or measure gradient alignment next. Every process was capped at 170
+seconds and the train records `max_wall_minutes=3.0`. Full evidence:
+[narrative](iter-e505-replay-loss-attribution-20260719.md) and
+[JSON](iter-e505-replay-loss-attribution-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

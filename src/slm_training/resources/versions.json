@@ -25,12 +25,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v6", "date": "2026-07-19", "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"},
         {"version": "v5", "date": "2026-07-19", "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"},
         {"version": "v4", "date": "2026-07-19", "note": "add explicit initialized-weight retention with strict initialization guards and RMS drift telemetry"},
         {"version": "v3", "date": "2026-07-18", "note": "preserve corpus-derived serving priors during checkpoint initialization and expose restored fields plus slot-head recipe settings in train summaries"},

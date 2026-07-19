@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E505",
+  "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Source-stratified masked-token loss can determine whether E500 primary examples diverge while E357 replay examples improve during the successful 50% replay structure arm.",
+  "conclusion": "Both source losses decline, falsifying simple primary-loss divergence. Primary examples remain consistently harder than replay examples, and the gap widens 3.95%, but scalar loss telemetry alone cannot establish gradient conflict.",
+  "harness_change": {
+    "feature": "source_stratified_replay_loss_proxy",
+    "behavior": "The canonical trainer summarizes its existing detached per-example masked-token loss proxy separately for primary and replay examples, including bounded first-20 and last-20 windows.",
+    "objective_changed": false,
+    "summary_field": "replay.example_token_loss_proxy",
+    "component_version": "harness.model_build.train@v6"
+  },
+  "parent_checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+  },
+  "data": {
+    "primary_version": "e500_documentized_expression_candidate_r2_20260718",
+    "primary_records": 260,
+    "primary_manifest_sha256": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+    "replay_version": "e357_card_hierarchy_v1",
+    "replay_records": 998,
+    "replay_manifest_sha256": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "replay_remote_uri": "hf://buckets/TKendrick/OpenUI/data/train/e357_card_hierarchy_v1/",
+    "synthesis_feedback": {
+      "warnings": 0,
+      "recommendations": 0,
+      "experiment_candidates": 0,
+      "decision": "No producer or admission change; E505 attributes optimizer behavior on the already-governed corpora."
+    }
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "local_files_only": true,
+    "output_codec": "choice",
+    "d_model": 128,
+    "heads": 4,
+    "context_layers": 2,
+    "denoiser_layers": 4,
+    "batch_size": 2,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "target_tokens": 5000,
+    "requested_replay_fraction": 0.5,
+    "effective_replay_fraction": 0.504950495049505,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "no DESIGN context; honest slot-contract scoring; grammar-constrained LTR decode; no fallback; scratch diagnostic; no checkpoint sync"
+  },
+  "matched_runs": [
+    {
+      "label": "fifty_percent_replay_loss_attribution",
+      "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "steps": 101,
+      "seen_target_tokens": 5000,
+      "elapsed_wall_seconds": 93.81593479099683,
+      "last_loss": 9.848666191101074,
+      "initialized_weight_rms_drift": 0.0027963723708701836,
+      "seen_primary_examples": 100,
+      "seen_replay_examples": 102,
+      "loss_proxy": {
+        "primary": {
+          "count": 100,
+          "mean": 3.5923726779222487,
+          "first_20_mean": 3.8422380447387696,
+          "last_20_mean": 3.372352623939514,
+          "decline_fraction": 0.12229471868425124
+        },
+        "replay": {
+          "count": 102,
+          "mean": 3.1211920389357735,
+          "first_20_mean": 3.4087365448474882,
+          "last_20_mean": 2.9217338860034943,
+          "decline_fraction": 0.14286896403892757
+        },
+        "first_20_primary_minus_replay": 0.4335014998912814,
+        "last_20_primary_minus_replay": 0.4506187379360198,
+        "gap_growth_fraction": 0.03948599497125449
+      },
+      "smoke": {
+        "n": 3,
+        "slot_contract_constrained_decode": false,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.24693333333333334,
+        "component_type_recall": 0.08333333333333333,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.3148148148148148,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 4228.33,
+        "failure_counts": {
+          "no_placeholders": 2,
+          "trivial_layout": 1
+        }
+      }
+    }
+  ],
+  "decode_ablation": {
+    "same_checkpoint": true,
+    "change": "slot_contract_constrained_decode false to true",
+    "smoke": {
+      "n": 3,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.16666666666666666,
+      "structural_similarity": 0.2039,
+      "component_type_recall": 0.08333333333333333,
+      "reward_score": 0.26233333333333336,
+      "ast_node_f1": 0.09523809523809523,
+      "ast_edge_f1": 0.0,
+      "latency_ms_p50": 4609.71,
+      "failure_counts": {
+        "low_component_recall": 1,
+        "trivial_layout": 2
+      }
+    },
+    "decision": "Promising fidelity/reward wiring signal, but not promotable: meaningful rate and AgentV remain zero and structure falls by 0.0430 on n=3."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 2,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Both smoke-only n=3 decode policies have zero meaningful-program rate and AgentV 0/1."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: bounded attribution checkpoint is rejected."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5895d46d4aca58c3d9afdadd03a67c67a454ac82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v6",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T03:35:30+00:00"
+  },
+  "decision": "Keep bounded source-loss telemetry. Reject the E505 checkpoint. Simple replay-loss divergence is falsified; next measure gradient alignment or validate constrained slot-contract decode on a larger capped diagnostic before changing the training objective."
+}

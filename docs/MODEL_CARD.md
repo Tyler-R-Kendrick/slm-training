@@ -133,6 +133,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E504 25% parent replay | `e504-e396-e500-replay025-r3-5k` | CPU frozen SmolLM2 E357 replay diagnostic | `outputs/runs/e504-e396-e500-replay025-r3-5k/checkpoints/last.pt` (local) | Structure 0.0964, recall 0.0833, semantic metrics zero, AgentV 0/1. SHA `91ab3f73…c3d85b4`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
 | E504 50% parent replay | `e504-e396-e500-replay050-r4-5k` | CPU frozen SmolLM2 E357 replay diagnostic | `outputs/runs/e504-e396-e500-replay050-r4-5k/checkpoints/last.pt` (local) | RMS drift 0.002796 and structure 0.2469, but recall 0.0833 and semantic metrics zero, AgentV 0/1. SHA `7d7e056e…c90294f9`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
 | E504 50% replay + 1% retention | `e504-e396-e500-replay050-retention001-r5-5k` | CPU frozen SmolLM2 interaction diagnostic | `outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/checkpoints/last.pt` (local) | RMS drift 0.001775, but structure collapses to 0.0634 and semantic metrics remain zero, AgentV 0/1. SHA `1fc2fc23…a36036c`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
+| E505 50% replay loss attribution | `e505-e396-e500-replay050-loss-attribution-r1-5k` | CPU frozen SmolLM2 source-loss diagnostic | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/checkpoints/last.pt` (local) | Primary/replay loss proxies both decline; matched structure 0.2469 and recall 0.0833, but meaningful/fidelity/reward zero, AgentV 0/1. SHA `8fd11acd…525967e8`; rejected, **not promotable or ship** ([results](design/iter-e505-replay-loss-attribution-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -575,6 +576,22 @@ All five checkpoints are rejected local diagnostics with explicit
 `--no-sync-checkpoints`; the exact E357 data snapshot, not these checkpoints,
 was persisted to the HF bucket.
 
+### E505 replay-loss attribution diagnostic
+
+The single train repeats E504's 50% replay recipe for 5,000 target tokens under
+the external 170-second cap. Train v6 adds source-stratified masked-token loss
+proxies without changing the objective.
+
+| Run | Decode policy | Primary proxy first→last | Replay proxy first→last | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AgentV | Promote |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `e505-e396-e500-replay050-loss-attribution-r1-5k` | Honest, slot-contract bias off | 3.8422→3.3724 | 3.4087→2.9217 | 1.0 | 0.0 | 0.0 | 0.2469 | 0.0833 | 0.0 | 0/1 | No |
+| same checkpoint | Constrained slot contract | — | — | 1.0 | 0.0 | 0.1667 | 0.2039 | 0.0833 | 0.2623 | 0/1 | No |
+
+Both source losses improve, while constrained slot-contract decode changes the
+fidelity/structure tradeoff without clearing meaningful or AgentV gates. The
+checkpoint is a rejected local diagnostic with explicit
+`--no-sync-checkpoints`.
+
 ---
 
 ## Limitations & honesty
@@ -714,6 +731,7 @@ was persisted to the HF bucket.
 | 2026-07-19 | `e504-e396-e500-replay025-r3-5k` | `outputs/runs/e504-e396-e500-replay025-r3-5k/` (local) | 100 CPU steps / 5,039 tokens in 73.12s; loss 8.8749; SHA `91ab3f73b6a3f74d7b8a19679d5827068be0806cd327a1c3aeaef76c8c3d85b4` | 25% replay; structure 0.0964 and recall 0.0833; semantic gates zero, AgentV 0/1; rejected |
 | 2026-07-19 | `e504-e396-e500-replay050-r4-5k` | `outputs/runs/e504-e396-e500-replay050-r4-5k/` (local) | 101 CPU steps / 5,000 tokens in 74.70s; loss 9.8487; SHA `7d7e056e9c61ed4ffba53cf2c20e4d6d624d242488ac7f999e1baa05c90294f9` | 50% replay; RMS drift 0.002796, structure 0.2469, recall 0.0833; semantic gates zero, AgentV 0/1; rejected |
 | 2026-07-19 | `e504-e396-e500-replay050-retention001-r5-5k` | `outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/` (local) | 101 CPU steps / 5,000 tokens in 74.50s; loss 9.5478; SHA `1fc2fc23b7598bffaab0e0beb07c79593ebc9d25221d6441bc924a38ea36036c` | 50% replay + 1% retention; drift 0.001775 but structure 0.0634 and recall zero; semantic gates zero, AgentV 0/1; rejected |
+| 2026-07-19 | `e505-e396-e500-replay050-loss-attribution-r1-5k` | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/` (local) | 101 CPU steps / 5,000 tokens in 93.82s; loss 9.8487; SHA `8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8` | Primary/replay proxies both decline; matched structure 0.2469 and recall 0.0833, semantic gates zero, AgentV 0/1; constrained slot-contract ablation still rejected |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

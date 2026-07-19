@@ -381,6 +381,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     seen_target_tokens = 0
     seen_primary_examples = 0
     seen_replay_examples = 0
+    source_loss_proxy = {
+        "primary": {"count": 0, "sum": 0.0, "first": [], "last": []},
+        "replay": {"count": 0, "sum": 0.0, "first": [], "last": []},
+    }
     best_weighted_nll = math.inf
     best_ship_score = -math.inf
     pending: list[list] = []
@@ -477,6 +481,32 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             }
             for record in batch
         ]
+
+    def _record_source_loss_proxy(batch: list, values: list[float]) -> None:
+        if len(batch) != len(values):
+            return
+        for record, value in zip(batch, values, strict=True):
+            group = "replay" if record.id.startswith("replay::") else "primary"
+            stats = source_loss_proxy[group]
+            stats["count"] += 1
+            stats["sum"] += value
+            if len(stats["first"]) < 20:
+                stats["first"].append(value)
+            stats["last"].append(value)
+            if len(stats["last"]) > 20:
+                stats["last"].pop(0)
+
+    def _source_loss_proxy_summary(group: str) -> dict:
+        stats = source_loss_proxy[group]
+        count = stats["count"]
+        first = stats["first"]
+        last = stats["last"]
+        return {
+            "count": count,
+            "mean": stats["sum"] / count if count else None,
+            "first_20_mean": sum(first) / len(first) if first else None,
+            "last_20_mean": sum(last) / len(last) if last else None,
+        }
 
     def _budget_exhausted() -> bool:
         budget = getattr(config, "target_token_budget", None)
@@ -722,12 +752,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 accum_loss_sum += float(reported_loss_t)
                 accum_loss_count += 1
                 accum_batch_meta.extend(_batch_meta(batch))
-                accum_example_losses.extend(
+                batch_example_losses = [
                     float(value)
                     for value in (
                         getattr(plugin, "_last_example_token_losses", None) or []
                     )
-                )
+                ]
+                accum_example_losses.extend(batch_example_losses)
+                _record_source_loss_proxy(batch, batch_example_losses)
                 micro += 1
                 if micro >= grad_accum:
                     with timed("optim_step"):
@@ -883,6 +915,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "primary_data_manifest_sha": primary_manifest_sha,
             "replay_data_manifest_sha": replay_manifest_sha,
             "combined_data_manifest_sha": manifest_sha,
+            "example_token_loss_proxy": {
+                "primary": _source_loss_proxy_summary("primary"),
+                "replay": _source_loss_proxy_summary("replay"),
+            },
         },
         "model": config.model_name,
         "device": config.device,

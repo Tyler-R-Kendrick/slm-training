@@ -29,10 +29,11 @@ d128/h4/c2/dn4, batch 2, LR `3e-4`, seed 0, and the E396 slot/component recipe.
 Each stops at approximately 5,000 target tokens. Every train summary records
 `max_wall_minutes=3.0`; every process had an external 170-second cap.
 
-Evaluation is the same honest diagnostic smoke `n=3`: prompt-derived slot
-contracts, constrained LTR decode, no fallback, four generation steps, one
-attempt, and a 96-token cap. Every evaluation emitted AgentEvals plus a pinned
-AgentV bundle without execution errors.
+Evaluation is the same honest diagnostic smoke `n=3`: honest slot-contract
+scoring with slot-contract decode bias off, grammar-constrained LTR decode, no
+fallback, four generation steps, one attempt, and a 96-token cap. Every
+evaluation emitted AgentEvals plus a pinned AgentV bundle without execution
+errors.
 
 | Replay | Effective examples | RMS drift | Last loss | Structure | Recall | AST node F1 | Meaningful / fidelity / reward | AgentV |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
