@@ -1099,6 +1099,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "root_reference_identity_loss_weight": getattr(
                 config, "root_reference_identity_loss_weight", 0.0
             ),
+            "root_reference_identity_negative_weight": getattr(
+                config, "root_reference_identity_negative_weight", 1.0
+            ),
             "root_reference_identity_decode_weight": getattr(
                 config, "root_reference_identity_decode_weight", 0.0
             ),

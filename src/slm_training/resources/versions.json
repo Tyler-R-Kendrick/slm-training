@@ -38,12 +38,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v11", "date": "2026-07-19", "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"},
         {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
         {"version": "v9", "date": "2026-07-19", "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"},
         {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
@@ -250,7 +251,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -260,6 +261,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v6", "date": "2026-07-19", "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"},
         {"version": "v5", "date": "2026-07-19", "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"},
         {"version": "v4", "date": "2026-07-19", "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"},
         {"version": "v3", "date": "2026-07-19", "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"},

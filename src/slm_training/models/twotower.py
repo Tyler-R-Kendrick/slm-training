@@ -250,6 +250,7 @@ class TwoTowerConfig:
     root_reference_arity_loss_weight: float = 0.0
     root_reference_arity_decode_weight: float = 0.0
     root_reference_identity_loss_weight: float = 0.0
+    root_reference_identity_negative_weight: float = 1.0
     root_reference_identity_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
@@ -2615,6 +2616,11 @@ class TwoTowerModel(nn.Module):
         root_identity_w = float(
             getattr(self.config, "root_reference_identity_loss_weight", 0.0) or 0.0
         )
+        root_identity_negative_w = float(
+            getattr(self.config, "root_reference_identity_negative_weight", 1.0)
+        )
+        if root_identity_negative_w < 0.0:
+            raise ValueError("root_reference_identity_negative_weight must be >= 0")
         if (
             root_identity_w > 0.0
             and self.root_reference_identity_head is not None
@@ -2629,6 +2635,7 @@ class TwoTowerModel(nn.Module):
             identity_losses: list[torch.Tensor] = []
             identity_exact_hits: list[torch.Tensor] = []
             identity_positive_recalls: list[torch.Tensor] = []
+            identity_negative_accuracies: list[torch.Tensor] = []
             identity_class_counts: list[int] = []
             for row, record in enumerate(batch):
                 target_and_bound = structural_root_reference_identity_target(
@@ -2648,8 +2655,17 @@ class TwoTowerModel(nn.Module):
                         target[reference] = 1.0
                 scores = identity_logits[row, :valid_count]
                 prediction = scores >= 0.0
+                element_loss = F.binary_cross_entropy_with_logits(
+                    scores, target, reduction="none"
+                )
+                element_weights = torch.where(
+                    target.bool(),
+                    element_loss.new_ones(()),
+                    element_loss.new_tensor(root_identity_negative_w),
+                )
                 identity_losses.append(
-                    F.binary_cross_entropy_with_logits(scores, target)
+                    (element_loss * element_weights).sum()
+                    / element_weights.sum().clamp_min(1.0)
                 )
                 identity_exact_hits.append(prediction.eq(target.bool()).all().float())
                 positives = target.sum()
@@ -2657,6 +2673,12 @@ class TwoTowerModel(nn.Module):
                     (prediction & target.bool()).float().sum()
                     / positives.clamp_min(1.0)
                 )
+                negatives = target.eq(0.0)
+                if negatives.any():
+                    identity_negative_accuracies.append(
+                        ((~prediction) & negatives).float().sum()
+                        / negatives.float().sum()
+                    )
                 identity_class_counts.append(valid_count)
             identity_loss = (
                 torch.stack(identity_losses).mean()
@@ -2681,6 +2703,17 @@ class TwoTowerModel(nn.Module):
                         torch.stack(identity_positive_recalls).mean().detach().cpu()
                         if identity_positive_recalls
                         else 0.0
+                    ),
+                    "root_reference_identity_negative_accuracy": float(
+                        torch.stack(identity_negative_accuracies)
+                        .mean()
+                        .detach()
+                        .cpu()
+                        if identity_negative_accuracies
+                        else 0.0
+                    ),
+                    "root_reference_identity_negative_rows": len(
+                        identity_negative_accuracies
                     ),
                     "root_reference_identity_rows": len(identity_losses),
                     "root_reference_identity_classes_mean": (
