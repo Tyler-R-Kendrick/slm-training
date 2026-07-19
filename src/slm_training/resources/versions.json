@@ -163,12 +163,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v9", "date": "2026-07-19", "note": "add SDE4-04 pretrained-denoiser activation/candidate/budget manifest (wiring slice)"},
         {"version": "v8", "date": "2026-07-19", "note": "add SDE4-03 teacher-paraphrase activation/budget manifest and canonical request renderer (wiring slice)"},
         {"version": "v7", "date": "2026-07-19", "note": "add EFS2-03 conflict-slice repair harness (ConflictSliceV1, repair policies, deterministic fixtures, matched-budget comparison) on top of EFS0-05/CAP5 manifests"},
         {"version": "v6", "date": "2026-07-19", "note": "add EFS0-05 rejected-lever registry (RejectedLeverV1, ReAdjudicationRowV1, paired five-seed classification, autoresearch evidence items) on top of CAP5-02/CAP5-01 manifests"},
