@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E510",
+  "run_id": "e510-e505-ood160-component-plan4-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Activating the E505 checkpoint's trained component-plan head during constrained grammar-LTR decode improves component selection and downstream semantic quality.",
+  "conclusion": "Component-plan decode doubles meaningful rate and materially improves fidelity, structure, reward, and AST topology on OOD. Strict binding-aware meaning and AgentV remain zero, so this is a promising diagnostic inference policy rather than a promotable checkpoint.",
+  "checkpoint": {
+    "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+    "sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+    "new_checkpoint_written": false
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "ood",
+    "suite_n": 4,
+    "grammar_ltr_primary": true,
+    "component_plan_decode_weight": 4.0,
+    "component_plan_training_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "gold_p95_tokens": 143,
+    "honest_slot_contract": true,
+    "slot_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "length_safe_component_plan4_contract_context_decode",
+      "run_id": "e510-e505-ood160-component-plan4-r1",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "placeholder_fidelity": 0.6583333333333333,
+          "structural_similarity": 0.344575,
+          "component_type_recall": 0.3958333333333333,
+          "reward_score": 0.8405,
+          "ast_node_f1": 0.46785714285714286,
+          "ast_edge_f1": 0.1625,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "latency_ms_p50": 4796.36,
+          "latency_ms_p95": 10491.78
+        }
+      }
+    }
+  ],
+  "comparison_to_e509": {
+    "meaningful_program_rate_delta": 0.25,
+    "placeholder_fidelity_delta": 0.4,
+    "structural_similarity_delta": 0.10395,
+    "component_type_recall_delta": 0.0625,
+    "reward_score_delta": 0.1485,
+    "ast_node_f1_delta": 0.12896825396825398,
+    "ast_edge_f1_delta": 0.1625,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0,
+    "p50_latency_ms": -593.64,
+    "note": "Timing is diagnostic CPU evidence; all headline quality gains are matched on the same four records."
+  },
+  "decode_telemetry": {
+    "component_plan_applications": 155,
+    "component_plan_choice_changes": 7,
+    "slot_component_applications": 23,
+    "slot_component_choice_changes": 10,
+    "constrained_fallback_rate": 0.0
+  },
+  "failure_analysis": {
+    "failure_breakdown": {
+      "low_component_recall": 2
+    },
+    "binding_aware_meaningful_v2_reason_prevalence": {
+      "placeholder_semantic_role_mismatch": 4,
+      "placeholder_spam": 3,
+      "prompt_component_missing": 2,
+      "required_component_missing": 2,
+      "required_placeholder_missing": 4,
+      "schema_value_role_mismatch:Card.children": 2,
+      "schema_value_role_mismatch:ImageGallery.images": 1,
+      "schema_value_role_mismatch:Modal.children": 1
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "AgentV remains 0/1 and binding-aware meaningfulness remains zero."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Evaluation-only experiment; no checkpoint was created."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5895d46d4aca58c3d9afdadd03a67c67a454ac82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T04:28:59.235938+00:00"
+  },
+  "decision": "Retain component-plan weight 4 as the leading diagnostic policy and expand it across held-out and adversarial suites. Do not promote until strict semantic and AgentV gates improve."
+}

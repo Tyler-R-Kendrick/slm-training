@@ -640,6 +640,15 @@ AST F1, and AgentV 0/1 are unchanged. Inventory visibility does not resolve the
 component/placeholder semantic-role failures. No checkpoint was created or
 promoted.
 
+### E510 component-plan-decode diagnostic
+
+The same E505 checkpoint activates its trained component-plan head at decode
+weight 4. Against E509 on the same four OOD records, meaningful improves
+0.25→0.50, fidelity 0.2583→0.6583, structure 0.2406→0.3446, reward
+0.6920→0.8405, AST node F1 0.3389→0.4679, and AST edge F1 0→0.1625. Strict
+binding-aware meaning and AgentV 0/1 remain red. This is the leading diagnostic
+policy, not a checkpoint promotion.
+
 ---
 
 ## Limitations & honesty

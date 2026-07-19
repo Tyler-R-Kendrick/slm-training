@@ -2030,6 +2030,21 @@ process was capped at 170 seconds. Full evidence:
 [narrative](iter-e509-slot-contract-context-20260719.md) and
 [JSON](iter-e509-slot-contract-context-20260719.json).
 
+## E510 component-plan decode
+
+E510 activates the E505 checkpoint's trained component-plan head at decode
+weight 4 while retaining E509's honest contract, length-safe canvas, and
+default generation policy. On all four OOD records, meaningful rises
+`0.25→0.50`, fidelity `0.2583→0.6583`, structure `0.2406→0.3446`, recall
+`0.3333→0.3958`, reward `0.6920→0.8405`, AST node F1 `0.3389→0.4679`, and AST
+edge F1 `0→0.1625`.
+
+**Verdict:** retain weight 4 as the leading diagnostic policy and expand it
+across held-out and adversarial suites. Do not promote: strict binding-aware
+meaning remains zero and AgentV remains 0/1. The process was capped at 170
+seconds. Full evidence: [narrative](iter-e510-component-plan-decode-20260719.md)
+and [JSON](iter-e510-component-plan-decode-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
