@@ -9,6 +9,8 @@ import {
   HeroStrip,
   JobLines,
   JobsBadgeView,
+  OtelBadgesView,
+  OtelRunLines,
   ProvenanceBadge,
   StatTile,
   StatusPill,
@@ -26,6 +28,7 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
   const hero = useHero(15000);
   const { data: jobsRaw } = usePoll<any>("/api/jobs", 10000);
   const { data: dispRaw } = usePoll<any>("/api/dispatches", 30000);
+  const { data: otelRaw } = usePoll<any>("/api/otel/runs", 10000);
 
   if (error) return <ErrorNote error={error} />;
   if (!data) return <div className="loading">Loading mission control…</div>;
@@ -68,6 +71,10 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
           <DispatchLines data={dispData} navigate={navigate} />
         </Card>
       </div>
+
+      <Card title="Active training runs" right={<OtelBadgesView data={otelRaw} />}>
+        <OtelRunLines data={otelRaw} navigate={navigate} />
+      </Card>
 
       <Card
         title="Current model card"

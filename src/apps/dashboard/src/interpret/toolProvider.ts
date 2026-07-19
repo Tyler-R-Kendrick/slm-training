@@ -86,6 +86,10 @@ export const toolProvider: Record<string, QueryFn> = {
     const active = (d.jobs ?? []).filter((j: any) => ["running", "queued"].includes(j.status));
     return { rows: active.map((j: any) => ({ id: j.id, job: j.job_key, status: j.status })), count: active.length, execution: !!d.execution };
   },
+  // Raw hub payload; OtelRunList/OtelBadges delegate to the shared views, so
+  // compiled and interpreted format identically from the same shape.
+  otel_active_runs: async () =>
+    getJSON("/api/otel/runs").catch(() => ({ enabled: false, runs: [], peers: [] })),
   overview_scoreboards: async () => {
     const d: any = await getJSON("/api/scoreboards");
     return {

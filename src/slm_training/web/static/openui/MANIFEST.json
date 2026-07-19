@@ -82,6 +82,8 @@
         "JobList",
         "JobsBadge",
         "NavChip",
+        "OtelBadges",
+        "OtelRunList",
         "Page",
         "PageHead",
         "Panel",
@@ -93,11 +95,12 @@
       "file": "overview.openui",
       "queries": [
         "dispatches",
+        "otel_active_runs",
         "overview_hero",
         "overview_insights",
         "overview_jobs"
       ],
-      "sha256": "dd9763bfe73596ba22ded6841f3f22828f451eb647c6dc035d898a2155fd1b65",
+      "sha256": "bca84e16481c6c57a921a64bb9f0fcea4c193ff18d8ce4e3bec43a18b2c214c3",
       "status": "ok"
     },
     "playground": {

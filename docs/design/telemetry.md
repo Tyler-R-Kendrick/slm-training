@@ -33,6 +33,67 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` (or a signal-specific endpoint) to mirror the
 same JSON payloads through OTLP/HTTP. Local persistence remains authoritative if
 the remote endpoint is missing or unavailable.
 
+## Shared telemetry peers (active runs + live streaming)
+
+Every web app instance embeds an in-memory OTLP hub (`slm_training/web/otel_hub.py`)
+speaking two protocol surfaces, which together make any instance a **telemetry
+peer**:
+
+- **Ingest** — standard OTLP/HTTP JSON at `POST /v1/traces` and `POST /v1/logs`
+  (exactly the paths `RunTrace._mirror` derives from a base endpoint URL).
+- **Read** — `GET /api/otel/runs` (active-run list), `GET
+  /api/otel/runs/<id>/events?since=<seq>` (cursor page), and `GET
+  /api/otel/runs/<id>/stream` (SSE: `status` / `otel` / `dropped` / `ping` /
+  `error` frames, each stamped with the hub's boot `hub_epoch`).
+
+There is no blessed central server: "the shared endpoint" is whichever
+always-reachable peer a team agrees on. `SLM_OTEL_PEERS` (comma-separated URLs)
+wires a machine into the mesh:
+
+- **Broadcast** — trainers mirror through `OTEL_EXPORTER_OTLP_ENDPOINT` if set,
+  else the **first** peer in `SLM_OTEL_PEERS` (single blocking 2s-timeout POST
+  per record keeps the training hot path bounded). The train loop additionally
+  emits a throttled `train.progress` log record (step, loss, target tokens)
+  every `SLM_OTEL_PROGRESS_SECONDS` (default 20; `0` disables) so streams show
+  live training activity between run start and end.
+- **Read federation** — the dashboard's active-runs list merges local ingest ∪
+  every peer (in listed order) ∪ a zero-config disk fallback
+  (`outputs/runs/*/metrics.jsonl` touched in the last 10 minutes, list-only),
+  deduped by run id with that precedence. Federation always requests a peer's
+  **local-only** view (`?local=1`), so cyclic peer graphs (A↔B) are loop-safe by
+  construction — reads fan out at request time, nothing is re-broadcast.
+- **Laziness** — peer fetches happen only while a client request or stream is
+  attached; per-run SSE fan-out queues exist only while someone subscribes; the
+  dashboard opens a run's EventSource only while the observing page is mounted
+  and the tab visible (hidden tabs close it and resume from the last `seq`).
+
+Run lifecycle at a peer: `run.started` → **active**; `run.completed` /
+root-span status 1 → **completed**; `run.failed` / status 2 → **failed**; no
+events for 10 minutes → **stale** (any later event revives, which also covers
+hub restarts — state is in-memory only and `hub_epoch` tells clients to reset;
+durable history stays in the producer's local trace bundle).
+
+**Auth (ingest only).** `SLM_OTEL_AUTH` selects the mode: `open` (default when
+nothing is configured — keeps localhost zero-config), `token` (bearer must match
+`SLM_OTEL_TOKEN`; senders inherit it automatically), or `hf` (bearer validated
+against `https://huggingface.co/api/whoami-v2`, and the resolved username is
+stamped on the run so the dashboard shows *who* is running what). With
+`SLM_OTEL_AUTH=hf` a sender forwards its `HF_TOKEN` — explicit opt-in only, and
+prefer a fine-grained token. `OTEL_EXPORTER_OTLP_HEADERS` (`k=v,k2=v2`)
+overrides sender headers outright. Reads are tokenless like every other
+observability endpoint (`EventSource` cannot send headers) — anyone who can
+reach a peer can read run telemetry metadata, so front a private deployment with
+network controls if that matters.
+
+**Deployment constraints.** The hub is in-memory and single-process: run peers
+with a single uvicorn worker (the default `scripts/serve_playground` path). On
+serverless deploys (Vercel) the hub disables itself — ingest and local streams
+return 503, `capabilities.otel.hub` is `false`, but the merged list still
+read-through-federates configured peers. A rendezvous peer for a team is just a
+persistently hosted instance: a lab box, a VM, or e.g. a Docker-SDK Hugging Face
+Space running `uvicorn` on one worker with `SLM_OTEL_AUTH=hf` set — no dedicated
+artifact required.
+
 ## Spans
 
 **Train:** `batch_build`, `forward` → nested `context_encode` + `denoiser_forward`,
