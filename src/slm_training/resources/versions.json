@@ -231,6 +231,20 @@
         {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-121 causal PEFT FTPO plan/fixture CLI"}
       ]
     },
+    "model.twotower": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/models/adapters/",
+        "src/slm_training/harnesses/model_build/config.py",
+        "src/slm_training/harnesses/model_build/factory.py",
+        "scripts/train_model.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
+      ]
+    },
     "harness.reasoning.bench": {
       "version": "v1",
       "kind": "harness",

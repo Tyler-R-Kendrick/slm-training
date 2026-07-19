@@ -1,0 +1,51 @@
+{
+  "adapter_bytes": 3200,
+  "adapter_id": "removable-low-rank-delta",
+  "base_compatibility_fingerprint": "510cbc5539b374b4e23033fe9c30f6be375716f02f86d5d6eed1b12dbce041e4",
+  "base_identity": {
+    "base_model_id": "scratch",
+    "base_model_revision": "local",
+    "kind": "twotower",
+    "tokenizer_sha": "5deceeaafd5931d31e55f9b49b5a52c1d3b023f6071b5f66d355c559e5d6ac25"
+  },
+  "honest_caveats": "wiring-only fixture; no trained checkpoint or ship claim",
+  "matrix_set": "twotower-adapter",
+  "matrix_version": "ldi2-01-v1",
+  "parity": {
+    "disabled_restores_parent": true,
+    "fresh_enabled_equals_parent": true,
+    "nonzero_adapter_changes_output": true
+  },
+  "resolved_module_map": [
+    "denoiser.layers.0.attn_q",
+    "denoiser.layers.0.attn_v"
+  ],
+  "spec": {
+    "alpha": 4.0,
+    "base_checkpoint_sha": "ckpt-fixture",
+    "base_compatibility_fingerprint": "510cbc5539b374b4e23033fe9c30f6be375716f02f86d5d6eed1b12dbce041e4",
+    "dropout": 0.0,
+    "include_output_head": false,
+    "method": "low_rank",
+    "rank": 2,
+    "schema_version": 1,
+    "target_layer_indices": null,
+    "target_modules": [
+      "attn_q",
+      "attn_v"
+    ],
+    "tokenizer_sha": "5deceeaafd5931d31e55f9b49b5a52c1d3b023f6071b5f66d355c559e5d6ac25",
+    "train_bias": "none"
+  },
+  "status": "wiring",
+  "trainable_parameter_count": 256,
+  "version_stamp": {
+    "code_commit": "0cf79b1a153292b37644f616527cac40bb434b04",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T21:45:35.438265+00:00"
+  }
+}

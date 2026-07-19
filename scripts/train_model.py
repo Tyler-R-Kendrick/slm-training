@@ -741,6 +741,17 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
+    parser.add_argument(
+        "--adapter-spec",
+        type=Path,
+        default=None,
+        help="LDI2-01: load a removable TwoTower low-rank adapter directory.",
+    )
+    parser.add_argument(
+        "--adapter-frozen",
+        action="store_true",
+        help="Load the adapter as frozen (no adapter parameters train).",
+    )
     args = parser.parse_args(argv)
     data_store = DataStore()
     if args.train_version:
@@ -977,6 +988,8 @@ def main(argv: list[str] | None = None) -> int:
             else False
         ),
         checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
+        adapter_spec=args.adapter_spec,
+        adapter_trainable=not bool(args.adapter_frozen),
     )
     from slm_training.runtime.telemetry import run_trace
 
