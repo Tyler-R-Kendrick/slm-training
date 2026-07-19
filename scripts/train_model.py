@@ -598,6 +598,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Inject record placeholder inventory (SLOT_CONTRACT) into context.",
     )
     parser.add_argument(
+        "--honest-slot-contract",
+        action="store_true",
+        help=(
+            "Derive slot inventory only from user-visible prompt/DESIGN input; "
+            "never inject gold record placeholders."
+        ),
+    )
+    parser.add_argument(
         "--slot-contract-constrained-decode",
         action="store_true",
         help="Restrict placeholder decode to the slot contract inventory.",
@@ -915,6 +923,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
         slot_contract_constrained_decode=args.slot_contract_constrained_decode,
+        honest_slot_contract=args.honest_slot_contract,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         use_curriculum=args.curriculum,

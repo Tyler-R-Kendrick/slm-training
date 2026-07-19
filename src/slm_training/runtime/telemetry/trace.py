@@ -40,12 +40,36 @@ def _attrs(values: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _first_peer() -> str | None:
+    peers = os.getenv("SLM_OTEL_PEERS", "")
+    for peer in peers.split(","):
+        if peer.strip():
+            return peer.strip()
+    return None
+
+
 def _endpoint(signal: str) -> str | None:
     specific = os.getenv(f"OTEL_EXPORTER_OTLP_{signal.upper()}_ENDPOINT")
-    base = specific or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+    base = specific or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") or _first_peer()
     if not base:
         return None
     return base if specific else f"{base.rstrip('/')}/v1/{signal}"
+
+
+def _headers() -> dict[str, str]:
+    raw = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
+    if raw:
+        headers: dict[str, str] = {}
+        for pair in raw.split(","):
+            key, sep, value = pair.partition("=")
+            if sep and key.strip():
+                headers[key.strip()] = value.strip()
+        return headers
+    token = os.getenv("SLM_OTEL_TOKEN")
+    if not token and os.getenv("SLM_OTEL_AUTH", "").strip().lower() == "hf":
+        # HF_TOKEN is credential-bearing; forward it only on explicit opt-in.
+        token = os.getenv("HF_TOKEN")
+    return {"Authorization": f"Bearer {token}"} if token else {}
 
 
 @dataclass
@@ -209,7 +233,7 @@ class RunTrace:
         request = urllib.request.Request(
             endpoint,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **_headers()},
             method="POST",
         )
         try:

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E521",
+  "run_id": "e521_visible_slot_contract_r2_20260719",
+  "date": "2026-07-19",
+  "hypothesis": "Making each declared placeholder visible in projected training prompts closes the E500 train/eval slot-authority mismatch without relaxing data gates.",
+  "recipe": {
+    "device": "CPU",
+    "source": "src/slm_training/resources/data/train/remediated_roots/records.jsonl",
+    "profile": "strict",
+    "synthesizer": "layout",
+    "documentize_expressions": true,
+    "target_kinds": [
+      "document"
+    ],
+    "prompt_slot_contract": true,
+    "max_records_per_parent": 6,
+    "hard_process_cap_seconds": 170,
+    "elapsed_seconds": 4.77
+  },
+  "audit": {
+    "e500": {
+      "records": 260,
+      "all_placeholders_visible": 13,
+      "generation_records": 209,
+      "generation_records_with_all_placeholders_visible": 0
+    },
+    "e357_replay": {
+      "records": 998,
+      "all_placeholders_visible": 998
+    }
+  },
+  "invalid_attempts": [
+    {
+      "version": "e521_visible_slot_contract_r1_20260719",
+      "status": "invalid_setup",
+      "reason": "The isolated clone lacked OpenUI bridge dependencies, so all 270 candidates failed closed at G2. This build is local only, was not published, and is not evidence."
+    }
+  ],
+  "result": {
+    "version": "e521_visible_slot_contract_r2_20260719",
+    "published_path": "src/slm_training/resources/data/train/e521_visible_slot_contract_r2_20260719",
+    "content_fingerprint": "b6a44a1b155f569ff46e738295330c4f35e3e4cdccd606cb8ff7a0a8a853b7d5",
+    "records": 244,
+    "records_with_all_placeholders_visible": 244,
+    "mean_quality_score": 0.9643,
+    "placeholder_vocab_size": 77,
+    "with_design_md": 244,
+    "quality_rejected": 0,
+    "warnings": [],
+    "semantic_cosine_dropped": 18,
+    "synthesis_recommendations": 1
+  },
+  "feedback_action": {
+    "recommendation": "programspec_generated yield is 0.375 because semantic dedup removed near-duplicate variants",
+    "decision": "Keep the unchanged semantic dedup gate. Record the emitted producer-yield candidate for a future matched synthesis experiment; do not add no-op variants or relax the threshold."
+  },
+  "decision": "Publish E521 as the matched visible-inventory candidate for bounded continuation training. This is data-quality evidence only; it makes no model-quality or ship claim.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "60e14b8e93933de6090ce5c036e6b542e8983075",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v2"
+    },
+    "stamped_at": "2026-07-19T15:17:18.992625+00:00"
+  }
+}

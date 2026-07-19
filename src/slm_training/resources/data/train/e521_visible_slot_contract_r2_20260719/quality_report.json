@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "version": "e521_visible_slot_contract_r2_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T15:17:18.982261+00:00",
+  "counts": {
+    "seeds": 104,
+    "candidates": 270,
+    "collected": 270,
+    "admitted": 244,
+    "rejected_total": 31,
+    "source_errors": 0,
+    "by_stage": {
+      "dedup": 18,
+      "selection": 5,
+      "verification": 8
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 20,
+      "Gold": 1,
+      "Silver": 223
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 8,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 244
+    },
+    "mean_quality_score": 0.9643,
+    "min_quality_score": 0.9
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 18,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 244,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "0036cfad899fe9b8|fbda2194f27dfcdc02d08044f74edc17a92c8229d82ac5a87f53f372a33c4984|ea3cc3deabfe57eb",
+        "count": 1,
+        "sample_ids": [
+          "train_modal_01_aug_cta"
+        ]
+      },
+      {
+        "cluster": "013374e1fe1aca88|4a91f70c50ef05d1e8830d134b8225d100f4bd0a26c713e78e2b7160175dcc86|804b44a51b86eb0f",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_BarChart_as_document_aug_cta"
+        ]
+      },
+      {
+        "cluster": "019df97ba2c6feab|a604fd3cf3b4e537234998c06cfa5d85bff6b44e4b57d6ca322041b4623a089c|9693e29e7a7da3ed",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_SwitchItem_as_document"
+        ]
+      },
+      {
+        "cluster": "019dfdb2572dba05|2d4ed73d1318a746122877ccf79a078799bbbe6bf3de29657bd6f48b97b6bd33|d460e050f04ef257",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_SwitchGroup_as_document"
+        ]
+      },
+      {
+        "cluster": "01a4e46f0c1c28f8|e57fa461c700a48db71c75c0a54996889e7f54f3b79e61d4267f00a9e5ea8fda|ccec2d52bd0baa49",
+        "count": 1,
+        "sample_ids": [
+          "program_966554f6443dd38f_aug_cta"
+        ]
+      },
+      {
+        "cluster": "01dcc21444c1f86b|2d6f9aed315bceb6ca1eb99b44974dfc4efd0945406adb3adc0ff194f291ff8d|e7422afb851d3248",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_TextArea_as_document"
+        ]
+      },
+      {
+        "cluster": "025dbd2c6a8fbe1f|9fab076d47ee6995a6c12dd1b3d908a269ecd7e836324069bc7390c7b08ec3d0|6e51277c3d9a7064",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_HorizontalBarChart_as_document_aug_dir"
+        ]
+      },
+      {
+        "cluster": "033b312f20b2d01a|6bb0e5342e059edd1fdbcab647c96945c0d7eb6bc2054d6bd9263ff8ce2d791a|9490275485a7ab3d",
+        "count": 1,
+        "sample_ids": [
+          "lc_nested_list_as_document_aug_dir"
+        ]
+      },
+      {
+        "cluster": "03e9ee43a01a28fb|2b2923abf7e3f6880d0c1be9cc12915ddd0bab8ef81c4028d1afe03089f9d106|0540142b7b79c5da",
+        "count": 1,
+        "sample_ids": [
+          "train_text_only_01"
+        ]
+      },
+      {
+        "cluster": "04be57241735ddba|e05d517c6a5147af8d98124a06721e119848c7a9450a10c4c1eaab1fc02bbf69|cff5eceedb8a2ca3",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_PieChart_as_document"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 13,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.953846,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 13
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 15,
+      "root_parent_count": 15,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 15
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 53,
+      "root_parent_count": 53,
+      "mean_quality_score": 0.954717,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 53
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 156,
+      "root_parent_count": 83,
+      "mean_quality_score": 0.965385,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 156
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 6,
+      "root_parent_count": 6,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "generation": 6
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "60e14b8e93933de6090ce5c036e6b542e8983075",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v2"
+    },
+    "stamped_at": "2026-07-19T15:17:18.992625+00:00"
+  }
+}

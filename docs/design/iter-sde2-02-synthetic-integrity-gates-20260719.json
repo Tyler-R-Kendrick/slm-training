@@ -1,0 +1,17 @@
+{
+  "schema_version": "synthetic_integrity_audit/v1",
+  "audit_date": "20260719",
+  "records_path": "src/slm_training/resources/train_seeds.jsonl",
+  "n_records": 20,
+  "n_passed": 20,
+  "n_failed": 0,
+  "pass_rate": 1.0,
+  "hard_fail_counts": {},
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "75fb3f22a5ac3b3bb047ffcf5cc864a3fa17574c",
+    "code_dirty": true,
+    "components": {},
+    "stamped_at": "2026-07-19T15:29:26.366877+00:00"
+  }
+}

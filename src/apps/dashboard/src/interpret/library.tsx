@@ -30,6 +30,8 @@ import {
   JobLines,
   JobsBadgeView,
   DispatchLines,
+  OtelBadgesView,
+  OtelRunLines,
   Empty,
   fmt,
   pct,
@@ -606,6 +608,26 @@ const AnnotatePlayground = defineComponent({
   component: () => <Playground />,
 });
 
+// Active training runs across telemetry peers. Delegates to the shared
+// OtelRunLines / OtelBadgesView views so compiled and interpreted match verbatim.
+const OtelRunList = defineComponent({
+  name: "OtelRunList",
+  description:
+    "Active training runs table from the otel_active_runs query (run link, user, status, step, loss, source, last event), with the no-active-runs hint.",
+  props: z.object({ data: any }),
+  component: ({ props }: any) => (
+    <OtelRunLines data={props.data} navigate={(to: string) => navRef.current?.(to)} />
+  ),
+});
+
+const OtelBadges = defineComponent({
+  name: "OtelBadges",
+  description:
+    "Header badges for the active-runs card: peer reachability x/y and hub on/off, from the otel_active_runs query.",
+  props: z.object({ data: any }),
+  component: ({ props }: any) => <OtelBadgesView data={props.data} />,
+});
+
 const CUSTOM = [
   Page,
   PageHead,
@@ -629,6 +651,8 @@ const CUSTOM = [
   JobList,
   JobsBadge,
   DispatchList,
+  OtelRunList,
+  OtelBadges,
   HeroStrip,
   ChipTabs,
   JobConsole,

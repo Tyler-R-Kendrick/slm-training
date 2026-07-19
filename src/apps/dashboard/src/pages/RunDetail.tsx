@@ -1,5 +1,5 @@
 import React from "react";
-import { postJSON, usePoll } from "../api";
+import { postJSON, usePoll, useOtelStream, OtelEvent } from "../api";
 import { useCaps, jobDef } from "../caps";
 import {
   Card,
@@ -214,8 +214,71 @@ function InsightEnrichment({ report, completed, reload }: { report: any; complet
   );
 }
 
+function LiveTelemetry({ runId, entry }: { runId: string; entry: any }) {
+  // Disk-detected runs are list-only (no ingested events to stream).
+  const streamable = entry.source !== "disk";
+  const { events, status, dropped, live } = useOtelStream(streamable ? runId : null);
+  const current = status && status.status && status.status !== "unknown" ? status : entry;
+  const latest = { ...(entry.latest ?? {}), ...(status?.latest ?? {}) };
+  const feedRef = React.useRef<HTMLPreElement>(null);
+  React.useEffect(() => {
+    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
+  }, [events.length]);
+  const describe = (e: OtelEvent) => {
+    const when = e.ts ? new Date(Number(e.ts) / 1e6).toISOString().slice(11, 19) : "—";
+    const step = e.attrs?.["slm.step"];
+    const loss = e.attrs?.["slm.loss"];
+    const extras = [
+      step !== undefined ? `step ${step}` : null,
+      loss !== undefined ? `loss ${fmt(loss, 4)}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return `${when}  ${String(e.severity ?? "INFO").padEnd(5)} ${e.body || e.signal}${extras ? `  (${extras})` : ""}`;
+  };
+  return (
+    <Card
+      title="Live telemetry"
+      right={
+        <>
+          {entry.source !== "local" && (
+            <span className="prov prov-committed" title={entry.peer ?? undefined}>{entry.source}</span>
+          )}{" "}
+          {live && <span className="prov prov-live">streaming</span>}{" "}
+          <StatusPill value={current.status} />
+        </>
+      }
+    >
+      <Grid min="160px">
+        <StatTile label="Operation" value={current.operation || "—"} />
+        <StatTile label="Step" value={latest.step ?? "—"} accent="moss" sub={latest.body ? String(latest.body) : undefined} />
+        <StatTile label="Loss" value={latest.loss !== undefined ? fmt(latest.loss, 4) : "—"} />
+        <StatTile label="User" value={current.user ?? "—"} sub={current.instance_id ? `instance ${String(current.instance_id).slice(0, 8)}` : undefined} />
+        <StatTile label="Events" value={current.event_count ?? events.length} sub={dropped ? `${dropped} dropped (slow consumer)` : undefined} />
+      </Grid>
+      {streamable ? (
+        <div className="logstream">
+          <div className="logstream-head">
+            <span className="mono">otel · {runId}</span>
+            {status?.peer && <span className="hint">via {status.peer}</span>}
+          </div>
+          <pre ref={feedRef} className="logstream-body">
+            {events.length ? events.map(describe).join("\n") : "waiting for events…"}
+          </pre>
+        </div>
+      ) : (
+        <p className="hint">
+          This run was detected from local <span className="mono">outputs/</span> activity
+          (list-only). Point the trainer at a telemetry peer to stream its events here.
+        </p>
+      )}
+    </Card>
+  );
+}
+
 export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: string) => void }) {
   const { data, error, reload } = usePoll<any>(`/api/runs/${encodeURIComponent(runId)}`, 0);
+  const { data: otelData } = usePoll<any>("/api/otel/runs", 10000);
   const traceLimit = 20;
   const [traceOffset, setTraceOffset] = React.useState(0);
   const {
@@ -231,6 +294,7 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
   if (error) return <ErrorNote error={error} />;
   if (!data) return <div className="loading">Loading run…</div>;
 
+  const otelEntry = (otelData?.runs ?? []).find((row: any) => row.run_id === runId);
   const ts = data.train_summary ?? {};
   const track = ts.track ?? {};
   const sb = data.scoreboard ?? {};
@@ -277,6 +341,8 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
         <StatTile label="Gate" value={data.gates?.pass === undefined ? "—" : ""} sub={sb.matrix ? `${sb.matrix} matrix` : undefined}
           accent={data.gates?.pass ? "passed" : data.gates ? "failed" : undefined} />
       </Grid>
+
+      {otelEntry && <LiveTelemetry runId={runId} entry={otelEntry} />}
 
       <Card title="Loss over time" right={<StatusPill value={loss.status ?? "unavailable"} label={loss.status ?? "unavailable"} />}>
         <LossChart points={loss.points ?? []} events={loss.events ?? []} />

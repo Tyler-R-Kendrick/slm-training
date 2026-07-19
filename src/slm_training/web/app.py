@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,11 +17,16 @@ from slm_training.harnesses.annotations.store import (
     AnnotationStorageError,
     AnnotationStore,
 )
-from slm_training.web.capabilities import resolve_capabilities
+from slm_training.web.capabilities import is_serverless, resolve_capabilities
 from slm_training.web.comparisons import BlindedComparisonStore
 from slm_training.web.deployments import DeploymentRegistry
 from slm_training.web.observability import Readers
-from slm_training.web.routes import actions_router, observability_router
+from slm_training.web.otel_hub import OtelHub
+from slm_training.web.routes import (
+    actions_router,
+    observability_router,
+    otel_ingest_router,
+)
 from slm_training.web.service import PlaygroundService
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -131,6 +137,9 @@ def create_app(
     deployment_root: Path | None = None,
     comparisons_path: Path | None = None,
     require_onnx: bool | None = None,
+    otel_token: str | None = None,
+    otel_peers: list[str] | None = None,
+    otel_auth_mode: str | None = None,
 ) -> FastAPI:
     service = PlaygroundService(
         checkpoint=checkpoint,
@@ -158,11 +167,27 @@ def create_app(
 
         registry = JobRegistry(app_root)
 
+    if otel_peers is None:
+        otel_peers = [
+            peer.strip()
+            for peer in os.getenv("SLM_OTEL_PEERS", "").split(",")
+            if peer.strip()
+        ]
+    otel = OtelHub(
+        enabled=not is_serverless(),
+        outputs_dir=app_root / "outputs",
+        peers=otel_peers,
+        auth_mode=otel_auth_mode if otel_auth_mode is not None else os.getenv("SLM_OTEL_AUTH"),
+        token=otel_token if otel_token is not None else os.getenv("SLM_OTEL_TOKEN"),
+    )
+
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         if registry is not None:
             await registry.start()
+        await otel.start()
         yield
+        await otel.stop()
         if registry is not None:
             await registry.shutdown()
 
@@ -173,6 +198,7 @@ def create_app(
         app_root, persist_insights=capabilities.execution
     )
     app.state.capabilities = capabilities
+    app.state.otel = otel
     if registry is not None:
         app.state.jobs = registry
 
@@ -402,6 +428,7 @@ def create_app(
 
     app.include_router(observability_router)
     app.include_router(actions_router)
+    app.include_router(otel_ingest_router)
 
     def _spa() -> FileResponse:
         spa_index = SPA_DIR / "index.html"

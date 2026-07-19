@@ -2,11 +2,13 @@ perf = Query("overview_insights", {}, { references: { rows: [], provenance: "com
 heroData = Query("overview_hero", {}, { reference: null, provenance: "committed", gate: null, deployment: { selected: false, track: "" }, inflight: { jobs: 0, dispatches: 0, execution: false }, unavailable: false }, 15)
 jobs = Query("overview_jobs", {}, { rows: [], count: 0, execution: false }, 10)
 disp = Query("dispatches", {}, { rows: [], remotes: [], bucket_url: "" }, 30)
+otel = Query("otel_active_runs", {}, { enabled: false, runs: [], peers: [] }, 10)
 
 head = PageHead("Mission control", "Champion status, ship-gate verdict, and what's in flight — grounded in live-vs-committed evidence from the model card and track champions.")
 
 hero = HeroStrip(heroData)
 inflight = Row([Panel("Live jobs", [JobList(jobs)], JobsBadge(jobs)), Panel("Remote dispatches", [DispatchList(disp)], Badge("hf jobs / pods", "committed"))])
+otelPanel = Panel("Active training runs", [OtelRunList(otel)], OtelBadges(otel))
 
 referenceCols = [{ key: "role", label: "Reference role" }, { key: "run_id", label: "Run" }, { key: "architecture", label: "Architecture" }, { key: "parameters", label: "Parameters", align: "right" }, { key: "model_size", label: "Model size", align: "right" }, { key: "throughput", label: "Throughput", align: "right" }, { key: "evaluation_status", label: "Evaluation" }, { key: "card_state", label: "Model-card status" }]
 resourceNote = "Resource figures marked ≈ are architecture-comparable estimates; exact figures come from local checkpoint, train-summary, or performance evidence. Throughput varies by hardware and decode settings."
@@ -24,4 +26,4 @@ cacheBadge = Badge(perf.cache.persisted ? "insights persisted" : "session insigh
 comparisonNote = "Persisted " + perf.cache.generated_at + "; regenerated only when the model-card checkpoint roster or a track champion changes."
 comparisonPanel = Panel("Experiment performance vs current reference", [DataTable(perf.comparisons.columns, perf.comparisons, 26, "run_id"), Hint(comparisonNote, true)], cacheBadge)
 
-root = Page([head, hero, inflight, referencePanel, tileRow, insightGrid, comparisonPanel])
+root = Page([head, hero, inflight, otelPanel, referencePanel, tileRow, insightGrid, comparisonPanel])

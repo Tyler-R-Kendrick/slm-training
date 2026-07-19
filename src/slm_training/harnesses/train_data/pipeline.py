@@ -71,6 +71,9 @@ class TrainDataConfig:
     # prompts; this is intentionally opt-in so historical snapshots remain
     # immutable and comparable.
     prompt_slot_contract: bool = False
+    # Make the output component type/count inventory visible. Keep this
+    # opt-in because it is a stronger contract than ordinary user prompts.
+    prompt_component_contract: bool = False
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -1424,20 +1427,6 @@ def build_train_data(
                 continue
             _accept_record(normalized)
 
-    if config.prompt_slot_contract:
-        from slm_training.models.template_fill import ensure_prompt_inventory
-
-        deduped = [
-            replace(
-                record,
-                prompt=ensure_prompt_inventory(
-                    record.prompt, list(record.placeholders or [])
-                ),
-            )
-            for record in deduped
-        ]
-        deduped.sort(key=lambda r: r.id)
-
     # Source-family lineage + exposure control (annotate before the cap so
     # capping can group variants under their root parent).
     from slm_training.harnesses.train_data.catalog import (
@@ -1581,6 +1570,32 @@ def build_train_data(
     if config.difficulty_from:
         nll_by_id = load_record_nll(config.difficulty_from)
     attach_curation_scores(deduped, nll_by_id=nll_by_id)
+
+    # Prompt contracts are training-only projections, not admission signals.
+    # Apply them after every quality/decontamination/dedup gate so enabling a
+    # contract cannot silently change which source examples are admitted.
+    if config.prompt_component_contract or config.prompt_slot_contract:
+        from slm_training.data.quality import component_counts
+        from slm_training.models.template_fill import ensure_prompt_inventory
+
+        contracted = []
+        for record in deduped:
+            prompt = record.prompt.rstrip()
+            if config.prompt_component_contract and not any(
+                line.startswith("Components:") for line in prompt.splitlines()
+            ):
+                inventory = ", ".join(
+                    f"{name} x{count}"
+                    for name, count in sorted(component_counts(record.openui).items())
+                )
+                if inventory:
+                    prompt = f"{prompt}\nComponents: {inventory}"
+            if config.prompt_slot_contract:
+                prompt = ensure_prompt_inventory(
+                    prompt, list(record.placeholders or [])
+                )
+            contracted.append(replace(record, prompt=prompt))
+        deduped = contracted
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
@@ -1735,6 +1750,7 @@ def build_train_data(
         "max_components": config.max_components,
         "curriculum": bool(config.curriculum),
         "prompt_slot_contract": bool(config.prompt_slot_contract),
+        "prompt_component_contract": bool(config.prompt_component_contract),
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "max_records_per_parent": config.max_records_per_parent,

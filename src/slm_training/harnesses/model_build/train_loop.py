@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import random
 import time
 import warnings
@@ -15,7 +16,12 @@ from pathlib import Path
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
-from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry, timed
+from slm_training.runtime.telemetry import (
+    CycleTelemetry,
+    bind_telemetry,
+    current_trace,
+    timed,
+)
 
 
 def _parse_eval_suites(config: ModelBuildConfig) -> list[str]:
@@ -220,6 +226,39 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "replay_fraction": replay_fraction,
         },
     )
+    run_otel_trace = current_trace()
+    try:
+        progress_seconds = float(os.getenv("SLM_OTEL_PROGRESS_SECONDS", "20"))
+    except ValueError:
+        progress_seconds = 20.0
+    last_progress_emit = 0.0
+
+    def _emit_progress(step_value: int, loss_value: float) -> None:
+        # Throttled OTLP heartbeat so telemetry peers can list and stream this
+        # run live. No-op unless the CLI wrapped training in run_trace(), and
+        # SLM_OTEL_PROGRESS_SECONDS=0 is the kill switch.
+        nonlocal last_progress_emit
+        if run_otel_trace is None or progress_seconds <= 0:
+            return
+        now_monotonic = time.monotonic()
+        if (
+            last_progress_emit
+            and now_monotonic - last_progress_emit < progress_seconds
+        ):
+            return
+        last_progress_emit = now_monotonic
+        try:
+            run_otel_trace.log(
+                "train.progress",
+                attributes={
+                    "slm.step": step_value,
+                    "slm.loss": loss_value,
+                    "slm.tokens.target": seen_target_tokens,
+                    "slm.steps.total": int(config.steps),
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 - telemetry must never abort training
+            warnings.warn(f"train.progress heartbeat failed: {exc}", stacklevel=2)
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
     curriculum_pools = None
     if getattr(config, "use_curriculum", False):
@@ -795,6 +834,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
                     metrics_file.flush()
+                    _emit_progress(step, last_loss)
                     did_eval = _maybe_eval(step)
                     did_loss_eval = _maybe_loss_eval(step)
                     if did_eval or did_loss_eval:
@@ -812,6 +852,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 }
                 metrics_file.write(json.dumps(row) + "\n")
                 metrics_file.flush()
+                _emit_progress(int(row["step"]), last_loss)
                 step += 1
                 _maybe_eval(step)
 
@@ -1009,6 +1050,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "slot_component_prompt_context": bool(
                 getattr(config, "slot_component_prompt_context", False)
+            ),
+            "slot_contract_in_context": bool(
+                getattr(config, "slot_contract_in_context", False)
+            ),
+            "honest_slot_contract": bool(
+                getattr(config, "honest_slot_contract", False)
             ),
             "slot_component_lexeme_prior_weight": getattr(
                 config, "slot_component_lexeme_prior_weight", 0.0

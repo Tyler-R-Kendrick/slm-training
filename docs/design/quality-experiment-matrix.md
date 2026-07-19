@@ -2113,6 +2113,110 @@ data rather than more loss scaling. Full evidence:
 [narrative](iter-e515-focal-loss-decomposition-20260719.md) and
 [JSON](iter-e515-focal-loss-decomposition-20260719.json).
 
+## E517 slot-loss context control
+
+E517 is matched to E515 except slot-component loss returns `4→1`; focal gamma
+stays zero and training-time honest contract context stays enabled. It completes
+101 CPU HF-context steps / 5,000 target tokens in 130.7 seconds under
+`max_wall_minutes=3`, then uploads and verifies checkpoint SHA
+`2b572a04…e24b60e3`.
+
+Matched E518 OOD evaluation regresses meaningful `0.25→0.00`, fidelity
+`0.6583→0.4083`, structure `0.3213→0.2250`, recall `0.2708→0.2083`, reward
+`0.8270→0.7445`, and AST node F1 `0.4292→0.2833` versus E515. Strict v2 stays
+zero and AgentV stays 0/1.
+
+**Verdict:** reject E517. Slot loss and contract context interact, but neither
+context-conditioned arm approaches E510. Stop objective-scale tuning and
+target training-time role-label representation. Full evidence:
+[narrative](iter-e517-slot-loss-context-control-20260719.md) and
+[JSON](iter-e517-slot-loss-context-control-20260719.json).
+
+## E519 honest slot-contract training context
+
+E519 adds canonical `train_model --honest-slot-contract`, preventing
+training-time slot context from falling back to gold record placeholders and
+recording both authority flags in train summaries (`harness.model_build.train`
+`v7`). The matched run completes 101 CPU HF-context steps / 5,000 target tokens
+in 103.2 seconds under `max_wall_minutes=3` from clean commit `950007f`, then
+uploads and verifies checkpoint SHA `d82155b0…6c91805f`.
+
+E520 exactly matches E518 on every OOD quality metric and decoder counter:
+meaningful 0.0, fidelity 0.4083, structure 0.2250, recall 0.2083, reward
+0.7445, AST node F1 0.2833, AST edge F1 0.0625, and AgentV 0/1. The authority
+change still perturbs 102/106 tensors (max absolute delta `9.67e-05`).
+
+**Verdict:** retain the honest harness fix, reject checkpoint promotion, and
+make role labels visible in training prompts rather than restoring privileged
+gold inventory. Full evidence:
+[narrative](iter-e519-honest-slot-context-20260719.md) and
+[JSON](iter-e519-honest-slot-context-20260719.json).
+
+## E521 visible slot-contract data
+
+E521 applies the existing canonical prompt-slot-contract projection to the E500
+source recipe. The audit finds full placeholder visibility in only 13/260 E500
+rows and 0/209 generation rows, versus 998/998 E357 replay rows. The successful
+strict build admits 244 rows; all 244 expose every declared placeholder, mean
+quality is 0.9643, and no quality record is rejected.
+
+**Verdict:** publish the immutable E521 snapshot for a matched bounded
+continuation. Keep semantic dedup unchanged; its 18 near-duplicate removals
+produce one ProgramSpec yield candidate but no warning. E521 is data evidence
+only until a checkpoint receives the standard honest suites. Full evidence:
+[narrative](iter-e521-visible-slot-contract-data-20260719.md) and
+[JSON](iter-e521-visible-slot-contract-data-20260719.json).
+
+## E522 visible-inventory continuation
+
+E522 holds the E519 parent, replay, token budget, objective weights, honest
+context authority, and E520 evaluator fixed while replacing E500 with E521.
+The clean run completes 99 CPU HF-context steps / 5,059 target tokens in 120.7
+seconds and uploads a bucket-verified checkpoint.
+
+E523 raises OOD fidelity `0.4083→0.8667`, recall `0.2083→0.2708`, AST node F1
+`0.2833→0.3437`, and AST edge F1 `0.0625→0.1007`. Structure regresses
+`0.2250→0.1955`, reward regresses `0.7445→0.2093`, meaningful and strict
+meaning remain zero, and AgentV remains 0/1.
+
+**Verdict:** retain visible inventory as positive slot-grounding evidence but
+reject E522. The next intervention must restore component hierarchy while
+preserving the fidelity gain. Full evidence:
+[narrative](iter-e522-visible-slot-continuation-20260719.md) and
+[JSON](iter-e522-visible-slot-continuation-20260719.json).
+
+## E524 visible component-contract data
+
+E524 appends exact component type/count inventories to the immutable E521
+prompts after all admission gates. The published r4 snapshot preserves all 244
+E521 IDs and OpenUI targets, exposes exact component contracts in 244/244 rows,
+retains full declared-slot visibility, and has zero quality rejects, warnings,
+or synthesis recommendations.
+
+**Verdict:** publish E524 for one matched bounded continuation against E522.
+This is conditional-contract data evidence, not an unconditional model or ship
+claim. Three membership-changing diagnostics remain local and are not evidence.
+Full evidence:
+[narrative](iter-e524-visible-component-contract-data-20260719.md) and
+[JSON](iter-e524-visible-component-contract-data-20260719.json).
+
+## E525 visible component-contract continuation
+
+E525 holds the E522 parent, replay, token budget, objective weights, authority,
+and evaluator fixed while replacing E521 with membership-identical E524. The
+clean run completes 99 CPU HF-context steps / 5,059 target tokens in 76.7
+seconds and has a bucket-verified checkpoint.
+
+E526 raises component recall `0.2708→0.4167`, but fidelity regresses
+`0.8667→0.4667`, structure `0.1955→0.1452`, AST node F1
+`0.3437→0.3041`, and AST edge F1 `0.1007→0.0774`. Meaningful and strict
+meaning remain zero and AgentV remains 0/1.
+
+**Verdict:** reject E525. Exact component counts teach inventory recall but do
+not recover reference hierarchy and trade away slot fidelity. Full evidence:
+[narrative](iter-e525-visible-component-continuation-20260719.md) and
+[JSON](iter-e525-visible-component-continuation-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
