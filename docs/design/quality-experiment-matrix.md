@@ -2729,6 +2729,22 @@ the 42 strict-subset identity records rather than increasing class weight.
 Full evidence: [narrative](iter-e545-root-reference-negative-weight-20260719.md)
 and [JSON](iter-e545-root-reference-negative-weight-20260719.json).
 
+## E546 strict-subset root-reference sampling
+
+E546 raises exposure to the 42 records whose terminal root references a
+nonempty strict subset of generated sections. Multiplier 5 increases observed
+negative-target rows from 7 to 22. Against a matched multiplier-1 control, OOD
+`n=4` fidelity rises 0.4250→0.6083, structure 0.1494→0.2038, reward
+0.5078→0.8120, AST node F1 0.2574→0.2976, and AST edge F1 0→0.0417.
+Component recall regresses 0.2083→0.0625; meaningful-v1 and strict-v2 remain
+0.0 and AgentV remains 0/1. Identity decoding applies zero times in both arms,
+so the difference is attributable to the training distribution.
+
+**Decision:** retain the sampler capability, reject multiplier 5 and both
+scratch checkpoints, and test a moderate multiplier. Full evidence:
+[narrative](iter-e546-root-reference-coverage-sampling-20260719.md) and
+[JSON](iter-e546-root-reference-coverage-sampling-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

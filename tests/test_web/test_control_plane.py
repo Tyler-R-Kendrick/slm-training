@@ -652,6 +652,31 @@ def test_e545_matched_train_summaries_and_checkpoints_are_persisted(
     assert run_ids <= checkpoint_ids
 
 
+def test_e546_matched_train_summaries_and_checkpoints_are_persisted(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e546-e544-strict-subset1-control-r1-24s",
+        "e546-e544-strict-subset5-r2-24s",
+    }
+
+    for run_id in run_ids:
+        detail = readers.run(run_id)
+        assert detail["provenance"] == "committed"
+        assert detail["train_summary"]["steps"] == 24
+        assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.0
+        assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids <= checkpoint_ids
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
