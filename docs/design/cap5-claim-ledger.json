@@ -1,0 +1,121 @@
+{
+  "schema": "cap5_claim_ledger/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7433f2661e68b135148f77138a52bb2f7ab0a878",
+    "code_dirty": true,
+    "components": {
+      "analysis.arity.diffusion_graph": "v1",
+      "harness.experiments": "v14",
+      "model.quantization": "v4"
+    },
+    "stamped_at": "2026-07-19T19:19:54.572329+00:00"
+  },
+  "claims": [
+    {
+      "claim_id": "CAP0-02-001",
+      "claim_text": "For the committed bounded-expr fixture (max_ast_nodes=6, max_live_bindings=2, dimensions=4), the exact minimized DFA has 28 states.",
+      "hypothesis_id": "CAP0-02",
+      "status": "supported",
+      "scope_constraints": "bounded-expr fixture, parser/codec version recorded in certificate, CPU enumeration",
+      "evidence_kind": "exact_local",
+      "primary_artifact_ids": [
+        "docs/design/cap0-02-arity-analyzer-20260718.json",
+        "tests/test_dsl/test_arity_analysis.py"
+      ],
+      "metrics_effect_uncertainty": "minimized_state_count=28, trie_state_count=844, canonical_ast_count=400; exact, no sampling uncertainty",
+      "known_counterexamples": null,
+      "transfer_limits": "Does not transfer to unbounded grammar, different template classes, or later parser/codec versions without re-enumeration."
+    },
+    {
+      "claim_id": "CAP0-03-001",
+      "claim_text": "A [4,2,3]_7 MDS code and a shortened [7,4,3]_3 Hamming code are verified constructions for the declared parameters.",
+      "hypothesis_id": "CAP0-03",
+      "status": "supported",
+      "scope_constraints": "Declared code parameters only; exhaustive verification over the 49- and 81-word codes",
+      "evidence_kind": "exact_local",
+      "primary_artifact_ids": [
+        "docs/design/cap0-03-coding-precision-20260718.md",
+        "tests/test_dsl/test_arity_coding.py"
+      ],
+      "metrics_effect_uncertainty": "minimum_distance=3 for both; no arbitrary A_q(n,d) solver claimed",
+      "known_counterexamples": null,
+      "transfer_limits": "Not a general bound solver; each construction must be re-verified for new parameters."
+    },
+    {
+      "claim_id": "CAP1-03-001",
+      "claim_text": "Task-confusability quotient size depends on the declared distortion tolerance, action alignment, and policy metric.",
+      "hypothesis_id": "CAP1-03",
+      "status": "supported",
+      "scope_constraints": "Bounded exact states with empirical action records; distortion spec is versioned",
+      "evidence_kind": "exact_local",
+      "primary_artifact_ids": [
+        "docs/design/cap1-03-task-quotient-20260718.md",
+        "tests/test_dsl/test_task_quotient.py"
+      ],
+      "metrics_effect_uncertainty": "Graph coloring exact up to 128 vertices; larger graphs use greedy upper bound with stated gap",
+      "known_counterexamples": null,
+      "transfer_limits": "Quotient is not M_epsilon without declared distortion and traffic distribution."
+    },
+    {
+      "claim_id": "CAP2-04-001",
+      "claim_text": "Compiler-owned state and hard legality are the load-bearing boundary for semantic decoding; latent-codec choices are secondary inside that boundary.",
+      "hypothesis_id": "CAP2-04",
+      "status": "supported",
+      "scope_constraints": "OpenUI grammar-diffusion and MaskGIT decode; fixture and scratch CPU runs",
+      "evidence_kind": "estimated",
+      "primary_artifact_ids": [
+        "docs/design/iter-cap2-04-state-ablation-20260718.md",
+        "docs/design/iter-cap2-04-state-ablation-20260718.json"
+      ],
+      "metrics_effect_uncertainty": "Measured via parse/meaningful/fidelity/structure gates; ship gates fail in all arms, so the claim is boundary-ordering, not a quality win",
+      "known_counterexamples": null,
+      "transfer_limits": "Does not imply compiler-owned state alone is sufficient for ship quality."
+    },
+    {
+      "claim_id": "CAP3-03-001",
+      "claim_text": "Equal-storage ternary latent codes do not outperform matched continuous or binary controls on semantic quality at the tested fixture budget.",
+      "hypothesis_id": "CAP3-03",
+      "status": "falsified",
+      "scope_constraints": "Equal static bytes, bounded latent-codec matrix, CPU scratch runs, 80-step fixture budget",
+      "evidence_kind": "estimated",
+      "primary_artifact_ids": [
+        "docs/design/iter-cap3-03-ternary-falsification-20260718.md",
+        "docs/design/iter-cap3-03-ternary-falsification-20260718.json"
+      ],
+      "metrics_effect_uncertainty": "Semantic metrics remain zero across arms; no statistically reliable advantage for ternary",
+      "known_counterexamples": null,
+      "transfer_limits": "Does not rule out ternary with larger budgets, optimized kernels, or different state signatures."
+    },
+    {
+      "claim_id": "CAP4-03-001",
+      "claim_text": "Quantized local-action greedy decoding matches exact Viterbi lattice inference on small energy problems but diverges as the lattice grows.",
+      "hypothesis_id": "CAP4-03",
+      "status": "diagnostic",
+      "scope_constraints": "Small exact energy fixtures with declared quantizer grids",
+      "evidence_kind": "estimated",
+      "primary_artifact_ids": [
+        "docs/design/iter-cap4-03-quantized-energy-inference-20260719.md",
+        "docs/design/iter-cap4-03-quantized-energy-inference-20260719.json"
+      ],
+      "metrics_effect_uncertainty": "Error rate measured on bounded fixtures; gap increases with alphabet size and grid coarseness",
+      "known_counterexamples": null,
+      "transfer_limits": "Not a deployment recommendation; exact inference is infeasible at full scale."
+    },
+    {
+      "claim_id": "CAP5-01-001",
+      "claim_text": "A conditional phase law framed on normalized slack quantities is the working hypothesis for cross-grammar failure prediction.",
+      "hypothesis_id": "CAP5-01",
+      "status": "diagnostic",
+      "scope_constraints": "Declared grammar/profile families, preregistered design, held-out profile prediction",
+      "evidence_kind": "estimated",
+      "primary_artifact_ids": [
+        "docs/design/calculated-arity-adaptive-precision-results.md",
+        "docs/design/quality-experiment-matrix.md"
+      ],
+      "metrics_effect_uncertainty": "Hierarchical model predictions with confidence intervals; raw structural M baseline required",
+      "known_counterexamples": null,
+      "transfer_limits": "Not a universal law; extrapolation outside declared families is unsupported."
+    }
+  ]
+}
