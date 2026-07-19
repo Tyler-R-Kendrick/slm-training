@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E534",
+  "run_id": "e534-e531-ood160-visible-role-bias4-r2",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_positive_diagnostic_not_ship",
+  "hypothesis": "Directly biasing legal component choices with schema-compatible candidates derived only from prompt-mentioned components and honest visible slots improves E531 OOD quality, distinguishing useful contract signal from failed model uptake.",
+  "checkpoint": {
+    "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+    "sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
+  },
+  "recipe": {
+    "device": "cpu",
+    "suite": "ood",
+    "n": 4,
+    "diagnostic_subset": true,
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 4.0,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "gold_component_inventory_used": false,
+    "gold_reference_graph_used": false,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_control": {
+    "experiment_id": "E533",
+    "run_id": "e533-e531-ood160-visible-role-inference-r1",
+    "checkpoint_sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+    "result": {
+      "suite": "ood",
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.3833333333333333,
+      "placeholder_validity": 0.53,
+      "structural_similarity": 0.11585,
+      "component_type_recall": 0.22916666666666666,
+      "reward_score": 0.36850000000000005,
+      "ast_node_f1": 0.16269841269841268,
+      "ast_edge_f1": 0.041666666666666664,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "contract_precision": 0.75,
+      "contract_recall": 0.3833333333333333
+    }
+  },
+  "result": {
+    "suite": "ood",
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.25,
+    "placeholder_fidelity": 1.0,
+    "placeholder_validity": 1.0,
+    "structural_similarity": 0.19592500000000002,
+    "component_type_recall": 0.5416666666666666,
+    "reward_score": 0.74025,
+    "ast_node_f1": 0.16269841269841268,
+    "ast_edge_f1": 0.041666666666666664,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "contract_precision": 1.0,
+    "contract_recall": 1.0,
+    "latency_ms_p50": 6512.85,
+    "latency_ms_p95": 7071.69,
+    "slot_component_applications": 18,
+    "slot_component_choice_changes": 18
+  },
+  "comparison_to_e533": {
+    "syntax_parse_rate_delta": 0.0,
+    "meaningful_program_rate_delta": 0.25,
+    "placeholder_fidelity_delta": 0.6166666666666667,
+    "placeholder_validity_delta": 0.47,
+    "structural_similarity_delta": 0.08007500000000002,
+    "component_type_recall_delta": 0.3125,
+    "reward_score_delta": 0.3717499999999999,
+    "ast_node_f1_delta": 0.0,
+    "ast_edge_f1_delta": 0.0,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0
+  },
+  "failure_breakdown": {
+    "low_component_recall": 1,
+    "trivial_layout": 2
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The diagnostic improves shallow contract and component metrics, but strict meaning and reference-graph validity remain zero and AgentV fails."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "discarded_attempts": [
+    {
+      "run_id": "e534-e531-ood160-visible-role-bias4-r1",
+      "reason": "AgentV SDK unavailable in the fresh checkout; incomplete publication is not evidence."
+    }
+  ],
+  "decision": "Retain the opt-in honest constrained-decode lever because it causally improves visible contract use. Do not promote or retrain from this n=4 result; target visible-authority reference construction next.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "bdb994a094dbcfd77e7065cfa02d3661c682b6af",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v5",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v9"
+    },
+    "stamped_at": "2026-07-19T18:18:04.252122+00:00"
+  }
+}
