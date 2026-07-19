@@ -137,6 +137,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E513 durable slot-role continuation | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | CPU frozen SmolLM2 slot-role diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 steps / 5,000 target tokens in 79.6s under the three-minute cap; bucket verified, SHA `59253c67…a88a9548`. E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e513-slot-role-supervision-20260719.md)) |
 | E515 focal-zero slot-role control | `e515-e396-e500-replay050-slotrole4-focal0-r1-5k` | CPU frozen SmolLM2 focal-loss diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/` | 101 steps / 5,000 target tokens in 105.8s under the three-minute cap; bucket verified, SHA `97f2e426…24721c1b`. E516 OOD meaningful 0.25, fidelity 0.6583, structure 0.3213, AgentV 0/1; focal 2 rejected and this control **not promotable or ship** ([results](design/iter-e515-focal-loss-decomposition-20260719.md)) |
 | E517 slot-loss-1 context control | `e517-e396-e500-replay050-slotrole1-context-r1-5k` | CPU frozen SmolLM2 context interaction diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/` | 101 steps / 5,000 target tokens in 130.7s under the three-minute cap; bucket verified, SHA `2b572a04…e24b60e3`. E518 OOD meaningful 0.0, fidelity 0.4083, structure 0.2250, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e517-slot-loss-context-control-20260719.md)) |
+| E519 honest slot-context control | `e519-e396-e500-replay050-slotrole1-honest-context-r1-5k` | CPU frozen SmolLM2 authority diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k/` | 101 steps / 5,000 target tokens in 103.2s from clean harness v7; bucket verified, SHA `d82155b0…6c91805f`. E520 exactly matches E518 quality (meaningful 0.0, fidelity 0.4083, structure 0.2250, AgentV 0/1); honest path retained, checkpoint **not promotable or ship** ([results](design/iter-e519-honest-slot-context-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -714,6 +715,21 @@ Matched E518 OOD evaluation regresses meaningful 0.25→0.00, fidelity
 binding-aware meaning and AgentV stay zero. The loss and context interact, but
 neither context-conditioned checkpoint is promotable.
 
+### E519 honest slot-contract context
+
+E519 adds `train_model --honest-slot-contract`, preventing training-time
+context from using gold record placeholders and recording the authority flags
+under train harness v7. The clean-source CPU HF-context run completes 101 steps
+/ 5,000 target tokens in 103.2 seconds; serving SHA
+`d82155b03531c2d852ec8d497d3fdb0878ac1f678c0c5d247e272bc36c91805f`
+and full state are uploaded and verified.
+
+E520 exactly matches E518 quality and decoder counts: meaningful 0.0, fidelity
+0.4083, structure 0.2250, recall 0.2083, reward 0.7445, AST node F1 0.2833,
+AST edge F1 0.0625, and AgentV 0/1. The checkpoint tensors do change, so the
+authority path is operational, but it yields no observable quality gain. The
+honest harness fix is retained; the checkpoint is rejected.
+
 ---
 
 ## Limitations & honesty
@@ -857,6 +873,7 @@ neither context-conditioned checkpoint is promotable.
 | 2026-07-19 | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 79.6s; loss 11.1562; SHA `59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548` | Bucket upload and resync verification pass; matched E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; durable diagnostic, rejected for promotion |
 | 2026-07-19 | `e515-e396-e500-replay050-slotrole4-focal0-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 105.8s; loss 11.3045; SHA `97f2e426604e3956f2791398a608b967937ebf548fa7cae0ef59dde324721c1b` | Bucket upload and resync verification pass; removing focal gamma 2 recovers OOD meaningful to 0.25 and fidelity to 0.6583, but strict meaning and AgentV remain zero; rejected for promotion |
 | 2026-07-19 | `e517-e396-e500-replay050-slotrole1-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 130.7s; loss 9.9594; SHA `2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3` | Bucket upload and resync verification pass; slot loss 1 with contract context regresses every headline metric versus E515 and AgentV remains 0/1; rejected for promotion |
+| 2026-07-19 | `e519-e396-e500-replay050-slotrole1-honest-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 103.2s from clean commit `950007f`; loss 9.9594; SHA `d82155b03531c2d852ec8d497d3fdb0878ac1f678c0c5d247e272bc36c91805f` | Bucket upload and resync verification pass; honest authority changes tensors but exactly matches E517 quality and AgentV 0/1; harness fix retained, checkpoint rejected |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

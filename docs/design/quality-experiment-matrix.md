@@ -2132,6 +2132,26 @@ target training-time role-label representation. Full evidence:
 [narrative](iter-e517-slot-loss-context-control-20260719.md) and
 [JSON](iter-e517-slot-loss-context-control-20260719.json).
 
+## E519 honest slot-contract training context
+
+E519 adds canonical `train_model --honest-slot-contract`, preventing
+training-time slot context from falling back to gold record placeholders and
+recording both authority flags in train summaries (`harness.model_build.train`
+`v7`). The matched run completes 101 CPU HF-context steps / 5,000 target tokens
+in 103.2 seconds under `max_wall_minutes=3` from clean commit `950007f`, then
+uploads and verifies checkpoint SHA `d82155b0…6c91805f`.
+
+E520 exactly matches E518 on every OOD quality metric and decoder counter:
+meaningful 0.0, fidelity 0.4083, structure 0.2250, recall 0.2083, reward
+0.7445, AST node F1 0.2833, AST edge F1 0.0625, and AgentV 0/1. The authority
+change still perturbs 102/106 tensors (max absolute delta `9.67e-05`).
+
+**Verdict:** retain the honest harness fix, reject checkpoint promotion, and
+make role labels visible in training prompts rather than restoring privileged
+gold inventory. Full evidence:
+[narrative](iter-e519-honest-slot-context-20260719.md) and
+[JSON](iter-e519-honest-slot-context-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
