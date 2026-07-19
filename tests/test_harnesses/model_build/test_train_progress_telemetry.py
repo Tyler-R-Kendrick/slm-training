@@ -130,3 +130,24 @@ def test_progress_heartbeat_disabled_by_env_and_without_trace(
     monkeypatch.setenv("SLM_OTEL_PROGRESS_SECONDS", "0.0001")
     summary = train(_cfg(train_dir, tmp_path, "progress_untraced"))
     assert summary["steps"] == 4
+
+
+def test_heartbeat_failure_never_aborts_training(
+    train_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.runtime.telemetry.trace import RunTrace
+
+    monkeypatch.setenv("SLM_OTEL_PROGRESS_SECONDS", "0.0001")
+    original_log = RunTrace.log
+
+    def failing_log(self, body, **kwargs):
+        if body == "train.progress":
+            raise OSError("disk full")
+        return original_log(self, body, **kwargs)
+
+    monkeypatch.setattr(RunTrace, "log", failing_log)
+    config = _cfg(train_dir, tmp_path, "progress_crashy")
+    with pytest.warns(UserWarning, match="train.progress heartbeat failed"):
+        with run_trace("progress_crashy", "train", run_dir=config.run_dir):
+            summary = train(config)
+    assert summary["steps"] == 4  # training survived the telemetry failure

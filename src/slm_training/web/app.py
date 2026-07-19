@@ -169,7 +169,9 @@ def create_app(
 
     if otel_peers is None:
         otel_peers = [
-            peer for peer in os.getenv("SLM_OTEL_PEERS", "").split(",") if peer.strip()
+            peer.strip()
+            for peer in os.getenv("SLM_OTEL_PEERS", "").split(",")
+            if peer.strip()
         ]
     otel = OtelHub(
         enabled=not is_serverless(),

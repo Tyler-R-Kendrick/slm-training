@@ -193,10 +193,12 @@ export function useOtelStream(runId: string | null): OtelStreamState {
           /* ignore */
         }
       });
-      // A server-sent `error` frame carries data (terminal: close for good);
-      // the built-in transport error event has none (EventSource reconnects).
+      // A server-sent `error` frame carries data (terminal: close for good).
+      // The built-in transport error event has none: EventSource reconnects
+      // on its own unless it gave up (readyState CLOSED — e.g. a 503 or a
+      // non-SSE response), where we must close or `live` sticks true.
       es.addEventListener("error", (e: any) => {
-        if (e?.data) close();
+        if (e?.data || es.readyState === EventSource.CLOSED) close();
       });
     };
 

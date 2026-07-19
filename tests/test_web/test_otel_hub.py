@@ -563,6 +563,19 @@ def test_http_ingest_rejects_bad_requests(tmp_path: Path) -> None:
             ).status_code
             == 413
         )
+        # A declared oversize length is rejected from the header alone,
+        # before any body bytes are buffered.
+        assert (
+            client.post(
+                "/v1/logs",
+                content=b"{}",
+                headers={
+                    "content-type": "application/json",
+                    "content-length": str(otel_hub.MAX_INGEST_BYTES + 1),
+                },
+            ).status_code
+            == 413
+        )
 
 
 def test_http_ingest_token_auth(tmp_path: Path) -> None:

@@ -283,11 +283,18 @@ async def otel_ingest(signal: str, request: Request) -> dict[str, Any]:
     ok, user = await hub.authorize(request.headers.get("authorization"))
     if not ok:
         raise HTTPException(status_code=401, detail="valid bearer token required")
-    body = await request.body()
-    if len(body) > MAX_INGEST_BYTES:
+    declared = request.headers.get("content-length")
+    if declared is not None and declared.isdigit() and int(declared) > MAX_INGEST_BYTES:
         raise HTTPException(status_code=413, detail="payload too large")
+    # Stream with an incremental cap instead of request.body(): an oversized
+    # or lying upload 413s at the threshold rather than buffering fully first.
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_INGEST_BYTES:
+            raise HTTPException(status_code=413, detail="payload too large")
     try:
-        payload = json.loads(body)
+        payload = json.loads(bytes(body))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="invalid JSON body") from exc
     return hub.ingest(signal, payload, user=user)

@@ -247,15 +247,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         ):
             return
         last_progress_emit = now_monotonic
-        run_otel_trace.log(
-            "train.progress",
-            attributes={
-                "slm.step": step_value,
-                "slm.loss": loss_value,
-                "slm.tokens.target": seen_target_tokens,
-                "slm.steps.total": int(config.steps),
-            },
-        )
+        try:
+            run_otel_trace.log(
+                "train.progress",
+                attributes={
+                    "slm.step": step_value,
+                    "slm.loss": loss_value,
+                    "slm.tokens.target": seen_target_tokens,
+                    "slm.steps.total": int(config.steps),
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 - telemetry must never abort training
+            warnings.warn(f"train.progress heartbeat failed: {exc}", stacklevel=2)
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
     curriculum_pools = None
     if getattr(config, "use_curriculum", False):
