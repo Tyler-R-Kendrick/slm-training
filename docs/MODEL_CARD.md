@@ -136,6 +136,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E505 50% replay loss attribution | `e505-e396-e500-replay050-loss-attribution-r1-5k` | CPU frozen SmolLM2 source-loss diagnostic | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/checkpoints/last.pt` (local) | Primary/replay loss proxies both decline; matched structure 0.2469 and recall 0.0833, but meaningful/fidelity/reward zero, AgentV 0/1. SHA `8fd11acd…525967e8`; rejected, **not promotable or ship** ([results](design/iter-e505-replay-loss-attribution-20260719.md)) |
 | E513 durable slot-role continuation | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | CPU frozen SmolLM2 slot-role diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 steps / 5,000 target tokens in 79.6s under the three-minute cap; bucket verified, SHA `59253c67…a88a9548`. E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e513-slot-role-supervision-20260719.md)) |
 | E515 focal-zero slot-role control | `e515-e396-e500-replay050-slotrole4-focal0-r1-5k` | CPU frozen SmolLM2 focal-loss diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/` | 101 steps / 5,000 target tokens in 105.8s under the three-minute cap; bucket verified, SHA `97f2e426…24721c1b`. E516 OOD meaningful 0.25, fidelity 0.6583, structure 0.3213, AgentV 0/1; focal 2 rejected and this control **not promotable or ship** ([results](design/iter-e515-focal-loss-decomposition-20260719.md)) |
+| E517 slot-loss-1 context control | `e517-e396-e500-replay050-slotrole1-context-r1-5k` | CPU frozen SmolLM2 context interaction diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/` | 101 steps / 5,000 target tokens in 130.7s under the three-minute cap; bucket verified, SHA `2b572a04…e24b60e3`. E518 OOD meaningful 0.0, fidelity 0.4083, structure 0.2250, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e517-slot-loss-context-control-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -698,6 +699,21 @@ E510 on meaningfulness and component structure, while strict binding-aware
 meaning and AgentV stay zero. Focal gamma 2 is rejected; the focal-zero
 checkpoint remains diagnostic and is not promoted.
 
+### E517 slot-loss context control
+
+E517 is matched to E515 except slot-component loss returns from 4 to 1 while
+focal gamma stays zero and honest contract context remains enabled during
+training. The CPU HF-context run completes 101 steps / 5,000 target tokens in
+130.7 seconds under `max_wall_minutes=3`; serving SHA
+`2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3`
+and full state are uploaded and verified in the OpenUI bucket.
+
+Matched E518 OOD evaluation regresses meaningful 0.25→0.00, fidelity
+0.6583→0.4083, structure 0.3213→0.2250, recall 0.2708→0.2083, reward
+0.8270→0.7445, and AST node F1 0.4292→0.2833 versus E515. Strict
+binding-aware meaning and AgentV stay zero. The loss and context interact, but
+neither context-conditioned checkpoint is promotable.
+
 ---
 
 ## Limitations & honesty
@@ -840,6 +856,7 @@ checkpoint remains diagnostic and is not promoted.
 | 2026-07-19 | `e505-e396-e500-replay050-loss-attribution-r1-5k` | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/` (local) | 101 CPU steps / 5,000 tokens in 93.82s; loss 9.8487; SHA `8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8` | Primary/replay proxies both decline; matched structure 0.2469 and recall 0.0833, semantic gates zero, AgentV 0/1; constrained slot-contract ablation still rejected |
 | 2026-07-19 | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 79.6s; loss 11.1562; SHA `59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548` | Bucket upload and resync verification pass; matched E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; durable diagnostic, rejected for promotion |
 | 2026-07-19 | `e515-e396-e500-replay050-slotrole4-focal0-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 105.8s; loss 11.3045; SHA `97f2e426604e3956f2791398a608b967937ebf548fa7cae0ef59dde324721c1b` | Bucket upload and resync verification pass; removing focal gamma 2 recovers OOD meaningful to 0.25 and fidelity to 0.6583, but strict meaning and AgentV remain zero; rejected for promotion |
+| 2026-07-19 | `e517-e396-e500-replay050-slotrole1-context-r1-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 130.7s; loss 9.9594; SHA `2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3` | Bucket upload and resync verification pass; slot loss 1 with contract context regresses every headline metric versus E515 and AgentV remains 0/1; rejected for promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

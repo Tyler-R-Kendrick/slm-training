@@ -2113,6 +2113,25 @@ data rather than more loss scaling. Full evidence:
 [narrative](iter-e515-focal-loss-decomposition-20260719.md) and
 [JSON](iter-e515-focal-loss-decomposition-20260719.json).
 
+## E517 slot-loss context control
+
+E517 is matched to E515 except slot-component loss returns `4→1`; focal gamma
+stays zero and training-time honest contract context stays enabled. It completes
+101 CPU HF-context steps / 5,000 target tokens in 130.7 seconds under
+`max_wall_minutes=3`, then uploads and verifies checkpoint SHA
+`2b572a04…e24b60e3`.
+
+Matched E518 OOD evaluation regresses meaningful `0.25→0.00`, fidelity
+`0.6583→0.4083`, structure `0.3213→0.2250`, recall `0.2708→0.2083`, reward
+`0.8270→0.7445`, and AST node F1 `0.4292→0.2833` versus E515. Strict v2 stays
+zero and AgentV stays 0/1.
+
+**Verdict:** reject E517. Slot loss and contract context interact, but neither
+context-conditioned arm approaches E510. Stop objective-scale tuning and
+target training-time role-label representation. Full evidence:
+[narrative](iter-e517-slot-loss-context-control-20260719.md) and
+[JSON](iter-e517-slot-loss-context-control-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
