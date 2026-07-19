@@ -1,0 +1,70 @@
+{
+  "fixture": "cap4-03-quantized-energy-inference",
+  "per_format": {
+    "binary": {
+      "exact_total": 290.736,
+      "format_id": "binary",
+      "greedy_exact_agree": 8,
+      "greedy_total": 290.736,
+      "max_tie_class": 48,
+      "problems": 8,
+      "total_path_count": 384
+    },
+    "fp16": {
+      "exact_total": 103.101,
+      "format_id": "fp16",
+      "greedy_exact_agree": 8,
+      "greedy_total": 103.101,
+      "max_tie_class": 1,
+      "problems": 8,
+      "total_path_count": 384
+    },
+    "int4": {
+      "exact_total": 104.01214285714286,
+      "format_id": "int4",
+      "greedy_exact_agree": 8,
+      "greedy_total": 104.01214285714286,
+      "max_tie_class": 9,
+      "problems": 8,
+      "total_path_count": 384
+    },
+    "learned_four_level_zero": {
+      "exact_total": 109.832,
+      "format_id": "learned_four_level_zero",
+      "greedy_exact_agree": 8,
+      "greedy_total": 109.832,
+      "max_tie_class": 18,
+      "problems": 8,
+      "total_path_count": 384
+    },
+    "symmetric_four_level": {
+      "exact_total": 133.66,
+      "format_id": "symmetric_four_level",
+      "greedy_exact_agree": 8,
+      "greedy_total": 133.66,
+      "max_tie_class": 24,
+      "problems": 8,
+      "total_path_count": 384
+    },
+    "ternary": {
+      "exact_total": 63.741,
+      "format_id": "ternary",
+      "greedy_exact_agree": 8,
+      "greedy_total": 63.741,
+      "max_tie_class": 24,
+      "problems": 8,
+      "total_path_count": 384
+    }
+  },
+  "problems": 8,
+  "run_id": "iter-cap4-03-20260719",
+  "version_stamp": {
+    "code_commit": "c586c4a68db3fb3a853d4bf95cd43d8adb488ef9",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v4"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T03:59:23.463656+00:00"
+  }
+}
