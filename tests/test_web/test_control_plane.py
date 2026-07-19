@@ -232,6 +232,14 @@ def test_e509_slot_contract_context_ood_run_is_persisted() -> None:
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
 
 
+def test_e510_component_plan_ood_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e510-e505-ood160-component-plan4-r1"
+    assert run_id in {row.get("run_id") for row in readers.runs()["runs"]}
+    assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
