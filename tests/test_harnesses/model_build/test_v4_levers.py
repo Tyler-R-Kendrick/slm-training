@@ -11,6 +11,7 @@ from slm_training.models.parallel_decode import (
 from slm_training.models.template_fill import (
     build_slot_contract_template,
     ensure_prompt_inventory,
+    ensure_prompt_semantic_roles,
     inventory_from_prompt,
     normalize_placeholders,
 )
@@ -41,6 +42,24 @@ def test_ensure_prompt_inventory_idempotent() -> None:
     assert once == twice
     assert "Placeholders:" in once
     assert inventory_from_prompt(once, heuristic=False) == slots
+
+
+def test_semantic_roles_use_only_prompt_mentioned_components() -> None:
+    prompt = ensure_prompt_semantic_roles(
+        "Modal with a title, body, and confirm button.",
+        [":ood.modal.title", ":ood.modal.body", ":ood.modal.label"],
+    )
+    assert "Components: Button, Modal" in prompt
+    assert "Semantic roles: ood.modal(" in prompt
+    assert "label -> Button" in prompt
+    assert "title -> Modal" in prompt
+    assert "TextContent" not in prompt
+    assert ensure_prompt_semantic_roles(prompt, [":hidden.slot"]) == prompt
+
+
+def test_semantic_roles_fail_closed_without_visible_components() -> None:
+    prompt = "A compact confirmation surface."
+    assert ensure_prompt_semantic_roles(prompt, [":modal.title"]) == prompt
 
 
 def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:

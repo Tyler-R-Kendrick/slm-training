@@ -45,6 +45,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "design_md_budget",
         "schema_in_context",
         "slot_contract_in_context",
+        "semantic_role_contract_in_context",
         "slot_contract_constrained_decode",
         "template_fill_decode",
         "contract_template_fastpath",
@@ -278,6 +279,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         design_md_budget=config.design_md_budget,
         schema_in_context=getattr(config, "schema_in_context", False),
         slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
+        semantic_role_contract_in_context=getattr(
+            config, "semantic_role_contract_in_context", False
+        ),
         slot_contract_constrained_decode=getattr(
             config, "slot_contract_constrained_decode", False
         ),

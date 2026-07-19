@@ -67,6 +67,7 @@ from slm_training.models.speculative_denoise import (
 from slm_training.models.template_fill import (
     build_slot_contract_template,
     ensure_prompt_inventory,
+    ensure_prompt_semantic_roles,
     inventory_from_prompt,
     template_mask_positions,
 )
@@ -252,6 +253,7 @@ class TwoTowerConfig:
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
+    semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
     template_fill_decode: bool = False
@@ -5686,6 +5688,24 @@ class TwoTowerModel(nn.Module):
                     )
         else:
             self._slot_contracts = None
+        if bool(
+            getattr(self.config, "semantic_role_contract_in_context", False)
+        ):
+            if not honest:
+                raise ValueError(
+                    "semantic_role_contract_in_context requires honest_slot_contract"
+                )
+            prompts = [
+                ensure_prompt_semantic_roles(
+                    prompt,
+                    (
+                        self._slot_contracts[i]
+                        if self._slot_contracts and i < len(self._slot_contracts)
+                        else None
+                    ),
+                )
+                for i, prompt in enumerate(prompts)
+            ]
         ctx_prompts = self._context_prompts(
             prompts,
             golds=golds,

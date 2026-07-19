@@ -69,6 +69,7 @@ class ModelBuildConfig:
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
+    semantic_role_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
     template_fill_decode: bool = False
     contract_template_fastpath: bool = False
