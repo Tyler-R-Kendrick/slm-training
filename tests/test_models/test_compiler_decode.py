@@ -508,17 +508,24 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
         tokenizer.token_to_id["&1"],
         tokenizer.token_to_id["]"],
     )
+    scores = torch.tensor([2.0, 3.0, 4.0])
     first = model._root_reference_identity_bias(
-        ctx, ctx_pad, state, [], candidates
+        ctx, ctx_pad, state, [], candidates, scores
     )
-    assert first is not None and first[1] > first[0]
-    assert first[1] == first[2] == 0
+    assert first is not None
+    adjusted_first = scores + first
+    assert adjusted_first[1] > adjusted_first[0]
+    assert adjusted_first[:2].max() == scores[:2].max()
+    assert adjusted_first[2] == scores[2]
     prefix = [tokenizer.token_to_id["&1"]]
     second = model._root_reference_identity_bias(
-        ctx, ctx_pad, state, prefix, candidates
+        ctx, ctx_pad, state, prefix, candidates, scores
     )
-    assert second is not None and second[0] > second[1]
-    assert second[0] == second[2] == 0
+    assert second is not None
+    adjusted_second = scores + second
+    assert adjusted_second[0] > adjusted_second[1]
+    assert adjusted_second[:2].max() == scores[:2].max()
+    assert adjusted_second[2] == scores[2]
 
 
 def test_projection_with_features_accepts_sliced_hidden() -> None:

@@ -4049,8 +4049,9 @@ class TwoTowerModel(nn.Module):
         state: Any,
         prefix: list[int],
         candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
     ) -> torch.Tensor | None:
-        """Bias terminal-root references by learned inclusion probability."""
+        """Re-rank terminal-root references without changing their best score."""
         weight = float(
             getattr(self.config, "root_reference_identity_decode_weight", 0.0)
             or 0.0
@@ -4100,16 +4101,25 @@ class TwoTowerModel(nn.Module):
         ]
         if not unused:
             return None
-        best_unused = torch.stack(
-            [F.logsigmoid(logits[reference]) for _, reference in unused]
-        ).max()
+        ranked_unused = sorted(
+            unused,
+            key=lambda item: float(logits[item[1]].detach().cpu()),
+            reverse=True,
+        )
+        ranked_reference_scores = sorted(
+            (scores[position] for position, _ in references),
+            key=lambda score: float(score.detach().cpu()),
+            reverse=True,
+        )
+        mix = min(weight, 1.0)
         bias = logits.new_zeros(len(candidate_ids))
+        for rank, (position, _) in enumerate(ranked_unused):
+            bias[position] = mix * (
+                ranked_reference_scores[rank] - scores[position]
+            )
         for position, reference in references:
-            bias[position] = (
-                logits.new_tensor(-20.0)
-                if reference in used
-                else F.logsigmoid(logits[reference]) - best_unused
-            ) * weight
+            if reference in used:
+                bias[position] = logits.new_tensor(-20.0) * mix
         return bias
 
     @staticmethod
@@ -5430,6 +5440,7 @@ class TwoTowerModel(nn.Module):
                         states[row],
                         ids[row, :position].tolist(),
                         candidate_ids,
+                        scores,
                     )
                     if root_identity_bias is not None:
                         before_root_identity = int(scores.argmax().item())
