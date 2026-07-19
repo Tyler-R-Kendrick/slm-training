@@ -19,7 +19,12 @@ from slm_training.data.leakage import (
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate, validate_output
-from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+from slm_training.dsl.schema import (
+    OUTPUT_KINDS,
+    ExampleRecord,
+    load_jsonl,
+    write_jsonl,
+)
 from slm_training.harnesses.train_data.report import (
     build_quality_report,
     rejection_entry,
@@ -98,6 +103,11 @@ class TrainDataConfig:
     programspec_count: int = 16
     programspec_seed: int = 0
     include_language_contract: bool = True
+    # Optional output-contract projection/selection for codec-specific corpora.
+    # Projection is explicit and provenance-tagged; unselected kinds remain in
+    # rejected.jsonl instead of disappearing silently.
+    documentize_expressions: bool = False
+    target_kinds: tuple[str, ...] | None = None
     deconstruct_path: Path | None = Path(
         "src/slm_training/resources/deconstruct/pipeline.jsonl"
     )
@@ -372,8 +382,7 @@ def _normalize_verbatim_document(record: ExampleRecord) -> ExampleRecord:
         id=record.id,
         prompt=record.prompt.strip(),
         openui=record.openui,
-        placeholders=list(program.placeholders)
-        or extract_placeholders(record.openui),
+        placeholders=list(program.placeholders) or extract_placeholders(record.openui),
         split=record.split,
         source=record.source,
         meta=meta,
@@ -522,9 +531,7 @@ def _records_from_progspec(
     from slm_training.data.progspec import emit_record
     from slm_training.data.verify import VerificationContext, stamp_record
 
-    specs, load_errors = (
-        preloaded if preloaded is not None else _load_progspecs(config)
-    )
+    specs, load_errors = preloaded if preloaded is not None else _load_progspecs(config)
     errors = list(load_errors)
     out: list[ExampleRecord] = []
     for spec in sorted(specs, key=lambda item: item.id):
@@ -570,6 +577,47 @@ def _records_from_language_contract(
     return list(iter_positives(config.require_split)), []
 
 
+def _documentize_expression(record: ExampleRecord) -> ExampleRecord:
+    """Project one expression task to a complete root-document task."""
+    if record.target_kind != "expression":
+        return record
+    _, separator, subject = record.prompt.partition("for:")
+    subject = (subject if separator else record.prompt).strip().rstrip(".")
+    placeholders = list(record.placeholders)
+    children = ["projected_content"]
+    lines = [
+        "root = Stack([{children}])",
+        f"projected_content = {record.openui.strip()}",
+    ]
+    if not placeholders:
+        placeholders.append(":document.context")
+        children.append("projected_context")
+        lines.append('projected_context = TextContent(":document.context")')
+    lines[0] = lines[0].format(children=", ".join(children))
+    meta = dict(record.meta)
+    lineage = list(meta.get("transformation_lineage") or ())
+    meta.update(
+        {
+            "parent_id": str(meta.get("root_parent_id") or record.id),
+            "target_projection": "expression_to_document_v2",
+            "source_target_kind": "expression",
+            "source_accepted_output_count": len(record.accepted_outputs),
+            "transformation_lineage": [*lineage, "expression_to_document"],
+        }
+    )
+    return ExampleRecord(
+        id=f"{record.id}_as_document",
+        prompt=f"Generate a complete OpenUI document containing: {subject}.",
+        openui="\n".join(lines),
+        placeholders=placeholders,
+        split=record.split,
+        source=record.source,
+        meta=meta,
+        design_md=record.design_md,
+        target_kind="document",
+    )
+
+
 def _records_from_scope_corpus(
     config: TrainDataConfig,
     *,
@@ -583,9 +631,7 @@ def _records_from_scope_corpus(
         build_scope_corpus,
     )
 
-    specs, load_errors = (
-        preloaded if preloaded is not None else _load_progspecs(config)
-    )
+    specs, load_errors = preloaded if preloaded is not None else _load_progspecs(config)
     errors = list(load_errors)
     corpus_config = ScopeCorpusConfig(
         scopes=tuple(config.scope_kinds),
@@ -1101,6 +1147,39 @@ def build_train_data(
         raise ValueError(f"unknown train source {config.source!r}")
     producer_error_count = len(errors)
 
+    if config.documentize_expressions:
+        seeds = [_documentize_expression(record) for record in seeds]
+    selected_target_kinds = (
+        None if config.target_kinds is None else set(config.target_kinds)
+    )
+    if selected_target_kinds is not None:
+        unknown = selected_target_kinds - OUTPUT_KINDS
+        if unknown:
+            raise ValueError(
+                f"unknown target kinds {sorted(unknown)}; "
+                f"expected a subset of {sorted(OUTPUT_KINDS)}"
+            )
+        from slm_training.harnesses.train_data.catalog import classify_source_family
+
+        selected: list[ExampleRecord] = []
+        for record in seeds:
+            if record.target_kind in selected_target_kinds:
+                selected.append(record)
+                continue
+            rejections.append(
+                rejection_entry(
+                    "selection",
+                    "target_kind_excluded",
+                    record=record,
+                    detail={
+                        "source_family": classify_source_family(record),
+                        "target_kind": record.target_kind,
+                        "selected_target_kinds": sorted(selected_target_kinds),
+                    },
+                )
+            )
+        seeds = selected
+
     from slm_training.harnesses.train_data.catalog import (
         LineageIndex,
         lineage_entry,
@@ -1377,9 +1456,7 @@ def build_train_data(
     def _mirror_drops(stage: str, dropped: list[dict]) -> None:
         for drop in dropped:
             detail = {
-                key: value
-                for key, value in drop.items()
-                if key not in {"id", "reason"}
+                key: value for key, value in drop.items() if key not in {"id", "reason"}
             }
             candidate = candidates_by_id.get(str(drop.get("id")))
             if candidate is not None:
@@ -1648,6 +1725,10 @@ def build_train_data(
         "synthesis_feedback_path": str(synthesis_feedback_path.as_posix()),
         "synthesis_recommendations": len(synthesis_feedback["recommendations"]),
         "synthesizer": config.synthesizer,
+        "documentize_expressions": bool(config.documentize_expressions),
+        "target_kinds": (
+            sorted(config.target_kinds) if config.target_kinds is not None else None
+        ),
         "min_quality_score": config.min_quality_score,
         "min_verification_tier": config.min_verification_tier,
         "max_openui_chars": config.max_openui_chars,
@@ -1690,6 +1771,10 @@ def build_train_data(
             "programspec_count": config.programspec_count,
             "programspec_seed": config.programspec_seed,
             "language_contract": bool(config.include_language_contract),
+            "documentize_expressions": bool(config.documentize_expressions),
+            "target_kinds": (
+                sorted(config.target_kinds) if config.target_kinds is not None else None
+            ),
             "deconstruct_path": (
                 str(config.deconstruct_path) if config.deconstruct_path else None
             ),

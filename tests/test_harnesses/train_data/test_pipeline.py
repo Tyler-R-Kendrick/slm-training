@@ -110,6 +110,54 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
+def test_documentizes_expressions_and_records_target_selection(tmp_path: Path) -> None:
+    result = build_train_data(
+        TrainDataConfig(
+            source="language_contract",
+            output_root=tmp_path / "train_data",
+            version="documents",
+            synthesizer="none",
+            include_frontier_artifacts=False,
+            include_scope_corpus=False,
+            documentize_expressions=True,
+            target_kinds=("document",),
+            require_design_md=False,
+            test_seed_path=None,
+        )
+    )
+    out_dir = Path(result["output_dir"])
+    rows = load_jsonl(out_dir / "records.jsonl")
+    assert rows
+    assert {row.target_kind for row in rows} == {"document"}
+    projected = [row for row in rows if row.meta.get("target_projection")]
+    assert projected
+    assert all(row.openui.startswith("root = ") for row in projected)
+    rejected = [
+        json.loads(line)
+        for line in (out_dir / "rejected.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    selected = [row for row in rejected if row["stage"] == "selection"]
+    assert selected
+    assert {row["detail"]["target_kind"] for row in selected} <= {
+        "lexical",
+        "statement",
+        "typed_node",
+    }
+    feedback = json.loads(
+        (out_dir / "synthesis_feedback.json").read_text(encoding="utf-8")
+    )
+    assert all(
+        item["evidence"].get("top_reason") != "target_kind_excluded"
+        for item in feedback["recommendations"]
+    )
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
 def test_immutable_build_refuses_to_overwrite_snapshot(tmp_path: Path) -> None:
     config = TrainDataConfig(
         seed_path=_seed_file(tmp_path),

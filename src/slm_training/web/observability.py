@@ -551,6 +551,48 @@ class Readers:
 
     # ---- runs (lineage + per-run artifacts) -----------------------------------
 
+    def _matched_research_runs(self) -> list[dict[str, Any]]:
+        """Expand matched arms while keeping one scoreboard row per evidence file."""
+        rows: list[dict[str, Any]] = []
+        for path in sorted(self.docs_design.glob("iter-*.json")):
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            matched_runs = payload.get("matched_runs")
+            if not isinstance(matched_runs, list):
+                continue
+            description = (
+                payload.get("campaign")
+                or payload.get("conclusion")
+                or payload.get("decision")
+                or payload.get("verdict")
+                or payload.get("status")
+                or path.stem
+            )
+            gates = payload.get("ship_gates")
+            gate_pass = gates.get("pass") if isinstance(gates, dict) else None
+            for matched in matched_runs:
+                if not isinstance(matched, dict):
+                    continue
+                run_id = matched.get("run_id")
+                smoke = matched.get("smoke")
+                if not isinstance(run_id, str) or not isinstance(smoke, dict):
+                    continue
+                rows.append(
+                    {
+                        "id": run_id,
+                        "run_id": run_id,
+                        "description": f"{description} ({matched.get('label') or run_id})",
+                        "date": payload.get("date_utc") or payload.get("date"),
+                        "pass": gate_pass,
+                        "suites": {"smoke": normalize_suite_metrics(smoke)},
+                        "source_schema": "matched_runs@experiment",
+                        "checkpoint": matched.get("checkpoint_sha256"),
+                        "source": f"docs/design/{path.name}",
+                    }
+                )
+        return rows
+
     def runs(self) -> dict[str, Any]:
         runs_dir = self.lineage.root / "runs"
         live: list[dict[str, Any]] = []
@@ -607,6 +649,20 @@ class Readers:
                         ),
                     }
                 )
+        for row in self._matched_research_runs():
+            derived.append(
+                {
+                    **row,
+                    "experiment_id": row.get("id"),
+                    "matrix": RESEARCH_SCOREBOARD_KIND,
+                    "lifecycle_state": None,
+                    "provenance": (
+                        "live"
+                        if self._run_dir(str(row.get("run_id") or ""), row).is_dir()
+                        else "committed"
+                    ),
+                }
+            )
         known = {row.get("run_id") for row in live}
         for row in derived:
             if row.get("run_id") not in known:
@@ -630,6 +686,9 @@ class Readers:
             for row in self.scoreboard(kind)["results"]:
                 if run_id in (row.get("run_id"), row.get("id")):
                     return {"matrix": kind, **row}
+        for row in self._matched_research_runs():
+            if run_id == row.get("run_id"):
+                return {"matrix": RESEARCH_SCOREBOARD_KIND, **row}
         return None
 
     def _run_dir(self, run_id: str, scoreboard: dict[str, Any] | None = None) -> Path:

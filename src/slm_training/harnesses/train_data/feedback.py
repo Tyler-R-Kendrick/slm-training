@@ -66,6 +66,8 @@ def _group_stats(
             bucket(synths, str(meta["synth"]))["admitted"] += 1
     for entry in rejections:
         stage = str(entry.get("stage") or "unknown")
+        if stage == "selection":
+            continue
         reason = str(entry.get("reason") or stage)
         for store, key in (
             (families, _family_of(entry)),

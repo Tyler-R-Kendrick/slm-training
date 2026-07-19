@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "version": "e500_documentized_expression_candidate_r2_20260718",
+  "profile": "strict",
+  "built_at": "2026-07-19T00:35:39.049042+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 1,
+      "by_stage": {
+        "verification": 1
+      },
+      "by_reason": {
+        "quarantine": 1
+      },
+      "candidates": 14,
+      "yield": 0.9286
+    },
+    "human_curated": {
+      "admitted": 15,
+      "rejected": 4,
+      "by_stage": {
+        "verification": 4
+      },
+      "by_reason": {
+        "quarantine": 4
+      },
+      "candidates": 19,
+      "yield": 0.7895
+    },
+    "language_contract": {
+      "admitted": 57,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 57,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 160,
+      "rejected": 2,
+      "by_stage": {
+        "dedup": 2
+      },
+      "by_reason": {
+        "semantic_cosine": 2
+      },
+      "candidates": 162,
+      "yield": 0.9877
+    },
+    "programspec_generated": {
+      "admitted": 13,
+      "rejected": 3,
+      "by_stage": {
+        "verification": 3
+      },
+      "by_reason": {
+        "quarantine": 3
+      },
+      "candidates": 16,
+      "yield": 0.8125
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "web_distilled": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    }
+  },
+  "synthesizers": {
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 1,
+      "by_stage": {
+        "verification": 1
+      },
+      "by_reason": {
+        "quarantine": 1
+      },
+      "candidates": 14,
+      "yield": 0.9286
+    },
+    "layout_augment": {
+      "admitted": 160,
+      "rejected": 6,
+      "by_stage": {
+        "dedup": 2,
+        "verification": 4
+      },
+      "by_reason": {
+        "quarantine": 4,
+        "semantic_cosine": 2
+      },
+      "candidates": 166,
+      "yield": 0.9639
+    }
+  },
+  "warnings": [],
+  "recommendations": [],
+  "experiment_candidates": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "962d2b63ff167d08579c1d7ea4581db515c4a720",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v2"
+    },
+    "stamped_at": "2026-07-19T00:35:39.259806+00:00"
+  }
+}

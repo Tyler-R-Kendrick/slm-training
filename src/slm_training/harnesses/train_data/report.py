@@ -22,7 +22,9 @@ from slm_training.dsl.schema import ExampleRecord
 REPORT_SCHEMA_VERSION = 1
 
 # Stages that persist the full candidate payload into rejected.jsonl.
-_PAYLOAD_STAGES = frozenset({"normalize", "verification", "verification_tier", "quality"})
+_PAYLOAD_STAGES = frozenset(
+    {"normalize", "selection", "verification", "verification_tier", "quality"}
+)
 
 # assess_record reasons that indicate a placeholder/template-contract breach
 # rather than generic low quality.
@@ -202,9 +204,7 @@ def build_quality_report(
 
     top_clusters = _top_clusters(admitted)
     warnings: list[dict[str, Any]] = []
-    admission_rate = (
-        len(admitted) / candidate_count if candidate_count else None
-    )
+    admission_rate = len(admitted) / candidate_count if candidate_count else None
     if admission_rate is not None and admission_rate < 0.5:
         warnings.append(
             {
@@ -244,9 +244,7 @@ def build_quality_report(
                 "the quality gate",
             }
         )
-    judge_rate = (
-        round(sum(judge_flags) / len(judge_flags), 4) if judge_flags else None
-    )
+    judge_rate = round(sum(judge_flags) / len(judge_flags), 4) if judge_flags else None
     if judge_rate is not None and judge_rate < 1.0:
         warnings.append(
             {

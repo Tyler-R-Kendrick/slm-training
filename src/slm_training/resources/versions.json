@@ -35,7 +35,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -44,6 +44,7 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {"version": "v2", "date": "2026-07-18", "note": "add provenance-tagged expression-to-document projection and explicit target-kind corpus selection"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration; strict build results carry version stamps and actionable rejection lineage"}
       ]
     },

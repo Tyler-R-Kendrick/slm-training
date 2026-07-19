@@ -77,6 +77,32 @@ def test_e499_cold_start_evidence_is_persisted() -> None:
     } <= checkpoint_ids
 
 
+def test_e500_cold_start_evidence_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_ids = {
+        row.get("run_id") for row in readers.runs()["runs"]
+    }
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    expected = {
+        "e500-document-control-hf-choice-r1",
+        "e500-documentized-expression-hf-choice-r2",
+        "e500-document-control-hf-choice-r3-5k",
+        "e500-documentized-expression-hf-choice-r4-5k",
+    }
+    assert expected <= run_ids
+    assert expected <= checkpoint_ids
+
+    train = readers.train_data()
+    version = "e500_documentized_expression_candidate_r2_20260718"
+    assert version in train["versions"]
+    records = readers.train_records(version, limit=300)
+    assert records["count"] == 260
+    assert len(records["records"]) == 260
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

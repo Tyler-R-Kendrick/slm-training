@@ -1844,6 +1844,28 @@ was synced or promoted. Full evidence:
 [narrative](iter-e499-strict-corpus-bounded-sft-20260718.md) and
 [JSON](iter-e499-strict-corpus-bounded-sft-20260718.json).
 
+## E500 documentized-expression corpus
+
+E500 adds a general, provenance-preserving projection from language-contract
+expression tasks to complete documents and an explicit target-kind selector.
+The clean projected corpus has 260 choice-compatible rows, 87 independent root
+parents, 72 program families, and 241 structural families, with no synthesis
+warnings or feedback recommendations. The canonical snapshot is committed as
+`e500_documentized_expression_candidate_r2_20260718`.
+
+Matched frozen-SmolLM2 choice runs at 1k and 5k target tokens do not show a
+model-quality gain. All four arms have syntax 1.0 but meaningful rate,
+fidelity, component recall, and reward 0.0; structural similarity is 0.0375
+and AgentV is 0/1. The candidate's lower 1k loss (`27.6250` versus `30.3844`)
+reverses at 5k (`12.6778` versus `10.5529`).
+
+**Verdict:** retain the generalized data projection and clean committed
+snapshot, but reject all four bounded checkpoints for promotion or bucket
+sync. Every process was externally capped at 170 seconds and every train
+summary records `max_wall_minutes=3.0`. Full evidence:
+[narrative](iter-e500-documentized-expression-corpus-20260718.md) and
+[JSON](iter-e500-documentized-expression-corpus-20260718.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
