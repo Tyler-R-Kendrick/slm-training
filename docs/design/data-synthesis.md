@@ -209,3 +209,12 @@ semantic behavior; adding retention makes the interaction worse. This localizes
 the next investigation to primary-versus-replay objective or output-codec
 conflict rather than synthesis admission. See
 [E504](iter-e504-parent-corpus-replay-20260719.md).
+
+### E505 source-loss follow-up
+
+E505 changes no synthesis producer or acceptance gate. Both governed corpora'
+masked-token loss proxies decline during matched 50% replay; the E500 primary
+examples remain about 14–15% harder than E357 replay examples. This falsifies
+simple primary-loss divergence but does not resolve gradient alignment. The
+next lever belongs in optimizer/decode attribution, not data admission. See
+[E505](iter-e505-replay-loss-attribution-20260719.md).

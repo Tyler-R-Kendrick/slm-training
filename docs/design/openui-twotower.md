@@ -103,7 +103,9 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
   Replay IDs are namespaced for resumability; the full-state fingerprint and
   train summary bind both corpus hashes, the requested fraction, and effective
   primary/replay exposure. Replay currently fails closed with curriculum or
-  mixture samplers instead of silently composing policies.
+  mixture samplers instead of silently composing policies. Source-stratified
+  per-example masked-token loss proxies report overall, first-20, and last-20
+  means without changing the scalar training objective.
 - `scripts/train_preference.py` — build-pairs / train (reference-free)
 - `scripts/export_cactus.py` / `scripts/bench_cactus.py`
 - `scripts/remote_train.py` — SSH pod train + pull (trains the `v1` corpus it builds)

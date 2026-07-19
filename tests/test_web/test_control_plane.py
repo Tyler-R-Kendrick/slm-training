@@ -179,6 +179,17 @@ def test_e504_matched_runs_and_checkpoints_are_persisted() -> None:
     assert all(readers.run(run_id)["scoreboard"] for run_id in expected)
 
 
+def test_e505_run_and_checkpoint_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e505-e396-e500-replay050-loss-attribution-r1-5k"
+    assert run_id in {row.get("run_id") for row in readers.runs()["runs"]}
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert readers.run(run_id)["scoreboard"]
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
