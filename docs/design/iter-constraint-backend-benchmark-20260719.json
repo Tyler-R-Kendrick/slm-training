@@ -1,0 +1,217 @@
+{
+  "manifest": {
+    "activation_gates": [
+      {
+        "available": false,
+        "depends_on_issue_id": "SLM-175",
+        "evidence": "",
+        "gate_id": "eval_cache_or_cost_approved",
+        "required_status": "Done"
+      },
+      {
+        "available": false,
+        "depends_on_issue_id": null,
+        "evidence": "",
+        "gate_id": "budget_approved",
+        "required_status": null
+      }
+    ],
+    "activation_status": "activation_blocked",
+    "activation_verdict": "activation_blocked",
+    "arms": [
+      {
+        "arm_id": "current_static_micro",
+        "backend_id": "current",
+        "benchmark_layer": "static_micro",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "current_language_equivalence",
+        "backend_id": "current",
+        "benchmark_layer": "language_equivalence",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "current_end_to_end_surface",
+        "backend_id": "current",
+        "benchmark_layer": "end_to_end_surface",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "syncode_static_micro",
+        "backend_id": "syncode",
+        "benchmark_layer": "static_micro",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "syncode_language_equivalence",
+        "backend_id": "syncode",
+        "benchmark_layer": "language_equivalence",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "syncode_end_to_end_surface",
+        "backend_id": "syncode",
+        "benchmark_layer": "end_to_end_surface",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "domino_static_micro",
+        "backend_id": "domino",
+        "benchmark_layer": "static_micro",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "domino_language_equivalence",
+        "backend_id": "domino",
+        "benchmark_layer": "language_equivalence",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "domino_end_to_end_surface",
+        "backend_id": "domino",
+        "benchmark_layer": "end_to_end_surface",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "xgrammar_static_micro",
+        "backend_id": "xgrammar",
+        "benchmark_layer": "static_micro",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "xgrammar_language_equivalence",
+        "backend_id": "xgrammar",
+        "benchmark_layer": "language_equivalence",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "xgrammar_end_to_end_surface",
+        "backend_id": "xgrammar",
+        "benchmark_layer": "end_to_end_surface",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "unconstrained_static_micro",
+        "backend_id": "unconstrained",
+        "benchmark_layer": "static_micro",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "unconstrained_language_equivalence",
+        "backend_id": "unconstrained",
+        "benchmark_layer": "language_equivalence",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "unconstrained_end_to_end_surface",
+        "backend_id": "unconstrained",
+        "benchmark_layer": "end_to_end_surface",
+        "eligible": true,
+        "omission_reason": null
+      }
+    ],
+    "backends": [
+      {
+        "backend_id": "current",
+        "commit_hash": "",
+        "license_spdx": "",
+        "local_offline_available": true,
+        "package_name": "openui_current",
+        "package_version": "repo",
+        "provenance_url": "",
+        "supported_grammar_kinds": [
+          "openui"
+        ],
+        "unsupported_reason": null
+      },
+      {
+        "backend_id": "syncode",
+        "commit_hash": "",
+        "license_spdx": "",
+        "local_offline_available": true,
+        "package_name": "syncode",
+        "package_version": "unset",
+        "provenance_url": "",
+        "supported_grammar_kinds": [],
+        "unsupported_reason": null
+      },
+      {
+        "backend_id": "domino",
+        "commit_hash": "",
+        "license_spdx": "",
+        "local_offline_available": true,
+        "package_name": "domino",
+        "package_version": "unset",
+        "provenance_url": "",
+        "supported_grammar_kinds": [],
+        "unsupported_reason": null
+      },
+      {
+        "backend_id": "xgrammar",
+        "commit_hash": "",
+        "license_spdx": "",
+        "local_offline_available": true,
+        "package_name": "xgrammar",
+        "package_version": "unset",
+        "provenance_url": "",
+        "supported_grammar_kinds": [],
+        "unsupported_reason": null
+      },
+      {
+        "backend_id": "unconstrained",
+        "commit_hash": "",
+        "license_spdx": "",
+        "local_offline_available": true,
+        "package_name": "unconstrained",
+        "package_version": "repo",
+        "provenance_url": "",
+        "supported_grammar_kinds": [],
+        "unsupported_reason": null
+      }
+    ],
+    "budget": {
+      "end_to_end_repetitions": 0,
+      "gpu_hours": 0.0,
+      "max_dollars": 0.0,
+      "microbenchmark_repetitions": 0
+    },
+    "campaign_verdict": "unrun",
+    "hypothesis_id": "H17",
+    "manifest_hash": "b2e3c515418dd20a",
+    "manifest_id": "iter-constraint-backend-benchmark-20260719",
+    "note": "SDE3-04 constraint-backend benchmark manifest (wiring slice). No decoder package is installed and no benchmark is run.",
+    "null_threshold_percent": 5.0,
+    "primary_metric": "binding_aware_meaningful_program_rate",
+    "schema_version": "constraint_backend_benchmark/v1",
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "version_stamp": {
+    "code_commit": "d11405a48c39d8b52dae26be6cfd763d3d0ca5c4",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v11",
+      "matrix.perf": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T18:21:40.220767+00:00"
+  }
+}
