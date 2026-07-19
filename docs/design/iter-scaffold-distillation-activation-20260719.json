@@ -1,0 +1,155 @@
+{
+  "activation_gates": [
+    {
+      "available": true,
+      "depends_on_issue_id": "SLM-161",
+      "evidence": "Machine-readable decomposition of the scaffold into levered operations.",
+      "gate_id": "slm161_machine_readable_decomposition",
+      "required_status": "Done"
+    },
+    {
+      "available": true,
+      "depends_on_issue_id": "SLM-162",
+      "evidence": "Metric-gaming stress suite demonstrates the scaffold is not gamed.",
+      "gate_id": "slm162_metric_gaming_suite",
+      "required_status": "Done"
+    },
+    {
+      "available": true,
+      "depends_on_issue_id": "SLM-168",
+      "evidence": "Public structured contract pointer exposes the inventory gap.",
+      "gate_id": "slm168_public_structured_contract_pointer",
+      "required_status": "Done"
+    },
+    {
+      "available": true,
+      "depends_on_issue_id": "SLM-161",
+      "evidence": "The scaffold improves over no-scaffold baselines on a held slice.",
+      "gate_id": "scaffold_value_demonstrated",
+      "required_status": "Done"
+    },
+    {
+      "available": true,
+      "depends_on_issue_id": null,
+      "evidence": "Teacher scaffolding cost is worth amortizing over student training.",
+      "gate_id": "latency_or_complexity_worth_amortizing",
+      "required_status": null
+    },
+    {
+      "available": true,
+      "depends_on_issue_id": null,
+      "evidence": "Campaign budget approved for teacher traces and student runs.",
+      "gate_id": "budget_approved",
+      "required_status": null
+    }
+  ],
+  "activation_status": "ready",
+  "activation_verdict": "ready_to_spend",
+  "arms": [
+    {
+      "arm_id": "scaffolded_teacher_selected",
+      "arm_kind": "scaffolded_teacher_selected",
+      "eligible": true,
+      "objectives": [],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "teacher_first_attempt_only",
+      "arm_kind": "teacher_first_attempt_only",
+      "eligible": true,
+      "objectives": [],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "lever_off_gold_sft",
+      "arm_kind": "lever_off_gold_sft",
+      "eligible": true,
+      "objectives": [],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "selected_trajectory_distillation",
+      "arm_kind": "selected_trajectory_distillation",
+      "eligible": true,
+      "objectives": [
+        "sft"
+      ],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "sft_plus_legal_set_kl",
+      "arm_kind": "sft_plus_legal_set_kl",
+      "eligible": true,
+      "objectives": [
+        "sft",
+        "kl"
+      ],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "sft_kl_plus_preference",
+      "arm_kind": "sft_kl_plus_preference",
+      "eligible": true,
+      "objectives": [
+        "sft",
+        "kl",
+        "preference"
+      ],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "permuted_teacher_specificity_control",
+      "arm_kind": "permuted_teacher_specificity_control",
+      "eligible": true,
+      "objectives": [
+        "sft"
+      ],
+      "omission_reason": null
+    },
+    {
+      "arm_id": "impossible_information_inventory_control",
+      "arm_kind": "impossible_information_inventory_control",
+      "eligible": false,
+      "objectives": [],
+      "omission_reason": "non-promotable control only; quantifies the information gap when the student cannot access the teacher inventory"
+    }
+  ],
+  "budget": {
+    "eval_dollars": 0.0,
+    "student_training_dollars": 0.0,
+    "student_training_gpu_hours": 0.0,
+    "teacher_trace_compute_dollars": 0.0,
+    "total_dollars": 1000.0
+  },
+  "campaign_verdict": "unrun",
+  "hypothesis_id": "H13",
+  "manifest_hash": "281dc33bee9b92a9",
+  "manifest_id": "scaffold-distillation-activation-20260719",
+  "max_attempts_for_teacher": 1,
+  "note": "SDE4-01 (SLM-179) scaffold-distillation activation manifest (wiring slice).",
+  "primary_metric": "binding_aware_meaningful_program_rate",
+  "schema_version": "scaffold_distillation_activation/v1",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "trace_contract": {
+    "max_traces": 0,
+    "min_traces": 0,
+    "scaffold_config_hash": "unknown",
+    "teacher_checkpoint_id": "teacher/checkpoint",
+    "teacher_run_id": "teacher/run",
+    "trace_schema_version": "v1",
+    "trace_store_uri": "memory://traces"
+  },
+  "version_stamp": {
+    "code_commit": "d11405a48c39d8b52dae26be6cfd763d3d0ca5c4",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v10"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T18:11:14.140460+00:00"
+  }
+}
