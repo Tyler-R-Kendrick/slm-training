@@ -26,12 +26,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v7", "date": "2026-07-19", "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"},
         {"version": "v6", "date": "2026-07-19", "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"},
         {"version": "v5", "date": "2026-07-19", "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"},
         {"version": "v4", "date": "2026-07-19", "note": "add explicit initialized-weight retention with strict initialization guards and RMS drift telemetry"},

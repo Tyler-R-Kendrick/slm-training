@@ -1010,6 +1010,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_prompt_context": bool(
                 getattr(config, "slot_component_prompt_context", False)
             ),
+            "slot_contract_in_context": bool(
+                getattr(config, "slot_contract_in_context", False)
+            ),
+            "honest_slot_contract": bool(
+                getattr(config, "honest_slot_contract", False)
+            ),
             "slot_component_lexeme_prior_weight": getattr(
                 config, "slot_component_lexeme_prior_weight", 0.0
             ),
