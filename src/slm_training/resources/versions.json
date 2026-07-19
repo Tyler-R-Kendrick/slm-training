@@ -163,12 +163,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v12", "date": "2026-07-19", "note": "add SDE3-03 (SLM-177) proxy-metric calibration activation/budget/feature manifest dataclass, builder/validator, and CLI"},
         {"version": "v11", "date": "2026-07-19", "note": "add SDE3-04 constraint-backend benchmark manifest dataclass, builder/validator, and CLI for frozen grammar-backend comparison plan"},
         {"version": "v10", "date": "2026-07-19", "note": "add SDE4-01 (SLM-179) scaffold-distillation activation manifest dataclass, builder/validator, and CLI"},
         {"version": "v9", "date": "2026-07-19", "note": "add SDE4-04 pretrained-denoiser activation/candidate/budget manifest (wiring slice)"},
