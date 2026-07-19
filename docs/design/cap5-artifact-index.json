@@ -1,0 +1,136 @@
+{
+  "schema": "cap5_artifact_index/v1",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7433f2661e68b135148f77138a52bb2f7ab0a878",
+    "code_dirty": true,
+    "components": {
+      "analysis.arity.diffusion_graph": "v1",
+      "harness.experiments": "v14",
+      "model.quantization": "v4"
+    },
+    "stamped_at": "2026-07-19T19:20:26.840581+00:00"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "cap0-02-arity-analyzer",
+      "kind": "exact_certificate",
+      "path": "docs/design/cap0-02-arity-analyzer-20260718.json",
+      "description": "Exact arity counts for the bounded-expr fixture.",
+      "generator": "scripts/analyze_grammar_arity.py",
+      "reproduce": "python -m scripts.analyze_grammar_arity --fixture bounded-expr --max-ast-nodes 6 --max-live-bindings 2 --dimensions 4 --out outputs/runs/arity/report.json"
+    },
+    {
+      "artifact_id": "cap0-03-coding-precision",
+      "kind": "exact_certificate",
+      "path": "docs/design/cap0-03-coding-precision-20260718.md",
+      "description": "Verified [4,2,3]_7 and [7,4,3]_3 code constructions and residual-precision guards.",
+      "generator": "tests/test_dsl/test_arity_coding.py",
+      "reproduce": "pytest tests/test_dsl/test_arity_coding.py -q"
+    },
+    {
+      "artifact_id": "cap1-03-task-quotient",
+      "kind": "exact_certificate",
+      "path": "docs/design/cap1-03-task-quotient-20260718.md",
+      "description": "Task-confusability graph and neural-state quotient methodology.",
+      "generator": "scripts/analyze_task_quotient.py",
+      "reproduce": "python -m scripts.analyze_task_quotient --help"
+    },
+    {
+      "artifact_id": "cap1-04-conditional-rate",
+      "kind": "exact_certificate",
+      "path": "docs/design/cap1-04-conditional-rate-20260718.md",
+      "description": "Conditional task rate, Fano bounds, and posterior effective support.",
+      "generator": "scripts/analyze_conditional_rate.py",
+      "reproduce": "python -m scripts.analyze_conditional_rate --help"
+    },
+    {
+      "artifact_id": "cap2-bottleneck-results",
+      "kind": "experiment_matrix",
+      "path": "docs/design/cap2-bottleneck-results.json",
+      "description": "CAP2 K-ary bottleneck fixture matrix results.",
+      "generator": "scripts/run_cap2_bottleneck.py",
+      "reproduce": "python -m scripts.run_cap2_bottleneck --out outputs/runs/cap2_bottleneck"
+    },
+    {
+      "artifact_id": "cap2-04-state-ablation",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap2-04-state-ablation-20260718.json",
+      "description": "Implicit/explicit/discrete/compiler-owned state-ownership ablation.",
+      "generator": "scripts/run_cap2_04_state_ablation.py",
+      "reproduce": "python -m scripts.run_cap2_04_state_ablation --out outputs/runs/cap2_state_ablation"
+    },
+    {
+      "artifact_id": "cap3-03-ternary-falsification",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap3-03-ternary-falsification-20260718.json",
+      "description": "Equal-storage ternary latent-codec falsification matrix.",
+      "generator": "scripts/run_cap3_03_ternary_falsification.py",
+      "reproduce": "python -m scripts.run_cap3_03_ternary_falsification --out outputs/runs/cap3_ternary"
+    },
+    {
+      "artifact_id": "cap3-04-sensitivity",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap3-04-sensitivity-20260718.json",
+      "description": "Grammar-conditioned quantization sensitivity and mixed-precision allocation.",
+      "generator": "scripts/profile_quant_sensitivity.py, scripts/allocate_mixed_precision.py",
+      "reproduce": "python -m scripts.profile_quant_sensitivity --out outputs/runs/quant_sensitivity && python -m scripts.allocate_mixed_precision --report outputs/runs/quant_sensitivity/report.json --out outputs/runs/mixed_precision"
+    },
+    {
+      "artifact_id": "cap3-05-equal-byte-ladder",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap3-05-equal-byte-ladder-20260718.json",
+      "description": "Width \u00d7 precision ladder at equal deployed bytes.",
+      "generator": "scripts/run_scaling_ladder.py",
+      "reproduce": "python -m scripts.run_scaling_ladder --out outputs/runs/cap3_ladder"
+    },
+    {
+      "artifact_id": "cap4-01-residual-quantization",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap4-01-residual-quantization-20260718.json",
+      "description": "Residual ternary plane stack fixture results.",
+      "generator": "scripts/run_residual_trit_fixture.py",
+      "reproduce": "python -m scripts.run_residual_trit_fixture --out outputs/runs/cap4_residual"
+    },
+    {
+      "artifact_id": "cap4-02-adaptive-plane-routing",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap4-02-adaptive-plane-routing-20260718.json",
+      "description": "Compiler-floor + runtime-signal adaptive-plane routing fixture.",
+      "generator": "scripts/run_adaptive_plane_fixture.py",
+      "reproduce": "python -m scripts.run_adaptive_plane_fixture --out outputs/runs/cap4_adaptive"
+    },
+    {
+      "artifact_id": "cap4-03-quantized-energy-inference",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap4-03-quantized-energy-inference-20260719.json",
+      "description": "Quantized local-action energy inference vs exact lattice inference.",
+      "generator": "scripts/run_quantized_energy_inference_fixture.py",
+      "reproduce": "python -m scripts.run_quantized_energy_inference_fixture --out outputs/runs/cap4_energy"
+    },
+    {
+      "artifact_id": "cap4-04-block-sparsity",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap4-04-block-sparsity-20260718.json",
+      "description": "Compiler-routed block sparsity and state-family micro-experts.",
+      "generator": "scripts/run_block_sparsity_fixture.py",
+      "reproduce": "python -m scripts.run_block_sparsity_fixture --out outputs/runs/cap4_sparsity"
+    },
+    {
+      "artifact_id": "cap4-05-quotient-diffusion-graph",
+      "kind": "experiment_matrix",
+      "path": "docs/design/iter-cap4-05-quotient-diffusion-graph-20260718.json",
+      "description": "Quotient-state diffusion graph diagnostics.",
+      "generator": "scripts/run_quotient_diffusion_fixture.py",
+      "reproduce": "python -m scripts.run_quotient_diffusion_fixture --out outputs/runs/cap4_diffusion"
+    },
+    {
+      "artifact_id": "cap5-repro-summary",
+      "kind": "reproduction_summary",
+      "path": "outputs/runs/cap_repro/cap_repro_summary.json",
+      "description": "Deterministic CPU reproduction summary for the exact CAP fixtures.",
+      "generator": "scripts/reproduce_calculated_arity_fixtures.py",
+      "reproduce": "python -m scripts.reproduce_calculated_arity_fixtures --out outputs/runs/cap_repro --verify-expected"
+    }
+  ]
+}

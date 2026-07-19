@@ -775,6 +775,28 @@ No plan predictor, X22 change, energy model, or training run is added by SPV0-01
 | Discrete Flow Matching | Adjacent | Plan-conditioned valid-edit trajectories |
 | FS-DFM | Adjacent | Few-step latency-sensitive plan editing |
 
+## Calculated arity, adaptive precision, and quantization (CAP0–CAP4)
+
+**Fidelity label: adapted / adjacent.** The CAP campaign uses coding-theoretic and
+information-theoretic tools as *reference benchmarks and falsifiers*, not as
+production algorithms. Exact constructions are verified only for their declared
+parameters; estimated quantities carry declared uncertainty and are never treated
+as exact.
+
+| Source | Fidelity | CAP use |
+| --- | --- | --- |
+| BitNet b1.58 (Ma et al., 2024) [arXiv:2402.02764](https://arxiv.org/abs/2402.02764) and BitNet 2B4T (Ma et al., 2025) [arXiv:2501.15308](https://arxiv.org/abs/2501.15308) | Adjacent | Motivates ternary/low-bit baseline arms; our quantizers are reference fake-quant/STE only (`src/slm_training/models/quantization/`) |
+| ParetoQ (Zhang et al.) | Adjacent | Motivates mixed-precision sensitivity allocation; our allocation is a grammar-group knapsack (`src/slm_training/harnesses/quantization/allocation.py`) |
+| CAT-Q / LLM-QAT-style PTQ | Adjacent | Reference category for calibration and low-bit adaptation (`src/slm_training/harnesses/quantization/calibration.py`) |
+| FSQ/LFQ/VQ (e.g. Mentzer et al. FSQ 2024; Yu et al. LFQ 2024) | Adjacent | Latent-codec control arms (`src/slm_training/models/mixed_radix_fsq.py`, `binary_lfq.py`, `learned_vq.py`, `continuous_latent.py`) |
+| Weighted tree automata / Hankel methods | Adjacent | Inspiration for exact-state and predictive-rank discussion; no Hankel learning is implemented |
+| Grammar/AST-native decoding (e.g. Lark, SynCode, Outlines, Guidance) | Adapted | Hard legality and incremental acceptor (`src/slm_training/dsl/grammar/fastpath/`) |
+| Grammar-aligned diffusion / constrained diffusion LLMs | Adapted | Constrained MaskGIT fill and grammar-fastpath admit/reject (`dsl/grammar/fastpath/maskgit_constrain.py`) |
+| Structured energy / dynamic programming for legal actions | Adapted | Local-action energy quantizer and exact lattice comparison (`src/slm_training/evals/quantized_energy_inference.py`) |
+| AST/tree diffusion (Stern et al. Insertion Transformer; Gu et al. Levenshtein Transformer; Chen et al. Diffusion Forcing) | Adapted | Grammar-topology diffusion v2 (`src/slm_training/models/grammar_diffusion.py`) |
+| Mixed-precision sensitivity allocation | Adapted | Group sensitivity profiling + knapsack allocation (`src/slm_training/harnesses/quantization/sensitivity.py`, `allocation.py`) |
+| Residual quantization / adaptive compute (e.g. BitNet b1.58 residual approximations, adaptive mixed-precision) | Adapted | Residual ternary planes and adaptive-plane routing (`src/slm_training/models/quantization/residual_planes.py`, `adaptive_planes.py`) |
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
