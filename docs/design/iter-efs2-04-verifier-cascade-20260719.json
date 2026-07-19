@@ -1,0 +1,35 @@
+{
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "46d646f3ce282338e0ced3d110a35e6287298690",
+    "code_dirty": true,
+    "components": {
+      "evals.loss_suite": "v1",
+      "evals.scoring": "v2"
+    },
+    "stamped_at": "2026-07-19T03:29:52.272956+00:00"
+  },
+  "run_id": "efs2-04-verifier-cascade",
+  "claim_class": "diagnostic",
+  "status": "wiring_fixture",
+  "timestamp": "2026-07-19T03:29:52.272956+00:00",
+  "artifact": "outputs/runs/efs2-04-verifier-cascade/fixture-20260719/verifier_cascade_fixture.json",
+  "schema": "efs2-04/verifier_cascade_fixture/v1",
+  "summary": {
+    "n_candidates": 6,
+    "cascade_total_cost": 219.0,
+    "flat_total_cost": 530.0,
+    "cost_ratio": 0.41320754716981134,
+    "expensive_calls": 3,
+    "expensive_skipped": 3,
+    "cache_entries": 21,
+    "cache_hits": 7,
+    "cache_misses": 21
+  },
+  "honest_caveats": [
+    "Synthetic programs only; no checkpoint or live compiler decode was run.",
+    "The expensive 'semantic' stage is a marker-based mock, not a real contract verifier.",
+    "Cost hints are abstract units, not measured wall time.",
+    "A production EFS2-04 run must use durable checkpoints, real DSL packs, and matched flat/cascade arms."
+  ]
+}
