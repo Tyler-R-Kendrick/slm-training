@@ -40,9 +40,10 @@ def _model(**config_overrides) -> TwoTowerModel:
         split="train",
         source="fixture",
     )
+    output_tokenizer = config_overrides.pop("output_tokenizer", "lexer")
     config = TwoTowerConfig(
         context_backend="scratch",
-        output_tokenizer="lexer",
+        output_tokenizer=output_tokenizer,
         d_model=32,
         n_heads=2,
         context_layers=1,
@@ -255,6 +256,39 @@ def test_visible_semantic_role_bias_does_not_require_learned_slot_head() -> None
     assert email_bias[1] == 0.0
     assert submit_bias is not None and submit_bias[0] == 0.0
     assert submit_bias[1] == 4.0
+
+
+def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        visible_reference_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    ref0 = tokenizer.token_to_id["&0"]
+    ref1 = tokenizer.token_to_id["&1"]
+    close = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        current_marker="r=",
+        frames=[object()],
+        section_types=["element:Input", "element:Button"],
+    )
+
+    bias = model._visible_reference_completeness_bias(
+        state,
+        [tokenizer.bos_id, ref0],
+        (ref0, ref1, close),
+    )
+    exhausted = model._visible_reference_completeness_bias(
+        state,
+        [tokenizer.bos_id, ref0, ref1],
+        (ref0, ref1, close),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 4.0, 0.0]
+    assert exhausted is None
 
 
 def test_projection_with_features_accepts_sliced_hidden() -> None:

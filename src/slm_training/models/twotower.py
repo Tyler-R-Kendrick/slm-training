@@ -225,6 +225,7 @@ class TwoTowerConfig:
     slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
     semantic_role_decode_weight: float = 0.0
+    visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
     slot_component_pair_interaction: bool = False
@@ -3738,6 +3739,55 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _visible_reference_completeness_bias(
+        self,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Prefer each unused legal bound reference once while building the root."""
+        weight = float(
+            getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or state.current_marker != "r="
+            or not state.frames
+        ):
+            return None
+        eligible = {
+            index
+            for index, expr_type in enumerate(state.section_types)
+            if str(expr_type).startswith("element:")
+        }
+        used: set[int] = set()
+        for token_id in prefix:
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if token.startswith("&"):
+                try:
+                    used.add(int(token[1:]))
+                except ValueError:
+                    continue
+        unused = eligible - used
+        if not unused:
+            return None
+        bias = torch.zeros(
+            len(candidate_ids), dtype=torch.float32, device=self.device_name
+        )
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if not token.startswith("&"):
+                continue
+            try:
+                reference = int(token[1:])
+            except ValueError:
+                continue
+            if reference in unused:
+                bias[position] = weight
+                applied = True
+        return bias if applied else None
+
     def _binder_component_plan_bias(
         self,
         ctx: torch.Tensor,
@@ -4976,6 +5026,19 @@ class TwoTowerModel(nn.Module):
                             stats.slot_component_choice_changes += int(
                                 int(scores.argmax().item()) != before_slot
                             )
+                    reference_bias = self._visible_reference_completeness_bias(
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                    )
+                    if reference_bias is not None:
+                        before_reference = int(scores.argmax().item())
+                        scores = scores + reference_bias
+                        if stats is not None:
+                            stats.visible_reference_applications += 1
+                            stats.visible_reference_choice_changes += int(
+                                int(scores.argmax().item()) != before_reference
+                            )
                     best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
@@ -5760,6 +5823,20 @@ class TwoTowerModel(nn.Module):
             ]
         else:
             self._semantic_role_candidates = None
+        reference_weight = float(
+            getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
+        )
+        if reference_weight > 0.0 and (
+            not choice_constrained
+            or not honest
+            or not bool(
+                getattr(self.config, "slot_contract_constrained_decode", False)
+            )
+        ):
+            raise ValueError(
+                "visible_reference_decode_weight requires honest choice-codec "
+                "slot-constrained decode"
+            )
         ctx_prompts = self._context_prompts(
             prompts,
             golds=golds,

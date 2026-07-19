@@ -201,6 +201,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal component choices using only visible semantic-role candidates.",
     )
     parser.add_argument(
+        "--visible-reference-decode-weight",
+        type=float,
+        default=None,
+        help="Prefer each unused legal generated bound reference once in the root.",
+    )
+    parser.add_argument(
         "--component-edge-decode-weight",
         type=float,
         default=None,
@@ -491,6 +497,7 @@ def main(argv: list[str] | None = None) -> int:
         component_plan_decode_weight=args.component_plan_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
         semantic_role_decode_weight=args.semantic_role_decode_weight,
+        visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
         binder_component_plan_decode_weight=(
             args.binder_component_plan_decode_weight
