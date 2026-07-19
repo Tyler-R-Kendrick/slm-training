@@ -608,6 +608,26 @@
         }
       ]
     },
+    "harness.preference.remine_campaign": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/remine_campaign.py",
+        "scripts/run_remine_campaign.py",
+        "scripts/autoresearch.py",
+        "tests/test_harnesses/preference/test_remine_campaign.py",
+        "tests/test_scripts/test_autoresearch_remine.py",
+        "docs/design/ldi3-04-remine-intervene-campaign-20260718.md",
+        "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-132 LDI3-04 immutable on-policy remine/intervene/regenerate campaign wiring/fixture harness"
+        }
+      ]
+    },
     "data.test_build": {
       "version": "v1",
       "kind": "data_builder",

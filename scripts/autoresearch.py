@@ -770,6 +770,43 @@ def cmd_materialize_mixture(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_remine(args: argparse.Namespace) -> int:
+    """Run the LDI3-04 immutable remine → intervene → regenerate campaign."""
+    # Lazy import so importing autoresearch.py does not pull torch-heavy paths.
+    from slm_training.harnesses.preference.remine_campaign import (
+        RemineCampaignConfig,
+        describe_campaign,
+        run_campaign,
+    )
+
+    _smoke_config = {
+        "campaign_id": "ldi-remine-smoke",
+        "created_at": "2026-07-18T00:00:00Z",
+        "base_checkpoint_sha": "fixture-parent",
+        "tokenizer_sha": "fixture-tokenizer",
+        "prompt_group_ids": ["group_a", "group_b"],
+        "suite_mix": ["grammar", "schema", "dataflow"],
+        "decode_config_hash": "fixture-decode-v1",
+        "seeds": [0, 1],
+        "verifier_bundle_hash": "fixture-verifier-v1",
+        "adapter_spec": {"method": "twotower_adapter", "rank": 4},
+        "max_iterations": 2,
+        "min_new_evidence": 1,
+        "notes": "wiring-only fixture smoke",
+    }
+
+    data = json.loads(args.config.read_text(encoding="utf-8")) if args.config else _smoke_config
+    config = RemineCampaignConfig.from_mapping(data)
+
+    if args.describe or not args.smoke:
+        print(json.dumps(describe_campaign(config), indent=2, sort_keys=True))
+        return 0
+
+    result = run_campaign(config, root=args.root)
+    print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("outputs/autoresearch"))
@@ -925,6 +962,21 @@ def build_parser() -> argparse.ArgumentParser:
     mixture.add_argument("--mixture-id", required=True)
     mixture.add_argument("--weights-json", required=True)
     mixture.set_defaults(func=cmd_materialize_mixture)
+
+    remine = sub.add_parser("remine")
+    remine.add_argument("--campaign-id", default="ldi-remine-smoke")
+    remine.add_argument("--config", type=Path, help="Path to RemineCampaignConfig JSON")
+    remine.add_argument(
+        "--describe",
+        action="store_true",
+        help="Print the default campaign description and exit",
+    )
+    remine.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Run the built-in fixture smoke (default if no --config)",
+    )
+    remine.set_defaults(func=cmd_remine)
     return parser
 
 
