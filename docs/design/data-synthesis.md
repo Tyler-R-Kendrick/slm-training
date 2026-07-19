@@ -287,3 +287,18 @@ conditional-contract evidence, reject the E528 checkpoint, and move the next
 lever to semantic-role/reference-graph supervision rather than synthesis gates
 or stronger inventory prompting. See
 [E528](iter-e528-visible-component-types-continuation-20260719.md).
+
+### E530 visible semantic-role follow-up
+
+E530 groups already-visible slots into semantic namespaces and annotates only
+schema-compatible component types already present in each prompt. The first
+immutable build accidentally retained default producer expansions; its
+176-row result, 239 rejects, high-rejection warning, and redundant-expansion
+experiment candidates are preserved but invalid for training.
+
+The corrected recipe explicitly disables all producers and preserves all 244
+E521 IDs, targets, and placeholder lists. Every prompt gains a role contract,
+174 include compatible visible type candidates, no exact counts are exposed,
+and the strict reports contain zero rejects, warnings, recommendations, or
+experiment candidates. No gate or producer changes are warranted by the valid
+projection. See [E530](iter-e530-visible-semantic-roles-data-20260719.md).

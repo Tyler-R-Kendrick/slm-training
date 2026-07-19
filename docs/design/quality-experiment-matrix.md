@@ -2249,6 +2249,21 @@ do not expose gold counts or weaken gates. Full evidence:
 [narrative](iter-e528-visible-component-types-continuation-20260719.md) and
 [JSON](iter-e528-visible-component-types-continuation-20260719.json).
 
+## E530 visible semantic-role data
+
+E530 adds prompt-visible semantic namespaces and schema-compatible owning-type
+candidates derived only from slots and component types already visible in
+E521. It exposes no exact counts or gold parent/child graph. An initial
+recipe-drift build is retained as invalid evidence because default producers
+changed membership. The corrected producer-free projection preserves all 244
+IDs, targets, and placeholder lists; all 244 rows gain role contracts, 174 gain
+typed candidates, and strict feedback is clean.
+
+**Verdict:** publish only corrected `r2` for one matched bounded continuation.
+Data evidence only; no learned-behavior or ship claim. Full evidence:
+[narrative](iter-e530-visible-semantic-roles-data-20260719.md) and
+[JSON](iter-e530-visible-semantic-roles-data-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

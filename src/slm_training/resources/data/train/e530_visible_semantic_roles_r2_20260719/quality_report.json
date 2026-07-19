@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "version": "e530_visible_semantic_roles_r2_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T17:07:22.031151+00:00",
+  "counts": {
+    "seeds": 244,
+    "candidates": 244,
+    "collected": 244,
+    "admitted": 244,
+    "rejected_total": 0,
+    "source_errors": 0,
+    "by_stage": {}
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 20,
+      "Gold": 1,
+      "Silver": 223
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 244
+    },
+    "mean_quality_score": 0.9643,
+    "min_quality_score": 0.9
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 244,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "0014554128da96f7|6edb81bab55dbd30dcabc16b5a9cea1c889acbc6b5812c642c15166a2ac663ab|af6b73b86f8baf27",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_SingleStackedBarChart_as_document_aug_dir"
+        ]
+      },
+      {
+        "cluster": "00177a8973dac1d2|856b6e8228dd903cf3df25ad8e4bbf24bf003f5eac874a535bd3dd06c32b30e9|5f0bf2f9004cce92",
+        "count": 1,
+        "sample_ids": [
+          "program_966554f6443dd38f_aug_dir"
+        ]
+      },
+      {
+        "cluster": "00a282189015140b|46f3faeda381b688d64c940a730342b3e5a8273f73e7809b6eeaf48237fa778d|cc93972f42c70551",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Point_as_document_aug_cta"
+        ]
+      },
+      {
+        "cluster": "00caa0e993b87170|561a69daf33ba89dd01e18f54180d120c5bfb9ee7e01df7f30bcd134cd6f718e|515f6bb44b4b1987",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Separator_as_document"
+        ]
+      },
+      {
+        "cluster": "016316f66513ad35|b0ead57b00dc9bca42b39efe463ec2a47bd6bfcc082a7185949d5107d669c56e|7a811540c7147ecd",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Carousel_as_document_aug_cta"
+        ]
+      },
+      {
+        "cluster": "02ce3c89c2e716bd|25266008bc740fa5edf76a14bfbad7c8f34b0292b0b9253d581d699dfa9fa155|0de3c2297b8f7909",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Slice_as_document"
+        ]
+      },
+      {
+        "cluster": "0344b0f1555c1ea6|fbf562e995e63249ca7e081793fce6c143d509ef26c7a1431383659de7a0a75a|f2b54ac2bc6a1c16",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Tag_as_document_aug_cta"
+        ]
+      },
+      {
+        "cluster": "03603fb5199615c2|18cd64f0b088d4f777e3ac594622ecc397a15a76205284c028b57a18b7f6fb46|124f2257e4f00cfa",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_FormControl_as_document_aug_cta"
+        ]
+      },
+      {
+        "cluster": "064a6da53a969fc5|cbcee6cf9e66fec7aae254f791ff646bd9ec5f2e52b0d330ef204554f0dee301|cf230dd494b0efc7",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_CheckBoxItem_as_document_aug_dir"
+        ]
+      },
+      {
+        "cluster": "07af0751f9459b9e|85dd4fc7fe08c327389d4f88cb057ce944d39bc0cb19ac5141e10081c21e407a|951232a5ca890f9f",
+        "count": 1,
+        "sample_ids": [
+          "program_812a9a868c6c9958_repair_f8c2cea0d463"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 13,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.953846,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 13
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 15,
+      "root_parent_count": 15,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 15
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 53,
+      "root_parent_count": 53,
+      "mean_quality_score": 0.954717,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 53
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 156,
+      "root_parent_count": 83,
+      "mean_quality_score": 0.965385,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 156
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 6,
+      "root_parent_count": 6,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "generation": 6
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": null,
+    "decontam": null
+  },
+  "warnings": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a2fd764feb34f3f8320c14e4e637b572c1301303",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v7"
+    },
+    "stamped_at": "2026-07-19T17:07:22.045582+00:00"
+  }
+}

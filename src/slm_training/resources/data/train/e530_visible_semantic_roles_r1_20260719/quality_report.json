@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "version": "e530_visible_semantic_roles_r1_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T17:05:10.802008+00:00",
+  "counts": {
+    "seeds": 82,
+    "candidates": 354,
+    "collected": 354,
+    "admitted": 176,
+    "rejected_total": 239,
+    "source_errors": 0,
+    "by_stage": {
+      "dedup": 6,
+      "exposure": 172,
+      "selection": 61
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 122,
+      "Gold": 1,
+      "Silver": 53
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 176
+    },
+    "mean_quality_score": 0.9795,
+    "min_quality_score": 0.95
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 6,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 172
+    },
+    "cluster_exposure": {
+      "unique_clusters": 176,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "00177a8973dac1d2|856b6e8228dd903cf3df25ad8e4bbf24bf003f5eac874a535bd3dd06c32b30e9|5f0bf2f9004cce92",
+        "count": 1,
+        "sample_ids": [
+          "program_966554f6443dd38f_aug_dir"
+        ]
+      },
+      {
+        "cluster": "028101fa92d4a702|94809028f6e46fe6bf37616959cbc6a80e21b00e2206d2cb9bb4bab5a6b2f871|450b13d679918257",
+        "count": 1,
+        "sample_ids": [
+          "program_6bf891b163fb6489_generation_5d8e79cded1b"
+        ]
+      },
+      {
+        "cluster": "032880a01fed3ee7|3ac332f09829ec7943f3f5e51ca7081e6d6e5824b4bf56b8cfdc489f5e97d734|9a53bf30f5daba97",
+        "count": 1,
+        "sample_ids": [
+          "program_16e57c86e8ca54d6_edit_b75292e60b0b"
+        ]
+      },
+      {
+        "cluster": "032880a01fed3ee7|a7823b3b6ff07f223c627b8ae261358a184f7949c4830cb934711cad29828061|9a53bf30f5daba97",
+        "count": 1,
+        "sample_ids": [
+          "program_16e57c86e8ca54d6_edit_28c3d6d43ef7"
+        ]
+      },
+      {
+        "cluster": "057b82218889b7e5|b1c3b1d34aa8f592ae56c39753ebd2d43a9901df44dd1b4707a130e29f6f7853|cf467ca872447d07",
+        "count": 1,
+        "sample_ids": [
+          "train_callout_01_edit_e38fe907e52f"
+        ]
+      },
+      {
+        "cluster": "058889b6b9bc69f4|e2007f7d2d068b98e377430426ef3b7bc788282d033196bd425644c8c17b02d6|ddb0b88c721917b1",
+        "count": 1,
+        "sample_ids": [
+          "lc_forward_reference"
+        ]
+      },
+      {
+        "cluster": "08d85f4be3857ba9|a01e52a2873180febeaa49bdb3972e08ab9fdd754c27c8a662fccd7bf4922536|a5ce4425b2371208",
+        "count": 1,
+        "sample_ids": [
+          "program_748f040f0cc63303_edit_62075e23a445"
+        ]
+      },
+      {
+        "cluster": "08d85f4be3857ba9|ee5fe10772bd787d991262f4b5f3f74600b72c4f3c0cb6ec36a6487aac087234|a5ce4425b2371208",
+        "count": 1,
+        "sample_ids": [
+          "program_748f040f0cc63303_edit_ce3fe7d03f67"
+        ]
+      },
+      {
+        "cluster": "096ef37d73c63a6b|c89628d9040c89a4994a3443b9218239fa7450a367b8b66f6be2e344b6914484|1effa3b3817e0463",
+        "count": 1,
+        "sample_ids": [
+          "program_812a9a868c6c9958_aug_cta"
+        ]
+      },
+      {
+        "cluster": "0b0ce1e0a1e5715f|c89628d9040c89a4994a3443b9218239fa7450a367b8b66f6be2e344b6914484|1effa3b3817e0463",
+        "count": 1,
+        "sample_ids": [
+          "program_812a9a868c6c9958_generation_aee1fb20c324"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 5,
+      "root_parent_count": 5,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 5
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 102,
+      "root_parent_count": 30,
+      "mean_quality_score": 0.979412,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 68,
+        "generation": 29,
+        "patch": 5
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 15,
+      "root_parent_count": 15,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 15
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 1
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 46,
+      "root_parent_count": 26,
+      "mean_quality_score": 0.973913,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 46
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 6,
+      "root_parent_count": 6,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "generation": 6
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": null,
+    "decontam": null
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.4972,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a2fd764feb34f3f8320c14e4e637b572c1301303",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v7"
+    },
+    "stamped_at": "2026-07-19T17:05:10.815691+00:00"
+  }
+}
