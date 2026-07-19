@@ -236,7 +236,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -246,6 +246,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v2", "date": "2026-07-19", "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"},
         {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
       ]
     },
