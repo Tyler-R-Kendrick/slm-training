@@ -2094,6 +2094,25 @@ promotion and broader evaluation. Full evidence:
 [narrative](iter-e513-slot-role-supervision-20260719.md) and
 [JSON](iter-e513-slot-role-supervision-20260719.json).
 
+## E515 focal-loss decomposition
+
+E515 is matched to E513 except focal gamma returns `2→0`. It completes 101 CPU
+HF-context steps / 5,000 target tokens in 105.8 seconds under
+`max_wall_minutes=3`, then uploads and verifies checkpoint SHA
+`97f2e426…24721c1b` in the OpenUI bucket.
+
+Matched E516 OOD evaluation recovers meaningful `0.00→0.25`, fidelity
+`0.4917→0.6583`, structure `0.2750→0.3213`, recall `0.2083→0.2708`, reward
+`0.7695→0.8270`, and AST node F1 `0.3500→0.4292` versus E513. It still trails
+E510 on meaningful, structure, recall, reward, AST node F1, and AST edge F1;
+strict v2 remains zero and AgentV remains 0/1.
+
+**Verdict:** focal gamma 2 is harmful. Retain focal gamma zero for future
+controls, reject slot-component loss 4 for promotion, and target role-labeled
+data rather than more loss scaling. Full evidence:
+[narrative](iter-e515-focal-loss-decomposition-20260719.md) and
+[JSON](iter-e515-focal-loss-decomposition-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
