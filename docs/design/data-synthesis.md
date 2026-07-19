@@ -218,3 +218,19 @@ examples remain about 14–15% harder than E357 replay examples. This falsifies
 simple primary-loss divergence but does not resolve gradient alignment. The
 next lever belongs in optimizer/decode attribution, not data admission. See
 [E505](iter-e505-replay-loss-attribution-20260719.md).
+
+### E521 visible-inventory follow-up
+
+E521 audits the prompt authority mismatch exposed by E519. Only 13/260 E500
+records—and 0/209 generation records—made every declared placeholder visible,
+versus 998/998 E357 replay records. Rebuilding through the existing
+`--prompt-slot-contract` path admits 244 strict-profile rows, all 244 with full
+visible inventory, mean quality 0.9643, and zero quality rejects or warnings.
+
+The immutable snapshot is committed at
+`src/slm_training/resources/data/train/e521_visible_slot_contract_r2_20260719/`
+with fingerprint `b6a44a1b…a853b7d5`. Semantic dedup removes 18 near-duplicate
+variants and produces one ProgramSpec yield recommendation; the gate remains
+unchanged and the emitted producer-yield hypothesis is retained for a future
+matched synthesis experiment. See
+[E521](iter-e521-visible-slot-contract-data-20260719.md).

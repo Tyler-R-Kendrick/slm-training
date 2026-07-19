@@ -103,6 +103,21 @@ def test_e500_cold_start_evidence_is_persisted() -> None:
     assert len(records["records"]) == 260
 
 
+def test_e521_visible_slot_contract_data_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    version = "e521_visible_slot_contract_r2_20260719"
+    assert version in readers.train_data()["versions"]
+
+    records = readers.train_records(version, limit=300)
+    assert records["count"] == 244
+    assert len(records["records"]) == 244
+    assert all(
+        all(slot in row["prompt"] for slot in row["placeholders"])
+        for row in records["records"]
+    )
+
+
 def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)

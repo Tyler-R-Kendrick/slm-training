@@ -2152,6 +2152,21 @@ gold inventory. Full evidence:
 [narrative](iter-e519-honest-slot-context-20260719.md) and
 [JSON](iter-e519-honest-slot-context-20260719.json).
 
+## E521 visible slot-contract data
+
+E521 applies the existing canonical prompt-slot-contract projection to the E500
+source recipe. The audit finds full placeholder visibility in only 13/260 E500
+rows and 0/209 generation rows, versus 998/998 E357 replay rows. The successful
+strict build admits 244 rows; all 244 expose every declared placeholder, mean
+quality is 0.9643, and no quality record is rejected.
+
+**Verdict:** publish the immutable E521 snapshot for a matched bounded
+continuation. Keep semantic dedup unchanged; its 18 near-duplicate removals
+produce one ProgramSpec yield candidate but no warning. E521 is data evidence
+only until a checkpoint receives the standard honest suites. Full evidence:
+[narrative](iter-e521-visible-slot-contract-data-20260719.md) and
+[JSON](iter-e521-visible-slot-contract-data-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
