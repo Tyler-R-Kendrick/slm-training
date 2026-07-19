@@ -611,6 +611,7 @@ class _ChoiceFrame:
     schemas: tuple[dict[str, Any], ...] = ()
     required_args: int = 0
     arg_index: int = 0
+    reference_count: int = 0
 
 
 @dataclass
@@ -761,6 +762,12 @@ class ChoiceDecodeState:
             expr_type = self._reference_type(token)
             if expr_type is None:
                 return False
+            if (
+                self.frames
+                and self.frames[-1].kind == "variadic"
+                and self.frames[-1].expr_type == "array"
+            ):
+                self.frames[-1].reference_count += 1
             return self._complete_expr(expr_type)
         if token.startswith(SLOT_PREFIX):
             try:
@@ -1095,10 +1102,43 @@ def is_choice_tokenizer(obj: object) -> bool:
     return isinstance(obj, ChoiceTokenizer)
 
 
+def structural_root_reference_arity(
+    tokenizer: ChoiceTokenizer, token_ids: Iterable[int], *, slot_count: int = 0
+) -> int | None:
+    """Return direct reference count in the final generated structural root list."""
+    state = ChoiceDecodeState(tokenizer, slot_count=slot_count)
+    completed: int | None = None
+    list_counts: dict[int, int] = {}
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if token_id in {tokenizer.pad_id, tokenizer.bos_id}:
+            continue
+        token = str(tokenizer.id_to_token.get(token_id, ""))
+        active_list = bool(
+            state.mode == "structural"
+            and state.frames
+            and state.frames[-1].kind == "variadic"
+            and state.frames[-1].expr_type == "array"
+        )
+        depth = len(state.frames)
+        if active_list and token.startswith(REF_PREFIX):
+            list_counts[depth] = list_counts.get(depth, 0) + 1
+        elif active_list and token == LIST_CLOSE:
+            completed = list_counts.pop(depth, 0)
+        if token_id == tokenizer.eos_id:
+            break
+        if not state.advance_id(token_id):
+            return None
+        if token == LIST_OPEN:
+            list_counts[len(state.frames)] = 0
+    return completed
+
+
 __all__ = [
     "CHOICE_TOKENIZER_KIND",
     "CHOICE_TOKENIZER_VERSION",
     "ChoiceTokenizer",
     "ChoiceDecodeState",
     "is_choice_tokenizer",
+    "structural_root_reference_arity",
 ]

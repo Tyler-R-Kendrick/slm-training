@@ -247,6 +247,8 @@ class TwoTowerConfig:
     binder_topology_decode_weight: float = 0.0
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
+    root_reference_arity_loss_weight: float = 0.0
+    root_reference_arity_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -489,6 +491,9 @@ def _load_checkpoint_state(
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
     # V7 survival head is likewise a plug-in (trained via survival_train, E73).
     allowed_missing |= {key for key in missing if key.startswith("survival_head.")}
+    allowed_missing |= {
+        key for key in missing if key.startswith("root_reference_arity_head.")
+    }
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
     # non-factorized path now uses a non-persistent stub, so treat that legacy
@@ -746,6 +751,28 @@ class TwoTowerModel(nn.Module):
             if binder_arity_enabled and binder_plan_ids
             else None
         )
+        root_reference_arity_enabled = (
+            float(
+                getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "root_reference_arity_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.root_reference_arity_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    int(getattr(tokenizer, "ref_slots", 64)) + 1,
+                ),
+                108,
+            )
+            if root_reference_arity_enabled and _is_choice_output(self.config)
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -922,6 +949,7 @@ class TwoTowerModel(nn.Module):
             "binder_component_plan_head.",
             "binder_topology_head.",
             "binder_arity_head.",
+            "root_reference_arity_head.",
             "trust_gate.",
             "survival_head.",
         )
@@ -2493,6 +2521,56 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        root_arity_w = float(
+            getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0
+        )
+        if root_arity_w > 0.0 and self.root_reference_arity_head is not None:
+            from slm_training.models.choice_tokenizer import (
+                structural_root_reference_arity,
+            )
+
+            root_logits = self.root_reference_arity_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            )
+            root_losses: list[torch.Tensor] = []
+            root_hits: list[torch.Tensor] = []
+            for row, record in enumerate(batch):
+                target = structural_root_reference_arity(
+                    self.tokenizer,
+                    target_ids[row].tolist(),
+                    slot_count=len(record.placeholders or ()),
+                )
+                if target is None:
+                    continue
+                target = min(int(target), root_logits.size(1) - 1)
+                target_tensor = torch.as_tensor([target], device=ctx.device)
+                root_losses.append(
+                    F.cross_entropy(root_logits[row : row + 1], target_tensor)
+                )
+                root_hits.append(
+                    root_logits[row].argmax().eq(target_tensor[0]).float()
+                )
+            root_loss = (
+                torch.stack(root_losses).mean()
+                if root_losses
+                else root_logits.sum() * 0.0
+            )
+            detached = root_arity_w * root_loss
+            if self._detached_auxiliary_loss is not None:
+                detached = detached + self._detached_auxiliary_loss
+            self._detached_auxiliary_loss = detached
+            self.last_training_metrics.update(
+                {
+                    "root_reference_arity_loss": float(root_loss.detach().cpu()),
+                    "root_reference_arity_accuracy": float(
+                        torch.stack(root_hits).mean().detach().cpu()
+                        if root_hits
+                        else 0.0
+                    ),
+                    "root_reference_arity_rows": len(root_losses),
+                }
+            )
+
         edge_alignment_w = float(
             getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
         )
@@ -3795,6 +3873,49 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _root_reference_arity_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Learned continue/stop bias for a terminal structural root list."""
+        weight = float(
+            getattr(self.config, "root_reference_arity_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or self.root_reference_arity_head is None
+            or getattr(state, "mode", None) != "structural"
+            or len(getattr(state, "frames", ())) != 1
+            or state.frames[-1].kind != "variadic"
+            or state.frames[-1].expr_type != "array"
+        ):
+            return None
+        emitted = int(getattr(state.frames[-1], "reference_count", 0))
+        logits = self.root_reference_arity_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0]
+        split = min(emitted + 1, logits.numel())
+        stop_score = torch.logsumexp(logits[:split], dim=0)
+        continue_score = (
+            torch.logsumexp(logits[split:], dim=0)
+            if split < logits.numel()
+            else logits.new_tensor(-20.0)
+        )
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if token == "]":
+                bias[position] = weight * stop_score
+                applied = True
+            elif token.startswith("&"):
+                bias[position] = weight * continue_score
+                applied = True
+        return bias if applied else None
+
     @staticmethod
     def _choice_phase_evidence(state: Any) -> dict[str, object]:
         """Describe the bounded generated-state phase around a choice."""
@@ -5068,6 +5189,45 @@ class TwoTowerModel(nn.Module):
                             stats.slot_component_choice_changes += int(
                                 int(scores.argmax().item()) != before_slot
                             )
+                    root_arity_bias = self._root_reference_arity_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        states[row],
+                        candidate_ids,
+                    )
+                    if root_arity_bias is not None:
+                        before_root_arity = int(scores.argmax().item())
+                        scores = scores + root_arity_bias
+                        after_root_arity = int(scores.argmax().item())
+                        if stats is not None:
+                            stats.root_reference_arity_applications += 1
+                            stats.root_reference_arity_choice_changes += int(
+                                after_root_arity != before_root_arity
+                            )
+                            if len(stats.constrained_selection_traces) < 64:
+                                stats.constrained_selection_traces.append(
+                                    {
+                                        "phase": "root_reference_arity",
+                                        "position": position,
+                                        "emitted_references": int(
+                                            states[row].frames[-1].reference_count
+                                        ),
+                                        "before_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[before_root_arity], ""
+                                            )
+                                        ),
+                                        "chosen_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[after_root_arity], ""
+                                            )
+                                        ),
+                                        "choice_changed": (
+                                            after_root_arity != before_root_arity
+                                        ),
+                                        **self._choice_phase_evidence(states[row]),
+                                    }
+                                )
                     reference_bias = self._visible_reference_completeness_bias(
                         states[row],
                         ids[row, :position].tolist(),
