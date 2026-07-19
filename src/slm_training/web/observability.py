@@ -643,7 +643,7 @@ class Readers:
         derived: list[dict[str, Any]] = []
         for row in _results_of(snapshot.get("runs")):
             derived.append({**row, "provenance": "committed-snapshot"})
-        for kind in ("quality", "grammar", "perf", RESEARCH_SCOREBOARD_KIND):
+        for kind in ("quality", "grammar", "perf"):
             for row in self.scoreboard(kind)["results"]:
                 derived.append(
                     {
@@ -673,6 +673,25 @@ class Readers:
                     "provenance": (
                         "live"
                         if self._run_dir(str(row.get("run_id") or ""), row).is_dir()
+                        else "committed"
+                    ),
+                }
+            )
+        for row in self.scoreboard(RESEARCH_SCOREBOARD_KIND)["results"]:
+            derived.append(
+                {
+                    "run_id": row.get("run_id") or row.get("id"),
+                    "experiment_id": row.get("id"),
+                    "matrix": RESEARCH_SCOREBOARD_KIND,
+                    "pass": row.get("pass"),
+                    "description": row.get("description"),
+                    "checkpoint": row.get("checkpoint"),
+                    "lifecycle_state": None,
+                    "provenance": (
+                        "live"
+                        if self._run_dir(
+                            str(row.get("run_id") or row.get("id") or ""), row
+                        ).is_dir()
                         else "committed"
                     ),
                 }

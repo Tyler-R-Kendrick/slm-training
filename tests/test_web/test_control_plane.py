@@ -244,7 +244,10 @@ def test_e511_component_plan_three_suite_run_is_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e511-e505-three-suite192-component-plan4-r1"
-    assert run_id in {row.get("run_id") for row in readers.runs()["runs"]}
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert set(listed["suites"]) == {"held_out", "ood", "adversarial"}
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {
         "held_out",
         "ood",
