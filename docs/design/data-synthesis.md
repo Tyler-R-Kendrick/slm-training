@@ -234,3 +234,13 @@ variants and produces one ProgramSpec yield recommendation; the gate remains
 unchanged and the emitted producer-yield hypothesis is retained for a future
 matched synthesis experiment. See
 [E521](iter-e521-visible-slot-contract-data-20260719.md).
+
+### E522 visible-inventory train follow-up
+
+The matched E522 continuation confirms that the E521 representation changes
+learned behavior: OOD placeholder fidelity rises from 0.4083 to 0.8667 and
+component recall from 0.2083 to 0.2708. The gain does not compose with
+hierarchy—structure falls from 0.2250 to 0.1955, reward falls to 0.2093, and
+meaningful rate and AgentV remain zero. Keep visible inventories, but pair them
+with component-hierarchy supervision or data rather than stronger slot loss.
+See [E522](iter-e522-visible-slot-continuation-20260719.md).
