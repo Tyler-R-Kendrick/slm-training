@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,7 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v6", "date": "2026-07-19", "note": "add a fail-closed choice-codec bias toward unused legal generated bound references in the root"},
         {"version": "v5", "date": "2026-07-19", "note": "add a direct constrained-decode bias from honest visible semantic-role candidates"},
         {"version": "v4", "date": "2026-07-19", "note": "add honest inference-time semantic-role contract projection from prompt-mentioned components and visible slots"},
         {"version": "v3", "date": "2026-07-19", "note": "merge SDE3-01 suite-level eval cache integration on top of decode-weight override CLI"},

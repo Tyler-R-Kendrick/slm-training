@@ -38,6 +38,8 @@ class DecodeStats:
     component_plan_choice_changes: int = 0
     slot_component_applications: int = 0
     slot_component_choice_changes: int = 0
+    visible_reference_applications: int = 0
+    visible_reference_choice_changes: int = 0
     component_edge_applications: int = 0
     component_edge_choice_changes: int = 0
     binder_component_plan_applications: int = 0
@@ -212,6 +214,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "component_plan_choice_changes",
         "slot_component_applications",
         "slot_component_choice_changes",
+        "visible_reference_applications",
+        "visible_reference_choice_changes",
         "component_edge_applications",
         "component_edge_choice_changes",
         "binder_component_plan_applications",
