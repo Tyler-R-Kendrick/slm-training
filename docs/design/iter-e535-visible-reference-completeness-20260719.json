@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E535",
+  "run_id": "e535-e531-ood160-visible-role4-reference4-r1",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_rejected_unreachable",
+  "hypothesis": "Preferring each unused legal generated bound reference once while constructing the root improves E534 reference topology without gold graph access.",
+  "checkpoint": {
+    "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+    "sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
+  },
+  "recipe": {
+    "device": "cpu",
+    "suite": "ood",
+    "n": 4,
+    "diagnostic_subset": true,
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 4.0,
+    "visible_reference_decode_weight": 4.0,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "gold_component_inventory_used": false,
+    "gold_reference_graph_used": false,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_control": {
+    "experiment_id": "E534",
+    "run_id": "e534-e531-ood160-visible-role-bias4-r2",
+    "result": {
+      "suite": "ood",
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.19592500000000002,
+      "component_type_recall": 0.5416666666666666,
+      "reward_score": 0.74025,
+      "ast_node_f1": 0.16269841269841268,
+      "ast_edge_f1": 0.041666666666666664,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "contract_precision": 1.0,
+      "contract_recall": 1.0
+    }
+  },
+  "result": {
+    "suite": "ood",
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.25,
+    "placeholder_fidelity": 1.0,
+    "placeholder_validity": 1.0,
+    "structural_similarity": 0.19592500000000002,
+    "component_type_recall": 0.5416666666666666,
+    "reward_score": 0.74025,
+    "ast_node_f1": 0.16269841269841268,
+    "ast_edge_f1": 0.041666666666666664,
+    "ref_graph_exact": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "contract_precision": 1.0,
+    "contract_recall": 1.0,
+    "latency_ms_p50": 6605.94,
+    "latency_ms_p95": 7149.92,
+    "visible_reference_applications": 0,
+    "visible_reference_choice_changes": 0
+  },
+  "comparison_to_e534": {
+    "syntax_parse_rate_delta": 0.0,
+    "meaningful_program_rate_delta": 0.0,
+    "placeholder_fidelity_delta": 0.0,
+    "placeholder_validity_delta": 0.0,
+    "structural_similarity_delta": 0.0,
+    "component_type_recall_delta": 0.0,
+    "reward_score_delta": 0.0,
+    "ast_node_f1_delta": 0.0,
+    "ast_edge_f1_delta": 0.0,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0
+  },
+  "failure_breakdown": {
+    "low_component_recall": 1,
+    "trivial_layout": 2
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The intervention is unreachable on the matched trajectories; reference-graph exactness and strict meaning remain zero and AgentV fails."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Reject E535 and do not train it. Require non-zero reachability from a completion-path or declaration/reference-plan intervention before another topology experiment.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3874815e38b9eaad3044f0a29165d00843e6ee3a",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v6",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v9"
+    },
+    "stamped_at": "2026-07-19T18:35:32.759586+00:00"
+  }
+}

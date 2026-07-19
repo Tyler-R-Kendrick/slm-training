@@ -2324,6 +2324,25 @@ authority. Full evidence:
 [narrative](iter-e534-visible-role-decode-bias-20260719.md) and
 [JSON](iter-e534-visible-role-decode-bias-20260719.json).
 
+## E535 visible generated-reference completeness
+
+E535 holds the E531 checkpoint and complete E534 OOD n=4 recipe fixed, adding
+only a weight-4 preference for each unused legal reference to an
+already-generated bound element while the root is open. The intervention uses
+no gold graph and fails closed outside honest slot-constrained choice decode.
+
+Every aggregate is identical to E534, including meaningful 0.25, structure
+0.1959, component recall 0.5417, AST node/edge F1 0.1627/0.0417, strict meaning
+0.0, reference-graph exact 0.0, and AgentV 0/1. Telemetry reports zero
+applications and zero choice changes: no unused-reference alternative appeared
+at a multi-candidate token decision on these trajectories.
+
+**Verdict:** reject E535 and do not train it. A future topology lever must act
+at completion-path or declaration/reference-plan scope and prove non-zero
+reachability before consuming a training run. Full evidence:
+[narrative](iter-e535-visible-reference-completeness-20260719.md) and
+[JSON](iter-e535-visible-reference-completeness-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

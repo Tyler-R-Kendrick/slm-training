@@ -510,6 +510,21 @@ def test_e534_visible_role_decode_bias_run_is_persisted() -> None:
     assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
 
 
+def test_e535_visible_reference_completeness_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e535-e531-ood160-visible-role4-reference4-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert listed["pass"] is False
+    detail = readers.run(run_id)
+    ood = detail["scoreboard"]["suites"]["ood"]
+    assert ood["n"] == 4
+    assert ood["visible_reference_applications"] == 0
+    assert ood["ref_graph_exact"] == 0.0
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
