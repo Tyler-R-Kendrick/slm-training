@@ -164,12 +164,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v14", "date": "2026-07-19", "note": "fix(cap3-05): make equal-byte planning honest and reconcile cost ledger"},
         {"version": "v13", "date": "2026-07-19", "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"},
         {"version": "v12", "date": "2026-07-19", "note": "add SDE3-03 (SLM-177) proxy-metric calibration activation/budget/feature manifest dataclass, builder/validator, and CLI"},
         {"version": "v11", "date": "2026-07-19", "note": "add SDE3-04 constraint-backend benchmark manifest dataclass, builder/validator, and CLI for frozen grammar-backend comparison plan"},
@@ -228,13 +229,14 @@
       ]
     },
     "model.quantization": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {"version": "v4", "date": "2026-07-19", "note": "fix(cap3-05): honest physical-cost ledger rounding and byte-accounting for equal-byte ladder"},
         {"version": "v3", "date": "2026-07-19", "note": "CAP4-04 compiler-routed block sparsity and state-family experts merged on top of CAP4-02"},
         {"version": "v2", "date": "2026-07-18", "note": "CAP4-02 adaptive residual-plane scheduling (structural floor + entropy/margin/sensitivity/learned-router/oracle)"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (CAP4-01 residual ternary planes and local scorer head)"}

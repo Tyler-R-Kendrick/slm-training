@@ -48,6 +48,8 @@ class LadderPoint:
     actual_bytes: int | None = None
     budget_delta: float | None = None
     status: str = "feasible"
+    matching_regime: str | None = None
+    training_status: str | None = None
 
     @property
     def point_id(self) -> str:
@@ -325,9 +327,13 @@ def model_build_config_for_point(
         "parallel_unmask": str(decode.get("parallel_unmask", "adaptive")),
         "loss_eval_every": max(1, steps // 10),
     }
-    if point.precision_format is not None:
+    if point.precision_format not in (None, "fp16", "bf16"):
+        if point.training_status != "native_or_qat":
+            raise ValueError(
+                f"{point.precision_format} is {point.training_status or 'unsupported'}; "
+                "equal-byte training requires a native/QAT implementation"
+            )
         kwargs["quant_format"] = point.precision_format
-        kwargs["use_dynamic_quant"] = True
     if point.byte_budget is not None:
         kwargs["byte_budget"] = point.byte_budget
     if extra:
@@ -428,7 +434,7 @@ def estimate_bytes(
         default_format=fmt,
         d_model=d_model,
     )
-    return ledger.total()
+    return ledger.checkpoint_bytes
 
 
 def plan_equal_byte_ladder(
@@ -456,13 +462,22 @@ def plan_equal_byte_ladder(
     Bytes are *modeled* via ``estimate_bytes`` (a synthetic TwoTower-like module
     + ``build_model_ledger``), not measured on a deployed device.
     """
+    if not byte_budgets or any(budget <= 0 for budget in byte_budgets):
+        raise ValueError("byte_budgets must contain positive values")
+    if not widths or any(width <= 0 for width in widths):
+        raise ValueError("widths must contain positive values")
+    if not horizons or any(horizon <= 0 for horizon in horizons):
+        raise ValueError("horizons must contain positive values")
+    if tolerance < 0:
+        raise ValueError("tolerance must be non-negative")
+
     ladders: list[ScalingLadder] = []
 
     for budget in byte_budgets:
         for fmt_id in formats:
             points: list[LadderPoint] = []
             ref = 128
-            candidates: list[tuple[int, int, int, int, float, int, float]] = []
+            candidates: list[tuple[int, int, int, int, int, float, int, float]] = []
             for d in widths:
                 if head_policy == "proportional":
                     n_heads, ctx, den = proportional_depths(d)
@@ -484,16 +499,18 @@ def plan_equal_byte_ladder(
                         ffn_mult=ffn_mult,
                     )
                     delta = (actual - budget) / budget if budget else 0.0
-                    candidates.append((d, n_heads, ctx, den, h, actual, delta))
+                    candidates.append(
+                        (d, n_heads, ctx, den, token_budget, h, actual, delta)
+                    )
 
-            feasible = [c for c in candidates if abs(c[6]) <= tolerance]
+            feasible = [c for c in candidates if abs(c[7]) <= tolerance]
             if feasible:
-                chosen = min(feasible, key=lambda c: abs(c[6]))
+                chosen = min(feasible, key=lambda c: abs(c[7]))
                 status = "feasible"
             else:
-                under = [c for c in candidates if c[5] <= budget]
+                under = [c for c in candidates if c[6] <= budget]
                 if under:
-                    chosen = max(under, key=lambda c: c[5])
+                    chosen = max(under, key=lambda c: c[6])
                     status = "infeasible"
                 else:
                     # No configuration fits; record the smallest width as infeasible
@@ -501,7 +518,7 @@ def plan_equal_byte_ladder(
                     chosen = candidates[0]
                     status = "infeasible"
 
-            d, n_heads, ctx, den, h, actual, delta = chosen
+            d, n_heads, ctx, den, token_budget, h, actual, delta = chosen
             points.append(
                 LadderPoint(
                     d_model=d,
@@ -516,6 +533,12 @@ def plan_equal_byte_ladder(
                     actual_bytes=actual,
                     budget_delta=delta,
                     status=status,
+                    matching_regime="equal_static_bytes",
+                    training_status=(
+                        "native_or_qat"
+                        if fmt_id in ("fp16", "bf16")
+                        else "post_training_reference"
+                    ),
                 )
             )
 
