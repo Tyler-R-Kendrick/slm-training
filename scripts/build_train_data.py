@@ -256,6 +256,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Expose exact component counts (default) or component types only.",
     )
     parser.add_argument(
+        "--prompt-semantic-role-contract",
+        action="store_true",
+        help=(
+            "Group visible slots by semantic namespace and annotate compatible "
+            "owners from the visible component types; requires both prompt contracts."
+        ),
+    )
+    parser.add_argument(
         "--max-records-per-parent",
         type=int,
         default=None,
@@ -391,6 +399,7 @@ def main(argv: list[str] | None = None) -> int:
         prompt_slot_contract=args.prompt_slot_contract,
         prompt_component_contract=args.prompt_component_contract,
         prompt_component_contract_mode=args.prompt_component_contract_mode,
+        prompt_semantic_role_contract=args.prompt_semantic_role_contract,
         max_records_per_parent=args.max_records_per_parent,
         fuzzy_dedup=bool(args.fuzzy_dedup),
         fuzzy_jaccard=float(args.fuzzy_jaccard),
