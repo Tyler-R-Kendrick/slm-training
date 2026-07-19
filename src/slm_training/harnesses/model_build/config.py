@@ -265,6 +265,8 @@ class ModelBuildConfig:
     binder_topology_decode_weight: float | None = None
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float | None = None
+    root_reference_arity_loss_weight: float = 0.0
+    root_reference_arity_decode_weight: float | None = None
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

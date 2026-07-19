@@ -208,6 +208,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_topology_decode_weight=0.2,
             binder_arity_loss_weight=0.7,
             binder_arity_decode_weight=0.1,
+            root_reference_arity_loss_weight=0.6,
+            root_reference_arity_decode_weight=0.05,
         ),
     )
     assert model.component_inventory_head is not None
@@ -244,6 +246,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_topology_decode_weight == 0.2
     assert loaded.config.binder_arity_loss_weight == 0.7
     assert loaded.config.binder_arity_decode_weight == 0.1
+    assert loaded.config.root_reference_arity_loss_weight == 0.6
+    assert loaded.config.root_reference_arity_decode_weight == 0.05
 
     apply_runtime_overrides(
         loaded,
@@ -255,6 +259,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_component_plan_decode_weight=0.0,
             binder_topology_decode_weight=0.0,
             binder_arity_decode_weight=0.0,
+            root_reference_arity_decode_weight=0.0,
         ),
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
@@ -263,6 +268,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_component_plan_decode_weight == 0.0
     assert loaded.config.binder_topology_decode_weight == 0.0
     assert loaded.config.binder_arity_decode_weight == 0.0
+    assert loaded.config.root_reference_arity_decode_weight == 0.0
 
 
 def test_optional_heads_do_not_shift_training_rng() -> None:

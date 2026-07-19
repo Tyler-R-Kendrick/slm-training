@@ -135,6 +135,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",
         "binder_arity_decode_weight",
+        "root_reference_arity_decode_weight",
         "remask_span",
         "teacher_init_embeddings",
         "runtime_symbol_features",
@@ -457,6 +458,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         binder_arity_decode_weight=float(
             getattr(config, "binder_arity_decode_weight", 0.0) or 0.0
+        ),
+        root_reference_arity_loss_weight=float(
+            getattr(config, "root_reference_arity_loss_weight", 0.0) or 0.0
+        ),
+        root_reference_arity_decode_weight=float(
+            getattr(config, "root_reference_arity_decode_weight", 0.0) or 0.0
         ),
         symbol_boundary_loss_weight=float(
             getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0

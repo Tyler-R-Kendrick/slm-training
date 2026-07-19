@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v10",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,8 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v12", "date": "2026-07-19", "note": "bound learned root-reference arity partitioning by the available generated sections so impossible tokenizer-tail classes cannot force continuation"},
+        {"version": "v11", "date": "2026-07-19", "note": "add learned choice-codec terminal-root reference arity decoding and bounded intervention telemetry"},
         {"version": "v10", "date": "2026-07-19", "note": "restrict structural generated-reference completeness bias to the terminal root list"},
         {"version": "v9", "date": "2026-07-19", "note": "persist bounded root-vs-nested choice-frame and reference-bias counterfactual telemetry"},
         {"version": "v8", "date": "2026-07-19", "note": "extend generated-reference completeness bias to reachable structural list aggregation while remaining fail-closed elsewhere"},
@@ -35,12 +37,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"},
         {"version": "v7", "date": "2026-07-19", "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"},

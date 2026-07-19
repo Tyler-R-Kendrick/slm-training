@@ -373,6 +373,74 @@ def test_choice_phase_evidence_separates_root_and_nested_lists() -> None:
     assert nested_evidence["frame_depth"] == 2
 
 
+def test_structural_root_reference_arity_ignores_nested_lists() -> None:
+    from slm_training.models.choice_tokenizer import structural_root_reference_arity
+
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    ids = tokenizer.encode(
+        "root = Stack([card, title])\n"
+        "card = Card([body])\n"
+        'body = TextContent(":body")\n'
+        'title = TextContent(":title")',
+        placeholders=[":body", ":title"],
+    )
+
+    assert structural_root_reference_arity(tokenizer, ids, slot_count=2) == 2
+
+
+def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        root_reference_arity_loss_weight=1.0,
+        root_reference_arity_decode_weight=2.0,
+    )
+    model.train()
+    record = ExampleRecord(
+        id="root-reference-arity",
+        prompt="stack with title and body",
+        openui=(
+            "root = Stack([title, body])\n"
+            'title = TextContent(":title")\n'
+            'body = TextContent(":body")'
+        ),
+        placeholders=[":title", ":body"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+    assert model.root_reference_arity_head is not None
+    assert model.root_reference_arity_head.weight.grad is not None
+    assert model.root_reference_arity_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["root_reference_arity_rows"] == 1
+
+    tokenizer = model.tokenizer
+    with torch.no_grad():
+        model.root_reference_arity_head.weight.zero_()
+        model.root_reference_arity_head.bias.zero_()
+        model.root_reference_arity_head.bias[2] = 4.0
+        model.root_reference_arity_head.bias[-1] = 20.0
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    for token in ("+TextContent", "@0", "-", "+TextContent", "@1", "-", "["):
+        assert state.advance_id(tokenizer.token_to_id[token])
+    ctx, ctx_pad = model._encode_context(["stack with title and body"])
+    candidates = (tokenizer.token_to_id["&0"], tokenizer.token_to_id["]"])
+    continue_bias = model._root_reference_arity_bias(
+        ctx, ctx_pad, state, candidates
+    )
+    assert continue_bias is not None and continue_bias[0] > continue_bias[1]
+    assert state.advance_id(tokenizer.token_to_id["&0"])
+    assert state.advance_id(tokenizer.token_to_id["&1"])
+    stop_bias = model._root_reference_arity_bias(ctx, ctx_pad, state, candidates)
+    assert stop_bias is not None and stop_bias[1] > stop_bias[0]
+
+
 def test_projection_with_features_accepts_sliced_hidden() -> None:
     """Compiler/tree scorers project [D] and [N,D] slices; with one request's
     runtime symbol features active the projection must match the [B,T,D]
