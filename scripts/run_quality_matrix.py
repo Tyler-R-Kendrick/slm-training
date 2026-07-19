@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import signal
+import sys
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -2506,6 +2507,63 @@ def _run_verified_solver(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_external_ceiling(args: argparse.Namespace) -> int:
+    """SLM-108: dispatch the ``external-ceiling`` matrix set.
+
+    Fixture mode runs a torch-free wiring check with deterministic fake scores.
+    Frontier mode resolves the manifest but leaves model-backed arms ``not_run``
+    unless a GPU host and pinned durable checkpoints are available.
+    """
+    from slm_training.harnesses.experiments import external_ceiling_matrix as ecm
+
+    manifest = ecm.build_external_ceiling_manifest(
+        tiny_slm_run_id=getattr(args, "tiny_slm_run_id", None),
+        checkpoint_reference_uri=getattr(args, "checkpoint_reference_uri", None),
+    )
+    errors = ecm.validate_external_ceiling_manifest(manifest)
+    if errors:
+        for error in errors:
+            print(f"manifest error: {error}", file=sys.stderr)
+        return 1
+
+    if args.describe:
+        print(json.dumps(manifest.to_dict(), indent=2))
+        return 0
+
+    report = ecm.run_fixture_matrix(
+        manifest,
+        run_id=f"slm108_{args.mode}",
+        output_dir=args.run_root,
+    )
+    args.run_root.mkdir(parents=True, exist_ok=True)
+    json_path = args.run_root / "external_ceiling_matrix_results.json"
+    json_path.write_text(json.dumps(report.to_dict(), indent=2) + "\n", encoding="utf-8")
+    md_path = args.run_root / "external_ceiling_matrix_results.md"
+    md_path.write_text(ecm.render_markdown(report) + "\n", encoding="utf-8")
+
+    docs_out = args.docs_out or (
+        Path("docs/design/external-ceiling-matrix-results.json")
+        if args.run_root == Path("outputs/runs")
+        else args.run_root / "external_ceiling_matrix_results.json"
+    )
+    if args.docs_out or args.run_root == Path("outputs/runs"):
+        docs_out.parent.mkdir(parents=True, exist_ok=True)
+        docs_out.write_text(json.dumps(report.to_dict(), indent=2) + "\n", encoding="utf-8")
+
+    print(
+        json.dumps(
+            {
+                "summary": str(json_path),
+                "matrix_set": report.matrix_set,
+                "status": report.status,
+                "arms": len(report.results),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
@@ -2669,8 +2727,20 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Named matrix set outside the E-series. 'verified-solver' runs the "
-            "VSS4-02 matched R0-R6 verified-scope-solver rows and hard gates."
+            "VSS4-02 matched R0-R6 verified-scope-solver rows and hard gates. "
+            "'external-ceiling' runs the SLM-108 fixture/frontier external-model "
+            "constrained-decoding ceiling matrix."
         ),
+    )
+    parser.add_argument(
+        "--checkpoint-reference-uri",
+        default=None,
+        help="Durable checkpoint reference URI for external-ceiling baseline arm A.",
+    )
+    parser.add_argument(
+        "--tiny-slm-run-id",
+        default=None,
+        help="Run id of the tiny-SLM baseline for external-ceiling arm A.",
     )
     parser.add_argument(
         "--row",
@@ -2710,6 +2780,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.matrix_set == "verified-solver":
         return _run_verified_solver(args)
+    if args.matrix_set == "external-ceiling":
+        return _run_external_ceiling(args)
     # Modern curriculum rows (notably E53) use ``curriculum_dir`` as their
     # actual training input.  If a caller explicitly supplies a different
     # train corpus, do not silently substitute the stale default curriculum

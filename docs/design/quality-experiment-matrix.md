@@ -149,6 +149,40 @@ python -m scripts.train_rl \
 python -m scripts.bench_telemetry --train-steps 8 --gen-prompts 8
 ```
 
+## External semantic ceiling (SLM-108 / EFS1-01)
+
+Off-the-shelf 1–7B instruct/code models scored through the same compiler-owned
+legal candidate space as the tiny SLM. This is a control experiment, not a
+replacement model. The matrix set is registered separately because it evaluates
+external weights rather than training a new checkpoint.
+
+| Arm | Model | Decode | Purpose |
+| --- | --- | --- | --- |
+| A | tiny SLM | constrained | Baseline from existing champion run |
+| B | HuggingFaceTB/SmolLM2-135M (1-2B) | constrained | Lower-bound external constrained |
+| C | Qwen/Qwen2.5-7B-Instruct (6-7B) | constrained | Upper-range external constrained |
+| D | Same as B | unconstrained + postvalidation | Constraint-distortion control |
+| E | Same as B | complete-candidate rerank | Diagnostic rerank mode |
+
+```bash
+# Fixture wiring run (CPU, no model download)
+python -m scripts.run_quality_matrix \
+  --matrix-set external-ceiling \
+  --mode fixture \
+  --run-root outputs/runs/slm108_external_ceiling \
+  --checkpoint-reference-uri hf://buckets/TKendrick/OpenUI/checkpoints/<baseline_run_id>/ref.json
+
+# Frontier run (GPU + pinned durable checkpoints required)
+python -m scripts.run_external_ceiling \
+  --mode frontier \
+  --output-dir outputs/runs/slm108_frontier \
+  --checkpoint-reference-uri hf://buckets/TKendrick/OpenUI/checkpoints/<baseline_run_id>/ref.json
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict`. Fixture runs are
+wiring-only and cannot claim ship gates. Frontier execution requires durable
+checkpoint provenance from SLM-103 and the EFS0 comparison stack.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the

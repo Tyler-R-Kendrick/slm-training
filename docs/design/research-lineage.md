@@ -797,6 +797,34 @@ as exact.
 | Mixed-precision sensitivity allocation | Adapted | Group sensitivity profiling + knapsack allocation (`src/slm_training/harnesses/quantization/sensitivity.py`, `allocation.py`) |
 | Residual quantization / adaptive compute (e.g. BitNet b1.58 residual approximations, adaptive mixed-precision) | Adapted | Residual ternary planes and adaptive-plane routing (`src/slm_training/models/quantization/residual_planes.py`, `adaptive_planes.py`) |
 
+## External constrained-decoding semantic ceiling (EFS1-01 / SLM-108)
+
+**Fidelity label: adapted / adjacent.** SLM-108 treats publicly available
+HuggingFace causal/instruct models as a **control**, not as a deployable
+replacement. The adapter loads a pinned model revision and scores the exact live
+legal action set produced by the OpenUI compiler (`ExternalLegalActionScorer`);
+it never adds or removes candidates. This design borrows the general idea of
+using a strong pretrained model as a semantic ceiling (common in distillation and
+coverage-evaluation work) but is deliberately narrowed to the compiler-owned
+action space so the comparison isolates learned semantic competence from
+constraint-layer correctness.
+
+| | |
+| --- | --- |
+| **Lineage** | External-model baselines for semantic coverage / ceiling estimation; constrained decoding with pretrained LMs (Outlines, Guidance, SynCode family — **Adjacent**) |
+| **Fidelity** | **Adapted** — external scorer is legality-agnostic; constrained decode remains compiler-owned |
+| **Code** | `src/slm_training/models/external_scorer.py`, `src/slm_training/harnesses/experiments/external_ceiling_matrix.py`, `scripts/run_external_ceiling.py` |
+| **Config** | `--matrix-set external-ceiling`, `--checkpoint-reference-uri`, `--mode fixture|frontier` |
+
+**What we took:** a provider-neutral interface for scoring compiler-legal actions
+and complete candidates with a pinned HF causal/instruct model, plus an
+`ExternalScorePolicy` adapter for the existing eval-only score-policy path.
+
+**What we did not take:** any claim that the external model replaces the tiny
+SLM, any fine-tuning of external weights, or any bypass of the compiler in the
+constrained arms. Frontier execution requires durable checkpoint provenance
+(SLM-103) and a GPU host.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

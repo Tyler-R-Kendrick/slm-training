@@ -21,6 +21,17 @@ from slm_training.harnesses.experiments.efficiency_gain import (
     efficiency_gain,
     efficiency_gain_lcb,
 )
+from slm_training.harnesses.experiments.external_ceiling_matrix import (
+    MATRIX_SET as EXTERNAL_CEILING_MATRIX_SET,
+    MATRIX_VERSION as EXTERNAL_CEILING_MATRIX_VERSION,
+    ExternalCeilingArm,
+    ExternalCeilingManifest,
+    ExternalCeilingReport,
+    build_external_ceiling_manifest,
+    render_markdown as render_external_ceiling_markdown,
+    run_fixture_matrix as run_external_ceiling_fixture_matrix,
+    validate_external_ceiling_manifest,
+)
 from slm_training.harnesses.experiments.pretrained_denoiser_activation import (
     DEFAULT_ACTIVATION_GATES,
     DEFAULT_ARMS,
@@ -165,6 +176,11 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "EXTERNAL_CEILING_MATRIX_SET",
+    "EXTERNAL_CEILING_MATRIX_VERSION",
+    "ExternalCeilingArm",
+    "ExternalCeilingManifest",
+    "ExternalCeilingReport",
     "ACTIVATION_VERDICTS",
     "CAMPAIGN_VERDICTS",
     "CONSTRAINT_BACKEND_BENCHMARK_SCHEMA",
@@ -204,10 +220,14 @@ __all__ = [
     "TeacherTraceContract",
     "build_cap5_campaign_manifest",
     "build_constraint_backend_benchmark_manifest",
+    "build_external_ceiling_manifest",
     "build_pretrained_denoiser_activation_manifest",
     "build_proxy_metric_calibration_manifest",
     "build_scaffold_distillation_activation_manifest",
     "build_teacher_paraphrase_activation_manifest",
+    "render_external_ceiling_markdown",
+    "run_external_ceiling_fixture_matrix",
+    "validate_external_ceiling_manifest",
     "validate_cap5_campaign_manifest",
     "validate_constraint_backend_benchmark_manifest",
     "validate_pretrained_denoiser_activation_manifest",
