@@ -1406,6 +1406,22 @@
           "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
+    },
+    "harness.distill": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/distill/legal_set_kl.py",
+        "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
+        "tests/test_harnesses/distill/test_legal_set_kl.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-151 SPV2-03 dense legal-set distillation fixture wiring baseline"
+        }
+      ]
     }
   }
 }

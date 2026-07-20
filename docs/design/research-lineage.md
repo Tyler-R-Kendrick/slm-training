@@ -993,6 +993,32 @@ quality until matched adapter-only vs full-update trains complete with
 binding-aware meaningful v2 metrics and merge-parity tests on the target device.
 Fixture/planning evidence is not treated as a result.
 
+## Dense legal-set knowledge distillation (SPV2-03 / SLM-151)
+
+**Fidelity label: adapted / surrogate.** SLM-151 wires a dense KL-distillation
+objective that normalizes both student and teacher to the compiler-owned legal
+action set. It borrows the sequence-level knowledge-distillation framing (Hinton
+et al., 2015; Kim & Rush, 2016) but deliberately narrows it to a **legal-set**
+surrogate: the teacher is a probability vector over exactly the actions the
+compiler admits, not a full-vocabulary next-token distribution, and the loss is
+a wiring fixture over synthetic logits rather than a trained sequence model.
+
+| | |
+| --- | --- |
+| **Paper** | Hinton, Vinyals, Dean, *Distilling the Knowledge in a Neural Network*, NIPS 2014 Workshop ([arXiv:1503.02531](https://arxiv.org/abs/1503.02531)); Kim & Rush, *Sequence-Level Knowledge Distillation*, EMNLP 2016 ([arXiv:1606.07947](https://arxiv.org/abs/1606.07947)) |
+| **Fidelity** | **Surrogate** — legal-set KL over compiler-legal actions only; fixture-only, no full sequence distillation |
+| **Code** | `src/slm_training/harnesses/distill/legal_set_kl.py`, `src/slm_training/harnesses/distill/legal_set_teacher_trace.py` |
+| **Config** | `temperature`, `teacher_is_prob`, `kl_weight` |
+
+**What we took:** a deterministic teacher-trace manifest, a legal-set-masked KL
+objective, and a tiny fixture trainer that can later consume external scorer
+outputs (SLM-108).
+
+**What we did not take:** a claim that this surrogate matches sequence-level KD,
+that it improves OpenUI quality, or that it is ready for production. Real teacher
+scoring requires the SLM-108 external scorer and is not run here. Evidence:
+[`iter-spv2-03-legal-set-distillation-20260720.md`](iter-spv2-03-legal-set-distillation-20260720.md).
+
 ## Evidence-First Semantic SLM causal synthesis (EFS4-04 / SLM-140)
 
 **Fidelity label: adapted.** SLM-140 publishes a preregistered campaign manifest,
