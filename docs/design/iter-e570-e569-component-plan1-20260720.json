@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E570",
+  "run_id": "e570-e569-component-plan1-eval-r1",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_decode_pareto_not_ship",
+  "hypothesis": "Enabling E569's trained component-plan head at decode weight 1.0 will reduce required-component failures and preserve its semantic-coverage gains.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "eval_run_id": "e570-e569-component-plan1-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "component_plan_decode_weight": 1.0,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.49166666666666664,
+      "placeholder_validity": 0.6950000000000001,
+      "structural_similarity": 0.335,
+      "component_type_recall": 0.20833333333333331,
+      "reward_score": 0.7695,
+      "ast_node_f1": 0.382051282051282,
+      "ast_edge_f1": 0.045454545454545456,
+      "latency_ms_p50": 8058.9,
+      "latency_ms_p95": 11355.79
+    }
+  },
+  "decode_telemetry": {
+    "component_plan_applications": 131,
+    "component_plan_choice_changes": 3
+  },
+  "comparison": {
+    "baseline": "E569",
+    "placeholder_fidelity_delta": 0.23333333333333334,
+    "structural_similarity_delta": 0.13187500000000002,
+    "component_type_recall_delta": -0.125,
+    "reward_score_delta": 0.07750000000000001,
+    "ast_node_f1_delta": 0.04316239316239312,
+    "ast_edge_f1_delta": 0.045454545454545456,
+    "meaningful_program_v1_delta": -0.25,
+    "interpretation": "Weight 1 strongly improves fidelity, hierarchy, reward, and AST F1 but loses E569's legacy meaningful pass and some component recall."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaning-v1/v2 remain zero and AgentV fails."
+  },
+  "decision": "Retain weight 1 as a topology/reward decode Pareto without promotion; test weight 0.5 for a coverage-quality compromise.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7c71031f165500353190594efbbb16ef23e4a43c",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v11"
+    },
+    "stamped_at": "2026-07-20T02:53:47.811894+00:00"
+  }
+}
