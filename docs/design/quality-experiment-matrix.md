@@ -3649,3 +3649,16 @@ recall 0.6250, reward 0.8115, strict v2 0, and AgentV 0/1. Treat weight 8 as a
 scratch threshold only; do not promote or sync.
 Evidence: [narrative](iter-e598-owner-slot-threshold-20260720.md) and
 [JSON](iter-e598-owner-slot-threshold-20260720.json).
+
+## E599 visible-slot coverage close score
+
+E599 closes typed component arrays after all visible slots are covered.
+Weights 2 and 4 are prediction-identical on matched OOD `n=4`: both remove
+the duplicate Modal body child and leaked size argument while preserving the
+E598 confirm/body repair. Structure improves 0.4694→0.5169, AST-node F1
+0.5532→0.5754, and AST-edge F1 0.3875→0.4143; fidelity, validity, recall, and
+reward remain flat. Keep the lever default-off and use weight 2 only as the
+next scratch setting. Strict v2 remains 0, AgentV is 0/1, and no checkpoint
+was created or synced.
+Evidence: [narrative](iter-e599-slot-coverage-close-20260720.md) and
+[JSON](iter-e599-slot-coverage-close-20260720.json).
