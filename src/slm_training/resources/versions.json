@@ -844,7 +844,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -857,6 +857,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-07-20",
+          "note": "gate first-component prompt-plan scoring on compiler root candidate kinds rather than parser frame emptiness"
+        },
         {
           "version": "v38",
           "date": "2026-07-20",

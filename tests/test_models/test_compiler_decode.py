@@ -676,11 +676,14 @@ def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() ->
     kinds = ("component_root", "component_root")
     model._semantic_plan_action_scores = [{card_id: 1.0}]
 
-    initial = SimpleNamespace(section_types=[], frames=[])
+    initial = SimpleNamespace(section_types=[], frames=[object()])
     after_first = SimpleNamespace(section_types=["element:TextContent"], frames=[])
 
     initial_bias = model._semantic_plan_bias(
         0, candidates, kinds, initial
+    )
+    nested_bias = model._semantic_plan_bias(
+        0, candidates, ("component_bound", "component_bound"), initial
     )
     later_bias = model._semantic_plan_bias(
         0, candidates, kinds, after_first
@@ -688,6 +691,7 @@ def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() ->
 
     assert initial_bias is not None
     assert initial_bias.tolist() == [5.0, 0.0]
+    assert nested_bias is None
     assert later_bias is None
 
 

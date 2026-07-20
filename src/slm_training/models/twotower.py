@@ -4055,7 +4055,10 @@ class TwoTowerModel(nn.Module):
         if (
             state is not None
             and not tuple(getattr(state, "section_types", ()))
-            and not tuple(getattr(state, "frames", ()))
+            and any(
+                kind in {"component_root", "component_root_or_bound"}
+                for kind in candidate_kinds
+            )
         ):
             weight += seed_weight
         if (
