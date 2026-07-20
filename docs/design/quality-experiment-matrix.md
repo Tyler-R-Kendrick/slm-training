@@ -3015,6 +3015,20 @@ test weight 0.5. No checkpoint was created. Evidence:
 [narrative](iter-e570-e569-component-plan1-20260720.md) and
 [JSON](iter-e570-e569-component-plan1-20260720.json).
 
+## E571 E569 component-plan decode weight 0.5
+
+At weight 0.5 the trained head changes one of 107 choices and exactly
+reproduces E569's OOD `n=4` aggregates: fidelity 0.2583, structure 0.2031,
+recall 0.3333, reward 0.6920, AST-node F1 0.3389, edge F1 0, and
+meaningful-v1 0.25. Strict meaning-v2 remains 0 and AgentV remains 0/1.
+An earlier completed run with E569's non-LTR policy produced the same
+aggregates and is retained as a disclosed control. **Decision:** retain 0.5
+only as the E569-equivalent coverage setting; the 0.5-to-1.0 response is a
+sharp threshold, so close the scalar ladder and return to training or a
+targeted strict-semantic mechanism. No checkpoint was created. Evidence:
+[narrative](iter-e571-e569-component-plan05-20260720.md) and
+[JSON](iter-e571-e569-component-plan05-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

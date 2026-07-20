@@ -1066,6 +1066,23 @@ def test_e570_eval_is_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7695
 
 
+def test_e571_eval_and_control_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    detail = readers.run("e571-e569-component-plan05-eval-r2")
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
+    assert detail["scoreboard"]["suites"]["ood"]["component_type_recall"] == (
+        0.3333333333333333
+    )
+
+    control = readers.run("e571-e569-component-plan05-eval-r1")
+    assert control["provenance"] == "committed"
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
