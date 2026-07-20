@@ -237,6 +237,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Soft-score legal root/bound components from prompt-derived SemanticPlanV1.",
     )
     parser.add_argument(
+        "--semantic-plan-inline-decode-weight",
+        type=float,
+        default=None,
+        help="Soft-score still-missing prompt families in inline component positions.",
+    )
+    parser.add_argument(
         "--semantic-plan-binding-decode-weight",
         type=float,
         default=None,
@@ -563,6 +569,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
         schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
+        semantic_plan_inline_decode_weight=args.semantic_plan_inline_decode_weight,
         semantic_plan_binding_decode_weight=(
             args.semantic_plan_binding_decode_weight
         ),

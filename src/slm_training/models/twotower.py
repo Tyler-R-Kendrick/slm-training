@@ -242,6 +242,7 @@ class TwoTowerConfig:
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
+    semantic_plan_inline_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
     semantic_plan_root_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
@@ -4157,6 +4158,47 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _semantic_plan_inline_bias(
+        self,
+        row: int,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+    ) -> torch.Tensor | None:
+        """Soft-score still-missing prompt families in inline component positions."""
+        weight = float(
+            getattr(self.config, "semantic_plan_inline_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or not self._semantic_plan_action_scores
+            or not self._semantic_plan_action_counts
+            or row >= len(self._semantic_plan_action_scores)
+            or row >= len(self._semantic_plan_action_counts)
+        ):
+            return None
+        scores = self._semantic_plan_action_scores[row]
+        remaining = dict(self._semantic_plan_action_counts[row])
+        for token_id in prefix:
+            if token_id in remaining:
+                remaining[token_id] = max(0, remaining[token_id] - 1)
+        bias = torch.zeros(
+            len(candidate_ids), device=next(self.parameters()).device
+        )
+        applied = False
+        for position, (token_id, kind) in enumerate(
+            zip(candidate_ids, candidate_kinds, strict=True)
+        ):
+            score = scores.get(token_id, 0.0)
+            if (
+                kind == "component"
+                and score > 0.0
+                and remaining.get(token_id, 0) > 0
+            ):
+                bias[position] = weight * score
+                applied = True
+        return bias if applied else None
+
     def _schema_opaque_bias(
         self,
         state: Any,
@@ -6071,6 +6113,14 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
+                    semantic_plan_inline_bias = self._semantic_plan_inline_bias(
+                        row,
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        candidate_kinds,
+                    )
+                    if semantic_plan_inline_bias is not None:
+                        scores = scores + semantic_plan_inline_bias
                     semantic_plan_root_bias = self._semantic_plan_root_bias(
                         row,
                         states[row],

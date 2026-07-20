@@ -565,6 +565,37 @@ def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> No
     assert complete_bias is None
 
 
+def test_prompt_semantic_plan_inline_bias_targets_only_missing_families() -> None:
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_inline_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    modal_id = tokenizer.token_to_id["+Modal"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    button_id = tokenizer.token_to_id["+Button"]
+    model._semantic_plan_action_scores = [{
+        modal_id: 1.0,
+        text_id: 1.0,
+        button_id: 1.0,
+    }]
+    model._semantic_plan_action_counts = [{
+        modal_id: 1,
+        text_id: 1,
+        button_id: 1,
+    }]
+
+    bias = model._semantic_plan_inline_bias(
+        0,
+        [tokenizer.bos_id, modal_id, text_id],
+        (text_id, button_id),
+        ("component", "component"),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 3.0]
+
+
 def test_prompt_semantic_plan_bias_reserves_distinct_repeated_slots() -> None:
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 
