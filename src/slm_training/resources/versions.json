@@ -1309,7 +1309,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v57",
+      "version": "v58",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1324,6 +1324,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v58",
+          "date": "2026-07-20",
+          "note": "E615: expose the active typed-object declared property to schema_role_slot_decode_weight so src/alt/details each prefer their own matching visible-slot role instead of converging on one slot"
+        },
         {
           "version": "v57",
           "date": "2026-07-20",

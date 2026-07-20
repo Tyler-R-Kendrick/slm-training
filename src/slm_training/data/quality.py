@@ -110,6 +110,49 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     return frozenset(found)
 
 
+# Slot-role -> schema-property-name aliases shared by every visible-role match:
+# top-level component/slot compatibility (semantic_role_candidates) and, since
+# E615, declared typed-object property/slot compatibility
+# (object_property_matches_slot_role) for object literals filled during
+# grammar-guided decode (e.g. ImageGallery.images[].src/alt/details).
+_SEMANTIC_ROLE_PROPERTY_ALIASES: dict[str, frozenset[str]] = {
+    "body": frozenset({"text"}),
+    "copy": frozenset({"text"}),
+    "description": frozenset({"text"}),
+    "confirm": frozenset({"label", "action"}),
+    "create": frozenset({"label", "action"}),
+    "save": frozenset({"label", "action"}),
+    "submit": frozenset({"label", "action"}),
+    "continue": frozenset({"label", "action"}),
+    "cta": frozenset({"label", "action"}),
+    "img": frozenset({"src"}),
+    "image": frozenset({"src"}),
+    "caption": frozenset({"details"}),
+}
+
+
+def slot_role(placeholder: str) -> str:
+    """Return the trailing dotted segment naming a visible slot's semantic role."""
+    return placeholder.removeprefix(":").split(".")[-1]
+
+
+def slot_compatible_property_names(placeholder: str) -> frozenset[str]:
+    """Return schema property names an honest visible slot's role is compatible with."""
+    role = slot_role(placeholder)
+    return frozenset({role}) | _SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, frozenset())
+
+
+def object_property_matches_slot_role(property_name: str, placeholder: str) -> bool:
+    """Return True if a declared typed-object property name matches a visible slot's role.
+
+    Used at decode time (schema_role_slot_decode_weight) to bias which visible
+    slot fills an active typed-object property (e.g. an ``alt`` property
+    prefers a slot whose role is ``alt``; a ``src`` property prefers an
+    ``img``/``image`` role slot) instead of any legal string-typed slot.
+    """
+    return str(property_name) in slot_compatible_property_names(placeholder)
+
+
 def semantic_role_candidates(
     placeholders: list[str], component_names: list[str]
 ) -> dict[str, tuple[str, ...]]:
@@ -117,21 +160,9 @@ def semantic_role_candidates(
     from slm_training.dsl.lang_core import library_schema
 
     definitions = library_schema().get("$defs", {})
-    property_aliases = {
-        "body": {"text"},
-        "copy": {"text"},
-        "description": {"text"},
-        "confirm": {"label", "action"},
-        "create": {"label", "action"},
-        "save": {"label", "action"},
-        "submit": {"label", "action"},
-        "continue": {"label", "action"},
-        "cta": {"label", "action"},
-    }
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
-        role = placeholder.removeprefix(":").split(".")[-1]
-        compatible_properties = {role, *property_aliases.get(role, ())}
+        compatible_properties = slot_compatible_property_names(placeholder)
         result[placeholder] = tuple(
             name
             for name in sorted(set(component_names))

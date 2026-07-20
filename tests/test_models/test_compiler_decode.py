@@ -752,6 +752,52 @@ def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
     assert bias.tolist() == [4.0, 4.0, 0.0]
 
 
+def test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role() -> None:
+    """E615: sibling properties of an active typed-object literal (e.g. an
+    ``ImageGallery`` item's ``src``/``alt``/``details``) must each prefer their
+    own matching visible slot instead of converging on the same one."""
+    from slm_training.dsl.production_codec import (
+        LIST_OPEN,
+        NAME_PREFIX,
+        OBJ_OPEN,
+        OPEN_PREFIX,
+    )
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    slot_contract = [":ood.gallery.img", ":ood.gallery.alt", ":ood.gallery.caption"]
+    img_id, alt_id, caption_id = (
+        tokenizer.sym_id(0),
+        tokenizer.sym_id(1),
+        tokenizer.sym_id(2),
+    )
+
+    def _bias_for_property(name: str) -> list[float]:
+        state = ChoiceDecodeState(tokenizer, slot_count=3)
+        assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}ImageGallery"])
+        assert state.advance_id(tokenizer.token_to_id[LIST_OPEN])
+        assert state.advance_id(tokenizer.token_to_id[OBJ_OPEN])
+        assert state.advance_id(tokenizer.token_to_id[f"{NAME_PREFIX}{name}"])
+        assert state.frames[-1].kind == "object"
+        assert state.frames[-1].active_property == name
+        bias = model._schema_role_slot_bias(
+            state,
+            (img_id, alt_id, caption_id),
+            torch.zeros(3),
+            slot_contract,
+            None,
+        )
+        assert bias is not None
+        return bias.tolist()
+
+    # src has no literal ":...src" slot; it must still resolve via the
+    # img/image role alias, and each property owns a distinct slot.
+    assert _bias_for_property("src") == [4.0, 0.0, 0.0]
+    assert _bias_for_property("alt") == [0.0, 4.0, 0.0]
+    assert _bias_for_property("details") == [0.0, 0.0, 4.0]
+
+
 def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> None:
     from slm_training.data.quality import semantic_role_candidates
 
@@ -765,6 +811,16 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
         ":modal.confirm": ("Button",),
         ":modal.title": ("Modal",),
     }
+
+
+def test_object_property_matches_slot_role_resolves_image_and_caption_aliases() -> None:
+    from slm_training.data.quality import object_property_matches_slot_role
+
+    assert object_property_matches_slot_role("src", ":ood.gallery.img")
+    assert object_property_matches_slot_role("alt", ":ood.gallery.alt")
+    assert object_property_matches_slot_role("details", ":ood.gallery.caption")
+    assert not object_property_matches_slot_role("src", ":ood.gallery.alt")
+    assert not object_property_matches_slot_role("details", ":ood.gallery.alt")
 
 
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:

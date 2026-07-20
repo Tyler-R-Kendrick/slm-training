@@ -4864,30 +4864,60 @@ class TwoTowerModel(nn.Module):
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None,
     ) -> torch.Tensor | None:
-        """Prefer visible slots compatible with the active content property owner."""
+        """Prefer visible slots compatible with the active content property owner.
+
+        Two owners are scored, both gated by the same
+        ``schema_role_slot_decode_weight`` knob:
+
+        * a top-level component argument (``frame.kind == "component"``),
+          matched against ``semantic_role_candidates`` (prompt/schema derived
+          component-name compatibility); unchanged since E591.
+        * (E615) a declared property inside an active typed-object literal
+          (``frame.kind == "object"``, ``frame.phase == "value"``), matched by
+          the property's own key/schema role (``frame.active_property``, e.g.
+          ``alt``/``src``/``details``) against each candidate slot's role, so
+          sibling properties of the same object (e.g. an ``ImageGallery`` item)
+          can each prefer their own matching public slot instead of all
+          converging on the highest-scoring one.
+        """
         weight = float(
             getattr(self.config, "schema_role_slot_decode_weight", 0.0) or 0.0
         )
         frames = list(getattr(state, "frames", ()))
-        if (
-            weight <= 0.0
-            or not frames
-            or not slot_contract
-            or not semantic_role_candidates
-        ):
+        if weight <= 0.0 or not frames or not slot_contract:
             return None
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
         index = int(getattr(frame, "arg_index", -1))
-        component = str(getattr(frame, "expr_type", "")).removeprefix("element:")
-        if (
-            getattr(frame, "kind", None) != "component"
-            or index < 0
-            or index >= len(schemas)
-            or not schemas[index].get("x-openui-placeholder")
-            or not component
-        ):
+        kind = getattr(frame, "kind", None)
+
+        component = ""
+        active_property = ""
+        if kind == "component":
+            if not semantic_role_candidates:
+                return None
+            component = str(getattr(frame, "expr_type", "")).removeprefix("element:")
+            if (
+                index < 0
+                or index >= len(schemas)
+                or not schemas[index].get("x-openui-placeholder")
+                or not component
+            ):
+                return None
+        elif kind == "object":
+            if getattr(frame, "phase", None) != "value":
+                return None
+            active_property = str(getattr(frame, "active_property", "") or "")
+            if (
+                not active_property
+                or index < 0
+                or index >= len(schemas)
+                or schemas[index].get("type") != "string"
+            ):
+                return None
+        else:
             return None
+
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
         bias = scores.new_zeros(len(candidate_ids))
@@ -4901,7 +4931,13 @@ class TwoTowerModel(nn.Module):
                 slot = slot_contract[slot_index]
             except (ValueError, IndexError):
                 continue
-            if component in semantic_role_candidates.get(slot, ()):
+            if kind == "component":
+                matches = component in semantic_role_candidates.get(slot, ())
+            else:
+                from slm_training.data.quality import object_property_matches_slot_role
+
+                matches = object_property_matches_slot_role(active_property, slot)
+            if matches:
                 bias[position] = weight
                 applied = True
         return bias if applied else None
