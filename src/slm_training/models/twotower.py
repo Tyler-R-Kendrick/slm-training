@@ -4942,8 +4942,9 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
         slot_contract: list[str] | None,
+        semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
-        """Prefer closing a typed component array after visible-slot coverage."""
+        """Prefer coverage-compatible continuations before legal frame closure."""
         weight = float(
             getattr(self.config, "slot_coverage_close_decode_weight", 0.0) or 0.0
         )
@@ -4951,24 +4952,126 @@ class TwoTowerModel(nn.Module):
         if weight <= 0.0 or not frames or not slot_contract:
             return None
         frame = frames[-1]
-        if (
-            getattr(frame, "kind", None) != "variadic"
-            or getattr(frame, "expr_type", None) != "array"
-            or not tuple(getattr(frame, "schemas", ()))
-        ):
+        kind = getattr(frame, "kind", None)
+        if kind not in {"component", "variadic", "object"}:
+            return None
+        if kind == "object" and getattr(frame, "phase", None) != "key":
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+        if close_id not in candidate_ids:
             return None
         try:
-            covered = all(
-                int(self.tokenizer.sym_id(index)) in prefix
-                for index in range(len(slot_contract))
+            missing = tuple(
+                (index, slot)
+                for index, slot in enumerate(slot_contract)
+                if int(self.tokenizer.sym_id(index)) not in prefix
             )
         except (AttributeError, KeyError, ValueError):
             return None
-        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
-        if not covered or close_id not in candidate_ids:
-            return None
         bias = scores.new_zeros(len(candidate_ids))
-        bias[candidate_ids.index(close_id)] = weight
+        if not missing:
+            if (
+                kind != "variadic"
+                or getattr(frame, "expr_type", None) != "array"
+                or not tuple(getattr(frame, "schemas", ()))
+            ):
+                return None
+            bias[candidate_ids.index(close_id)] = weight
+            return bias
+
+        from slm_training.data.quality import semantic_role_properties
+        from slm_training.dsl.production_codec import (
+            LIST_OPEN,
+            NAME_PREFIX,
+            OBJ_OPEN,
+            OPEN_PREFIX,
+        )
+
+        missing_slots_by_id = {
+            int(self.tokenizer.sym_id(index)): slot for index, slot in missing
+        }
+        properties_by_slot = semantic_role_properties(
+            [slot for _index, slot in missing]
+        )
+        owner_component = next(
+            (
+                str(getattr(owner, "expr_type", "")).removeprefix("element:")
+                for owner in reversed(frames)
+                if getattr(owner, "kind", None) == "component"
+            ),
+            "",
+        )
+
+        def owner_matches(slot: str) -> bool:
+            return bool(
+                owner_component
+                and semantic_role_candidates
+                and owner_component in semantic_role_candidates.get(slot, ())
+            )
+
+        active_schema: dict[str, Any] | None = None
+        if kind == "component":
+            schemas = tuple(getattr(frame, "schemas", ()))
+            index = int(getattr(frame, "arg_index", -1))
+            if 0 <= index < len(schemas):
+                active_schema = dict(schemas[index])
+        elif kind == "variadic":
+            schemas = tuple(getattr(frame, "schemas", ()))
+            if schemas:
+                active_schema = dict(schemas[0])
+
+        targets: list[int] = []
+        for position, token_id in enumerate(candidate_ids):
+            if token_id == close_id:
+                continue
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if token_id in missing_slots_by_id:
+                slot = missing_slots_by_id[token_id]
+                if not semantic_role_candidates or owner_matches(slot):
+                    targets.append(position)
+                continue
+            if token.startswith(OPEN_PREFIX):
+                component = token[len(OPEN_PREFIX) :]
+                if semantic_role_candidates and any(
+                    component in semantic_role_candidates.get(slot, ())
+                    for _index, slot in missing
+                ):
+                    targets.append(position)
+                continue
+            if kind == "object" and token.startswith(NAME_PREFIX):
+                property_name = token[len(NAME_PREFIX) :]
+                property_names = tuple(getattr(frame, "property_names", ()))
+                schemas = tuple(getattr(frame, "schemas", ()))
+                if property_name not in property_names:
+                    continue
+                property_index = property_names.index(property_name)
+                if (
+                    property_index < len(schemas)
+                    and self._schema_can_reach_visible_slot(
+                        dict(schemas[property_index])
+                    )
+                    and any(
+                        property_name in properties_by_slot.get(slot, ())
+                        and owner_matches(slot)
+                        for _index, slot in missing
+                    )
+                ):
+                    targets.append(position)
+                continue
+            if (
+                token in {LIST_OPEN, OBJ_OPEN}
+                and active_schema is not None
+                and self._schema_can_reach_visible_slot(active_schema)
+                and any(owner_matches(slot) for _index, slot in missing)
+            ):
+                targets.append(position)
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + weight - float(scores[target].item()),
+        )
         return bias
 
     def _semantic_plan_repeated_owner_id(
@@ -7002,6 +7105,12 @@ class TwoTowerModel(nn.Module):
                         (
                             self._slot_contracts[row]
                             if self._slot_contracts and row < len(self._slot_contracts)
+                            else None
+                        ),
+                        (
+                            self._semantic_role_candidates[row]
+                            if self._semantic_role_candidates
+                            and row < len(self._semantic_role_candidates)
                             else None
                         ),
                     )

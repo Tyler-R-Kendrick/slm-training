@@ -4190,3 +4190,39 @@ Evidence:
 [iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
 and
 [JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+
+## E621 role-compatible coverage before frame closure
+
+E621 reuses E620's rejected local checkpoint and exact OOD `n=4` treatment
+recipe. Model v60 generalized `slot_coverage_close_decode_weight` beyond typed
+arrays, but its first real run exposed a wrong-owner bug: any schema-legal
+direct slot could outrank closure, so Button/TextContent absorbed incompatible
+email/name/confirm roles. That clean r1 is retained as rejected evidence.
+Model v61 requires public-schema owner compatibility for direct slots.
+
+| OOD `n=4` | E620 baseline | E621 r1 | E621 r2 |
+| --- | ---: | ---: | ---: |
+| syntax parse | 1.0000 | 1.0000 | 1.0000 |
+| meaningful v1 | 0.5000 | 0.5000 | 0.7500 |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
+| v2 coverage | 1.0000 | 1.0000 | 1.0000 |
+| placeholder fidelity | 0.5500 | 0.6250 | 0.5917 |
+| placeholder validity | 0.7300 | 0.6750 | 0.7550 |
+| structural similarity | 0.4886 | 0.4223 | 0.4029 |
+| component recall | 0.4792 | 0.4375 | 0.5000 |
+| reward | 0.8140 | 0.6668 | 0.8175 |
+| AST node / edge F1 | 0.5437 / 0.3750 | 0.4770 / 0.1667 | 0.4690 / 0.2625 |
+| latency p50 / p95 | 3116.67 / 13704.44 ms | 2609.49 / 13445.24 ms | 3346.44 / 6198.48 ms |
+| AgentV | 0/1 | 0/1 | 0/1 |
+
+Corrected r2 adds Gallery caption and Modal confirmation coverage and improves
+meaningful v1, fidelity, validity, component recall, reward, and p95 latency.
+Strict v2 remains zero and structure/AST regress, so this is a retained
+default-off scratch policy, not a promotion or ship result. No checkpoint was
+created or synced. Next diagnose root-level inventory termination and Auth
+owner selection instead of increasing the closure weight.
+
+Evidence:
+[iter-e621-coverage-aware-closure-20260720.md](iter-e621-coverage-aware-closure-20260720.md),
+[r2 JSON](iter-e621-coverage-aware-closure-20260720.json), and
+[rejected r1 JSON](iter-e621-coverage-aware-closure-r1-20260720.json).

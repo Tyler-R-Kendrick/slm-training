@@ -209,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
         "--slot-coverage-close-decode-weight",
         type=float,
         default=None,
-        help="Prefer closing typed component arrays after every visible slot is covered.",
+        help="Prefer role-compatible visible-slot coverage before legal frame closure.",
     )
     parser.add_argument(
         "--schema-value-decode-weight",

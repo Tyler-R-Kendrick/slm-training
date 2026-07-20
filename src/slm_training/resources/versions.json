@@ -24,6 +24,11 @@
         {
           "version": "v32",
           "date": "2026-07-20",
+          "note": "no-bump: describe the expanded model-side slot coverage closure policy in CLI help without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
           "note": "expose and persist the default-off schema-derived typed-array item margin"
         },
         {
@@ -1377,7 +1382,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v59",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1392,6 +1397,16 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-20",
+          "note": "E621: require public-schema owner compatibility before a direct visible-slot continuation can outrank frame closure"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-20",
+          "note": "E621: extend slot_coverage_close_decode_weight to floor a compiler-legal role-compatible component or object-property continuation above premature frame closure while abstaining when compatibility cannot be proven"
+        },
         {
           "version": "v59",
           "date": "2026-07-20",
