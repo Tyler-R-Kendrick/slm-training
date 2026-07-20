@@ -859,6 +859,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration of SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness"
         }
       ]
