@@ -3080,6 +3080,41 @@ next. Evidence:
 [narrative](iter-e575-prompt-semantic-plan-soft-20260720.md) and
 [JSON](iter-e575-prompt-semantic-plan-soft-20260720.json).
 
+## SLM-147 / SPV1-04 — X22 leakage-safe prototype retrieval
+
+First wiring campaign for retrieve-and-edit initialization of the Kapur tree-edit
+diffusion baseline (X22). A train-only local index of hard-valid canonical AST
+prototypes is built from the SLM-144 fixture plan corpus; retrieval strategies
+are compared by seed validity and seed-to-gold token distance under matched
+CPU-only (no model) conditions.
+
+Fixture results (`n_train=51`, `n_val=13`, seed 0):
+
+| Arm | Mean seed-to-gold ratio | Mean component coverage | Adapted prototypes |
+| --- | --- | --- | --- |
+| A minimal seed | 0.621 | 0.453 | 0/13 |
+| B random prototype | 0.717 | 0.594 | 8/13 |
+| C prompt similarity | 0.656 | 0.618 | 8/13 |
+| D AST sketch | 0.744 | 0.565 | 7/13 |
+| E SemanticPlan factor | 0.851 | 0.387 | 13/13 |
+| F hybrid | 0.851 | 0.387 | 13/13 |
+| G oracle nearest (diagnostic) | 0.860 | 0.367 | 13/13 |
+| H retrieval-as-context control | 0.621 | 0.453 | 0/13 |
+
+All arms passed leakage checks (no shared split group, prompt, or structure
+between query and retrieved prototype). No GPU X22 checkpoint was run; these
+numbers are wiring-only distance diagnostics, not ship-gate claims.
+
+**Decision:** the harness and local index are wired. The semantic-plan and
+hybrid arms reach the highest seed-to-gold ratio on this small fixture, but the
+corpus is too homogeneous to discriminate retrieval strategies. A frontier run
+with a trained X22 checkpoint, a larger labeled semantic corpus, and AgentV
+evaluation is required before any quality claim.
+
+Evidence:
+[narrative](iter-slm147-x22-retrieval-20260720.md) and
+[JSON](iter-slm147-x22-retrieval-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

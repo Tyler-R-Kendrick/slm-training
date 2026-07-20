@@ -786,6 +786,25 @@ No plan predictor, X22 change, energy model, or training run is added by SPV0-01
 | Discrete Flow Matching | Adjacent | Plan-conditioned valid-edit trajectories |
 | FS-DFM | Adjacent | Few-step latency-sensitive plan editing |
 
+## SPV1-04 retrieve-and-edit prototype initialization (SLM-147)
+
+**Fidelity label: wiring / fixture only.** SLM-147 wires the retrieve-and-edit
+mechanism from Hashimoto et al., *Retrieve-and-Edit: A Practical Approach to
+Large-Scale Domain-Specific Natural Language Generation* (EMNLP 2018,
+[arXiv:1812.01194](https://arxiv.org/abs/1812.01194)), specialized to the Kapur
+tree-edit diffusion baseline (X22). A train-only local index of hard-valid
+canonical AST prototypes is built from the fixture plan corpus; retrieval
+strategies include prompt similarity, AST-sketch similarity, SemanticPlanV1
+factor similarity, a hybrid, and an oracle-nearest diagnostic control. Retrieved
+prototypes are canonicalized, leakage-audited, and hygienically remapped onto
+the query placeholder inventory before being used as the initial X22 state.
+
+This is a wiring campaign only: no X22 checkpoint is trained or decoded, no
+AgentV evaluation is run, and no ship-gate claim is made. It isolates whether
+retrieved prototypes shorten the valid-state search path relative to the generic
+minimal X22 seed, leaving the full quality/cost frontier to a later frontier run.
+Evidence: [`iter-slm147-x22-retrieval-20260720.md`](iter-slm147-x22-retrieval-20260720.md).
+
 ## SPV1 plan-predictor factor gates (SLM-145) — closed
 
 SLM-145 asked for learned topology, cardinality, and live-symbol pointer heads
