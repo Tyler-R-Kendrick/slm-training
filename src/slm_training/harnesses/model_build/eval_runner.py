@@ -410,6 +410,9 @@ def _effective_evaluation_policy(
         "semantic_plan_root_decode_weight": float(
             value("semantic_plan_root_decode_weight") or 0.0
         ),
+        "semantic_plan_root_margin_decode_weight": float(
+            value("semantic_plan_root_margin_decode_weight") or 0.0
+        ),
         "visible_reference_decode_weight": float(
             value("visible_reference_decode_weight") or 0.0
         ),

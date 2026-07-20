@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E608",
+  "run_id": "e608-e607-rootmargin2-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed_rejected_not_promotable",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Flooring every verifier-approved root and completion token above the best legal score will recover root reachability without quality regression.",
+  "preregistration": {
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "acceptance": "Root reachability or strict meaning-v2 must improve without fidelity, validity, reward, or duplicate-cardinality regression."
+  },
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "matched_to": "e607-e606-roottrace-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.6,
+      "placeholder_validity": 0.66,
+      "structural_similarity": 0.6698,
+      "component_type_recall": 0.625,
+      "reward_score": 0.67875,
+      "ast_node_f1": 0.6800144300144301,
+      "ast_edge_f1": 0.5753968253968254,
+      "latency_ms_p50": 4344.8,
+      "latency_ms_p95": 14429.92
+    }
+  },
+  "trace_findings": {
+    "semantic_plan_root_applications": 28,
+    "semantic_plan_root_choice_changes": 19,
+    "dashboard_verified_stack_selected": true,
+    "gallery_verified_stack_and_eos_selected": true,
+    "auth_first_verified_eos_selected": true,
+    "dashboard_canonical_prediction": "root = Stack([v0, v1])",
+    "gallery_canonical_prediction": "root = Stack([v0], \"column\")\\nv0 = ImageGallery([])",
+    "changed_after_plan": false
+  },
+  "comparison_to_e607": {
+    "meaningful_program_rate_delta": 0.25,
+    "structural_similarity_delta": 0.094175,
+    "placeholder_fidelity_delta": 0.008333333333333304,
+    "placeholder_validity_delta": -0.09499999999999997,
+    "reward_score_delta": -0.13575000000000004,
+    "strict_v2_delta": 0.0
+  },
+  "decision": "Reject root margin 2. Verified root reachability improves, but forced low-quality closures regress placeholder validity and reward while strict meaning-v2 remains zero.",
+  "next": "Target visible schema-value role selection and root reference completeness without forcing a closure that cannot preserve required components and placeholders.",
+  "ship_gates": {
+    "pass": false,
+    "reason": "Diagnostic OOD subset only; strict meaning-v2 is 0, validity and reward regress, required components/placeholders remain missing, and AgentV is 0/1."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c3a850f8614a14a59217d75210652a4325378038",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v27",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v48"
+    },
+    "stamped_at": "2026-07-20T13:22:25.010408+00:00"
+  }
+}
