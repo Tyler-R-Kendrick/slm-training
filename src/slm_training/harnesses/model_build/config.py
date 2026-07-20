@@ -312,6 +312,13 @@ class ModelBuildConfig:
     connector_freeze_encoder: bool = True
     # current | connector_only | connector_plus_action_residuals | small_model
     train_scope: str = "current"
+    # SLM-168 (SDE2-01): explicit contract-index pointer head (default-off).
+    pointer_mode: str = "legacy_tokens"  # legacy_tokens | dynamic_head
+    pointer_candidate_source: str = "structured_contract"  # structured_contract | authored_only | inventory_in_prompt
+    pointer_hidden_dim: int = 256
+    pointer_heads: int = 4
+    pointer_temperature: float = 1.0
+    pointer_dropout: float = 0.0
     runtime_symbol_features: str = "none"  # none | surface | role_gated | replace (C2)
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False

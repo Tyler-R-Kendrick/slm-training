@@ -440,6 +440,14 @@ class TwoTowerConfig:
     # SLM-166: trainable scope when a connector is present.
     # current | connector_only | connector_plus_action_residuals | small_model
     train_scope: str = "current"
+    # SLM-168 (SDE2-01): explicit contract-index pointer head (default-off).
+    # legacy_tokens preserves existing behavior; dynamic_head enables the scorer.
+    pointer_mode: str = "legacy_tokens"  # legacy_tokens | dynamic_head
+    pointer_candidate_source: str = "structured_contract"  # structured_contract | authored_only | inventory_in_prompt
+    pointer_hidden_dim: int = 256
+    pointer_heads: int = 4
+    pointer_temperature: float = 1.0
+    pointer_dropout: float = 0.0
     # V8 request-conditioned dynamic vocabulary; ``none`` is checkpoint-identical.
     # none | surface | role_gated | replace (C2: dynamic pseudo-embeddings —
     # symbol rows become deterministic byte-compositional vectors).
