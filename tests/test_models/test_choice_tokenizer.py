@@ -199,6 +199,28 @@ def test_choice_state_derives_placeholder_fields_from_dsl_policy(
     assert with_contract.advance_id(tok.eos_id)
 
 
+def test_choice_state_enforces_component_array_item_schema(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=3)
+    assert state.advance_id(tok.token_to_id["+Modal"])
+    assert state.advance_id(tok.token_to_id["@0"])
+    assert state.advance_id(tok.token_to_id[f"{LIT_PREFIX}true"])
+    assert state.advance_id(tok.token_to_id["["])
+
+    assert tok.token_to_id["@1"] not in state.allowed_ids(16)
+    assert tok.token_to_id["+TextContent"] in state.allowed_ids(16)
+    assert state.advance_id(tok.token_to_id["+TextContent"])
+    assert state.advance_id(tok.token_to_id["@1"])
+    assert state.advance_id(tok.token_to_id["-"])
+    assert state.advance_id(tok.token_to_id["+Button"])
+    assert state.advance_id(tok.token_to_id["@2"])
+    assert state.advance_id(tok.token_to_id["-"])
+    assert state.advance_id(tok.token_to_id["]"])
+    assert state.advance_id(tok.token_to_id["-"])
+    assert state.advance_id(tok.eos_id)
+
+
 def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
     tok.allowed_cache.clear()
     tok.allowed_cache_hits = 0

@@ -732,10 +732,11 @@
       ]
     },
     "model.twotower": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/template_fill.py",
         "src/slm_training/models/adapters/",
         "src/slm_training/harnesses/model_build/config.py",
@@ -743,6 +744,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-07-20",
+          "note": "preserve component-array item schemas in choice decode state so invalid direct placeholder children are compiler-illegal"
+        },
         {
           "version": "v27",
           "date": "2026-07-20",

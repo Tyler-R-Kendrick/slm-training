@@ -3568,3 +3568,15 @@ AST-node F1 0.4889→0.5198, and AST-edge F1 0.25→0.325 at weights 2 and
 promote or sync because strict v2 is 0 and AgentV is 0/1. Evidence:
 [narrative](iter-e591-property-role-slot-20260720.md) and
 [JSON](iter-e591-property-role-slot-20260720.json).
+
+## E592 typed component-array item legality
+
+E592 preserves item schemas in the canonical choice array frame, making raw
+placeholder items illegal for component arrays. Against the matched E591 OOD
+`n=4` control, meaningful-v1 doubles 0.25→0.50, structure improves
+0.4044→0.4169, recall 0.4583→0.5417, reward 0.8085→0.8115, and
+AST-edge F1 0.3250→0.3429, with fidelity and validity unchanged. Keep the
+invariant as the next scratch baseline; do not promote or sync because strict
+v2 remains 0 and AgentV is 0/1. Evidence:
+[narrative](iter-e592-array-item-schema-20260720.md) and
+[JSON](iter-e592-array-item-schema-20260720.json).
