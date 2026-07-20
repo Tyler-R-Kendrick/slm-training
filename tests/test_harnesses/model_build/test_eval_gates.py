@@ -512,6 +512,76 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["fallback_count"] == 0
 
 
+def _required_inventory_coverage_check(metrics: dict) -> dict:
+    checks = metrics["details"][0]["semantic_meaning_report_v2"]["checks"]
+    return next(c for c in checks if c["name"] == "required_inventory_coverage")
+
+
+def test_slot_contract_in_context_turns_required_inventory_coverage_from_unknown_into_a_real_verdict(
+    tmp_path: Path,
+) -> None:
+    """E621: without --slot-contract-in-context, eval_runner._effective_request_for
+    zeroes GenerationRequest.slot_contract before it reaches
+    binding_aware_meaningful_v2's _prompt_contract, so required_inventory_coverage
+    can never move past CheckStatus.UNKNOWN for prompts that don't spell out a
+    literal "Placeholders:"/"Inventory:" line -- even when the model's own
+    request carried a real slot contract. Flipping the flag lets the same
+    request reach the scorer and produces a real judged PASS/FAIL instead.
+    """
+
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
+    record = ExampleRecord(
+        id="s1",
+        prompt="Show a CTA Button",
+        openui=gold,
+        placeholders=[":prod.cta"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class EchoGoldModel:
+        def generate_batch_requests(
+            self, requests: list[GenerationRequest]
+        ) -> list[str]:
+            assert requests[0].slot_contract == (":prod.cta",), (
+                "the request itself always carries the resolved slot contract; "
+                "only scoring visibility is flag-gated"
+            )
+            return [gold for _ in requests]
+
+    def _run(*, slot_contract_in_context: bool) -> dict:
+        config = ModelBuildConfig(
+            train_dir=train_dir,
+            test_dir=test_dir,
+            suite="smoke",
+            run_root=tmp_path / "runs",
+            run_id=f"slot-contract-in-context-{slot_contract_in_context}",
+            model_name="stub",
+            slot_contract_in_context=slot_contract_in_context,
+        )
+        return evaluate(config, model=EchoGoldModel(), publish_agentv=False)
+
+    off_metrics = _run(slot_contract_in_context=False)
+    on_metrics = _run(slot_contract_in_context=True)
+
+    off_check = _required_inventory_coverage_check(off_metrics)
+    on_check = _required_inventory_coverage_check(on_metrics)
+
+    assert off_check["status"] == "UNKNOWN"
+    assert tuple(off_check["reason_codes"]) == ("required_inventory_unknown",)
+    assert off_metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+
+    assert on_check["status"] == "PASS"
+    assert tuple(on_check["reason_codes"]) == ()
+    assert on_metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is True
+
+
 def test_evaluate_passes_reported_canvas_cap_to_request_generation(
     tmp_path: Path,
 ) -> None:
