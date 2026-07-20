@@ -8,7 +8,7 @@
       "parse_validity_rate": 0.5450215801708881,
       "rare_component_recall": 0.49028239987751476,
       "trainable_params": 17024.0,
-      "wall_seconds": 0.0050375109557789614
+      "wall_seconds": 0.001
     },
     "current": {
       "common_component_recall": 0.4322530694622369,
@@ -58,7 +58,7 @@
       "parse_validity_rate": 0.6011926375001855,
       "rare_component_recall": 0.5448843434896393,
       "trainable_params": 17280.0,
-      "wall_seconds": 0.006034648563583812
+      "wall_seconds": 0.002373518561582511
     },
     "low_rank": {
       "common_component_recall": 0.5154421039629276,
@@ -260,7 +260,7 @@
       "target_decisions": 1000,
       "train_scope": "connector_only",
       "trainable_params": 17024,
-      "wall_seconds": 0.0050375109557789614
+      "wall_seconds": 0.001
     },
     {
       "arm_id": "linear_plus_action_residuals__s0",
@@ -328,22 +328,22 @@
       "target_decisions": 1000,
       "train_scope": "small_model",
       "trainable_params": 17280,
-      "wall_seconds": 0.006034648563583812
+      "wall_seconds": 0.002373518561582511
     }
   ],
   "run_id": "slm166-connector-capacity-20260720",
   "schema": "Slm166ConnectorCapacityReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T12:15:17.125369Z",
+  "timestamp": "2026-07-20T12:36:31.056638Z",
   "version_stamp": {
-    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
+    "code_commit": "2d9d1019bfb7ab4d0f99eb39672a8add33db12b0",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v41",
+      "harness.experiments": "v42",
       "harness.experiments.slm166_connector_capacity": "v1",
-      "model.twotower": "v41"
+      "model.twotower": "v42"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T12:15:17.124763+00:00"
+    "stamped_at": "2026-07-20T12:36:31.056052+00:00"
   }
 }

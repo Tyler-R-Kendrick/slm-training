@@ -326,15 +326,15 @@
   "run_id": "slm165-interaction-factorial-20260720",
   "schema": "Slm165InteractionFactorialReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T12:14:45.388116Z",
+  "timestamp": "2026-07-20T12:36:31.020895Z",
   "version_stamp": {
-    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
+    "code_commit": "2d9d1019bfb7ab4d0f99eb39672a8add33db12b0",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v41",
+      "harness.experiments": "v42",
       "harness.experiments.slm165_interaction_factorial": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T12:14:45.387717+00:00"
+    "stamped_at": "2026-07-20T12:36:31.020526+00:00"
   }
 }

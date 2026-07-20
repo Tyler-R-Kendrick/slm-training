@@ -108,7 +108,7 @@
       "arm_id": "T0_no_mixer",
       "family": "no_mixer",
       "mean_accuracy": 0.125,
-      "mean_latency_ms": 11.75014500040561,
+      "mean_latency_ms": 14.908987501257798,
       "mean_loss": 2.2872016429901123,
       "n_records": 8,
       "notes": [
@@ -124,7 +124,7 @@
       "arm_id": "T1_transformer",
       "family": "transformer",
       "mean_accuracy": 0.125,
-      "mean_latency_ms": 57.30290499923285,
+      "mean_latency_ms": 76.28975750048994,
       "mean_loss": 2.4824721813201904,
       "n_records": 8,
       "notes": [
@@ -140,7 +140,7 @@
       "arm_id": "S1_mamba_reference",
       "family": "mamba_reference",
       "mean_accuracy": 0.125,
-      "mean_latency_ms": 45.92609999963315,
+      "mean_latency_ms": 43.279555000481196,
       "mean_loss": 2.4494223594665527,
       "n_records": 8,
       "notes": [
@@ -156,7 +156,7 @@
       "arm_id": "L1_gated_delta_net",
       "family": "gated_delta_net",
       "mean_accuracy": 0.125,
-      "mean_latency_ms": 241.72095749963773,
+      "mean_latency_ms": 281.913060000079,
       "mean_loss": 2.295823097229004,
       "n_records": 8,
       "notes": [
@@ -172,7 +172,7 @@
       "arm_id": "R1_rwkv_reference",
       "family": "rwkv",
       "mean_accuracy": 0.25,
-      "mean_latency_ms": 64.76621250112657,
+      "mean_latency_ms": 47.39745999904699,
       "mean_loss": 2.5568695068359375,
       "n_records": 8,
       "notes": [
@@ -188,7 +188,7 @@
       "arm_id": "R2_xlstm_reference",
       "family": "xlstm",
       "mean_accuracy": 0.125,
-      "mean_latency_ms": 250.01548000000184,
+      "mean_latency_ms": 275.8318199994392,
       "mean_loss": 2.287919044494629,
       "n_records": 8,
       "notes": [
@@ -204,7 +204,7 @@
       "arm_id": "C1_hyena_reference",
       "family": "hyena",
       "mean_accuracy": 0.125,
-      "mean_latency_ms": 42.184367499430664,
+      "mean_latency_ms": 54.03917749936227,
       "mean_loss": 2.3500213623046875,
       "n_records": 8,
       "notes": [
@@ -220,15 +220,15 @@
   "run_id": "slm158_fixture",
   "schema": "Slm158MixerComparisonReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T12:14:44.372101Z",
+  "timestamp": "2026-07-20T12:36:29.803062Z",
   "version_stamp": {
-    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
+    "code_commit": "2d9d1019bfb7ab4d0f99eb39672a8add33db12b0",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v41",
+      "harness.experiments": "v42",
       "harness.experiments.slm158_mixer_comparison": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T12:14:44.371384+00:00"
+    "stamped_at": "2026-07-20T12:36:29.802364+00:00"
   }
 }

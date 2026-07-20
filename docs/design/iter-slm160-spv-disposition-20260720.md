@@ -10,9 +10,9 @@
 
 **Claim class:** wiring / disposition audit only. No GPU was used, no production TwoTower wiring was touched, and no ship-gate claim is made.
 
-**Evidence cutoff commit:** `f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a`
+**Evidence cutoff commit:** `2d9d1019bfb7ab4d0f99eb39672a8add33db12b0`
 
-**Generated at:** 2026-07-20T12:14:45.327300Z
+**Generated at:** 2026-07-20T12:36:30.964620Z
 
 ## Executive finding
 
