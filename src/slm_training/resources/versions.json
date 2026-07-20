@@ -1377,7 +1377,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1392,6 +1392,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-20",
+          "note": "E621: extend slot_coverage_close_decode_weight to floor a compiler-legal role-compatible component or object-property continuation above premature frame closure while abstaining when compatibility cannot be proven"
+        },
         {
           "version": "v59",
           "date": "2026-07-20",

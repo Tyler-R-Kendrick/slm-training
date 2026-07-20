@@ -389,6 +389,102 @@ def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> N
     )
 
 
+def test_slot_coverage_close_bias_continues_through_compatible_component() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    button_id = tokenizer.token_to_id["+Button"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Stack",
+            ),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=(
+                    {
+                        "anyOf": [
+                            {"$ref": "#/$defs/Button"},
+                            {"$ref": "#/$defs/TextContent"},
+                        ]
+                    },
+                ),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (button_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        [":dialog.confirm"],
+        {":dialog.confirm": ("Button",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [7.0, 0.0]
+
+
+def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    details_id = tokenizer.token_to_id["n:details"]
+    close_id = tokenizer.token_to_id["}"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:ImageGallery",
+            ),
+            SimpleNamespace(
+                kind="object",
+                expr_type="object",
+                phase="key",
+                property_names=("details",),
+                schemas=({"type": "string"},),
+                close="}",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (details_id, close_id),
+        torch.tensor([1.0, 5.0]),
+        [":gallery.caption"],
+        {":gallery.caption": ("ImageGallery",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [8.0, 0.0]
+    assert (
+        model._slot_coverage_close_bias(
+            state,
+            [tokenizer.bos_id],
+            (details_id, close_id),
+            torch.tensor([1.0, 5.0]),
+            [":gallery.caption"],
+            {":gallery.caption": ("TextContent",)},
+        )
+        is None
+    )
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
