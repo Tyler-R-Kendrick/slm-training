@@ -2822,6 +2822,20 @@ zero.
 [narrative](iter-e552-slot-lexeme-prior05-20260719.md) and
 [JSON](iter-e552-slot-lexeme-prior05-20260719.json).
 
+## E553 corpus-local proportional slot priors
+
+Warm starts now rebuild deterministic slot priors from the active corpus, and
+zero-cooccurrence token/component pairs receive negative rather than spurious
+positive associations. The valid matched R3 run reaches OOD `n=4` fidelity
+0.3000 and reward 0.5453, but structure falls to 0.1244, recall to 0.0625, and
+AST node F1 to 0.1556. Meaning and AgentV remain zero.
+
+**Decision:** keep the correctness fixes, reject the checkpoint, and move from
+prior calibration to corpus/supervision coverage. R1 and R2 are explicitly
+excluded as confounded. Full evidence:
+[narrative](iter-e553-slot-prior-proportional-smoothing-20260720.md) and
+[JSON](iter-e553-slot-prior-proportional-smoothing-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

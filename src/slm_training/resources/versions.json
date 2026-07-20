@@ -94,12 +94,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v13", "date": "2026-07-20", "note": "rebuild deterministic corpus-derived slot priors after weight initialization instead of silently restoring stale parent checkpoint statistics"},
         {"version": "v12", "date": "2026-07-19", "note": "add deterministic strict-subset root-reference identity oversampling with auditable eligible and expanded sampling counts"},
         {"version": "v11", "date": "2026-07-19", "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"},
         {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
@@ -551,7 +552,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -561,6 +562,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v8", "date": "2026-07-19", "note": "smooth slot lexeme-owner priors with class-prior-proportional pseudo-counts so unseen token-class pairs cannot receive spurious positive association"},
         {"version": "v7", "date": "2026-07-19", "note": "expose the bounded strict-subset root-reference identity sampling multiplier in the shared model-build recipe"},
         {"version": "v6", "date": "2026-07-19", "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"},
         {"version": "v5", "date": "2026-07-19", "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"},

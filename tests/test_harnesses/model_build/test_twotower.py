@@ -240,6 +240,10 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.slot_component_decode_weight == 0.25
     assert loaded.config.slot_component_prompt_context is False
     assert loaded.config.slot_component_lexeme_prior_weight == 1.0
+    hero_priors = dict(loaded.config.slot_component_lexeme_priors)["hero"]
+    component_index = loaded._component_name_index()
+    assert hero_priors[component_index["TextContent"]] > 0.0
+    assert hero_priors[component_index["Card"]] < 0.0
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4

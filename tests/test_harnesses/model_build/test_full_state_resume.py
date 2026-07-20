@@ -238,6 +238,10 @@ def test_initialize_from_resets_state_for_new_corpus(
         "slot_component_lexeme_priors",
         "slot_component_span_priors",
     ]
+    assert initialized["rebuilt_prior_fields"] == [
+        "slot_component_lexeme_priors",
+        "slot_component_span_priors",
+    ]
     assert initialized["initialized_weight_count"] > 0
     assert initialized["initialized_weight_rms_drift"] == 0.0
 
@@ -246,13 +250,13 @@ def test_initialize_from_resets_state_for_new_corpus(
     for key, value in source_model.state_dict().items():
         assert torch.equal(value, initialized_model.state_dict()[key]), key
     assert source_model.config.slot_component_lexeme_priors
-    assert all(
-        key != "fresh"
+    assert any(
+        key == "fresh"
         for key, _scores in initialized_model.config.slot_component_lexeme_priors
     )
     assert (
         source_model.config.slot_component_lexeme_priors
-        == initialized_model.config.slot_component_lexeme_priors
+        != initialized_model.config.slot_component_lexeme_priors
     )
 
     retained = train(

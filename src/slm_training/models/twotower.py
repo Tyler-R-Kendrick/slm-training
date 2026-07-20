@@ -7913,13 +7913,17 @@ class TwoTowerModel(nn.Module):
                     (class_counts[index] + 1.0) / (total + classes)
                     for index in range(classes)
                 ]
+                prior_mass = 0.5 * classes
                 cfg.slot_component_lexeme_priors = tuple(
                     (
                         token,
                         tuple(
                             math.log(
-                                (counts[index] + 0.5)
-                                / (token_totals[token] + 0.5 * classes)
+                                (
+                                    counts[index]
+                                    + prior_mass * base[index]
+                                )
+                                / (token_totals[token] + prior_mass)
                             )
                             - math.log(base[index])
                             for index in range(classes)
