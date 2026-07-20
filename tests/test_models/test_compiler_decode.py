@@ -520,6 +520,67 @@ def test_slot_coverage_close_bias_rejects_wrong_owner_direct_slot() -> None:
     )
 
 
+def test_slot_coverage_close_trace_records_owner_and_missing_slots() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    button_id = tokenizer.token_to_id["+Button"]
+    close_id = tokenizer.token_to_id["]"]
+    stats = DecodeStats()
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Stack",
+                phase="",
+                arg_index=0,
+            ),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                close="]",
+                active_property=None,
+                phase="",
+                arg_index=0,
+            ),
+        ],
+        mode="structural",
+    )
+
+    trace = model._record_slot_coverage_close_trace(
+        stats,
+        row=0,
+        position=8,
+        state=state,
+        prefix=[tokenizer.bos_id, tokenizer.sym_id(0)],
+        candidate_ids=(button_id, close_id),
+        scores_before=torch.tensor([1.0, 5.0]),
+        coverage_bias=torch.tensor([6.0, 0.0]),
+        scores_after=torch.tensor([7.0, 5.0]),
+        slot_contract=[":dialog.title", ":dialog.confirm"],
+    )
+    model._finalize_semantic_plan_trace(
+        trace,
+        candidate_ids=(button_id, close_id),
+        scores=torch.tensor([7.0, 8.0]),
+    )
+
+    assert trace is not None
+    assert trace["phase"] == "slot_coverage_close"
+    assert trace["mode"] == "coverage_continue"
+    assert trace["missing_slots"] == [":dialog.confirm"]
+    assert trace["owner_component"] == "Stack"
+    assert trace["chosen_token"] == "+Button"
+    assert trace["final_token"] == "]"
+    assert trace["changed_after_plan"] is True
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
