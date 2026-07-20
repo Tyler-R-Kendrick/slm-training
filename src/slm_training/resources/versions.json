@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-07-20",
+          "note": "make the reported evaluation canvas cap govern request-aware generation length"
+        },
         {
           "version": "v27",
           "date": "2026-07-20",

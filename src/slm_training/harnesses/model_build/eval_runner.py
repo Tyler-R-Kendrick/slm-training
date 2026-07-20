@@ -670,19 +670,30 @@ def evaluate(
         """Generate without passing gold ExampleRecord to the model."""
         if callable(generate_batch_requests):
             with collect_decode_stats() as stats:
-                predictions = generate_batch_requests(_requests_for(chunk))
+                requests = _requests_for(chunk)
+                try:
+                    predictions = generate_batch_requests(
+                        requests, max_len=canvas_cap
+                    )
+                except TypeError:
+                    predictions = generate_batch_requests(requests)
             decode_stats_rows.append(stats)
             consume = getattr(plugin, "consume_generation_evidence", None)
             evidence = consume() if callable(consume) else []
             return predictions, list(evidence)
         if callable(generate_with_stats) and len(chunk) == 1:
-            text, stats = generate_with_stats(chunk[0].prompt)
+            try:
+                text, stats = generate_with_stats(
+                    chunk[0].prompt, max_len=canvas_cap
+                )
+            except TypeError:
+                text, stats = generate_with_stats(chunk[0].prompt)
             decode_stats_rows.append(stats)
             return [text], []
         prompts = [r.prompt for r in chunk]
         if callable(generate_batch):
             try:
-                return generate_batch(prompts), []
+                return generate_batch(prompts, max_len=canvas_cap), []
             except TypeError:
                 try:
                     return generate_batch(prompts, golds=None), []
@@ -691,7 +702,7 @@ def evaluate(
         out: list[str] = []
         for prompt in prompts:
             try:
-                out.append(plugin.generate(prompt))
+                out.append(plugin.generate(prompt, max_len=canvas_cap))
             except TypeError:
                 out.append(plugin.generate(prompt, gold=None))
         consume = getattr(plugin, "consume_generation_evidence", None)
