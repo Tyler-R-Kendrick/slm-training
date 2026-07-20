@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "experiment_id": "E614",
-  "run_id": "e614-e613-typedobjectstate-r1",
+  "run_id": "e614-e613-typedobjectstate-r3",
   "date_utc": "2026-07-20",
   "status": "completed",
   "run_class": "scratch_matrix",
@@ -52,8 +52,8 @@
       "reward_score": 0.902,
       "ast_node_f1": 0.7579365079365079,
       "ast_edge_f1": 0.6309523809523809,
-      "latency_ms_p50": 4559.13,
-      "latency_ms_p95": 11922.38,
+      "latency_ms_p50": 4478.16,
+      "latency_ms_p95": 12597.1,
       "decode_timeout_count": 0,
       "fallback_count": 0,
       "tokens_emitted": 93
@@ -75,8 +75,8 @@
     "reward_score_delta": 0.015499999999999958,
     "ast_node_f1_delta": 0.021428571428571352,
     "ast_edge_f1_delta": 0.0,
-    "latency_ms_p50_delta": 831.56,
-    "latency_ms_p95_delta": -7273.8099999999995,
+    "latency_ms_p50_delta": 750.59,
+    "latency_ms_p95_delta": -6599.09,
     "tokens_emitted_delta": -140
   },
   "comparison_to_e611": {
@@ -89,8 +89,8 @@
     "reward_score_delta": 0.18725000000000003,
     "ast_node_f1_delta": 0.0,
     "ast_edge_f1_delta": 0.0,
-    "latency_ms_p50_delta": 308.5500000000002,
-    "latency_ms_p95_delta": 464.8899999999994,
+    "latency_ms_p50_delta": 227.58000000000084,
+    "latency_ms_p95_delta": 1139.6100000000006,
     "tokens_emitted_delta": 8
   },
   "gallery": {
@@ -120,14 +120,14 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "4213b8438a66933672b22fa310f586ef3181643a",
+    "code_commit": "a76679dc3df7b38ba3d5fd4b4f2e139845bb98e2",
     "code_dirty": false,
     "components": {
       "harness.model_build.eval": "v32",
       "evals.meaningful_program": "2.0.0",
       "evals.scoring": "v12",
-      "model.twotower": "v56"
+      "model.twotower": "v57"
     },
-    "stamped_at": "2026-07-20T16:09:36.632382+00:00"
+    "stamped_at": "2026-07-20T16:33:37.357198+00:00"
   }
 }
