@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E607",
+  "run_id": "e607-e606-roottrace-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed_diagnostic_not_promotable",
+  "run_class": "scratch_matrix",
+  "hypothesis": "After planned-family coverage, root reachability fails because the verifier abstains, the fixed root score loses, or a later score layer overwrites the planned token.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "matched_to": "e606-e605-planmargin2-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.575625,
+      "component_type_recall": 0.625,
+      "reward_score": 0.8145,
+      "ast_node_f1": 0.6111111111111112,
+      "ast_edge_f1": 0.4642857142857143,
+      "latency_ms_p50": 4602.16,
+      "latency_ms_p95": 11904.39
+    }
+  },
+  "trace_findings": {
+    "dashboard": {
+      "emitted_families": [
+        "Button",
+        "Callout",
+        "Card",
+        "Card"
+      ],
+      "verified_target": "+Stack",
+      "target_score_before": -44.474102,
+      "root_bias": 8.0,
+      "target_score_after": -36.474102,
+      "winner": "+TextContent",
+      "winner_score": 28.874542,
+      "post_bias_deficit": 65.348644
+    },
+    "gallery": {
+      "verified_stack_decisions": 15,
+      "post_bias_deficit_min": 79.324395,
+      "post_bias_deficit_max": 87.028771
+    },
+    "modal": {
+      "verified_stack_closure_completed": true,
+      "eos_completed": true
+    },
+    "auth": {
+      "first_stack_closure_completed": true,
+      "first_eos_lost_to_placeholder": true,
+      "duplicate_stack_then_completed": true
+    },
+    "changed_after_plan": false
+  },
+  "decision": "Reject verifier abstention and downstream overwrite. The fixed root score is miscalibrated across families; next floor verifier-approved root tokens above the best legal score while preserving exact completion validation.",
+  "ship_gates": {
+    "pass": false,
+    "reason": "Diagnostic OOD subset only; strict meaning-v2 is 0, dashboard/gallery roots still miss required families, and AgentV is 0/1."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9bcd6650dd3c267af94daf827d3c320ac85456e7",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v26",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v46"
+    },
+    "stamped_at": "2026-07-20T13:04:18.409476+00:00"
+  }
+}

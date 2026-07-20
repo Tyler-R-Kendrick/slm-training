@@ -3758,3 +3758,18 @@ a verified root over already-emitted planned bindings. No checkpoint was
 created or synced. Evidence:
 [narrative](iter-e606-semantic-plan-margin-20260720.md) and
 [JSON](iter-e606-semantic-plan-margin-20260720.json).
+
+## E607 verified semantic-plan root score trace
+
+E607 records behavior-neutral score decomposition for verifier-approved
+plan-root tokens. The matched OOD `n=4` replay is metric-identical to E606.
+After dashboard covers Button/Callout/Card/Card, verified `+Stack` starts at
+−44.47; +8 leaves it 65.35 behind TextContent. Gallery's verified Stack stays
+79.32–87.03 behind across 15 decisions. Modal's competitive closure succeeds;
+auth misses one EOS before building a duplicate Stack. Reject verifier
+abstention and downstream overwrite: the fixed root score is miscalibrated.
+Next floor verified completion tokens above the best legal score while keeping
+exact validation. Strict v2 remains 0, AgentV is 0/1, and no checkpoint was
+created or synced. Evidence:
+[narrative](iter-e607-semantic-plan-root-trace-20260720.md) and
+[JSON](iter-e607-semantic-plan-root-trace-20260720.json).

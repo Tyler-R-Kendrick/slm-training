@@ -1035,7 +1035,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v46",
+      "version": "v47",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1050,6 +1050,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v47",
+          "date": "2026-07-20",
+          "note": "record bounded score decomposition for verifier-approved semantic-plan root tokens atop default-off SLM-168 pointer plumbing"
+        },
         {
           "version": "v46",
           "date": "2026-07-20",
