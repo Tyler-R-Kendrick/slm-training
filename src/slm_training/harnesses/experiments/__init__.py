@@ -239,12 +239,32 @@ _LAZY_B3_EXPORTS = {
     "validate_b3_capacity_v2_manifest": "validate_manifest",
 }
 
+_LAZY_SDE4_02_EXPORTS = {
+    "SDE4_02_COMPETENCE_TARGET": "COMPETENCE_TARGET",
+    "SDE4_02_MATRIX_SET": "MATRIX_SET",
+    "SDE4_02_MATRIX_VERSION": "MATRIX_VERSION",
+    "ControllerCapacityArm": "ControllerCapacityArm",
+    "ControllerCapacityManifest": "ControllerCapacityManifest",
+    "ControllerCapacityReport": "ControllerCapacityReport",
+    "ControllerCapacityRow": "ControllerCapacityRow",
+    "ControllerCapacityRung": "ControllerCapacityRung",
+    "build_sde4_02_manifest": "build_manifest",
+    "render_sde4_02_markdown": "render_markdown",
+    "run_sde4_02_fixture_ladder": "run_fixture_ladder",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
         from slm_training.harnesses.experiments import b3_capacity_v2
 
         value = getattr(b3_capacity_v2, _LAZY_B3_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SDE4_02_EXPORTS:
+        from slm_training.harnesses.experiments import sde4_02_min_controller_capacity
+
+        value = getattr(sde4_02_min_controller_capacity, _LAZY_SDE4_02_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -267,6 +287,14 @@ __all__ = [
     "B3CapacityV2Manifest",
     "B3CapacityV2Report",
     "B3CapacityV2Row",
+    "SDE4_02_COMPETENCE_TARGET",
+    "SDE4_02_MATRIX_SET",
+    "SDE4_02_MATRIX_VERSION",
+    "ControllerCapacityArm",
+    "ControllerCapacityManifest",
+    "ControllerCapacityReport",
+    "ControllerCapacityRow",
+    "ControllerCapacityRung",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
@@ -345,11 +373,14 @@ __all__ = [
     "build_choice_retrieval_exemplar",
     "build_causal_peft_ftpo_manifest",
     "build_corruption_curriculum_manifest",
+    "build_sde4_02_manifest",
     "format_choice_exemplar_context",
     "nearest_choice_exemplars",
     "random_choice_exemplars",
     "render_ast_sketch_retrieval_markdown",
+    "render_sde4_02_markdown",
     "run_ast_sketch_retrieval_fixture_matrix",
+    "run_sde4_02_fixture_ladder",
     "validate_ast_sketch_retrieval_manifest",
     "build_e228_exposure_ladder",
     "build_e228_recipe_config",

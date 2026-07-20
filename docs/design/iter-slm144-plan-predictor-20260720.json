@@ -67,15 +67,15 @@
   "matrix_version": "spv1-01-v1",
   "schema": "Slm144PlanPredictorReportV1",
   "status": "plan_only",
-  "timestamp": "2026-07-20T00:52:30.315887Z",
+  "timestamp": "2026-07-20T01:12:33.157112Z",
   "version_stamp": {
-    "code_commit": "2732c0366431d8c82999f70958f6fac9422aebef",
+    "code_commit": "da1a4a05cc77b9124141875dd07a10f52f74a0cf",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v25",
+      "harness.experiments": "v26",
       "harness.experiments.slm144_plan_predictor": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T00:52:30.315762+00:00"
+    "stamped_at": "2026-07-20T01:12:33.156985+00:00"
   }
 }
