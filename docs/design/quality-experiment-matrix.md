@@ -3688,3 +3688,14 @@ pressure. Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or
 synced. Evidence:
 [narrative](iter-e601-first-component-plan-seed-20260720.md) and
 [JSON](iter-e601-first-component-plan-seed-20260720.json).
+
+## E602 first-component plan score trace
+
+E602 records bounded pre-plan score, plan bias, and post-plan score evidence at
+the first root-component choice. On capped OOD `n=4`, seed weight 32 changes
+all four first choices, but final predictions and aggregates remain identical
+to E601. The failure is downstream of first-family ranking; trace
+candidate-attempt outcomes and final selection next. Strict v2 remains 0,
+AgentV is 0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e602-plan-seed-score-trace-20260720.md) and
+[JSON](iter-e602-plan-seed-score-trace-20260720.json).
