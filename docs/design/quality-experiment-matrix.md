@@ -3874,6 +3874,30 @@ created or synced. Evidence:
 [narrative](iter-e614-typed-object-state-20260720.md) and
 [JSON](iter-e614-typed-object-state-20260720.json).
 
+## E615 object-frame schema-role slot bias
+
+E615 extends `schema_role_slot_decode_weight` from top-level component
+arguments to declared properties inside an active typed-object literal, so
+`ImageGallery` item properties (`src`, `alt`, `details`) each score against
+their own matching visible-slot role instead of E614's unscored object-frame
+gap. E614's own checkpoint (`e569-e561-matched-cont48-r1-48s`) is
+local-scratch-only and unrecoverable in a fresh container, so — following the
+E540-E548/E544-E545 fallback pattern — this experiment trained one fresh
+8-step CPU scratch checkpoint and ran the matched E614 OOD `n=4` recipe
+twice against it: control (`schema_role_slot_decode_weight=0`) vs treatment
+(`=8.0`, E614's value). Both arms are byte-identical, 0/4 parseable
+predictions, every headline metric `0.0`; the checkpoint is too undertrained
+for constrained decode to reach a legal full parse on any OOD record, so the
+Gallery `src`/`alt`/`details` fix cannot be observed end-to-end on it. The
+fix mechanism is verified separately at the unit level (two new passing
+tests constructing the `ImageGallery` object frame directly). Retain the code
+change as the current scratch policy; reject this session's checkpoint for
+promotion; the end-to-end demonstration is deferred to the next real trained
+successor checkpoint. Strict v2 remains 0, AgentV is 0/1 for both arms, and
+no checkpoint was synced. Evidence:
+[narrative](iter-e615-object-frame-schema-role-slot-20260720.md) and
+[JSON](iter-e615-object-frame-schema-role-slot-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

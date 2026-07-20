@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E615",
+  "run_id": "e615_training_loop_twotower_scratch_20260720",
+  "date_utc": "2026-07-20",
+  "status": "completed_inconclusive_end_to_end",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Extending schema_role_slot_decode_weight to active typed-object properties (frame.kind == \"object\") lets ImageGallery's src/alt/details each prefer their own matching visible slot instead of converging on one, without regressing the E614 recipe.",
+  "environment_note": "E614's exact checkpoint (e569-e561-matched-cont48-r1-48s) is local-scratch-only (--no-sync-checkpoints) and unrecoverable in this fresh container (no outputs/ dir, no HF sync). Following the checkpoint-bucket.md fallback pattern used by E540-E548 and the E544/E545 matched control-vs-treatment pairs, a fresh CPU scratch checkpoint was trained this session from the same published train corpus and a matched control/treatment OOD eval pair was run against it instead of fabricating or skipping the comparison.",
+  "checkpoint": {
+    "run_id": "e615_training_loop_twotower_scratch_20260720",
+    "location": "outputs/runs/e615_training_loop_twotower_scratch_20260720/checkpoints/last.pt",
+    "sha256": "c083f8d1710e3d6cb20890d6e1805692847f3ebc20aed1db0be9e573eef0c508",
+    "full_state_sha256": "2c924586e6faee79b3d884f5b5721f982d847f2150df35ea718d1eb583a60407",
+    "created": true,
+    "sync": false,
+    "sync_reason": "Explicit local-only 8-step scratch diagnostic checkpoint (matches e540-e548 style); --no-sync-checkpoints."
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "model": "twotower",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "trainable_params": 1643522,
+    "steps": 8,
+    "batch_size": 1,
+    "seed": 0,
+    "last_loss": 37.90449905395508,
+    "seen_prompt_tokens": 2038,
+    "seen_target_tokens": 227,
+    "elapsed_wall_seconds": 2.454264684000009,
+    "max_wall_minutes": 3.0,
+    "no_sync_checkpoints": true
+  },
+  "eval_recipe": {
+    "control_eval_run_id": "e615-control-eval-r1",
+    "treatment_eval_run_id": "e615-treatment-eval-r1",
+    "same_checkpoint_sha256": true,
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "semantic_role_contract_in_context": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight_control": 0.0,
+    "schema_role_slot_decode_weight_treatment": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "E614 recipe weights, replayed control (weight 0) vs treatment (weight 8.0) on the same fresh checkpoint",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "context_backend_deviation_from_e614": "E614's eval used context_backend=hf because its checkpoint (e569-e561-matched-cont48-r1-48s) was itself trained with context_backend=hf. This session's fresh checkpoint was trained with context_backend=scratch (per the E540-E548 fallback pattern), and a checkpoint's context tower architecture is backend-specific (src/slm_training/harnesses/model_build/factory.py), so eval was run with context_backend=scratch to match. This is an intentional, documented deviation, not an oversight.",
+    "semantic_role_contract_in_context_note": "src/slm_training/models/twotower.py raises ValueError('semantic_role_decode_weight requires honest visible role context') unless semantic_role_contract_in_context=True is also passed. E614's own eval_recipe JSON omits this flag even though semantic_role_decode_weight=8.0 > 0, meaning it must have been passed at runtime and simply not recorded there (the discrepancy the prior agent flagged). This run passes it explicitly for both control and treatment and records it here."
+  },
+  "control": {
+    "run_id": "e615-control-eval-r1",
+    "checkpoint_sha256": "c083f8d1710e3d6cb20890d6e1805692847f3ebc20aed1db0be9e573eef0c508",
+    "syntax_parse_rate": 0.0,
+    "meaningful_program_rate": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "reward_score": 0.0,
+    "ast_node_f1": null,
+    "ast_edge_f1": null,
+    "latency_ms_p50": 16773.15,
+    "latency_ms_p95": 20784.75,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "empty_prediction_count": 4,
+    "failure_breakdown": {"other": 4},
+    "predictions": ["", "", "", ""],
+    "agentv_passed": 0,
+    "agentv_total": 1,
+    "agentv_execution_errors": 0
+  },
+  "treatment": {
+    "run_id": "e615-treatment-eval-r1",
+    "checkpoint_sha256": "c083f8d1710e3d6cb20890d6e1805692847f3ebc20aed1db0be9e573eef0c508",
+    "syntax_parse_rate": 0.0,
+    "meaningful_program_rate": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "reward_score": 0.0,
+    "ast_node_f1": null,
+    "ast_edge_f1": null,
+    "latency_ms_p50": 17604.86,
+    "latency_ms_p95": 20398.58,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "empty_prediction_count": 4,
+    "failure_breakdown": {"other": 4},
+    "predictions": ["", "", "", ""],
+    "agentv_passed": 0,
+    "agentv_total": 1,
+    "agentv_execution_errors": 0
+  },
+  "delta_treatment_minus_control": {
+    "syntax_parse_rate": 0.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "structural_similarity": 0.0,
+    "component_type_recall": 0.0,
+    "reward_score": 0.0,
+    "latency_ms_p50": 831.71,
+    "latency_ms_p95": -386.17
+  },
+  "prediction_parity": {
+    "byte_identical": true,
+    "compared_records": 4,
+    "note": "Both arms produced four empty predictions; constrained decode hit a dead end on every OOD record (constrained_dead_end_last_position mean -1.0), consistent with an 8-step, near-random-initialization checkpoint never reaching a legal full parse under strict grammar + honest_slot_contract constraints."
+  },
+  "gallery_bug_check": {
+    "target": "Whether ImageGallery item src/alt/details each bind to their own matching visible slot instead of collapsing to one (E614's narrative bug).",
+    "end_to_end_observed": false,
+    "reason": "Neither arm ever emits a parseable program (0/4 non-empty predictions in both control and treatment), so no ImageGallery object is ever constructed in this session's decode traces and the fix cannot be observed at the generated-program level on this checkpoint.",
+    "mechanism_verified_separately": "The fix is unit-verified by tests/test_models/test_compiler_decode.py::test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role and ::test_object_property_matches_slot_role_resolves_image_and_caption_aliases, both already passing pre- and post- this session's runs (see verification section)."
+  },
+  "suites": {
+    "ood_control": {
+      "n": 4,
+      "syntax_parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0
+    },
+    "ood_treatment": {
+      "n": 4,
+      "syntax_parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "reward_score": 0.0
+    }
+  },
+  "comparison_to_e614": {
+    "note": "Directional context only, not decision-driving: E614 ran on a much more heavily trained checkpoint (e569-e561-matched-cont48-r1-48s, itself a continuation of many prior training runs) and produced non-empty, partially-meaningful predictions (syntax_parse_rate 1.0, reward_score 0.902). This session's 8-step from-scratch checkpoint is far too undertrained to be comparable in absolute terms; the decision-driving comparison is the control-vs-treatment pair above, on the identical checkpoint."
+  },
+  "decision": "Reject for promotion/ship. The control-vs-treatment eval on this session's fresh checkpoint is quality-neutral and byte-identical (both arms emit 0/4 parseable programs), so it cannot demonstrate the src/alt/details fix in generated output. Retain the code change (already unit-verified) and this run as the documented fallback-pattern evidence that E614's original checkpoint is unrecoverable in a fresh container; re-run this same matched control/treatment eval recipe against a real successor checkpoint (or a longer non-scratch continuation) the next time one is trained, to get an end-to-end verification of the Gallery fix.",
+  "next": "When a sufficiently trained successor checkpoint exists (HF-context, several dozen+ steps, ideally warm-started like e569), replay this exact control (schema_role_slot_decode_weight=0) vs treatment (=8.0) matched pair to observe whether ImageGallery src/alt/details resolve to distinct slots.",
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "diagnostic OOD n=4 is below the required full-suite sample size",
+      "both control and treatment syntax_parse_rate and meaningful_program_rate are 0.0 on this checkpoint",
+      "strict binding-aware meaning-v2 is 0.0",
+      "AgentV is 0/1 for both arms",
+      "smoke, held_out, adversarial, and rico_held suites were not run"
+    ]
+  },
+  "verification": {
+    "pytest_test_models_test_compiler_decode": "90 passed",
+    "pytest_test_harnesses_model_build_and_test_versioning": "223 passed, 1 skipped, 12 deselected",
+    "verify_version_stamps_check": "version-stamps: ok (vs HEAD; 0 changed file(s), 0 component(s) touched)",
+    "repo_policy": "repo-policy: ok (tracked + untracked)",
+    "prerequisite_fixes": "npm ci (repo root) and npm ci (src/apps/openui_bridge) were run to unblock AgentV publishing and the DSL lang-core parse bridge respectively, both listed as prerequisites in .claude/skills/autotrain/references/eval.md / the OpenUI bridge deps check."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9c36d829b5af01540456f1dfe0c83539fa0cb941",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v58"
+    },
+    "stamped_at": "2026-07-20T17:55:21.268395+00:00"
+  }
+}
