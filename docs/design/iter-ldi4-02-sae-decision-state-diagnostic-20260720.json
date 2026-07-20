@@ -1,0 +1,129 @@
+{
+  "arms": [
+    {
+      "arm_id": "S0",
+      "dose_grid": [],
+      "method": "no_intervention",
+      "purpose": "parent control",
+      "selection_data": "none",
+      "trainable_params": 0
+    },
+    {
+      "arm_id": "S1",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "random_normalized_direction",
+      "purpose": "generic perturbation control",
+      "selection_data": "none",
+      "trainable_params": 0
+    },
+    {
+      "arm_id": "S2",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "raw_diffmean",
+      "purpose": "simple representation control",
+      "selection_data": "train_only",
+      "trainable_params": 0
+    },
+    {
+      "arm_id": "S3",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "linear_probe_direction",
+      "purpose": "supervised dense control",
+      "selection_data": "train_only",
+      "trainable_params": null
+    },
+    {
+      "arm_id": "S4",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "reft_r1",
+      "purpose": "learned representation control (SLM-134)",
+      "selection_data": "train_only",
+      "trainable_params": null
+    },
+    {
+      "arm_id": "S5",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "direct_weight_adapter",
+      "purpose": "weight-space control (SLM-126)",
+      "selection_data": "train_only",
+      "trainable_params": null
+    },
+    {
+      "arm_id": "S6",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "top_sae_feature",
+      "purpose": "sparse single-feature test",
+      "selection_data": "train_only",
+      "trainable_params": null
+    },
+    {
+      "arm_id": "S7",
+      "dose_grid": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "method": "sparse_sae_feature_set",
+      "purpose": "capacity control",
+      "selection_data": "train_only",
+      "trainable_params": null
+    }
+  ],
+  "best_baseline_effect": 0.0,
+  "claim_class": "wiring",
+  "d_in": 16,
+  "matrix_set": "ldi4-02-sae-decision-state",
+  "matrix_version": "ldi4-02-v1",
+  "n": 64,
+  "note": "plan-only: no model or activation capture executed",
+  "run_id": "ldi4_02_plan",
+  "site": "denoiser.block.0.residual",
+  "status": "plan_only",
+  "version_stamp": {
+    "code_commit": "f42877574511d3ea43510fc3926f459850b8c4b9",
+    "code_dirty": true,
+    "components": {
+      "harness.representations": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T02:01:10.830099+00:00"
+  }
+}

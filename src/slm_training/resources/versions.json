@@ -815,6 +815,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
         },
         {
@@ -852,6 +857,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
         },
         {
@@ -886,6 +896,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
         },
         {
@@ -915,12 +930,41 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged"
         },
         {
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness"
+        }
+      ]
+    },
+    "harness.representations": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/representations/",
+        "scripts/run_sae_diagnostic_fixture.py",
+        "tests/test_harnesses/representations/",
+        "tests/test_scripts/test_run_sae_diagnostic_fixture.py",
+        "docs/design/iter-ldi4-02-sae-decision-state-diagnostic-20260720.json",
+        "docs/design/iter-ldi4-02-sae-decision-state-diagnostic-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-136 LDI4-02 SAE decision-state diagnostic harness (schema, SAE, interventions, fixture wiring)"
         }
       ]
     }
