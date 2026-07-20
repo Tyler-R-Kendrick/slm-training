@@ -45,8 +45,10 @@ Every experiment issue names, in its body:
    check (not a recorded dead-end, not a finished knob signature).
 3. **Plan** — campaign-allowed knobs, matched controls, expected artifact root
    `outputs/autoresearch/<campaign>/`.
-4. **Evidence link** — the `docs/design/iter-*.md` record (added when the run
-   lands). Issue ⇄ `iter-*` ⇄ `experiment-idea` note stay mutually linked.
+4. **Evidence link** — the committed `docs/design/iter-*.md` record (JSON +
+   markdown, recipe metadata, honest pass/fail vs gates —
+   `documenting-experiment-results`), added when the run lands. Issue ⇄ `iter-*`
+   ⇄ `experiment-idea` note stay mutually linked; a filed issue is not evidence.
 
 Reference the repo by URL (`Tyler-R-Kendrick/slm-training`), matching existing
 projects. Never put secrets, tokens, or machine-absolute paths in Linear.

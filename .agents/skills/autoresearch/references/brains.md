@@ -34,11 +34,14 @@ conventions: [`docs/brains/README.md`](../../../../docs/brains/README.md).
 
 ## Update (after results / discovery)
 
-- **New idea** → `templates/concept-note.md` (or `experiment-idea.md` if it is
-  run-ready); wikilink it from the MOC.
-- **New source** → `templates/source-note.md`; record what to take / not take and
-  the fidelity label. When a source graduates to implemented lineage, record it
-  in `research-lineage.md` / the source manifest and link back.
+- **New idea** → copy [`docs/brains/templates/concept-note.md`](../../../../docs/brains/templates/concept-note.md)
+  (or [`experiment-idea.md`](../../../../docs/brains/templates/experiment-idea.md)
+  if it is run-ready) into `docs/brains/repo/` (or a personal brain); wikilink it
+  from the MOC.
+- **New source** → copy [`docs/brains/templates/source-note.md`](../../../../docs/brains/templates/source-note.md);
+  record what to take / not take and the fidelity label. When a source graduates
+  to implemented lineage, record it in `research-lineage.md` / the source
+  manifest and link back.
 - **Answered question** → move it out of "open questions" and link the
   `docs/design/iter-*.md` row that answered it.
 - **Negative result** → add to "dead-ends" with the evidence link so the

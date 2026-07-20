@@ -42,5 +42,7 @@ not rewrite that file during routine `--update`.
   *what we think about it and want to try*. Link OpenWiki pages from brain notes;
   never paste generated navigation into a brain.
 
-Approvals: `--init` / `--update` call an external LLM provider — only run them
-with a configured provider secret and within the user's cost expectations.
+Approvals & run cap: `--init` / `--update` call an external LLM provider — only
+run them with a configured provider secret, within the user's cost expectations,
+and within the repo hard run cap (AGENTS.md "Hard run cap"; agent commands are
+interrupted at 170 s). `npm install -g openwiki@0.1.2` is a one-time setup step.

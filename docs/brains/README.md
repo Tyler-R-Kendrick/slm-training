@@ -41,7 +41,7 @@ Brains follow **OKF**, the repo's Obsidian-compatible note convention:
 
 ## Layout
 
-```
+```text
 docs/brains/
   README.md            # this file — OKF conventions
   repo/                # the shared repo brain (versioned, reviewed)

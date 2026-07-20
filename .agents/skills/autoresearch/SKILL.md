@@ -17,7 +17,7 @@ the Linear MCP. It never builds a parallel trainer, evaluator, or knowledge stor
 Turns curated knowledge into falsifiable, tracked experiments and folds results
 back into knowledge:
 
-```
+```text
 brains + OpenWiki  ──▶  discovery (prior work)  ──▶  hypotheses  ──▶  Linear issues
       ▲                                                                     │
       └──────────────  update brains from measured results  ◀──────────────┘

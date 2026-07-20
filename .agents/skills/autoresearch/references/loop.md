@@ -40,10 +40,13 @@ hypothesis loop, and Linear. Read [contracts.md](contracts.md) alongside it.
    `openui-autoresearch`, not this skill. Do not launch paid GPU / remote jobs or
    HF writes without explicit user approval.
 
-7. **Fold results back.** When runs land measured evidence, update the brain from
-   `docs/design/` (answered questions, new dead-ends, lineage graduation), flip
-   the Linear issue and `experiment-idea` note status, and run `synthesis-feedback`
-   after any data build. Then return to step 1.
+7. **Fold results back.** A run counts as landed only once its evidence exists per
+   the pipeline's iron law: a committed `docs/design/` record (JSON + markdown)
+   with recipe metadata and honest pass/fail vs gates (`documenting-experiment-results`;
+   readiness language → `honest-ship-eval`). From that record, update the brain
+   (answered questions, new dead-ends, lineage graduation), flip the Linear issue
+   and `experiment-idea` note status, and run `synthesis-feedback` after any data
+   build. Then return to step 1.
 
 ## Where each thing lives (never cross the streams)
 

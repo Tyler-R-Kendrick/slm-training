@@ -16,11 +16,12 @@ Supervised training from a versioned train snapshot. Owner:
 slm sft train --train-dir outputs/data/train/v1 \
   --model twotower --context-backend hf --steps 200 --run-id twotower_v1
 
-# Managed GPU job (A10G+) — always inspect the plan first
+# Managed GPU job (A10G+) — inspect the dry-run plan first, then get explicit
+# user approval before the paid execute (approvals contract, below)
 slm sft hf-jobs --run-id twotower_v1 --steps 200 --branch main --dry-run
-slm sft hf-jobs --run-id twotower_v1 --steps 200 --branch main
+slm sft hf-jobs --run-id twotower_v1 --steps 200 --branch main   # paid — approval required
 
-# Remote pod
+# Remote pod (remote job — approval required)
 slm sft remote --host <pod> --run-id twotower_v1 --steps 200
 ```
 

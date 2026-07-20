@@ -16,7 +16,7 @@ asks rather than guessing. A committed illustration lives in
 Create a folder named for the owner and open it (or the whole `docs/brains/`
 tree) as an Obsidian vault:
 
-```
+```text
 docs/brains/personal/<owner>/
   home.md            # the vault's home note / dashboard (OKF: type: moc)
   concepts/          # atomic concept notes
@@ -32,8 +32,10 @@ note gets typed OKF frontmatter.
 - **Same OKF rules** as the repo brain (atomic, typed frontmatter, wikilinks,
   evidence-linked, no leakage/secrets/absolute paths).
 - **Promotion path.** When a personal note becomes shared knowledge, the
-  `autoresearch` loop links or moves it into `docs/brains/repo/` and wikilinks it
-  from [`repo/MOC.md`](../repo/MOC.md). Keep the graph connected across the move.
+  `autoresearch` loop promotes it into `docs/brains/repo/` and wikilinks it from
+  [`repo/MOC.md`](../repo/MOC.md). A promotion is a tracked relocation: follow the
+  `organize-repository` skill and use `git mv` for the move, then verify the
+  backlinks/wikilinks still resolve so the graph stays connected across it.
 - **Ownership.** Only the owner (or `autoresearch` acting on their behalf) edits
   a personal vault; others link to it, they do not rewrite it.
 
