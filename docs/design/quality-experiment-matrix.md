@@ -4387,3 +4387,84 @@ Evidence:
 [iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md)
 and
 [JSON](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.json).
+
+## E629 a widened-suite margin sweep (1/2/3/4) surfaces a new frame_depth>=1 failure mode
+
+E629 picks up E626/E627/E628's shared deferral: a multi-value sweep of
+`required_slot_margin_decode_weight` against a fuller held-out suite than
+their shared `n=4` `ood`-only replay. A materially larger `rico_held` (via
+`slm data build-test --rico-hf-split test --rico-limit 2600`) would need a
+live HF fetch and fresh leakage check not tractable alongside the sweep
+itself; multi-seed retraining was intentionally skipped per this session's
+explicit apples-to-apples instruction to reuse E626's checkpoint verbatim. The
+suite used instead: the union of all 5 already-built, leakage-checked
+immutable suites under `src/slm_training/resources/data/eval/remediated`
+(`held_out`=5, `rico_held`=3, `adversarial`=4, `ood`=4, `smoke`=3, n=19) —
+~5x E626-E628's n, including `rico_held` by name, but still below
+`DEFAULT_MIN_SUITE_N=20` per suite (`ship_gates.py`) — exploratory, not a
+ship scoreboard.
+
+E626's own scratch checkpoint was reused verbatim (sha256 `c5b7c807…dd561221`
+verified) against the identical matched recipe, sweeping
+`required_slot_margin_decode_weight` over `{0, 1, 2, 3, 4}`. The `margin=0`
+control reproduces E626/E628's own `ood`-subset control exactly. No code
+changed this session (clean tree at `2caba977`); no version bump required.
+
+| Metric (pooled, n=19) | margin=0 | margin∈{1,2} | margin∈{3,4}\* |
+| --- | ---: | ---: | ---: |
+| meaningful_program_v1 rate | 0.6842 | 0.6842 | 0.6842 |
+| reward_score (mean) | 0.7889 | 0.9260 | 0.9260 |
+| placeholder_fidelity (mean) | 0.5781 | 0.8991 | 0.8991 |
+| structural_similarity (mean) | 0.4494 | 0.5295 | 0.5295 |
+| component_type_recall (mean) | 0.5965 | 0.6667 | 0.6667 |
+
+\* margins 3/4 differ from 1/2 in exactly 1/19 predictions, a cosmetic
+metric-neutral slot swap; margins 1 and 2 are byte-identical (0/19 diffs).
+
+Using `slm_training.evals.power_protocol`'s own `bootstrap_paired_ci` +
+`benjamini_hochberg` directly (the CLI's `analyze-existing` mode analyzes one
+arm at a time and has no built-in two-arm delta) on the 19 matched records:
+`reward_score` Δ=+0.137 (95% CI `[0.058, 0.253]`, BH-significant) and
+`placeholder_fidelity` Δ=+0.321 (CI `[0.188, 0.461]`, BH-significant);
+`structural_similarity` Δ=+0.080 and `component_type_recall` Δ=+0.070 are
+directionally positive but their CIs cross zero (not BH-significant) at
+n=19. **The binary `meaningful_program_v1` gate is exactly flat (13/19 in
+every arm)**: `ood_dashboard_01` gains (`False→True`, matching E626/E628's
+own reported fix) while `rico_eval_test_25` newly *loses* (`True→False`) at
+margin>=1 — a real gain and a real loss cancel to zero net movement. The
+paired bootstrap on the binary outcome itself: estimate 0.0, 95% CI
+`[-0.158, +0.158]` — not evidence of "no effect", evidence of "not enough
+data at this n to know".
+
+**A new failure mode.** `rico_eval_test_25` regresses at margin>=1 because
+one `Button` absorbs 5 placeholders belonging to 5 different role-appropriate
+slots (`schema_value_role_mismatch` on 3 `Button` properties,
+`placeholder_semantic_role_mismatch` on 6 placeholders) — a `frame_depth>=1`
+argument-position over-stuffing failure, not the `frame_depth==0` root hijack
+E627/E628 already fixed. This is exactly the risk E628's own "Next step" #2
+flagged as untested ("a different checkpoint/seed could still surface a
+different failure mode... once the floor dominates a legitimate
+`frame_depth>=1` argument-position competition") — surfacing here on the
+*same* checkpoint/seed at the *smallest* margin tested (1), on a suite record
+(`rico_held`) invisible to E626-E628's `n=4` ood-only replay.
+
+H19's Wilson/exact-binomial single-arm machinery is real and applicable here
+(pooled meaningful_program_v1 Wilson `[0.460, 0.846]`, exact binomial
+`[0.434, 0.874]`, identical in every arm); its seed-variance/MDE-simulation
+machinery is not meaningfully exercised — `seed_variance=0.0` correctly,
+since this stays single-checkpoint/single-seed by design. **Not a powered
+confirmatory result; not a ship claim.** No checkpoint trained, promoted, or
+synced; default `required_slot_margin_decode_weight` (`0.0`) unchanged.
+Margins 1-2 remain the best-supported range *if* adopted (3/4 show no benefit
+over 1/2), but the newly-discovered `rico_held` over-stuffing mode should be
+root-caused and fixed first — the same treatment E627/E628 gave the
+`frame_depth==0` hijack — before recommending any default change.
+`binding_aware_meaningful_v2_rate_strict` stays 0.0 across held_out/
+rico_held/adversarial/ood at every margin; E620's coverage-aware
+component/property closure work remains the next lever after that root-cause
+pass.
+
+Evidence:
+[iter-e629-required-slot-margin-widened-suite-sweep-20260720.md](iter-e629-required-slot-margin-widened-suite-sweep-20260720.md)
+and
+[JSON](iter-e629-required-slot-margin-widened-suite-sweep-20260720.json).
