@@ -1214,15 +1214,15 @@ def test_e578_matched_eval_arms_are_persisted_without_new_checkpoint(
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
 
-    primary_id = "e578-e569-plan-root1-r1"
+    primary_id = "e578-e569-plan-root1-r2"
     primary = readers.run(primary_id)
     assert primary["provenance"] == "committed"
     assert primary["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
     assert primary["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7345
 
     for run_id in (
-        "e578-e569-plan-root-control-r1",
-        "e578-e569-plan-root2-r1",
+        "e578-e569-plan-root-control-r2",
+        "e578-e569-plan-root2-r2",
     ):
         assert readers.run(run_id)["provenance"] == "committed"
 

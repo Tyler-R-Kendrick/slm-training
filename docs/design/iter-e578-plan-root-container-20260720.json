@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "experiment_id": "E578",
-  "run_id": "e578-e569-plan-root1-r1",
+  "run_id": "e578-e569-plan-root1-r2",
   "date_utc": "2026-07-20",
   "run_class": "scratch_matrix",
   "status": "completed_mechanical_success_quality_null_not_ship",
@@ -45,8 +45,8 @@
       "reward_score": 0.7345,
       "ast_node_f1": 0.2833333333333333,
       "ast_edge_f1": 0.0,
-      "latency_ms_p50": 7675.24,
-      "latency_ms_p95": 13824.65
+      "latency_ms_p50": 8648.48,
+      "latency_ms_p95": 13369.21
     }
   },
   "decode_telemetry": {
@@ -59,7 +59,7 @@
   },
   "matched_runs": [
     {
-      "run_id": "e578-e569-plan-root-control-r1",
+      "run_id": "e578-e569-plan-root-control-r2",
       "label": "root_weight_0_control",
       "semantic_plan_root_decode_weight": 0.0,
       "checkpoint_sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
@@ -76,8 +76,8 @@
           "reward_score": 0.7345,
           "ast_node_f1": 0.2833333333333333,
           "ast_edge_f1": 0.0,
-          "latency_ms_p50": 8856.62,
-          "latency_ms_p95": 16033.38
+          "latency_ms_p50": 9405.23,
+          "latency_ms_p95": 14092.76
         }
       },
       "agentv": {
@@ -87,7 +87,7 @@
       }
     },
     {
-      "run_id": "e578-e569-plan-root2-r1",
+      "run_id": "e578-e569-plan-root2-r2",
       "label": "root_weight_2_treatment",
       "semantic_plan_root_decode_weight": 2.0,
       "checkpoint_sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
@@ -104,8 +104,8 @@
           "reward_score": 0.7345,
           "ast_node_f1": 0.2833333333333333,
           "ast_edge_f1": 0.0,
-          "latency_ms_p50": 8277.45,
-          "latency_ms_p95": 14445.48
+          "latency_ms_p50": 7307.75,
+          "latency_ms_p95": 14223.12
         }
       },
       "agentv": {
@@ -116,7 +116,7 @@
     }
   ],
   "comparison": {
-    "baseline": "e578-e569-plan-root-control-r1",
+    "baseline": "e578-e569-plan-root-control-r2",
     "weight_1_root_applications": 21,
     "weight_1_root_choice_changes": 1,
     "weight_2_root_applications": 14,
@@ -148,7 +148,7 @@
   "decision": "Reject root weights 1 and 2 as quality interventions and keep the bounded root scorer default-off for diagnostics. Do not promote or sync. Next test a compiler-validated planned-root seed/state rather than another scalar.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "2b869c3ba9e3c7bde8c5d01ae0f63f176c75fc92",
+    "code_commit": "ec3f2e591f4f213a9e66bdc07d6630a9b8642bd1",
     "code_dirty": false,
     "components": {
       "harness.model_build.eval": "v16",
@@ -156,6 +156,6 @@
       "evals.scoring": "v10",
       "model.twotower": "v15"
     },
-    "stamped_at": "2026-07-20T04:52:42.222669+00:00"
+    "stamped_at": "2026-07-20T04:58:06.982678+00:00"
   }
 }

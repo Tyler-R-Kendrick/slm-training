@@ -12,7 +12,7 @@ honest, candidate-preserving, and default-off.
 
 ## Matched result
 
-All arms use commit `2b869c3b`, E569 checkpoint SHA
+All arms use commit `ec3f2e59`, E569 checkpoint SHA
 `8254fcf7…c6535f73`, CPU, frozen local HF context, OOD `n=4`, honest visible
 slot and semantic-role context, prompt-plan component and binding weights 1,
 choice-codec constrained LTR, 8 generation steps, 4 attempts, and a 160-token
@@ -21,9 +21,9 @@ carry eval v16 and TwoTower v15.
 
 | Root weight | Run | meaning-v1 / v2 | fidelity | validity | structure | recall | reward | AST node / edge | root applications / changes | AgentV |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0 | `e578-e569-plan-root-control-r1` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 0 / 0 | 0/1 |
-| 1 | `e578-e569-plan-root1-r1` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 21 / 1 | 0/1 |
-| 2 | `e578-e569-plan-root2-r1` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 14 / 2 | 0/1 |
+| 0 | `e578-e569-plan-root-control-r2` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 0 / 0 | 0/1 |
+| 1 | `e578-e569-plan-root1-r2` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 21 / 1 | 0/1 |
+| 2 | `e578-e569-plan-root2-r2` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 14 / 2 | 0/1 |
 
 The intended states activate, and weight 2 changes two latent choices versus
 one at weight 1. Nevertheless, every final program is identical to control and
