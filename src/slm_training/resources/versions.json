@@ -682,7 +682,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -692,6 +692,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-20",
+          "note": "soft-score only still-missing predicted component-family instances so repeated authored requirements can be generated before root closure"
+        },
         {
           "version": "v17",
           "date": "2026-07-20",

@@ -332,6 +332,39 @@ def test_prompt_semantic_plan_preserves_repeated_authored_component_mentions() -
     ]
 
 
+def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["+Input"]
+    button_id = tokenizer.token_to_id["+Button"]
+    candidates = (input_id, button_id)
+    kinds = ("component_bound", "component_bound")
+    model._semantic_plan_action_scores = [{input_id: 1.0, button_id: 1.0}]
+    model._semantic_plan_action_counts = [{input_id: 2, button_id: 1}]
+    one_each = SimpleNamespace(
+        section_types=["element:Input", "element:Button"]
+    )
+    all_required = SimpleNamespace(
+        section_types=["element:Input", "element:Input", "element:Button"]
+    )
+
+    remaining_bias = model._semantic_plan_bias(
+        0, candidates, kinds, one_each
+    )
+    complete_bias = model._semantic_plan_bias(
+        0, candidates, kinds, all_required
+    )
+
+    assert remaining_bias is not None
+    assert remaining_bias.tolist() == [3.0, 0.0]
+    assert complete_bias is None
+
+
 def test_prompt_semantic_plan_binding_bias_prefers_matching_unused_references() -> None:
     from types import SimpleNamespace
 
