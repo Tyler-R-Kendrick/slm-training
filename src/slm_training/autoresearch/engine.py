@@ -489,6 +489,27 @@ def compile_commands(
         train.extend(["--mixture-manifest", str(mixture_path)])
     if knobs.mixture_sampling_policy:
         train.extend(["--mixture-sampling-policy", knobs.mixture_sampling_policy])
+    if knobs.mixture_exposure_target_profile:
+        train.extend(
+            ["--mixture-exposure-target-profile", knobs.mixture_exposure_target_profile]
+        )
+    if knobs.mixture_total_decision_budget is not None:
+        train.extend(
+            ["--mixture-total-decision-budget", str(knobs.mixture_total_decision_budget)]
+        )
+    if knobs.mixture_per_root_cap is not None:
+        train.extend(["--mixture-per-root-cap", str(knobs.mixture_per_root_cap)])
+    if knobs.mixture_per_template_cap is not None:
+        train.extend(
+            ["--mixture-per-template-cap", str(knobs.mixture_per_template_cap)]
+        )
+    if knobs.mixture_max_importance_weight is not None:
+        train.extend(
+            [
+                "--mixture-max-importance-weight",
+                str(knobs.mixture_max_importance_weight),
+            ]
+        )
     commands.append(train)
     evaluate = [
         sys.executable,

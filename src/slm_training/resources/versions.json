@@ -169,12 +169,17 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-20",
+          "note": "wire SDE2-03 exposure-targeted rare-action sampler kwargs and recipe metadata; default with_replacement sampler unchanged"
+        },
         {
           "version": "v15",
           "date": "2026-07-20",
@@ -263,15 +268,21 @@
       ]
     },
     "harness.train_data": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
+        "src/slm_training/data/mixture.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-20",
+          "note": "add SDE2-03 exposure-targeted rare-action online sampler with bounded importance weights and diversity caps; default with_replacement unchanged"
+        },
         {
           "version": "v8",
           "date": "2026-07-19",
@@ -560,12 +571,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v43",
+      "version": "v44",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v44",
+          "date": "2026-07-20",
+          "note": "add SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness"
+        },
         {
           "version": "v43",
           "date": "2026-07-20",
@@ -808,6 +824,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -839,6 +860,11 @@
         "docs/design/iter-slm163-schema-action-embedding-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -876,6 +902,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -907,6 +938,11 @@
         "docs/design/iter-slm165-interaction-factorial-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -949,6 +985,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -988,6 +1029,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after commit amend; harness behavior and thresholds unchanged"
         },
         {
@@ -1012,7 +1058,31 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-168 public structured contract-index pointer wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm170_exposure_targeted_rare_action": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm170_exposure_targeted_rare_action.py",
+        "scripts/run_slm170_exposure_targeted_rare_action_fixture.py",
+        "tests/test_harnesses/experiments/test_slm170_exposure_targeted_rare_action.py",
+        "tests/test_scripts/test_run_slm170_exposure_targeted_rare_action_fixture.py",
+        "docs/design/iter-slm170-exposure-targeted-rare-action-20260720.json",
+        "docs/design/iter-slm170-exposure-targeted-rare-action-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness"
         }
       ]
     },
@@ -1045,7 +1115,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v48",
+      "version": "v49",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1060,6 +1130,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-07-20",
+          "note": "add SDE2-03 exposure-targeted rare-action sampling config fields and CLI args; defaults preserve existing behavior"
+        },
         {
           "version": "v48",
           "date": "2026-07-20",
@@ -1549,6 +1624,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -1628,6 +1708,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1715,6 +1800,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -1789,6 +1879,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -1858,6 +1953,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -1922,6 +2022,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -1983,6 +2088,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -2039,6 +2149,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2123,6 +2238,11 @@
         "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2231,6 +2351,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -2272,6 +2397,11 @@
         "docs/design/iter-slm156-plan-refinement-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2319,6 +2449,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -2363,6 +2498,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after harness.experiments v42 bump; harness behavior and thresholds unchanged"
         },
         {
@@ -2404,6 +2544,11 @@
         "docs/design/iter-slm160-spv-disposition-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-20",

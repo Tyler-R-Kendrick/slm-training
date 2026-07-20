@@ -88,6 +88,12 @@ class ModelBuildConfig:
     mixture_manifest: Path | None = None
     mixture_min_quality_score: float = 0.0
     mixture_sampling_policy: str = "with_replacement"
+    # SDE2-03 (SLM-170): exposure-targeted rare-action sampling knobs.
+    mixture_exposure_target_profile: str | None = None
+    mixture_total_decision_budget: int | None = None
+    mixture_per_root_cap: int | None = None
+    mixture_per_template_cap: int | None = None
+    mixture_max_importance_weight: float | None = None
     # P1d: after base training, write promoted.pt from best_weighted_nll / last.
     register_promoted: bool = False
     # Stub-only

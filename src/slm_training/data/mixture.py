@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import random
 import re
 from collections import Counter
@@ -63,7 +64,7 @@ ORGANIC_FAMILIES = (
 )
 FEEDBACK_FAMILIES = ("human_feedback",)
 SAMPLING_POLICIES = frozenset(
-    {"with_replacement", "capacity_aware", "quota_capacity_aware"}
+    {"with_replacement", "capacity_aware", "quota_capacity_aware", "exposure_targeted"}
 )
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
@@ -179,6 +180,202 @@ def index_task_family_pools(
     return pools
 
 
+def record_action_counts(record: ExampleRecord) -> Counter[str]:
+    """Extract component names and placeholders from a record's OpenUI target."""
+    counts: Counter[str] = Counter(_COMPONENT_RE.findall(record.openui))
+    counts.update(record.placeholders or ())
+    return counts
+
+
+def build_exposure_ledger(
+    records: list[ExampleRecord],
+    selected_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    """Build per-action and aggregate exposure statistics for a corpus or selection.
+
+    The ledger is audit-only: it reports raw counts and diversity caps without
+    changing the sampler.  ``selected_ids`` restricts the audit to a sampled
+    subset (e.g. the records chosen by ``_sample_exposure_targeted``).
+    """
+    selected_ids = selected_ids or {r.id for r in records}
+    action_records: dict[str, list[ExampleRecord]] = {}
+    action_counts: Counter[str] = Counter()
+    roots: dict[str, set[str | None]] = {}
+    templates: dict[str, set[str | None]] = {}
+    total_decisions = 0
+
+    for record in records:
+        counts = record_action_counts(record)
+        if not counts:
+            continue
+        total_decisions += sum(counts.values())
+        meta = record.meta or {}
+        root_id = str(meta.get("root_parent_id") or meta.get("parent_id") or record.id)
+        template_key = str(meta.get("parent_id") or meta.get("source_family") or record.source)
+        for action, count in counts.items():
+            action_records.setdefault(action, []).append(record)
+            action_counts[action] += count
+            roots.setdefault(action, set()).add(root_id)
+            templates.setdefault(action, set()).add(template_key)
+
+    actions = {
+        action: {
+            "raw_record_count": len(
+                [r for r in action_records.get(action, []) if r.id in selected_ids]
+            ),
+            "raw_target_decision_count": sum(
+                record_action_counts(r).get(action, 0)
+                for r in action_records.get(action, [])
+                if r.id in selected_ids
+            ),
+            "unique_root_count": len(roots.get(action, set())),
+            "unique_prompt_template_count": len(templates.get(action, set())),
+        }
+        for action in sorted(action_counts)
+    }
+
+    selected_records = [r for r in records if r.id in selected_ids]
+    selected_counts: Counter[str] = Counter()
+    for record in selected_records:
+        selected_counts.update(record_action_counts(record))
+
+    return {
+        "actions": actions,
+        "observed_decisions_per_run": dict(sorted(selected_counts.items())),
+        "aggregate": {
+            "total_records": len(records),
+            "selected_records": len(selected_records),
+            "total_decisions": total_decisions,
+            "selected_decisions": sum(selected_counts.values()),
+            "unique_actions": len(action_counts),
+        },
+    }
+
+
+def _sample_exposure_targeted(
+    records: list[ExampleRecord],
+    weights: dict[str, float],
+    action_targets: dict[str, float],
+    total_decision_budget: int,
+    per_root_cap: int | None,
+    per_template_cap: int | None,
+    max_importance_weight: float,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    """Greedy rare-action sampler with bounded importance weights and diversity caps.
+
+    Each selected record contributes its action counts toward the per-action
+    targets.  Selection stops when the total record budget is exhausted, all
+    targets are met, or no remaining record can be added without violating a cap.
+    """
+    if total_decision_budget <= 0 or not records:
+        return []
+
+    record_counts = [record_action_counts(r) for r in records]
+    max_iw = max(1.0, float(max_importance_weight))
+    no_cap = len(records)
+    per_root_cap = no_cap if per_root_cap is None else max(1, int(per_root_cap))
+    per_template_cap = no_cap if per_template_cap is None else max(1, int(per_template_cap))
+
+    current: Counter[str] = Counter()
+    root_counts: Counter[str] = Counter()
+    template_counts: Counter[str] = Counter()
+    selected: list[ExampleRecord] = []
+    selected_set: set[int] = set()
+
+    targets = {a: float(t) for a, t in action_targets.items() if t > 0}
+    if not targets:
+        # No targets supplied: fall back to uniform random within the budget.
+        return [
+            records[rng.randrange(len(records))]
+            for _ in range(min(total_decision_budget, len(records)))
+        ]
+
+    def _gain(index: int) -> tuple[float, int]:
+        counts = record_counts[index]
+        if not counts:
+            return (0.0, index)
+        gain = 0.0
+        for action, count in counts.items():
+            target = targets.get(action, 0.0)
+            deficit = max(0.0, target - current[action])
+            # Importance weight is target-normalized and capped.
+            importance = min(max_iw, target / max(1.0, current[action]))
+            gain += deficit * importance * count
+        return (gain, index)
+
+    while len(selected) < total_decision_budget:
+        best_gain = -1.0
+        best_index = -1
+        for index, record in enumerate(records):
+            if index in selected_set:
+                continue
+            meta = record.meta or {}
+            root_id = str(meta.get("root_parent_id") or meta.get("parent_id") or record.id)
+            template_key = str(
+                meta.get("parent_id") or meta.get("source_family") or record.source
+            )
+            if root_counts[root_id] >= per_root_cap:
+                continue
+            if template_counts[template_key] >= per_template_cap:
+                continue
+            gain, _ = _gain(index)
+            if gain > best_gain:
+                best_gain = gain
+                best_index = index
+        if best_index < 0 or best_gain <= 0:
+            break
+        selected_set.add(best_index)
+        selected.append(records[best_index])
+        current.update(record_counts[best_index])
+        meta = records[best_index].meta or {}
+        root_id = str(meta.get("root_parent_id") or meta.get("parent_id") or records[best_index].id)
+        template_key = str(
+            meta.get("parent_id") or meta.get("source_family") or records[best_index].source
+        )
+        root_counts[root_id] += 1
+        template_counts[template_key] += 1
+
+    return selected
+
+
+def _build_default_action_targets(
+    records: list[ExampleRecord],
+    weights: dict[str, float],
+    total_decision_budget: int,
+    max_importance_weight: float,
+) -> dict[str, float]:
+    """Sqrt-inverse-frequency capped targets derived from family weights."""
+    if not records:
+        return {}
+    family_pools = index_family_pools(records)
+    action_family_counts: dict[str, Counter[str]] = {}
+    for family, members in family_pools.items():
+        family_weight = float(weights.get(family, 0.0))
+        if family_weight <= 0:
+            continue
+        for record in members:
+            for action, count in record_action_counts(record).items():
+                action_family_counts.setdefault(action, Counter())[family] += (
+                    count * family_weight
+                )
+
+    if not action_family_counts:
+        # No weighted actions: fall back to raw corpus frequencies.
+        for record in records:
+            for action, count in record_action_counts(record).items():
+                action_family_counts.setdefault(action, Counter())["_corpus"] += count
+
+    max_iw = max(1.0, float(max_importance_weight))
+    raw: dict[str, float] = {}
+    for action, family_counter in action_family_counts.items():
+        weighted_freq = sum(family_counter.values())
+        raw[action] = min(max_iw, 1.0 / math.sqrt(max(1.0, weighted_freq)))
+
+    total = sum(raw.values()) or 1.0
+    return {a: total_decision_budget * v / total for a, v in raw.items()}
+
+
 def sample_mixture_batch(
     records: list[ExampleRecord],
     *,
@@ -189,12 +386,96 @@ def sample_mixture_batch(
     task_weights: dict[str, float] | None = None,
     task_pools: dict[str, dict[str, list[ExampleRecord]]] | None = None,
     sampling_policy: str = "with_replacement",
+    **kwargs: Any,
 ) -> list[ExampleRecord]:
     """Online weighted per-family draw (uses loop RNG for bit-exact resume)."""
     if batch_size <= 0:
         return []
     if sampling_policy not in SAMPLING_POLICIES:
         raise ValueError(f"unknown mixture sampling policy: {sampling_policy!r}")
+    if sampling_policy == "exposure_targeted":
+        action_targets = kwargs.get("action_targets")
+        total_decision_budget = int(
+            kwargs.get("total_decision_budget") or batch_size
+        )
+        per_root_cap = kwargs.get("per_root_cap")
+        per_template_cap = kwargs.get("per_template_cap")
+        max_importance_weight = float(kwargs.get("max_importance_weight") or 10.0)
+        if not action_targets:
+            action_targets = _build_default_action_targets(
+                records,
+                weights=weights,
+                total_decision_budget=total_decision_budget,
+                max_importance_weight=max_importance_weight,
+            )
+        if not action_targets:
+            # Nothing to target: retain the legacy default sampler.
+            return sample_mixture_batch(
+                records,
+                weights=weights,
+                batch_size=batch_size,
+                rng=rng,
+                pools=pools,
+                task_weights=task_weights,
+                task_pools=task_pools,
+                sampling_policy="with_replacement",
+            )
+        selected = _sample_exposure_targeted(
+            records,
+            weights=weights,
+            action_targets=action_targets,
+            total_decision_budget=total_decision_budget,
+            per_root_cap=per_root_cap,
+            per_template_cap=per_template_cap,
+            max_importance_weight=max_importance_weight,
+            rng=rng,
+        )
+        # Pad only if the greedy selection under-ran the requested batch size,
+        # and only with records that do not violate the diversity caps.
+        if len(selected) < batch_size:
+            shortfall = batch_size - len(selected)
+            selected_ids = {r.id for r in selected}
+            root_counts: Counter[str] = Counter()
+            template_counts: Counter[str] = Counter()
+            for record in selected:
+                meta = record.meta or {}
+                root_counts[
+                    str(meta.get("root_parent_id") or meta.get("parent_id") or record.id)
+                ] += 1
+                template_counts[
+                    str(
+                        meta.get("parent_id")
+                        or meta.get("source_family")
+                        or record.source
+                    )
+                ] += 1
+            per_root_cap = (
+                len(records) if kwargs.get("per_root_cap") is None else int(kwargs["per_root_cap"])
+            )
+            per_template_cap = (
+                len(records) if kwargs.get("per_template_cap") is None else int(kwargs["per_template_cap"])
+            )
+            candidates: list[ExampleRecord] = []
+            for record in records:
+                if record.id in selected_ids:
+                    continue
+                meta = record.meta or {}
+                root_key = str(
+                    meta.get("root_parent_id") or meta.get("parent_id") or record.id
+                )
+                template_key = str(
+                    meta.get("parent_id")
+                    or meta.get("source_family")
+                    or record.source
+                )
+                if (
+                    root_counts[root_key] < per_root_cap
+                    and template_counts[template_key] < per_template_cap
+                ):
+                    candidates.append(record)
+            rng.shuffle(candidates)
+            selected.extend(candidates[:shortfall])
+        return selected
     pools = pools or index_family_pools(records)
     manifest = MixtureManifest(mixture_id="runtime", weights=weights).normalized()
     if task_weights:
