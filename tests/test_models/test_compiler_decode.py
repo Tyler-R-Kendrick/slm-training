@@ -518,6 +518,73 @@ def test_repeated_plan_slot_bias_targets_best_unused_visible_slot() -> None:
     )
 
 
+def test_typed_array_nonempty_bias_starts_slot_bearing_authored_array() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_nonempty_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    gallery_id = tokenizer.token_to_id["+ImageGallery"]
+    object_id = tokenizer.token_to_id["{"]
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{gallery_id: 1}]
+    model._slot_contracts = [[":gallery.image", ":gallery.caption"]]
+    item_schema = {
+        "type": "object",
+        "properties": {"src": {"type": "string"}},
+        "required": ["src"],
+    }
+    empty = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:ImageGallery"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(item_schema,),
+                close="]",
+            ),
+        ]
+    )
+    candidates = (object_id, close_id)
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        empty,
+        [tokenizer.bos_id, gallery_id],
+        candidates,
+        torch.tensor([1.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [9.0, 0.0]
+    empty.frames[-1].item_count = 1
+    assert (
+        model._semantic_plan_typed_array_nonempty_bias(
+            0,
+            empty,
+            [tokenizer.bos_id, gallery_id],
+            candidates,
+            torch.tensor([1.0, 8.0]),
+        )
+        is None
+    )
+    empty.frames[-1].item_count = 0
+    empty.frames[-1].schemas = ({"type": "number"},)
+    assert (
+        model._semantic_plan_typed_array_nonempty_bias(
+            0,
+            empty,
+            [tokenizer.bos_id, gallery_id],
+            candidates,
+            torch.tensor([1.0, 8.0]),
+        )
+        is None
+    )
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

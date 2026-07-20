@@ -3830,6 +3830,20 @@ was created or synced. Evidence:
 [narrative](iter-e611-repeated-plan-slot-allocation-20260720.md) and
 [JSON](iter-e611-repeated-plan-slot-allocation-20260720.json).
 
+## E612 authored typed-array nonempty margin
+
+E612 prevents an authored prompt-plan component from closing an empty typed
+array when its item schema can reach visible slots. Gallery changes from
+`ImageGallery([])` to `ImageGallery([$s45])`, but `$s45` is an unresolved state
+reference rather than a visible slot. Gallery therefore remains at zero
+fidelity, validity, recall, and reward. Every aggregate quality metric is
+exactly unchanged from E611, while emitted tokens rise 85→86. Reject the
+highest-scoring-non-close policy as a quality baseline; preserve the default-off
+lever and negative result, and keep E611 as the scratch baseline. Strict v2
+remains 0, AgentV is 0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e612-authored-typed-array-nonempty-20260720.md) and
+[JSON](iter-e612-authored-typed-array-nonempty-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E612",
+  "run_id": "e612-e611-typedarraynonempty2-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Preventing an authored collection from closing its typed child array empty will make the gallery consume a visible slot without regressing E611.",
+  "preregistration": {
+    "primary": "Gallery emits a nonempty ImageGallery item containing at least one public visible slot.",
+    "retain_if": "Meaningful-v1, fidelity, validity, structure, recall, and reward do not regress versus E611.",
+    "promotion_requires": "Strict meaning-v2 and AgentV pass in addition to full honest ship gates."
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "e611-e610-repeatedslotmargin2-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.7,
+      "placeholder_validity": 0.72,
+      "structural_similarity": 0.772925,
+      "component_type_recall": 0.6875,
+      "reward_score": 0.71475,
+      "ast_node_f1": 0.7579365079365079,
+      "ast_edge_f1": 0.6309523809523809,
+      "latency_ms_p50": 2882.72,
+      "latency_ms_p95": 9345.94,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "tokens_emitted": 86
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "comparison_to_e611": {
+    "meaningful_program_rate_delta": 0.0,
+    "strict_v2_delta": 0.0,
+    "placeholder_fidelity_delta": 0.0,
+    "placeholder_validity_delta": 0.0,
+    "structural_similarity_delta": 0.0,
+    "component_type_recall_delta": 0.0,
+    "reward_score_delta": 0.0,
+    "ast_node_f1_delta": 0.0,
+    "ast_edge_f1_delta": 0.0,
+    "latency_ms_p50_delta": -1367.86,
+    "latency_ms_p95_delta": -2111.55,
+    "tokens_emitted_delta": 1
+  },
+  "gallery": {
+    "prediction": "root = Stack([v0], \"column\")\nv0 = ImageGallery([$s45])",
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "structural_similarity": 0.3167,
+    "component_type_recall": 0.0,
+    "reward_score": 0.0,
+    "choice_tokens": 13,
+    "visible_slots_consumed": 0,
+    "failure_reasons": [
+      "required_placeholder_missing",
+      "reference_graph_invalid",
+      "schema_value_role_mismatch:ImageGallery.images"
+    ]
+  },
+  "trace_findings": [
+    "The margin displaces the empty-array close.",
+    "The highest-scoring legal non-close token is generic state reference $@45, not the typed object start.",
+    "Dashboard, modal, and auth predictions are unchanged from E611.",
+    "All aggregate quality metrics are exactly unchanged while one token is added."
+  ],
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "diagnostic OOD n=4 is below the required full-suite sample size",
+      "strict binding-aware meaning-v2 is 0.0",
+      "AgentV is 0/1",
+      "smoke, held_out, adversarial, and rico_held suites were not run"
+    ]
+  },
+  "decision": "Reject the highest-scoring-non-close policy as a quality baseline. Preserve it default-off as negative evidence; E611 remains the scratch baseline.",
+  "next": "Target the schema-derived typed item start rather than an arbitrary legal any expression, then trace required object-property slot binding.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "839813e093ca439b0e821c80c90eccceceb874ed",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v31",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v53"
+    },
+    "stamped_at": "2026-07-20T15:38:28.799038+00:00"
+  }
+}
