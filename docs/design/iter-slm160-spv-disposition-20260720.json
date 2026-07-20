@@ -2,9 +2,9 @@
   "canonical_architecture_recommendation": "Canonical architecture remains the existing honest-slot-contract TwoTower decoder with all plan-aware mechanisms retained as default-off diagnostics. Do not promote or sync checkpoints from E575/E576/E579. Unblock flow/consistency (SLM-157) and second-pack portability only after their upstream dependencies are implemented and measured. The next high-leverage step is a factor-wise oracle-substitution matrix for topology/cardinality/bindings and a versioned hard-valid semantic-contrast corpus.",
   "claim_class": "wiring",
   "cross_pack_summary": "SPV4-02 audit covers semantic planning, valid-state init/search, scoring/supervision, generation factorization, and portability. All evidence up through SLM-159 is wiring/fixture, blocked, or measured-not-promotable. No mechanism satisfies the criteria for adopt_primary or adopt_optional. The GraphQL pack replication is a retained diagnostic; all second-pack portability is blocked pending real pack implementations.",
-  "evidence_cutoff_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
+  "evidence_cutoff_commit": "55afe65bfa54e161b3d486776cbf384db643f5e7",
   "experiment_id": "slm160-spv-disposition",
-  "generated_at": "2026-07-20T09:23:57.729755Z",
+  "generated_at": "2026-07-20T10:05:26.761878Z",
   "matrix_set": "slm160_spv_disposition",
   "matrix_version": "spv4-02-v1",
   "mechanism_dispositions": [
@@ -199,7 +199,7 @@
       ],
       "mechanism_id": "flow_consistency_slm157",
       "next_action": "Implement SLM-99/SLM-148 dependencies, then create a fixture or measured matrix for flow/consistency before disposition review.",
-      "rationale": "Blocked: upstream dependencies SLM-99/SLM-148 are not done and no implementation exists. The evidence document is also absent. [Evidence missing at audit time: docs/design/iter-slm157-flow-consistency-20260720.json]"
+      "rationale": "Blocked: upstream dependency SLM-99/SLM-148 is not done and the new fixture evidence is wiring-only, so the mechanism remains blocked."
     },
     {
       "default_state": "off",
@@ -260,15 +260,15 @@
   "run_id": "slm160_disposition_fixture",
   "schema": "SPVDispositionV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T09:23:57.730138Z",
+  "timestamp": "2026-07-20T10:05:26.762682Z",
   "version_stamp": {
-    "code_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
+    "code_commit": "55afe65bfa54e161b3d486776cbf384db643f5e7",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v35",
-      "harness.experiments.slm160_spv_disposition": "v1"
+      "harness.experiments": "v37",
+      "harness.experiments.slm160_spv_disposition": "v2"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T09:23:57.729773+00:00"
+    "stamped_at": "2026-07-20T10:05:26.761898+00:00"
   }
 }
