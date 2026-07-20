@@ -5623,20 +5623,6 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
-                    semantic_plan_binding_bias = self._semantic_plan_binding_bias(
-                        row,
-                        states[row],
-                        ids[row, :position].tolist(),
-                        candidate_ids,
-                    )
-                    if semantic_plan_binding_bias is not None:
-                        before_plan_binding = int(scores.argmax().item())
-                        scores = scores + semantic_plan_binding_bias
-                        if stats is not None:
-                            stats.semantic_plan_binding_applications += 1
-                            stats.semantic_plan_binding_choice_changes += int(
-                                int(scores.argmax().item()) != before_plan_binding
-                            )
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -5715,6 +5701,22 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
+                    # Learned identity permutes the reference score group, so apply
+                    # predicted plan evidence afterward to preserve both factors.
+                    semantic_plan_binding_bias = self._semantic_plan_binding_bias(
+                        row,
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                    )
+                    if semantic_plan_binding_bias is not None:
+                        before_plan_binding = int(scores.argmax().item())
+                        scores = scores + semantic_plan_binding_bias
+                        if stats is not None:
+                            stats.semantic_plan_binding_applications += 1
+                            stats.semantic_plan_binding_choice_changes += int(
+                                int(scores.argmax().item()) != before_plan_binding
+                            )
                     reference_bias = self._visible_reference_completeness_bias(
                         states[row],
                         ids[row, :position].tolist(),

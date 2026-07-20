@@ -3096,6 +3096,22 @@ not a stronger binding scalar. Evidence:
 [narrative](iter-e576-prompt-plan-binding-soft-20260720.md) and
 [JSON](iter-e576-prompt-plan-binding-soft-20260720.json).
 
+## E577 plan-binding score composition
+
+E577 applies predicted plan-binding evidence after learned root-reference
+identity ranking so identity cannot overwrite the plan factor. On a clean,
+matched E569 OOD `n=4` pair, binding weight 1 changes 2/4 applicable latent
+reference decisions versus 0 in E576, validating the composition diagnosis.
+All four final programs remain identical to control, however, and every
+quality aggregate is unchanged: meaning-v1 0.25, strict meaning-v2 0,
+AST-edge F1 0, reward 0.7345, and AgentV 0/1.
+
+**Decision:** retain the corrected factor order, keep binding scoring
+default-off, and do not promote or sync. The remaining bottleneck is root
+construction/topology cardinality, not reference-ranker ordering. Evidence:
+[narrative](iter-e577-plan-binding-order-20260720.md) and
+[JSON](iter-e577-plan-binding-order-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
