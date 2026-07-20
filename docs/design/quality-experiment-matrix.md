@@ -3616,3 +3616,13 @@ diagnostic evidence only; strict v2 remains 0, AgentV is 0/1, and no
 checkpoint was created or synced. Evidence:
 [narrative](iter-e595-action-plan-inference-20260720.md) and
 [JSON](iter-e595-action-plan-inference-20260720.json).
+
+## E596 visible slot-role aliases
+
+E596 maps visible body/action role aliases to compatible schema properties.
+The matched E595 OOD `n=4` treatment is prediction- and metric-identical:
+structure 0.4694, recall 0.6250, reward 0.8115, strict v2 0, and AgentV 0/1.
+The remaining-slot order commits Button to body before property-role scoring.
+Do not promote or sync; next repair component-to-slot assignment order.
+Evidence: [narrative](iter-e596-slot-role-alias-20260720.md) and
+[JSON](iter-e596-slot-role-alias-20260720.json).

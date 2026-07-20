@@ -117,13 +117,27 @@ def semantic_role_candidates(
     from slm_training.dsl.lang_core import library_schema
 
     definitions = library_schema().get("$defs", {})
+    property_aliases = {
+        "body": {"text"},
+        "copy": {"text"},
+        "description": {"text"},
+        "confirm": {"label", "action"},
+        "create": {"label", "action"},
+        "save": {"label", "action"},
+        "submit": {"label", "action"},
+        "continue": {"label", "action"},
+        "cta": {"label", "action"},
+    }
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
         role = placeholder.removeprefix(":").split(".")[-1]
+        compatible_properties = {role, *property_aliases.get(role, ())}
         result[placeholder] = tuple(
             name
             for name in sorted(set(component_names))
-            if role in (definitions.get(name, {}).get("properties") or {})
+            if compatible_properties.intersection(
+                definitions.get(name, {}).get("properties") or {}
+            )
         )
     return result
 
