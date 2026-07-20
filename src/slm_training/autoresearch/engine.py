@@ -485,6 +485,17 @@ def compile_commands(
             value = getattr(knobs, field)
             if value is not None:
                 train.append(f"--{flag}" if value else f"--no-{flag}")
+        for field, flag in {
+            "action_embedding_init": "action-embedding-init",
+            "action_embedding_train": "action-embedding-train",
+            "action_alias_mode": "action-alias-mode",
+            "action_description_name_mode": "action-description-name-mode",
+        }.items():
+            value = getattr(knobs, field)
+            if value is not None:
+                train.extend([f"--{flag}", str(value)])
+        if knobs.action_alias_manifest is not None:
+            train.extend(["--action-alias-manifest", str(knobs.action_alias_manifest)])
     if knobs.mixture_weights:
         train.extend(["--mixture-manifest", str(mixture_path)])
     if knobs.mixture_sampling_policy:

@@ -312,6 +312,11 @@ class ModelBuildConfig:
     # SLM-163: action-embedding initialization source and trainability.
     action_embedding_init: str = "none"
     action_embedding_train: str = "frozen"
+    # SLM-174 (SDE2-07): description-mediated generalization with anonymized
+    # action aliases.  Default ``canonical`` preserves canonical names.
+    action_alias_mode: str = "canonical"
+    action_alias_manifest: Path | None = None
+    action_description_name_mode: str = "schema"
     # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
     # sparse grammar-action scorer.  ``none`` is identity and preserves behavior.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention

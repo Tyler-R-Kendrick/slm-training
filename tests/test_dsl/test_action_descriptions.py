@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from slm_training.dsl.action_descriptions import (
+    ActionAliasMap,
     ActionDescriptionCatalog,
     FixtureDescriptionEncoder,
+    build_alias_map,
     centroid_distance,
     compute_nearest_neighbor_metrics,
     coverage_report,
@@ -142,3 +146,81 @@ def test_centroid_distance() -> None:
     }
     dist = centroid_distance(vectors, {"a1", "a2"}, {"b1", "b2"})
     assert dist == pytest.approx(10.0, abs=1e-4)
+
+
+def test_alias_map_is_bijection() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    alias_map = build_alias_map(7, "test", catalog.keys())
+    assert len(alias_map.by_key) == len(catalog.keys())
+    assert len(alias_map.by_alias) == len(alias_map.by_key)
+    for key in catalog.keys():
+        alias = alias_map.by_key[key]
+        assert alias_map.invert(alias) == key
+
+
+def test_alias_map_deterministic() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    m1 = build_alias_map(3, "pack", catalog.keys())
+    m2 = build_alias_map(3, "pack", catalog.keys())
+    assert m1.by_key == m2.by_key
+
+
+def test_alias_map_seed_and_pack_change_mapping() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    m1 = build_alias_map(0, "a", catalog.keys())
+    m2 = build_alias_map(1, "a", catalog.keys())
+    m3 = build_alias_map(0, "b", catalog.keys())
+    assert m1.by_key != m2.by_key
+    assert m1.by_key != m3.by_key
+
+
+def test_alias_map_no_canonical_substrings() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    alias_map = build_alias_map(0, "leak", catalog.keys())
+    for key, alias in alias_map.by_key.items():
+        short = key.lstrip("+*")
+        assert short not in alias
+        assert key not in alias
+
+
+def test_alias_aware_description_no_leakage() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    alias_map = build_alias_map(0, "leak", catalog.keys())
+    descriptions = catalog.descriptions_for(
+        "alias_aware_description", alias_map=alias_map
+    )
+    findings = alias_map.validate_no_leakage(descriptions, entries=catalog.by_key)
+    assert not findings
+
+
+def test_alias_aware_signature_only_no_leakage() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    alias_map = build_alias_map(0, "sig", catalog.keys())
+    descriptions = catalog.descriptions_for(
+        "alias_aware_signature_only", alias_map=alias_map
+    )
+    findings = alias_map.validate_no_leakage(descriptions, entries=catalog.by_key)
+    assert not findings
+
+
+def test_description_modes_differ() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    plus = catalog.descriptions_for("canonical_name_plus_description")
+    minus = catalog.descriptions_for("description_without_canonical_name")
+    sig = catalog.descriptions_for("signature_only")
+    for key in ("+Card", "+Stack", "+Button"):
+        assert plus[key] != minus[key]
+        assert sig[key] != minus[key]
+        # The canonical short name should not appear as a whole word in the
+        # stripped description (cross-references to other components may remain).
+        short = key.lstrip("+")
+        assert not re.search(r"\b" + re.escape(short) + r"\b", minus[key])
+
+
+def test_alias_map_round_trip_dict() -> None:
+    catalog = ActionDescriptionCatalog.build()
+    alias_map = build_alias_map(5, "rt", catalog.keys())
+    reconstructed = ActionAliasMap.from_dict(alias_map.to_dict())
+    assert reconstructed.by_key == alias_map.by_key
+    assert reconstructed.seed == alias_map.seed
+    assert reconstructed.pack_id == alias_map.pack_id

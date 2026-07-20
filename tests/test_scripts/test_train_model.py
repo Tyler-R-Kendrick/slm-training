@@ -65,3 +65,43 @@ def test_train_cli_wires_honest_slot_contract(monkeypatch, tmp_path) -> None:
     config = captured["config"]
     assert config.slot_contract_in_context is True
     assert config.honest_slot_contract is True
+
+
+def test_train_cli_wires_action_alias_args(monkeypatch, tmp_path) -> None:
+    captured = {}
+
+    def fake_train(config):
+        captured["config"] = config
+        return {"run_id": config.run_id}
+
+    monkeypatch.setattr(train_model, "train", fake_train)
+
+    assert (
+        train_model.main(
+            [
+                "--train-dir",
+                str(tmp_path),
+                "--run-root",
+                str(tmp_path / "runs"),
+                "--run-id",
+                "alias-test",
+                "--model",
+                "stub",
+                "--steps",
+                "1",
+                "--action-embedding-init",
+                "alias_aware_description",
+                "--action-alias-mode",
+                "fixed",
+                "--action-description-name-mode",
+                "alias_aware_description",
+                "--no-sync-checkpoints",
+            ]
+        )
+        == 0
+    )
+
+    config = captured["config"]
+    assert config.action_embedding_init == "alias_aware_description"
+    assert config.action_alias_mode == "fixed"
+    assert config.action_description_name_mode == "alias_aware_description"

@@ -105,6 +105,11 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "grammar_equivalence_cache",
         "grammar_active_symbol_bitsets",
         "compact_active_canvas",
+        "action_embedding_init",
+        "action_embedding_train",
+        "action_alias_mode",
+        "action_alias_manifest",
+        "action_description_name_mode",
     }
 )
 
@@ -329,6 +334,37 @@ class ExperimentKnobs(StrictModel):
     grammar_equivalence_cache: bool | None = None
     grammar_active_symbol_bitsets: bool | None = None
     compact_active_canvas: bool | None = None
+    action_embedding_init: (
+        Literal[
+            "none",
+            "current_stub",
+            "schema_description",
+            "expanded_description",
+            "shuffled",
+            "alias_aware_description",
+            "alias_aware_signature_only",
+            "alias_aware_shuffled",
+            "description_without_canonical_name",
+            "canonical_name_plus_description",
+            "signature_only",
+        ]
+        | None
+    ) = None
+    action_embedding_train: Literal["frozen", "trainable"] | None = None
+    action_alias_mode: Literal["canonical", "off", "fixed", "held_out"] | None = None
+    action_alias_manifest: str | None = None
+    action_description_name_mode: (
+        Literal[
+            "schema",
+            "alias_aware_description",
+            "alias_aware_signature_only",
+            "alias_aware_shuffled",
+            "description_without_canonical_name",
+            "canonical_name_plus_description",
+            "signature_only",
+        ]
+        | None
+    ) = None
     scope_contracts: bool | None = None
     scope_independent_noise: bool | None = None
     scope_local_oracle: bool | None = None

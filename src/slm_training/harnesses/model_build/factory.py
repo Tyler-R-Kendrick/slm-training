@@ -161,6 +161,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "teacher_init_embeddings",
         "action_embedding_init",
         "action_embedding_train",
+        "action_alias_mode",
+        "action_alias_manifest",
+        "action_description_name_mode",
         "semantic_connector",
         "connector_hidden_dim",
         "connector_rank",
@@ -597,6 +600,11 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
         action_embedding_init=getattr(config, "action_embedding_init", "none"),
         action_embedding_train=getattr(config, "action_embedding_train", "frozen"),
+        action_alias_mode=str(getattr(config, "action_alias_mode", "canonical") or "canonical"),
+        action_alias_manifest=getattr(config, "action_alias_manifest", None),
+        action_description_name_mode=str(
+            getattr(config, "action_description_name_mode", "schema") or "schema"
+        ),
         semantic_connector=str(getattr(config, "semantic_connector", "none") or "none"),
         connector_hidden_dim=int(getattr(config, "connector_hidden_dim", 256) or 256),
         connector_rank=int(getattr(config, "connector_rank", 32) or 32),
