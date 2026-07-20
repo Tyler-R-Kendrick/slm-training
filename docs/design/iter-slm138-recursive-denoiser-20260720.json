@@ -1,0 +1,50 @@
+{
+  "checkpoint_roundtrip_ok": true,
+  "claim_class": "wiring",
+  "deep_supervision_metrics": {
+    "recursive_depth_loss_0": 26.03812026977539,
+    "recursive_depth_loss_1": 23.953886032104492,
+    "recursive_depth_supervision_loss": 33.3280029296875
+  },
+  "denoiser_architectures": [
+    "stacked",
+    "shared_recursive"
+  ],
+  "forward_shapes": {
+    "recursive": [
+      2,
+      6,
+      32
+    ],
+    "stacked": [
+      2,
+      6,
+      32
+    ]
+  },
+  "losses": {
+    "recursive": 67.88097381591797,
+    "stacked": 40.054847717285156
+  },
+  "matrix_set": "slm138-shared-recursive-denoiser",
+  "matrix_version": "slm138-v1",
+  "note": "Wiring-only evidence. Full matched-block evaluation arms and GPU training are deferred.",
+  "recursive_params": 74242,
+  "recursive_weight_sharing": {
+    "f_layer_object_count": 1,
+    "g_layer_object_count": 1,
+    "total_shared_layers": 2
+  },
+  "run_id": "slm138_recursive_denoiser_fixture",
+  "stacked_params": 64994,
+  "status": "wiring_only",
+  "version_stamp": {
+    "code_commit": "930963fd55644c08362f5c63400af4b4d2670af7",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T02:33:32.371369+00:00"
+  }
+}

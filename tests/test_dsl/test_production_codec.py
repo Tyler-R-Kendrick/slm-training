@@ -518,3 +518,50 @@ def test_production_codec_choice_stream_end_to_end() -> None:
 def test_choice_stream_unbalanced_frame_fails_closed() -> None:
     with pytest.raises(ParseError):
         from_choice_stream((f"{OPEN_PREFIX}Card", '#"x"'))
+
+
+def test_parse_statement_bindings_roundtrip_equals_canonicalize() -> None:
+    from slm_training.dsl.canonicalize import canonicalize
+    from slm_training.dsl.production_codec import (
+        emit_statement_bindings,
+        parse_statement_bindings,
+        statement_binding_order,
+    )
+
+    bindings = parse_statement_bindings(HERO)
+    assert set(bindings) == {"root", "hero", "hero_title", "hero_body"}
+    order = statement_binding_order(bindings)
+    assert order[-1] == "root"
+    assert emit_statement_bindings(bindings) == canonicalize(HERO)
+
+
+def test_emit_statement_bindings_reflects_ast_mutations() -> None:
+    from slm_training.dsl.production_codec import (
+        emit_statement_bindings,
+        parse_statement_bindings,
+    )
+
+    bindings = parse_statement_bindings(HERO)
+    del bindings["hero_body"]
+    bindings["hero"]["props"]["children"] = [{"type": "ref", "name": "hero_title"}]
+    emitted = emit_statement_bindings(bindings)
+    assert ":hero.body" not in emitted
+    reparsed = parse_statement_bindings(emitted)
+    assert set(reparsed) == {"root", "v0", "v1"}
+
+
+def test_parse_statement_bindings_validate_false_reads_policy_literals() -> None:
+    from slm_training.dsl.production_codec import parse_statement_bindings
+
+    lit = 'root = Stack([t])\nt = TextContent("Free-form literal")'
+    bindings = parse_statement_bindings(lit, validate=False)
+    assert bindings["t"]["props"]["text"] == "Free-form literal"
+    with pytest.raises(ParseError):
+        parse_statement_bindings("no_root = Card([])", validate=False)
+
+
+def test_parse_statement_bindings_rejects_v05() -> None:
+    from slm_training.dsl.production_codec import parse_statement_bindings
+
+    with pytest.raises(ParseError, match="v0.5"):
+        parse_statement_bindings(V05_PROGRAM, validate=False)

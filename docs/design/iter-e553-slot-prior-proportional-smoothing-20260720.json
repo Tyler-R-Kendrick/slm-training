@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E553",
+  "run_id": "e553-e544-prior-proportional-r3-24s",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_negative_result_not_ship",
+  "hypothesis": "Class-prior-proportional smoothing plus corpus-local warm-start rebuilding will remove spurious unseen token-owner associations without sacrificing the E547 topology result.",
+  "implementation": {
+    "model_component": "model.twotower",
+    "model_component_version": "v8",
+    "train_component": "harness.model_build.train",
+    "train_component_version": "v13",
+    "prior_mass": "0.5 * component_class_count",
+    "posterior": "(token_class_count + prior_mass * base_class_rate) / (token_total + prior_mass)",
+    "warm_start_policy": "Restore learned weights, then rebuild deterministic lexeme and span priors from the active corpus.",
+    "regression_test": "A zero-cooccurrence slot token and component class receives a negative association."
+  },
+  "discarded_attempts": [
+    {
+      "run_id": "e553-e544-prior-proportional-r1-24s",
+      "reason": "The parent checkpoint silently replaced the newly computed corpus prior; the treatment was not exercised."
+    },
+    {
+      "run_id": "e553-e544-prior-proportional-r2-24s",
+      "reason": "The reconstructed command enabled DESIGN.md context and was not matched to E547."
+    }
+  ],
+  "checkpoint": {
+    "location": "outputs/runs/e553-e544-prior-proportional-r3-24s/checkpoints/last.pt",
+    "sha256": "510e55cf16fe23edd4ac408ed37d2409a895143646a6321c5b491c148e75399d",
+    "sync": false,
+    "sync_reason": "Explicit local-only 24-step scratch diagnostic; semantic and AgentV gates fail and topology regresses."
+  },
+  "training": {
+    "parent_run_id": "e544-e543-root-identity1-r2-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1304,
+    "elapsed_wall_seconds": 34.47508017200016,
+    "max_wall_minutes": 3.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_lexeme_prior_weight": 1.0,
+    "root_reference_identity_strict_subset_multiplier": 2,
+    "rebuilt_prior_fields": [
+      "slot_component_lexeme_priors",
+      "slot_component_span_priors"
+    ],
+    "last_loss": 12.193175315856934,
+    "hard_process_cap_seconds": 170
+  },
+  "prior_audit": {
+    "parent_tokens": 133,
+    "rebuilt_tokens": 65,
+    "comparable_scores": 3420,
+    "changed_scores": 3420,
+    "parent_positive_to_rebuilt_negative": 2303,
+    "parent_positive_scores": 2381,
+    "rebuilt_positive_scores": 100,
+    "max_absolute_score_delta": 4.100805375432357,
+    "scope": "The comparison includes both corpus-local rebuilding and the proportional-smoothing formula; the regression test isolates the zero-cooccurrence sign invariant."
+  },
+  "eval_recipe": {
+    "eval_run_id": "e553-prior-proportional-eval-r3",
+    "suite": "ood",
+    "n": 4,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.3,
+      "placeholder_validity": 0.48,
+      "structural_similarity": 0.12437500000000001,
+      "component_type_recall": 0.0625,
+      "reward_score": 0.54525,
+      "ast_node_f1": 0.15555555555555556,
+      "ast_edge_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0
+    }
+  },
+  "comparison": {
+    "baseline": "E547",
+    "interpretation": "The corrected corpus-local prior removes stale optimistic associations but does not preserve E547 topology.",
+    "fidelity_delta": 0.041666666666666685,
+    "structure_delta": -0.100425,
+    "recall_delta": -0.14583333333333331,
+    "reward_delta": 0.0050000000000000044,
+    "ast_node_f1_delta": -0.17142857142857143
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaningful-v1, strict-v2, AST edge F1, and AgentV remain zero; structure and component recall regress sharply."
+  },
+  "decision": "Keep the generalized prior and warm-start correctness fixes, but reject the checkpoint. Move from prior calibration to corpus/supervision coverage.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ebbc7579dee7160333dffb47a845fcedf56d52db",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v13",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v8"
+    },
+    "stamped_at": "2026-07-20T00:06:07.855029+00:00"
+  }
+}

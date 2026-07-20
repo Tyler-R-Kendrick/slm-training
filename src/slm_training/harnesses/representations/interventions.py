@@ -16,6 +16,7 @@ import torch
 
 from slm_training.harnesses.representations.sae import SparseAutoencoder
 from slm_training.harnesses.representations.spec import SAEArm, matched_sae_arms
+from slm_training.versioning import build_version_stamp
 
 __all__ = [
     "apply_direction",
@@ -173,11 +174,16 @@ def run_fixture_matrix(
             e, best_baseline_effect=best_baseline, preservation_budget=preservation_budget
         )
     return {
+        "matrix_set": "ldi4-02-sae-decision-state",
+        "matrix_version": "ldi4-02-v1",
+        "run_id": "ldi4_02_fixture",
         "site": site,
         "d_in": d_in,
         "n": n,
         "best_baseline_effect": best_baseline,
         "arms": [e.to_dict() for e in effects],
         "status": "wiring_only",
+        "claim_class": "wiring",
         "note": "synthetic fixture; no real model/checkpoint; no steering or superiority claim",
+        "version_stamp": build_version_stamp("harness.representations"),
     }

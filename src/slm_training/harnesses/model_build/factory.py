@@ -35,6 +35,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     for key in (
         "grammar_constrained",
         "grammar_top_k",
+        "denoiser_arch",
+        "recursive_steps",
+        "recursive_transition_layers",
+        "recursive_depth_supervision_weights",
         "structural_bias",
         "grammar_ltr_repair",
         "grammar_ltr_max_tokens",
@@ -135,6 +139,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",
         "binder_arity_decode_weight",
+        "root_reference_arity_decode_weight",
+        "root_reference_identity_decode_weight",
         "remask_span",
         "teacher_init_embeddings",
         "runtime_symbol_features",
@@ -262,6 +268,10 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         freeze_context=freeze,
         local_files_only=config.local_files_only,
         denoiser_backend=config.denoiser_backend,
+        denoiser_arch=config.denoiser_arch,
+        recursive_steps=config.recursive_steps,
+        recursive_transition_layers=config.recursive_transition_layers,
+        recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
         grammar_constrained=config.grammar_constrained,
         grammar_top_k=config.grammar_top_k,
         structural_bias=config.structural_bias,
@@ -457,6 +467,21 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         binder_arity_decode_weight=float(
             getattr(config, "binder_arity_decode_weight", 0.0) or 0.0
+        ),
+        root_reference_arity_loss_weight=float(
+            getattr(config, "root_reference_arity_loss_weight", 0.0) or 0.0
+        ),
+        root_reference_arity_decode_weight=float(
+            getattr(config, "root_reference_arity_decode_weight", 0.0) or 0.0
+        ),
+        root_reference_identity_loss_weight=float(
+            getattr(config, "root_reference_identity_loss_weight", 0.0) or 0.0
+        ),
+        root_reference_identity_negative_weight=float(
+            getattr(config, "root_reference_identity_negative_weight", 1.0)
+        ),
+        root_reference_identity_decode_weight=float(
+            getattr(config, "root_reference_identity_decode_weight", 0.0) or 0.0
         ),
         symbol_boundary_loss_weight=float(
             getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0
@@ -708,7 +733,9 @@ def build_model(
                 device=config.device,
                 local_files_only=config.local_files_only,
             )
-            return apply_runtime_overrides(loaded, config)
+            loaded = apply_runtime_overrides(loaded, config)
+            _maybe_load_adapter(loaded, config)
+            return loaded
 
         tt_cfg = _twotower_config_from_build(config)
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
@@ -716,6 +743,24 @@ def build_model(
             from slm_training.harnesses.quality import build_skeleton_bank
 
             model.skeleton_bank = build_skeleton_bank(records)
+        _maybe_load_adapter(model, config)
         return model
 
     raise ValueError(f"unknown model_name {config.model_name!r}")
+
+
+def _maybe_load_adapter(model: Any, config: ModelBuildConfig) -> None:
+    """Load a removable TwoTower adapter when ``config.adapter_spec`` is set.
+
+    Skips silently if the checkpoint already carries an adapter, and fails closed
+    on a mismatched or missing spec. The adapter is loaded trainable or frozen
+    according to ``config.adapter_trainable``.
+    """
+    spec_path = getattr(config, "adapter_spec", None)
+    if spec_path is None:
+        return
+    if not hasattr(model, "load_adapter"):
+        raise ValueError("adapter_spec is set but the model does not support adapters")
+    if getattr(model, "has_adapter", lambda: False)():
+        return
+    model.load_adapter(spec_path, trainable=bool(config.adapter_trainable))

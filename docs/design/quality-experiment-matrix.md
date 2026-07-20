@@ -149,6 +149,237 @@ python -m scripts.train_rl \
 python -m scripts.bench_telemetry --train-steps 8 --gen-prompts 8
 ```
 
+## External semantic ceiling (SLM-108 / EFS1-01)
+
+Off-the-shelf 1–7B instruct/code models scored through the same compiler-owned
+legal candidate space as the tiny SLM. This is a control experiment, not a
+replacement model. The matrix set is registered separately because it evaluates
+external weights rather than training a new checkpoint.
+
+| Arm | Model | Decode | Purpose |
+| --- | --- | --- | --- |
+| A | tiny SLM | constrained | Baseline from existing champion run |
+| B | HuggingFaceTB/SmolLM2-135M (1-2B) | constrained | Lower-bound external constrained |
+| C | Qwen/Qwen2.5-7B-Instruct (6-7B) | constrained | Upper-range external constrained |
+| D | Same as B | unconstrained + postvalidation | Constraint-distortion control |
+| E | Same as B | complete-candidate rerank | Diagnostic rerank mode |
+
+```bash
+# Fixture wiring run (CPU, no model download)
+python -m scripts.run_quality_matrix \
+  --matrix-set external-ceiling \
+  --mode fixture \
+  --run-root outputs/runs/slm108_external_ceiling \
+  --checkpoint-reference-uri hf://buckets/TKendrick/OpenUI/checkpoints/<baseline_run_id>/ref.json
+
+# Frontier run (GPU + pinned durable checkpoints required)
+python -m scripts.run_external_ceiling \
+  --mode frontier \
+  --output-dir outputs/runs/slm108_frontier \
+  --checkpoint-reference-uri hf://buckets/TKendrick/OpenUI/checkpoints/<baseline_run_id>/ref.json
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict`. Fixture runs are
+wiring-only and cannot claim ship gates. Frontier execution requires durable
+checkpoint provenance from SLM-103 and the EFS0 comparison stack.
+
+## Exposure ladder (SLM-109 / EFS1-02)
+
+Frozen E228 legal-candidate-margin recipe scaled from ~6.4k target tokens to
+≥100×. The ladder tests whether the tiny SLM is underexposed or whether the
+recipe is mis-specified.
+
+| Multiplier | Target tokens | Purpose |
+| --- | --- | --- |
+| 1× | 6,401 | Reproduction / resume baseline |
+| 4× | 25,604 | First ladder checkpoint |
+| 16× | 102,416 | Mid-ladder |
+| 64× | 409,664 | Late-ladder |
+| 128× | 819,328 | ≥100× threshold |
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_e228_exposure_ladder --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm109_e228_fixture
+
+# Frontier dispatch (GPU + durable checkpoint required)
+python -m scripts.hf_jobs_train \
+  --run-id e228-ladder-m4-s0 --steps 3200 \
+  --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --target-token-budget 25604"
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict` plus AgentV and
+independent labels. The recipe is frozen; any hash mismatch is a failed
+experiment. Frontier execution requires the E228 checkpoint and SLM-103 bucket
+sync.
+
+## Corruption curriculum (SLM-120 / EFS3-02)
+
+Frozen E228 legal-candidate-margin recipe with staged near-solved semantic
+corruption shares. Tests whether injecting 5–15% one- and two-error states
+improves recovery and fixed-point stability without degrading from-scratch
+generation.
+
+| Arm | Near-solved share (S1+S2) | Purpose |
+| --- | --- | --- |
+| A_control | 0% | Clean reproduction / resume baseline |
+| B05 | 5% | Low intervention |
+| B10 | 10% | Medium intervention |
+| B15 | 15% | High intervention |
+| B30 | 30% | Stress / copying-failure control |
+
+Within the near-solved share, S1 and S2 are split 50/50.
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_corruption_curriculum --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm120_corruption_fixture
+
+# Frontier dispatch (GPU + durable checkpoint required)
+python -m scripts.hf_jobs_train \
+  --run-id slm120-curriculum-b10-s0 --steps 3200 \
+  --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --near-solved-share 0.10"
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict`, with separate
+S0 stability, S1 recovery, and S2 recovery rates. Fixture runs are wiring-only
+and cannot claim ship gates. Frontier execution requires the EFS1-decided base
+recipe/checkpoint and SLM-103 bucket sync.
+
+## Causal PEFT FTPO (SLM-121 / LDI1-02)
+
+Frozen E228 legal-candidate-margin recipe with small removable PEFT adapters
+trained on exact-state causal decision events with FTPO objectives. Tests
+whether adapter-only updates can shift good legal actions above bad legal
+actions without changing base weights.
+
+| Objective | Purpose |
+| --- | --- |
+| `unlikelihood` | Negative control over bad legal actions |
+| `ftpo_single` | Exactly one good vs one bad action |
+| `ftpo_set` | Weighted good × bad margins |
+| `legal_set_mass` | Shift legal-space mass from bad set to good set |
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_causal_peft_ftpo --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm121_causal_peft_fixture
+
+# Frontier dispatch (GPU + durable checkpoint required)
+python -m scripts.hf_jobs_train \
+  --run-id slm121-causal-peft-ftpo-single-s0 --steps 3200 \
+  --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --adapter-method lora --ftpo-objective ftpo_single"
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict` plus
+`reference_locality_drift`. Fixture runs are wiring-only and cannot claim ship
+gates. Frontier execution requires a causal base checkpoint, an admitted
+DecisionEventV2 corpus, and SLM-103 bucket sync.
+
+## TwoTower removable adapter (SLM-123 / LDI2-01)
+
+Repository-owned LoRA-style low-rank delta over selected TwoTower denoiser
+projections. Parent weights stay frozen; only `A`/`B` factors are trainable.
+The adapter can be disabled (restoring the exact parent map), saved/loaded as a
+separate artifact, and merged one-way into a wrapper-free copy.
+
+| Target | Purpose |
+| --- | --- |
+| `attn_q`, `attn_v` | Attention query/value adaptation |
+| `attn_k`, `attn_out` | Attention key/output adaptation |
+| `cross_attn_*` | Cross-attention adaptation (when present) |
+| `mlp_in`, `mlp_out` | FFN adaptation |
+
+```bash
+# Load a saved adapter and train only adapter parameters
+python -m scripts.train_model \
+  --train-dir outputs/data/train/v1 \
+  --adapter-spec outputs/runs/slm123_adapter_evidence/adapter \
+  --steps 32
+
+# Load adapter frozen (inference / no adapter gradients)
+python -m scripts.train_model \
+  --train-dir outputs/data/train/v1 \
+  --adapter-spec outputs/runs/slm123_adapter_evidence/adapter \
+  --adapter-frozen \
+  --steps 32
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict`. Fixture runs are
+wiring-only and cannot claim ship gates. A real adapter-quality claim requires
+parent/adapter merge-parity tests, trained-adapter metrics, and SLM-103 bucket
+provenance.
+
+## B3 surface-vs-choice capacity ladder v2 (SLM-124 / EFS3-03)
+
+Rerun the B3 direct capacity experiment after the E288 choice-native decoder
+fix. Compare surface-token (`lexer`) and choice-sequence (`choice`) models at
+`d_model ∈ {64, 128, 192}` over three seeds each, with matched recipe and
+semantic-example exposure.
+
+| Arm | Representation | Widths | Seeds | Decode fingerprint |
+| --- | --- | --- | --- | --- |
+| surface | `lexer` | 64, 128, 192 | 0, 1, 2 | surface lexer, grammar-constrained, non-LTR |
+| choice | `choice` | 64, 128, 192 | 0, 1, 2 | E288 choice-native, forced singleton decisions |
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_b3_capacity_v2 --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm124_b3_capacity_fixture
+
+# Frontier dispatch (GPU + durable checkpoints required)
+python -m scripts.run_scaling_ladder --capacity-arm lexer \
+  --train-dir outputs/data/train/v1 --test-dir outputs/data/eval/v1 \
+  --widths 64,128,192 --seeds 0,1,2 --steps 3200 --representation lexer
+
+python -m scripts.run_scaling_ladder --capacity-arm choice \
+  --train-dir outputs/data/train/v1 --test-dir outputs/data/eval/v1 \
+  --widths 64,128,192 --seeds 0,1,2 --steps 3200 --representation choice
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict` versus trainable
+parameters / checkpoint bytes / `d_model`. Fixture runs are wiring-only and
+cannot claim ship gates. Frontier execution requires 18 matched trains, a GPU
+host, durable HF bucket sync per SLM-103, and the EFS1 exposure decision from
+SLM-109.
+
+## Contract-grounded candidate selector (SLM-127 / EFS3-04)
+
+Given a prompt/contract and a bounded set of generated OpenUI candidates, learn a
+small per-candidate utility + contract-success head and calibrate an abstention
+threshold on a validation split. The hypothesis is that exposing generator score,
+value score, energy score, set size, and a feature count to a tiny MLP yields a
+selector with lower regret than single-score baselines, and that a calibrated
+abstention can keep the "invalid selected over valid" count at zero.
+
+| Arm | Selection signal | Abstention |
+| --- | --- | --- |
+| `model_score` | Highest `generator_score` | never |
+| `value_score` | Highest `value_score` | never |
+| `energy_score` | Highest `energy_score` | never |
+| `hard_then_simple` | `semantic_success=True` first, then `generator_score` | never |
+| `learned_no_abstain` | `sigmoid(contract_success_logit)` argmax | never |
+| `learned_abstain` | `sigmoid(contract_success_logit)` argmax if > calibrated threshold | risk-bounded |
+
+```bash
+# Fixture wiring (CPU, no checkpoint training)
+python -m scripts.run_candidate_selector --fixture \
+  --out outputs/runs/slm127_candidate_selector/report.json
+
+# Evaluate an existing JSONL corpus
+python -m scripts.run_candidate_selector --groups groups.jsonl \
+  --selector learned_abstain --out report.json
+```
+
+Primary metric: selector regret, `invalid_over_valid_count`, and calibration
+error on the test split. Fixture runs are wiring-only and cannot claim ship
+gates. Frontier execution requires a trained OpenUI checkpoint, a labeled
+candidate corpus, and validation labels independent of the training set.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the
@@ -2390,6 +2621,377 @@ phased rather than applied to every list. Full evidence:
 [control JSON](iter-e539-structural-reference-control-20260719.json), and
 [intervention JSON](iter-e539-structural-reference-aggregation-20260719.json).
 
+## E540 reference phase telemetry
+
+E540 adds bounded root-vs-nested generated-frame evidence and reference-bias
+counterfactual choices, then replays the E539 intervention unchanged. All
+quality metrics reproduce exactly. Nine of ten applications and six of seven
+changed choices occur in the structural root list; one changed choice occurs in
+a nested `Modal` list.
+
+**Verdict:** accept the observability improvement with no quality or readiness
+claim. Test root-list-only bias next; do not train or promote weight 4. Full
+evidence:
+[narrative](iter-e540-reference-phase-telemetry-20260719.md) and
+[JSON](iter-e540-reference-phase-telemetry-20260719.json).
+
+## E541 root-only reference completeness
+
+E541 removes the single nested-list intervention identified by E540. Nine
+root-list applications still change six choices, but every quality metric
+exactly matches the E539 weight-zero control. E539's single nested Modal choice
+caused both its placeholder gain and structural regression.
+
+**Verdict:** keep the safer root-only guard default-off, reject weight 4 for
+training or promotion, and stop hand-written completeness-bias iteration.
+Learn topology/aggregation targets instead. Full evidence:
+[narrative](iter-e541-root-reference-only-20260719.md) and
+[JSON](iter-e541-root-reference-only-20260719.json).
+
+## E542 learned root-reference arity
+
+E542 trains an isolated dependency-order-aware terminal-root reference-count
+head on a 24-step E531 continuation. The local scratch train completes in
+52.93 seconds under the three-minute cap; the target covers 188/244 E530
+records and auxiliary loss moves from 3.9565 to 3.3124.
+
+The four-record OOD control reaches meaningful-v1 0.50, fidelity 0.5917,
+structure 0.3019, recall 0.4167, and reward 0.7950, while strict meaning and
+AgentV remain zero. An initial weight-1 replay exposes and fixes impossible
+tokenizer-tail mass. After bounding arity by available generated sections, the
+head still changes 7/11 applied choices but every metric exactly matches the
+weight-zero control.
+
+**Verdict:** retain the learned target, isolated head, semantic bound, and
+telemetry; keep decoding default-off, reject weight 1, and do not promote the
+scratch checkpoint. Full evidence:
+[narrative](iter-e542-learned-root-reference-arity-20260719.md) and
+[JSON](iter-e542-learned-root-reference-arity-20260719.json).
+
+## E543 bounded root-reference arity training
+
+E543 applies E542's semantic section bound to the auxiliary training loss. Its
+24-step matched continuation completes in 37.17 seconds under the three-minute
+cap. All 106 non-root-head tensors are bit-identical to E542. First-half mean
+auxiliary loss improves from 3.7329 to 0.8845 and accuracy from 0.0417 to
+0.7500; second-half loss improves from 3.5496 to 0.9414 and accuracy from
+0.3333 to 0.5833.
+
+The four-record OOD weight-1 replay remains exactly quality-neutral. It makes
+the same 7 changes across 11 applications as E542's bounded replay, and every
+metric equals E542 control: meaningful-v1 0.50, fidelity 0.5917, structure
+0.3019, recall 0.4167, and reward 0.7950. Strict meaning and AgentV remain
+zero.
+
+**Verdict:** retain the bounded loss as a calibration fix, keep decoding
+default-off, reject the scratch checkpoint, and move to reference-identity
+supervision. Full evidence:
+[narrative](iter-e543-bounded-root-reference-arity-20260719.md) and
+[JSON](iter-e543-bounded-root-reference-arity-20260719.json).
+
+## E544 bounded root-reference identity
+
+E544 supervises the exact generated-section identities referenced by the
+terminal root. The bounded target covers 188/244 records, including 42
+nontrivial strict subsets. Its 24-step continuation completes in 40.96 seconds
+under the three-minute cap. Mean positive recall rises from 0.3056 in steps
+1–12 to 0.5729 in steps 13–24, though second-half exact-set accuracy is only
+0.0417.
+
+Telemetry rejected additive identity bias because it could alter arity. The
+accepted rank-only operator preserves the best existing reference score and
+only permutes legal reference identities. In a same-checkpoint, same-commit
+OOD `n=4` comparison, weight 1 raises meaningful-v1 0.00→0.25, structure
+0.1250→0.1688, recall 0.1458→0.2708, and AST node F1 0.1833→0.2833. All 11
+changed identity decisions are reference-to-reference. Strict meaning, AST edge
+F1, and AgentV remain zero.
+
+**Verdict:** retain bounded identity training and rank-only decoding
+default-off; reject the scratch checkpoint for promotion. Next test
+coverage-conditioned calibration, not stronger decode bias. Full evidence:
+[narrative](iter-e544-root-reference-identity-20260719.md) and
+[JSON](iter-e544-root-reference-identity-20260719.json).
+
+## E545 root-reference negative weighting
+
+E545 compares matched 24-step E544 continuations with root-reference identity
+negative-class weights 1 and 4. The treatment improves only sparse late-window
+negative accuracy (0.3333→0.3958); exact-set accuracy and positive recall are
+unchanged. The two checkpoints produce byte-identical programs on the OOD
+`n=4` replay and every metric is identical: syntax 1.0, meaningful-v1 0.0,
+fidelity 0.4250, structure 0.1494, recall 0.2083, reward 0.5078, AST node F1
+0.2574, strict-v2 0.0, AST edge F1 0.0, and AgentV 0/1. Both additional
+continuations regress from E544.
+
+**Decision:** reject weight 4 and both scratch checkpoints for promotion.
+Retain the generalized weighted loss, but next increase sampling exposure to
+the 42 strict-subset identity records rather than increasing class weight.
+Full evidence: [narrative](iter-e545-root-reference-negative-weight-20260719.md)
+and [JSON](iter-e545-root-reference-negative-weight-20260719.json).
+
+## E546 strict-subset root-reference sampling
+
+E546 raises exposure to the 42 records whose terminal root references a
+nonempty strict subset of generated sections. Multiplier 5 increases observed
+negative-target rows from 7 to 22. Against a matched multiplier-1 control, OOD
+`n=4` fidelity rises 0.4250→0.6083, structure 0.1494→0.2038, reward
+0.5078→0.8120, AST node F1 0.2574→0.2976, and AST edge F1 0→0.0417.
+Component recall regresses 0.2083→0.0625; meaningful-v1 and strict-v2 remain
+0.0 and AgentV remains 0/1. Identity decoding applies zero times in both arms,
+so the difference is attributable to the training distribution.
+
+**Decision:** retain the sampler capability, reject multiplier 5 and both
+scratch checkpoints, and test a moderate multiplier. Full evidence:
+[narrative](iter-e546-root-reference-coverage-sampling-20260719.md) and
+[JSON](iter-e546-root-reference-coverage-sampling-20260719.json).
+
+## E547 moderate strict-subset exposure
+
+Multiplier 2 sees 15 negative-target rows, between control 7 and multiplier 5
+22. OOD `n=4` structure reaches 0.2248 and AST node F1 0.3270, the best values
+in the 1/2/5 ladder, while component recall matches control at 0.2083.
+Fidelity regresses to 0.2583. Root arity and identity each apply six times and
+change two choices. Meaningful-v1, strict-v2, AST edge F1, and AgentV remain
+zero.
+
+**Decision:** prefer multiplier 2 for subsequent bounded diagnostics but reject
+the checkpoint. Next address semantic-role fidelity rather than increasing
+exposure. Full evidence:
+[narrative](iter-e547-root-reference-coverage2-20260719.md) and
+[JSON](iter-e547-root-reference-coverage2-20260719.json).
+
+## E548 semantic-role decode weight 8
+
+E548 holds the E547 checkpoint and OOD `n=4` recipe fixed, changing only
+visible semantic-role decode weight from 4 to 8. Predictions and every
+headline metric are identical: fidelity 0.2583, structure 0.2248, component
+recall 0.2083, AST node F1 0.3270, meaningful-v1 0.0, strict-v2 0.0, and
+AgentV 0/1. Both weights apply and change all 28 eligible semantic-role
+choices.
+
+**Decision:** reject scalar weight escalation. Weight 4 already determines the
+eligible choices; next address learned semantic-role candidate ordering or
+supervision. Full evidence:
+[narrative](iter-e548-semantic-role-weight8-20260719.md) and
+[JSON](iter-e548-semantic-role-weight8-20260719.json).
+
+## E549 learned slot-component ordering off
+
+E549 holds the E547 checkpoint and OOD `n=4` recipe fixed, changing only
+learned slot-component decode weight from 4 to 0. Structure improves
+0.2248→0.2713, AST node F1 0.3270→0.3833, and AST edge F1 0→0.0625.
+Fidelity falls 0.2583→0.2083, component recall collapses 0.2083→0, and reward
+collapses 0.5403→0. Meaningful-v1, strict-v2, and AgentV remain zero.
+
+**Decision:** reject disabling learned ordering. It preserves semantic density
+but suppresses topology at full weight; test a midpoint learned weight next.
+Full evidence:
+[narrative](iter-e549-slot-component-ordering0-20260719.md) and
+[JSON](iter-e549-slot-component-ordering0-20260719.json).
+
+## E550 learned slot-component midpoint
+
+Learned weight 2 exactly matches weight 4 on predictions, metrics, and all 28
+interventions. Weight 0 collapses semantic density; tested positive weights 2
+and 4 yield the same ordering.
+
+**Decision:** close scalar tuning and address supervision, calibration, or
+candidate ordering directly. Full evidence:
+[narrative](iter-e550-slot-component-ordering2-20260719.md) and
+[JSON](iter-e550-slot-component-ordering2-20260719.json).
+
+## E551 slot lexeme prior off
+
+Removing the corpus-derived prior improves OOD `n=4` fidelity
+0.2583→0.3000 and reward 0.5403→0.5453, but structure falls 0.2248→0.1594,
+recall 0.2083→0.1250, and AST node F1 0.3270→0.2389. Meaning and AgentV stay
+zero.
+
+**Decision:** reject removal; calibrate or regularize the prior next. Full
+evidence: [narrative](iter-e551-slot-lexeme-prior0-20260719.md) and
+[JSON](iter-e551-slot-lexeme-prior0-20260719.json).
+
+## E552 half-strength slot lexeme prior
+
+Prior weight 0.5 yields OOD `n=4` fidelity 0.1333, validity 0.2800, structure
+0.2181, recall 0.1250, reward 0.3435, and AST node F1 0.3389. It regresses
+weight 1 on fidelity, recall, reward, and structure; meaning and AgentV stay
+zero.
+
+**Decision:** reject the midpoint and close scalar prior tuning. Full evidence:
+[narrative](iter-e552-slot-lexeme-prior05-20260719.md) and
+[JSON](iter-e552-slot-lexeme-prior05-20260719.json).
+
+## E553 corpus-local proportional slot priors
+
+Warm starts now rebuild deterministic slot priors from the active corpus, and
+zero-cooccurrence token/component pairs receive negative rather than spurious
+positive associations. The valid matched R3 run reaches OOD `n=4` fidelity
+0.3000 and reward 0.5453, but structure falls to 0.1244, recall to 0.0625, and
+AST node F1 to 0.1556. Meaning and AgentV remain zero.
+
+**Decision:** keep the correctness fixes, reject the checkpoint, and move from
+prior calibration to corpus/supervision coverage. R1 and R2 are explicitly
+excluded as confounded. Full evidence:
+[narrative](iter-e553-slot-prior-proportional-smoothing-20260720.md) and
+[JSON](iter-e553-slot-prior-proportional-smoothing-20260720.json).
+
+## E554 next-slot context
+
+Adding the next visible slot to slot-owner encoding raises OOD `n=4` structure
+0.1244→0.1594, recall 0.0625→0.1250, and AST node F1 0.1556→0.2389 versus
+E553, but fidelity falls 0.3000→0.2583 and reward 0.5453→0.5328. Meaning and
+AgentV remain zero.
+
+**Decision:** reject the mixed checkpoint. Full evidence:
+[narrative](iter-e554-slot-next-context-20260720.md) and
+[JSON](iter-e554-slot-next-context-20260720.json).
+
+## E555 slot-pair interaction
+
+Multiplicative slot-pair context keeps E553 fidelity 0.3000 and reward 0.5453
+while raising structure to 0.1594, recall to 0.1250, and AST node F1 to 0.2389.
+It also matches E554 topology while recovering its fidelity/reward loss.
+Meaning and AgentV remain zero.
+
+**Decision:** retain the Pareto lever, reject checkpoint promotion. Full
+evidence: [narrative](iter-e555-slot-pair-interaction-20260720.md) and
+[JSON](iter-e555-slot-pair-interaction-20260720.json).
+
+## E556 combined slot context
+
+Combining next-slot text and pair interaction holds structure at 0.1594 and
+recall at 0.1250 but drops fidelity to 0.2167 and reward to 0.5203. Meaning and
+AgentV remain zero. **Decision:** reject the combination, retain E555 alone,
+and close the factorial. Evidence:
+[narrative](iter-e556-slot-context-combined-20260720.md) and
+[JSON](iter-e556-slot-context-combined-20260720.json).
+
+## E557 full slot-owner class balancing
+
+Changing E555 class-balance power 0.5→1.0 produces identical predictions and
+metrics: fidelity 0.3000, structure 0.1594, recall 0.1250, reward 0.5453,
+meaning 0, AgentV 0/1. **Decision:** reject and change data/sampling coverage.
+Evidence: [narrative](iter-e557-slot-balance1-20260720.md) and
+[JSON](iter-e557-slot-balance1-20260720.json).
+
+## E558 rare slot-owner record coverage
+
+The canonical sampler now expands records containing owner labels observed at
+most 10 times. Fourfold exposure selected 75/244 records and expanded the pool
+to 469. OOD `n=4` fidelity improves 0.3000→0.4250, but structure regresses
+0.1594→0.0921, reward 0.5453→0.4075, and AST-node F1 0.2389→0.1393;
+binding-aware meaning remains 0 and AgentV remains 0/1. **Decision:** retain
+the sampler, reject the checkpoint, and test 2× exposure. Evidence:
+[narrative](iter-e558-owner-coverage-20260720.md) and
+[JSON](iter-e558-owner-coverage-20260720.json).
+
+## E559 twofold rare slot-owner coverage
+
+Reducing the rare-owner multiplier 4×→2× yields OOD `n=4` fidelity 0.4417,
+component recall 0.2708, structure 0.1085, AST-node F1 0.2048, and AST-edge F1
+0.0648. Fidelity and recall beat E555, but meaning-v1/v2 remain 0, reward falls
+to 0.1643, and AgentV remains 0/1. **Decision:** reject the checkpoint and
+narrow eligibility to owner labels observed at most four times. Evidence:
+[narrative](iter-e559-owner-coverage2-20260720.md) and
+[JSON](iter-e559-owner-coverage2-20260720.json).
+
+## E560 narrow rare slot-owner coverage
+
+Narrowing 2× eligibility from ≤10 to ≤4 owner labels selects 9/244 records.
+OOD `n=4` structure improves to 0.2181, component recall to 0.2083, and
+AST-node F1 to 0.3389. Fidelity falls to 0.2583 and reward is 0.5403;
+meaning-v1/v2 and AST-edge F1 remain 0, with AgentV 0/1. **Decision:** retain
+as a topology Pareto lever without promotion and test threshold 7. Evidence:
+[narrative](iter-e560-owner-threshold4-20260720.md) and
+[JSON](iter-e560-owner-threshold4-20260720.json).
+
+## E561 midpoint rare slot-owner coverage
+
+At 2× exposure, threshold 7 selects 42/244 records and dominates E555 on every
+non-semantic OOD `n=4` headline: fidelity 0.5750, structure 0.2419, recall
+0.1458, reward 0.5753, AST-node F1 0.3125, and AST-edge F1 0.0385. Meaning
+v1/v2 remain 0 and AgentV remains 0/1. **Decision:** retain threshold 7, close
+the sampling ladder, and use the checkpoint only for semantic decode research.
+Evidence: [narrative](iter-e561-owner-threshold7-20260720.md) and
+[JSON](iter-e561-owner-threshold7-20260720.json).
+
+## E562 component-plan decode weight 1
+
+Enabling E561's trained component-plan head at decode weight 1 changes five of
+136 applications. OOD `n=4` fidelity improves to 0.7417, structure to 0.2732,
+and AST-node F1 to 0.3236, but meaning-v1/v2 remain 0, reward falls to 0.3985,
+and AgentV remains 0/1. **Decision:** reject as a semantic fix and test weight
+0.5. No checkpoint was created. Evidence:
+[narrative](iter-e562-component-plan-decode1-20260720.md) and
+[JSON](iter-e562-component-plan-decode1-20260720.json).
+
+## E563 component-plan decode weight 0.5
+
+The midpoint weight changes seven of 130 component-plan applications, but OOD
+`n=4` fidelity falls to 0.4083, structure to 0.2019, reward to 0.5178, and
+AST-node F1 to 0.2500 versus E561. Meaning-v1/v2 remain 0 and AgentV remains
+0/1. **Decision:** reject as a semantic fix and close the component-plan
+decode-weight ladder. No checkpoint was created. Evidence:
+[narrative](iter-e563-component-plan-decode05-20260720.md) and
+[JSON](iter-e563-component-plan-decode05-20260720.json).
+
+## E564 semantic-role decode weight 2
+
+Halving E561's semantic-role decode weight from 4 to 2 changes no matched OOD
+`n=4` quality aggregate: fidelity remains 0.5750, structure 0.2419, recall
+0.1458, reward 0.5753, AST-node F1 0.3125, and AST-edge F1 0.0385.
+Meaning-v1/v2 remain 0 and AgentV remains 0/1. **Decision:** retain as
+no-effect negative evidence and test weight 0 as the decisive on/off ablation.
+No checkpoint was created. Evidence:
+[narrative](iter-e564-semantic-role-decode2-20260720.md) and
+[JSON](iter-e564-semantic-role-decode2-20260720.json).
+
+## E565 semantic-role decode weight 0
+
+The decisive on/off ablation retains visible role context but disables its
+decode bias. Every matched OOD `n=4` aggregate and failure-reason prevalence
+remains identical to E561 and E564; meaning-v1/v2 remain 0 and AgentV remains
+0/1. **Decision:** close the semantic-role decode-weight ladder as inactive
+for E561 and move to a different semantic mechanism. No checkpoint was
+created. Evidence:
+[narrative](iter-e565-semantic-role-decode0-20260720.md) and
+[JSON](iter-e565-semantic-role-decode0-20260720.json).
+
+## E566 slot-component decode weight 2
+
+Halving E561's learned slot-component decode weight from 4 to 2 retains 16
+applications and 14 choice changes, but every matched OOD `n=4` quality
+aggregate is identical. Meaning-v1/v2 remain 0 and AgentV remains 0/1.
+**Decision:** treat weights 2–4 as one saturated selection regime and test
+weight 0 as the decisive head on/off ablation. No checkpoint was created.
+Evidence: [narrative](iter-e566-slot-component-decode2-20260720.md) and
+[JSON](iter-e566-slot-component-decode2-20260720.json).
+
+## E567 slot-component decode weight 0
+
+Disabling E561's learned slot-component head drops matched OOD `n=4` fidelity
+to 0.5333, structure to 0.2194, recall to 0.0833, reward to 0.4110, and
+AST-node F1 to 0.2292. Meaning-v1/v2 remain 0 and AgentV remains 0/1.
+**Decision:** the head helps non-semantic quality but is not the missing
+semantic mechanism; retain weight 4 and close this ladder. No checkpoint was
+created. Evidence:
+[narrative](iter-e567-slot-component-decode0-20260720.md) and
+[JSON](iter-e567-slot-component-decode0-20260720.json).
+
+## E568 design-context E561 continuation
+
+A 48-step E561 warm start with threshold-7 twofold owner sampling completes
+in 116.24s and writes local SHA `8dcc0804…0283a12b`. The successful recipe
+retains design-metadata context, unlike E561, so this is not a duration-only
+comparison. OOD `n=4` reward improves to 0.6920, but fidelity falls to
+0.2583, structure to 0.1375, AST-node F1 to 0.1833, and AST-edge F1 to 0.
+Meaning-v1/v2 remain 0 and AgentV remains 0/1. **Decision:** reject for
+promotion, preserve as a local reward Pareto/recipe-drift diagnostic, and
+return to no-design-metadata context. Evidence:
+[narrative](iter-e568-design-context-continuation-20260720.md) and
+[JSON](iter-e568-design-context-continuation-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
@@ -2463,3 +3065,34 @@ ship gate in this document is retained unchanged; the verified-solver rows never
 weaken grammar/schema/dataflow/behavior/adversarial/OOD requirements. Fixture
 wiring landed 2026-07-18 (R0/R1 ran on CPU, hard gates PASS); every frontier row
 is fully specified but **not run until VSS4-03**. No model or ship claim.
+
+## V18 shared recursive denoiser (SLM-138)
+
+Replace the stacked ``DenoiserTower`` with a shared-recursive transition that
+recurses a small set of ``TransformerBlock(cross_attn=True)`` instances.  The
+tower keeps the same public contract as ``DenoiserTower`` so the rest of the
+codebase (masking, decode, checkpoints) needs no changes.  V18 is a
+**wiring-only** slice: it validates the module, factory routing, deep-supervision
+plumbing, and checkpoint migration on tiny synthetic records.  Matched-block
+evaluation arms and GPU training are deferred.
+
+| ID | Isolated lever | Purpose | Run id |
+| --- | --- | --- | --- |
+| E300 | Stacked control (byte-identical baseline) | Preserve existing ship recipe | `qx_e300_stacked_control` |
+| E301 | Shared recursive R=2, L=2 transition | Test that recurrence trains and round-trips | `qx_e301_recursive_r2_l2` |
+| E302 | Shared recursive R=4, L=1 transition | Stress very small transition, many recurrences | `qx_e302_recursive_r4_l1` |
+| E303 | Shared recursive + deep supervision | Per-recursion CE weighted depth loss | `qx_e303_recursive_deep_sup` |
+| E304 | Warm-start stacked → recursive | ``migrate_to_shared_recursive_denoiser`` smoke | `qx_e304_recursive_migrate` |
+
+```bash
+# Fixture wiring (CPU, no GPU training)
+python -m scripts.run_slm138_recursive_denoiser_fixture --mode fixture
+
+# Planned matrix dispatch (requires GPU + durable checkpoints for ship claims)
+python -m scripts.run_quality_matrix --matrix v18 --only E300,E301,E303 \
+  --steps 400 --device cpu --context-backend scratch
+```
+
+Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
+`outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
+`docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.

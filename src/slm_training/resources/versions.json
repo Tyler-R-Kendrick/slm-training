@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v8",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,24 +21,93 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
-        {"version": "v8", "date": "2026-07-19", "note": "extend generated-reference completeness bias to reachable structural list aggregation while remaining fail-closed elsewhere"},
-        {"version": "v7", "date": "2026-07-19", "note": "persist bounded choice-token and legal-reference decision evidence for per-record eval diagnosis"},
-        {"version": "v6", "date": "2026-07-19", "note": "add a fail-closed choice-codec bias toward unused legal generated bound references in the root"},
-        {"version": "v5", "date": "2026-07-19", "note": "add a direct constrained-decode bias from honest visible semantic-role candidates"},
-        {"version": "v4", "date": "2026-07-19", "note": "add honest inference-time semantic-role contract projection from prompt-mentioned components and visible slots"},
-        {"version": "v3", "date": "2026-07-19", "note": "merge SDE3-01 suite-level eval cache integration on top of decode-weight override CLI"},
-        {"version": "v2", "date": "2026-07-19", "note": "add SDE3-01 suite-level content-addressed eval cache integration (EvalCache, --eval-cache-mode, --eval-cache-root)"},
-        {"version": "v2", "date": "2026-07-19", "note": "expose the existing slot-to-component decode-weight override in the canonical evaluation CLI"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v13",
+          "date": "2026-07-19",
+          "note": "expose learned terminal-root reference identity bias and intervention telemetry in canonical evaluation"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-19",
+          "note": "bound learned root-reference arity partitioning by the available generated sections so impossible tokenizer-tail classes cannot force continuation"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-19",
+          "note": "add learned choice-codec terminal-root reference arity decoding and bounded intervention telemetry"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-19",
+          "note": "restrict structural generated-reference completeness bias to the terminal root list"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-19",
+          "note": "persist bounded root-vs-nested choice-frame and reference-bias counterfactual telemetry"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "extend generated-reference completeness bias to reachable structural list aggregation while remaining fail-closed elsewhere"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "persist bounded choice-token and legal-reference decision evidence for per-record eval diagnosis"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-19",
+          "note": "add a fail-closed choice-codec bias toward unused legal generated bound references in the root"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-19",
+          "note": "add a direct constrained-decode bias from honest visible semantic-role candidates"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "add honest inference-time semantic-role contract projection from prompt-mentioned components and visible slots"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-19",
+          "note": "merge SDE3-01 suite-level eval cache integration on top of decode-weight override CLI"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "add SDE3-01 suite-level content-addressed eval cache integration (EvalCache, --eval-cache-mode, --eval-cache-root)"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "expose the existing slot-to-component decode-weight override in the canonical evaluation CLI"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "harness.model_build.train": {
-      "version": "v7",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v15", "date": "2026-07-20", "note": "add deterministic rare slot-owner record oversampling with auditable corpus counts and expanded exposure"},
+        {"version": "v14", "date": "2026-07-20", "note": "persist slot next-context and pair-interaction architecture flags in train recipe summaries"},
+        {"version": "v13", "date": "2026-07-20", "note": "rebuild deterministic corpus-derived slot priors after weight initialization instead of silently restoring stale parent checkpoint statistics"},
+        {"version": "v12", "date": "2026-07-19", "note": "add deterministic strict-subset root-reference identity oversampling with auditable eligible and expanded sampling counts"},
+        {"version": "v11", "date": "2026-07-19", "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"},
+        {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
+        {"version": "v9", "date": "2026-07-19", "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"},
+        {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"},
         {"version": "v7", "date": "2026-07-19", "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"},
@@ -51,7 +120,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -60,14 +129,51 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
-        {"version": "v7", "date": "2026-07-19", "note": "no-bump: reuse the semantic-role formatter from the shared quality owner without changing projected training records"},
-        {"version": "v7", "date": "2026-07-19", "note": "add an opt-in visible semantic-role contract derived only from visible slots, visible component types, and generated schema compatibility"},
-        {"version": "v6", "date": "2026-07-19", "note": "support a type-only visible component prompt contract for matched count-ablation data"},
-        {"version": "v5", "date": "2026-07-19", "note": "add diversity fingerprinting module (diversity.py), corpus audit script, and regression tests for canonical-root, topology, type/action, prompt-intent, and lineage diversity metrics"},
-        {"version": "v4", "date": "2026-07-19", "note": "add an opt-in post-admission visible component type/count contract to training prompts"},
-        {"version": "v3", "date": "2026-07-19", "note": "add synthetic-data integrity gate module (integrity.py), audit script, and regression tests for canonical AST, codec round-trip, binding graph, slot contract, and leakage checks"},
-        {"version": "v2", "date": "2026-07-18", "note": "add provenance-tagged expression-to-document projection and explicit target-kind corpus selection"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration; strict build results carry version stamps and actionable rejection lineage"}
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "add deterministic target sanitization (D2 canonicalization + schema-checked default-elision/dead-binding removal/guarded Stack flattening + content-literal templatization) behind sanitize_mode off/audit/enforce; strict profile defaults to enforce"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "no-bump: reuse the semantic-role formatter from the shared quality owner without changing projected training records"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "add an opt-in visible semantic-role contract derived only from visible slots, visible component types, and generated schema compatibility"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-19",
+          "note": "support a type-only visible component prompt contract for matched count-ablation data"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-19",
+          "note": "add diversity fingerprinting module (diversity.py), corpus audit script, and regression tests for canonical-root, topology, type/action, prompt-intent, and lineage diversity metrics"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "add an opt-in post-admission visible component type/count contract to training prompts"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-19",
+          "note": "add synthetic-data integrity gate module (integrity.py), audit script, and regression tests for canonical AST, codec round-trip, binding graph, slot contract, and leakage checks"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-18",
+          "note": "add provenance-tagged expression-to-document projection and explicit target-kind corpus selection"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration; strict build results carry version stamps and actionable rejection lineage"
+        }
       ]
     },
     "evals.meaningful_program": {
@@ -77,7 +183,11 @@
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
-        {"version": "2.0.0", "date": "2026-07-18", "note": "initial registration; mirrors meaningful_program.METRIC_VERSION"}
+        {
+          "version": "2.0.0",
+          "date": "2026-07-18",
+          "note": "initial registration; mirrors meaningful_program.METRIC_VERSION"
+        }
       ]
     },
     "evals.loss_suite": {
@@ -90,8 +200,16 @@
         "src/slm_training/evals/emptiness_probe.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-19", "note": "no-bump: extend emptiness probe with optional eval-only score-policy comparison; LOSS_SUITE_VERSION unchanged"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration; mirrors loss_suites.LOSS_SUITE_VERSION"}
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "no-bump: extend emptiness probe with optional eval-only score-policy comparison; LOSS_SUITE_VERSION unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration; mirrors loss_suites.LOSS_SUITE_VERSION"
+        }
       ]
     },
     "evals.scoring": {
@@ -101,38 +219,110 @@
         "src/slm_training/evals/"
       ],
       "history": [
-        {"version": "v10", "date": "2026-07-19", "note": "add EFS0-04 judge-independence audit scaffolding (JudgeIndependenceEvaluator, judge_audit annotation harness, export_annotations CLI) and rubric"},
-        {"version": "v9", "date": "2026-07-19", "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"},
-        {"version": "v8", "date": "2026-07-19", "note": "add CAP4-03 quantized local-energy inference comparison harness (EnergyProblem, EnergyQuantizer, greedy vs exact Viterbi, QuantFormat wiring) on top of solver-state/verifier-cascade stack"},
-        {"version": "v7", "date": "2026-07-19", "note": "add EFS3-01 solver-state supervision source comparison schema and mixer on top of verifier-cascade/score-policy/eval-cache stack"},
-        {"version": "v6", "date": "2026-07-19", "note": "add cached cheap-to-expensive verifier cascade scaffolding (VerifierStageSpec, VerifierResultV1, VerifierCascade) on top of score-policy/eval-cache/trigger-telemetry stack"},
-        {"version": "v5", "date": "2026-07-19", "note": "add EFS1-03 eval-only score-policy interface for constrained-decode candidate ranking on top of eval cache/trigger telemetry/metric-gaming stack"},
-        {"version": "v4", "date": "2026-07-19", "note": "merge SDE3-01 eval cache and sharding on top of EFS2-02 trigger telemetry and SDE0-02 metric-gaming suite"},
-        {"version": "v3", "date": "2026-07-19", "note": "add SDE3-01 content-addressed eval cache (EvalCache, EvalCacheKey, layer keys) and deterministic suite sharding (assign_example_ids, aggregate_shard_payloads)"},
-        {"version": "v3", "date": "2026-07-19", "note": "merge EFS2-02 trigger telemetry harness on top of SDE0-02 metric-gaming stress suite"},
-        {"version": "v2", "date": "2026-07-19", "note": "add EFS2-02 observe-only trigger telemetry harness (SearchTriggerObservationV1, TriggerObserver, compare_trigger_regimes) and wiring fixture"},
-        {"version": "v2", "date": "2026-07-19", "note": "add SDE0-02 metric-gaming stress suite (metric_gaming.py) with deterministic adversarial cases scored by binding_aware_meaningful_v2"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration (catch-all for eval scoring helpers not claimed by a narrower component)"}
+        {
+          "version": "v10",
+          "date": "2026-07-19",
+          "note": "no-bump: relocate record_schema/eval_cache/score_policy to harness_core (old modules are sys.modules alias shims); suite_sharding and all scoring behavior unchanged"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-19",
+          "note": "add EFS0-04 judge-independence audit scaffolding (JudgeIndependenceEvaluator, judge_audit annotation harness, export_annotations CLI) and rubric"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-19",
+          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "add CAP4-03 quantized local-energy inference comparison harness (EnergyProblem, EnergyQuantizer, greedy vs exact Viterbi, QuantFormat wiring) on top of solver-state/verifier-cascade stack"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "add EFS3-01 solver-state supervision source comparison schema and mixer on top of verifier-cascade/score-policy/eval-cache stack"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-19",
+          "note": "add cached cheap-to-expensive verifier cascade scaffolding (VerifierStageSpec, VerifierResultV1, VerifierCascade) on top of score-policy/eval-cache/trigger-telemetry stack"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-19",
+          "note": "add EFS1-03 eval-only score-policy interface for constrained-decode candidate ranking on top of eval cache/trigger telemetry/metric-gaming stack"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "merge SDE3-01 eval cache and sharding on top of EFS2-02 trigger telemetry and SDE0-02 metric-gaming suite"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-19",
+          "note": "add SDE3-01 content-addressed eval cache (EvalCache, EvalCacheKey, layer keys) and deterministic suite sharding (assign_example_ids, aggregate_shard_payloads)"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-19",
+          "note": "merge EFS2-02 trigger telemetry harness on top of SDE0-02 metric-gaming stress suite"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "add EFS2-02 observe-only trigger telemetry harness (SearchTriggerObservationV1, TriggerObserver, compare_trigger_regimes) and wiring fixture"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "add SDE0-02 metric-gaming stress suite (metric_gaming.py) with deterministic adversarial cases scored by binding_aware_meaningful_v2"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration (catch-all for eval scoring helpers not claimed by a narrower component)"
+        }
       ]
     },
     "gates.ship": {
       "version": "openui_ship_gates_v1",
       "kind": "gate",
       "paths": [
-        "src/slm_training/harnesses/model_build/ship_gates.py"
+        "src/slm_training/harnesses/model_build/ship_gates.py",
+        "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
-        {"version": "openui_ship_gates_v1", "date": "2026-07-18", "note": "initial registration; mirrors MEANINGFUL_METRIC_POLICY threshold_version"}
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-19",
+          "note": "no-bump: relocate the generic gate-check loop to harness_core.gate_engine behind a normalize_suite/default_min_n seam; policy, thresholds, and the gates.json payload stay byte-identical (pinned by tests/test_harness_core/test_gate_engine_golden.py)"
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-18",
+          "note": "initial registration; mirrors MEANINGFUL_METRIC_POLICY threshold_version"
+        }
       ]
     },
     "matrix.quality": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "add SLM-108 external-ceiling matrix set dispatch (--matrix-set external-ceiling)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "matrix.grammar": {
@@ -142,7 +332,11 @@
         "scripts/run_grammar_matrix.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "matrix.perf": {
@@ -152,7 +346,11 @@
         "scripts/run_perf_matrix.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "matrix.verified_solver": {
@@ -163,31 +361,259 @@
         "src/slm_training/harnesses/experiments/vss4_campaign.py"
       ],
       "history": [
-        {"version": "vss4-02-v1", "date": "2026-07-18", "note": "initial registration; mirrors verified_solver_matrix.MATRIX_VERSION"}
+        {
+          "version": "vss4-02-v1",
+          "date": "2026-07-18",
+          "note": "initial registration; mirrors verified_solver_matrix.MATRIX_VERSION"
+        }
+      ]
+    },
+    "matrix.corruption_curriculum": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_corruption_curriculum.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-120 near-solved semantic corruption-curriculum plan/fixture CLI"
+        }
+      ]
+    },
+    "data.corrupt.trace": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/corrupt/trace.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; CorruptionTraceV2 severity taxonomy and fail-closed validation for SLM-120"
+        }
       ]
     },
     "harness.experiments": {
-      "version": "v15",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
-        {"version": "v15", "date": "2026-07-19", "note": "lazy-load torch-backed ladder re-exports so the read-only Vercel web entrypoint remains torch-free"},
-        {"version": "v14", "date": "2026-07-19", "note": "fix(cap3-05): make equal-byte planning honest and reconcile cost ledger"},
-        {"version": "v13", "date": "2026-07-19", "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"},
-        {"version": "v12", "date": "2026-07-19", "note": "add SDE3-03 (SLM-177) proxy-metric calibration activation/budget/feature manifest dataclass, builder/validator, and CLI"},
-        {"version": "v11", "date": "2026-07-19", "note": "add SDE3-04 constraint-backend benchmark manifest dataclass, builder/validator, and CLI for frozen grammar-backend comparison plan"},
-        {"version": "v10", "date": "2026-07-19", "note": "add SDE4-01 (SLM-179) scaffold-distillation activation manifest dataclass, builder/validator, and CLI"},
-        {"version": "v9", "date": "2026-07-19", "note": "add SDE4-04 pretrained-denoiser activation/candidate/budget manifest (wiring slice)"},
-        {"version": "v8", "date": "2026-07-19", "note": "add SDE4-03 teacher-paraphrase activation/budget manifest and canonical request renderer (wiring slice)"},
-        {"version": "v7", "date": "2026-07-19", "note": "add EFS2-03 conflict-slice repair harness (ConflictSliceV1, repair policies, deterministic fixtures, matched-budget comparison) on top of EFS0-05/CAP5 manifests"},
-        {"version": "v6", "date": "2026-07-19", "note": "add EFS0-05 rejected-lever registry (RejectedLeverV1, ReAdjudicationRowV1, paired five-seed classification, autoresearch evidence items) on top of CAP5-02/CAP5-01 manifests"},
-        {"version": "v5", "date": "2026-07-19", "note": "add CAP5-02 campaign manifest dataclass, builder/validator, and CLI for preregistered quality/cost arms"},
-        {"version": "v4", "date": "2026-07-19", "note": "add GrammarProfile dataclass, manifest builder/validator, and CLI for CAP5-01 grammar/profile family summaries"},
-        {"version": "v3", "date": "2026-07-18", "note": "lazy-load Torch-only equal-byte planning dependencies so the web runtime remains import-safe"},
-        {"version": "v2", "date": "2026-07-18", "note": "correct equal-byte arm token budgets and fail closed on reference-only low-bit training"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"}
+        {
+          "version": "v27",
+          "date": "2026-07-20",
+          "note": "add SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness"
+        },
+        {
+          "version": "v26",
+          "date": "2026-07-20",
+          "note": "add SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness"
+        },
+        {
+          "version": "v25",
+          "date": "2026-07-20",
+          "note": "no-bump: replace randomized string hash with stable action-index mapping in cap2-04 fixture; matrix semantics unchanged"
+        },
+        {
+          "version": "v25",
+          "date": "2026-07-20",
+          "note": "add SLM-144 SPV1-01 archetype + role-set predictor fixture wiring harness"
+        },
+        {
+          "version": "v24",
+          "date": "2026-07-19",
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+        },
+        {
+          "version": "v23",
+          "date": "2026-07-19",
+          "note": "add SLM-130 EFS3-05 canonical AST deduplication and valid semantic-mode coverage wiring/fixture harness"
+        },
+        {
+          "version": "v22",
+          "date": "2026-07-19",
+          "note": "add SLM-127 EFS3-04 contract-grounded candidate selector wiring/fixture harness"
+        },
+        {
+          "version": "v21",
+          "date": "2026-07-19",
+          "note": "lazy-load B3 capacity exports so importing the experiment package and Vercel web entrypoint does not require optional torch"
+        },
+        {
+          "version": "v20",
+          "date": "2026-07-19",
+          "note": "add SLM-124 EFS3-03 B3 surface-vs-choice capacity-ladder v2 manifest, fixture runner, and CLI wiring"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-19",
+          "note": "add SLM-121 LDI1-02 causal PEFT FTPO manifest, fixture runner, and CLI wiring"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-19",
+          "note": "add SLM-120 near-solved semantic corruption-curriculum manifest, fixture runner, and CLI wiring"
+        },
+        {
+          "version": "v17",
+          "date": "2026-07-19",
+          "note": "add SLM-109 E228 exposure-ladder manifest, recipe-freeze hash, and plan/fixture CLI"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-19",
+          "note": "add SLM-108 external-ceiling matrix manifest, fixture runner, and report rendering"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-19",
+          "note": "no-bump: relocate efficiency_gain/scaling_fit to harness_core (old modules are sys.modules alias shims) and delegate promotion checks to harness_core.promotion_engine; HARD_CATEGORIES, the OpenUI ship-gate binding, and all public signatures unchanged"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-19",
+          "note": "lazy-load torch-backed ladder re-exports so the read-only Vercel web entrypoint remains torch-free"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-19",
+          "note": "fix(cap3-05): make equal-byte planning honest and reconcile cost ledger"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-19",
+          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-19",
+          "note": "add SDE3-03 (SLM-177) proxy-metric calibration activation/budget/feature manifest dataclass, builder/validator, and CLI"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-19",
+          "note": "add SDE3-04 constraint-backend benchmark manifest dataclass, builder/validator, and CLI for frozen grammar-backend comparison plan"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-19",
+          "note": "add SDE4-01 (SLM-179) scaffold-distillation activation manifest dataclass, builder/validator, and CLI"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-19",
+          "note": "add SDE4-04 pretrained-denoiser activation/candidate/budget manifest (wiring slice)"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "add SDE4-03 teacher-paraphrase activation/budget manifest and canonical request renderer (wiring slice)"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "add EFS2-03 conflict-slice repair harness (ConflictSliceV1, repair policies, deterministic fixtures, matched-budget comparison) on top of EFS0-05/CAP5 manifests"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-19",
+          "note": "add EFS0-05 rejected-lever registry (RejectedLeverV1, ReAdjudicationRowV1, paired five-seed classification, autoresearch evidence items) on top of CAP5-02/CAP5-01 manifests"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-19",
+          "note": "add CAP5-02 campaign manifest dataclass, builder/validator, and CLI for preregistered quality/cost arms"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "add GrammarProfile dataclass, manifest builder/validator, and CLI for CAP5-01 grammar/profile family summaries"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-18",
+          "note": "lazy-load Torch-only equal-byte planning dependencies so the web runtime remains import-safe"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-18",
+          "note": "correct equal-byte arm token budgets and fail closed on reference-only low-bit training"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"
+        }
+      ]
+    },
+    "matrix.causal_peft_ftpo": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_causal_peft_ftpo.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-121 causal PEFT FTPO plan/fixture CLI"
+        }
+      ]
+    },
+    "matrix.b3_capacity_v2": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_b3_capacity_v2.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-124 EFS3-03 B3 surface-vs-choice capacity-ladder v2 plan/fixture CLI"
+        }
+      ]
+    },
+    "model.twotower": {
+      "version": "v11",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/models/adapters/",
+        "src/slm_training/harnesses/model_build/config.py",
+        "src/slm_training/harnesses/model_build/factory.py",
+        "scripts/train_model.py"
+      ],
+      "history": [
+        {"version": "v11", "date": "2026-07-20", "note": "add SLM-138 shared recursive denoiser tower wiring, deep-supervision plumbing, and migration helper"},
+        {"version": "v10", "date": "2026-07-20", "note": "expose bounded rare slot-owner record sampling in the shared TwoTower training recipe"},
+        {"version": "v9", "date": "2026-07-20", "note": "use a masked non-empty sentinel for terminal slot-pair context so HF tokenization cannot produce a zero-length sequence"},
+        {"version": "v8", "date": "2026-07-19", "note": "smooth slot lexeme-owner priors with class-prior-proportional pseudo-counts so unseen token-class pairs cannot receive spurious positive association"},
+        {"version": "v7", "date": "2026-07-19", "note": "expose the bounded strict-subset root-reference identity sampling multiplier in the shared model-build recipe"},
+        {"version": "v6", "date": "2026-07-19", "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"},
+        {"version": "v5", "date": "2026-07-19", "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"},
+        {"version": "v4", "date": "2026-07-19", "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"},
+        {"version": "v3", "date": "2026-07-19", "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"},
+        {"version": "v2", "date": "2026-07-19", "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"},
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
+      ]
+    },
+    "model.recursive_denoiser": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/recursive_denoiser.py",
+        "scripts/run_slm138_recursive_denoiser_fixture.py",
+        "tests/test_models/test_recursive_denoiser.py",
+        "docs/design/iter-slm138-recursive-denoiser-20260720.json",
+        "docs/design/iter-slm138-recursive-denoiser-20260720.md"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-20", "note": "initial registration; SLM-138 shared recursive denoiser tower wiring/fixture harness"}
       ]
     },
     "harness.reasoning.bench": {
@@ -197,7 +623,11 @@
         "src/slm_training/harnesses/reasoning/"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "harness.solver_bench": {
@@ -207,7 +637,11 @@
         "src/slm_training/harnesses/solver_bench.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "harness.quality.slop_forensics": {
@@ -218,32 +652,86 @@
         "scripts/run_slop_forensics.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
+      ]
+    },
+    "harness.preference.remine_campaign": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/remine_campaign.py",
+        "scripts/run_remine_campaign.py",
+        "scripts/autoresearch.py",
+        "tests/test_harnesses/preference/test_remine_campaign.py",
+        "tests/test_scripts/test_autoresearch_remine.py",
+        "docs/design/ldi3-04-remine-intervene-campaign-20260718.md",
+        "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-132 LDI3-04 immutable on-policy remine/intervene/regenerate campaign wiring/fixture harness"
+        }
       ]
     },
     "data.test_build": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration (eval/smoke suite builder; snapshot data versions remain DataStore's contract)"}
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "apply the shared deterministic target sanitization (enforce by default) so future eval gold matches the sanitized train distribution; committed snapshots stay immutable"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration (eval/smoke suite builder; snapshot data versions remain DataStore's contract)"
+        }
       ]
     },
     "model.quantization": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
-        {"version": "v4", "date": "2026-07-19", "note": "fix(cap3-05): honest physical-cost ledger rounding and byte-accounting for equal-byte ladder"},
-        {"version": "v3", "date": "2026-07-19", "note": "CAP4-04 compiler-routed block sparsity and state-family experts merged on top of CAP4-02"},
-        {"version": "v2", "date": "2026-07-18", "note": "CAP4-02 adaptive residual-plane scheduling (structural floor + entropy/margin/sensitivity/learned-router/oracle)"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration (CAP4-01 residual ternary planes and local scorer head)"}
+        {
+          "version": "v5",
+          "date": "2026-07-20",
+          "note": "use deterministic action-index mapping in GlobalMaskedHead and ResidualTritPlaneHead to eliminate per-process hash randomization"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "fix(cap3-05): honest physical-cost ledger rounding and byte-accounting for equal-byte ladder"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-19",
+          "note": "CAP4-04 compiler-routed block sparsity and state-family experts merged on top of CAP4-02"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-18",
+          "note": "CAP4-02 adaptive residual-plane scheduling (structural floor + entropy/margin/sensitivity/learned-router/oracle)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration (CAP4-01 residual ternary planes and local scorer head)"
+        }
       ]
     },
     "analysis.arity.diffusion_graph": {
@@ -254,7 +742,264 @@
         "scripts/run_quotient_diffusion_fixture.py"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration; wiring-first quotient-state diffusion graph diagnostics"}
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration; wiring-first quotient-state diffusion graph diagnostics"
+        }
+      ]
+    },
+    "harness.core": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harness_core/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; frozen DSL-agnostic core extracted structurally (versioning, lineage, checkpoint_reference, gate/promotion engines, scaling math, record_schema/eval_cache/score_policy) with behavior pinned by tests/test_harness_core"
+        }
+      ]
+    },
+    "harness.experiments.candidate_selector": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/candidate_selector.py",
+        "scripts/run_candidate_selector.py",
+        "tests/test_harnesses/experiments/test_candidate_selector.py",
+        "tests/test_scripts/test_run_candidate_selector.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-127 EFS3-04 contract-grounded candidate selector wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.ast_sketch_retrieval": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/ast_sketch_retrieval_factorial.py",
+        "scripts/run_ast_sketch_retrieval_factorial.py",
+        "tests/test_harnesses/experiments/test_ast_sketch_retrieval_factorial.py",
+        "tests/test_scripts/test_run_ast_sketch_retrieval_factorial.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.canonical_ast_dedup": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/canonical_ast_dedup.py",
+        "src/slm_training/dsl/grammar/fastpath/lattice_search.py",
+        "scripts/run_canonical_ast_dedup.py",
+        "tests/test_harnesses/experiments/test_canonical_ast_dedup.py",
+        "tests/test_scripts/test_run_canonical_ast_dedup.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-130 EFS3-05 canonical AST deduplication and valid semantic-mode coverage wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.semantic_regret": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/semantic_regret_matrix.py",
+        "scripts/run_semantic_regret_fixture.py",
+        "tests/test_harnesses/experiments/test_semantic_regret_matrix.py",
+        "tests/test_scripts/test_run_semantic_regret_fixture.py",
+        "docs/design/iter-spv0-03-semantic-regret-20260719.json",
+        "docs/design/iter-spv0-03-semantic-regret-20260719.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v25 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration of semantic regret decomposition fixture harness (SLM-143)"
+        }
+      ]
+    },
+    "harness.experiments.slm144_plan_predictor": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm144_plan_predictor_matrix.py",
+        "src/slm_training/models/semantic_plan_predictor.py",
+        "src/slm_training/data/semantic_plan/corpus.py",
+        "scripts/run_slm144_plan_predictor_fixture.py",
+        "tests/test_harnesses/experiments/test_slm144_plan_predictor_matrix.py",
+        "tests/test_models/test_semantic_plan_predictor.py",
+        "tests/test_scripts/test_run_slm144_plan_predictor_fixture.py",
+        "docs/design/iter-slm144-plan-predictor-20260720.json",
+        "docs/design/iter-slm144-plan-predictor-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-144 SPV1-01 archetype + role-set predictor fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.sde4_02_min_controller_capacity": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sde4_02_min_controller_capacity.py",
+        "scripts/run_sde4_02_min_controller_capacity.py",
+        "tests/test_harnesses/experiments/test_sde4_02_min_controller_capacity.py",
+        "tests/test_scripts/test_run_sde4_02_min_controller_capacity.py",
+        "docs/design/iter-sde4-02-min-controller-capacity-20260720.json",
+        "docs/design/iter-sde4-02-min-controller-capacity-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness"
+        }
+      ]
+    },
+    "harness.experiments.slm135_trailed_assumptions_ablation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm135_trailed_assumptions_ablation.py",
+        "scripts/run_slm135_trailed_assumptions_fixture.py",
+        "tests/test_harnesses/experiments/test_slm135_trailed_assumptions_ablation.py",
+        "tests/test_scripts/test_run_slm135_trailed_assumptions_fixture.py",
+        "docs/design/iter-slm135-trailed-assumptions-20260720.json",
+        "docs/design/iter-slm135-trailed-assumptions-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness"
+        }
+      ]
+    },
+    "harness.representations": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/representations/",
+        "scripts/run_sae_diagnostic_fixture.py",
+        "tests/test_harnesses/representations/",
+        "tests/test_scripts/test_run_sae_diagnostic_fixture.py",
+        "docs/design/iter-ldi4-02-sae-decision-state-diagnostic-20260720.json",
+        "docs/design/iter-ldi4-02-sae-decision-state-diagnostic-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-136 LDI4-02 SAE decision-state diagnostic harness (schema, SAE, interventions, fixture wiring)"
+        }
+      ]
+    },
+    "harness_core.lineage.interventions": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harness_core/lineage/interventions.py",
+        "scripts/run_intervention_unification_fixture.py",
+        "tests/test_lineage_interventions.py",
+        "tests/test_scripts/test_run_intervention_unification_fixture.py",
+        "docs/design/iter-ldi4-03-intervention-unification-20260720.json",
+        "docs/design/iter-ldi4-03-intervention-unification-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-137 LDI4-03 unified intervention manifest/registry/promotion harness"
+        }
       ]
     }
   }

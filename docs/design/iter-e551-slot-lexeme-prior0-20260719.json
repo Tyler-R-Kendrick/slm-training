@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E551",
+  "run_id": "e551-e544-strict-subset2-no-lexeme-r1-24s",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_mixed_result_not_ship",
+  "hypothesis": "Removing corpus-derived slot lexeme priors will improve OOD semantic-role fidelity without losing E547 topology.",
+  "checkpoint": {
+    "location": "outputs/runs/e551-e544-strict-subset2-no-lexeme-r1-24s/checkpoints/last.pt",
+    "sha256": "e7921e66df8d2c76b96c1577c7cfb3b35c97879d69f44da0c41ab787dac32fc6",
+    "sync": false,
+    "sync_reason": "Explicit local-only 24-step scratch diagnostic; semantic and AgentV gates fail."
+  },
+  "training": {
+    "parent_run_id": "e544-e543-root-identity1-r2-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1304,
+    "elapsed_wall_seconds": 41.85358547299984,
+    "max_wall_minutes": 3.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_lexeme_prior_weight": 0.0,
+    "root_reference_identity_strict_subset_multiplier": 2,
+    "last_loss": 14.259262084960938,
+    "hard_process_cap_seconds": 170
+  },
+  "eval_recipe": {
+    "eval_run_id": "e551-no-lexeme-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.3,
+      "placeholder_validity": 0.48,
+      "structural_similarity": 0.15937500000000002,
+      "component_type_recall": 0.125,
+      "reward_score": 0.54525,
+      "ast_node_f1": 0.2388888888888889,
+      "ast_edge_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0
+    }
+  },
+  "comparison_to_e547": {
+    "placeholder_fidelity_delta": 0.041666666666666685,
+    "structural_similarity_delta": -0.06542499999999998,
+    "component_type_recall_delta": -0.08333333333333331,
+    "reward_score_delta": 0.0050000000000000044,
+    "ast_node_f1_delta": -0.08809523809523809
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Fidelity improves modestly, but topology and recall regress; meaningful-v1, strict-v2, AST edge F1, and AgentV remain zero."
+  },
+  "decision": "Reject removing the lexeme prior and reject the checkpoint. Calibrate or regularize the prior rather than deleting it.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f0b51b40b4a1b2a4e183dd26006cf111365528f8",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v12",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-19T23:38:59.373839+00:00"
+  }
+}

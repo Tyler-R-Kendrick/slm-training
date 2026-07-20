@@ -1,0 +1,263 @@
+{
+  "arms": [
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned unlikelihood objective with lora adapter seed 0",
+        "fixture-only: no model trained"
+      ],
+      "objective": "unlikelihood",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_unlikelihood_lora_s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned unlikelihood objective with lora adapter seed 1",
+        "fixture-only: no model trained"
+      ],
+      "objective": "unlikelihood",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_unlikelihood_lora_s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned unlikelihood objective with lora adapter seed 2",
+        "fixture-only: no model trained"
+      ],
+      "objective": "unlikelihood",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_unlikelihood_lora_s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned ftpo_single objective with lora adapter seed 0",
+        "fixture-only: no model trained"
+      ],
+      "objective": "ftpo_single",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_ftpo_single_lora_s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned ftpo_single objective with lora adapter seed 1",
+        "fixture-only: no model trained"
+      ],
+      "objective": "ftpo_single",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_ftpo_single_lora_s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned ftpo_single objective with lora adapter seed 2",
+        "fixture-only: no model trained"
+      ],
+      "objective": "ftpo_single",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_ftpo_single_lora_s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned ftpo_set objective with lora adapter seed 0",
+        "fixture-only: no model trained"
+      ],
+      "objective": "ftpo_set",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_ftpo_set_lora_s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned ftpo_set objective with lora adapter seed 1",
+        "fixture-only: no model trained"
+      ],
+      "objective": "ftpo_set",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_ftpo_set_lora_s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned ftpo_set objective with lora adapter seed 2",
+        "fixture-only: no model trained"
+      ],
+      "objective": "ftpo_set",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_ftpo_set_lora_s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned legal_set_mass objective with lora adapter seed 0",
+        "fixture-only: no model trained"
+      ],
+      "objective": "legal_set_mass",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_legal_set_mass_lora_s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned legal_set_mass objective with lora adapter seed 1",
+        "fixture-only: no model trained"
+      ],
+      "objective": "legal_set_mass",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_legal_set_mass_lora_s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "adapter_method": "lora",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "notes": [
+        "planned legal_set_mass objective with lora adapter seed 2",
+        "fixture-only: no model trained"
+      ],
+      "objective": "legal_set_mass",
+      "reference_locality_drift": null,
+      "run_id": "slm121_fixture_legal_set_mass_lora_s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    }
+  ],
+  "ftpo_id": "causal-peft-ftpo",
+  "manifest": {
+    "adapter_methods": [
+      "lora"
+    ],
+    "base_recipe": {
+      "adapter_alpha": 16,
+      "adapter_dropout": 0.0,
+      "adapter_method": "lora",
+      "adapter_rank": 8,
+      "adapter_target_modules": [
+        "q_proj",
+        "v_proj"
+      ],
+      "alignment_candidate_scope": "lark_compiler_forest",
+      "allow_unconstrained_fallback": false,
+      "batch_size": 4,
+      "checkpoint_sync": false,
+      "compiler_alignment_loss_weight": 1.0,
+      "compiler_alignment_margin": 1.0,
+      "compiler_alignment_semantic_exhaustive": true,
+      "compiler_alignment_stratified": true,
+      "compiler_decode_mode": "tree",
+      "context_backend": "hf_local_files_only",
+      "design_md_in_context": false,
+      "device": "cpu",
+      "eval_version": "remediated",
+      "ftpo_epsilon": 2.0,
+      "ftpo_tau": 1.0,
+      "honest_slot_contract": true,
+      "learning_rate": 0.0003,
+      "max_wall_minutes": 3.0,
+      "mixture_sampling_policy": "quota_capacity_aware",
+      "non_target_tether": 0.4,
+      "output_tokenizer": "lexer",
+      "schema_in_context": true,
+      "seed": 0,
+      "slot_contract_constrained_decode": true,
+      "slot_contract_in_context": true,
+      "steps": 32,
+      "target_tether": 0.05,
+      "target_tether_grace": 1.0,
+      "train_version": "e218_schema_normalized_judge_v5"
+    },
+    "base_recipe_hash": "827379d0c3a9542c5c13acd508ce06669a812a68ccb47b0250423d52b1065575",
+    "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+    "claim_class": "frontier",
+    "falsifier": "PEFT FTPO adapters fail to move good legal actions above bad legal actions in logit space, degrade reference-locality metrics, or do not improve binding-aware meaningful outcomes at matched compute.",
+    "ftpo_id": "causal-peft-ftpo",
+    "hypothesis": "Updating only small PEFT adapters on exact-state causal decision events with FTPO objectives improves binding-aware meaningful-program rate while preserving base-model legality and keeping the adapter removable.",
+    "matrix_set": "causal-peft-ftpo",
+    "matrix_version": "ldi1-02-v1",
+    "objectives": [
+      "unlikelihood",
+      "ftpo_single",
+      "ftpo_set",
+      "legal_set_mass"
+    ],
+    "parent_checkpoint_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json",
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "status": "frontier_pending_gpu"
+  },
+  "matrix_set": "causal-peft-ftpo",
+  "matrix_version": "ldi1-02-v1",
+  "run_id": "slm121_fixture",
+  "status": "fixture",
+  "version_stamp": {
+    "code_commit": "0ac2a467407588b1adaef6abcf062de272951f5e",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v19"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T21:34:05.185840+00:00"
+  }
+}

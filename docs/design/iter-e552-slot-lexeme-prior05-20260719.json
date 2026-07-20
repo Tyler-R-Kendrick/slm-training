@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E552",
+  "run_id": "e552-e544-strict-subset2-lexeme05-r1-24s",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_negative_result_not_ship",
+  "hypothesis": "A half-strength slot lexeme prior will retain topology while recovering fidelity.",
+  "checkpoint": {
+    "location": "outputs/runs/e552-e544-strict-subset2-lexeme05-r1-24s/checkpoints/last.pt",
+    "sha256": "49a9c1119d28f95437f86cfca5f8c06467173d56d1e060757cea8af0a151fc04",
+    "sync": false,
+    "sync_reason": "Explicit local-only 24-step scratch diagnostic; all semantic and AgentV gates fail."
+  },
+  "training": {
+    "parent_run_id": "e544-e543-root-identity1-r2-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1304,
+    "elapsed_wall_seconds": 34.75388688799649,
+    "max_wall_minutes": 3.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_lexeme_prior_weight": 0.5,
+    "root_reference_identity_strict_subset_multiplier": 2,
+    "last_loss": 13.147594451904297,
+    "hard_process_cap_seconds": 170
+  },
+  "eval_recipe": {
+    "eval_run_id": "e552-lexeme05-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.13333333333333333,
+      "placeholder_validity": 0.28,
+      "structural_similarity": 0.218125,
+      "component_type_recall": 0.125,
+      "reward_score": 0.3435,
+      "ast_node_f1": 0.3388888888888889,
+      "ast_edge_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0
+    }
+  },
+  "comparison": {
+    "interpretation": "The 0/0.5/1 prior ladder is non-monotonic. Half strength has the ladder's worst fidelity and validity and does not restore recall.",
+    "vs_weight1_fidelity_delta": -0.125,
+    "vs_weight1_structure_delta": -0.006674999999999987,
+    "vs_weight1_recall_delta": -0.08333333333333331,
+    "vs_weight1_reward_delta": -0.19675000000000004
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Fidelity, validity, recall, and reward regress; meaningful-v1, strict-v2, AST edge F1, and AgentV remain zero."
+  },
+  "decision": "Reject the half-strength prior and checkpoint. Close scalar prior tuning; change supervision or prior construction.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cf4907fdd2bee35a8f7891115e9eefd5e78f2ceb",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v12",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-19T23:47:03.751371+00:00"
+  }
+}

@@ -8,6 +8,7 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Content | Location |
 | --- | --- |
 | Python implementation | `src/slm_training/` or the existing `src/gpu_multi_farm/` package |
+| Frozen DSL-agnostic harness machinery (versioning, lineage, gate/promotion engines) | `src/slm_training/harness_core/` (see `docs/design/harness-core.md`) |
 | DSL analysis helpers (arity, signatures, canonicalization) | `src/slm_training/dsl/analysis/` |
 | Runnable entrypoints and maintenance checks | `scripts/` |
 | Tests mirroring implementation domains | `tests/` |
