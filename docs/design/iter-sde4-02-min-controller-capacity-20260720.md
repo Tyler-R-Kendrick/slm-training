@@ -1,8 +1,8 @@
 # SLM-180 / SDE4-02: Minimum controller capacity fixture (sde4_02_plan)
 
-Matrix set: `sde4-02-min-controller`  
-Version: `sde4-02-v1`  
-Status: **plan_only**  
+Matrix set: `sde4-02-min-controller`
+Version: `sde4-02-v1`
+Status: **plan_only**
 
 Competence target (train accuracy): `0.66`
 

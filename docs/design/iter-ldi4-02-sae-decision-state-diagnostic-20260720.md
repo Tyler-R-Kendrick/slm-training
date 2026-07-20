@@ -1,8 +1,8 @@
 # SLM-136 / LDI4-02: SAE decision-state diagnostic fixture (ldi4_02_plan)
 
-Matrix set: `ldi4-02-sae-decision-state`  
-Version: `ldi4-02-v1`  
-Status: **plan_only**  
+Matrix set: `ldi4-02-sae-decision-state`
+Version: `ldi4-02-v1`
+Status: **plan_only**
 Site: `denoiser.block.0.residual`
 
 ## What this measures

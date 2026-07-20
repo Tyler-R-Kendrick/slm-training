@@ -1,8 +1,8 @@
 # SLM-135 / EFS4-01: Trailed-assumptions ablation fixture (slm135_plan)
 
-Matrix set: `slm135-trailed-assumptions`  
-Version: `efs4-01-v1`  
-Status: **plan_only**  
+Matrix set: `slm135-trailed-assumptions`
+Version: `efs4-01-v1`
+Status: **plan_only**
 Verdict: **not_run**
 
 ## Hypothesis

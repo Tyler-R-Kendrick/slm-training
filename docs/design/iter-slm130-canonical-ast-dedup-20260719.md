@@ -1,7 +1,7 @@
 # SLM-130 / EFS3-05: Wire canonical AST deduplication and measure valid semantic-mode coverage
 
-**Claim class:** wiring / fixture only  
-**Run date:** 2026-07-19  
+**Claim class:** wiring / fixture only
+**Run date:** 2026-07-19
 **Machine-readable result:** [`iter-slm130-canonical-ast-dedup-20260719.json`](iter-slm130-canonical-ast-dedup-20260719.json)
 
 This iteration implements the SLM-130 canonical-AST deduplication harness. No

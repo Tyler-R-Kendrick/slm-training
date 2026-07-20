@@ -1,7 +1,7 @@
 # SLM-138: Shared recursive denoiser tower fixture (slm138_recursive_denoiser_fixture)
 
-Matrix set: `slm138-shared-recursive-denoiser`  
-Version: `slm138-v1`  
+Matrix set: `slm138-shared-recursive-denoiser`
+Version: `slm138-v1`
 Status: **wiring_only**
 
 ## What this exercises

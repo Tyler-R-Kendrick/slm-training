@@ -1,7 +1,7 @@
 # SLM-127 / EFS3-04: Contract-grounded candidate selector with calibrated abstention
 
-**Claim class:** wiring / fixture only  
-**Run date:** 2026-07-19  
+**Claim class:** wiring / fixture only
+**Run date:** 2026-07-19
 **Machine-readable result:** [`iter-slm127-candidate-selector-20260719.json`](iter-slm127-candidate-selector-20260719.json)
 
 This iteration implements the SLM-127 candidate-selector harness. No checkpoint

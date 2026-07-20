@@ -1,7 +1,7 @@
 # SLM-143 / SPV0-03: Bounded completion enumeration and semantic regret decomposition
 
-**Claim class:** wiring / fixture only  
-**Run date:** 2026-07-19  
+**Claim class:** wiring / fixture only
+**Run date:** 2026-07-19
 **Machine-readable result:** [`iter-spv0-03-semantic-regret-20260719.json`](iter-spv0-03-semantic-regret-20260719.json)
 
 This iteration wires the SLM-143 semantic-regret decomposition harness. No

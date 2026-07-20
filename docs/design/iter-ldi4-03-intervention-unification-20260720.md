@@ -1,7 +1,7 @@
 # SLM-137 / LDI4-03: Intervention unification fixture (ldi4_03_fixture)
 
-Matrix set: `ldi4-03-intervention-unification`  
-Version: `ldi4-03-v1`  
+Matrix set: `ldi4-03-intervention-unification`
+Version: `ldi4-03-v1`
 Status: **wiring_only**
 
 ## What this exercises
@@ -26,8 +26,8 @@ A common manifest, registry, evaluation bundle, and promotion state machine for 
 
 ## Closeout index
 
-Total artifacts: 4  
-Best deployable: `peft-1`  
+Total artifacts: 4
+Best deployable: `peft-1`
 Statement: best deployable intervention: peft-1
 
 By status:

@@ -54,5 +54,3 @@ def test_missing_checkpoint_or_events_without_fixture_errors(
     rc = main(["--ranks", "2"])
     assert rc == 2
     assert "--checkpoint and --events are required" in capsys.readouterr().err
-
-
