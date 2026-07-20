@@ -3480,3 +3480,15 @@ unconditional gating, keep default-off, and next test confidence-aware
 arbitration. No checkpoint was created or synced. Evidence:
 [narrative](iter-e584-role-gated-slot-head-20260720.md) and
 [JSON](iter-e584-role-gated-slot-head-20260720.json).
+
+## E585 remaining-role coverage abstention
+
+E585 requires every remaining visible slot to have a role-family candidate
+before auxiliary learned-head gating activates. On a clean E569 OOD `n=4`
+role-weight 0/4 pair, the treatment exactly reproduces E584: perfect auth
+topology, modal `Stack([])`, reward 0.5743 versus control 0.7760, and strict
+meaning-v2 0 with AgentV 0/1. The check activates after an uncovered role can
+already be consumed. Reject it, keep default-off, and next bind confidence to
+the original visible contract. No checkpoint was created or synced. Evidence:
+[narrative](iter-e585-remaining-role-coverage-20260720.md) and
+[JSON](iter-e585-remaining-role-coverage-20260720.json).

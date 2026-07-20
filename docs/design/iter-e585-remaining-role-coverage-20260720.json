@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E585",
+  "date_utc": "2026-07-20",
+  "run_id": "e585-e569-role-coverage4-r1",
+  "run_class": "scratch_matrix",
+  "status": "negative_not_promotable",
+  "hypothesis": "Requiring every remaining visible slot to have a role-family candidate before gating the learned slot head will retain E584's auth topology gain while avoiding modal collapse.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weights": [0.0, 4.0],
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 4.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [{
+    "run_id": "e585-e569-role-coverage0-r1",
+    "label": "role_gate_inactive_control",
+    "semantic_role_decode_weight": 0.0,
+    "suites": {"ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5083333333333333,
+      "placeholder_validity": 0.7050000000000001,
+      "structural_similarity": 0.311875,
+      "component_type_recall": 0.4583333333333333,
+      "reward_score": 0.776,
+      "ast_node_f1": 0.42638888888888893,
+      "ast_edge_f1": 0.16666666666666666,
+      "latency_ms_p50": 13132.52,
+      "latency_ms_p95": 15577.43
+    }},
+    "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+  }],
+  "suites": {"ood": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.25,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.3416666666666667,
+    "placeholder_validity": 0.505,
+    "structural_similarity": 0.39437500000000003,
+    "component_type_recall": 0.375,
+    "reward_score": 0.57425,
+    "ast_node_f1": 0.48888888888888893,
+    "ast_edge_f1": 0.25,
+    "latency_ms_p50": 9530.55,
+    "latency_ms_p95": 15390.3
+  }},
+  "comparison": {
+    "baseline": "e585-e569-role-coverage0-r1",
+    "meaningful_program_rate_delta": 0.0,
+    "placeholder_fidelity_delta": -0.16666666666666663,
+    "placeholder_validity_delta": -0.20000000000000007,
+    "structural_similarity_delta": 0.08250000000000002,
+    "component_type_recall_delta": -0.08333333333333331,
+    "reward_score_delta": -0.20175,
+    "ast_node_f1_delta": 0.0625,
+    "ast_edge_f1_delta": 0.08333333333333334,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0,
+    "matches_e584_treatment": true,
+    "auth_ast_node_f1": 1.0,
+    "auth_ast_edge_f1": 1.0,
+    "modal_prediction": "root = Stack([])",
+    "interpretation": "Remaining-only coverage activates after an uncovered role has already been consumed, reproducing E584 exactly. Confidence must be fixed against the original visible contract."
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The treatment exactly reproduces E584's aggregate regressions, strict meaning-v2 remains zero, and AgentV fails."
+  },
+  "decision": "Reject remaining-only coverage gating, keep default-off, do not promote or sync a checkpoint, and next require complete original-contract coverage.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0ff8c653748f9b8ad0ae595b776371362231fb28",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v16",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v22"
+    },
+    "stamped_at": "2026-07-20T06:55:12.245982+00:00"
+  }
+}
