@@ -1,0 +1,340 @@
+{
+  "cells": [
+    {
+      "action_embedding_init": "current_stub",
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__neutral__none__s0",
+      "legal_margin_mode": "none",
+      "seed": 0,
+      "sibling_margin": "none",
+      "slot_component_class_balance_power": 0.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 1,
+      "slot_component_owner_rare_threshold": 0,
+      "target_decisions": 1000,
+      "targeted_margin_value": 0.0,
+      "type_balance": "neutral"
+    },
+    {
+      "action_embedding_init": "current_stub",
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__neutral__targeted_weighted__s0",
+      "legal_margin_mode": "targeted_weighted",
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "slot_component_class_balance_power": 0.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 1,
+      "slot_component_owner_rare_threshold": 0,
+      "target_decisions": 1000,
+      "targeted_margin_value": 1.0,
+      "type_balance": "neutral"
+    },
+    {
+      "action_embedding_init": "current_stub",
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__e396_balanced__none__s0",
+      "legal_margin_mode": "none",
+      "seed": 0,
+      "sibling_margin": "none",
+      "slot_component_class_balance_power": 1.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 4,
+      "slot_component_owner_rare_threshold": 3,
+      "target_decisions": 1000,
+      "targeted_margin_value": 0.0,
+      "type_balance": "e396_balanced"
+    },
+    {
+      "action_embedding_init": "current_stub",
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__e396_balanced__targeted_weighted__s0",
+      "legal_margin_mode": "targeted_weighted",
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "slot_component_class_balance_power": 1.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 4,
+      "slot_component_owner_rare_threshold": 3,
+      "target_decisions": 1000,
+      "targeted_margin_value": 1.0,
+      "type_balance": "e396_balanced"
+    },
+    {
+      "action_embedding_init": "schema_description",
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__neutral__none__s0",
+      "legal_margin_mode": "none",
+      "seed": 0,
+      "sibling_margin": "none",
+      "slot_component_class_balance_power": 0.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 1,
+      "slot_component_owner_rare_threshold": 0,
+      "target_decisions": 1000,
+      "targeted_margin_value": 0.0,
+      "type_balance": "neutral"
+    },
+    {
+      "action_embedding_init": "schema_description",
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__neutral__targeted_weighted__s0",
+      "legal_margin_mode": "targeted_weighted",
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "slot_component_class_balance_power": 0.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 1,
+      "slot_component_owner_rare_threshold": 0,
+      "target_decisions": 1000,
+      "targeted_margin_value": 1.0,
+      "type_balance": "neutral"
+    },
+    {
+      "action_embedding_init": "schema_description",
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__e396_balanced__none__s0",
+      "legal_margin_mode": "none",
+      "seed": 0,
+      "sibling_margin": "none",
+      "slot_component_class_balance_power": 1.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 4,
+      "slot_component_owner_rare_threshold": 3,
+      "target_decisions": 1000,
+      "targeted_margin_value": 0.0,
+      "type_balance": "e396_balanced"
+    },
+    {
+      "action_embedding_init": "schema_description",
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__e396_balanced__targeted_weighted__s0",
+      "legal_margin_mode": "targeted_weighted",
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "slot_component_class_balance_power": 1.0,
+      "slot_component_loss_weight": 1.0,
+      "slot_component_owner_rare_multiplier": 4,
+      "slot_component_owner_rare_threshold": 3,
+      "target_decisions": 1000,
+      "targeted_margin_value": 1.0,
+      "type_balance": "e396_balanced"
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [],
+  "experiment_id": "slm165-interaction-factorial",
+  "factorial_analysis": {
+    "best_two_way_cell": "schema_description \u00d7 e396_balanced \u00d7 none",
+    "best_two_way_mean": 0.432191,
+    "cell_means": {
+      "current_stub \u00d7 e396_balanced \u00d7 none": 0.38356,
+      "current_stub \u00d7 e396_balanced \u00d7 targeted_weighted": 0.411091,
+      "current_stub \u00d7 neutral \u00d7 none": 0.345759,
+      "current_stub \u00d7 neutral \u00d7 targeted_weighted": 0.383228,
+      "schema_description \u00d7 e396_balanced \u00d7 none": 0.432191,
+      "schema_description \u00d7 e396_balanced \u00d7 targeted_weighted": 0.539287,
+      "schema_description \u00d7 neutral \u00d7 none": 0.395914,
+      "schema_description \u00d7 neutral \u00d7 targeted_weighted": 0.427279
+    },
+    "full_cell_mean": 0.539287,
+    "full_minus_best_two_way": 0.107096,
+    "full_minus_best_two_way_ci_95": [
+      0.107096,
+      0.107096
+    ],
+    "main_effects": {
+      "action_init": 0.067758,
+      "sibling_margin": 0.050865,
+      "type_balance": 0.053487
+    },
+    "three_way_interaction": 0.021417,
+    "two_way_interactions": {
+      "action_init_x_sibling_margin": 0.018365,
+      "action_init_x_type_balance": 0.020656,
+      "type_balance_x_sibling_margin": 0.016448
+    },
+    "verdict": "synergistic",
+    "verdict_rule": "synergistic if full-cell rare recall exceeds the best two-lever cell by >= 0.05 and the three-way interaction is positive; otherwise antagonistic if the three-way interaction is <= -0.02, redundant if the largest main effect is within 0.02 of the second largest, and otherwise dominated by the largest main effect."
+  },
+  "falsifier": "The full three-lever cell does not outperform the best two-lever cell by at least 0.05 rare-component recall, or the three-way interaction is non-positive.",
+  "hypothesis": "The combination of schema-description action initialization (SLM-163), E396 type balancing, and targeted legal-sibling margin (SLM-164) produces a positive three-way interaction on rare-component recall, exceeding any two-lever combination.",
+  "matrix_set": "slm165_interaction_factorial",
+  "matrix_version": "sde1-03-v1",
+  "rows": [
+    {
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__neutral__none__s0",
+      "common_component_recall": 0.43069033178971966,
+      "first_attempt_quality": 0.3354408282438189,
+      "meaningful_program_rate": 0.32525104843734465,
+      "notes": [
+        "action_init=current_stub",
+        "type_balance=neutral",
+        "sibling_margin=none",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.3877807162223513,
+      "rare_component_recall": 0.3457587982092174,
+      "seed": 0,
+      "sibling_margin": "none",
+      "target_decisions": 1000,
+      "type_balance": "neutral",
+      "wall_seconds": 0.5136710414892367
+    },
+    {
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__neutral__targeted_weighted__s0",
+      "common_component_recall": 0.46541460317667166,
+      "first_attempt_quality": 0.36705325900293007,
+      "meaningful_program_rate": 0.36981839452527504,
+      "notes": [
+        "action_init=current_stub",
+        "type_balance=neutral",
+        "sibling_margin=targeted_weighted",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.4347372072787238,
+      "rare_component_recall": 0.3832283060827876,
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "target_decisions": 1000,
+      "type_balance": "neutral",
+      "wall_seconds": 0.603268872067306
+    },
+    {
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__e396_balanced__none__s0",
+      "common_component_recall": 0.4613926362671118,
+      "first_attempt_quality": 0.3671189764741075,
+      "meaningful_program_rate": 0.3683717659763876,
+      "notes": [
+        "action_init=current_stub",
+        "type_balance=e396_balanced",
+        "sibling_margin=none",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.4379824172512567,
+      "rare_component_recall": 0.38355975932294895,
+      "seed": 0,
+      "sibling_margin": "none",
+      "target_decisions": 1000,
+      "type_balance": "e396_balanced",
+      "wall_seconds": 0.6017403450694013
+    },
+    {
+      "action_init": "current_stub",
+      "cell_id": "A_current_stub__e396_balanced__targeted_weighted__s0",
+      "common_component_recall": 0.49444558571688274,
+      "first_attempt_quality": 0.3915707890440289,
+      "meaningful_program_rate": 0.38814565707326576,
+      "notes": [
+        "action_init=current_stub",
+        "type_balance=e396_balanced",
+        "sibling_margin=targeted_weighted",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.46051546040147046,
+      "rare_component_recall": 0.4110909149923711,
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "target_decisions": 1000,
+      "type_balance": "e396_balanced",
+      "wall_seconds": 0.7160632406586349
+    },
+    {
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__neutral__none__s0",
+      "common_component_recall": 0.4840447874391096,
+      "first_attempt_quality": 0.38537457360097466,
+      "meaningful_program_rate": 0.37876114802596306,
+      "notes": [
+        "action_init=schema_description",
+        "type_balance=neutral",
+        "sibling_margin=none",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.4493549304752987,
+      "rare_component_recall": 0.3959139983103261,
+      "seed": 0,
+      "sibling_margin": "none",
+      "target_decisions": 1000,
+      "type_balance": "neutral",
+      "wall_seconds": 0.5972336688512293
+    },
+    {
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__neutral__targeted_weighted__s0",
+      "common_component_recall": 0.5025863894581998,
+      "first_attempt_quality": 0.4074344076335238,
+      "meaningful_program_rate": 0.40913225156897304,
+      "notes": [
+        "action_init=schema_description",
+        "type_balance=neutral",
+        "sibling_margin=targeted_weighted",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.4743223764296741,
+      "rare_component_recall": 0.42727880373335353,
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "target_decisions": 1000,
+      "type_balance": "neutral",
+      "wall_seconds": 0.6985122108632081
+    },
+    {
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__e396_balanced__none__s0",
+      "common_component_recall": 0.5131032716310687,
+      "first_attempt_quality": 0.42763788415106835,
+      "meaningful_program_rate": 0.41508245924302123,
+      "notes": [
+        "action_init=schema_description",
+        "type_balance=e396_balanced",
+        "sibling_margin=none",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.4765437118427095,
+      "rare_component_recall": 0.432191250016474,
+      "seed": 0,
+      "sibling_margin": "none",
+      "target_decisions": 1000,
+      "type_balance": "e396_balanced",
+      "wall_seconds": 0.6801650421650738
+    },
+    {
+      "action_init": "schema_description",
+      "cell_id": "A_schema_description__e396_balanced__targeted_weighted__s0",
+      "common_component_recall": 0.6198955238412054,
+      "first_attempt_quality": 0.5360644370028088,
+      "meaningful_program_rate": 0.5272382930403895,
+      "notes": [
+        "action_init=schema_description",
+        "type_balance=e396_balanced",
+        "sibling_margin=targeted_weighted",
+        "fixture-only: deterministic main-effect + interaction simulator"
+      ],
+      "parse_validity_rate": 0.5951403645326593,
+      "rare_component_recall": 0.5392874072455719,
+      "seed": 0,
+      "sibling_margin": "targeted_weighted",
+      "target_decisions": 1000,
+      "type_balance": "e396_balanced",
+      "wall_seconds": 0.7987825650499097
+    }
+  ],
+  "run_id": "slm165-interaction-factorial-20260720",
+  "schema": "Slm165InteractionFactorialReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T11:44:21.809425Z",
+  "version_stamp": {
+    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v40",
+      "harness.experiments.slm165_interaction_factorial": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T11:44:21.808959+00:00"
+  }
+}

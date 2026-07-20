@@ -457,12 +457,12 @@
       "family": "discrete_flow_rate",
       "mean_detour_ratio": 1.5,
       "mean_edits_applied": 4.0,
-      "mean_forwards": 5529.0,
+      "mean_forwards": 5366.5,
       "mean_path_length": 4.0,
-      "mean_remaining_distance": 4.5,
-      "mean_trajectory_consistency": 0.625,
-      "mean_transition_entropy": 3.6245957176040524,
-      "mean_verifier_calls": 5529.0,
+      "mean_remaining_distance": 4.0,
+      "mean_trajectory_consistency": 0.75,
+      "mean_transition_entropy": 3.631521959362737,
+      "mean_verifier_calls": 5366.5,
       "n_records": 2,
       "notes": [
         "family=discrete_flow_rate",
@@ -477,8 +477,8 @@
           "boundary_accuracy": 1.0,
           "detour_ratio": 2.0,
           "edits_applied": 4,
-          "final_state": "node_0 = Button(\":sym_0000.text\")\nnode_1 = Button(\":sym_0001.placeholder\")\nroot = ImageBlock([node_0, node_1, n0])\nn0 = TextContent(\":content.body\")",
-          "forwards": 4554,
+          "final_state": "node_0 = TextContent(\":sym_0000.text\")\nnode_1 = Image(\":sym_0001.placeholder\")\nroot = Buttons([node_0, node_1])",
+          "forwards": 4879,
           "notes": [
             "ok"
           ],
@@ -486,23 +486,23 @@
           "path_length": 4,
           "reached_target": false,
           "record_index": 0,
-          "remaining_distance": 4,
+          "remaining_distance": 3,
           "rollbacks": 0,
           "source": "node_0 = TextContent(\":sym_0000.text\")\nnode_1 = Input(\":sym_0001.placeholder\")\nroot = Card([node_0, node_1])",
           "states_visited": 5,
           "steps_budget": 4,
           "target": "node_0 = Input(\":sym_0000.placeholder\")\nnode_1 = CardHeader(\":sym_0001.title\")\nroot = Card([node_0, node_1])",
           "trajectory_consistency": 0.75,
-          "transition_entropy": 3.543168752966229,
-          "verifier_calls": 4554
+          "transition_entropy": 3.587042284770416,
+          "verifier_calls": 4879
         },
         {
           "accepted": false,
           "boundary_accuracy": 1.0,
           "detour_ratio": 1.0,
           "edits_applied": 4,
-          "final_state": "node_0 = Button(\":sym_0000.label\")\nnode_1 = Button(\":sym_0001.label\")\nroot = CardHeader([node_0, node_1, n0, n1])\nn0 = Image(\":sym_0000.placeholder\")\nn1 = Button(\":sym_0002.placeholder\")",
-          "forwards": 6504,
+          "final_state": "node_0 = Button(\":sym_0000.label\")\nnode_1 = Button(\":sym_0001.label\")\nnode_2 = Button(\":sym_0002.placeholder\")\nroot = TextCallout([node_0, node_1, node_2, n0])\nn0 = Button(\":sym_0001.label\")",
+          "forwards": 5854,
           "notes": [
             "ok"
           ],
@@ -516,9 +516,9 @@
           "states_visited": 5,
           "steps_budget": 4,
           "target": "node_0 = Input(\":sym_0000.placeholder\")\nroot = Stack([node_0])",
-          "trajectory_consistency": 0.5,
-          "transition_entropy": 3.706022682241876,
-          "verifier_calls": 6504
+          "trajectory_consistency": 0.75,
+          "transition_entropy": 3.6760016339550585,
+          "verifier_calls": 5854
         }
       ],
       "rollback_rate": 0.0,
@@ -536,12 +536,12 @@
       "family": "random_path_control",
       "mean_detour_ratio": 1.5,
       "mean_edits_applied": 4.0,
-      "mean_forwards": 4391.5,
+      "mean_forwards": 5366.5,
       "mean_path_length": 4.0,
-      "mean_remaining_distance": 3.5,
-      "mean_trajectory_consistency": 0.625,
-      "mean_transition_entropy": 3.808923871840185,
-      "mean_verifier_calls": 4391.5,
+      "mean_remaining_distance": 6.0,
+      "mean_trajectory_consistency": 0.375,
+      "mean_transition_entropy": 3.8564105742071275,
+      "mean_verifier_calls": 5366.5,
       "n_records": 2,
       "notes": [
         "family=random_path_control",
@@ -556,8 +556,8 @@
           "boundary_accuracy": 1.0,
           "detour_ratio": 2.0,
           "edits_applied": 4,
-          "final_state": "node_0 = TextContent(\":sym_0000.text\")\nnode_1 = Input(\":sym_0001.placeholder\")\nroot = Buttons([node_0, node_1])",
-          "forwards": 4554,
+          "final_state": "node_0 = TextContent(\":sym_0000.text\")\nnode_1 = Input(\":sym_0001.placeholder\")\nroot = Label([node_0, node_1, n0, n1, n2])\nn0 = Image(\":sym_0001.title\")\nn1 = Button(\":sym_0001.placeholder\")\nn2 = TextContent(\":sym_0001.title\")",
+          "forwards": 5854,
           "notes": [
             "ok"
           ],
@@ -565,23 +565,23 @@
           "path_length": 4,
           "reached_target": false,
           "record_index": 0,
-          "remaining_distance": 3,
+          "remaining_distance": 6,
           "rollbacks": 0,
           "source": "node_0 = TextContent(\":sym_0000.text\")\nnode_1 = Input(\":sym_0001.placeholder\")\nroot = Card([node_0, node_1])",
           "states_visited": 5,
           "steps_budget": 4,
           "target": "node_0 = Input(\":sym_0000.placeholder\")\nnode_1 = CardHeader(\":sym_0001.title\")\nroot = Card([node_0, node_1])",
-          "trajectory_consistency": 0.5,
-          "transition_entropy": 3.8171686178141595,
-          "verifier_calls": 4554
+          "trajectory_consistency": 0.25,
+          "transition_entropy": 3.8791630386521465,
+          "verifier_calls": 5854
         },
         {
           "accepted": false,
           "boundary_accuracy": 1.0,
           "detour_ratio": 1.0,
           "edits_applied": 4,
-          "final_state": "node_0 = Button(\":sym_0000.label\")\nnode_2 = Input(\":sym_0002.placeholder\")\nroot = ImageBlock([node_0, node_2, n0])\nn0 = Button(\":sym_0002.placeholder\")",
-          "forwards": 4229,
+          "final_state": "node_1 = Image(\":sym_0001.label\")\nnode_2 = Input(\":sym_0002.placeholder\")\nroot = Card([node_1, node_2, n0, n1])\nn0 = TextContent(\":placeholder.hint\")\nn1 = Button(\":sym_0002.placeholder\")",
+          "forwards": 4879,
           "notes": [
             "ok"
           ],
@@ -589,15 +589,15 @@
           "path_length": 4,
           "reached_target": false,
           "record_index": 1,
-          "remaining_distance": 4,
+          "remaining_distance": 6,
           "rollbacks": 0,
           "source": "node_0 = Button(\":sym_0000.label\")\nnode_1 = Button(\":sym_0001.label\")\nnode_2 = Input(\":sym_0002.placeholder\")\nroot = Card([node_0, node_1, node_2])",
           "states_visited": 5,
           "steps_budget": 4,
           "target": "node_0 = Input(\":sym_0000.placeholder\")\nroot = Stack([node_0])",
-          "trajectory_consistency": 0.75,
-          "transition_entropy": 3.8006791258662105,
-          "verifier_calls": 4229
+          "trajectory_consistency": 0.5,
+          "transition_entropy": 3.833658109762109,
+          "verifier_calls": 4879
         }
       ],
       "rollback_rate": 0.0,
@@ -615,12 +615,12 @@
       "family": "ar_x22_hybrid_placeholder",
       "mean_detour_ratio": 0.5,
       "mean_edits_applied": 2.0,
-      "mean_forwards": 3090.0,
+      "mean_forwards": 2277.5,
       "mean_path_length": 2.0,
-      "mean_remaining_distance": 3.0,
-      "mean_trajectory_consistency": 0.25,
+      "mean_remaining_distance": 1.5,
+      "mean_trajectory_consistency": 0.5,
       "mean_transition_entropy": 0.0,
-      "mean_verifier_calls": 3090.0,
+      "mean_verifier_calls": 2277.5,
       "n_records": 2,
       "notes": [
         "family=ar_x22_hybrid_placeholder",
@@ -659,8 +659,8 @@
           "boundary_accuracy": 1.0,
           "detour_ratio": 1.0,
           "edits_applied": 4,
-          "final_state": "node_0 = Button(\":sym_0000.label\")\nroot = Card([node_0, n0, n1])\nn0 = Button(\":content.body\")\nn1 = Image(\":placeholder.hint\")",
-          "forwards": 5204,
+          "final_state": "node_0 = TextContent(\":sym_0000.label\")\nroot = Stack([node_0])",
+          "forwards": 3579,
           "notes": [
             "ok"
           ],
@@ -668,15 +668,15 @@
           "path_length": 4,
           "reached_target": false,
           "record_index": 1,
-          "remaining_distance": 4,
+          "remaining_distance": 1,
           "rollbacks": 0,
           "source": "node_0 = Button(\":sym_0000.label\")\nnode_1 = Button(\":sym_0001.label\")\nnode_2 = Input(\":sym_0002.placeholder\")\nroot = Card([node_0, node_1, node_2])",
           "states_visited": 5,
           "steps_budget": 4,
           "target": "node_0 = Input(\":sym_0000.placeholder\")\nroot = Stack([node_0])",
-          "trajectory_consistency": 0.5,
+          "trajectory_consistency": 1.0,
           "transition_entropy": 0.0,
-          "verifier_calls": 5204
+          "verifier_calls": 3579
         }
       ],
       "rollback_rate": 0.0,
@@ -769,15 +769,15 @@
   "run_id": "slm157-flow-consistency-20260720",
   "schema": "Slm157FlowConsistencyReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T10:05:22.049398Z",
+  "timestamp": "2026-07-20T11:43:48.788082Z",
   "version_stamp": {
-    "code_commit": "55afe65bfa54e161b3d486776cbf384db643f5e7",
+    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v37",
+      "harness.experiments": "v40",
       "harness.experiments.slm157_flow_consistency": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T10:05:22.048016+00:00"
+    "stamped_at": "2026-07-20T11:43:48.786678+00:00"
   }
 }
