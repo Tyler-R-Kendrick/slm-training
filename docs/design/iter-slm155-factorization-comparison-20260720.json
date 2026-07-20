@@ -1,0 +1,791 @@
+{
+  "claim_class": "wiring",
+  "experiment_id": "slm155-factorization-comparison",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "AR-G",
+        "description": "Greedy autoregressive scorer over the live legal action set.",
+        "diagnostic": false,
+        "family": "ar",
+        "max_beam_width": 1,
+        "max_edit_budget": 0,
+        "name": "legal_action_greedy",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "AR-B",
+        "description": "AR scorer with a bounded beam/k-best calibration placeholder.",
+        "diagnostic": false,
+        "family": "ar",
+        "max_beam_width": 4,
+        "max_edit_budget": 0,
+        "name": "legal_action_beam",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "AR-C",
+        "description": "AR greedy followed by the shared global semantic critic/selector.",
+        "diagnostic": false,
+        "family": "ar",
+        "max_beam_width": 1,
+        "max_edit_budget": 0,
+        "name": "legal_action_with_critic",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "X-M",
+        "description": "Canonical minimal valid X22 seed with no learned plan.",
+        "diagnostic": false,
+        "family": "x22",
+        "max_beam_width": 1,
+        "max_edit_budget": 0,
+        "name": "x22_minimal_seed",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "X-P",
+        "description": "Plan-conditioned seed followed by conflict-slice repair.",
+        "diagnostic": false,
+        "family": "x22",
+        "max_beam_width": 1,
+        "max_edit_budget": 1,
+        "name": "x22_plan_seed_repair",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "X-C",
+        "description": "X-P plus the same final global critic/selector.",
+        "diagnostic": false,
+        "family": "x22",
+        "max_beam_width": 1,
+        "max_edit_budget": 1,
+        "name": "x22_with_critic",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "H-1",
+        "description": "AR greedy program followed by one bounded X22 refinement phase.",
+        "diagnostic": false,
+        "family": "hybrid",
+        "max_beam_width": 1,
+        "max_edit_budget": 1,
+        "name": "ar_then_one_repair",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "H-K",
+        "description": "AR program followed by the smallest calibrated K edit budget (K=2 fixture).",
+        "diagnostic": false,
+        "family": "hybrid",
+        "max_beam_width": 1,
+        "max_edit_budget": 2,
+        "name": "ar_then_calibrated_k",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "H-C",
+        "description": "H-1 plus the same final critic/selector.",
+        "diagnostic": false,
+        "family": "hybrid",
+        "max_beam_width": 1,
+        "max_edit_budget": 1,
+        "name": "hybrid_with_critic",
+        "promotable": true,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "gold_ar",
+        "description": "Gold-plan AR diagnostic ceiling.",
+        "diagnostic": true,
+        "family": "ar",
+        "max_beam_width": 1,
+        "max_edit_budget": 0,
+        "name": "gold_plan_ar",
+        "promotable": false,
+        "uses_gold_plan": true,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "gold_x22",
+        "description": "Gold-plan X22 diagnostic ceiling.",
+        "diagnostic": true,
+        "family": "x22",
+        "max_beam_width": 1,
+        "max_edit_budget": 0,
+        "name": "gold_plan_x22",
+        "promotable": false,
+        "uses_gold_plan": true,
+        "uses_oracle_selector": false
+      },
+      {
+        "arm_id": "oracle_selector",
+        "description": "Oracle candidate/beam selector diagnostic.",
+        "diagnostic": true,
+        "family": "ar",
+        "max_beam_width": 1,
+        "max_edit_budget": 0,
+        "name": "oracle_candidate_selector",
+        "promotable": false,
+        "uses_gold_plan": false,
+        "uses_oracle_selector": true
+      }
+    ],
+    "claim_class": "wiring",
+    "common_config": {
+      "compiler_honesty_mode": "production",
+      "dsl_pack": "openui",
+      "equal_forward_budget": 64,
+      "metric_versions": {
+        "meaningful": "2.0.0"
+      },
+      "n_eval_decisions": 16,
+      "n_train_decisions": 64,
+      "plan_source": "predicted",
+      "scorer_seed": 0,
+      "scorer_variant": "mlp",
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "x22_beam_width": 4,
+      "x22_max_depth": 4
+    },
+    "experiment_id": "slm155-factorization-comparison",
+    "falsifier": "X22 produces materially better semantic outcomes at comparable cost, or the hybrid duplicates the better parent at higher cost, or plan features silently alter legal candidate membership between families.",
+    "hypothesis": "For short OpenUI semantic decision streams, direct autoregressive legal-action scoring matches or exceeds plan-conditioned X22 semantic quality at lower deployed cost; a small AR\u2192X22 hybrid edit tail adds a useful Pareto point only when AR realization contains recoverable structural errors.",
+    "matrix_set": "slm155_factorization_comparison",
+    "matrix_version": "spv3-02-v1",
+    "status": "not_run"
+  },
+  "matrix_set": "slm155_factorization_comparison",
+  "matrix_version": "spv3-02-v1",
+  "rows": [
+    {
+      "arm_id": "AR-G",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 5.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "AR-G",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 5.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "AR-G",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 5.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "AR-B",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 8.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "AR-B",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 8.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "AR-B",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 8.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "AR-C",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 6.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "AR-C",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 6.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "AR-C",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 6.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "X-M",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "X-M",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "X-M",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "X-P",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "X-P",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "X-P",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "X-C",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 65.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "X-C",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 65.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "X-C",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 65.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "H-1",
+      "family": "hybrid",
+      "mean_cost_edits": 2.0,
+      "mean_cost_forwards": 69.8125,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "H-1",
+      "family": "hybrid",
+      "mean_cost_edits": 2.0,
+      "mean_cost_forwards": 69.8125,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "H-1",
+      "family": "hybrid",
+      "mean_cost_edits": 2.0,
+      "mean_cost_forwards": 69.8125,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "H-K",
+      "family": "hybrid",
+      "mean_cost_edits": 4.0,
+      "mean_cost_forwards": 133.8125,
+      "mean_cost_verifier_calls": 32.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "H-K",
+      "family": "hybrid",
+      "mean_cost_edits": 4.0,
+      "mean_cost_forwards": 133.8125,
+      "mean_cost_verifier_calls": 32.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "H-K",
+      "family": "hybrid",
+      "mean_cost_edits": 4.0,
+      "mean_cost_forwards": 133.8125,
+      "mean_cost_verifier_calls": 32.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "H-C",
+      "family": "hybrid",
+      "mean_cost_edits": 2.0,
+      "mean_cost_forwards": 70.8125,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=0",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "H-C",
+      "family": "hybrid",
+      "mean_cost_edits": 2.0,
+      "mean_cost_forwards": 70.8125,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=1",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 1
+    },
+    {
+      "arm_id": "H-C",
+      "family": "hybrid",
+      "mean_cost_edits": 2.0,
+      "mean_cost_forwards": 70.8125,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 0.0,
+      "n_records": 16,
+      "notes": [
+        "family=hybrid",
+        "seed=2",
+        "fixture-only: no live production decode loop"
+      ],
+      "promotable": true,
+      "seed": 2
+    },
+    {
+      "arm_id": "gold_ar",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 5.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=0",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 0
+    },
+    {
+      "arm_id": "gold_ar",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 5.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=1",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 1
+    },
+    {
+      "arm_id": "gold_ar",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 5.8125,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=2",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 2
+    },
+    {
+      "arm_id": "gold_x22",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=0",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 0
+    },
+    {
+      "arm_id": "gold_x22",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=1",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 1
+    },
+    {
+      "arm_id": "gold_x22",
+      "family": "x22",
+      "mean_cost_edits": 1.0,
+      "mean_cost_forwards": 64.0,
+      "mean_cost_verifier_calls": 16.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 4,
+      "notes": [
+        "family=x22",
+        "seed=2",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 2
+    },
+    {
+      "arm_id": "oracle_selector",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 0.0,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=0",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 0
+    },
+    {
+      "arm_id": "oracle_selector",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 0.0,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=1",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 1
+    },
+    {
+      "arm_id": "oracle_selector",
+      "family": "ar",
+      "mean_cost_edits": 0.0,
+      "mean_cost_forwards": 0.0,
+      "mean_cost_verifier_calls": 0.0,
+      "mean_semantic_score": 1.0,
+      "n_records": 16,
+      "notes": [
+        "family=ar",
+        "seed=2",
+        "fixture-only: no live production decode loop",
+        "non-promotable arm",
+        "diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 2
+    }
+  ],
+  "run_id": "slm155_fixture",
+  "schema": "Slm155FactorizationComparisonReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T07:43:34.593258Z",
+  "version_stamp": {
+    "code_commit": "7550a4a5999a029428b694f9836c263d079ab8bc",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v31",
+      "harness.experiments.slm155_factorization_comparison": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T07:43:34.591929+00:00"
+  }
+}
