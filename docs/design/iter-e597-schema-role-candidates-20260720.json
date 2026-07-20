@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E597",
+  "date_utc": "2026-07-20",
+  "run_id": "e597-e596-schema-roles8-r2",
+  "run_class": "scratch_matrix",
+  "status": "neutral_not_promotable",
+  "hypothesis": "Stronger visible-role scoring or public-schema candidate coverage will bind the inferred Button to confirmation rather than body.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "matched_to": "e596-e595-role-alias-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "arms": [
+    {
+      "run_id": "e597-e596-role8-r1",
+      "semantic_role_decode_weight": 8.0,
+      "semantic_role_schema_candidates": false,
+      "predictions_changed": false,
+      "latency_ms_p50": 5318.96,
+      "latency_ms_p95": 13514.43
+    },
+    {
+      "run_id": "e597-e596-role12-r1",
+      "semantic_role_decode_weight": 12.0,
+      "semantic_role_schema_candidates": false,
+      "predictions_changed": false,
+      "latency_ms_p50": 5670.31,
+      "latency_ms_p95": 13428.37
+    },
+    {
+      "run_id": "e597-e596-schema-roles-r1",
+      "semantic_role_decode_weight": 4.0,
+      "semantic_role_schema_candidates": true,
+      "predictions_changed": true,
+      "latency_ms_p50": 5196.92,
+      "latency_ms_p95": 14242.57
+    },
+    {
+      "run_id": "e597-e596-schema-roles8-r1",
+      "semantic_role_decode_weight": 8.0,
+      "semantic_role_schema_candidates": true,
+      "predictions_changed": true,
+      "latency_ms_p50": 4829.01,
+      "latency_ms_p95": 16260.02
+    },
+    {
+      "run_id": "e597-e596-schema-roles8-r2",
+      "semantic_role_decode_weight": 8.0,
+      "semantic_role_schema_candidates": true,
+      "predictions_changed": true,
+      "latency_ms_p50": 6218.53,
+      "latency_ms_p95": 17433.55,
+      "canonical_rebased_rerun": true
+    }
+  ],
+  "matched_runs": [
+    {
+      "run_id": "e597-e596-role8-r1",
+      "label": "role_weight_8",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.46937500000000004,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5531746031746032,
+          "ast_edge_f1": 0.38749999999999996,
+          "latency_ms_p50": 5318.96,
+          "latency_ms_p95": 13514.43
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e597-e596-role12-r1",
+      "label": "role_weight_12",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.46937500000000004,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5531746031746032,
+          "ast_edge_f1": 0.38749999999999996,
+          "latency_ms_p50": 5670.31,
+          "latency_ms_p95": 13428.37
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e597-e596-schema-roles-r1",
+      "label": "schema_candidates_role_weight_4",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.46937500000000004,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5531746031746032,
+          "ast_edge_f1": 0.38749999999999996,
+          "latency_ms_p50": 5196.92,
+          "latency_ms_p95": 14242.57
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e597-e596-schema-roles8-r1",
+      "label": "schema_candidates_role_weight_8_pre_rebase",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.46937500000000004,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5531746031746032,
+          "ast_edge_f1": 0.38749999999999996,
+          "latency_ms_p50": 4829.01,
+          "latency_ms_p95": 16260.02
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.46937500000000004,
+      "component_type_recall": 0.625,
+      "reward_score": 0.8115,
+      "ast_node_f1": 0.5531746031746032,
+      "ast_edge_f1": 0.38749999999999996,
+      "latency_ms_p50": 6218.53,
+      "latency_ms_p95": 17433.55
+    }
+  },
+  "shared_metrics": {
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.5,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.5916666666666667,
+    "placeholder_validity": 0.755,
+    "structural_similarity": 0.46937500000000004,
+    "component_type_recall": 0.625,
+    "reward_score": 0.8115,
+    "ast_node_f1": 0.5531746031746032,
+    "ast_edge_f1": 0.38749999999999996
+  },
+  "agentv": {
+    "passed_per_arm": 0,
+    "total_per_arm": 1,
+    "execution_errors": 0
+  },
+  "comparison": {
+    "aggregate_metrics_changed": false,
+    "schema_candidate_prediction_change": "Dashboard root changes from Button to TextContent; modal assignment is unchanged.",
+    "diagnosis": "Candidate coverage and scalar strength are not the bottleneck; component-family choice still commits against the sequential remaining-slot state."
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict meaning-v2 remains zero, AgentV fails, and the target modal binding is unchanged."
+  },
+  "decision": "Keep the generalized switch default-off and preserve as neutral diagnostic evidence; do not promote or sync.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "53123ca3ae9beb96ce8ae8483dcc2ade2902126e",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v23",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v33"
+    },
+    "stamped_at": "2026-07-20T10:21:04.762169+00:00"
+  }
+}

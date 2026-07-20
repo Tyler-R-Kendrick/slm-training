@@ -257,6 +257,7 @@ class ModelBuildConfig:
     slot_component_owner_rare_multiplier: int = 1
     slot_component_decode_weight: float | None = None
     semantic_role_decode_weight: float | None = None
+    semantic_role_schema_candidates: bool | None = None
     schema_value_decode_weight: float | None = None
     schema_enum_close_decode_weight: float | None = None
     schema_opaque_decode_weight: float | None = None

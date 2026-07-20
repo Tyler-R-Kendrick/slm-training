@@ -1626,6 +1626,29 @@ def test_e596_role_alias_result_is_persisted_without_new_checkpoint(
     }
 
 
+def test_e597_schema_role_ladder_is_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e597-e596-role8-r1",
+        "e597-e596-role12-r1",
+        "e597-e596-schema-roles-r1",
+        "e597-e596-schema-roles8-r1",
+        "e597-e596-schema-roles8-r2",
+    }
+    for run_id in run_ids:
+        run = readers.run(run_id)
+        assert run["provenance"] == "committed"
+        assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.8115
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert not checkpoints.intersection(run_ids)
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

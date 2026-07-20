@@ -3626,3 +3626,15 @@ The remaining-slot order commits Button to body before property-role scoring.
 Do not promote or sync; next repair component-to-slot assignment order.
 Evidence: [narrative](iter-e596-slot-role-alias-20260720.md) and
 [JSON](iter-e596-slot-role-alias-20260720.json).
+
+## E597 schema-derived semantic-role candidates
+
+E597 first raises the existing role weight from 4 to 8 and 12, then enables a
+default-off public-schema candidate set at weights 4 and 8. All four matched
+OOD `n=4` arms retain E596's aggregate metrics: structure 0.4694, recall
+0.6250, reward 0.8115, strict v2 0, and AgentV 0/1. Schema candidates replace
+the erroneous dashboard Button with TextContent but do not repair the modal
+Button-to-body binding. Keep the switch default-off and do not promote or
+sync; next repair explicit component-to-slot assignment.
+Evidence: [narrative](iter-e597-schema-role-candidates-20260720.md) and
+[JSON](iter-e597-schema-role-candidates-20260720.json).

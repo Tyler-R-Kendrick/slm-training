@@ -201,6 +201,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal component choices using only visible semantic-role candidates.",
     )
     parser.add_argument(
+        "--semantic-role-schema-candidates",
+        action="store_true",
+        help="Derive legal component candidates from visible slot roles and the public schema.",
+    )
+    parser.add_argument(
         "--schema-value-decode-weight",
         type=float,
         default=None,
@@ -563,6 +568,7 @@ def main(argv: list[str] | None = None) -> int:
         component_plan_decode_weight=args.component_plan_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
         semantic_role_decode_weight=args.semantic_role_decode_weight,
+        semantic_role_schema_candidates=args.semantic_role_schema_candidates,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
