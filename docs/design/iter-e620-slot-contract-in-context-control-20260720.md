@@ -1,8 +1,9 @@
-# E619 — closing the `slot_contract_in_context` scoring gap upstream of `required_inventory_coverage`
+# E620 — the real `slot_contract_in_context` control arm, and a correction to E618/E619
 
 Date: 2026-07-20
 Status: completed, real scoring gap closed, no headline quality metric moved,
-no new evaluator bug found, no code change, recipe-only fix
+no new evaluator bug found, no code change, recipe-only fix; corrects an
+overbroad claim carried from E618 into a concurrent E619 session
 
 E618 found and fixed a real false positive in `binding_aware_meaningful_v2`'s
 `binding_correctness` check, but `binding_aware_meaningful_v2_rate_strict`
@@ -12,6 +13,17 @@ recipes ever passed `--slot-contract-in-context` to `scripts.evaluate_model`,
 so `required_inventory_coverage` — one of `binding_aware_meaningful_v2`'s 8
 sub-checks — could never move past `CheckStatus.UNKNOWN`. This iteration
 answers that directly, in the same instrument-first spirit as E617/E618.
+
+**Note on numbering.** This work was drafted in parallel with a separate,
+concurrent session that also answered E618's question and landed as
+`## E619 chasing the --slot-contract-in-context gap` in
+`docs/design/quality-experiment-matrix.md`
+(`docs/design/iter-e619-slot-contract-in-context-gap-20260720.{md,json}`,
+run IDs `e619-slotcontext-control-r1` / `e619-slotcontext-treatment-r1`).
+Both sessions independently reach the same headline conclusion. This
+iteration is renumbered **E620** to avoid a duplicate experiment ID, and adds
+one real finding the concurrent E619 session did not have: a genuinely live
+control arm (see "Correction to E618 and the concurrent E619" below).
 
 ## Method
 
@@ -101,7 +113,7 @@ deep inside an already-garbled string literal
 It does not change `ood_modal_01`'s score; that record fails every check in
 both arms regardless.
 
-## Correction to E618
+## Correction to E618 and the concurrent E619
 
 E618's own secondary-finding text said `required_inventory_coverage` is
 `UNKNOWN` **"for every OOD record"** across E611-E617. This iteration's real
@@ -113,6 +125,22 @@ from the predicted placeholders' identities and was never gated by the
 `slot_contract_in_context` gap in the first place. The underlying diagnosis —
 that the flag was needed for `ood_gallery_01`'s coverage check specifically —
 still holds; the "every record" framing does not.
+
+The concurrent E619 session repeats this same overbroad claim ("moves from
+`UNKNOWN` to a real judged verdict for all 4 records"), and its own committed
+JSON shows why: its `eval_recipe.slot_contract_in_context` is a single flat
+`true` applied to *both* its `control` and `treatment` runs (its
+`control.binding_aware_meaningful_v2_coverage` is already `1.0`, not `0.75`).
+The only lever E619 varied live was `schema_role_slot_decode_weight` (an
+unrelated E614/E615/E617 lever, 0 vs 8); its "before" state
+(`UNKNOWN` for all 4) was carried over from E618's prose, not measured live
+with `--slot-contract-in-context` genuinely unset in that session. This
+iteration's control run (flag genuinely unset, same checkpoint class) is the
+first live measurement of the true pre-flag baseline, and it disagrees with
+both write-ups on scope while agreeing with both on the flag's real,
+measured effect (the post-flag/treatment numbers match: coverage `1.0`,
+identical headline metrics, the same one-character `ood_modal_01` noise
+diff).
 
 ## Honesty check: does this reintroduce a gold-placeholder channel?
 
@@ -170,4 +198,6 @@ trained/warm-started (non-scratch) checkpoint, to see whether closing this
 scoring gap changes anything once the Gallery `src`/`alt` collapse itself is
 also fixed by the treatment arm.
 
-Evidence: [JSON](iter-e619-slot-contract-in-context-20260720.json).
+Evidence: [JSON](iter-e620-slot-contract-in-context-control-20260720.json).
+Concurrent session: [E619 narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
+and [JSON](iter-e619-slot-contract-in-context-gap-20260720.json).

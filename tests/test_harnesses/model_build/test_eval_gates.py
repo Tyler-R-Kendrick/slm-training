@@ -520,7 +520,7 @@ def _required_inventory_coverage_check(metrics: dict) -> dict:
 def test_slot_contract_in_context_turns_required_inventory_coverage_from_unknown_into_a_real_verdict(
     tmp_path: Path,
 ) -> None:
-    """E619: without --slot-contract-in-context, eval_runner._effective_request_for
+    """E620: without --slot-contract-in-context, eval_runner._effective_request_for
     zeroes GenerationRequest.slot_contract before it reaches
     binding_aware_meaningful_v2's _prompt_contract, so required_inventory_coverage
     can never move past CheckStatus.UNKNOWN for prompts that don't spell out a

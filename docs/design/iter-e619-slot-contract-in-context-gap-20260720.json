@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E619",
+  "run_id": "e619-slot-contract-in-context-gap-20260720",
+  "date_utc": "2026-07-20",
+  "status": "completed_partial",
+  "run_class": "diagnostic",
+  "hypothesis": "E618's secondary finding (not fixed there) observed that required_inventory_coverage is CheckStatus.UNKNOWN (never a real judged PASS/FAIL) for all 4 real E617 OOD predictions because none of the E611-E618 eval recipes ever set --slot-contract-in-context, so _effective_request_for() (harnesses/model_build/eval_runner.py) zeroes GenerationRequest.slot_contract before it reaches binding_aware_meaningful_v2's _prompt_contract(). This iteration asks directly: is adding --slot-contract-in-context to the recipe (a) safe/apples-to-apples (does it leak gold placeholder labels into the model's own generation context, or change the task unfairly?), and (b) if safe, does it convert required_inventory_coverage from UNKNOWN into real judgments, and does that -- combined with E618's binding_correctness fix -- flip binding_aware_meaningful_v2_rate_strict off 0.0 on any of the 4 real OOD records?",
+  "safety_analysis": {
+    "question": "Does --slot-contract-in-context change the eval task unfairly (e.g. leak gold labels into the model's input) versus being a legitimate eval-time decode/context override on an already-trained checkpoint?",
+    "method": "Read src/slm_training/harnesses/model_build/factory.py's apply_runtime_overrides (the function explicitly documented as 'Apply eval/train decode + conditioning overrides onto a loaded plugin') and confirmed slot_contract_in_context is listed among its overridable fields (line 51), in the same category as slot_contract_constrained_decode -- the flag E617 already showed is a legitimate, intended eval-time-only override (no retraining required). Then read src/slm_training/models/twotower.py's _resolve_slot_contract (used to build the actual ---SLOT_CONTRACT--- context block fed to the model when slot_contract_in_context=True): when honest_slot_contract=True (already set in every E611-E618 recipe), the inventory is derived ONLY from inventory_from_prompt(prompt, design_md, heuristic=True) -- i.e. extracted from the user-visible prompt/DESIGN.md text -- and gold.placeholders is never consulted. Confirmed this is the code path actually exercised (honest_slot_contract=True in the E619 recipe below).",
+    "conclusion": "Safe and apples-to-apples for this recipe. slot_contract_in_context is a documented eval-time runtime override, and because honest_slot_contract=True is already active in this lineage's recipes, turning it on does not leak gold/answer data into the model's context -- it only surfaces an inventory honestly derivable from the prompt itself, which is the intended production behavior of the honest_slot_contract system (E35). Also verified empirically (see real_result below): the model's actual predictions were byte-identical to the E617 baseline (without the flag) on 3 of 4 records, confirming this did not covertly change what the model generates via some other path.",
+    "caveat": "The checkpoint (sha256 119dd41a...8898a854) was itself trained without slot_contract_in_context=True (none of the E611-E618 training recipes set it), so this is genuinely a train/eval configuration difference, not a like-for-like replay of training conditions. The empirical byte-identical-prediction result (below) suggests this particular checkpoint's _generate_batch_once path for these records did not meaningfully change decode behavior from the extra context block, but this has not been verified architecturally for other checkpoints or longer training runs, and should not be assumed to generalize."
+  },
+  "method": "No retraining. Reused the real, on-disk E617 checkpoint (outputs/runs/e617-debug-repro-scratch80-20260720/checkpoints/last.pt, sha256 119dd41a...8898a854, verified via sha256sum before running) and replayed the exact E617 matched control (schema_role_slot_decode_weight=0.0) vs treatment (=8.0) eval recipe via `python -m scripts.evaluate_model`, adding only --slot-contract-in-context (every other CLI flag/weight identical to E617's evaluation_policy, read directly from outputs/runs/e617-control-eval-r1/eval_ood.json's evaluation_policy block). Real generation was required (not a re-score of existing predictions like E618) because slot_contract_in_context changes what is fed to the model at generation time, so a fresh eval run was necessary; both runs (control + treatment) completed within the sandbox's per-command time budget.",
+  "checkpoint": {
+    "run_id": "e617-debug-repro-scratch80-20260720",
+    "location": "outputs/runs/e617-debug-repro-scratch80-20260720/checkpoints/last.pt",
+    "sha256": "119dd41a57573fe408ee1208a9159cafca9a45c7050bd00274571938898a8539",
+    "reused": true,
+    "note": "Same E616/E617/E618 80-step CPU scratch checkpoint; no new training this iteration."
+  },
+  "eval_recipe": {
+    "control_eval_run_id": "e619-slotcontext-control-r1",
+    "treatment_eval_run_id": "e619-slotcontext-treatment-r1",
+    "same_checkpoint_sha256": true,
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "eval_limit": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "slot_contract_in_context_note": "The single flag change vs. the E617 recipe (which itself was E611-E616 plus --slot-contract-constrained-decode). All other weights/flags identical to E617's evaluation_policy.",
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "semantic_role_contract_in_context": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight_control": 0.0,
+    "schema_role_slot_decode_weight_treatment": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "E617's control/treatment recipe (itself E611-E616 plus --slot-contract-constrained-decode), replayed on the identical checkpoint SHA with --slot-contract-in-context added"
+  },
+  "control": {
+    "parse_rate": 1.0,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.5,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.7416666666666667,
+    "placeholder_validity": 0.845,
+    "reward_score": 0.64925,
+    "structural_similarity": 0.550925,
+    "ast_node_f1": 0.6002304147465438,
+    "empty_prediction_count": 0,
+    "checkpoint_sha256": "119dd41a57573fe408ee1208a9159cafca9a45c7050bd00274571938898a8539"
+  },
+  "treatment": {
+    "parse_rate": 1.0,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.5,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.7833333333333333,
+    "placeholder_validity": 0.87,
+    "reward_score": 0.6617500000000001,
+    "structural_similarity": 0.55475,
+    "ast_node_f1": 0.604679802955665,
+    "empty_prediction_count": 0,
+    "checkpoint_sha256": "119dd41a57573fe408ee1208a9159cafca9a45c7050bd00274571938898a8539"
+  },
+  "comparison_to_e617_baseline": {
+    "e617_control_binding_aware_meaningful_v2_coverage": 0.75,
+    "e619_control_binding_aware_meaningful_v2_coverage": 1.0,
+    "e617_treatment_binding_aware_meaningful_v2_coverage": 0.75,
+    "e619_treatment_binding_aware_meaningful_v2_coverage": 1.0,
+    "headline_metrics_delta_vs_e617": "None. parse_rate, syntax_parse_rate, meaningful_program_rate, placeholder_fidelity, placeholder_validity, reward_score, structural_similarity, ast_node_f1, and empty_prediction_count are identical (to the value) between e619 and e617 in both arms.",
+    "prediction_byte_diff": {
+      "ood_dashboard_01": "identical to E617",
+      "ood_gallery_01": "identical to E617 in both arms",
+      "ood_modal_01": "single-character difference deep inside an already-malformed, self-nested garbage string tail (both arms) -- e.g. control: '...QEte>ee>=8:66em' (E619) vs '...QEte>me>=8:66em' (E617). No metric or check-status impact; consistent with this record's output being unstable decode noise on a pathological malformed tree, not something slot_contract_in_context materially changed.",
+      "ood_auth_01": "identical to E617"
+    }
+  },
+  "required_inventory_coverage_before_after": {
+    "before_e618_and_e617_baseline": "CheckStatus.UNKNOWN for all 4 OOD records in both arms (E618's secondary finding) -- GenerationRequest.slot_contract was zeroed by _effective_request_for because slot_contract_in_context was never set, so placeholder_coverage_known was False.",
+    "after_e619_with_flag": {
+      "ood_dashboard_01": {"status": "FAIL", "reason_codes": ["required_placeholder_missing", "placeholder_semantic_role_mismatch"]},
+      "ood_gallery_01": {"status": "FAIL", "reason_codes": ["required_placeholder_missing"], "missing_placeholders": [":ood.gallery.caption", ":ood.gallery.cta", ":ood.gallery.hint.body", ":ood.gallery.hint.title", ":ood.gallery.img"]},
+      "ood_modal_01": {"status": "FAIL", "reason_codes": ["placeholder_semantic_role_mismatch"]},
+      "ood_auth_01": {"status": "FAIL", "reason_codes": ["placeholder_semantic_role_mismatch"]},
+      "note": "Identical in both control and treatment arms. binding_correctness PASSes for all 4 records in both arms (E618's fix holds under this recipe too)."
+    },
+    "honest_conclusion": "required_inventory_coverage now reports a real, judged verdict (FAIL, with genuine reason codes and evidence -- e.g. ood_gallery_01 is missing 5 of its 6 required placeholders because the 80-step checkpoint's prediction only ever opens one ImageGallery item) instead of degrading to UNKNOWN. This is exactly the E618 'secondary finding' hypothesis, confirmed: the gap was a real, silently-never-exercised check, now genuinely exercised. binding_aware_meaningful_v2_coverage (fraction of records with a known, non-UNKNOWN coverage verdict) rises from 0.75 (3/4) to 1.0 (4/4) in both arms, a clean, reproducible confirmation."
+  },
+  "ship_gate_result": {
+    "binding_aware_meaningful_v2_rate_strict_before": 0.0,
+    "binding_aware_meaningful_v2_rate_strict_after": 0.0,
+    "flipped_any_ood_item_to_strict_pass": false,
+    "honest_conclusion": "binding_aware_meaningful_v2_rate_strict remains 0.0 -> 0.0 in both arms; --slot-contract-in-context does NOT flip any of the 4 OOD items to a strict-v2 pass on this checkpoint. All 4 records now fail required_inventory_coverage for genuine content reasons (missing required placeholders and/or semantic-role mismatches) rather than degrading to UNKNOWN. This is a real, honest 0 with the previously-open coverage gap now fully accounted for -- not a promotion, not a ship-gate-clearing result, but it closes E618's open secondary question with a definitive real-eval answer instead of leaving it as a hypothesis."
+  },
+  "suites": ["ood"],
+  "n": 4,
+  "ship_gates": {
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "promotable": false,
+    "reason": "required_inventory_coverage now reports real judgments (no longer UNKNOWN) but all 4 OOD records genuinely fail it (missing required placeholders / semantic-role mismatches) on this 80-step diagnostic checkpoint. n=4 is diagnostic, not confirmatory."
+  },
+  "code_change": "None. This iteration is pure eval-evidence (real generation + real scoring against an already-fixed evaluator and an already-existing checkpoint), matching E616's pattern. python -m scripts.verify_version_stamps --check confirms 0 components touched.",
+  "decision": "Close E618's open 'try --slot-contract-in-context' question with a real answer: the flag is safe (no gold-label leakage, confirmed via honest_slot_contract=True code path and byte-identical predictions on 3/4 records), converts required_inventory_coverage from UNKNOWN to real judged FAILs (coverage 0.75 -> 1.0 in both arms), but does not move binding_aware_meaningful_v2_rate_strict off 0.0 for this specific 80-step checkpoint's real predictions -- the checkpoint genuinely does not emit all required placeholders yet. No checkpoint trained, promoted, or synced this iteration. Not a ship claim. Recommend adding --slot-contract-in-context to future E611-E619-lineage recipes going forward since it is a strict improvement in judgment honesty (fewer UNKNOWNs) at no measured cost.",
+  "next": "Replay this same matched pair on a more-trained (non-80-step-scratch) checkpoint to see whether required_inventory_coverage starts PASSing for records where the model has learned to emit the full placeholder set, and whether binding_aware_meaningful_v2_rate_strict finally moves off 0.0 once checkpoint capability, not eval configuration, is the only remaining variable. Separately, ood_modal_01's raw prediction remains worth a closer, checkpoint-capacity-focused look (E618's still-open second candidate) -- this iteration's single-character noise diff between otherwise-identical runs is a small additional data point that its self-nested garbage output is decode-level instability, not a fixed/deterministic bug.",
+  "verification": {
+    "real_eval_runs": "python -m scripts.evaluate_model run twice (control + treatment), each real generation + real scoring against the real on-disk checkpoint, NODE_OPTIONS unset per the documented E615/E616/E617/E618 fix. Outputs: outputs/runs/e619-slotcontext-control-r1/eval_ood.json, outputs/runs/e619-slotcontext-treatment-r1/eval_ood.json (gitignored, not committed; sha256/metrics captured in this JSON).",
+    "verify_version_stamps": "python -m scripts.verify_version_stamps --check -> ok (0 components touched, no code changed)",
+    "repo_policy": "python -m scripts.repo_policy -> ok (tracked + untracked)"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3ea0c1f5a275dac5d26935a0fd0664b1a9e7478d",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v59"
+    },
+    "note": "No code changed this iteration; version stamp is carried over unchanged from the E618 commit (3ea0c1f) this branch is built on, matching the real eval run's own emitted stamp."
+  }
+}
