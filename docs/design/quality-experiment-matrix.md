@@ -3728,3 +3728,19 @@ coverage-aware section commitment plus root reachability next. No checkpoint
 was created or synced. Evidence:
 [narrative](iter-e604-missing-family-pressure-20260720.md) and
 [JSON](iter-e604-missing-family-pressure-20260720.json).
+
+## E605 missing-family score-scale trace
+
+E605 adds behavior-neutral, bounded score decomposition for every post-first
+planned-family choice. The canonical matched OOD `n=4` retry reproduces E604
+exactly. `Card` remains legal and receives +32 at 16 dashboard choices, but its
+base score is −33.84 to −37.79 and it still loses by 30.40–44.28 after bias.
+By contrast, competitive `Callout`, `Modal`, `Input`, and `Button` candidates
+are emitted, and no later layer overwrites a plan-stage winner. Reject pruning
+and downstream-overwrite hypotheses; next test a bounded normalized or
+explicit-margin score rather than another arbitrary global-weight sweep.
+Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or synced.
+The first completed run is retained as instrumentation-negative because its
+top-eight cutoff hid the planned `Card` candidate. Evidence:
+[narrative](iter-e605-missing-family-score-trace-20260720.md) and
+[JSON](iter-e605-missing-family-score-trace-20260720.json).

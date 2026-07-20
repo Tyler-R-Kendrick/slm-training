@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E605",
+  "run_id": "e605-e604-plan32-trace-r2",
+  "date_utc": "2026-07-20",
+  "status": "completed_diagnostic_not_promotable",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Missing planned families remain legal after the first component but lose either at plan scoring or a later score layer.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_plan_decode_weight": 32.0,
+    "semantic_plan_seed_decode_weight": 0.0,
+    "matched_to": "e604-e603-plan32-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e605-e604-plan32-trace-r1",
+      "label": "instrumentation-negative first run",
+      "status": "completed_instrumentation_negative",
+      "limitation": "The top-eight score cutoff omitted deeply negative planned candidates.",
+      "latency_ms_p50": 5290.73,
+      "latency_ms_p95": 20317.95,
+      "code_git_sha": "2c3509e49bcbb2782faa45175d439fdaeac24f47",
+      "model_twotower_version": "v43",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.575625,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8145,
+          "ast_node_f1": 0.6111111111111112,
+          "ast_edge_f1": 0.4642857142857143
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "canonical_run": {
+    "status": "completed",
+    "latency_ms_p50": 4264.98,
+    "latency_ms_p95": 14733.8,
+    "code_git_sha": "b632aeedaef6e80fcf0bf167998aaaf700af9bd4",
+    "model_twotower_version": "v44"
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.575625,
+      "component_type_recall": 0.625,
+      "reward_score": 0.8145,
+      "ast_node_f1": 0.6111111111111112,
+      "ast_edge_f1": 0.4642857142857143
+    }
+  },
+  "trace_findings": {
+    "dashboard_card": {
+      "observed_decisions": 16,
+      "legal_and_positively_biased": true,
+      "plan_bias": 32.0,
+      "base_score_min": -37.787487,
+      "base_score_max": -33.836903,
+      "post_plan_score_min": -5.787487,
+      "post_plan_score_max": -1.836903,
+      "post_plan_deficit_to_winner_min": 30.402556,
+      "post_plan_deficit_to_winner_max": 44.278557,
+      "emitted": false
+    },
+    "dashboard_callout": {
+      "legal_and_positively_biased": true,
+      "plan_bias": 32.0,
+      "first_post_plan_deficit": 44.278557,
+      "emitted_at_position": 7
+    },
+    "competitive_families": {
+      "modal_emitted": true,
+      "second_input_emitted": true,
+      "button_emitted": true,
+      "changed_after_plan": false
+    }
+  },
+  "decision": "Reject candidate-pruning and downstream-overwrite hypotheses. Raw additive plan scores are not calibrated across legal component families; next test a bounded normalized or explicit-margin score with duplicate and cardinality safeguards.",
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "reason": "Diagnostic OOD subset only; strict meaning-v2 is 0, required families remain missing, and AgentV is 0/1."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b632aeedaef6e80fcf0bf167998aaaf700af9bd4",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v25",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v44"
+    },
+    "stamped_at": "2026-07-20T12:34:05.829846+00:00"
+  }
+}
