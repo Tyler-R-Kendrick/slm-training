@@ -156,6 +156,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "teacher_init_embeddings",
         "action_embedding_init",
         "action_embedding_train",
+        "legal_margin_mode",
+        "targeted_margin_manifest",
+        "targeted_margin_value",
+        "targeted_margin_family_weights",
         "runtime_symbol_features",
         "symbol_slot_augmentation",
         "semantic_candidate_masks",
@@ -405,6 +409,16 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         compiler_alignment_semantic_exhaustive=bool(
             getattr(config, "compiler_alignment_semantic_exhaustive", False)
+        ),
+        legal_margin_mode=str(
+            getattr(config, "legal_margin_mode", "none") or "none"
+        ),
+        targeted_margin_manifest=getattr(config, "targeted_margin_manifest", None),
+        targeted_margin_value=float(
+            getattr(config, "targeted_margin_value", 1.0) or 1.0
+        ),
+        targeted_margin_family_weights=tuple(
+            getattr(config, "targeted_margin_family_weights", ()) or ()
         ),
         component_inventory_loss_weight=float(
             getattr(config, "component_inventory_loss_weight", 0.0) or 0.0

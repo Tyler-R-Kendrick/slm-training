@@ -223,6 +223,11 @@ class TwoTowerConfig:
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
+    # SLM-164: confusion-targeted legal-sibling contrast margin (default-off).
+    legal_margin_mode: str = "none"
+    targeted_margin_manifest: Path | None = None
+    targeted_margin_value: float = 1.0
+    targeted_margin_family_weights: tuple[tuple[str, float], ...] = ()
     # Prompt-level multi-label component inventory derived from gold token kinds.
     component_inventory_loss_weight: float = 0.0
     # Bias only compiler-legal component candidates with the learned inventory.
