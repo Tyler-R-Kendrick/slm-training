@@ -3220,4 +3220,56 @@ The closeout report is at
 `outputs/runs/slm145-plan-predictor-factors-20260720/` with mirrored design
 artifacts `docs/design/iter-slm145-plan-predictor-factors-20260720.json` and
 `.md`.
-| E307 | Inference-only low-level noise | PTRM-style control lineage | blocked by SLM-138 gate |
+
+## EFS4-04 causal diagnosis and architecture disposition (SLM-140)
+
+This is the campaign-level synthesis issue.  It does not introduce a new trainable
+lever; it consumes every committed EFS result manifest under `docs/design/` and
+emits a preregistered causal diagnosis plus explicit architecture dispositions.
+
+| Hypothesis | Issue | Status | Result refs |
+| --- | --- | --- | --- |
+| efs0-01-checkpoint-provenance | SLM-103 | MISSING | no committed manifest |
+| efs0-02-decode-invariance | SLM-104 | NOT_RUN_BY_GATE | `iter-efs-decode-invariance-20260718.json` |
+| efs0-03-meaningful-v2 | SLM-105 | NOT_RUN_BY_GATE | `iter-efs0-03-meaningful-v2-frontier-audit-20260717.json` |
+| efs0-04-judge-independence | SLM-106 | MISSING | no committed manifest |
+| efs0-05-rejected-lever-readjudication | SLM-107 | NOT_RUN_BY_GATE | `iter-efs0-05-rejected-lever-readjudication-20260719.json` |
+| efs1-01-external-ceiling | SLM-108 | MISSING | no committed manifest |
+| efs1-02-exposure-ladder | SLM-109 | MISSING | no committed manifest |
+| efs1-03-empty-length-bias | SLM-110 | NOT_RUN_BY_GATE | `iter-efs1-03-empty-length-bias-20260719.json` |
+| efs2-01-x22-scaling | SLM-111 | NOT_RUN_BY_GATE | `iter-efs2-01-tree-edit-scaling-20260719.json` |
+| efs2-02-trigger-telemetry | SLM-112 | NOT_RUN_BY_GATE | `iter-efs2-02-trigger-telemetry-20260719.json` |
+| efs2-03-conflict-slice-repair | SLM-113 | NOT_RUN_BY_GATE | `iter-efs2-03-conflict-slice-repair-20260719.json` |
+| efs2-04-verifier-cascade | SLM-115 | NOT_RUN_BY_GATE | `iter-efs2-04-verifier-cascade-20260719.json` |
+| efs3-01-solver-state-supervision | SLM-118 | NOT_RUN_BY_GATE | `iter-efs3-01-solver-state-supervision-20260719.json` |
+| efs3-02-corruption-curriculum | SLM-120 | MISSING | no committed manifest |
+| efs3-03-b3-capacity-v2 | SLM-124 | NOT_RUN_BY_GATE | `iter-efs-b3-capacity-v2-20260719.json` |
+| efs3-04-candidate-selector | SLM-127 | MISSING | no committed manifest |
+| efs3-05-canonical-ast-dedup | SLM-130 | MISSING | no committed manifest |
+| efs3-06-ast-sketch-retrieval | SLM-133 | NOT_RUN_BY_GATE | `iter-efs3-06-ast-sketch-retrieval-factorial-20260719.json` |
+| efs4-01-trailed-assumptions | SLM-135 | NOT_RUN_BY_GATE | `iter-slm135-trailed-assumptions-20260720.json` |
+| efs4-02-shared-recursive-denoiser | SLM-138 | MISSING | no committed manifest |
+| efs4-03-stochastic-recursive-state | SLM-139 | MISSING | no committed manifest |
+
+Primary causal diagnosis: **insufficient_valid_evidence**.  Core measurement
+branches (checkpoint provenance, decoder invariance, judge independence) are not
+all resolved, so no training/data/search/architecture conclusion can be asserted.
+No architecture item is promoted; safety-infrastructure items
+(compiler-owned exact closure, reversible trailing, verifier cascade) are
+recorded as `ADOPT_AS_SAFETY_ONLY` without a quality claim.
+
+```bash
+# Regenerate the synthesis (no training, no model download)
+python -m scripts.synthesize_efs_campaign \
+  --manifest docs/design/evidence-first-semantic-slm-campaign-v1.json \
+  --docs-design docs/design \
+  --out-json docs/design/iter-efs4-04-causal-synthesis-20260720.json \
+  --out-md docs/design/iter-efs4-04-causal-synthesis-20260720.md \
+  --graph-output docs/design/iter-efs4-04-causal-synthesis-graph
+```
+
+Durable artifacts:
+- `docs/design/evidence-first-semantic-slm-campaign-v1.json` (preregistered manifest)
+- `docs/design/iter-efs4-04-causal-synthesis-20260720.json`
+- `docs/design/iter-efs4-04-causal-synthesis-20260720.md`
+- `docs/design/iter-efs4-04-causal-synthesis-graph.{mmd,dot}`

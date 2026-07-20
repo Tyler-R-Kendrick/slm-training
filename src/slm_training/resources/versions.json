@@ -105,23 +105,91 @@
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
-        {"version": "v15", "date": "2026-07-20", "note": "add deterministic rare slot-owner record oversampling with auditable corpus counts and expanded exposure"},
-        {"version": "v14", "date": "2026-07-20", "note": "persist slot next-context and pair-interaction architecture flags in train recipe summaries"},
-        {"version": "v13", "date": "2026-07-20", "note": "rebuild deterministic corpus-derived slot priors after weight initialization instead of silently restoring stale parent checkpoint statistics"},
-        {"version": "v12", "date": "2026-07-19", "note": "add deterministic strict-subset root-reference identity oversampling with auditable eligible and expanded sampling counts"},
-        {"version": "v11", "date": "2026-07-19", "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"},
-        {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
-        {"version": "v9", "date": "2026-07-19", "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"},
-        {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
-        {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
-        {"version": "v7", "date": "2026-07-19", "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"},
-        {"version": "v7", "date": "2026-07-19", "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"},
-        {"version": "v6", "date": "2026-07-19", "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"},
-        {"version": "v5", "date": "2026-07-19", "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"},
-        {"version": "v4", "date": "2026-07-19", "note": "add explicit initialized-weight retention with strict initialization guards and RMS drift telemetry"},
-        {"version": "v3", "date": "2026-07-18", "note": "preserve corpus-derived serving priors during checkpoint initialization and expose restored fields plus slot-head recipe settings in train summaries"},
-        {"version": "v2", "date": "2026-07-18", "note": "add explicit weight-only checkpoint initialization for matched new-corpus training without weakening bit-exact resume guards"},
-        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+        {
+          "version": "v15",
+          "date": "2026-07-20",
+          "note": "add deterministic rare slot-owner record oversampling with auditable corpus counts and expanded exposure"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-20",
+          "note": "persist slot next-context and pair-interaction architecture flags in train recipe summaries"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-20",
+          "note": "rebuild deterministic corpus-derived slot priors after weight initialization instead of silently restoring stale parent checkpoint statistics"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-19",
+          "note": "add deterministic strict-subset root-reference identity oversampling with auditable eligible and expanded sampling counts"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-19",
+          "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-19",
+          "note": "record learned terminal-root reference identity loss and decode settings in training recipes"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-19",
+          "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-19",
+          "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-19",
+          "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "add explicit initialized-weight retention with strict initialization guards and RMS drift telemetry"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-18",
+          "note": "preserve corpus-derived serving priors during checkpoint initialization and expose restored fields plus slot-head recipe settings in train summaries"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-18",
+          "note": "add explicit weight-only checkpoint initialization for matched new-corpus training without weakening bit-exact resume guards"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-18",
+          "note": "initial registration"
+        }
       ]
     },
     "harness.train_data": {
@@ -237,7 +305,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -402,12 +470,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-07-20",
+          "note": "add SLM-140 EFS4-04 causal synthesis manifest, loader, script, and tests"
+        },
         {
           "version": "v28",
           "date": "2026-07-20",
@@ -496,7 +569,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -624,8 +697,16 @@
         "docs/design/iter-slm138-recursive-denoiser-20260720.md"
       ],
       "history": [
-        {"version": "v1", "date": "2026-07-20", "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"},
-        {"version": "v1", "date": "2026-07-20", "note": "initial registration; SLM-138 shared recursive denoiser tower wiring/fixture harness"}
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-138 shared recursive denoiser tower wiring/fixture harness"
+        }
       ]
     },
     "harness.reasoning.bench": {
@@ -842,6 +923,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: append run-record rows to design markdown and normalize trailing whitespace in fixture runner markdown string; harness behavior, thresholds, and report content unchanged"
         },
         {
@@ -886,6 +972,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -938,6 +1029,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
         },
         {
@@ -977,6 +1073,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
         },
         {
@@ -1011,6 +1112,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
         },
         {
@@ -1040,6 +1146,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
         },
         {
@@ -1066,12 +1177,47 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refine fixture CLI so plan-only mode no longer overwrites committed design artifacts; refresh fixture design JSON/Markdown"
         },
         {
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-146 SPV1-03 SemanticPlanV1 to compiler-choice and X22 tree-edit bridge"
+        }
+      ]
+    },
+    "harness.experiments.efs4_04_causal_synthesis": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/efs4_04_causal_synthesis.py",
+        "scripts/synthesize_efs_campaign.py",
+        "tests/test_harnesses/experiments/test_efs4_04_causal_synthesis.py",
+        "tests/test_scripts/test_synthesize_efs_campaign.py",
+        "docs/design/evidence-first-semantic-slm-campaign-v1.json",
+        "docs/design/iter-efs4-04-causal-synthesis-20260720.json",
+        "docs/design/iter-efs4-04-causal-synthesis-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: make --write-default-manifest exit after writing the manifest so tests do not overwrite committed design artifacts"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: add regression tests for the campaign manifest, synthesis loader, and CLI; harness behavior unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-140 EFS4-04 Evidence-First Semantic SLM causal synthesis manifest and loader"
         }
       ]
     }

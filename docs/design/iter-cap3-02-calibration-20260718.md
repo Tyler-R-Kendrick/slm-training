@@ -1,7 +1,7 @@
 # CAP3-02: Grammar-stratified calibration and low-bit adaptation for the local scorer
 
-**Issue:** SLM-91  
-**Date:** 2026-07-18  
+**Issue:** SLM-91
+**Date:** 2026-07-18
 **Status:** wiring evidence / fixture dry-run
 
 ## What was run

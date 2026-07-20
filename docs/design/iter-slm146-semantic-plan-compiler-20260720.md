@@ -1,8 +1,8 @@
 # SLM-146 / SPV1-03: Plan-compiler bridge fixture matrix (slm146_fixture)
 
-Matrix set: `slm146_semantic_plan_compiler`  
-Version: `spv1-03-v1`  
-Status: **fixture**  
+Matrix set: `slm146_semantic_plan_compiler`
+Version: `spv1-03-v1`
+Status: **fixture**
 
 **Claim class:** wiring / fixture only. No GPU was used, no production decoder was changed, and no ship-gate claim is made.
 

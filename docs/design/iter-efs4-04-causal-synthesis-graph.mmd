@@ -1,0 +1,65 @@
+flowchart TD
+    campaign_efs["Evidence-First Semantic SLM Campaign"]
+    hyp_efs0-01-checkpoint-provenance["SLM-103 efs0-01-checkpoint-provenance"]
+    hyp_efs0-02-decode-invariance["SLM-104 efs0-02-decode-invariance"]
+    result_iter-efs-decode-invariance-20260718.json["iter-efs-decode-invariance-20260718.json"]
+    hyp_efs0-03-meaningful-v2["SLM-105 efs0-03-meaningful-v2"]
+    result_iter-efs0-03-meaningful-v2-frontier-audit-20260717.json["iter-efs0-03-meaningful-v2-frontier-audit-20260717.json"]
+    hyp_efs0-04-judge-independence["SLM-106 efs0-04-judge-independence"]
+    hyp_efs0-05-rejected-lever-readjudication["SLM-107 efs0-05-rejected-lever-readjudication"]
+    result_iter-efs0-05-rejected-lever-readjudication-20260719.json["iter-efs0-05-rejected-lever-readjudication-20260719.json"]
+    hyp_efs1-01-external-ceiling["SLM-108 efs1-01-external-ceiling"]
+    hyp_efs1-02-exposure-ladder["SLM-109 efs1-02-exposure-ladder"]
+    hyp_efs1-03-empty-length-bias["SLM-110 efs1-03-empty-length-bias"]
+    result_iter-efs1-03-empty-length-bias-20260719.json["iter-efs1-03-empty-length-bias-20260719.json"]
+    hyp_efs2-01-x22-scaling["SLM-111 efs2-01-x22-scaling"]
+    result_iter-efs2-01-tree-edit-scaling-20260719.json["iter-efs2-01-tree-edit-scaling-20260719.json"]
+    hyp_efs2-02-trigger-telemetry["SLM-112 efs2-02-trigger-telemetry"]
+    result_iter-efs2-02-trigger-telemetry-20260719.json["iter-efs2-02-trigger-telemetry-20260719.json"]
+    hyp_efs2-03-conflict-slice-repair["SLM-113 efs2-03-conflict-slice-repair"]
+    result_iter-efs2-03-conflict-slice-repair-20260719.json["iter-efs2-03-conflict-slice-repair-20260719.json"]
+    hyp_efs2-04-verifier-cascade["SLM-115 efs2-04-verifier-cascade"]
+    result_iter-efs2-04-verifier-cascade-20260719.json["iter-efs2-04-verifier-cascade-20260719.json"]
+    hyp_efs3-01-solver-state-supervision["SLM-118 efs3-01-solver-state-supervision"]
+    result_iter-efs3-01-solver-state-supervision-20260719.json["iter-efs3-01-solver-state-supervision-20260719.json"]
+    hyp_efs3-02-corruption-curriculum["SLM-120 efs3-02-corruption-curriculum"]
+    hyp_efs3-03-b3-capacity-v2["SLM-124 efs3-03-b3-capacity-v2"]
+    result_iter-efs-b3-capacity-v2-20260719.json["iter-efs-b3-capacity-v2-20260719.json"]
+    hyp_efs3-04-candidate-selector["SLM-127 efs3-04-candidate-selector"]
+    hyp_efs3-05-canonical-ast-dedup["SLM-130 efs3-05-canonical-ast-dedup"]
+    hyp_efs3-06-ast-sketch-retrieval["SLM-133 efs3-06-ast-sketch-retrieval"]
+    result_iter-efs3-06-ast-sketch-retrieval-factorial-20260719.json["iter-efs3-06-ast-sketch-retrieval-factorial-20260719.json"]
+    hyp_efs4-01-trailed-assumptions["SLM-135 efs4-01-trailed-assumptions"]
+    result_iter-slm135-trailed-assumptions-20260720.json["iter-slm135-trailed-assumptions-20260720.json"]
+    hyp_efs4-02-shared-recursive-denoiser["SLM-138 efs4-02-shared-recursive-denoiser"]
+    hyp_efs4-03-stochastic-recursive-state["SLM-139 efs4-03-stochastic-recursive-state"]
+    diagnosis_primary["Primary diagnosis: insufficient_valid_evidence"]
+    decision_compiler-owned-grammar-schema-binding-lattice-and-exact-closure["compiler-owned grammar/schema/binding lattice and exact closure -> ADOPT_AS_SAFE"]
+    decision_reduced-product-cross-domain-propagation-claims["reduced-product/cross-domain propagation claims -> NOT_RUN_BY_GATE"]
+    decision_reversible-decisions-local-nogoods-and-certificate-backed-traili["reversible decisions, local nogoods, and certificate-backed trailing -> ADOPT_AS"]
+    decision_free-form-typed-ast-topology-diffusion["free-form typed-AST/topology diffusion -> NOT_RUN_BY_GATE"]
+    decision_x22-all-valid-tree-edit-diffusion["X22/all-valid tree-edit diffusion -> NOT_RUN_BY_GATE"]
+    decision_deterministic-shared-recursive-denoiser-deep-supervision["deterministic shared recursive denoiser/deep supervision -> NOT_RUN_BY_GATE"]
+    decision_request-local-recurrent-latent-persistence["request-local recurrent latent persistence -> NOT_RUN_BY_GATE"]
+    decision_triggered-ptrm-inference-only-low-level-noise["triggered PTRM/inference-only low-level noise -> NOT_RUN_BY_GATE"]
+    decision_learned-gram-style-high-level-stochastic-state["learned GRAM-style high-level stochastic state -> NOT_RUN_BY_GATE"]
+    decision_candidate-ast-dedup-semantic-mode-tracking["candidate AST dedup/semantic mode tracking -> NOT_RUN_BY_GATE"]
+    decision_contract-grounded-selector-and-abstention["contract-grounded selector and abstention -> NOT_RUN_BY_GATE"]
+    decision_conflict-slice-remasking["conflict-slice remasking -> NOT_RUN_BY_GATE"]
+    decision_cheap-to-expensive-verifier-cascade-cache["cheap-to-expensive verifier cascade/cache -> ADOPT_AS_SAFETY_ONLY"]
+    decision_choice-representation-capacity-conclusion["choice representation/capacity conclusion -> NOT_RUN_BY_GATE"]
+    decision_gold-on-policy-mixed-supervision-and-nearly-solved-curriculum["gold/on-policy mixed supervision and nearly-solved curriculum -> NOT_RUN_BY_GATE"]
+    decision_ast-sketch-data-balancing-and-choice-native-retrieval["AST-sketch data balancing and choice-native retrieval -> NOT_RUN_BY_GATE"]
+    decision_content-floor-length-mask-mass-corrections["content-floor/length/mask-mass corrections -> NOT_RUN_BY_GATE"]
+    hyp_efs0-02-decode-invariance --supports--> result_iter-efs-decode-invariance-20260718.json
+    hyp_efs0-03-meaningful-v2 --supports--> result_iter-efs0-03-meaningful-v2-frontier-audit-20260717.json
+    hyp_efs0-05-rejected-lever-readjudication --supports--> result_iter-efs0-05-rejected-lever-readjudication-20260719.json
+    hyp_efs1-03-empty-length-bias --supports--> result_iter-efs1-03-empty-length-bias-20260719.json
+    hyp_efs2-01-x22-scaling --supports--> result_iter-efs2-01-tree-edit-scaling-20260719.json
+    hyp_efs2-02-trigger-telemetry --supports--> result_iter-efs2-02-trigger-telemetry-20260719.json
+    hyp_efs2-03-conflict-slice-repair --supports--> result_iter-efs2-03-conflict-slice-repair-20260719.json
+    hyp_efs2-04-verifier-cascade --supports--> result_iter-efs2-04-verifier-cascade-20260719.json
+    hyp_efs3-01-solver-state-supervision --supports--> result_iter-efs3-01-solver-state-supervision-20260719.json
+    hyp_efs3-03-b3-capacity-v2 --supports--> result_iter-efs-b3-capacity-v2-20260719.json
+    hyp_efs3-06-ast-sketch-retrieval --supports--> result_iter-efs3-06-ast-sketch-retrieval-factorial-20260719.json
+    hyp_efs4-01-trailed-assumptions --supports--> result_iter-slm135-trailed-assumptions-20260720.json

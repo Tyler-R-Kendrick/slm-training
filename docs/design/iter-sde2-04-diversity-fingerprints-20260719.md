@@ -1,7 +1,7 @@
 # SDE2-04 diversity fingerprinting (first slice)
 
-Date: 2026-07-19  
-Issue: SLM-171  
+Date: 2026-07-19
+Issue: SLM-171
 Branch: `agent/slm-171-sde2-04-diversity-fingerprints`
 
 ## What this slice delivers

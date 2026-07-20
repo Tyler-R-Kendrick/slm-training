@@ -1,7 +1,7 @@
 # SDE2-02 synthetic-data integrity gates
 
-Date: 2026-07-19  
-Issue: SLM-169  
+Date: 2026-07-19
+Issue: SLM-169
 Branch: `agent/slm-169-sde2-02-synthetic-integrity-gates`
 
 ## What this slice delivers

@@ -363,12 +363,12 @@
     }
   },
   "version_stamp": {
-    "code_commit": "5f501be5bfee1b4b1c357b9ea99dc79d6c7d03e0",
+    "code_commit": "685a506f42f6d246036f1c939c9cb1f0da89a8c4",
     "code_dirty": true,
     "components": {
       "harness_core.lineage.interventions": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T02:09:33.866688+00:00"
+    "stamped_at": "2026-07-20T04:03:21.650544+00:00"
   }
 }

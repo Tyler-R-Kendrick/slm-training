@@ -1,8 +1,8 @@
 # CAP2-03: state-local action heads and semantic-cost-aware ternary ECOC
 
-**Linear issue:** SLM-88  
-**Branch:** `agent/slm-88-state-local-action-heads`  
-**Date:** 2026-07-18  
+**Linear issue:** SLM-88
+**Branch:** `agent/slm-88-state-local-action-heads`
+**Date:** 2026-07-18
 **Run artifact:** `outputs/runs/cap2_state_local_action/cap2_state_local_action_7b7fad506c4bce14.json`
 
 ## What changed

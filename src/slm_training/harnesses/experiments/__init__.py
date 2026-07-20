@@ -175,6 +175,21 @@ from slm_training.harnesses.experiments.ast_sketch_retrieval_factorial import (
     run_fixture_matrix as run_ast_sketch_retrieval_fixture_matrix,
     validate_manifest as validate_ast_sketch_retrieval_manifest,
 )
+from slm_training.harnesses.experiments.efs4_04_causal_synthesis import (
+    CAMPAIGN_ID as EFS_CAMPAIGN_ID,
+    CampaignHypothesisSpec,
+    CampaignManifestV1,
+    EvidenceFirstSemanticSynthesisV1,
+    build_default_campaign_manifest,
+    load_manifest as load_efs_campaign_manifest,
+    render_dot as render_efs_evidence_dot,
+    render_markdown as render_efs_synthesis_markdown,
+    render_mermaid as render_efs_evidence_mermaid,
+    save_manifest as save_efs_campaign_manifest,
+    save_synthesis as save_efs_synthesis,
+    synthesize_campaign as synthesize_efs_campaign,
+    validate_synthesis as validate_efs_synthesis,
+)
 
 try:
     from slm_training.harnesses.experiments.cap2_bottleneck import (
@@ -490,4 +505,17 @@ __all__ = [
     "run_evolution",
     "scratch_ladder_default",
     "train_eval_evaluator",
+    "EFS_CAMPAIGN_ID",
+    "CampaignHypothesisSpec",
+    "CampaignManifestV1",
+    "EvidenceFirstSemanticSynthesisV1",
+    "build_default_campaign_manifest",
+    "load_efs_campaign_manifest",
+    "render_efs_evidence_dot",
+    "render_efs_synthesis_markdown",
+    "render_efs_evidence_mermaid",
+    "save_efs_campaign_manifest",
+    "save_efs_synthesis",
+    "synthesize_efs_campaign",
+    "validate_efs_synthesis",
 ]

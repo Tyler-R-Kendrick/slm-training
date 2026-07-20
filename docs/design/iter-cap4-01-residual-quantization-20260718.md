@@ -1,8 +1,8 @@
 # CAP4-01 residual ternary planes — fixture results
 
-**Experiment:** `CAP4-01 residual ternary planes fixture`  
-**Artifact:** [`iter-cap4-01-residual-quantization-20260718.json`](iter-cap4-01-residual-quantization-20260718.json)  
-**Run date:** 2026-07-18  
+**Experiment:** `CAP4-01 residual ternary planes fixture`
+**Artifact:** [`iter-cap4-01-residual-quantization-20260718.json`](iter-cap4-01-residual-quantization-20260718.json)
+**Run date:** 2026-07-18
 **Claim:** Wiring evidence only. No ship gate, no checkpoint promotion.
 
 ## What changed

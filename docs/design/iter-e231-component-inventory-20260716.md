@@ -1,6 +1,6 @@
 # E231 — request-level component inventory
 
-Date: 2026-07-16  
+Date: 2026-07-16
 Status: completed; checkpoint rejected; not promotable or ship
 
 ## Hypothesis and boundary

@@ -1,8 +1,8 @@
 # CAP2-04: Implicit vs explicit vs discrete vs compiler-owned state ablation (2026-07-18)
 
-**Linear issue:** SLM-89  
-**Branch:** `agent/slm-89-state-ablation`  
-**Date:** 2026-07-18  
+**Linear issue:** SLM-89
+**Branch:** `agent/slm-89-state-ablation`
+**Date:** 2026-07-18
 **Run artifact:** `outputs/runs/cap2_04_state_ablation/cap2_04_state_ablation_01dcdd51a62f3902.json`
 
 Evidence: [iter-cap2-04-state-ablation-20260718.json](iter-cap2-04-state-ablation-20260718.json).
