@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E623",
+  "run_ids": [
+    "e623-control-scratch40-20260720",
+    "e623-treatment-scratch40-20260720"
+  ],
+  "date_utc": "2026-07-20",
+  "status": "completed_positive",
+  "run_class": "scratch_matrix",
+  "hypothesis": "E622 found that scripts/train_model.py's CLI never exposes the semantic_plan_*/schema_*/schema_role_slot_decode_weight levers that scripts/evaluate_model.py already exposes, so the E617-fixed self._slot_contracts gate opens live during a real slm sft train run's own periodic eval but nothing weighted behind it can ever fire from a training-time invocation. This iteration verifies that gap is real (not already wired some other way), closes it by adding the missing CLI flags to train_model.py mirroring evaluate_model.py's exact flag names/config plumbing, then reruns E622's exact 40-step scratch recipe as a paired control/treatment to check whether exercising these levers for the first time inside a real training process's own periodic eval produces any observable eval difference.",
+  "method": {
+    "verify_gap": "grep -c semantic_plan scripts/train_model.py scripts/evaluate_model.py -> 0 vs 18, confirming the gap. Traced evaluate_model.py's add_argument definitions (lines 179-314) and ModelBuildConfig construction call (lines 615-660) against src/slm_training/harnesses/model_build/config.py (all 21 target fields already exist, defaulting to None) and src/slm_training/harnesses/model_build/factory.py (already reads every one of these ModelBuildConfig fields generically at lines 143-144/505-509 into TwoTowerConfig). Confirmed the gap is exclusively train_model.py's argparse surface -- no config.py or factory.py change needed. Also found scripts/train_model.py never exposed --semantic-role-contract-in-context, a hard prerequisite: TwoTowerModel._generate_batch_once raises ValueError if semantic_role_decode_weight > 0 without it (twotower.py:8164-8173).",
+    "code_change": "Added 21 argparse flags to scripts/train_model.py mirroring evaluate_model.py's exact flag names/help text: --semantic-role-contract-in-context (placed with the existing slot-contract context-flag group), --semantic-role-decode-weight, --semantic-role-schema-candidates, --slot-coverage-close-decode-weight, --schema-value-decode-weight, --schema-opaque-decode-weight, --schema-enum-close-decode-weight, --schema-opaque-close-decode-weight, --schema-role-slot-decode-weight, all nine --semantic-plan-*-decode-weight flags, and --visible-reference-decode-weight (placed between the existing --slot-component-content-arity and --component-edge-loss-weight flags, matching evaluate_model.py's relative ordering). Used default=0.0 (matching train_model.py's own established sibling-flag convention, e.g. component_inventory_decode_weight) rather than evaluate_model.py's default=None ('preserve checkpoint value'), since train_model.py always builds a fresh config; TwoTowerConfig treats None and 0.0 identically via getattr(self.config, name, 0.0) or 0.0 throughout twotower.py, so this is cosmetic only. Wired every new flag into the ModelBuildConfig(...) construction call at the same call site as the pre-existing decode-weight flags.",
+    "test_added": "tests/test_scripts/test_train_model.py::test_train_cli_wires_semantic_plan_and_schema_decode_weights -- passes every new flag nonzero (plus a few left default) through train_model.main(), asserts the captured ModelBuildConfig carries each value through untouched, mirroring the file's existing test_train_cli_wires_honest_slot_contract/test_train_cli_wires_action_alias_args pattern.",
+    "paired_run": "Reran E622's exact recipe fresh as control (same corpus/seed/steps/architecture) to get a byte-verified paired baseline in this session, then a treatment run adding the newly-wired flags at E617's own treatment values: schema_role_slot_decode_weight=8.0, semantic_role_decode_weight=8.0 (with --semantic-role-contract-in-context), slot_coverage_close_decode_weight=2.0, schema_value_decode_weight=4.0, schema_opaque_close_decode_weight=4.0, semantic_plan_decode_weight=4.0, semantic_plan_margin_decode_weight=2.0, semantic_plan_binding_decode_weight=1.0, semantic_plan_root_decode_weight=8.0, semantic_plan_root_margin_decode_weight=2.0, semantic_plan_repeated_array_close_margin_decode_weight=2.0, semantic_plan_repeated_slot_margin_decode_weight=2.0, semantic_plan_typed_array_nonempty_margin_decode_weight=2.0, semantic_plan_typed_array_item_margin_decode_weight=2.0. All other levers left at 0.0/off, matching E617's own recipe. Both runs completed under timeout 165 (49.5s control, 16.2s treatment per train_summary.json's elapsed_wall_seconds), well inside the 3-minute hard run cap."
+  },
+  "finding": "Control reproduced E622 byte-exactly: last.pt sha256 6b7aaf2bdd4deaa2b9f54f8ff2fae75d36c8dc847e2d49ba11f5c4f9037bf00a (identical to E622's own checkpoint) and identical ood-suite eval numbers, confirming CPU determinism and a true paired rerun. Training loss is identical between control and treatment (last_loss 15.396740913391113 in both), as expected: every added flag is decode-only, never read inside the teacher-forced forward/backward loss path, so no training dynamic changed and the underlying trained weights are the same (only the checkpoints' saved config differs, hence different last.pt sha256 for treatment: 3dec6e98e8295e1a877ae01e1dde55fd86c5ca38ccff6b19e7f28d22911844c8). scoreboard.json's evaluation_policy confirms every treatment weight landed exactly as passed. The ood-suite periodic eval (n=4) differs sharply: meaningful_program_rate 0.0->0.75 (+0.75), placeholder_fidelity 0.0->0.5667 (+0.5667), structural_similarity 0.190625->0.6439 (+0.4533), reward_score 0.0->0.67475 (+0.67475), ship_score 0.03465909090909091->0.657201515151515 (+0.6225); parse_rate unchanged at 1.0. This is the first time in the E610-E623 lineage these decode-time levers have been exercised inside a real slm sft train process's own periodic eval rather than only via a standalone evaluate_model.py replay, and the CLI gap E622 identified is closed. The delta is much larger than E617's own standalone-eval finding (+0.042 placeholder_fidelity on an already-trained checkpoint); most plausible reading is a floor effect: this 40-step scratch checkpoint's unbiased decode is close to degenerate (control reward_score/meaningful_program_rate both 0.0), so compiler-legal/prompt-plan-compatible decode biasing has much more room to help than on E617's better-trained checkpoint.",
+  "decision": "Code change retained (train_model.py CLI flags + config wiring + test). Both checkpoints remain far too undertrained to be promotable or synced (--no-sync-checkpoints); this is diagnostic CLI-wiring and decode-mechanism evidence, not a ship claim. Does not re-audit E617-E621's already-vetted bias honesty, only confirms the training-time CLI gap is closed and the effect reproduces end-to-end from a real training invocation.",
+  "not_a_ship_claim": true,
+  "checkpoints": {
+    "control": {
+      "run_id": "e623-control-scratch40-20260720",
+      "location": "outputs/runs/e623-control-scratch40-20260720/checkpoints/last.pt",
+      "sha256": "6b7aaf2bdd4deaa2b9f54f8ff2fae75d36c8dc847e2d49ba11f5c4f9037bf00a",
+      "created": true,
+      "sync": false,
+      "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); byte-identical reproduction of E622's checkpoint, not promotable."
+    },
+    "treatment": {
+      "run_id": "e623-treatment-scratch40-20260720",
+      "location": "outputs/runs/e623-treatment-scratch40-20260720/checkpoints/last.pt",
+      "sha256": "3dec6e98e8295e1a877ae01e1dde55fd86c5ca38ccff6b19e7f28d22911844c8",
+      "created": true,
+      "sync": false,
+      "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); heavily undertrained, not promotable."
+    }
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "model": "twotower",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "steps": 40,
+    "batch_size": 1,
+    "seed": 0,
+    "no_sync_checkpoints": true,
+    "control_elapsed_wall_seconds": 49.5485313600002,
+    "treatment_elapsed_wall_seconds": 16.195984883000165,
+    "control_last_loss": 15.396740913391113,
+    "treatment_last_loss": 15.396740913391113,
+    "last_loss_delta": 0.0
+  },
+  "eval": {
+    "suite": "ood",
+    "n": 4,
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "eval_every": 40,
+    "fired_at_step": 40,
+    "control": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "meaningful_program_v1_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.190625,
+      "reward_score": 0.0,
+      "ship_score": 0.03465909090909091,
+      "ship_best": true
+    },
+    "treatment": {
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "meaningful_program_v1_rate": 0.75,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.75,
+      "placeholder_fidelity": 0.5666666666666667,
+      "structural_similarity": 0.6439,
+      "reward_score": 0.67475,
+      "ship_score": 0.657201515151515,
+      "ship_best": true
+    },
+    "delta": {
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.75,
+      "placeholder_fidelity": 0.5666666666666667,
+      "structural_similarity": 0.4532749999999999,
+      "reward_score": 0.67475,
+      "ship_score": 0.6225424151515151
+    },
+    "treatment_evaluation_policy_confirmed": {
+      "semantic_role_contract_in_context": true,
+      "semantic_role_decode_weight": 8.0,
+      "schema_role_slot_decode_weight": 8.0,
+      "slot_coverage_close_decode_weight": 2.0,
+      "schema_value_decode_weight": 4.0,
+      "schema_opaque_close_decode_weight": 4.0,
+      "semantic_plan_decode_weight": 4.0,
+      "semantic_plan_margin_decode_weight": 2.0,
+      "semantic_plan_binding_decode_weight": 1.0,
+      "semantic_plan_root_decode_weight": 8.0,
+      "semantic_plan_root_margin_decode_weight": 2.0,
+      "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+      "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+      "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+      "semantic_plan_typed_array_item_margin_decode_weight": 2.0
+    }
+  },
+  "no_metric_changes": "No previously reported ship-gate or matrix metric changes; these are two fresh standalone checkpoints' own numbers (one a byte-verified reproduction of E622's), not a comparison against any shipped/promoted baseline.",
+  "next": [
+    "This iteration's control/treatment pair is n=4, single-seed diagnostic evidence, not a statistically powered comparison. H19's power protocol (src/slm_training/harnesses -- run_flow_power_protocol) would be the right tool for a confirmatory version of this same comparison across multiple seeds.",
+    "GRPO-lite RL (slm rl train) remains the training loop most directly motivated to exercise these biases live every step via on-policy rollout, still fail-closed on an approved RLReadinessReport (none exists in this repo snapshot).",
+    "A longer (still cap-respecting) scratch run at more steps would show whether the large control/treatment gap seen here is specific to a near-untrained 40-step checkpoint (floor effect) or persists at a more trained checkpoint closer to E617's own effect size."
+  ],
+  "verification": {
+    "commands": [
+      "python -m pytest tests/test_scripts/test_train_model.py -q",
+      "python -m scripts.verify_version_stamps --check",
+      "python -m scripts.repo_policy",
+      "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 0 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --no-sync-checkpoints --run-id e623-control-scratch40-20260720",
+      "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 0 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --semantic-role-contract-in-context --semantic-role-decode-weight 8.0 --schema-role-slot-decode-weight 8.0 --slot-coverage-close-decode-weight 2.0 --schema-value-decode-weight 4.0 --schema-opaque-close-decode-weight 4.0 --semantic-plan-decode-weight 4.0 --semantic-plan-margin-decode-weight 2.0 --semantic-plan-binding-decode-weight 1.0 --semantic-plan-root-decode-weight 8.0 --semantic-plan-root-margin-decode-weight 2.0 --semantic-plan-repeated-array-close-margin-decode-weight 2.0 --semantic-plan-repeated-slot-margin-decode-weight 2.0 --semantic-plan-typed-array-nonempty-margin-decode-weight 2.0 --semantic-plan-typed-array-item-margin-decode-weight 2.0 --no-sync-checkpoints --run-id e623-treatment-scratch40-20260720"
+    ],
+    "notes": "5/5 tests pass in tests/test_scripts/test_train_model.py: 4 pre-existing (2 published-train-version tests + 2 CLI-wiring tests) plus the 1 new test added this iteration. version-stamps and repo-policy both report ok."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "46c0ac76a98a97670c4ead50d011c8ef9b520b8f",
+    "code_dirty": true,
+    "components_touched": 1,
+    "components": {
+      "model.twotower": "v61"
+    }
+  }
+}

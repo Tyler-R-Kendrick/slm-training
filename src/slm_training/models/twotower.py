@@ -533,6 +533,39 @@ class TwoTowerConfig:
     speculative_overlap: bool = False
 
 
+# E620: every TwoTowerConfig field matching `semantic_plan_*_decode_weight` (or
+# `semantic_plan_*_margin_decode_weight`) gates population of
+# `self._semantic_plan_action_scores` / `self._semantic_plan_action_counts` in
+# `_generate_batch_once` via `plan_weight = max(...)` over exactly this list. Before
+# E620, two real decode-time biases read that same state but their weight names were
+# missing from the list: `_semantic_plan_inline_bias`
+# (`semantic_plan_inline_decode_weight`) and `_semantic_plan_repeated_array_close_bias`
+# (`semantic_plan_repeated_array_close_margin_decode_weight`). Setting either one alone
+# (every other `semantic_plan_*` weight at 0) left `plan_weight <= 0`, so
+# `self._semantic_plan_action_scores`/`_action_counts` stayed `None` and both biases
+# silently no-opped on every decode step -- the same failure shape as E617's
+# `self._slot_contracts` gap, one level removed. Every E610-E619 recipe happened to
+# also set `semantic_plan_decode_weight` nonzero, which masked the gap by coincidence
+# rather than by design.
+# `test_semantic_plan_decode_weight_names_cover_all_config_fields`
+# (tests/test_models/test_compiler_decode.py) fails the build if a future
+# `semantic_plan_*_decode_weight`/`semantic_plan_*_margin_decode_weight` config field
+# is added without being added here.
+SEMANTIC_PLAN_DECODE_WEIGHT_NAMES: tuple[str, ...] = (
+    "semantic_plan_decode_weight",
+    "semantic_plan_margin_decode_weight",
+    "semantic_plan_seed_decode_weight",
+    "semantic_plan_inline_decode_weight",
+    "semantic_plan_binding_decode_weight",
+    "semantic_plan_root_decode_weight",
+    "semantic_plan_root_margin_decode_weight",
+    "semantic_plan_repeated_array_close_margin_decode_weight",
+    "semantic_plan_repeated_slot_margin_decode_weight",
+    "semantic_plan_typed_array_nonempty_margin_decode_weight",
+    "semantic_plan_typed_array_item_margin_decode_weight",
+)
+
+
 def _pad_batch(
     seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None
 ) -> torch.Tensor:
@@ -8079,6 +8112,39 @@ class TwoTowerModel(nn.Module):
                     )
         else:
             self._slot_contracts = None
+        if not use_contract_decode:
+            # E617: schema_role_slot_decode_weight, slot_coverage_close_decode_weight,
+            # and the semantic_plan_typed_array_*/repeated_slot_margin decode weights
+            # all gate their own bias functions on a populated `self._slot_contracts`
+            # row (see `_schema_role_slot_bias`, `_slot_coverage_close_bias`,
+            # `_semantic_plan_typed_array_nonempty_bias`,
+            # `_semantic_plan_repeated_slot_bias`), which this method only populates
+            # when `slot_contract_constrained_decode` (or `template_fill_decode`) is
+            # enabled. Setting one of these weights without either flag used to
+            # silently no-op every step (E611-E616 replayed a matched control/
+            # treatment eval this way without ever observing a difference). Fail
+            # loud instead of reproducing that footgun.
+            _contract_gated_weight_names = (
+                "schema_role_slot_decode_weight",
+                "slot_coverage_close_decode_weight",
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                "semantic_plan_typed_array_item_margin_decode_weight",
+                "semantic_plan_repeated_slot_margin_decode_weight",
+            )
+            _active_contract_gated_weights = sorted(
+                name
+                for name in _contract_gated_weight_names
+                if float(getattr(self.config, name, 0.0) or 0.0) > 0.0
+            )
+            if _active_contract_gated_weights:
+                raise ValueError(
+                    "The following decode weights require "
+                    "slot_contract_constrained_decode (or template_fill_decode) to "
+                    "be enabled, or they silently no-op every decode step because "
+                    "self._slot_contracts stays None: "
+                    f"{_active_contract_gated_weights}. Pass "
+                    "--slot-contract-constrained-decode (or --template-fill-decode)."
+                )
         if bool(getattr(self.config, "semantic_role_contract_in_context", False)):
             if not honest:
                 raise ValueError(
@@ -8125,41 +8191,14 @@ class TwoTowerModel(nn.Module):
             ]
         else:
             self._semantic_role_candidates = None
+        # E620: iterate SEMANTIC_PLAN_DECODE_WEIGHT_NAMES (module-level, see comment
+        # there) rather than a hand-enumerated literal -- a hand-enumerated list
+        # previously omitted semantic_plan_inline_decode_weight and
+        # semantic_plan_repeated_array_close_margin_decode_weight, silently no-opping
+        # their biases whenever no other semantic_plan_* weight was also set.
         plan_weight = max(
-            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0,
-            getattr(self.config, "semantic_plan_binding_decode_weight", 0.0) or 0.0,
-            getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_root_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_repeated_slot_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_typed_array_nonempty_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_typed_array_item_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
+            float(getattr(self.config, name, 0.0) or 0.0)
+            for name in SEMANTIC_PLAN_DECODE_WEIGHT_NAMES
         )
         if plan_weight > 0.0:
             if not choice_constrained:

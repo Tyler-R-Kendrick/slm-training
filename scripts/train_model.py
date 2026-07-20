@@ -548,6 +548,125 @@ def main(argv: list[str] | None = None) -> int:
         help="Average owner evidence across schema-derived content slots.",
     )
     parser.add_argument(
+        "--semantic-role-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias legal component choices using only visible semantic-role candidates.",
+    )
+    parser.add_argument(
+        "--semantic-role-schema-candidates",
+        action="store_true",
+        help="Derive legal component candidates from visible slot roles and the public schema.",
+    )
+    parser.add_argument(
+        "--slot-coverage-close-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer closing typed component arrays after every visible slot is covered.",
+    )
+    parser.add_argument(
+        "--schema-value-decode-weight",
+        type=float,
+        default=0.0,
+        help="Penalize visible placeholders in legal enum-valued component arguments.",
+    )
+    parser.add_argument(
+        "--schema-opaque-decode-weight",
+        type=float,
+        default=0.0,
+        help="Penalize visible placeholders in optional unconstrained arguments.",
+    )
+    parser.add_argument(
+        "--schema-enum-close-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer legal closure at optional enum-valued arguments.",
+    )
+    parser.add_argument(
+        "--schema-opaque-close-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer legal closure at optional unconstrained arguments.",
+    )
+    parser.add_argument(
+        "--schema-role-slot-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer visible slots compatible with the active content property owner.",
+    )
+    parser.add_argument(
+        "--semantic-plan-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score legal root/bound components from prompt-derived SemanticPlanV1.",
+    )
+    parser.add_argument(
+        "--semantic-plan-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor still-required plan families above the best legal component.",
+    )
+    parser.add_argument(
+        "--semantic-plan-seed-decode-weight",
+        type=float,
+        default=0.0,
+        help="Add prompt-plan component score only before the first component.",
+    )
+    parser.add_argument(
+        "--semantic-plan-inline-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score still-missing prompt families in inline component positions.",
+    )
+    parser.add_argument(
+        "--semantic-plan-binding-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score legal root references to prompt-plan-compatible components.",
+    )
+    parser.add_argument(
+        "--semantic-plan-root-decode-weight",
+        type=float,
+        default=0.0,
+        help="Soft-score legal Stack root construction after prompt-plan coverage.",
+    )
+    parser.add_argument(
+        "--semantic-plan-root-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor a verified plan-root token above the best legal score.",
+    )
+    parser.add_argument(
+        "--semantic-plan-repeated-array-close-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Close nested arrays after one item inside repeated plan families.",
+    )
+    parser.add_argument(
+        "--semantic-plan-repeated-slot-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor the best unused visible slot inside repeated plan instances.",
+    )
+    parser.add_argument(
+        "--semantic-plan-typed-array-nonempty-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Start slot-bearing typed arrays inside authored plan components.",
+    )
+    parser.add_argument(
+        "--semantic-plan-typed-array-item-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help="Floor the schema-derived item start inside authored typed arrays.",
+    )
+    parser.add_argument(
+        "--visible-reference-decode-weight",
+        type=float,
+        default=0.0,
+        help="Prefer unused legal generated element references in root/list aggregation.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -721,6 +840,14 @@ def main(argv: list[str] | None = None) -> int:
         "--slot-contract-constrained-decode",
         action="store_true",
         help="Restrict placeholder decode to the slot contract inventory.",
+    )
+    parser.add_argument(
+        "--semantic-role-contract-in-context",
+        action="store_true",
+        help=(
+            "Normalize prompt-mentioned components and visible slots into the "
+            "semantic-role contract used by E530 training."
+        ),
     )
     parser.add_argument(
         "--retrieval-k",
@@ -1116,6 +1243,36 @@ def main(argv: list[str] | None = None) -> int:
         slot_component_lexeme_prior_weight=(args.slot_component_lexeme_prior_weight),
         slot_component_span_prior_weight=(args.slot_component_span_prior_weight),
         slot_component_content_arity=args.slot_component_content_arity,
+        semantic_role_decode_weight=args.semantic_role_decode_weight,
+        semantic_role_schema_candidates=args.semantic_role_schema_candidates,
+        slot_coverage_close_decode_weight=args.slot_coverage_close_decode_weight,
+        schema_value_decode_weight=args.schema_value_decode_weight,
+        schema_opaque_decode_weight=args.schema_opaque_decode_weight,
+        schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
+        schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
+        schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
+        semantic_plan_decode_weight=args.semantic_plan_decode_weight,
+        semantic_plan_margin_decode_weight=args.semantic_plan_margin_decode_weight,
+        semantic_plan_seed_decode_weight=args.semantic_plan_seed_decode_weight,
+        semantic_plan_inline_decode_weight=args.semantic_plan_inline_decode_weight,
+        semantic_plan_binding_decode_weight=args.semantic_plan_binding_decode_weight,
+        semantic_plan_root_decode_weight=args.semantic_plan_root_decode_weight,
+        semantic_plan_root_margin_decode_weight=(
+            args.semantic_plan_root_margin_decode_weight
+        ),
+        semantic_plan_repeated_array_close_margin_decode_weight=(
+            args.semantic_plan_repeated_array_close_margin_decode_weight
+        ),
+        semantic_plan_repeated_slot_margin_decode_weight=(
+            args.semantic_plan_repeated_slot_margin_decode_weight
+        ),
+        semantic_plan_typed_array_nonempty_margin_decode_weight=(
+            args.semantic_plan_typed_array_nonempty_margin_decode_weight
+        ),
+        semantic_plan_typed_array_item_margin_decode_weight=(
+            args.semantic_plan_typed_array_item_margin_decode_weight
+        ),
+        visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_loss_weight=args.component_edge_loss_weight,
         component_edge_alignment_loss_weight=(
             args.component_edge_alignment_loss_weight
@@ -1156,6 +1313,7 @@ def main(argv: list[str] | None = None) -> int:
         slot_contract_in_context=args.slot_contract_in_context,
         slot_contract_constrained_decode=args.slot_contract_constrained_decode,
         honest_slot_contract=args.honest_slot_contract,
+        semantic_role_contract_in_context=args.semantic_role_contract_in_context,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         action_embedding_init=args.action_embedding_init,
