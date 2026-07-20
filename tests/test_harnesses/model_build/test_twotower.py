@@ -253,6 +253,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_topology_decode_weight == 0.2
     assert loaded.config.binder_arity_loss_weight == 0.7
     assert loaded.config.binder_arity_decode_weight == 0.1
+
     assert loaded.config.root_reference_arity_loss_weight == 0.6
     assert loaded.config.root_reference_arity_decode_weight == 0.05
     assert loaded.config.root_reference_identity_loss_weight == 0.55
@@ -281,6 +282,38 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_arity_decode_weight == 0.0
     assert loaded.config.root_reference_arity_decode_weight == 0.0
     assert loaded.config.root_reference_identity_decode_weight == 0.0
+
+
+def test_slot_pair_interaction_never_encodes_empty_next_slot() -> None:
+    records = [
+        ExampleRecord(
+            id="pair",
+            prompt="Hero",
+            openui=HERO,
+            placeholders=[":hero.title", ":hero.body"],
+            split="train",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="choice",
+            slot_component_loss_weight=1.0,
+            slot_component_pair_interaction=True,
+        ),
+    )
+    encode_context = model._encode_context
+
+    def assert_nonempty(prompts: list[str], **kwargs):
+        assert all(prompt for prompt in prompts)
+        return encode_context(prompts, **kwargs)
+
+    model._encode_context = assert_nonempty  # type: ignore[method-assign]
+    assert torch.isfinite(model.training_loss(records))
 
 
 def test_optional_heads_do_not_shift_training_rng() -> None:

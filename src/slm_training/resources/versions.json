@@ -553,7 +553,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -563,6 +563,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v9", "date": "2026-07-20", "note": "use a masked non-empty sentinel for terminal slot-pair context so HF tokenization cannot produce a zero-length sequence"},
         {"version": "v8", "date": "2026-07-19", "note": "smooth slot lexeme-owner priors with class-prior-proportional pseudo-counts so unseen token-class pairs cannot receive spurious positive association"},
         {"version": "v7", "date": "2026-07-19", "note": "expose the bounded strict-subset root-reference identity sampling multiplier in the shared model-build recipe"},
         {"version": "v6", "date": "2026-07-19", "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"},
