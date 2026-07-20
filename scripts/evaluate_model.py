@@ -201,6 +201,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal component choices using only visible semantic-role candidates.",
     )
     parser.add_argument(
+        "--semantic-plan-decode-weight",
+        type=float,
+        default=None,
+        help="Soft-score legal root/bound components from prompt-derived SemanticPlanV1.",
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -509,6 +515,7 @@ def main(argv: list[str] | None = None) -> int:
         component_plan_decode_weight=args.component_plan_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
         semantic_role_decode_weight=args.semantic_role_decode_weight,
+        semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
         binder_component_plan_decode_weight=(

@@ -116,6 +116,42 @@ def prompt_semantic_role_candidates(
     return semantic_role_candidates(slots, components) if components else {}
 
 
+def prompt_semantic_plan(prompt: str):
+    """Build a predicted partial plan from explicit, schema-owned prompt mentions."""
+    from slm_training.data.progspec.semantic_plan import (
+        PlanArchetype,
+        PlanCoverage,
+        PlanIdentity,
+        RoleSlot,
+        SemanticPlanV1,
+    )
+    from slm_training.data.quality import _prompt_component_mentions
+
+    components = sorted(_prompt_component_mentions(prompt))
+    if not components:
+        return None
+    return SemanticPlanV1(
+        identity=PlanIdentity(
+            pack_id="openui",
+            prompt_context_hash=hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+            provenance="predicted",
+        ),
+        archetype=PlanArchetype(confidence=1.0),
+        role_slots=tuple(
+            RoleSlot(
+                role_id=f"prompt_component_{index}",
+                component_family=component,
+                required=True,
+                evidence_spans=(component,),
+            )
+            for index, component in enumerate(components)
+        ),
+        coverage=PlanCoverage(
+            named_requirements_accounted_for=tuple(components),
+        ),
+    )
+
+
 def inventory_from_prompt(
     prompt: str | None,
     design_md: str | None = None,

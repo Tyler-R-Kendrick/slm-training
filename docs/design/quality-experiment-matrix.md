@@ -3062,6 +3062,24 @@ scalar tuning. The checkpoint remains local/no-sync negative evidence.
 Evidence: [narrative](iter-e574-e569-slotloss2-20260720.md) and
 [JSON](iter-e574-e569-slotloss2-20260720.json).
 
+## E575 prompt-derived SemanticPlanV1 soft scorer
+
+E575 connects visible prompt component mentions to a predicted partial
+`SemanticPlanV1` and uses the SLM-146 compiler bridge to soft-score legal root
+and bound component choices. Candidate legality is unchanged. On a clean,
+matched E569 OOD `n=4` 0/1/2 ladder, weight 1 changes 3/52 scored choices and
+improves meaningful-v1 0→0.25, fidelity 0.3417→0.4250, validity
+0.6050→0.6550, structure 0.1250→0.1688, component recall 0.1458→0.2708,
+reward 0.7095→0.7345, and AST-node F1 0.1833→0.2833. Weight 2 changes five
+choices but regresses fidelity, validity, and reward below the control.
+
+**Decision:** retain the generalized scorer and weight 1 as a default-off local
+decode Pareto; close the scalar ladder. Strict meaning-v2 and AgentV remain
+zero, so do not promote or sync. Target predicted topology/binding factors
+next. Evidence:
+[narrative](iter-e575-prompt-semantic-plan-soft-20260720.md) and
+[JSON](iter-e575-prompt-semantic-plan-soft-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

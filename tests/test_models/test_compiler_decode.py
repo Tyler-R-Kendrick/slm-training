@@ -258,6 +258,63 @@ def test_visible_semantic_role_bias_does_not_require_learned_slot_head() -> None
     assert submit_bias[1] == 4.0
 
 
+def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
+    from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    component_ids = model._component_inventory_token_ids()
+    actions = [
+        str(tokenizer.id_to_token[token_id]).removeprefix("+")
+        for token_id in component_ids
+    ]
+    plan = prompt_semantic_plan("Image gallery block with caption text underneath.")
+    features = OpenUISemanticPlanCompiler().annotate_actions(None, actions, plan)
+    model._semantic_plan_action_scores = [{
+        token_id: feature.plan_confidence
+        for token_id, feature in zip(component_ids, features, strict=True)
+        if feature.component_family_compatible
+    }]
+    gallery_id = tokenizer.token_to_id["+ImageGallery"]
+    slider_id = tokenizer.token_to_id["+Slider"]
+    candidates = (gallery_id, slider_id)
+
+    root_bias = model._semantic_plan_bias(
+        0, candidates, ("component_root", "component_root")
+    )
+    bound_bias = model._semantic_plan_bias(
+        0, candidates, ("component_bound", "component_bound")
+    )
+
+    assert root_bias is not None and root_bias.tolist() == [3.0, 0.0]
+    assert bound_bias is not None and bound_bias.tolist() == [3.0, 0.0]
+
+
+def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
+    from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=3.0,
+    )
+    assert prompt_semantic_plan("Build a polished responsive experience.") is None
+    features = OpenUISemanticPlanCompiler().annotate_actions(
+        None, ["Card", "Button"], None
+    )
+    assert all(feature.plan_confidence == 0.0 for feature in features)
+    model._semantic_plan_action_scores = [{}]
+    assert model._semantic_plan_bias(
+        0,
+        (model.tokenizer.token_to_id["+Card"],),
+        ("component_root",),
+    ) is None
+
+
 def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None:
     from types import SimpleNamespace
 

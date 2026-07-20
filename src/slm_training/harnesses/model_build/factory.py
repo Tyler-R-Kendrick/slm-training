@@ -134,6 +134,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "component_plan_decode_weight",
         "slot_component_decode_weight",
         "semantic_role_decode_weight",
+        "semantic_plan_decode_weight",
         "visible_reference_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
@@ -419,6 +420,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         semantic_role_decode_weight=float(
             getattr(config, "semantic_role_decode_weight", 0.0) or 0.0
+        ),
+        semantic_plan_decode_weight=float(
+            getattr(config, "semantic_plan_decode_weight", 0.0) or 0.0
         ),
         visible_reference_decode_weight=float(
             getattr(config, "visible_reference_decode_weight", 0.0) or 0.0
