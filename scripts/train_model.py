@@ -735,6 +735,91 @@ def main(argv: list[str] | None = None) -> int:
         help="Generate N candidates and pick by composite reward.",
     )
     parser.add_argument(
+        "--action-embedding-init",
+        default="none",
+        choices=(
+            "none",
+            "current_stub",
+            "schema_description",
+            "expanded_description",
+            "shuffled",
+            "alias_aware_description",
+            "alias_aware_signature_only",
+            "alias_aware_shuffled",
+            "description_without_canonical_name",
+            "canonical_name_plus_description",
+            "signature_only",
+        ),
+        help="SLM-163/174: source text used to initialize action embedding rows.",
+    )
+    parser.add_argument(
+        "--action-embedding-train",
+        default="frozen",
+        choices=("frozen", "trainable"),
+        help="SLM-163: whether action embeddings are frozen or trainable.",
+    )
+    parser.add_argument(
+        "--action-alias-mode",
+        default="canonical",
+        choices=("canonical", "off", "fixed", "held_out"),
+        help="SLM-174: use anonymized action aliases for description-mediated generalization.",
+    )
+    parser.add_argument(
+        "--action-alias-manifest",
+        type=Path,
+        default=None,
+        help="SLM-174: optional persisted alias map JSON.",
+    )
+    parser.add_argument(
+        "--action-description-name-mode",
+        default="schema",
+        choices=(
+            "schema",
+            "alias_aware_description",
+            "alias_aware_signature_only",
+            "alias_aware_shuffled",
+            "description_without_canonical_name",
+            "canonical_name_plus_description",
+            "signature_only",
+        ),
+        help="SLM-174: how canonical names are rendered in action-description sources.",
+    )
+    parser.add_argument(
+        "--action-shortlist-mode",
+        default="off",
+        choices=("off", "description_retrieval"),
+        help="SLM-176: description-based retrieve-then-rerank over live legal action sets.",
+    )
+    parser.add_argument(
+        "--action-shortlist-k",
+        type=int,
+        default=8,
+        help="SLM-176: top-k actions retained by description retrieval.",
+    )
+    parser.add_argument(
+        "--action-shortlist-min-legal-size",
+        type=int,
+        default=16,
+        help="SLM-176: minimum legal set size before shortlisting is allowed.",
+    )
+    parser.add_argument(
+        "--action-shortlist-score-margin",
+        type=float,
+        default=0.0,
+        help="SLM-176: include actions within this margin of the k-th score.",
+    )
+    parser.add_argument(
+        "--action-shortlist-fallback-policy",
+        default="confidence_and_coverage",
+        choices=("confidence_and_coverage",),
+        help="SLM-176: fallback policy when retrieval confidence is too low.",
+    )
+    parser.add_argument(
+        "--action-shortlist-shadow-full-score",
+        action="store_true",
+        help="SLM-176: also score the full legal set for diagnostic comparison.",
+    )
+    parser.add_argument(
         "--curriculum",
         action="store_true",
         help="Sample train batches by curriculum stage A→B→C (soft mix by default).",
@@ -1020,9 +1105,7 @@ def main(argv: list[str] | None = None) -> int:
         slot_component_loss_weight=args.slot_component_loss_weight,
         slot_component_focal_gamma=args.slot_component_focal_gamma,
         slot_component_class_balance_power=(args.slot_component_class_balance_power),
-        slot_component_owner_rare_threshold=(
-            args.slot_component_owner_rare_threshold
-        ),
+        slot_component_owner_rare_threshold=(args.slot_component_owner_rare_threshold),
         slot_component_owner_rare_multiplier=(
             args.slot_component_owner_rare_multiplier
         ),
@@ -1046,9 +1129,7 @@ def main(argv: list[str] | None = None) -> int:
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
-        root_reference_identity_loss_weight=(
-            args.root_reference_identity_loss_weight
-        ),
+        root_reference_identity_loss_weight=(args.root_reference_identity_loss_weight),
         root_reference_identity_negative_weight=(
             args.root_reference_identity_negative_weight
         ),
@@ -1077,6 +1158,17 @@ def main(argv: list[str] | None = None) -> int:
         honest_slot_contract=args.honest_slot_contract,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
+        action_embedding_init=args.action_embedding_init,
+        action_embedding_train=args.action_embedding_train,
+        action_alias_mode=args.action_alias_mode,
+        action_alias_manifest=args.action_alias_manifest,
+        action_description_name_mode=args.action_description_name_mode,
+        action_shortlist_mode=args.action_shortlist_mode,
+        action_shortlist_k=args.action_shortlist_k,
+        action_shortlist_min_legal_size=args.action_shortlist_min_legal_size,
+        action_shortlist_score_margin=args.action_shortlist_score_margin,
+        action_shortlist_fallback_policy=args.action_shortlist_fallback_policy,
+        action_shortlist_shadow_full_score=args.action_shortlist_shadow_full_score,
         use_curriculum=args.curriculum,
         mix_curriculum=not bool(args.hard_curriculum),
         use_amp=use_amp,

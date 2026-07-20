@@ -29,3 +29,20 @@ def test_pointer_mode_defaults_to_legacy_tokens() -> None:
     assert cfg.pointer_heads == 4
     assert cfg.pointer_temperature == pytest.approx(1.0)
     assert cfg.pointer_dropout == pytest.approx(0.0)
+
+
+def test_action_alias_defaults_to_canonical() -> None:
+    cfg = TwoTowerConfig()
+    assert cfg.action_alias_mode == "canonical"
+    assert cfg.action_alias_manifest is None
+    assert cfg.action_description_name_mode == "schema"
+
+
+def test_action_shortlist_defaults_to_off() -> None:
+    cfg = TwoTowerConfig()
+    assert cfg.action_shortlist_mode == "off"
+    assert cfg.action_shortlist_k == 8
+    assert cfg.action_shortlist_min_legal_size == 16
+    assert cfg.action_shortlist_score_margin == pytest.approx(0.0)
+    assert cfg.action_shortlist_fallback_policy == "confidence_and_coverage"
+    assert cfg.action_shortlist_shadow_full_score is False

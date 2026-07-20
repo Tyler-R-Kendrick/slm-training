@@ -3816,6 +3816,48 @@ still empty, AgentV is 0/1, and no checkpoint was created or synced. Evidence:
 [narrative](iter-e610-repeated-plan-array-close-20260720.md) and
 [JSON](iter-e610-repeated-plan-array-close-20260720.json).
 
+## E611 repeated-plan distinct-slot allocation
+
+E611 floors the best-scoring legal unused visible slot inside each repeated
+prompt-plan instance. Dashboard now binds `m1` and `m2` to different Cards,
+shrinks 60→54 output symbols, and improves its fidelity 0.60→0.80, validity
+0.76→0.88, structure 0.7417→0.7750, and reward 0.865→0.925. Aggregate
+meaningful-v1 remains 0.75 while fidelity rises 0.65→0.70, validity 0.69→0.72,
+structure 0.7646→0.7729, reward 0.6998→0.7148, and p95 latency falls
+12.98→11.46 s. Retain the default-off lever as the next scratch baseline.
+Strict v2 remains 0, gallery is still empty, AgentV is 0/1, and no checkpoint
+was created or synced. Evidence:
+[narrative](iter-e611-repeated-plan-slot-allocation-20260720.md) and
+[JSON](iter-e611-repeated-plan-slot-allocation-20260720.json).
+
+## E612 authored typed-array nonempty margin
+
+E612 prevents an authored prompt-plan component from closing an empty typed
+array when its item schema can reach visible slots. Gallery changes from
+`ImageGallery([])` to `ImageGallery([$s45])`, but `$s45` is an unresolved state
+reference rather than a visible slot. Gallery therefore remains at zero
+fidelity, validity, recall, and reward. Every aggregate quality metric is
+exactly unchanged from E611, while emitted tokens rise 85→86. Reject the
+highest-scoring-non-close policy as a quality baseline; preserve the default-off
+lever and negative result, and keep E611 as the scratch baseline. Strict v2
+remains 0, AgentV is 0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e612-authored-typed-array-nonempty-20260720.md) and
+[JSON](iter-e612-authored-typed-array-nonempty-20260720.json).
+
+## E613 schema-derived typed-array item
+
+E613 targets the schema-derived object opener instead of E612's highest-scoring
+generic expression. Gallery consumes a public slot and aggregate fidelity,
+validity, recall, and reward improve to 0.7417, 0.8450, 0.7500, and 0.8865.
+The object frame loses the item schema, however, so Gallery fills arbitrary
+keys and nested components through the 160-token canvas. Structure regresses
+to 0.7452, tokens rise 86→233, and p95 latency rises 9.35→19.20 s. Retain the
+default-off target as a research direction, but keep E611 as the baseline and
+next propagate required typed-object properties through the choice state.
+Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or synced.
+Evidence: [narrative](iter-e613-schema-derived-typed-item-20260720.md) and
+[JSON](iter-e613-schema-derived-typed-item-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
@@ -3852,3 +3894,26 @@ Honest caveats:
   representative evaluation distribution.
 - No model was trained; real predictions may expose failure modes the current
   surrogates do not capture.
+
+## H16 action-alias generalization (SLM-174, SDE2-07)
+
+H16 tests whether schema-derived action descriptions remain semantically
+clusterable when canonical action names are replaced by opaque aliases.  The
+default `action_alias_mode` is `canonical` (canonical names preserved).  Alias
+maps are deterministic from `seed` + `pack_id`, reversible, and validated to
+contain no canonical-name substrings.  The fixture encodes descriptions under
+several name/alias regimes, measures nearest-neighbor separability and
+sibling-family purity, and reports whether aliased descriptions still cluster by
+semantics.  This is wiring/fixture evidence only; no ship claim is made.
+
+```bash
+python -m scripts.run_slm174_action_alias_generalization_fixture --mode fixture
+```
+
+Honest caveats:
+
+- The fixture uses a deterministic hash-based description encoder, not a trained
+  language model; real HF text geometry may differ.
+- Sibling-family grouping is a coarse semantic proxy.
+- No model was trained; real action-embedding generalization must be validated
+  with a trained checkpoint and AgentV evaluation.

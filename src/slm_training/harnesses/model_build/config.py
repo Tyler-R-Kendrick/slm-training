@@ -283,6 +283,9 @@ class ModelBuildConfig:
     semantic_plan_root_decode_weight: float | None = None
     semantic_plan_root_margin_decode_weight: float | None = None
     semantic_plan_repeated_array_close_margin_decode_weight: float | None = None
+    semantic_plan_repeated_slot_margin_decode_weight: float | None = None
+    semantic_plan_typed_array_nonempty_margin_decode_weight: float | None = None
+    semantic_plan_typed_array_item_margin_decode_weight: float | None = None
     visible_reference_decode_weight: float | None = None
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -311,6 +314,19 @@ class ModelBuildConfig:
     # SLM-163: action-embedding initialization source and trainability.
     action_embedding_init: str = "none"
     action_embedding_train: str = "frozen"
+    # SLM-174 (SDE2-07): description-mediated generalization with anonymized
+    # action aliases.  Default ``canonical`` preserves canonical names.
+    action_alias_mode: str = "canonical"
+    action_alias_manifest: Path | None = None
+    action_description_name_mode: str = "schema"
+    # SLM-176 (P14): description-based retrieve-then-rerank over live legal
+    # action sets.  All defaults are off; this is wiring/fixture evidence only.
+    action_shortlist_mode: str = "off"
+    action_shortlist_k: int = 8
+    action_shortlist_min_legal_size: int = 16
+    action_shortlist_score_margin: float = 0.0
+    action_shortlist_fallback_policy: str = "confidence_and_coverage"
+    action_shortlist_shadow_full_score: bool = False
     # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
     # sparse grammar-action scorer.  ``none`` is identity and preserves behavior.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention

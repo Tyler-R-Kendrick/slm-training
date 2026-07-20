@@ -149,6 +149,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_plan_root_decode_weight",
         "semantic_plan_root_margin_decode_weight",
         "semantic_plan_repeated_array_close_margin_decode_weight",
+        "semantic_plan_repeated_slot_margin_decode_weight",
+        "semantic_plan_typed_array_nonempty_margin_decode_weight",
+        "semantic_plan_typed_array_item_margin_decode_weight",
         "visible_reference_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
@@ -160,6 +163,15 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "teacher_init_embeddings",
         "action_embedding_init",
         "action_embedding_train",
+        "action_alias_mode",
+        "action_alias_manifest",
+        "action_description_name_mode",
+        "action_shortlist_mode",
+        "action_shortlist_k",
+        "action_shortlist_min_legal_size",
+        "action_shortlist_score_margin",
+        "action_shortlist_fallback_policy",
+        "action_shortlist_shadow_full_score",
         "semantic_connector",
         "connector_hidden_dim",
         "connector_rank",
@@ -232,10 +244,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         cfg, "grammar_ltr_repair"
     ):
         cfg.grammar_ltr_repair = True
-    if (
-        str(getattr(config, "compiler_decode_mode", "off") or "off") != "off"
-        and hasattr(cfg, "grammar_ltr_primary")
-    ):
+    if str(
+        getattr(config, "compiler_decode_mode", "off") or "off"
+    ) != "off" and hasattr(cfg, "grammar_ltr_primary"):
         cfg.grammar_ltr_primary = True
     if int(getattr(config, "best_of_n", 1) or 1) > 1 and hasattr(cfg, "best_of_n"):
         cfg.best_of_n = int(config.best_of_n)
@@ -359,12 +370,24 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_decode_mode=str(
             getattr(config, "compiler_decode_mode", "off") or "off"
         ),
-        compiler_search_mode=str(getattr(config, "compiler_search_mode", "greedy") or "greedy"),
-        compiler_search_trigger=str(getattr(config, "compiler_search_trigger", "stagnation") or "stagnation"),
-        compiler_search_width=max(1, int(getattr(config, "compiler_search_width", 1) or 1)),
-        compiler_search_noise=max(0.0, float(getattr(config, "compiler_search_noise", 0.0) or 0.0)),
-        compiler_search_stagnation_patience=max(1, int(getattr(config, "compiler_search_stagnation_patience", 2) or 2)),
-        compiler_search_backtrack_limit=max(0, int(getattr(config, "compiler_search_backtrack_limit", 8) or 0)),
+        compiler_search_mode=str(
+            getattr(config, "compiler_search_mode", "greedy") or "greedy"
+        ),
+        compiler_search_trigger=str(
+            getattr(config, "compiler_search_trigger", "stagnation") or "stagnation"
+        ),
+        compiler_search_width=max(
+            1, int(getattr(config, "compiler_search_width", 1) or 1)
+        ),
+        compiler_search_noise=max(
+            0.0, float(getattr(config, "compiler_search_noise", 0.0) or 0.0)
+        ),
+        compiler_search_stagnation_patience=max(
+            1, int(getattr(config, "compiler_search_stagnation_patience", 2) or 2)
+        ),
+        compiler_search_backtrack_limit=max(
+            0, int(getattr(config, "compiler_search_backtrack_limit", 8) or 0)
+        ),
         compiler_search_local_nogoods=bool(
             getattr(config, "compiler_search_local_nogoods", False)
         ),
@@ -426,9 +449,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_alignment_semantic_exhaustive=bool(
             getattr(config, "compiler_alignment_semantic_exhaustive", False)
         ),
-        legal_margin_mode=str(
-            getattr(config, "legal_margin_mode", "none") or "none"
-        ),
+        legal_margin_mode=str(getattr(config, "legal_margin_mode", "none") or "none"),
         targeted_margin_manifest=getattr(config, "targeted_margin_manifest", None),
         targeted_margin_value=float(
             getattr(config, "targeted_margin_value", 1.0) or 1.0
@@ -518,6 +539,30 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             )
             or 0.0
         ),
+        semantic_plan_repeated_slot_margin_decode_weight=float(
+            getattr(
+                config,
+                "semantic_plan_repeated_slot_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        ),
+        semantic_plan_typed_array_nonempty_margin_decode_weight=float(
+            getattr(
+                config,
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        ),
+        semantic_plan_typed_array_item_margin_decode_weight=float(
+            getattr(
+                config,
+                "semantic_plan_typed_array_item_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        ),
         visible_reference_decode_weight=float(
             getattr(config, "visible_reference_decode_weight", 0.0) or 0.0
         ),
@@ -588,6 +633,32 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
         action_embedding_init=getattr(config, "action_embedding_init", "none"),
         action_embedding_train=getattr(config, "action_embedding_train", "frozen"),
+        action_alias_mode=str(
+            getattr(config, "action_alias_mode", "canonical") or "canonical"
+        ),
+        action_alias_manifest=getattr(config, "action_alias_manifest", None),
+        action_description_name_mode=str(
+            getattr(config, "action_description_name_mode", "schema") or "schema"
+        ),
+        action_shortlist_mode=str(
+            getattr(config, "action_shortlist_mode", "off") or "off"
+        ),
+        action_shortlist_k=int(getattr(config, "action_shortlist_k", 8) or 8),
+        action_shortlist_min_legal_size=int(
+            getattr(config, "action_shortlist_min_legal_size", 16) or 16
+        ),
+        action_shortlist_score_margin=float(
+            getattr(config, "action_shortlist_score_margin", 0.0) or 0.0
+        ),
+        action_shortlist_fallback_policy=str(
+            getattr(
+                config, "action_shortlist_fallback_policy", "confidence_and_coverage"
+            )
+            or "confidence_and_coverage"
+        ),
+        action_shortlist_shadow_full_score=bool(
+            getattr(config, "action_shortlist_shadow_full_score", False)
+        ),
         semantic_connector=str(getattr(config, "semantic_connector", "none") or "none"),
         connector_hidden_dim=int(getattr(config, "connector_hidden_dim", 256) or 256),
         connector_rank=int(getattr(config, "connector_rank", 32) or 32),
@@ -596,9 +667,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "connector_freeze_encoder", True)
         ),
         train_scope=str(getattr(config, "train_scope", "current") or "current"),
-        pointer_mode=str(getattr(config, "pointer_mode", "legacy_tokens") or "legacy_tokens"),
+        pointer_mode=str(
+            getattr(config, "pointer_mode", "legacy_tokens") or "legacy_tokens"
+        ),
         pointer_candidate_source=str(
-            getattr(config, "pointer_candidate_source", "structured_contract") or "structured_contract"
+            getattr(config, "pointer_candidate_source", "structured_contract")
+            or "structured_contract"
         ),
         pointer_hidden_dim=int(getattr(config, "pointer_hidden_dim", 256) or 256),
         pointer_heads=int(getattr(config, "pointer_heads", 4) or 4),
@@ -712,9 +786,7 @@ def build_model(
                 else bool(config.design_md_in_context)
             ),
             design_md_budget=config.design_md_budget,
-            slot_contract_in_context=getattr(
-                config, "slot_contract_in_context", True
-            ),
+            slot_contract_in_context=getattr(config, "slot_contract_in_context", True),
             seed=config.seed,
         )
         return TreeEditDiffusionModel.from_records(

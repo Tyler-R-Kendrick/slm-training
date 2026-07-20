@@ -416,6 +416,15 @@ def _effective_evaluation_policy(
         "semantic_plan_repeated_array_close_margin_decode_weight": float(
             value("semantic_plan_repeated_array_close_margin_decode_weight") or 0.0
         ),
+        "semantic_plan_repeated_slot_margin_decode_weight": float(
+            value("semantic_plan_repeated_slot_margin_decode_weight") or 0.0
+        ),
+        "semantic_plan_typed_array_nonempty_margin_decode_weight": float(
+            value("semantic_plan_typed_array_nonempty_margin_decode_weight") or 0.0
+        ),
+        "semantic_plan_typed_array_item_margin_decode_weight": float(
+            value("semantic_plan_typed_array_item_margin_decode_weight") or 0.0
+        ),
         "visible_reference_decode_weight": float(
             value("visible_reference_decode_weight") or 0.0
         ),

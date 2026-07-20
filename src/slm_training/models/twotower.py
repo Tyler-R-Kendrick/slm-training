@@ -74,6 +74,13 @@ from slm_training.models.template_fill import (
     prompt_semantic_role_candidates,
     template_mask_positions,
 )
+from slm_training.dsl.action_descriptions import FixtureDescriptionEncoder
+from slm_training.dsl.action_shortlist import (
+    ActionShortlistPolicy,
+    ActionShortlistTrace,
+    build_query_vector,
+    retrieve_then_rerank,
+)
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 
@@ -256,18 +263,17 @@ class TwoTowerConfig:
     semantic_plan_root_decode_weight: float = 0.0
     semantic_plan_root_margin_decode_weight: float = 0.0
     semantic_plan_repeated_array_close_margin_decode_weight: float = 0.0
+    semantic_plan_repeated_slot_margin_decode_weight: float = 0.0
+    semantic_plan_typed_array_nonempty_margin_decode_weight: float = 0.0
+    semantic_plan_typed_array_item_margin_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
     slot_component_pair_interaction: bool = False
     slot_component_lexeme_prior_weight: float = 0.0
-    slot_component_lexeme_priors: tuple[
-        tuple[str, tuple[float, ...]], ...
-    ] = ()
+    slot_component_lexeme_priors: tuple[tuple[str, tuple[float, ...]], ...] = ()
     slot_component_span_prior_weight: float = 0.0
-    slot_component_span_priors: tuple[
-        tuple[str, tuple[float, ...]], ...
-    ] = ()
+    slot_component_span_priors: tuple[tuple[str, tuple[float, ...]], ...] = ()
     slot_component_content_arity: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
@@ -431,6 +437,28 @@ class TwoTowerConfig:
     action_embedding_init: str = "none"
     # SLM-163: how to treat action embeddings during training (frozen | trainable).
     action_embedding_train: str = "frozen"
+    # SLM-174 (SDE2-07): action alias mode for description-mediated
+    # generalization.  ``off`` / ``canonical`` preserves canonical names;
+    # ``fixed`` uses a single deterministic alias map; ``held_out`` trains on
+    # one alias map and evaluates on a fresh map.
+    action_alias_mode: str = "canonical"
+    # Optional path to a persisted alias manifest (JSON).  When None the alias
+    # map is built deterministically from seed + pack hash.
+    action_alias_manifest: Path | None = None
+    # How canonical names are rendered in description sources:
+    # schema | alias_aware_description | alias_aware_signature_only |
+    # alias_aware_shuffled | description_without_canonical_name |
+    # canonical_name_plus_description | signature_only.
+    action_description_name_mode: str = "schema"
+    # SLM-176 (P14): description-based retrieve-then-rerank over complete live
+    # legal action sets.  ``off`` preserves canonical decode; other values are
+    # wiring placeholders for future trained-controller integration.
+    action_shortlist_mode: str = "off"  # off | description_retrieval
+    action_shortlist_k: int = 8
+    action_shortlist_min_legal_size: int = 16
+    action_shortlist_score_margin: float = 0.0
+    action_shortlist_fallback_policy: str = "confidence_and_coverage"
+    action_shortlist_shadow_full_score: bool = False
     # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
     # sparse grammar-action scorer.  ``none`` is identity; other values select a
     # standalone connector variant for future wiring.
@@ -665,7 +693,9 @@ class TwoTowerModel(nn.Module):
                 n_kinds=max(kind_ids) + 1 if kind_ids else 0,
             )
         elif denoiser_backend in {"scratch", "token", "local"}:
-            denoiser_arch = str(getattr(self.config, "denoiser_arch", "stacked")).lower()
+            denoiser_arch = str(
+                getattr(self.config, "denoiser_arch", "stacked")
+            ).lower()
             if denoiser_arch == "shared_recursive":
                 transition_layers = int(
                     getattr(self.config, "recursive_transition_layers", 0) or 0
@@ -705,7 +735,6 @@ class TwoTowerModel(nn.Module):
             with torch.random.fork_rng(devices=[]):
                 torch.manual_seed(int(self.config.seed) + offset)
                 return factory()
-
 
         self.length_head = (
             isolated_aux_init(
@@ -752,11 +781,8 @@ class TwoTowerModel(nn.Module):
         except (AttributeError, TypeError, ValueError):
             component_edge_ids = ()
         slot_component_enabled = (
-            float(getattr(self.config, "slot_component_loss_weight", 0.0) or 0.0)
-            > 0.0
-            or float(
-                getattr(self.config, "slot_component_decode_weight", 0.0) or 0.0
-            )
+            float(getattr(self.config, "slot_component_loss_weight", 0.0) or 0.0) > 0.0
+            or float(getattr(self.config, "slot_component_decode_weight", 0.0) or 0.0)
             > 0.0
         )
         self.slot_component_head = (
@@ -827,8 +853,7 @@ class TwoTowerModel(nn.Module):
             else None
         )
         binder_arity_enabled = (
-            float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0)
-            > 0.0
+            float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0) > 0.0
             or float(getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0)
             > 0.0
         )
@@ -844,13 +869,10 @@ class TwoTowerModel(nn.Module):
             else None
         )
         root_reference_arity_enabled = (
-            float(
-                getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0
-            )
+            float(getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0)
             > 0.0
             or float(
-                getattr(self.config, "root_reference_arity_decode_weight", 0.0)
-                or 0.0
+                getattr(self.config, "root_reference_arity_decode_weight", 0.0) or 0.0
             )
             > 0.0
         )
@@ -867,8 +889,7 @@ class TwoTowerModel(nn.Module):
         )
         root_reference_identity_enabled = (
             float(
-                getattr(self.config, "root_reference_identity_loss_weight", 0.0)
-                or 0.0
+                getattr(self.config, "root_reference_identity_loss_weight", 0.0) or 0.0
             )
             > 0.0
             or float(
@@ -906,6 +927,11 @@ class TwoTowerModel(nn.Module):
         # Optional grammar-state decision trace recorder (distill.GrammarTraceRecorder).
         # Zero-cost when None.
         self.grammar_trace_recorder = None
+        # SLM-176: lightweight shortlist-trace buffer for wiring diagnostics.
+        self.action_shortlist_traces: list[dict[str, object]] = []
+        # SLM-176: lazily-built action catalog and deterministic fixture vectors.
+        self._action_shortlist_catalog: object | None = None
+        self._action_shortlist_vectors: dict[str, torch.Tensor] | None = None
         # Optional retrieval bank: list[(norm_prompt, openui, id)]
         self.skeleton_bank: list[tuple[str, str, str]] = []
         # Train-time caches (formatted context string keyed by record id).
@@ -920,9 +946,7 @@ class TwoTowerModel(nn.Module):
         self._binder_token_ids_cache: tuple[int, ...] | None = None
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
-        self._semantic_role_candidates: (
-            list[dict[str, tuple[str, ...]]] | None
-        ) = None
+        self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._semantic_plan_action_counts: list[dict[int, int]] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
@@ -954,9 +978,7 @@ class TwoTowerModel(nn.Module):
         roots = {str(slot).split(".", 1)[0] for slot in slot_contract if slot}
         return len(roots)
 
-    def _coverage_deficit(
-        self, ids: torch.Tensor, known: torch.Tensor
-    ) -> torch.Tensor:
+    def _coverage_deficit(self, ids: torch.Tensor, known: torch.Tensor) -> torch.Tensor:
         """A3 per-position content-coverage deficit.
 
         Non-content (structural filler) positions score ``1 - content_fraction``
@@ -979,9 +1001,7 @@ class TwoTowerModel(nn.Module):
             return deficit
         rows, length = ids.shape
         for b in range(rows):
-            known_positions = [
-                t for t in range(length) if bool(known[b, t].item())
-            ]
+            known_positions = [t for t in range(length) if bool(known[b, t].item())]
             if not known_positions:
                 continue
             content_hits = sum(
@@ -1094,7 +1114,9 @@ class TwoTowerModel(nn.Module):
         weights stay untouched — ``disable_adapter()`` therefore restores the exact
         parent map. The context tower is never adapted.
         """
-        from slm_training.models.adapters.twotower_adapter import attach_low_rank_adapters
+        from slm_training.models.adapters.twotower_adapter import (
+            attach_low_rank_adapters,
+        )
 
         if getattr(self, "_adapter_spec", None) is not None:
             raise ValueError("an adapter is already attached to this model")
@@ -1176,7 +1198,9 @@ class TwoTowerModel(nn.Module):
             parameter.requires_grad_(True)
         return merged
 
-    def save_adapter(self, path: Path | str, *, provenance: dict[str, Any] | None = None) -> None:
+    def save_adapter(
+        self, path: Path | str, *, provenance: dict[str, Any] | None = None
+    ) -> None:
         """Write the removable adapter (config + tensors + manifest) to its own directory.
 
         The base checkpoint is not duplicated — only the adapter tensors and the identity
@@ -1190,7 +1214,8 @@ class TwoTowerModel(nn.Module):
         path.mkdir(parents=True, exist_ok=True)
         spec = self._adapter_spec
         (path / "adapter_config.json").write_text(
-            json.dumps(spec.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            json.dumps(spec.to_dict(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
         )
         tensors = {
             name: parameter.detach().cpu()
@@ -1240,9 +1265,16 @@ class TwoTowerModel(nn.Module):
         expected_tokenizer = self.artifact_identity()["tokenizer_sha"]
         if spec.tokenizer_sha and spec.tokenizer_sha != expected_tokenizer:
             raise ValueError("adapter tokenizer identity does not match this model")
-        if manifest.get("base_compatibility_fingerprint") != spec.base_compatibility_fingerprint:
-            raise ValueError("adapter manifest disagrees with its config on base identity")
-        tensors = torch.load(path / "adapter_model.pt", map_location="cpu", weights_only=True)
+        if (
+            manifest.get("base_compatibility_fingerprint")
+            != spec.base_compatibility_fingerprint
+        ):
+            raise ValueError(
+                "adapter manifest disagrees with its config on base identity"
+            )
+        tensors = torch.load(
+            path / "adapter_model.pt", map_location="cpu", weights_only=True
+        )
         loaded_names = set(tensors)
         expected_names = set(manifest.get("parameter_names", []))
         if loaded_names != expected_names:
@@ -1398,7 +1430,10 @@ class TwoTowerModel(nn.Module):
         This is a disabled-by-default reference path.  It records a conversion
         ledger but does not claim speedup or quality retention.
         """
-        from slm_training.models.quantization.convert import QuantizationPolicy, convert_twotower
+        from slm_training.models.quantization.convert import (
+            QuantizationPolicy,
+            convert_twotower,
+        )
         from slm_training.models.quantization.formats import (
             binary_format,
             binary_plus_mask_format,
@@ -1425,7 +1460,9 @@ class TwoTowerModel(nn.Module):
         try:
             fmt = factory(group_size=128)
             policy = QuantizationPolicy(default_format=fmt)
-            _, records = convert_twotower(self, policy, fail_on_tied=False, in_place=True)
+            _, records = convert_twotower(
+                self, policy, fail_on_tied=False, in_place=True
+            )
             self.config.quant_format = format_id
             self._quant_conversion_records = [r.as_dict() for r in records]
             return True
@@ -2014,14 +2051,14 @@ class TwoTowerModel(nn.Module):
                         d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
                         d_loss = (d_ce * weights)[mask_flat].mean()
                         depth_losses.append(d_loss)
-                        self.last_training_metrics[
-                            f"recursive_depth_loss_{d}"
-                        ] = float(d_loss.detach().cpu())
+                        self.last_training_metrics[f"recursive_depth_loss_{d}"] = float(
+                            d_loss.detach().cpu()
+                        )
                     normalized = torch.stack(depth_losses).sum() / total_w
                     mask_loss = mask_loss + normalized
-                    self.last_training_metrics[
-                        "recursive_depth_supervision_loss"
-                    ] = float(normalized.detach().cpu())
+                    self.last_training_metrics["recursive_depth_supervision_loss"] = (
+                        float(normalized.detach().cpu())
+                    )
         else:
             mask_loss = logits.sum() * 0.0
             self._last_example_token_losses = [0.0] * len(batch)
@@ -2638,14 +2675,18 @@ class TwoTowerModel(nn.Module):
             )
 
             binder_ids = self._binder_component_token_ids()
-            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            binder_index = {
+                token_id: index for index, token_id in enumerate(binder_ids)
+            }
             arity_logits = self.binder_arity_head(
                 self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(binder_ids) + 1)
             arity_losses: list[torch.Tensor] = []
             arity_hits: list[torch.Tensor] = []
             for row in range(len(batch)):
-                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                target_key = tuple(
+                    int(token_id) for token_id in target_ids[row].tolist()
+                )
                 for binder_id, count in binder_reference_arities(
                     self.tokenizer, target_key
                 ):
@@ -2704,9 +2745,7 @@ class TwoTowerModel(nn.Module):
                 )
                 bounded_logits = root_logits[row : row + 1, : valid_max + 1]
                 target_tensor = torch.as_tensor([target], device=ctx.device)
-                root_losses.append(
-                    F.cross_entropy(bounded_logits, target_tensor)
-                )
+                root_losses.append(F.cross_entropy(bounded_logits, target_tensor))
                 root_hits.append(
                     bounded_logits[0].argmax().eq(target_tensor[0]).float()
                 )
@@ -2745,10 +2784,7 @@ class TwoTowerModel(nn.Module):
         )
         if root_identity_negative_w < 0.0:
             raise ValueError("root_reference_identity_negative_weight must be >= 0")
-        if (
-            root_identity_w > 0.0
-            and self.root_reference_identity_head is not None
-        ):
+        if root_identity_w > 0.0 and self.root_reference_identity_head is not None:
             from slm_training.models.choice_tokenizer import (
                 structural_root_reference_identity_target,
             )
@@ -2815,9 +2851,7 @@ class TwoTowerModel(nn.Module):
             self._detached_auxiliary_loss = detached
             self.last_training_metrics.update(
                 {
-                    "root_reference_identity_loss": float(
-                        identity_loss.detach().cpu()
-                    ),
+                    "root_reference_identity_loss": float(identity_loss.detach().cpu()),
                     "root_reference_identity_exact_accuracy": float(
                         torch.stack(identity_exact_hits).mean().detach().cpu()
                         if identity_exact_hits
@@ -2829,10 +2863,7 @@ class TwoTowerModel(nn.Module):
                         else 0.0
                     ),
                     "root_reference_identity_negative_accuracy": float(
-                        torch.stack(identity_negative_accuracies)
-                        .mean()
-                        .detach()
-                        .cpu()
+                        torch.stack(identity_negative_accuracies).mean().detach().cpu()
                         if identity_negative_accuracies
                         else 0.0
                     ),
@@ -3394,7 +3425,9 @@ class TwoTowerModel(nn.Module):
                     legal_cov = legal_action_ids_from_state(tok, st, prefix)
                     if legal_cov is not None:
                         legal_ids, coverage = legal_cov
-                        token_str = tok.id_to_token.get(int(token_id), str(int(token_id)))
+                        token_str = tok.id_to_token.get(
+                            int(token_id), str(int(token_id))
+                        )
                         grec.record(
                             state_fingerprint=state_fingerprint(
                                 prefix_ids=prefix,
@@ -3413,7 +3446,13 @@ class TwoTowerModel(nn.Module):
                             expected_type=None,
                             template_signature=None,
                         )
-                except (AttributeError, ImportError, KeyError, TypeError, ValueError) as exc:
+                except (
+                    AttributeError,
+                    ImportError,
+                    KeyError,
+                    TypeError,
+                    ValueError,
+                ) as exc:
                     warnings.warn(
                         f"grammar trace record skipped ({type(exc).__name__}: {exc}) "
                         f"at decision {len(repair_commits)}",
@@ -3566,7 +3605,11 @@ class TwoTowerModel(nn.Module):
             if stats is not None:
                 stats.tokens_emitted += 1
             _record_commit(
-                t, int(choice), logits[0, local_t], forced=forced is not None, prefix=prefix
+                t,
+                int(choice),
+                logits[0, local_t],
+                forced=forced is not None,
+                prefix=prefix,
             )
             if choice == tok.eos_id:
                 if t + 1 < length:
@@ -3605,7 +3648,10 @@ class TwoTowerModel(nn.Module):
                         stats.tokens_emitted += 1
                         stats.accepted_run_tokens += 1
                     _record_commit(
-                        pos, int(nxt), logits[0, pos], forced=False,
+                        pos,
+                        int(nxt),
+                        logits[0, pos],
+                        forced=False,
                         prefix=ids[0, :pos].tolist(),
                     )
                     advance = step + 1
@@ -3729,6 +3775,173 @@ class TwoTowerModel(nn.Module):
             )
             scores = scores + boost
         return scores
+
+    def _action_key_for_token_id(self, token_id: int) -> str | None:
+        """Map a token id to an action-catalog key.
+
+        Component tokens render as ``+Card``; builtin tokens as ``*Run``;
+        structural tokens keep their literal token text (e.g. ``r=``).
+        """
+        text = self.tokenizer.id_to_token.get(int(token_id))
+        if text is None:
+            return None
+        return text
+
+    def _token_id_for_action_key(self, action_key: str) -> int | None:
+        """Inverse of ``_action_key_for_token_id`` when the mapping is unique."""
+        return self.tokenizer.token_to_id.get(str(action_key))
+
+    def _action_shortlist_policy(self) -> ActionShortlistPolicy:
+        """Build an ActionShortlistPolicy from the current config."""
+        cfg = self.config
+        return ActionShortlistPolicy(
+            mode=str(getattr(cfg, "action_shortlist_mode", "off") or "off"),
+            k=int(getattr(cfg, "action_shortlist_k", 8) or 8),
+            min_legal_size=int(
+                getattr(cfg, "action_shortlist_min_legal_size", 16) or 16
+            ),
+            score_margin=float(
+                getattr(cfg, "action_shortlist_score_margin", 0.0) or 0.0
+            ),
+            fallback_policy=str(
+                getattr(
+                    cfg, "action_shortlist_fallback_policy", "confidence_and_coverage"
+                )
+                or "confidence_and_coverage"
+            ),
+            shadow_full_score=bool(
+                getattr(cfg, "action_shortlist_shadow_full_score", False)
+            ),
+        )
+
+    def _ensure_action_shortlist_vectors(self) -> dict[str, torch.Tensor]:
+        """Lazily build and cache deterministic fixture vectors for the catalog."""
+        if self._action_shortlist_vectors is not None:
+            return self._action_shortlist_vectors
+        from slm_training.dsl.action_descriptions import ActionDescriptionCatalog
+
+        catalog = ActionDescriptionCatalog.build()
+        self._action_shortlist_catalog = catalog
+        self._action_shortlist_vectors = catalog.fixture_vectors(
+            self.config.d_model,
+            source="schema_description",
+            name_mode=str(
+                getattr(self.config, "action_description_name_mode", "schema")
+                or "schema"
+            ),
+        )
+        return self._action_shortlist_vectors
+
+    def _maybe_apply_action_shortlist(
+        self,
+        paths: tuple,
+        prefix: list[int],
+    ) -> tuple[tuple, ActionShortlistTrace | None]:
+        """Filter ``paths`` by description retrieval when configured.
+
+        When ``action_shortlist_mode`` is ``off`` or the legal set is too small,
+        this returns ``paths`` unchanged and ``None``.  Otherwise it reduces the
+        candidate ids passed to ``_project_candidates`` to the retrieval
+        shortlist.  The reranker itself (``_project_candidates``) is unchanged;
+        only the ids it sees are reduced.
+        """
+        policy = self._action_shortlist_policy()
+        if policy.mode == "off":
+            return paths, None
+
+        if len(paths) < policy.min_legal_size:
+            return paths, None
+
+        legal_action_ids: list[str] = []
+        path_by_action: dict[str, list] = {}
+        for path in paths:
+            if not path.token_ids:
+                continue
+            action_key = self._action_key_for_token_id(int(path.token_ids[0]))
+            if action_key is None:
+                continue
+            legal_action_ids.append(action_key)
+            path_by_action.setdefault(action_key, []).append(path)
+
+        if len(legal_action_ids) < policy.min_legal_size:
+            return paths, None
+
+        action_vectors = self._ensure_action_shortlist_vectors()
+        state_context = self.tokenizer.decode(prefix)
+        query_vector = build_query_vector(
+            state_context,
+            self._action_shortlist_catalog,  # type: ignore[arg-type]
+            FixtureDescriptionEncoder(self.config.d_model),
+        )
+
+        shortlist, scores, fallback_reason = retrieve_then_rerank(
+            tuple(legal_action_ids),
+            query_vector,
+            action_vectors,
+            policy,
+        )
+
+        shadow_full_selected_id: str | None = None
+        if policy.shadow_full_score and not fallback_reason:
+            # Diagnostic: which action would the full-set reranker pick next?
+            # We do not have the model score here, so we record the top
+            # retrieval-score id as a cheap shadow comparator.
+            if scores:
+                shadow_full_selected_id = max(scores, key=scores.get)  # type: ignore[arg-type]
+
+        trace = ActionShortlistTrace(
+            legal_action_ids=tuple(legal_action_ids),
+            shortlist_ids=shortlist,
+            retrieval_scores=scores,
+            fallback_reason=fallback_reason,
+            shadow_full_selected_id=shadow_full_selected_id,
+        )
+
+        if fallback_reason is not None:
+            self._record_action_shortlist_trace(trace)
+            return paths, trace
+
+        filtered: list = []
+        for action_key in shortlist:
+            filtered.extend(path_by_action.get(action_key, []))
+
+        if not filtered:
+            self._record_action_shortlist_trace(trace)
+            return paths, trace
+
+        # Preserve original order where possible.
+        kept_first_tokens = {int(p.token_ids[0]) for p in filtered}
+        ordered = [p for p in paths if int(p.token_ids[0]) in kept_first_tokens]
+        self._record_action_shortlist_trace(trace)
+        return tuple(ordered), trace
+
+    def _record_action_shortlist_trace(self, trace: ActionShortlistTrace) -> None:
+        """Emit the shortlist trace to the best available sink."""
+        payload = trace.to_dict()
+        grec = getattr(self, "grammar_trace_recorder", None)
+        if grec is not None and hasattr(grec, "record"):
+            try:
+                grec.record(
+                    state_fingerprint=f"slm176:{len(trace.legal_action_ids)}:{hash(tuple(trace.shortlist_ids))}",
+                    legal_action_ids=list(trace.legal_action_ids),
+                    selected_action_id=trace.shortlist_ids[0]
+                    if trace.shortlist_ids
+                    else None,
+                    logits_or_energies=[
+                        trace.retrieval_scores.get(aid, 0.0)
+                        for aid in trace.legal_action_ids
+                    ],
+                    convention="energy",
+                    completion_support_size_exact=len(trace.shortlist_ids),
+                )
+            except Exception:  # noqa: BLE001
+                pass
+        stats = get_active_stats()
+        if stats is not None:
+            if not hasattr(stats, "action_shortlist_traces"):
+                stats.action_shortlist_traces = []
+            stats.action_shortlist_traces.append(payload)
+        self.action_shortlist_traces.append(payload)
 
     def _component_inventory_token_ids(self) -> tuple[int, ...]:
         if self._component_token_ids_cache is not None:
@@ -4001,12 +4214,11 @@ class TwoTowerModel(nn.Module):
         span_weight = float(
             getattr(self.config, "slot_component_span_prior_weight", 0.0) or 0.0
         )
-        use_content_arity = bool(
-            getattr(self.config, "slot_component_content_arity", False)
-        ) or span_weight > 0.0
-        span_lookup = dict(
-            getattr(self.config, "slot_component_span_priors", ()) or ()
+        use_content_arity = (
+            bool(getattr(self.config, "slot_component_content_arity", False))
+            or span_weight > 0.0
         )
+        span_lookup = dict(getattr(self.config, "slot_component_span_priors", ()) or ())
         bias = ctx.new_zeros(len(candidate_ids))
         applied = False
         for position, (token_id, kind) in enumerate(
@@ -4033,23 +4245,19 @@ class TwoTowerModel(nn.Module):
                         token = token[len(prefix) :]
                         break
                 visible_role_available = bool(slot_contract) and all(
-                    semantic_role_candidates.get(slot, ())
-                    for slot in slot_contract
+                    semantic_role_candidates.get(slot, ()) for slot in slot_contract
                 )
                 matches = sum(
                     token in semantic_role_candidates.get(slot, ())
                     for slot in remaining_slots[:consumed]
                 )
-            if logits is not None and (
-                not visible_role_available or matches > 0
-            ):
+            if logits is not None and (not visible_role_available or matches > 0):
                 bias[position] = learned_weight * logits[:consumed, index].mean()
             if role_weight > 0.0 and semantic_role_candidates:
                 bias[position] += role_weight * matches / consumed
             if span_weight > 0.0 and consumed == required and required > 1:
                 key = "\x1f".join(
-                    self._slot_role_token(slot)
-                    for slot in remaining_slots[:consumed]
+                    self._slot_role_token(slot) for slot in remaining_slots[:consumed]
                 )
                 scores = span_lookup.get(key)
                 if scores is not None:
@@ -4069,9 +4277,7 @@ class TwoTowerModel(nn.Module):
         candidate_scores: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Soft-score missing component instances and distinct-slot closure."""
-        weight = float(
-            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0)
         seed_weight = float(
             getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
         )
@@ -4109,16 +4315,10 @@ class TwoTowerModel(nn.Module):
         }
         if remaining_counts is not None:
             for expr_type in getattr(state, "section_types", ()):
-                token_id = family_token_ids.get(
-                    str(expr_type).removeprefix("element:")
-                )
+                token_id = family_token_ids.get(str(expr_type).removeprefix("element:"))
                 if token_id in remaining_counts:
-                    remaining_counts[token_id] = max(
-                        0, remaining_counts[token_id] - 1
-                    )
-        bias = torch.zeros(
-            len(candidate_ids), device=next(self.parameters()).device
-        )
+                    remaining_counts[token_id] = max(0, remaining_counts[token_id] - 1)
+        bias = torch.zeros(len(candidate_ids), device=next(self.parameters()).device)
         applied = False
         component_kinds = {
             "component_root",
@@ -4141,8 +4341,7 @@ class TwoTowerModel(nn.Module):
         ):
             score = scores.get(token_id, 0.0)
             still_required = (
-                remaining_counts is None
-                or remaining_counts.get(token_id, 0) > 0
+                remaining_counts is None or remaining_counts.get(token_id, 0) > 0
             )
             if kind in component_kinds and score > 0.0 and still_required:
                 bias[position] = weight * score
@@ -4160,14 +4359,10 @@ class TwoTowerModel(nn.Module):
         frames = getattr(state, "frames", ())
         if remaining_counts is not None and prefix and frames:
             frame = frames[-1]
-            family = str(getattr(frame, "expr_type", "")).removeprefix(
-                "element:"
-            )
+            family = str(getattr(frame, "expr_type", "")).removeprefix("element:")
             family_token_id = family_token_ids.get(family)
             family_score = scores.get(family_token_id, 0.0)
-            close_id = self.tokenizer.token_to_id.get(
-                str(getattr(frame, "close", ""))
-            )
+            close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
             if (
                 getattr(frame, "kind", None) == "component"
                 and family_token_id is not None
@@ -4184,9 +4379,7 @@ class TwoTowerModel(nn.Module):
                     default=-1,
                 )
                 has_visible_slot = any(
-                    str(self.tokenizer.id_to_token.get(token_id, "")).startswith(
-                        "@"
-                    )
+                    str(self.tokenizer.id_to_token.get(token_id, "")).startswith("@")
                     for token_id in prefix[open_position + 1 :]
                 )
                 if has_visible_slot:
@@ -4324,8 +4517,7 @@ class TwoTowerModel(nn.Module):
             "row": int(row),
             "position": int(position),
             "emitted_families": [
-                str(expr_type).removeprefix("element:")
-                for expr_type in section_types
+                str(expr_type).removeprefix("element:") for expr_type in section_types
             ],
             "remaining_planned_families": {
                 str(self.tokenizer.id_to_token.get(token_id, ""))
@@ -4465,8 +4657,7 @@ class TwoTowerModel(nn.Module):
             ),
             "choice_changed": before != after,
             "semantic_plan_root_decode_weight": float(
-                getattr(self.config, "semantic_plan_root_decode_weight", 0.0)
-                or 0.0
+                getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
             ),
             "semantic_plan_root_margin_decode_weight": float(
                 getattr(
@@ -4510,9 +4701,7 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
         """Discourage visible placeholders in enum-valued component arguments."""
-        weight = float(
-            getattr(self.config, "schema_value_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "schema_value_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
             return None
@@ -4561,19 +4750,13 @@ class TwoTowerModel(nn.Module):
         for token_id in prefix:
             if token_id in remaining:
                 remaining[token_id] = max(0, remaining[token_id] - 1)
-        bias = torch.zeros(
-            len(candidate_ids), device=next(self.parameters()).device
-        )
+        bias = torch.zeros(len(candidate_ids), device=next(self.parameters()).device)
         applied = False
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
             score = scores.get(token_id, 0.0)
-            if (
-                kind == "component"
-                and score > 0.0
-                and remaining.get(token_id, 0) > 0
-            ):
+            if kind == "component" and score > 0.0 and remaining.get(token_id, 0) > 0:
                 bias[position] = weight * score
                 applied = True
         return bias if applied else None
@@ -4585,9 +4768,7 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
         """Discourage visible placeholders in optional unconstrained arguments."""
-        weight = float(
-            getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
             return None
@@ -4761,6 +4942,166 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _semantic_plan_repeated_owner_id(
+        self,
+        row: int,
+        state: Any,
+    ) -> int | None:
+        """Return the deepest repeated prompt-plan family in the active path."""
+        return self._semantic_plan_owner_id(row, state, minimum_count=2)
+
+    def _semantic_plan_owner_id(
+        self,
+        row: int,
+        state: Any,
+        *,
+        minimum_count: int = 1,
+    ) -> int | None:
+        """Return the deepest authored prompt-plan family in the active path."""
+        if (
+            not self._semantic_plan_action_counts
+            or row >= len(self._semantic_plan_action_counts)
+        ):
+            return None
+        family_token_ids = {
+            str(self.tokenizer.id_to_token.get(token_id, ""))
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        for frame in reversed(getattr(state, "frames", ())):
+            if frame.kind != "component":
+                continue
+            candidate_id = family_token_ids.get(
+                str(frame.expr_type).removeprefix("element:")
+            )
+            if (
+                self._semantic_plan_action_counts[row].get(candidate_id, 0)
+                >= minimum_count
+            ):
+                return candidate_id
+        return None
+
+    @staticmethod
+    def _schema_can_reach_visible_slot(schema: dict[str, Any]) -> bool:
+        if schema.get("x-openui-placeholder") or schema.get("type") == "string":
+            return True
+        return any(
+            TwoTowerModel._schema_can_reach_visible_slot(dict(child))
+            for child in (
+                *schema.get("anyOf", ()),
+                *schema.get("properties", {}).values(),
+                *(
+                    (schema["items"],)
+                    if isinstance(schema.get("items"), dict)
+                    else ()
+                ),
+            )
+            if isinstance(child, dict)
+        )
+
+    def _semantic_plan_typed_array_nonempty_bias(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Start a slot-bearing typed array for an authored plan component."""
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
+        typed_margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_item_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        slot_contract = (
+            self._slot_contracts[row]
+            if self._slot_contracts and row < len(self._slot_contracts)
+            else None
+        )
+        if (
+            max(margin, typed_margin) <= 0.0
+            or len(frames) < 2
+            or not slot_contract
+        ):
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        if (
+            getattr(frame, "kind", None) != "variadic"
+            or getattr(frame, "expr_type", None) != "array"
+            or int(getattr(frame, "item_count", 0)) != 0
+            or not schemas
+            or not self._schema_can_reach_visible_slot(dict(schemas[0]))
+        ):
+            return None
+        owner_id = self._semantic_plan_owner_id(row, state)
+        if owner_id is None:
+            return None
+        owner_frame = frames[-2]
+        owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
+            "element:"
+        )
+        if (
+            getattr(owner_frame, "kind", None) != "component"
+            or owner_id
+            not in {
+                self.tokenizer.token_to_id.get(f"+{owner_family}"),
+                self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
+                self.tokenizer.token_to_id.get(owner_family),
+            }
+        ):
+            return None
+        visible_slot_ids = {
+            int(self.tokenizer.sym_id(index))
+            for index in range(
+                min(len(slot_contract), int(self.tokenizer.sym_slots))
+            )
+        }
+        if not visible_slot_ids.difference(prefix):
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+        if close_id not in candidate_ids:
+            return None
+        typed_target_id = None
+        if typed_margin > 0.0:
+            try:
+                typed_target_id = state._minimal_schema_id(dict(schemas[0]))
+            except (AttributeError, KeyError, TypeError, ValueError):
+                return None
+            if typed_target_id not in candidate_ids:
+                return None
+            targets = [candidate_ids.index(typed_target_id)]
+        else:
+            targets = [
+                position
+                for position, token_id in enumerate(candidate_ids)
+                if token_id != close_id
+            ]
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item())
+            + max(margin, typed_margin)
+            - float(scores[target].item()),
+        )
+        return bias
+
     def _semantic_plan_repeated_array_close_bias(
         self,
         row: int,
@@ -4786,28 +5127,72 @@ class TwoTowerModel(nn.Module):
             or int(getattr(frames[-1], "item_count", 0)) < 1
         ):
             return None
-        family_token_ids = {
-            str(self.tokenizer.id_to_token.get(token_id, ""))
-            .removeprefix("COMP:")
-            .removeprefix("+"): token_id
-            for token_id in self._component_inventory_token_ids()
-        }
-        owner_id = None
-        for frame in reversed(frames):
-            if frame.kind != "component":
-                continue
-            candidate_id = family_token_ids.get(
-                str(frame.expr_type).removeprefix("element:")
-            )
-            if self._semantic_plan_action_counts[row].get(candidate_id, 0) > 1:
-                owner_id = candidate_id
-                break
+        owner_id = self._semantic_plan_repeated_owner_id(row, state)
         if owner_id is None:
             return None
         close_id = self.tokenizer.token_to_id.get(str(frames[-1].close))
         if close_id not in candidate_ids:
             return None
         target = candidate_ids.index(close_id)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
+        return bias
+
+    def _semantic_plan_repeated_slot_bias(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Floor the best unused visible slot for each repeated plan instance."""
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_repeated_slot_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
+        slot_contract = (
+            self._slot_contracts[row]
+            if self._slot_contracts and row < len(self._slot_contracts)
+            else None
+        )
+        owner_id = self._semantic_plan_repeated_owner_id(row, state)
+        if margin <= 0.0 or not slot_contract or owner_id is None:
+            return None
+        owner_position = max(
+            (
+                position
+                for position, token_id in enumerate(prefix)
+                if token_id == owner_id
+            ),
+            default=-1,
+        )
+        if owner_position < 0:
+            return None
+        visible_slot_ids = {
+            int(self.tokenizer.sym_id(index))
+            for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
+        }
+        if any(
+            token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
+        ):
+            return None
+        used_slot_ids = visible_slot_ids.intersection(prefix[:owner_position])
+        targets = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if token_id in visible_slot_ids and token_id not in used_slot_ids
+        ]
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
         bias = scores.new_zeros(len(candidate_ids))
         bias[target] = max(
             0.0,
@@ -4835,8 +5220,7 @@ class TwoTowerModel(nn.Module):
     ) -> torch.Tensor | None:
         """Prefer legal root references backed by predicted plan families."""
         weight = float(
-            getattr(self.config, "semantic_plan_binding_decode_weight", 0.0)
-            or 0.0
+            getattr(self.config, "semantic_plan_binding_decode_weight", 0.0) or 0.0
         )
         frames = list(getattr(state, "frames", ()))
         structural_root_list = bool(
@@ -4864,17 +5248,17 @@ class TwoTowerModel(nn.Module):
         if not action_scores:
             return None
         family_token_ids = {
-            str(self.tokenizer.id_to_token[token_id]).removeprefix("COMP:").removeprefix(
-                "+"
-            ): token_id
+            str(self.tokenizer.id_to_token[token_id])
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
             for token_id in self._component_inventory_token_ids()
         }
         used = {
             int(token[1:])
             for token_id in prefix
-            if (token := str(self.tokenizer.id_to_token.get(int(token_id), ""))).startswith(
-                "&"
-            )
+            if (
+                token := str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            ).startswith("&")
             and token[1:].isdigit()
         }
         bias = torch.zeros(
@@ -4928,15 +5312,16 @@ class TwoTowerModel(nn.Module):
             return None
         action_scores = self._semantic_plan_action_scores[row]
         required_ids = {
-            token_id for token_id, confidence in action_scores.items()
+            token_id
+            for token_id, confidence in action_scores.items()
             if confidence > 0.0
         }
         if not required_ids:
             return None
         family_token_ids = {
-            str(self.tokenizer.id_to_token[token_id]).removeprefix("COMP:").removeprefix(
-                "+"
-            ): token_id
+            str(self.tokenizer.id_to_token[token_id])
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
             for token_id in self._component_inventory_token_ids()
         }
         section_types = tuple(getattr(state, "section_types", ()))
@@ -5009,9 +5394,7 @@ class TwoTowerModel(nn.Module):
                     planned = [*base, *closure]
                     if len(consumed) >= len(closure):
                         return None
-                    target_id = self.tokenizer.token_to_id.get(
-                        closure[len(consumed)]
-                    )
+                    target_id = self.tokenizer.token_to_id.get(closure[len(consumed)])
                 else:
                     planned = [*tokens, *closure]
                     target_id = self.tokenizer.token_to_id.get(closure[0])
@@ -5167,9 +5550,7 @@ class TwoTowerModel(nn.Module):
         ):
             return None
         emitted = int(getattr(state.frames[-1], "reference_count", 0))
-        logits = self.root_reference_arity_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0]
+        logits = self.root_reference_arity_head(self._pool_context(ctx, ctx_pad))[0]
         max_reference_count = min(
             len(getattr(state, "section_types", ())), logits.numel() - 1
         )
@@ -5206,8 +5587,7 @@ class TwoTowerModel(nn.Module):
     ) -> torch.Tensor | None:
         """Re-rank terminal-root references without changing their best score."""
         weight = float(
-            getattr(self.config, "root_reference_identity_decode_weight", 0.0)
-            or 0.0
+            getattr(self.config, "root_reference_identity_decode_weight", 0.0) or 0.0
         )
         if (
             weight <= 0.0
@@ -5224,9 +5604,9 @@ class TwoTowerModel(nn.Module):
         )
         if valid_count <= 0:
             return None
-        logits = self.root_reference_identity_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0, :valid_count]
+        logits = self.root_reference_identity_head(self._pool_context(ctx, ctx_pad))[
+            0, :valid_count
+        ]
         used: set[int] = set()
         for token_id in prefix:
             token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
@@ -5267,9 +5647,7 @@ class TwoTowerModel(nn.Module):
         mix = min(weight, 1.0)
         bias = logits.new_zeros(len(candidate_ids))
         for rank, (position, _) in enumerate(ranked_unused):
-            bias[position] = mix * (
-                ranked_reference_scores[rank] - scores[position]
-            )
+            bias[position] = mix * (ranked_reference_scores[rank] - scores[position])
         for position, reference in references:
             if reference in used:
                 bias[position] = logits.new_tensor(-20.0) * mix
@@ -5289,9 +5667,7 @@ class TwoTowerModel(nn.Module):
             aggregation_scope = "v05_root"
         elif structural_list:
             aggregation_scope = (
-                "structural_root_list"
-                if len(frames) == 1
-                else "structural_nested_list"
+                "structural_root_list" if len(frames) == 1 else "structural_nested_list"
             )
         else:
             aggregation_scope = "other"
@@ -5394,9 +5770,7 @@ class TwoTowerModel(nn.Module):
         prefix: list[int],
         paths: tuple,
     ) -> list[float] | None:
-        weight = float(
-            getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0)
         if weight <= 0.0 or self.binder_arity_head is None:
             return None
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -5416,9 +5790,9 @@ class TwoTowerModel(nn.Module):
         ]
         if not any(continues) or all(continues):
             return None
-        logits = self.binder_arity_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0].view(len(binder_ids), len(binder_ids) + 1)[parent]
+        logits = self.binder_arity_head(self._pool_context(ctx, ctx_pad))[0].view(
+            len(binder_ids), len(binder_ids) + 1
+        )[parent]
         split = min(int(emitted) + 1, logits.numel())
         stop_score = torch.logsumexp(logits[:split], dim=0)
         continue_score = (
@@ -5450,6 +5824,10 @@ class TwoTowerModel(nn.Module):
         if stats is not None:
             stats.compiler_candidates += len(paths)
 
+        # SLM-176: optionally retrieve-then-rerank the legal action set.  When
+        # disabled this is a no-op and leaves ``paths`` unchanged.
+        paths, _shortlist_trace = self._maybe_apply_action_shortlist(paths, prefix)
+
         def record_choice(
             chosen: int,
             scores: list[float],
@@ -5461,34 +5839,36 @@ class TwoTowerModel(nn.Module):
                 ranked = sorted(
                     range(len(paths)), key=scores.__getitem__, reverse=True
                 )[:5]
-                stats.constrained_selection_traces.append({
-                    "position": len(prefix),
-                    "prefix_text": self.tokenizer.decode(prefix),
-                    "chosen_token": self.tokenizer.id_to_token.get(
-                        int(paths[chosen].token_ids[0]), ""
-                    ),
-                    "legal_candidates": len(paths),
-                    "forced": False,
-                    "phase": phase,
-                    "top_candidates": [
-                        {
-                            "token": self.tokenizer.id_to_token.get(
-                                int(paths[index].token_ids[0]), ""
-                            ),
-                            "score": round(float(scores[index]), 6),
-                            **(
-                                {
-                                    "first_edge_score": round(
-                                        float(first_edge_scores[index]), 6
-                                    )
-                                }
-                                if first_edge_scores is not None
-                                else {}
-                            ),
-                        }
-                        for index in ranked
-                    ],
-                })
+                stats.constrained_selection_traces.append(
+                    {
+                        "position": len(prefix),
+                        "prefix_text": self.tokenizer.decode(prefix),
+                        "chosen_token": self.tokenizer.id_to_token.get(
+                            int(paths[chosen].token_ids[0]), ""
+                        ),
+                        "legal_candidates": len(paths),
+                        "forced": False,
+                        "phase": phase,
+                        "top_candidates": [
+                            {
+                                "token": self.tokenizer.id_to_token.get(
+                                    int(paths[index].token_ids[0]), ""
+                                ),
+                                "score": round(float(scores[index]), 6),
+                                **(
+                                    {
+                                        "first_edge_score": round(
+                                            float(first_edge_scores[index]), 6
+                                        )
+                                    }
+                                    if first_edge_scores is not None
+                                    else {}
+                                ),
+                            }
+                            for index in ranked
+                        ],
+                    }
+                )
 
         if not tree:
             canvas = self._compiler_canvas(prefix, length)
@@ -5725,8 +6105,7 @@ class TwoTowerModel(nn.Module):
         if arity_bias is not None:
             before_arity = max(range(len(paths)), key=path_scores.__getitem__)
             path_scores = [
-                score + arity_bias[index]
-                for index, score in enumerate(path_scores)
+                score + arity_bias[index] for index, score in enumerate(path_scores)
             ]
             if stats is not None:
                 stats.binder_arity_applications += 1
@@ -5759,9 +6138,9 @@ class TwoTowerModel(nn.Module):
                         "id": int(token_id),
                         "raw_id": raw_id,
                         "lp": float(log_probs[int(token_id)].item()),
-                        "pre_canvas": self._compiler_canvas(
-                            list(parent), length
-                        )[0].tolist(),
+                        "pre_canvas": self._compiler_canvas(list(parent), length)[
+                            0
+                        ].tolist(),
                         "phase": "compiler_tree",
                         "decision_kind": str(paths[chosen].kind),
                     }
@@ -5825,8 +6204,12 @@ class TwoTowerModel(nn.Module):
         cv = contract_id()
         window = int(getattr(self.config, "grammar_draft_window", 8) or 8)
         expander = OpenUIForestExpander(
-            self.tokenizer, prefix, pack_id="openui", constraint_version=cv,
-            bounds=bounds, max_path_tokens=window,
+            self.tokenizer,
+            prefix,
+            pack_id="openui",
+            constraint_version=cv,
+            bounds=bounds,
+            max_path_tokens=window,
         )
         provider = EnumerativeSupportProvider(expander, OpenUIWellFormedVerifier())
         policy = str(getattr(self.config, "solver_unknown_policy", "keep_and_rank"))
@@ -5836,14 +6219,19 @@ class TwoTowerModel(nn.Module):
         # Solver wall time is separated from denoiser_ms/projection_ms (VSS1-04).
         with timed_ms(stats, "solver_ms"):
             pruned, result = solver_prune(
-                forest, prefix, provider, pack_id="openui", constraint_version=cv,
-                bounds=bounds, unknown_policy=policy, state=root_state, cache={},
+                forest,
+                prefix,
+                provider,
+                pack_id="openui",
+                constraint_version=cv,
+                bounds=bounds,
+                unknown_policy=policy,
+                state=root_state,
+                cache={},
                 certificate_store=certificate_store,
             )
         if result is not None:
-            self._record_solver_metrics(
-                result, root_state, certificate_store, stats
-            )
+            self._record_solver_metrics(result, root_state, certificate_store, stats)
         return pruned
 
     def _record_solver_metrics(self, result, root_state, certificate_store, stats):
@@ -5878,9 +6266,7 @@ class TwoTowerModel(nn.Module):
         if recorder is None:
             return
         mode = str(getattr(self.config, "solver_certificate_mode", "summary"))
-        events = solver_events_from_closure(
-            result, root_state, certificate_mode=mode
-        )
+        events = solver_events_from_closure(result, root_state, certificate_mode=mode)
         for event in events:
             kind = event["kind"]
             payload = {key: value for key, value in event.items() if key != "kind"}
@@ -6444,9 +6830,7 @@ class TwoTowerModel(nn.Module):
             vocab_candidates_avoided = tok.vocab_candidates_avoided
             completion_cache_hits = tok.completion_cache_hits
             completion_cache_misses = tok.completion_cache_misses
-            allowed = {
-                row: states[row].allowed_ids(length - position) for row in rows
-            }
+            allowed = {row: states[row].allowed_ids(length - position) for row in rows}
             if stats is not None:
                 stats.choice_state_cache_hits += tok.allowed_cache_hits - cache_hits
                 stats.choice_state_cache_misses += (
@@ -6465,11 +6849,7 @@ class TwoTowerModel(nn.Module):
                     tok.completion_cache_misses - completion_cache_misses
                 )
             need_model = [row for row in rows if len(allowed[row]) > 1]
-            logits = (
-                self._denoiser_forward(ids, ctx, ctx_pad)
-                if need_model
-                else None
-            )
+            logits = self._denoiser_forward(ids, ctx, ctx_pad) if need_model else None
             for row in rows:
                 legal = allowed[row]
                 if not legal:
@@ -6529,8 +6909,7 @@ class TwoTowerModel(nn.Module):
                         candidate_kinds,
                         (
                             self._slot_contracts[row]
-                            if self._slot_contracts
-                            and row < len(self._slot_contracts)
+                            if self._slot_contracts and row < len(self._slot_contracts)
                             else None
                         ),
                         (
@@ -6574,8 +6953,7 @@ class TwoTowerModel(nn.Module):
                         scores,
                         (
                             self._slot_contracts[row]
-                            if self._slot_contracts
-                            and row < len(self._slot_contracts)
+                            if self._slot_contracts and row < len(self._slot_contracts)
                             else None
                         ),
                         (
@@ -6594,8 +6972,7 @@ class TwoTowerModel(nn.Module):
                         scores,
                         (
                             self._slot_contracts[row]
-                            if self._slot_contracts
-                            and row < len(self._slot_contracts)
+                            if self._slot_contracts and row < len(self._slot_contracts)
                             else None
                         ),
                     )
@@ -6611,6 +6988,17 @@ class TwoTowerModel(nn.Module):
                     )
                     if repeated_array_close_bias is not None:
                         scores = scores + repeated_array_close_bias
+                    typed_array_nonempty_bias = (
+                        self._semantic_plan_typed_array_nonempty_bias(
+                            row,
+                            states[row],
+                            ids[row, :position].tolist(),
+                            candidate_ids,
+                            scores,
+                        )
+                    )
+                    if typed_array_nonempty_bias is not None:
+                        scores = scores + typed_array_nonempty_bias
                     semantic_plan_bias = self._semantic_plan_bias(
                         row,
                         candidate_ids,
@@ -6629,18 +7017,16 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
-                            semantic_plan_trace = (
-                                self._record_semantic_plan_seed_trace(
-                                    stats,
-                                    row=row,
-                                    position=position,
-                                    state=states[row],
-                                    candidate_ids=candidate_ids,
-                                    candidate_kinds=candidate_kinds,
-                                    scores_before=scores_before_semantic_plan,
-                                    plan_bias=semantic_plan_bias,
-                                    scores_after=scores,
-                                )
+                            semantic_plan_trace = self._record_semantic_plan_seed_trace(
+                                stats,
+                                row=row,
+                                position=position,
+                                state=states[row],
+                                candidate_ids=candidate_ids,
+                                candidate_kinds=candidate_kinds,
+                                scores_before=scores_before_semantic_plan,
+                                plan_bias=semantic_plan_bias,
+                                scores_after=scores,
                             )
                             if semantic_plan_trace is None:
                                 semantic_plan_trace = (
@@ -6693,6 +7079,15 @@ class TwoTowerModel(nn.Module):
                                     scores_after=scores,
                                 )
                             )
+                    repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
+                        row,
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                    )
+                    if repeated_slot_bias is not None:
+                        scores = scores + repeated_slot_bias
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -6765,8 +7160,7 @@ class TwoTowerModel(nn.Module):
                                             )
                                         ),
                                         "choice_changed": (
-                                            after_root_identity
-                                            != before_root_identity
+                                            after_root_identity != before_root_identity
                                         ),
                                         **self._choice_phase_evidence(states[row]),
                                     }
@@ -7583,8 +7977,7 @@ class TwoTowerModel(nn.Module):
                     "schema": "choice_decision_trace/v2",
                     "choice_token_count": len(stream),
                     "choice_tokens": [
-                        str(tok.id_to_token.get(token_id, ""))
-                        for token_id in stream
+                        str(tok.id_to_token.get(token_id, "")) for token_id in stream
                     ],
                     "reference_decisions": reference_decisions,
                 }
@@ -7650,9 +8043,7 @@ class TwoTowerModel(nn.Module):
                     )
         else:
             self._slot_contracts = None
-        if bool(
-            getattr(self.config, "semantic_role_contract_in_context", False)
-        ):
+        if bool(getattr(self.config, "semantic_role_contract_in_context", False)):
             if not honest:
                 raise ValueError(
                     "semantic_role_contract_in_context requires honest_slot_contract"
@@ -7707,14 +8098,29 @@ class TwoTowerModel(nn.Module):
             )
             or 0.0,
             getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0,
-            getattr(
-                self.config, "semantic_plan_binding_decode_weight", 0.0
-            )
-            or 0.0,
+            getattr(self.config, "semantic_plan_binding_decode_weight", 0.0) or 0.0,
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0,
             getattr(
                 self.config,
                 "semantic_plan_root_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_repeated_slot_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_item_margin_decode_weight",
                 0.0,
             )
             or 0.0,
@@ -7742,26 +8148,30 @@ class TwoTowerModel(nn.Module):
             for prompt in prompts:
                 plan = prompt_semantic_plan(prompt)
                 features = compiler.annotate_actions(None, action_ids, plan)
-                self._semantic_plan_action_scores.append({
-                    token_id: feature.plan_confidence
-                    for token_id, feature in zip(
-                        component_ids, features, strict=True
-                    )
-                    if feature.component_family_compatible
-                    and not feature.conflict_or_unknown
-                })
+                self._semantic_plan_action_scores.append(
+                    {
+                        token_id: feature.plan_confidence
+                        for token_id, feature in zip(
+                            component_ids, features, strict=True
+                        )
+                        if feature.component_family_compatible
+                        and not feature.conflict_or_unknown
+                    }
+                )
                 family_counts = Counter(
                     slot.component_family
                     for slot in (plan.role_slots if plan is not None else ())
                     if slot.component_family
                 )
-                self._semantic_plan_action_counts.append({
-                    token_id: family_counts[action_id]
-                    for token_id, action_id in zip(
-                        component_ids, action_ids, strict=True
-                    )
-                    if family_counts[action_id] > 0
-                })
+                self._semantic_plan_action_counts.append(
+                    {
+                        token_id: family_counts[action_id]
+                        for token_id, action_id in zip(
+                            component_ids, action_ids, strict=True
+                        )
+                        if family_counts[action_id] > 0
+                    }
+                )
         else:
             self._semantic_plan_action_scores = None
             self._semantic_plan_action_counts = None
@@ -7771,9 +8181,7 @@ class TwoTowerModel(nn.Module):
         if reference_weight > 0.0 and (
             not choice_constrained
             or not honest
-            or not bool(
-                getattr(self.config, "slot_contract_constrained_decode", False)
-            )
+            or not bool(getattr(self.config, "slot_contract_constrained_decode", False))
         ):
             raise ValueError(
                 "visible_reference_decode_weight requires honest choice-codec "
@@ -9158,8 +9566,7 @@ class TwoTowerModel(nn.Module):
                     )
                 if str(getattr(cfg, "bind_encoding", "absolute")) != "absolute":
                     raise ValueError(
-                        "symbol_anonymization=False requires "
-                        "bind_encoding='absolute'"
+                        "symbol_anonymization=False requires bind_encoding='absolute'"
                     )
 
             tokenizer = DSLNativeTokenizer.build(
@@ -9237,16 +9644,17 @@ class TwoTowerModel(nn.Module):
                 total = float(sum(observed))
                 classes = float(len(observed))
                 weights = [
-                    (total / (classes * count)) ** balance_power
-                    if count > 0
-                    else 0.0
+                    (total / (classes * count)) ** balance_power if count > 0 else 0.0
                     for count in counts
                 ]
-                observed_mean = sum(
-                    weight * count
-                    for weight, count in zip(weights, counts, strict=True)
-                    if count > 0
-                ) / total
+                observed_mean = (
+                    sum(
+                        weight * count
+                        for weight, count in zip(weights, counts, strict=True)
+                        if count > 0
+                    )
+                    / total
+                )
                 cfg.slot_component_class_weights = tuple(
                     weight / observed_mean if weight > 0.0 else 0.0
                     for weight in weights
@@ -9284,10 +9692,7 @@ class TwoTowerModel(nn.Module):
                         token,
                         tuple(
                             math.log(
-                                (
-                                    counts[index]
-                                    + prior_mass * base[index]
-                                )
+                                (counts[index] + prior_mass * base[index])
                                 / (token_totals[token] + prior_mass)
                             )
                             - math.log(base[index])
@@ -9376,14 +9781,68 @@ class TwoTowerModel(nn.Module):
                 return
             assert isinstance(self.context, HFContextEncoder)
 
-            init_source = str(getattr(self.config, "action_embedding_init", "none") or "none")
-            use_catalog = init_source in {"schema_description", "expanded_description", "shuffled"}
+            init_source = str(
+                getattr(self.config, "action_embedding_init", "none") or "none"
+            )
+            alias_sources = {
+                "alias_aware_description",
+                "alias_aware_signature_only",
+                "alias_aware_shuffled",
+            }
+            canonical_sources = {
+                "schema_description",
+                "expanded_description",
+                "shuffled",
+                "description_without_canonical_name",
+                "canonical_name_plus_description",
+                "signature_only",
+            }
+            use_catalog = (
+                init_source in canonical_sources or init_source in alias_sources
+            )
+            alias_mode = str(
+                getattr(self.config, "action_alias_mode", "canonical") or "canonical"
+            )
+            name_mode = str(
+                getattr(self.config, "action_description_name_mode", "schema")
+                or "schema"
+            )
+            use_alias = (
+                alias_mode not in {"off", "canonical"} or init_source in alias_sources
+            )
 
+            alias_map = None
             if use_catalog:
-                from slm_training.dsl.action_descriptions import ActionDescriptionCatalog
+                from slm_training.dsl.action_descriptions import (
+                    ActionDescriptionCatalog,
+                )
 
                 catalog = ActionDescriptionCatalog.build()
-                descriptions = catalog.descriptions_for(init_source)
+
+            if use_alias:
+                from slm_training.dsl.action_descriptions import (
+                    ActionAliasMap,
+                    build_alias_map,
+                )
+
+                manifest_path = getattr(self.config, "action_alias_manifest", None)
+                if manifest_path is not None and Path(manifest_path).is_file():
+                    alias_map = ActionAliasMap.from_dict(
+                        json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+                    )
+                elif use_catalog:
+                    alias_map = build_alias_map(
+                        seed=int(getattr(self.config, "seed", 0) or 0),
+                        pack_id=f"{init_source}:{alias_mode}",
+                        action_keys=catalog.keys(),
+                    )
+
+            if use_catalog:
+                descriptions = catalog.descriptions_for(
+                    init_source,
+                    alias_map=alias_map,
+                    name_mode=name_mode,
+                )
                 fallback = catalog.descriptions_for("current_stub")
             else:
                 catalog = None  # type: ignore[assignment]

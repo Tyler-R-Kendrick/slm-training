@@ -305,3 +305,37 @@ E290's p50 regression: median p50 improves 1.29×–1.99× and p95 improves
 1.51×–1.93× versus E290. Against E289, all p95s improve 1.73×–2.30×; OOD p50
 remains 13% slower. Parse stays 1.0 with zero dead ends, while semantic metrics
 and AgentV remain zero. [Full E291 evidence](iter-e291-choice-completion-cache-20260717.md).
+
+## H14: description-based retrieve-then-rerank (SLM-176, 2026-07-20)
+
+Wiring/fixture harness for reducing the candidate set passed to the learned
+reranker (`_project_candidates`) using deterministic description retrieval over
+the complete live legal action set.  Default-off; controlled by
+`action_shortlist_mode` and related `TwoTowerConfig` fields.
+
+```bash
+python -m scripts.run_slm176_action_shortlist_rerank_fixture --mode fixture --seeds 0 --d-model 32
+```
+
+**Claim class:** wiring / fixture only. No ship-gate claim is made.
+
+### Expected effect
+
+When enabled (`description_retrieval`), the legal action set is filtered to a
+top-k description-retrieval shortlist (plus mandatory ids and margin ties)
+before the neural reranker scores candidates.  The intended throughput effect is
+fewer gathered projection rows per decode step for large legal sets, with a
+fallback to the full set when confidence is flat or the legal set is small.
+
+### Measured results
+
+Placeholder — no trained-model perf run has been executed. The fixture verifies
+that the shortlist plumbing preserves the full-set top candidate on synthetic
+legal sets using the deterministic `FixtureDescriptionEncoder`.
+
+### Honest caveats
+
+- The retrieval encoder is a hash surrogate, not a trained text model.
+- Query vectors are derived from the decoded prefix as a wiring placeholder.
+- A promotion rerun must show parse/fidelity within five absolute points of the
+  off baseline while reducing forwards or projection cost.
