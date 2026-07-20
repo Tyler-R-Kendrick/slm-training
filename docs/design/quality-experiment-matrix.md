@@ -3844,6 +3844,20 @@ remains 0, AgentV is 0/1, and no checkpoint was created or synced. Evidence:
 [narrative](iter-e612-authored-typed-array-nonempty-20260720.md) and
 [JSON](iter-e612-authored-typed-array-nonempty-20260720.json).
 
+## E613 schema-derived typed-array item
+
+E613 targets the schema-derived object opener instead of E612's highest-scoring
+generic expression. Gallery consumes a public slot and aggregate fidelity,
+validity, recall, and reward improve to 0.7417, 0.8450, 0.7500, and 0.8865.
+The object frame loses the item schema, however, so Gallery fills arbitrary
+keys and nested components through the 160-token canvas. Structure regresses
+to 0.7452, tokens rise 86→233, and p95 latency rises 9.35→19.20 s. Retain the
+default-off target as a research direction, but keep E611 as the baseline and
+next propagate required typed-object properties through the choice state.
+Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or synced.
+Evidence: [narrative](iter-e613-schema-derived-typed-item-20260720.md) and
+[JSON](iter-e613-schema-derived-typed-item-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
