@@ -1382,7 +1382,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1397,6 +1397,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-07-20",
+          "note": "E622: emit bounded slot-coverage closure score traces plus application and immediate-choice-change counters without changing decode scores"
+        },
         {
           "version": "v61",
           "date": "2026-07-20",

@@ -5074,6 +5074,108 @@ class TwoTowerModel(nn.Module):
         )
         return bias
 
+    def _record_slot_coverage_close_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores_before: torch.Tensor,
+        coverage_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+        slot_contract: list[str] | None,
+    ) -> dict[str, object] | None:
+        """Record bounded evidence for a visible-slot closure intervention."""
+        if len(stats.constrained_selection_traces) >= 64:
+            return None
+        targeted = [
+            index
+            for index in range(len(candidate_ids))
+            if float(coverage_bias[index].item()) > 0.0
+        ]
+        if not targeted:
+            return None
+        frames = list(getattr(state, "frames", ()))
+        frame = frames[-1] if frames else None
+        close_id = self.tokenizer.token_to_id.get(
+            str(getattr(frame, "close", ""))
+        )
+        try:
+            missing_slots = [
+                slot
+                for index, slot in enumerate(slot_contract or ())
+                if int(self.tokenizer.sym_id(index)) not in prefix
+            ]
+        except (AttributeError, KeyError, ValueError):
+            missing_slots = []
+        owner_component = next(
+            (
+                str(getattr(owner, "expr_type", "")).removeprefix("element:")
+                for owner in reversed(frames)
+                if getattr(owner, "kind", None) == "component"
+            ),
+            "",
+        )
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        trace: dict[str, object] = {
+            "phase": "slot_coverage_close",
+            "row": int(row),
+            "position": int(position),
+            "mode": (
+                "covered_close"
+                if close_id is not None
+                and close_id in {candidate_ids[index] for index in targeted}
+                else "coverage_continue"
+            ),
+            "missing_slots": missing_slots,
+            "owner_component": owner_component,
+            "active_property": str(getattr(frame, "active_property", "") or ""),
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "choice_changed": before != after,
+            "slot_coverage_close_decode_weight": float(
+                getattr(self.config, "slot_coverage_close_decode_weight", 0.0)
+                or 0.0
+            ),
+            "planned_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(coverage_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in targeted
+            ],
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(coverage_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+            **self._choice_phase_evidence(state),
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
+
     def _semantic_plan_repeated_owner_id(
         self,
         row: int,
@@ -7114,8 +7216,36 @@ class TwoTowerModel(nn.Module):
                             else None
                         ),
                     )
+                    slot_coverage_close_trace = None
                     if slot_coverage_close_bias is not None:
+                        scores_before_coverage_close = scores.clone()
+                        before_coverage_close = int(scores.argmax().item())
                         scores = scores + slot_coverage_close_bias
+                        if stats is not None:
+                            stats.slot_coverage_close_applications += 1
+                            stats.slot_coverage_close_choice_changes += int(
+                                int(scores.argmax().item())
+                                != before_coverage_close
+                            )
+                            slot_coverage_close_trace = (
+                                self._record_slot_coverage_close_trace(
+                                    stats,
+                                    row=row,
+                                    position=position,
+                                    state=states[row],
+                                    prefix=ids[row, :position].tolist(),
+                                    candidate_ids=candidate_ids,
+                                    scores_before=scores_before_coverage_close,
+                                    coverage_bias=slot_coverage_close_bias,
+                                    scores_after=scores,
+                                    slot_contract=(
+                                        self._slot_contracts[row]
+                                        if self._slot_contracts
+                                        and row < len(self._slot_contracts)
+                                        else None
+                                    ),
+                                )
+                            )
                     repeated_array_close_bias = (
                         self._semantic_plan_repeated_array_close_bias(
                             row,
@@ -7361,6 +7491,11 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
+                    self._finalize_semantic_plan_trace(
+                        slot_coverage_close_trace,
+                        candidate_ids=candidate_ids,
+                        scores=scores,
+                    )
                     self._finalize_semantic_plan_trace(
                         semantic_plan_trace,
                         candidate_ids=candidate_ids,

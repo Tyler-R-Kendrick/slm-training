@@ -72,3 +72,13 @@ def test_decode_stats_aggregates_bounded_selection_traces() -> None:
     assert aggregate_stats([stats])["constrained_selection_traces"] == [
         {"position": 2, "chosen_token": "="}
     ]
+
+
+def test_decode_stats_aggregates_slot_coverage_close_counts() -> None:
+    stats = DecodeStats(
+        slot_coverage_close_applications=3,
+        slot_coverage_close_choice_changes=2,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["slot_coverage_close_applications_sum"] == 3.0
+    assert summary["slot_coverage_close_choice_changes_sum"] == 2.0
