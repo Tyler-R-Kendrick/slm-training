@@ -1757,6 +1757,26 @@ def test_e602_plan_seed_trace_is_persisted_without_new_checkpoint(
     assert run_id not in checkpoints
 
 
+def test_e603_reachability_trace_runs_are_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    expected_structure = {
+        "e603-e602-final-choice-trace-r1": 0.2175,
+        "e603-e602-final-choice-trace-r2": 0.516875,
+    }
+    for run_id, structure in expected_structure.items():
+        run = readers.run(run_id)
+        assert run["provenance"] == "committed"
+        assert run["scoreboard"]["suites"]["ood"]["structural_similarity"] == structure
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert not checkpoints.intersection(expected_structure)
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

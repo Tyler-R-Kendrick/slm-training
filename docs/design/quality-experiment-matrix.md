@@ -3699,3 +3699,18 @@ candidate-attempt outcomes and final selection next. Strict v2 remains 0,
 AgentV is 0/1, and no checkpoint was created or synced. Evidence:
 [narrative](iter-e602-plan-seed-score-trace-20260720.md) and
 [JSON](iter-e602-plan-seed-score-trace-20260720.json).
+
+## E603 final-choice and reachability trace
+
+E603 carries the E602 trace through actual final legal-token selection. The
+matched OOD `n=4` retry reproduces structure 0.5169, recall 0.6250, reward
+0.8115, strict v2 0, and AgentV 0/1. No downstream score layer changes any of
+the four plan-stage winners. Dashboard's seeded `Button` and gallery's seeded
+`ImageGallery` instead become unreachable bindings and are removed when the
+last structural expression becomes root; modal/auth retain their referenced
+first binding. Reject the downstream-overwrite hypothesis and target
+reachability plus missing-family coverage next. The initial policy-mismatched
+run is retained but excluded from the causal comparison. No checkpoint was
+created or synced. Evidence:
+[narrative](iter-e603-final-choice-reachability-trace-20260720.md) and
+[JSON](iter-e603-final-choice-reachability-trace-20260720.json).
