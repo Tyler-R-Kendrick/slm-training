@@ -839,7 +839,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v36",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -853,9 +853,14 @@
       ],
       "history": [
         {
-          "version": "v36",
+          "version": "v37",
           "date": "2026-07-20",
           "note": "add SLM-164 legal_margin_mode / targeted_margin_* plumbing; defaults preserve existing behavior"
+        },
+        {
+          "version": "v36",
+          "date": "2026-07-20",
+          "note": "preserve explicit component counts when one descriptive modifier separates the count from the component family"
         },
         {
           "version": "v35",
