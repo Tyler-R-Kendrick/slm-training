@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E589",
+  "date_utc": "2026-07-20",
+  "run_id": "e589-e588-opaque4-r1",
+  "run_class": "scratch_matrix",
+  "status": "negative_result_not_promotable",
+  "hypothesis": "Penalizing visible slot pointers in optional unconstrained component arguments will make the legal decoder close those arguments instead of consuming a content placeholder.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 4.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_decode_weights": [
+      0.0,
+      4.0,
+      8.0
+    ],
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e589-e588-opaque0-control-r1",
+      "label": "opaque_weight_0_control",
+      "schema_opaque_decode_weight": 0.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.425,
+          "placeholder_validity": 0.655,
+          "structural_similarity": 0.406875,
+          "component_type_recall": 0.4583333333333333,
+          "reward_score": 0.7585,
+          "ast_node_f1": 0.48888888888888893,
+          "ast_edge_f1": 0.25,
+          "latency_ms_p50": 10502.37,
+          "latency_ms_p95": 18126.53
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    },
+    {
+      "run_id": "e589-e588-opaque8-r1",
+      "label": "opaque_weight_8_plateau_replication",
+      "schema_opaque_decode_weight": 8.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.425,
+          "placeholder_validity": 0.655,
+          "structural_similarity": 0.331875,
+          "component_type_recall": 0.4583333333333333,
+          "reward_score": 0.7585,
+          "ast_node_f1": 0.46111111111111114,
+          "ast_edge_f1": 0.21428571428571427,
+          "latency_ms_p50": 10113.78,
+          "latency_ms_p95": 17761.59
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.425,
+      "placeholder_validity": 0.655,
+      "structural_similarity": 0.331875,
+      "component_type_recall": 0.4583333333333333,
+      "reward_score": 0.7585,
+      "ast_node_f1": 0.46111111111111114,
+      "ast_edge_f1": 0.21428571428571427,
+      "latency_ms_p50": 11610.72,
+      "latency_ms_p95": 21200.11
+    }
+  },
+  "comparison": {
+    "baseline": "e589-e588-opaque0-control-r1",
+    "meaningful_program_rate_delta": 0.0,
+    "placeholder_fidelity_delta": 0.0,
+    "placeholder_validity_delta": 0.0,
+    "structural_similarity_delta": -0.075,
+    "component_type_recall_delta": 0.0,
+    "reward_score_delta": 0.0,
+    "ast_node_f1_delta": -0.02777777777777779,
+    "ast_edge_f1_delta": -0.03571428571428573,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0,
+    "matches_weight8_replication": true,
+    "interpretation": "Suppressing slot pointers does not prefer closure; the unconstrained argument diverts into a legal nested list expression and increases structural spam."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The treatment regresses structure, strict meaning-v2 remains zero, AgentV fails, and this is an OOD n=4 scratch diagnostic."
+  },
+  "decision": "Keep the lever default-off, do not promote or sync a checkpoint, and next directly reward the legal close token for optional unconstrained arguments.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "020582bef816d56d78994dbe563951d3f52da002",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v18",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v25"
+    },
+    "stamped_at": "2026-07-20T08:06:49.612048+00:00"
+  }
+}
