@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v31",
+      "version": "v32",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v32",
+          "date": "2026-07-20",
+          "note": "expose and persist the default-off schema-derived typed-array item margin"
+        },
         {
           "version": "v31",
           "date": "2026-07-20",
@@ -1211,7 +1216,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v54",
+      "version": "v55",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1226,6 +1231,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v55",
+          "date": "2026-07-20",
+          "note": "optionally floor the schema-derived item start inside authored typed arrays"
+        },
         {
           "version": "v54",
           "date": "2026-07-20",

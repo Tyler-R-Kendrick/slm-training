@@ -585,6 +585,52 @@ def test_typed_array_nonempty_bias_starts_slot_bearing_authored_array() -> None:
     )
 
 
+def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_nonempty_margin_decode_weight=2.0,
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    gallery_id = tokenizer.token_to_id["+ImageGallery"]
+    object_id = tokenizer.token_to_id["{"]
+    state_id = tokenizer.token_to_id["$@45"]
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{gallery_id: 1}]
+    model._slot_contracts = [[":gallery.image"]]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:ImageGallery"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(
+                    {
+                        "type": "object",
+                        "properties": {"src": {"type": "string"}},
+                    },
+                ),
+                close="]",
+            ),
+        ],
+        _minimal_schema_id=lambda _schema: object_id,
+    )
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        [tokenizer.bos_id, gallery_id],
+        (object_id, state_id, close_id),
+        torch.tensor([1.0, 9.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [10.0, 0.0, 0.0]
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
