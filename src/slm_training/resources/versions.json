@@ -952,7 +952,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v42",
+      "version": "v43",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -966,6 +966,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v43",
+          "date": "2026-07-20",
+          "note": "record bounded post-first semantic-plan family score decompositions without changing decode scores"
+        },
         {
           "version": "v42",
           "date": "2026-07-20",
