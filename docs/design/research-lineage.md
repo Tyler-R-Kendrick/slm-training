@@ -162,6 +162,7 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Code** | [`models/recursive_denoiser.py`](../../src/slm_training/models/recursive_denoiser.py), routing in [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
 | **Config** | `denoiser_arch`, `recursive_steps`, `recursive_transition_layers`, `recursive_depth_supervision_weights` |
 | **Fixture** | `scripts/run_slm138_recursive_denoiser_fixture.py` |
+| **SLM-139 follow-up** | Closed as `no_supported_probabilistic_regime`: SLM-138 delivered only wiring-only fixture evidence, so the stochastic high-level width campaign did not run. See `docs/design/iter-slm139-stochastic-recursive-width-20260720.md`. |
 
 ### Preference / “DPO”
 
