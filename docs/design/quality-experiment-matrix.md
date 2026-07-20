@@ -4003,6 +4003,60 @@ No checkpoint trained, promoted, or synced this iteration; not a ship claim.
 Evidence: [narrative](iter-e618-strict-v2-reference-graph-false-positive-20260720.md)
 and [JSON](iter-e618-strict-v2-reference-graph-false-positive-20260720.json).
 
+## E619 closing the `slot_contract_in_context` scoring gap upstream of `required_inventory_coverage`
+
+E619 answers E618's own secondary finding directly: none of the E611-E618
+eval recipes ever passed `--slot-contract-in-context`, so
+`eval_runner._effective_request_for` zeroed `GenerationRequest.slot_contract`
+before it reached `binding_aware_meaningful_v2`'s `_prompt_contract`, and
+`required_inventory_coverage` could never move past `CheckStatus.UNKNOWN`.
+Tracing the real code path (`GenerationRequest.from_record` →
+`_effective_request_for` → `_prompt_contract` → `_inventory_check`) confirmed
+the diagnosis, with one correction: `_inventory_check`'s `role_mismatches`
+list is computed unconditionally from the predicted placeholders' identities,
+not gated on contract-known-ness, so 3 of the 4 OOD records
+(`ood_dashboard_01`, `ood_modal_01`, `ood_auth_01`) were already real, judged
+`FAIL`s the whole time — only `ood_gallery_01` was ever truly `UNKNOWN`.
+E618's "UNKNOWN for every OOD record" framing was overbroad. Reused E616/E617's
+exact training recipe on a fresh scratch checkpoint (this sandbox's `outputs/`
+started empty again); the resulting checkpoint's sha256
+(`119dd41a…8898a854`) and loss (26.5243) are byte-identical to E616/E617's,
+confirming a true replay. A matched control (flag unset, E617's corrected
+recipe as-is) vs treatment (flag added) `n=4` OOD eval against the same
+checkpoint SHA shows `binding_aware_meaningful_v2_coverage` rising 0.75→1.0:
+`ood_gallery_01`'s `required_inventory_coverage` moves from `UNKNOWN`
+(`required_inventory_unknown`) to a real, correct `FAIL`
+(`required_placeholder_missing` — `:ood.gallery.img` is genuinely missing
+because `src`/`alt` both collapse onto `:ood.gallery.alt`, the known
+`schema_role_slot_decode_weight=0` collapse E614/E615/E617 target). Every
+headline quality metric (`parse_rate`, `placeholder_fidelity`,
+`placeholder_validity`, `structural_similarity`, `reward_score`,
+`ast_node_f1`, `ast_edge_f1`, `component_type_recall`) is bit-for-bit
+unchanged, `binding_aware_meaningful_v2_rate_strict` stays 0.0→0.0 (nothing
+newly passes), and AgentV stays 0/1 in both arms. 3 of 4 predictions are
+byte-identical; `slot_contract_in_context` also feeds the model's
+context-encoder input (`_context_prompts`), so it can in principle perturb
+decode, and on this checkpoint it reaches exactly one already-malformed
+record (`ood_modal_01`, previously flagged by E618 as undertraining-driven
+garbage) with a one-character difference deep inside an already-garbled
+string literal, not affecting its score. No further evaluator bug was found
+this time (unlike E618) — the newly-real verdict is a correct judgment, not a
+false positive. Checked for gold-placeholder leakage per CLAUDE.md's
+honesty contract: `GenerationRequest.slot_contract` is gold-derived, but
+`honest_slot_contract=True` (already active throughout E611-E618) already
+surfaces this same list into the literal, model-visible prompt text via
+`ensure_prompt_inventory` regardless of `slot_contract_in_context`, so
+enabling the flag adds no information the model did not already have — it
+only makes scoring consistent with the model's real input. No production
+source changed (`python -m scripts.verify_version_stamps --check`: 0
+components touched, matching E616's pattern); one new regression test,
+`tests/test_harnesses/model_build/test_eval_gates.py::test_slot_contract_in_context_turns_required_inventory_coverage_from_unknown_into_a_real_verdict`,
+protects the observed `UNKNOWN`→real-verdict transition. Not a promotion or
+ship claim; recommend `--slot-contract-in-context` join the standard recipe
+alongside E617's `--slot-contract-constrained-decode` going forward. Evidence:
+[narrative](iter-e619-slot-contract-in-context-20260720.md) and
+[JSON](iter-e619-slot-contract-in-context-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
