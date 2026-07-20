@@ -2916,6 +2916,16 @@ the sampling ladder, and use the checkpoint only for semantic decode research.
 Evidence: [narrative](iter-e561-owner-threshold7-20260720.md) and
 [JSON](iter-e561-owner-threshold7-20260720.json).
 
+## E562 component-plan decode weight 1
+
+Enabling E561's trained component-plan head at decode weight 1 changes five of
+136 applications. OOD `n=4` fidelity improves to 0.7417, structure to 0.2732,
+and AST-node F1 to 0.3236, but meaning-v1/v2 remain 0, reward falls to 0.3985,
+and AgentV remains 0/1. **Decision:** reject as a semantic fix and test weight
+0.5. No checkpoint was created. Evidence:
+[narrative](iter-e562-component-plan-decode1-20260720.md) and
+[JSON](iter-e562-component-plan-decode1-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

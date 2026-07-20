@@ -932,6 +932,22 @@ def test_e561_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     }
 
 
+def test_e562_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e562-e561-component-plan-decode1-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert (
+        detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"]
+        == 0.7416666666666667
+    )
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.273175
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
