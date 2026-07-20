@@ -337,6 +337,58 @@ def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> N
     assert bias.tolist() == [4.0, 6.0]
 
 
+def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> None:
+    from types import SimpleNamespace
+
+    model = _model(slot_coverage_close_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    close_id = tokenizer.token_to_id["]"]
+    button_id = tokenizer.token_to_id["Button"]
+    candidates = (button_id, close_id)
+    scores = torch.zeros(2)
+    typed = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=({"type": "object"},),
+                close="]",
+            )
+        ]
+    )
+    structural = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=(),
+                close="]",
+            )
+        ]
+    )
+    slots = [":modal.title", ":modal.body"]
+    complete = [tokenizer.bos_id, tokenizer.sym_id(0), tokenizer.sym_id(1)]
+    incomplete = [tokenizer.bos_id, tokenizer.sym_id(0)]
+
+    bias = model._slot_coverage_close_bias(
+        typed, complete, candidates, scores, slots
+    )
+
+    assert bias is not None and bias.tolist() == [0.0, 4.0]
+    assert (
+        model._slot_coverage_close_bias(
+            typed, incomplete, candidates, scores, slots
+        )
+        is None
+    )
+    assert (
+        model._slot_coverage_close_bias(
+            structural, complete, candidates, scores, slots
+        )
+        is None
+    )
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

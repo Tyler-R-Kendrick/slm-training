@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-20",
+          "note": "persist the default-off visible-slot coverage close score in canonical evaluation policy"
+        },
         {
           "version": "v23",
           "date": "2026-07-20",
@@ -834,7 +839,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v35",
+      "version": "v36",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -848,9 +853,14 @@
       ],
       "history": [
         {
-          "version": "v35",
+          "version": "v36",
           "date": "2026-07-20",
           "note": "add SLM-164 legal_margin_mode / targeted_margin_* plumbing; defaults preserve existing behavior"
+        },
+        {
+          "version": "v35",
+          "date": "2026-07-20",
+          "note": "optionally close typed component arrays after all visible slots are covered"
         },
         {
           "version": "v34",

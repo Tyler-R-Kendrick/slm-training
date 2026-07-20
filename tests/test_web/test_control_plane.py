@@ -1670,6 +1670,30 @@ def test_e598_owner_slot_ladder_is_persisted_without_new_checkpoint(
     assert not checkpoints.intersection(run_ids)
 
 
+def test_e599_slot_coverage_close_ladder_is_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e599-e598-slotclose2-r1",
+        "e599-e598-slotclose2-r2",
+        "e599-e598-slotclose4-r1",
+    }
+    for run_id in run_ids:
+        run = readers.run(run_id)
+        assert run["provenance"] == "committed"
+        assert (
+            run["scoreboard"]["suites"]["ood"]["structural_similarity"]
+            == 0.516875
+        )
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert not checkpoints.intersection(run_ids)
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
