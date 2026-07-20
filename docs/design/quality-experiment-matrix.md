@@ -3052,3 +3052,34 @@ ship gate in this document is retained unchanged; the verified-solver rows never
 weaken grammar/schema/dataflow/behavior/adversarial/OOD requirements. Fixture
 wiring landed 2026-07-18 (R0/R1 ran on CPU, hard gates PASS); every frontier row
 is fully specified but **not run until VSS4-03**. No model or ship claim.
+
+## V18 shared recursive denoiser (SLM-138)
+
+Replace the stacked ``DenoiserTower`` with a shared-recursive transition that
+recurses a small set of ``TransformerBlock(cross_attn=True)`` instances.  The
+tower keeps the same public contract as ``DenoiserTower`` so the rest of the
+codebase (masking, decode, checkpoints) needs no changes.  V18 is a
+**wiring-only** slice: it validates the module, factory routing, deep-supervision
+plumbing, and checkpoint migration on tiny synthetic records.  Matched-block
+evaluation arms and GPU training are deferred.
+
+| ID | Isolated lever | Purpose | Run id |
+| --- | --- | --- | --- |
+| E300 | Stacked control (byte-identical baseline) | Preserve existing ship recipe | `qx_e300_stacked_control` |
+| E301 | Shared recursive R=2, L=2 transition | Test that recurrence trains and round-trips | `qx_e301_recursive_r2_l2` |
+| E302 | Shared recursive R=4, L=1 transition | Stress very small transition, many recurrences | `qx_e302_recursive_r4_l1` |
+| E303 | Shared recursive + deep supervision | Per-recursion CE weighted depth loss | `qx_e303_recursive_deep_sup` |
+| E304 | Warm-start stacked → recursive | ``migrate_to_shared_recursive_denoiser`` smoke | `qx_e304_recursive_migrate` |
+
+```bash
+# Fixture wiring (CPU, no GPU training)
+python -m scripts.run_slm138_recursive_denoiser_fixture --mode fixture
+
+# Planned matrix dispatch (requires GPU + durable checkpoints for ship claims)
+python -m scripts.run_quality_matrix --matrix v18 --only E300,E301,E303 \
+  --steps 400 --device cpu --context-backend scratch
+```
+
+Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
+`outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
+`docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.

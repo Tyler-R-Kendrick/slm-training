@@ -153,6 +153,16 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Fidelity** | **Adapted** naming — architecture is conditioned MaskGIT, not DSSM retrieval |
 | **Code** | [`models/twotower.py`](../../src/slm_training/models/twotower.py), [`models/context.py`](../../src/slm_training/models/context.py), [`models/blocks.py`](../../src/slm_training/models/blocks.py) |
 
+### Shared recursive denoiser tower (SLM-138)
+
+| | |
+| --- | --- |
+| **Lineage** | Deep equilibrium / weight-tied recurrent transitions; related to recurrent/transformer reasoning towers and the Deep Equilibrium Model (DEQ) idea of running a fixed-depth transition to a steady state. The specific coupled ``y/z`` recurrence with cross-attention to context is an OpenUI-specific design, not a reproduction of any cited DEQ training recipe. |
+| **Fidelity** | **Adapted** — same public contract as ``DenoiserTower``, but replaces independent stacked blocks with a small shared transition recursed ``R`` times; the z-state path and deep-supervision weights are new. |
+| **Code** | [`models/recursive_denoiser.py`](../../src/slm_training/models/recursive_denoiser.py), routing in [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Config** | `denoiser_arch`, `recursive_steps`, `recursive_transition_layers`, `recursive_depth_supervision_weights` |
+| **Fixture** | `scripts/run_slm138_recursive_denoiser_fixture.py` |
+
 ### Preference / “DPO”
 
 | | |

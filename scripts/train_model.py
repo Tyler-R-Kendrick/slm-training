@@ -204,6 +204,29 @@ def main(argv: list[str] | None = None) -> int:
         help="B4: from-scratch DenoiserTower or AR-adapted HF backbone.",
     )
     parser.add_argument(
+        "--denoiser-arch",
+        choices=("stacked", "shared_recursive"),
+        default="stacked",
+        help="SLM-138: stacked independent blocks or shared recursive transition.",
+    )
+    parser.add_argument(
+        "--recursive-steps",
+        type=int,
+        default=1,
+        help="SLM-138: recurrence depth for shared_recursive denoiser.",
+    )
+    parser.add_argument(
+        "--recursive-transition-layers",
+        type=int,
+        default=0,
+        help="SLM-138: shared transition blocks (0 = use --denoiser-layers).",
+    )
+    parser.add_argument(
+        "--recursive-depth-supervision-weights",
+        default="",
+        help="SLM-138: comma-separated depth CE weights (empty = off).",
+    )
+    parser.add_argument(
         "--decode-min-content",
         type=int,
         default=0,
@@ -888,6 +911,14 @@ def main(argv: list[str] | None = None) -> int:
         output_tokenizer=args.output_tokenizer,
         bind_encoding=args.bind_encoding,
         denoiser_backend=args.denoiser_backend,
+        denoiser_arch=args.denoiser_arch,
+        recursive_steps=args.recursive_steps,
+        recursive_transition_layers=args.recursive_transition_layers,
+        recursive_depth_supervision_weights=tuple(
+            float(v.strip())
+            for v in args.recursive_depth_supervision_weights.split(",")
+            if v.strip()
+        ),
         decode_min_content=max(-1, args.decode_min_content),
         asap_decode=bool(args.asap_decode),
         runtime_symbol_features=args.runtime_symbol_features,

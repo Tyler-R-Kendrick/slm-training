@@ -44,6 +44,12 @@ class ModelBuildConfig:
     # scratch | hf — B4: adapt the pretrained hf_model_name causal LM into the
     # (trainable) masked denoiser instead of the from-scratch DenoiserTower.
     denoiser_backend: str = "scratch"
+    # stacked | shared_recursive — SLM-138 shared recursive denoiser tower.
+    denoiser_arch: str = "stacked"
+    # SLM-138: recurrence and transition-depth knobs for shared_recursive.
+    recursive_steps: int = 1
+    recursive_transition_layers: int = 0
+    recursive_depth_supervision_weights: tuple[float, ...] = ()
     grammar_constrained: bool = True
     # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout
     grammar_dsl: str = "openui"
