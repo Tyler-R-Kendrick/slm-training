@@ -1115,6 +1115,22 @@ def test_e573_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     }
 
 
+def test_e574_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e574-e569-slotloss2-r1-48s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 48
+    assert detail["scoreboard"]["suites"]["ood"]["reward_score"] == 0.757
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

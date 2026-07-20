@@ -3051,6 +3051,17 @@ fidelity scalar ladder because strict semantics do not improve. Evidence:
 [narrative](iter-e573-e569-fidelity1-20260720.md) and
 [JSON](iter-e573-e569-fidelity1-20260720.json).
 
+## E574 E573 slot-component loss weight 2
+
+Doubling slot-component loss on the matched 48-step E573 recipe completes in
+76.23s. Despite 31 slot-head applications and choice changes, every OOD `n=4`
+aggregate exactly matches E573, including meaningful-v1 0.25, fidelity 0.4750,
+recall 0.2708, reward 0.7570, strict meaning-v2 0, and AgentV 0/1.
+**Decision:** reject as a quality improvement and close slot-component loss
+scalar tuning. The checkpoint remains local/no-sync negative evidence.
+Evidence: [narrative](iter-e574-e569-slotloss2-20260720.md) and
+[JSON](iter-e574-e569-slotloss2-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
