@@ -3580,3 +3580,16 @@ invariant as the next scratch baseline; do not promote or sync because strict
 v2 remains 0 and AgentV is 0/1. Evidence:
 [narrative](iter-e592-array-item-schema-20260720.md) and
 [JSON](iter-e592-array-item-schema-20260720.json).
+
+## E593 optional enum-argument close score
+
+E593 directly scores legal closure at optional enum-valued arguments. On the
+matched E592 OOD `n=4` baseline, weight 2 removes the Modal size leak but
+lowers fidelity 0.5917→0.5417, validity 0.7550→0.6250, and reward
+0.8115→0.6447 after dashboard collapses to an empty Card. Weight 4 removes all
+reported enum-role mismatches but still regresses structure, recall, reward,
+and AST-node F1. Keep the generalized lever default-off and retain E592 as the
+baseline; strict v2 remains 0 and AgentV is 0/1. No checkpoint was created or
+synced. Evidence:
+[narrative](iter-e593-enum-close-score-20260720.md) and
+[JSON](iter-e593-enum-close-score-20260720.json).

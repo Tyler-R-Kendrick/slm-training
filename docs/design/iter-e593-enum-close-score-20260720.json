@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E593",
+  "date_utc": "2026-07-20",
+  "run_id": "e593-e592-enum-close4-r1",
+  "run_class": "scratch_matrix",
+  "status": "mixed_negative_not_promotable",
+  "hypothesis": "Positive legal-close scoring at optional enum-valued arguments will remove stray schema values without suppressing other legal expression classes.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "semantic_role_decode_weight": 4.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_enum_close_decode_weights": [0.0, 2.0, 4.0],
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 2.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5833333333333334,
+      "placeholder_validity": 0.65,
+      "structural_similarity": 0.388125,
+      "component_type_recall": 0.47916666666666663,
+      "reward_score": 0.65725,
+      "ast_node_f1": 0.43650793650793646,
+      "ast_edge_f1": 0.34285714285714286,
+      "latency_ms_p50": 5620.01,
+      "latency_ms_p95": 14488.97
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "matched_runs": [
+    {
+      "run_id": "e593-e592-enum-close2-r1",
+      "label": "enum_close_weight_2",
+      "schema_enum_close_decode_weight": 2.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5416666666666666,
+          "placeholder_validity": 0.625,
+          "structural_similarity": 0.423125,
+          "component_type_recall": 0.5416666666666666,
+          "reward_score": 0.6447499999999999,
+          "ast_node_f1": 0.5198412698412698,
+          "ast_edge_f1": 0.34285714285714286,
+          "latency_ms_p50": 5248.13,
+          "latency_ms_p95": 14560.59
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "comparison": {
+    "baseline": "e592-e591-array-items-r1",
+    "targeted_modal_size_removed_at_weight_2": true,
+    "all_reported_enum_role_mismatches_removed_at_weight_4": true,
+    "weight_2_reward_delta": -0.16675000000000006,
+    "weight_4_reward_delta": -0.15425,
+    "weight_4_structural_similarity_delta": -0.028749999999999998,
+    "weight_4_component_type_recall_delta": -0.0625,
+    "weight_4_ast_node_f1_delta": -0.08333333333333331,
+    "interpretation": "Direct enum closure fixes the targeted optional-value leaks but diverts dashboard generation to an empty Card, so aggregate learned quality regresses at both tested strengths."
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict meaning-v2 remains zero, AgentV fails, and both nonzero treatments regress aggregate quality on OOD n=4."
+  },
+  "decision": "Keep the generalized lever default-off, retain E592 weight 0 as baseline, and do not promote or sync a checkpoint.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3c7d1299eb0c39400cd8fe03f62e06039653fd8a",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v21",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v29"
+    },
+    "stamped_at": "2026-07-20T09:20:52.289497+00:00"
+  }
+}
