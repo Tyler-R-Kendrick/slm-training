@@ -197,7 +197,8 @@ def _prompt_component_requirements(
             ) and re.match(r"\s+(?:with|for|to)\b", after):
                 continue
             count_match = re.search(
-                r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+$",
+                r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+                r"(?:\s+[a-z0-9]+)?\s+$",
                 before,
             )
             count = 1

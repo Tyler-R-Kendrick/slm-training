@@ -599,6 +599,22 @@ def test_prompt_semantic_plan_preserves_repeated_authored_component_mentions() -
     ]
 
 
+def test_prompt_semantic_plan_preserves_modified_component_count() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Dashboard with a status callout, two metric cards, and a refresh action."
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Callout",
+        "Card",
+        "Card",
+        "Button",
+    ]
+
+
 def test_prompt_semantic_plan_infers_button_from_action_semantics() -> None:
     from slm_training.models.template_fill import prompt_semantic_plan
 
