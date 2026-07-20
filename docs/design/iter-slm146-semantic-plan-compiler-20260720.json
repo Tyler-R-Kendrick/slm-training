@@ -1,0 +1,206 @@
+{
+  "claim_class": "wiring",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "A_baseline",
+        "description": "Minimal baseline seed, no plan features, compiler-only restrictions.",
+        "feature_mode": "off",
+        "promotable": true,
+        "restriction_mode": "compiler_only",
+        "seed_mode": "baseline"
+      },
+      {
+        "arm_id": "B_gold_seed",
+        "description": "Gold plan seed, no plan features, compiler-only restrictions.",
+        "feature_mode": "off",
+        "promotable": true,
+        "restriction_mode": "compiler_only",
+        "seed_mode": "gold"
+      },
+      {
+        "arm_id": "C_gold_seed_soft",
+        "description": "Gold plan seed with soft plan features, compiler-only restrictions.",
+        "feature_mode": "soft",
+        "promotable": true,
+        "restriction_mode": "compiler_only",
+        "seed_mode": "gold"
+      },
+      {
+        "arm_id": "D_baseline_soft",
+        "description": "Baseline seed with soft gold-plan features, compiler-only restrictions.",
+        "feature_mode": "soft",
+        "promotable": true,
+        "restriction_mode": "compiler_only",
+        "seed_mode": "baseline"
+      },
+      {
+        "arm_id": "E_certified_restrictions",
+        "description": "Gold plan seed with soft features and certified-only authored restrictions.",
+        "feature_mode": "soft",
+        "promotable": true,
+        "restriction_mode": "certified",
+        "seed_mode": "gold"
+      },
+      {
+        "arm_id": "F_unsafe_predicted_hard",
+        "description": "Unsafe predicted-hard fixture control; non-promotable diagnostic.",
+        "feature_mode": "soft",
+        "promotable": false,
+        "restriction_mode": "unsafe_predicted_hard",
+        "seed_mode": "gold"
+      }
+    ],
+    "claim_class": "wiring",
+    "falsifier": "Either the plan-derived seeds are invalid, soft features alter the legal candidate set, or any non-certified prediction removes a supported candidate in a promotable arm.",
+    "hypothesis": "A deterministic plan compiler produces valid OpenUI seeds, attaches soft action features without changing legal membership, and gates hard restrictions behind certified evidence; unsafe predicted-hard controls are non-promotable diagnostics.",
+    "matrix_set": "slm146_semantic_plan_compiler",
+    "matrix_version": "spv1-03-v1",
+    "status": "not_run"
+  },
+  "matrix_set": "slm146_semantic_plan_compiler",
+  "matrix_version": "spv1-03-v1",
+  "rows": [
+    {
+      "arm_id": "A_baseline",
+      "mean_binding_coverage": 0.0,
+      "mean_role_coverage": 0.0,
+      "mean_seed_to_gold_ratio": null,
+      "mean_topology_coverage": 0.0,
+      "n_records": 13,
+      "notes": [
+        "seed_mode=baseline",
+        "feature_mode=off",
+        "restriction_mode=compiler_only",
+        "fixture-only: synthetic corpus, no production decoder"
+      ],
+      "promotable": true,
+      "seed_ok_count": 13,
+      "seed_valid_count": 0,
+      "status": "fixture",
+      "total_false_hard_prunes": 0,
+      "total_hard_removals": 0,
+      "total_soft_features": 0
+    },
+    {
+      "arm_id": "B_gold_seed",
+      "mean_binding_coverage": 0.0,
+      "mean_role_coverage": 1.0,
+      "mean_seed_to_gold_ratio": 0.41063339843180696,
+      "mean_topology_coverage": 0.0,
+      "n_records": 13,
+      "notes": [
+        "seed_mode=gold",
+        "feature_mode=off",
+        "restriction_mode=compiler_only",
+        "fixture-only: synthetic corpus, no production decoder"
+      ],
+      "promotable": true,
+      "seed_ok_count": 13,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "total_false_hard_prunes": 0,
+      "total_hard_removals": 0,
+      "total_soft_features": 0
+    },
+    {
+      "arm_id": "C_gold_seed_soft",
+      "mean_binding_coverage": 0.0,
+      "mean_role_coverage": 1.0,
+      "mean_seed_to_gold_ratio": 0.41063339843180696,
+      "mean_topology_coverage": 0.0,
+      "n_records": 13,
+      "notes": [
+        "seed_mode=gold",
+        "feature_mode=soft",
+        "restriction_mode=compiler_only",
+        "fixture-only: synthetic corpus, no production decoder"
+      ],
+      "promotable": true,
+      "seed_ok_count": 13,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "total_false_hard_prunes": 0,
+      "total_hard_removals": 0,
+      "total_soft_features": 32
+    },
+    {
+      "arm_id": "D_baseline_soft",
+      "mean_binding_coverage": 0.0,
+      "mean_role_coverage": 0.0,
+      "mean_seed_to_gold_ratio": null,
+      "mean_topology_coverage": 0.0,
+      "n_records": 13,
+      "notes": [
+        "seed_mode=baseline",
+        "feature_mode=soft",
+        "restriction_mode=compiler_only",
+        "fixture-only: synthetic corpus, no production decoder"
+      ],
+      "promotable": true,
+      "seed_ok_count": 13,
+      "seed_valid_count": 0,
+      "status": "fixture",
+      "total_false_hard_prunes": 0,
+      "total_hard_removals": 0,
+      "total_soft_features": 32
+    },
+    {
+      "arm_id": "E_certified_restrictions",
+      "mean_binding_coverage": 0.0,
+      "mean_role_coverage": 1.0,
+      "mean_seed_to_gold_ratio": 0.41063339843180696,
+      "mean_topology_coverage": 0.0,
+      "n_records": 13,
+      "notes": [
+        "seed_mode=gold",
+        "feature_mode=soft",
+        "restriction_mode=certified",
+        "fixture-only: synthetic corpus, no production decoder"
+      ],
+      "promotable": true,
+      "seed_ok_count": 13,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "total_false_hard_prunes": 0,
+      "total_hard_removals": 13,
+      "total_soft_features": 32
+    },
+    {
+      "arm_id": "F_unsafe_predicted_hard",
+      "mean_binding_coverage": 0.0,
+      "mean_role_coverage": 1.0,
+      "mean_seed_to_gold_ratio": 0.41063339843180696,
+      "mean_topology_coverage": 0.0,
+      "n_records": 13,
+      "notes": [
+        "seed_mode=gold",
+        "feature_mode=soft",
+        "restriction_mode=unsafe_predicted_hard",
+        "fixture-only: synthetic corpus, no production decoder",
+        "non-promotable diagnostic arm"
+      ],
+      "promotable": false,
+      "seed_ok_count": 13,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "total_false_hard_prunes": 0,
+      "total_hard_removals": 13,
+      "total_soft_features": 32
+    }
+  ],
+  "run_id": "slm146_fixture",
+  "schema": "Slm146PlanCompilerReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T03:36:07.877398Z",
+  "version_stamp": {
+    "code_commit": "bf0009d3a97a2f7948193647bf0123765ce03264",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v28",
+      "harness.experiments.slm146_plan_compiler": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T03:36:07.875681+00:00"
+  }
+}
