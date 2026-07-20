@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-07-20",
+          "note": "expose and persist the default-off repeated-plan-family nested-array close margin"
+        },
         {
           "version": "v28",
           "date": "2026-07-20",
@@ -1115,7 +1120,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v49",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1130,6 +1135,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-20",
+          "note": "add default-off repeated-plan-family nested-array close margin and track variadic item counts"
+        },
         {
           "version": "v49",
           "date": "2026-07-20",

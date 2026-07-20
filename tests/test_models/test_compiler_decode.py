@@ -389,6 +389,65 @@ def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> N
     )
 
 
+def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_repeated_array_close_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["+Card"]
+    close_id = tokenizer.token_to_id["]"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    candidates = (text_id, close_id)
+    model._semantic_plan_action_counts = [{card_id: 2}]
+    nested = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Card"),
+            SimpleNamespace(kind="variadic", expr_type="array", item_count=0),
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=1,
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._semantic_plan_repeated_array_close_bias(
+        0,
+        nested,
+        candidates,
+        torch.tensor([8.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 9.0]
+    direct = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Card"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=1,
+                close="]",
+            ),
+        ]
+    )
+    assert model._semantic_plan_repeated_array_close_bias(
+        0, direct, candidates, torch.tensor([8.0, 1.0])
+    ).tolist() == [0.0, 9.0]
+    model._semantic_plan_action_counts = [{card_id: 1}]
+    assert (
+        model._semantic_plan_repeated_array_close_bias(
+            0, nested, candidates, torch.tensor([8.0, 1.0])
+        )
+        is None
+    )
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

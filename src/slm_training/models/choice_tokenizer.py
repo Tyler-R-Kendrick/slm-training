@@ -612,6 +612,7 @@ class _ChoiceFrame:
     required_args: int = 0
     arg_index: int = 0
     reference_count: int = 0
+    item_count: int = 0
 
 
 @dataclass
@@ -705,8 +706,15 @@ class ChoiceDecodeState:
                 and str(option.get("$ref") or "").startswith("#/$defs/")
                 for option in options
             ):
-                return expr_type.startswith("element:")
-            return self._schema_accepts(item_schema, expr_type)
+                accepted = expr_type.startswith("element:")
+            else:
+                accepted = self._schema_accepts(item_schema, expr_type)
+            if accepted:
+                frame.item_count += 1
+            return accepted
+        elif frame.kind == "variadic":
+            frame.item_count += 1
+            return True
         elif frame.kind == "component":
             if frame.arg_index >= len(frame.schemas):
                 return False
