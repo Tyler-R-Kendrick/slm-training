@@ -3424,3 +3424,17 @@ honesty, keep the scorer default-off, and next test count-aware component
 generation. No checkpoint was created or synced. Evidence:
 [narrative](iter-e580-plan-cardinality-20260720.md) and
 [JSON](iter-e580-plan-cardinality-20260720.json).
+
+## E581 count-aware predicted components
+
+E581 scores only still-missing predicted component-family instances before the
+honest cardinality-gated root closure. On a clean matched E569 OOD `n=4`
+component-weight 0/1/2/4 ladder, weight 4 improves meaning-v1 0→0.25,
+fidelity 0.3417→0.4250, validity 0.6050→0.6550, structure 0.1250→0.3231,
+recall 0.1458→0.4583, reward 0.7095→0.7480, AST-node F1 0.1833→0.4532,
+and AST-edge F1 0→0.20. Strict meaning-v2 remains 0 and AgentV fails 0/1.
+Auth's missing serialized `v1` shows that repeated latent Inputs still collapse
+without distinct slot assignments. Retain default-off for structural
+diagnosis; do not promote or sync. Evidence:
+[narrative](iter-e581-count-aware-components-20260720.md) and
+[JSON](iter-e581-count-aware-components-20260720.json).
