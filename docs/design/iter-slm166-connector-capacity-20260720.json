@@ -1,0 +1,349 @@
+{
+  "arm_means": {
+    "cross_attention": {
+      "common_component_recall": 0.5683840744232308,
+      "estimated_flops": 12288.0,
+      "first_attempt_quality": 0.4772525943049416,
+      "meaningful_program_rate": 0.468716909929272,
+      "parse_validity_rate": 0.5450215801708881,
+      "rare_component_recall": 0.49028239987751476,
+      "trainable_params": 17024.0,
+      "wall_seconds": 0.0050375109557789614
+    },
+    "current": {
+      "common_component_recall": 0.4322530694622369,
+      "estimated_flops": 0.0,
+      "first_attempt_quality": 0.3414532386120856,
+      "meaningful_program_rate": 0.32083123651086626,
+      "parse_validity_rate": 0.40421500358783136,
+      "rare_component_recall": 0.34773195850080385,
+      "trainable_params": 0.0,
+      "wall_seconds": 0.001
+    },
+    "linear": {
+      "common_component_recall": 0.4749444348207153,
+      "estimated_flops": 9216.0,
+      "first_attempt_quality": 0.3933137814340561,
+      "meaningful_program_rate": 0.3823860652709409,
+      "parse_validity_rate": 0.4404094870601625,
+      "rare_component_recall": 0.3958585759519227,
+      "trainable_params": 4160.0,
+      "wall_seconds": 0.001
+    },
+    "linear_plus_action_residuals": {
+      "common_component_recall": 0.5149045089078759,
+      "estimated_flops": 9216.0,
+      "first_attempt_quality": 0.40709915622454856,
+      "meaningful_program_rate": 0.40321885685960523,
+      "parse_validity_rate": 0.48052452789550176,
+      "rare_component_recall": 0.4262197913519656,
+      "trainable_params": 4160.0,
+      "wall_seconds": 0.001
+    },
+    "linear_shuffled_context": {
+      "common_component_recall": 0.43707800601485264,
+      "estimated_flops": 9216.0,
+      "first_attempt_quality": 0.3408344318761215,
+      "meaningful_program_rate": 0.3372579677604298,
+      "parse_validity_rate": 0.40980036940841374,
+      "rare_component_recall": 0.3547355754762268,
+      "trainable_params": 4160.0,
+      "wall_seconds": 0.001
+    },
+    "local_target": {
+      "common_component_recall": 0.6256374915520614,
+      "estimated_flops": 24576.0,
+      "first_attempt_quality": 0.5364818088724145,
+      "meaningful_program_rate": 0.5299467813737782,
+      "parse_validity_rate": 0.6011926375001855,
+      "rare_component_recall": 0.5448843434896393,
+      "trainable_params": 17280.0,
+      "wall_seconds": 0.006034648563583812
+    },
+    "low_rank": {
+      "common_component_recall": 0.5154421039629276,
+      "estimated_flops": 66560.0,
+      "first_attempt_quality": 0.43631995563731923,
+      "meaningful_program_rate": 0.4252546527176187,
+      "parse_validity_rate": 0.48414156332020414,
+      "rare_component_recall": 0.44109299493057946,
+      "trainable_params": 33216.0,
+      "wall_seconds": 0.001
+    }
+  },
+  "cells": [
+    {
+      "arm_id": "current__s0",
+      "arm_name": "current",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 256,
+      "connector_n_queries": 4,
+      "connector_rank": 32,
+      "connector_type": "none",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "current"
+    },
+    {
+      "arm_id": "linear__s0",
+      "arm_name": "linear",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 256,
+      "connector_n_queries": 4,
+      "connector_rank": 32,
+      "connector_type": "linear",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only"
+    },
+    {
+      "arm_id": "low_rank__s0",
+      "arm_name": "low_rank",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 256,
+      "connector_n_queries": 4,
+      "connector_rank": 32,
+      "connector_type": "low_rank",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only"
+    },
+    {
+      "arm_id": "cross_attention__s0",
+      "arm_name": "cross_attention",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 256,
+      "connector_n_queries": 4,
+      "connector_rank": 32,
+      "connector_type": "cross_attention",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only"
+    },
+    {
+      "arm_id": "linear_plus_action_residuals__s0",
+      "arm_name": "linear_plus_action_residuals",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 256,
+      "connector_n_queries": 4,
+      "connector_rank": 32,
+      "connector_type": "linear",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_plus_action_residuals"
+    },
+    {
+      "arm_id": "linear_shuffled_context__s0",
+      "arm_name": "linear_shuffled_context",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 256,
+      "connector_n_queries": 4,
+      "connector_rank": 32,
+      "connector_type": "linear",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only"
+    },
+    {
+      "arm_id": "local_target__s0",
+      "arm_name": "local_target",
+      "connector_freeze_encoder": true,
+      "connector_hidden_dim": 512,
+      "connector_n_queries": 8,
+      "connector_rank": 64,
+      "connector_type": "cross_attention",
+      "d_model": 64,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "small_model"
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [],
+  "disposition": "decoder_adaptation_needed",
+  "disposition_rationale": "The cross-attention connector improves over linear/low-rank variants but still falls short of the small-model control, suggesting decoder-side adaptation is also needed.",
+  "experiment_id": "slm166-connector-capacity",
+  "falsifier": "The linear connector matches or exceeds the cross-attention connector on rare-component recall, or the cross-attention connector already matches the small-model control.",
+  "hypothesis": "A nonlinear cross-attention connector between the frozen context encoder and the sparse grammar-action scorer improves rare-component recall over a linear projection and a low-rank bottleneck, but a full small-model control still outperforms it unless the decoder is also adapted.",
+  "matrix_set": "slm166_connector_capacity",
+  "matrix_version": "sde1-04-v1",
+  "rows": [
+    {
+      "arm_id": "current__s0",
+      "arm_name": "current",
+      "common_component_recall": 0.4322530694622369,
+      "connector_type": "none",
+      "estimated_flops": 0,
+      "first_attempt_quality": 0.3414532386120856,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.32083123651086626,
+      "notes": [
+        "connector_type=none",
+        "train_scope=current",
+        "fixture-only: synthetic capacity comparison"
+      ],
+      "parse_validity_rate": 0.40421500358783136,
+      "rare_component_recall": 0.34773195850080385,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "current",
+      "trainable_params": 0,
+      "wall_seconds": 0.001
+    },
+    {
+      "arm_id": "linear__s0",
+      "arm_name": "linear",
+      "common_component_recall": 0.4749444348207153,
+      "connector_type": "linear",
+      "estimated_flops": 9216,
+      "first_attempt_quality": 0.3933137814340561,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.3823860652709409,
+      "notes": [
+        "connector_type=linear",
+        "train_scope=connector_only",
+        "fixture-only: synthetic capacity comparison"
+      ],
+      "parse_validity_rate": 0.4404094870601625,
+      "rare_component_recall": 0.3958585759519227,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only",
+      "trainable_params": 4160,
+      "wall_seconds": 0.001
+    },
+    {
+      "arm_id": "low_rank__s0",
+      "arm_name": "low_rank",
+      "common_component_recall": 0.5154421039629276,
+      "connector_type": "low_rank",
+      "estimated_flops": 66560,
+      "first_attempt_quality": 0.43631995563731923,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.4252546527176187,
+      "notes": [
+        "connector_type=low_rank",
+        "train_scope=connector_only",
+        "fixture-only: synthetic capacity comparison"
+      ],
+      "parse_validity_rate": 0.48414156332020414,
+      "rare_component_recall": 0.44109299493057946,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only",
+      "trainable_params": 33216,
+      "wall_seconds": 0.001
+    },
+    {
+      "arm_id": "cross_attention__s0",
+      "arm_name": "cross_attention",
+      "common_component_recall": 0.5683840744232308,
+      "connector_type": "cross_attention",
+      "estimated_flops": 12288,
+      "first_attempt_quality": 0.4772525943049416,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.468716909929272,
+      "notes": [
+        "connector_type=cross_attention",
+        "train_scope=connector_only",
+        "fixture-only: synthetic capacity comparison"
+      ],
+      "parse_validity_rate": 0.5450215801708881,
+      "rare_component_recall": 0.49028239987751476,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only",
+      "trainable_params": 17024,
+      "wall_seconds": 0.0050375109557789614
+    },
+    {
+      "arm_id": "linear_plus_action_residuals__s0",
+      "arm_name": "linear_plus_action_residuals",
+      "common_component_recall": 0.5149045089078759,
+      "connector_type": "linear",
+      "estimated_flops": 9216,
+      "first_attempt_quality": 0.40709915622454856,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.40321885685960523,
+      "notes": [
+        "connector_type=linear",
+        "train_scope=connector_plus_action_residuals",
+        "fixture-only: synthetic capacity comparison",
+        "added deterministic action-description residual"
+      ],
+      "parse_validity_rate": 0.48052452789550176,
+      "rare_component_recall": 0.4262197913519656,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_plus_action_residuals",
+      "trainable_params": 4160,
+      "wall_seconds": 0.001
+    },
+    {
+      "arm_id": "linear_shuffled_context__s0",
+      "arm_name": "linear_shuffled_context",
+      "common_component_recall": 0.43707800601485264,
+      "connector_type": "linear",
+      "estimated_flops": 9216,
+      "first_attempt_quality": 0.3408344318761215,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.3372579677604298,
+      "notes": [
+        "connector_type=linear",
+        "train_scope=connector_only",
+        "fixture-only: synthetic capacity comparison",
+        "shuffled context sequence order"
+      ],
+      "parse_validity_rate": 0.40980036940841374,
+      "rare_component_recall": 0.3547355754762268,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "connector_only",
+      "trainable_params": 4160,
+      "wall_seconds": 0.001
+    },
+    {
+      "arm_id": "local_target__s0",
+      "arm_name": "local_target",
+      "common_component_recall": 0.6256374915520614,
+      "connector_type": "cross_attention",
+      "estimated_flops": 24576,
+      "first_attempt_quality": 0.5364818088724145,
+      "frozen_params": 0,
+      "meaningful_program_rate": 0.5299467813737782,
+      "notes": [
+        "connector_type=cross_attention",
+        "train_scope=small_model",
+        "fixture-only: synthetic capacity comparison"
+      ],
+      "parse_validity_rate": 0.6011926375001855,
+      "rare_component_recall": 0.5448843434896393,
+      "seed": 0,
+      "target_decisions": 1000,
+      "train_scope": "small_model",
+      "trainable_params": 17280,
+      "wall_seconds": 0.006034648563583812
+    }
+  ],
+  "run_id": "slm166-connector-capacity-20260720",
+  "schema": "Slm166ConnectorCapacityReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T12:15:17.125369Z",
+  "version_stamp": {
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v41",
+      "harness.experiments.slm166_connector_capacity": "v1",
+      "model.twotower": "v41"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T12:15:17.124763+00:00"
+  }
+}

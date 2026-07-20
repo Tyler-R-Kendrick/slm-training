@@ -581,15 +581,15 @@
   "run_id": "slm147_fixture",
   "schema": "Slm147X22RetrievalReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T11:43:35.632017Z",
+  "timestamp": "2026-07-20T12:14:25.165130Z",
   "version_stamp": {
-    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v40",
+      "harness.experiments": "v41",
       "harness.experiments.slm147_x22_retrieval": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T11:43:35.630767+00:00"
+    "stamped_at": "2026-07-20T12:14:25.163349+00:00"
   }
 }

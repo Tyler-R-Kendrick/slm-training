@@ -428,6 +428,17 @@ class TwoTowerConfig:
     action_embedding_init: str = "none"
     # SLM-163: how to treat action embeddings during training (frozen | trainable).
     action_embedding_train: str = "frozen"
+    # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
+    # sparse grammar-action scorer.  ``none`` is identity; other values select a
+    # standalone connector variant for future wiring.
+    semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
+    connector_hidden_dim: int = 256
+    connector_rank: int = 32
+    connector_n_queries: int = 4
+    connector_freeze_encoder: bool = True
+    # SLM-166: trainable scope when a connector is present.
+    # current | connector_only | connector_plus_action_residuals | small_model
+    train_scope: str = "current"
     # V8 request-conditioned dynamic vocabulary; ``none`` is checkpoint-identical.
     # none | surface | role_gated | replace (C2: dynamic pseudo-embeddings —
     # symbol rows become deterministic byte-compositional vectors).

@@ -150,13 +150,13 @@
   "status": "plan_only",
   "verdict": "not_run",
   "version_stamp": {
-    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v40",
+      "harness.experiments": "v41",
       "harness.experiments.slm135_trailed_assumptions_ablation": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T11:43:23.145994+00:00"
+    "stamped_at": "2026-07-20T12:14:15.760663+00:00"
   }
 }

@@ -413,15 +413,15 @@
   "run_id": "slm164-targeted-margin-20260720",
   "schema": "Slm164TargetedMarginReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T11:43:53.552829Z",
+  "timestamp": "2026-07-20T12:14:45.383301Z",
   "version_stamp": {
-    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v40",
+      "harness.experiments": "v41",
       "harness.experiments.slm164_targeted_margin": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T11:43:53.552375+00:00"
+    "stamped_at": "2026-07-20T12:14:45.382906+00:00"
   }
 }
