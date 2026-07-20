@@ -467,6 +467,57 @@ def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None
     )
 
 
+def test_repeated_plan_slot_bias_targets_best_unused_visible_slot() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_repeated_slot_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["+Card"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    slot2 = tokenizer.sym_id(2)
+    model._semantic_plan_action_counts = [{card_id: 2}]
+    model._slot_contracts = [
+        [":status.title", ":status.body", ":metric.one", ":metric.two"]
+    ]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Card"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+        ]
+    )
+    prefix = [tokenizer.bos_id, slot0, slot1, card_id, stack_id]
+    candidates = (slot1, slot2, text_id)
+
+    bias = model._semantic_plan_repeated_slot_bias(
+        0,
+        state,
+        prefix,
+        candidates,
+        torch.tensor([9.0, 2.0, 10.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+    assert (
+        model._semantic_plan_repeated_slot_bias(
+            0,
+            state,
+            [*prefix, slot2],
+            candidates,
+            torch.tensor([9.0, 2.0, 10.0]),
+        )
+        is None
+    )
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

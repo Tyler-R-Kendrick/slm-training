@@ -3816,6 +3816,20 @@ still empty, AgentV is 0/1, and no checkpoint was created or synced. Evidence:
 [narrative](iter-e610-repeated-plan-array-close-20260720.md) and
 [JSON](iter-e610-repeated-plan-array-close-20260720.json).
 
+## E611 repeated-plan distinct-slot allocation
+
+E611 floors the best-scoring legal unused visible slot inside each repeated
+prompt-plan instance. Dashboard now binds `m1` and `m2` to different Cards,
+shrinks 60→54 output symbols, and improves its fidelity 0.60→0.80, validity
+0.76→0.88, structure 0.7417→0.7750, and reward 0.865→0.925. Aggregate
+meaningful-v1 remains 0.75 while fidelity rises 0.65→0.70, validity 0.69→0.72,
+structure 0.7646→0.7729, reward 0.6998→0.7148, and p95 latency falls
+12.98→11.46 s. Retain the default-off lever as the next scratch baseline.
+Strict v2 remains 0, gallery is still empty, AgentV is 0/1, and no checkpoint
+was created or synced. Evidence:
+[narrative](iter-e611-repeated-plan-slot-allocation-20260720.md) and
+[JSON](iter-e611-repeated-plan-slot-allocation-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

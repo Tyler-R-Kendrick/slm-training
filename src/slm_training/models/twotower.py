@@ -256,6 +256,7 @@ class TwoTowerConfig:
     semantic_plan_root_decode_weight: float = 0.0
     semantic_plan_root_margin_decode_weight: float = 0.0
     semantic_plan_repeated_array_close_margin_decode_weight: float = 0.0
+    semantic_plan_repeated_slot_margin_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4761,6 +4762,33 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _semantic_plan_repeated_owner_id(
+        self,
+        row: int,
+        state: Any,
+    ) -> int | None:
+        """Return the deepest repeated prompt-plan family in the active path."""
+        if (
+            not self._semantic_plan_action_counts
+            or row >= len(self._semantic_plan_action_counts)
+        ):
+            return None
+        family_token_ids = {
+            str(self.tokenizer.id_to_token.get(token_id, ""))
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        for frame in reversed(getattr(state, "frames", ())):
+            if frame.kind != "component":
+                continue
+            candidate_id = family_token_ids.get(
+                str(frame.expr_type).removeprefix("element:")
+            )
+            if self._semantic_plan_action_counts[row].get(candidate_id, 0) > 1:
+                return candidate_id
+        return None
+
     def _semantic_plan_repeated_array_close_bias(
         self,
         row: int,
@@ -4786,28 +4814,74 @@ class TwoTowerModel(nn.Module):
             or int(getattr(frames[-1], "item_count", 0)) < 1
         ):
             return None
-        family_token_ids = {
-            str(self.tokenizer.id_to_token.get(token_id, ""))
-            .removeprefix("COMP:")
-            .removeprefix("+"): token_id
-            for token_id in self._component_inventory_token_ids()
-        }
-        owner_id = None
-        for frame in reversed(frames):
-            if frame.kind != "component":
-                continue
-            candidate_id = family_token_ids.get(
-                str(frame.expr_type).removeprefix("element:")
-            )
-            if self._semantic_plan_action_counts[row].get(candidate_id, 0) > 1:
-                owner_id = candidate_id
-                break
+        owner_id = self._semantic_plan_repeated_owner_id(row, state)
         if owner_id is None:
             return None
         close_id = self.tokenizer.token_to_id.get(str(frames[-1].close))
         if close_id not in candidate_ids:
             return None
         target = candidate_ids.index(close_id)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
+        return bias
+
+    def _semantic_plan_repeated_slot_bias(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Floor the best unused visible slot for each repeated plan instance."""
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_repeated_slot_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
+        slot_contract = (
+            self._slot_contracts[row]
+            if self._slot_contracts and row < len(self._slot_contracts)
+            else None
+        )
+        owner_id = self._semantic_plan_repeated_owner_id(row, state)
+        if margin <= 0.0 or not slot_contract or owner_id is None:
+            return None
+        owner_position = max(
+            (
+                position
+                for position, token_id in enumerate(prefix)
+                if token_id == owner_id
+            ),
+            default=-1,
+        )
+        if owner_position < 0:
+            return None
+        visible_slot_ids = {
+            int(self.tokenizer.sym_id(index))
+            for index in range(
+                min(len(slot_contract), int(self.tokenizer.sym_slots))
+            )
+        }
+        if any(
+            token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
+        ):
+            return None
+        used_slot_ids = visible_slot_ids.intersection(prefix[:owner_position])
+        targets = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if token_id in visible_slot_ids and token_id not in used_slot_ids
+        ]
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
         bias = scores.new_zeros(len(candidate_ids))
         bias[target] = max(
             0.0,
@@ -6693,6 +6767,15 @@ class TwoTowerModel(nn.Module):
                                     scores_after=scores,
                                 )
                             )
+                    repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
+                        row,
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                    )
+                    if repeated_slot_bias is not None:
+                        scores = scores + repeated_slot_bias
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -7715,6 +7798,12 @@ class TwoTowerModel(nn.Module):
             getattr(
                 self.config,
                 "semantic_plan_root_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_repeated_slot_margin_decode_weight",
                 0.0,
             )
             or 0.0,

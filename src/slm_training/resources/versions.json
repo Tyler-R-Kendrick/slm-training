@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v29",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-07-20",
+          "note": "expose and persist the default-off repeated-plan distinct-slot margin"
+        },
         {
           "version": "v29",
           "date": "2026-07-20",
@@ -1164,7 +1169,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v51",
+      "version": "v52",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1179,6 +1184,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v52",
+          "date": "2026-07-20",
+          "note": "optionally floor the best unused visible slot inside each repeated prompt-plan instance"
+        },
         {
           "version": "v51",
           "date": "2026-07-20",
