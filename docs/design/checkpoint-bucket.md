@@ -101,6 +101,7 @@ Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
 
 | Date (UTC) | Run | Sync? | Notes |
 | --- | --- | --- | --- |
+| 2026-07-20 | `e556-e544-slot-context-combined-r1-24s` | No (`--no-sync-checkpoints`) | 68.42s under `max_wall_minutes=3`, SHA `139c670c7e1d087101111720fbb458f2a0ad1b3284e9d57fa3eff4fa95831f0a`; combined treatment regresses fidelity/reward and fails semantic gates. |
 | 2026-07-20 | `e555-e544-slot-pair-interaction-r2-24s` | No (`--no-sync-checkpoints`) | Explicit 24-step local-only scratch diagnostic; 50.29s under `max_wall_minutes=3`, serving SHA `af53e1619e9749eab78379ae7696a929e7409dbd984a5e33481cfa050addf19e`. Pareto topology gain, but semantic gates and AgentV fail; no promotion. |
 | 2026-07-20 | `e554-e544-slot-next-context-r2-24s` | No (`--no-sync-checkpoints`) | Explicit 24-step local-only scratch diagnostic; 39.91s under `max_wall_minutes=3`, serving SHA `af3cbce7ca8c2adfbccc8d5ad0550361e2c30f56a6da04f6390615d40c67b579`. Mixed topology gains and fidelity/reward regressions; semantic gates and AgentV fail, so no promotion. |
 | 2026-07-20 | `e553-e544-prior-proportional-r3-24s` | No (`--no-sync-checkpoints`) | Explicit 24-step local-only scratch diagnostic; 34.48s under `max_wall_minutes=3`, serving SHA `510e55cf16fe23edd4ac408ed37d2409a895143646a6321c5b491c148e75399d`. Corpus-local proportional priors improve fidelity slightly but sharply regress structure and recall; semantic gates and AgentV fail, so no promotion. |
