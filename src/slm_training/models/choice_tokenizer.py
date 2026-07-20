@@ -697,6 +697,16 @@ class ChoiceDecodeState:
         elif frame.kind == "object":
             frame.phase = "key"
             return True
+        elif frame.kind == "variadic" and frame.schemas:
+            item_schema = frame.schemas[0] if frame.schemas else {}
+            options = item_schema.get("anyOf", ())
+            if options and all(
+                isinstance(option, dict)
+                and str(option.get("$ref") or "").startswith("#/$defs/")
+                for option in options
+            ):
+                return expr_type.startswith("element:")
+            return self._schema_accepts(item_schema, expr_type)
         elif frame.kind == "component":
             if frame.arg_index >= len(frame.schemas):
                 return False
@@ -736,7 +746,29 @@ class ChoiceDecodeState:
             self.frames.append(_ChoiceFrame("variadic", "any", close=CLOSE))
             return True
         if token == LIST_OPEN:
-            self.frames.append(_ChoiceFrame("variadic", "array", close=LIST_CLOSE))
+            item_schema: dict[str, Any] | None = None
+            if self.frames:
+                parent = self.frames[-1]
+                if (
+                    parent.kind == "component"
+                    and parent.arg_index < len(parent.schemas)
+                ):
+                    active_schema = parent.schemas[parent.arg_index]
+                    if active_schema.get("type") == "array":
+                        item_schema = dict(active_schema.get("items") or {})
+            if item_schema is None:
+                self.frames.append(
+                    _ChoiceFrame("variadic", "array", close=LIST_CLOSE)
+                )
+                return True
+            self.frames.append(
+                _ChoiceFrame(
+                    "variadic",
+                    "array",
+                    close=LIST_CLOSE,
+                    schemas=(item_schema,),
+                )
+            )
             return True
         if token == OBJ_OPEN:
             self.frames.append(
@@ -960,6 +992,10 @@ class ChoiceDecodeState:
                     frame.phase,
                     frame.required_args,
                     frame.arg_index,
+                    tuple(
+                        json.dumps(schema, sort_keys=True, separators=(",", ":"))
+                        for schema in frame.schemas
+                    ),
                 )
                 for frame in self.frames
             ),
