@@ -257,6 +257,7 @@ class TwoTowerConfig:
     semantic_plan_root_margin_decode_weight: float = 0.0
     semantic_plan_repeated_array_close_margin_decode_weight: float = 0.0
     semantic_plan_repeated_slot_margin_decode_weight: float = 0.0
+    semantic_plan_typed_array_nonempty_margin_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4768,6 +4769,16 @@ class TwoTowerModel(nn.Module):
         state: Any,
     ) -> int | None:
         """Return the deepest repeated prompt-plan family in the active path."""
+        return self._semantic_plan_owner_id(row, state, minimum_count=2)
+
+    def _semantic_plan_owner_id(
+        self,
+        row: int,
+        state: Any,
+        *,
+        minimum_count: int = 1,
+    ) -> int | None:
+        """Return the deepest authored prompt-plan family in the active path."""
         if (
             not self._semantic_plan_action_counts
             or row >= len(self._semantic_plan_action_counts)
@@ -4785,9 +4796,108 @@ class TwoTowerModel(nn.Module):
             candidate_id = family_token_ids.get(
                 str(frame.expr_type).removeprefix("element:")
             )
-            if self._semantic_plan_action_counts[row].get(candidate_id, 0) > 1:
+            if (
+                self._semantic_plan_action_counts[row].get(candidate_id, 0)
+                >= minimum_count
+            ):
                 return candidate_id
         return None
+
+    @staticmethod
+    def _schema_can_reach_visible_slot(schema: dict[str, Any]) -> bool:
+        if schema.get("x-openui-placeholder") or schema.get("type") == "string":
+            return True
+        return any(
+            TwoTowerModel._schema_can_reach_visible_slot(dict(child))
+            for child in (
+                *schema.get("anyOf", ()),
+                *schema.get("properties", {}).values(),
+                *(
+                    (schema["items"],)
+                    if isinstance(schema.get("items"), dict)
+                    else ()
+                ),
+            )
+            if isinstance(child, dict)
+        )
+
+    def _semantic_plan_typed_array_nonempty_bias(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Start a slot-bearing typed array for an authored plan component."""
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        slot_contract = (
+            self._slot_contracts[row]
+            if self._slot_contracts and row < len(self._slot_contracts)
+            else None
+        )
+        if margin <= 0.0 or len(frames) < 2 or not slot_contract:
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        if (
+            getattr(frame, "kind", None) != "variadic"
+            or getattr(frame, "expr_type", None) != "array"
+            or int(getattr(frame, "item_count", 0)) != 0
+            or not schemas
+            or not self._schema_can_reach_visible_slot(dict(schemas[0]))
+        ):
+            return None
+        owner_id = self._semantic_plan_owner_id(row, state)
+        if owner_id is None:
+            return None
+        owner_frame = frames[-2]
+        owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
+            "element:"
+        )
+        if (
+            getattr(owner_frame, "kind", None) != "component"
+            or owner_id
+            not in {
+                self.tokenizer.token_to_id.get(f"+{owner_family}"),
+                self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
+                self.tokenizer.token_to_id.get(owner_family),
+            }
+        ):
+            return None
+        visible_slot_ids = {
+            int(self.tokenizer.sym_id(index))
+            for index in range(
+                min(len(slot_contract), int(self.tokenizer.sym_slots))
+            )
+        }
+        if not visible_slot_ids.difference(prefix):
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+        if close_id not in candidate_ids:
+            return None
+        targets = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if token_id != close_id
+        ]
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
+        return bias
 
     def _semantic_plan_repeated_array_close_bias(
         self,
@@ -6685,6 +6795,17 @@ class TwoTowerModel(nn.Module):
                     )
                     if repeated_array_close_bias is not None:
                         scores = scores + repeated_array_close_bias
+                    typed_array_nonempty_bias = (
+                        self._semantic_plan_typed_array_nonempty_bias(
+                            row,
+                            states[row],
+                            ids[row, :position].tolist(),
+                            candidate_ids,
+                            scores,
+                        )
+                    )
+                    if typed_array_nonempty_bias is not None:
+                        scores = scores + typed_array_nonempty_bias
                     semantic_plan_bias = self._semantic_plan_bias(
                         row,
                         candidate_ids,
@@ -7804,6 +7925,12 @@ class TwoTowerModel(nn.Module):
             getattr(
                 self.config,
                 "semantic_plan_repeated_slot_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
                 0.0,
             )
             or 0.0,
