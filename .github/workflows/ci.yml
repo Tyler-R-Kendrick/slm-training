@@ -33,15 +33,21 @@ jobs:
             src/apps/openui_bridge/package-lock.json
             src/apps/design_md_bridge/package-lock.json
             src/apps/graphql_bridge/package-lock.json
-      - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev,mcp,web]"
-      - run: npm ci
-      - run: npm ci
-        working-directory: src/apps/openui_bridge
-      - run: npm ci
-        working-directory: src/apps/design_md_bridge
-      - run: npm ci
-        working-directory: src/apps/graphql_bridge
+      - name: Install Node dependencies
+        run: |
+          npm ci &
+          root_pid=$!
+          npm --prefix src/apps/openui_bridge ci &
+          openui_pid=$!
+          npm --prefix src/apps/design_md_bridge ci &
+          design_pid=$!
+          npm --prefix src/apps/graphql_bridge ci &
+          graphql_pid=$!
+          wait "$root_pid"
+          wait "$openui_pid"
+          wait "$design_pid"
+          wait "$graphql_pid"
       - name: Validate repository organization
         run: python -m scripts.repo_policy
       - run: ruff check .
