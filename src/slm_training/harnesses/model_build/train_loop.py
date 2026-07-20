@@ -224,6 +224,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             raise ValueError("no strict-subset root-reference records found")
     initialized_from: str | None = None
     initialized_prior_fields: list[str] = []
+    rebuilt_prior_fields: list[str] = []
     if initialize_path:
         initialize_path = Path(initialize_path)
         if not initialize_path.is_file():
@@ -233,9 +234,25 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         loader = getattr(plugin, "load", None)
         if not callable(loader):
             raise TypeError(f"{type(plugin).__name__} does not support initialize_from")
+        plugin_config = getattr(plugin, "config", None)
+        corpus_priors = {
+            field_name: getattr(plugin_config, field_name)
+            for field_name in (
+                "slot_component_lexeme_priors",
+                "slot_component_span_priors",
+            )
+            if plugin_config is not None and hasattr(plugin_config, field_name)
+        }
         loader(initialize_path)
         initialized_from = str(initialize_path)
         initialized_prior_fields = list(getattr(plugin, "initialized_prior_fields", ()))
+        # These priors are deterministic corpus statistics, not learned weights.
+        # Warm starts must keep the current corpus/model formula rather than
+        # silently restoring stale values cached in the parent checkpoint.
+        for field_name, values in corpus_priors.items():
+            setattr(plugin.config, field_name, values)
+            if field_name in initialized_prior_fields:
+                rebuilt_prior_fields.append(field_name)
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
@@ -1021,6 +1038,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "resumed_from": resumed_from,
         "initialized_from": initialized_from,
         "initialized_prior_fields": initialized_prior_fields,
+        "rebuilt_prior_fields": rebuilt_prior_fields,
         "initialized_weight_count": sum(
             parameter.numel() for parameter, _anchor in initialized_weight_anchor
         ),

@@ -94,12 +94,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v13", "date": "2026-07-20", "note": "rebuild deterministic corpus-derived slot priors after weight initialization instead of silently restoring stale parent checkpoint statistics"},
         {"version": "v12", "date": "2026-07-19", "note": "add deterministic strict-subset root-reference identity oversampling with auditable eligible and expanded sampling counts"},
         {"version": "v11", "date": "2026-07-19", "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"},
         {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
