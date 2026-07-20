@@ -2858,6 +2858,15 @@ Meaning and AgentV remain zero.
 evidence: [narrative](iter-e555-slot-pair-interaction-20260720.md) and
 [JSON](iter-e555-slot-pair-interaction-20260720.json).
 
+## E556 combined slot context
+
+Combining next-slot text and pair interaction holds structure at 0.1594 and
+recall at 0.1250 but drops fidelity to 0.2167 and reward to 0.5203. Meaning and
+AgentV remain zero. **Decision:** reject the combination, retain E555 alone,
+and close the factorial. Evidence:
+[narrative](iter-e556-slot-context-combined-20260720.md) and
+[JSON](iter-e556-slot-context-combined-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
