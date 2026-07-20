@@ -3638,3 +3638,14 @@ Button-to-body binding. Keep the switch default-off and do not promote or
 sync; next repair explicit component-to-slot assignment.
 Evidence: [narrative](iter-e597-schema-role-candidates-20260720.md) and
 [JSON](iter-e597-schema-role-candidates-20260720.json).
+
+## E598 schema owner-slot threshold
+
+E598 tests the existing schema property-owner slot score at weights 4, 6, and
+8 on E597's schema-candidate treatment. Only weight 8 repairs the target modal
+binding, changing Button from body to confirm and reducing semantic-role
+mismatches 3→2. All headline OOD `n=4` metrics remain flat: structure 0.4694,
+recall 0.6250, reward 0.8115, strict v2 0, and AgentV 0/1. Treat weight 8 as a
+scratch threshold only; do not promote or sync.
+Evidence: [narrative](iter-e598-owner-slot-threshold-20260720.md) and
+[JSON](iter-e598-owner-slot-threshold-20260720.json).
