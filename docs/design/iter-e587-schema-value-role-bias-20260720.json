@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E587",
+  "date_utc": "2026-07-20",
+  "run_id": "e587-e586-schema-value1-r1",
+  "run_class": "scratch_matrix",
+  "status": "mixed_negative_not_promotable",
+  "hypothesis": "Penalizing visible slot pointers only in enum-valued active schema arguments will remove schema-value placeholder spam while preserving E586 topology.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 4.0,
+    "schema_value_decode_weights": [0.0, 1.0, 4.0],
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 4.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e587-e586-schema-value0-r1",
+      "label": "schema_value_inactive_control",
+      "schema_value_decode_weight": 0.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.425,
+          "placeholder_validity": 0.655,
+          "structural_similarity": 0.381875,
+          "component_type_recall": 0.4583333333333333,
+          "reward_score": 0.751,
+          "ast_node_f1": 0.48888888888888893,
+          "ast_edge_f1": 0.25,
+          "latency_ms_p50": 7562.27,
+          "latency_ms_p95": 10701.66
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e587-e586-schema-value4-r1",
+      "label": "aggressive_schema_value_treatment",
+      "schema_value_decode_weight": 4.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.2583333333333333,
+          "placeholder_validity": 0.5549999999999999,
+          "structural_similarity": 0.215625,
+          "component_type_recall": 0.3333333333333333,
+          "reward_score": 0.692,
+          "ast_node_f1": 0.3388888888888889,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 8327.39,
+          "latency_ms_p95": 23367.84
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.4666666666666667,
+      "placeholder_validity": 0.6799999999999999,
+      "structural_similarity": 0.346875,
+      "component_type_recall": 0.3958333333333333,
+      "reward_score": 0.7635,
+      "ast_node_f1": 0.40555555555555556,
+      "ast_edge_f1": 0.25,
+      "latency_ms_p50": 10996.53,
+      "latency_ms_p95": 16961.42
+    }
+  },
+  "comparison": {
+    "baseline": "e587-e586-schema-value0-r1",
+    "meaningful_program_rate_delta": 0.0,
+    "placeholder_fidelity_delta": 0.041666666666666685,
+    "placeholder_validity_delta": 0.02499999999999991,
+    "structural_similarity_delta": -0.035,
+    "component_type_recall_delta": -0.0625,
+    "reward_score_delta": 0.012499999999999956,
+    "ast_node_f1_delta": -0.08333333333333337,
+    "ast_edge_f1_delta": 0.0,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0,
+    "auth_ast_node_f1": 1.0,
+    "auth_ast_edge_f1": 1.0,
+    "auth_root_direction": "column",
+    "interpretation": "Weight 1 corrects the Stack enum and improves fidelity, validity, and reward, but nested enum spam remains and structural coverage regresses. Weight 4 destabilizes the generated component plan."
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict meaning-v2 remains zero, AgentV fails, and the midpoint loses structure, recall, and AST-node F1 despite fidelity and reward gains."
+  },
+  "decision": "Keep the default-off schema-role lever for further composition work, do not promote or sync a checkpoint, and next separate required content-slot consumption from optional schema-value choices.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a7aaf8da12686150f046220755dd7bda119ba2c7",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v17",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v24"
+    },
+    "stamped_at": "2026-07-20T07:41:28.623663+00:00"
+  }
+}

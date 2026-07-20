@@ -3506,3 +3506,18 @@ weight default-off, and next prevent visible placeholders from filling
 enum-like schema properties. No checkpoint was created or synced. Evidence:
 [narrative](iter-e586-original-role-coverage-20260720.md) and
 [JSON](iter-e586-original-role-coverage-20260720.json).
+
+## E587 schema-value role bias
+
+E587 penalizes visible slot pointers only in enum-valued active schema
+arguments, without changing legal candidates. On a clean E569 OOD `n=4`
+weight 0/1/4 ladder layered on E586, weight 1 improves fidelity
+0.4250→0.4667, validity 0.6550→0.6800, and reward 0.7510→0.7635, while
+structure falls 0.3819→0.3469, recall 0.4583→0.3958, and AST-node F1
+0.4889→0.4056. It corrects Stack direction but leaves nested Input/Button enum
+spam. Weight 4 collapses auth topology and reward to 0.6920. Strict meaning-v2
+remains 0 and AgentV fails 0/1 throughout. Keep the lever default-off, do not
+promote or sync, and next separate required content consumption from optional
+schema values. Evidence:
+[narrative](iter-e587-schema-value-role-bias-20260720.md) and
+[JSON](iter-e587-schema-value-role-bias-20260720.json).
