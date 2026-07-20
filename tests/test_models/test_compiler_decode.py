@@ -710,7 +710,7 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
     text_id = tokenizer.token_to_id["+TextContent"]
     stats = DecodeStats()
 
-    model._record_semantic_plan_seed_trace(
+    trace = model._record_semantic_plan_seed_trace(
         stats,
         row=2,
         position=3,
@@ -721,6 +721,11 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
         plan_bias=torch.tensor([12.0, 0.0]),
         scores_after=torch.tensor([13.0, 5.0]),
     )
+    model._finalize_semantic_plan_seed_trace(
+        trace,
+        candidate_ids=(card_id, text_id),
+        scores=torch.tensor([12.0, 15.0]),
+    )
 
     assert stats.constrained_selection_traces == [
         {
@@ -730,6 +735,8 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
             "before_token": "+TextContent",
             "chosen_token": "+Card",
             "choice_changed": True,
+            "final_token": "+TextContent",
+            "changed_after_plan": True,
             "seed_weight": 8.0,
             "semantic_plan_decode_weight": 4.0,
             "top_candidates": [
@@ -739,6 +746,8 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
                     "score_before": 1.0,
                     "plan_bias": 12.0,
                     "score_after": 13.0,
+                    "post_plan_bias": -1.0,
+                    "final_score": 12.0,
                 },
                 {
                     "token": "+TextContent",
@@ -746,6 +755,8 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
                     "score_before": 5.0,
                     "plan_bias": 0.0,
                     "score_after": 5.0,
+                    "post_plan_bias": 10.0,
+                    "final_score": 15.0,
                 },
             ],
         }

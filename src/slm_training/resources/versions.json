@@ -888,7 +888,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v40",
+      "version": "v41",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -901,6 +901,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v41",
+          "date": "2026-07-20",
+          "note": "extend first-component plan traces through the actual final legal-token selection"
+        },
         {
           "version": "v40",
           "date": "2026-07-20",

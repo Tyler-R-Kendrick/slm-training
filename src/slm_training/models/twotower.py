@@ -4168,7 +4168,7 @@ class TwoTowerModel(nn.Module):
         scores_before: torch.Tensor,
         plan_bias: torch.Tensor,
         scores_after: torch.Tensor,
-    ) -> None:
+    ) -> dict[str, object] | None:
         """Record a bounded first-family score decomposition."""
         seed_weight = float(
             getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
@@ -4178,43 +4178,78 @@ class TwoTowerModel(nn.Module):
             or len(stats.constrained_selection_traces) >= 64
             or not self._semantic_plan_seed_active(state, candidate_kinds)
         ):
-            return
+            return None
         before = int(scores_before.argmax().item())
         after = int(scores_after.argmax().item())
         ranked = torch.topk(
             scores_after,
             k=min(8, int(scores_after.numel())),
         ).indices.tolist()
-        stats.constrained_selection_traces.append(
-            {
-                "phase": "semantic_plan_seed",
-                "row": int(row),
-                "position": int(position),
-                "before_token": str(
-                    self.tokenizer.id_to_token.get(candidate_ids[before], "")
-                ),
-                "chosen_token": str(
-                    self.tokenizer.id_to_token.get(candidate_ids[after], "")
-                ),
-                "choice_changed": before != after,
-                "seed_weight": seed_weight,
-                "semantic_plan_decode_weight": float(
-                    getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
-                ),
-                "top_candidates": [
-                    {
-                        "token": str(
-                            self.tokenizer.id_to_token.get(candidate_ids[index], "")
-                        ),
-                        "kind": candidate_kinds[index],
-                        "score_before": round(float(scores_before[index].item()), 6),
-                        "plan_bias": round(float(plan_bias[index].item()), 6),
-                        "score_after": round(float(scores_after[index].item()), 6),
-                    }
-                    for index in ranked
-                ],
-            }
-        )
+        trace: dict[str, object] = {
+            "phase": "semantic_plan_seed",
+            "row": int(row),
+            "position": int(position),
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "choice_changed": before != after,
+            "seed_weight": seed_weight,
+            "semantic_plan_decode_weight": float(
+                getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+            ),
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "kind": candidate_kinds[index],
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(plan_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
+
+    def _finalize_semantic_plan_seed_trace(
+        self,
+        trace: dict[str, object] | None,
+        *,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> None:
+        """Attach the actual final choice and aggregate post-plan score delta."""
+        if trace is None:
+            return
+        final = int(scores.argmax().item())
+        final_token = str(self.tokenizer.id_to_token.get(candidate_ids[final], ""))
+        trace["final_token"] = final_token
+        trace["changed_after_plan"] = final_token != trace["chosen_token"]
+        candidates = trace.get("top_candidates")
+        if not isinstance(candidates, list):
+            return
+        score_by_token = {
+            str(self.tokenizer.id_to_token.get(token_id, "")): round(
+                float(scores[index].item()), 6
+            )
+            for index, token_id in enumerate(candidate_ids)
+        }
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            token = str(candidate.get("token", ""))
+            final_score = score_by_token.get(token)
+            if final_score is None:
+                continue
+            candidate["post_plan_bias"] = round(
+                final_score - float(candidate["score_after"]), 6
+            )
+            candidate["final_score"] = final_score
 
     def _schema_value_bias(
         self,
@@ -6247,6 +6282,7 @@ class TwoTowerModel(nn.Module):
                         states[row],
                         ids[row, :position].tolist(),
                     )
+                    semantic_plan_seed_trace = None
                     if semantic_plan_bias is not None:
                         scores_before_semantic_plan = scores.clone()
                         before_semantic_plan = int(scores.argmax().item())
@@ -6256,16 +6292,18 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
-                            self._record_semantic_plan_seed_trace(
-                                stats,
-                                row=row,
-                                position=position,
-                                state=states[row],
-                                candidate_ids=candidate_ids,
-                                candidate_kinds=candidate_kinds,
-                                scores_before=scores_before_semantic_plan,
-                                plan_bias=semantic_plan_bias,
-                                scores_after=scores,
+                            semantic_plan_seed_trace = (
+                                self._record_semantic_plan_seed_trace(
+                                    stats,
+                                    row=row,
+                                    position=position,
+                                    state=states[row],
+                                    candidate_ids=candidate_ids,
+                                    candidate_kinds=candidate_kinds,
+                                    scores_before=scores_before_semantic_plan,
+                                    plan_bias=semantic_plan_bias,
+                                    scores_after=scores,
+                                )
                             )
                     semantic_plan_inline_bias = self._semantic_plan_inline_bias(
                         row,
@@ -6425,6 +6463,11 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
+                    self._finalize_semantic_plan_seed_trace(
+                        semantic_plan_seed_trace,
+                        candidate_ids=candidate_ids,
+                        scores=scores,
+                    )
                     best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
