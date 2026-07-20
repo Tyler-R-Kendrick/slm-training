@@ -296,12 +296,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v10",
+      "version": "v11",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-20",
+          "note": "add SPV2-04 dense teacher distribution mixture harness (dense_teacher_mixture.py) and fixture runner on top of the EFS3-01 state-source owner and SPV2-03 legal-set teacher traces"
+        },
         {
           "version": "v10",
           "date": "2026-07-19",

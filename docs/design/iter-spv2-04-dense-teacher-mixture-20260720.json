@@ -1,0 +1,56 @@
+{
+  "schema_version": "spv2-04-measured-results/v1",
+  "manifest_id": "iter-spv2-04-dense-teacher-mixture-20260720",
+  "linear_issue": "SLM-152",
+  "fixture": "spv2-04-dense-teacher-mixture",
+  "run_id": "iter-spv2-04-20260720-v11",
+  "synthetic_rows": 200,
+  "teacher_traces": 100,
+  "decision_budget": 64,
+  "teacher_label_budget": 32,
+  "acquisition_policy": "uniform",
+  "seeds": [0, 1, 2],
+  "aggregate_arm_sizes": {
+    "gold_only": {
+      "mean": 64.0,
+      "min": 64,
+      "max": 64
+    },
+    "mixed_no_teacher": {
+      "mean": 64.0,
+      "min": 64,
+      "max": 64
+    },
+    "mixed_teacher_argmax": {
+      "mean": 64.0,
+      "min": 64,
+      "max": 64
+    },
+    "mixed_teacher_kl": {
+      "mean": 64.0,
+      "min": 64,
+      "max": 64
+    },
+    "on_policy_teacher_kl": {
+      "mean": 51.666666666666664,
+      "min": 50,
+      "max": 54
+    },
+    "targeted_teacher_kl": {
+      "mean": 64.0,
+      "min": 64,
+      "max": 64
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9abc8ff0c73ad2e9a85c31f1aaad659b6d708fde",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v11"
+    },
+    "stamped_at": "2026-07-20T06:46:03.141883+00:00"
+  },
+  "honest_verdict": "fixture_wiring_only",
+  "note": "No external teacher model, solver replay, or checkpoint training was performed."
+}
