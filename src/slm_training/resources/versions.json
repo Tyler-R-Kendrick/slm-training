@@ -475,12 +475,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v29",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-07-20",
+          "note": "add SLM-147 SPV1-04 X22 leakage-safe retrieved-valid-AST prototype seeding harness"
+        },
         {
           "version": "v29",
           "date": "2026-07-20",
@@ -1195,6 +1200,30 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-146 SPV1-03 SemanticPlanV1 to compiler-choice and X22 tree-edit bridge"
+        }
+      ]
+    },
+    "harness.experiments.slm147_x22_retrieval": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm147_x22_retrieval.py",
+        "scripts/run_slm147_x22_retrieval.py",
+        "tests/test_harnesses/experiments/test_slm147_x22_retrieval.py",
+        "tests/test_scripts/test_run_slm147_x22_retrieval.py",
+        "docs/design/iter-slm147-x22-retrieval-20260720.json",
+        "docs/design/iter-slm147-x22-retrieval-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamp after harness.experiments v30 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-147 SPV1-04 X22 leakage-safe retrieved-valid-AST prototype seeding harness"
         }
       ]
     },

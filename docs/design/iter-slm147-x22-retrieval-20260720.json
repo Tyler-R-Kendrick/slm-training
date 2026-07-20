@@ -1,0 +1,595 @@
+{
+  "claim_class": "wiring",
+  "experiment_id": "slm147-x22-retrieval",
+  "index_manifest": {
+    "corpus_train_count": 51,
+    "n_entries": 51,
+    "schema": "ValidPrototypeIndexV1",
+    "source": "fixture_plan_corpus",
+    "split": "train"
+  },
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "A_minimal_seed",
+        "description": "Canonical minimal X22 seed; baseline for search distance.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "minimal"
+      },
+      {
+        "arm_id": "B_random_prototype",
+        "description": "Random valid training prototype control.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "random"
+      },
+      {
+        "arm_id": "C_prompt_similarity",
+        "description": "Prototype retrieved by prompt-token overlap.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "prompt_similarity"
+      },
+      {
+        "arm_id": "D_ast_sketch",
+        "description": "Prototype retrieved by binding-aware AST sketch.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "ast_sketch"
+      },
+      {
+        "arm_id": "E_semantic_plan",
+        "description": "Prototype retrieved by SemanticPlanV1 factor fingerprints.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "semantic_plan"
+      },
+      {
+        "arm_id": "F_hybrid",
+        "description": "Weighted hybrid of prompt, AST-sketch, and plan similarity.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "hybrid"
+      },
+      {
+        "arm_id": "G_oracle_nearest",
+        "description": "Oracle nearest training prototype; diagnostic ceiling only.",
+        "k": 1,
+        "promotable": false,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "oracle_nearest"
+      },
+      {
+        "arm_id": "H_retrieval_as_context",
+        "description": "Historical control: retrieval added as context, seed remains minimal.",
+        "k": 1,
+        "promotable": true,
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "strategy": "retrieval_as_context"
+      }
+    ],
+    "claim_class": "wiring",
+    "experiment_id": "slm147-x22-retrieval",
+    "falsifier": "Retrieved prototypes are no closer to gold than the minimal seed, simple prompt/component retrieval matches or beats plan/sketch retrieval, or adaptation/remapping fails closed too often for the strategy to be useful.",
+    "hypothesis": "A leakage-safe retrieved hard-valid AST prototype initializes X22 closer to an acceptable target than the generic minimal seed. SemanticPlan-aware and AST-sketch retrieval select more editable prototypes than surface prompt or random controls.",
+    "matrix_set": "slm147_x22_retrieval",
+    "matrix_version": "spv1-04-v1",
+    "status": "not_run"
+  },
+  "matrix_set": "slm147_x22_retrieval",
+  "matrix_version": "spv1-04-v1",
+  "rows": [
+    {
+      "adaptation_valid_count": 0,
+      "arm_id": "A_minimal_seed",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.4525641025641026,
+      "mean_retrieval_score": null,
+      "mean_seed_to_gold_ratio": 0.6206659102586705,
+      "n_records": 13,
+      "notes": [
+        "strategy=minimal",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "minimal"
+    },
+    {
+      "adaptation_valid_count": 0,
+      "arm_id": "A_minimal_seed",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.4525641025641026,
+      "mean_retrieval_score": null,
+      "mean_seed_to_gold_ratio": 0.6206659102586705,
+      "n_records": 13,
+      "notes": [
+        "strategy=minimal",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "minimal"
+    },
+    {
+      "adaptation_valid_count": 0,
+      "arm_id": "A_minimal_seed",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.4525641025641026,
+      "mean_retrieval_score": null,
+      "mean_seed_to_gold_ratio": 0.6206659102586705,
+      "n_records": 13,
+      "notes": [
+        "strategy=minimal",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "minimal"
+    },
+    {
+      "adaptation_valid_count": 8,
+      "arm_id": "B_random_prototype",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.5935897435897436,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.7173051307666692,
+      "n_records": 13,
+      "notes": [
+        "strategy=random",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "random"
+    },
+    {
+      "adaptation_valid_count": 7,
+      "arm_id": "B_random_prototype",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.5230769230769231,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.6896789485024779,
+      "n_records": 13,
+      "notes": [
+        "strategy=random",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "random"
+    },
+    {
+      "adaptation_valid_count": 9,
+      "arm_id": "B_random_prototype",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.43461538461538457,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.728793609261701,
+      "n_records": 13,
+      "notes": [
+        "strategy=random",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "random"
+    },
+    {
+      "adaptation_valid_count": 8,
+      "arm_id": "C_prompt_similarity",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.617948717948718,
+      "mean_retrieval_score": 0.8461538461538461,
+      "mean_seed_to_gold_ratio": 0.656041394502933,
+      "n_records": 13,
+      "notes": [
+        "strategy=prompt_similarity",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "prompt_similarity"
+    },
+    {
+      "adaptation_valid_count": 8,
+      "arm_id": "C_prompt_similarity",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.617948717948718,
+      "mean_retrieval_score": 0.8461538461538461,
+      "mean_seed_to_gold_ratio": 0.656041394502933,
+      "n_records": 13,
+      "notes": [
+        "strategy=prompt_similarity",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "prompt_similarity"
+    },
+    {
+      "adaptation_valid_count": 8,
+      "arm_id": "C_prompt_similarity",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.617948717948718,
+      "mean_retrieval_score": 0.8461538461538461,
+      "mean_seed_to_gold_ratio": 0.656041394502933,
+      "n_records": 13,
+      "notes": [
+        "strategy=prompt_similarity",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "prompt_similarity"
+    },
+    {
+      "adaptation_valid_count": 7,
+      "arm_id": "D_ast_sketch",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.5653846153846154,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.7438940546632854,
+      "n_records": 13,
+      "notes": [
+        "strategy=ast_sketch",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "ast_sketch"
+    },
+    {
+      "adaptation_valid_count": 7,
+      "arm_id": "D_ast_sketch",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.5653846153846154,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.7438940546632854,
+      "n_records": 13,
+      "notes": [
+        "strategy=ast_sketch",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "ast_sketch"
+    },
+    {
+      "adaptation_valid_count": 7,
+      "arm_id": "D_ast_sketch",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.5653846153846154,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.7438940546632854,
+      "n_records": 13,
+      "notes": [
+        "strategy=ast_sketch",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "ast_sketch"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "E_semantic_plan",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.3871794871794872,
+      "mean_retrieval_score": 0.6307692307692309,
+      "mean_seed_to_gold_ratio": 0.8512188960464822,
+      "n_records": 13,
+      "notes": [
+        "strategy=semantic_plan",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "semantic_plan"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "E_semantic_plan",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.3871794871794872,
+      "mean_retrieval_score": 0.6307692307692309,
+      "mean_seed_to_gold_ratio": 0.8512188960464822,
+      "n_records": 13,
+      "notes": [
+        "strategy=semantic_plan",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "semantic_plan"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "E_semantic_plan",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.3871794871794872,
+      "mean_retrieval_score": 0.6307692307692309,
+      "mean_seed_to_gold_ratio": 0.8512188960464822,
+      "n_records": 13,
+      "notes": [
+        "strategy=semantic_plan",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "semantic_plan"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "F_hybrid",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.3871794871794872,
+      "mean_retrieval_score": 0.41823361823361827,
+      "mean_seed_to_gold_ratio": 0.8512188960464822,
+      "n_records": 13,
+      "notes": [
+        "strategy=hybrid",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "hybrid"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "F_hybrid",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.3871794871794872,
+      "mean_retrieval_score": 0.41823361823361827,
+      "mean_seed_to_gold_ratio": 0.8512188960464822,
+      "n_records": 13,
+      "notes": [
+        "strategy=hybrid",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "hybrid"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "F_hybrid",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.3871794871794872,
+      "mean_retrieval_score": 0.41823361823361827,
+      "mean_seed_to_gold_ratio": 0.8512188960464822,
+      "n_records": 13,
+      "notes": [
+        "strategy=hybrid",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "hybrid"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "G_oracle_nearest",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.36666666666666664,
+      "mean_retrieval_score": 0.8139194139194139,
+      "mean_seed_to_gold_ratio": 0.8597069597069597,
+      "n_records": 13,
+      "notes": [
+        "strategy=oracle_nearest",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded",
+        "non-promotable diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "oracle_nearest"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "G_oracle_nearest",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.36666666666666664,
+      "mean_retrieval_score": 0.8139194139194139,
+      "mean_seed_to_gold_ratio": 0.8597069597069597,
+      "n_records": 13,
+      "notes": [
+        "strategy=oracle_nearest",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded",
+        "non-promotable diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "oracle_nearest"
+    },
+    {
+      "adaptation_valid_count": 13,
+      "arm_id": "G_oracle_nearest",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.36666666666666664,
+      "mean_retrieval_score": 0.8139194139194139,
+      "mean_seed_to_gold_ratio": 0.8597069597069597,
+      "n_records": 13,
+      "notes": [
+        "strategy=oracle_nearest",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded",
+        "non-promotable diagnostic arm"
+      ],
+      "promotable": false,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "oracle_nearest"
+    },
+    {
+      "adaptation_valid_count": 0,
+      "arm_id": "H_retrieval_as_context",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.4525641025641026,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.6206659102586705,
+      "n_records": 13,
+      "notes": [
+        "strategy=retrieval_as_context",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 0,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "retrieval_as_context"
+    },
+    {
+      "adaptation_valid_count": 0,
+      "arm_id": "H_retrieval_as_context",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.4525641025641026,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.6206659102586705,
+      "n_records": 13,
+      "notes": [
+        "strategy=retrieval_as_context",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 1,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "retrieval_as_context"
+    },
+    {
+      "adaptation_valid_count": 0,
+      "arm_id": "H_retrieval_as_context",
+      "leakage_pass_count": 13,
+      "mean_component_coverage": 0.4525641025641026,
+      "mean_retrieval_score": 0.0,
+      "mean_seed_to_gold_ratio": 0.6206659102586705,
+      "n_records": 13,
+      "notes": [
+        "strategy=retrieval_as_context",
+        "k=1",
+        "fixture-only: no X22 model trained or decoded"
+      ],
+      "promotable": true,
+      "seed": 2,
+      "seed_valid_count": 13,
+      "status": "fixture",
+      "strategy": "retrieval_as_context"
+    }
+  ],
+  "run_id": "slm147_fixture",
+  "schema": "Slm147X22RetrievalReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T04:43:47.756674Z",
+  "version_stamp": {
+    "code_commit": "350547ca32765710147d158bd7116e4c09b50929",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v30",
+      "harness.experiments.slm147_x22_retrieval": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T04:43:47.755251+00:00"
+  }
+}
