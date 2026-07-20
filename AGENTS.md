@@ -55,7 +55,8 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
 | `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
 | `improve-openui-harnesses` | Enhancing canonical research, data, model, eval, preference, distill, promotion, annotation, quality, or RL harnesses without parallel paths or artifact sprawl |
-| `train` | Running any training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch self-improvement) — per-phase references load on demand |
+| `autotrain` | Running any training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch self-improvement + hypothesis loop) — per-phase references load on demand |
+| `autoresearch` | Knowledge-driven research orchestration: read/update repo + personal brains (OpenWiki / OKF / Obsidian), run the prior-work discovery loop, drive the autotrain hypothesis loop, and file ideas/experiments as Linear issues/milestones/projects — per-stage references load on demand |
 | `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
 | `organize-repository` | Creating, moving, renaming, deleting, or duplicating tracked paths; adding modules/docs/src/apps/skills; repository-sprawl review |
 | `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
