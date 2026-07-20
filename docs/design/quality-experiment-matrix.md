@@ -3040,6 +3040,17 @@ no-sync checkpoint only as a non-semantic fidelity/reward Pareto. Evidence:
 [narrative](iter-e572-e569-fidelity2-20260720.md) and
 [JSON](iter-e572-e569-fidelity2-20260720.json).
 
+## E573 E569 fidelity-loss weight 1
+
+A matched 48-step midpoint completes in 109.72s. OOD `n=4` retains
+meaningful-v1 0.25 while improving fidelity to 0.4750, validity to 0.6850,
+and reward to 0.7570. Structure falls to 0.1813, recall to 0.2708, and
+AST-node F1 to 0.2833; strict meaning-v2 remains 0 and AgentV remains 0/1.
+**Decision:** retain locally as a fidelity/coverage Pareto, but close the
+fidelity scalar ladder because strict semantics do not improve. Evidence:
+[narrative](iter-e573-e569-fidelity1-20260720.md) and
+[JSON](iter-e573-e569-fidelity1-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
