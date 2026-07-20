@@ -81,6 +81,21 @@ def test_semantic_role_candidates_use_local_authored_associations() -> None:
     }
 
 
+def test_semantic_role_candidates_can_use_visible_roles_and_public_schema() -> None:
+    prompt = "Modal dialog confirming a destructive delete action."
+    slots = [":ood.modal.title", ":ood.modal.body", ":ood.modal.confirm"]
+
+    candidates = prompt_semantic_role_candidates(
+        prompt,
+        slots,
+        include_schema_candidates=True,
+    )
+
+    assert "Modal" in candidates[":ood.modal.title"]
+    assert "TextContent" in candidates[":ood.modal.body"]
+    assert "Button" in candidates[":ood.modal.confirm"]
+
+
 def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:
     conf = torch.tensor([[0.9, 0.8, 0.1, 0.2, 0.05]])
     known = torch.tensor([[True, True, True, True, True]])

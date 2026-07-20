@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-20",
+          "note": "persist the default-off public-schema semantic-role candidate policy"
+        },
         {
           "version": "v22",
           "date": "2026-07-20",
@@ -805,7 +810,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -818,6 +823,21 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-07-20",
+          "note": "add SLM-163 action_embedding_init and action_embedding_train plumbing; defaults preserve existing behavior"
+        },
+        {
+          "version": "v33",
+          "date": "2026-07-20",
+          "note": "no-bump: complete runtime override plumbing for the already registered v33 lever"
+        },
+        {
+          "version": "v33",
+          "date": "2026-07-20",
+          "note": "optionally derive component choices from visible slot roles and the public schema"
+        },
         {
           "version": "v33",
           "date": "2026-07-20",

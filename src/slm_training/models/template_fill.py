@@ -101,20 +101,29 @@ def ensure_prompt_semantic_roles(
 
 
 def prompt_semantic_role_candidates(
-    prompt: str, placeholders: list[str] | None
+    prompt: str,
+    placeholders: list[str] | None,
+    *,
+    include_schema_candidates: bool = False,
 ) -> dict[str, tuple[str, ...]]:
-    """Return only schema-compatible candidates justified by visible prompt prose."""
+    """Return schema-compatible candidates justified by visible roles and prose."""
     slots = normalize_placeholders(placeholders)
     if not slots:
         return {}
     from slm_training.data.quality import (
+        _official_component_names,
         _prompt_component_mentions,
         semantic_role_candidates,
     )
 
-    components = sorted(_prompt_component_mentions(prompt))
-    if not components:
+    mentioned_components = sorted(_prompt_component_mentions(prompt))
+    if not mentioned_components:
         return {}
+    components = (
+        sorted(_official_component_names())
+        if include_schema_candidates
+        else mentioned_components
+    )
     candidates = {
         slot: set(names)
         for slot, names in semantic_role_candidates(slots, components).items()
@@ -142,7 +151,7 @@ def prompt_semantic_role_candidates(
         role = re.findall(r"[a-z0-9]+", slot.removeprefix(":").split(".")[-1])
         if not role:
             continue
-        for component in components:
+        for component in mentioned_components:
             family = re.findall(
                 r"[a-z0-9]+",
                 re.sub(r"(?<!^)(?=[A-Z])", " ", component).lower(),
