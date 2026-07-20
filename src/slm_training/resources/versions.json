@@ -479,6 +479,21 @@
         }
       ]
     },
+    "data.semantic_contrast": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/semantic_contrast/",
+        "scripts/build_semantic_contrasts.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SPV2-01 versioned hard-valid semantic-contrast corpus and corruption taxonomy"
+        }
+      ]
+    },
     "harness.experiments": {
       "version": "v31",
       "kind": "harness",
