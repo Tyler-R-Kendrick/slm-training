@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-07-20",
+          "note": "expose and persist the default-off authored typed-array nonempty margin"
+        },
         {
           "version": "v30",
           "date": "2026-07-20",
@@ -1206,7 +1211,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v53",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1221,6 +1226,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-07-20",
+          "note": "optionally start empty slot-bearing typed arrays inside authored prompt-plan components"
+        },
         {
           "version": "v53",
           "date": "2026-07-20",
