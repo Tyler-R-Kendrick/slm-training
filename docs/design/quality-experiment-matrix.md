@@ -3662,3 +3662,16 @@ next scratch setting. Strict v2 remains 0, AgentV is 0/1, and no checkpoint
 was created or synced.
 Evidence: [narrative](iter-e599-slot-coverage-close-20260720.md) and
 [JSON](iter-e599-slot-coverage-close-20260720.json).
+
+## E600 modified component-count parsing
+
+E600 preserves explicit prompt component counts when one descriptive modifier
+separates the number and component family, so “two metric cards” yields two
+required `Card` plan roles. The matched weight-4 OOD `n=4` arm is prediction-
+and metric-identical to E599. Weight 8 improves aggregate structure
+0.5169→0.5756 only by adding a duplicate auth `Input`; dashboard/gallery remain
+collapsed and placeholder spam returns. Keep the planner fix and weight 4,
+reject weight 8, and do not promote or sync. Strict v2 remains 0 and AgentV is
+0/1. Evidence:
+[narrative](iter-e600-modified-component-count-20260720.md) and
+[JSON](iter-e600-modified-component-count-20260720.json).
