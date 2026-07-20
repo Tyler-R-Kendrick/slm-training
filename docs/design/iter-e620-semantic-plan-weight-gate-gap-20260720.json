@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E620",
+  "run_id": "e620-semantic-plan-weight-gate-gap-20260720",
+  "date_utc": "2026-07-20",
+  "status": "completed_positive",
+  "run_class": "audit",
+  "hypothesis": "E617 found that five decode-time biases silently no-op because they read self._slot_contracts, which is populated only when an orthogonal flag is set. E618 found an independent evaluator false-positive class. This iteration audits twotower.py/choice_tokenizer.py and evals/meaningful_program.py for more instances of either failure shape, rather than repeating E611-E619's scratch-checkpoint approach.",
+  "method": "Traced every self._* attribute in TwoTowerModel populated conditionally during batch/decode setup and read by a decode-time bias that silently no-ops when absent: self._slot_contracts (already fixed by E617, re-verified complete), self._semantic_role_candidates (self-guarding, already raises), self._semantic_plan_action_scores/_action_counts (populated by plan_weight = max(...) over a hand-enumerated 9-name list). Cross-referenced the 9-name list against TwoTowerConfig's actual 11 semantic_plan_*_decode_weight/semantic_plan_*_margin_decode_weight dataclass fields (grep) and against every function that reads self._semantic_plan_action_scores/_action_counts. Two weight names were missing from the list: semantic_plan_inline_decode_weight (gates _semantic_plan_inline_bias, twotower.py:4729) and semantic_plan_repeated_array_close_margin_decode_weight (gates _semantic_plan_repeated_array_close_bias, twotower.py:5141), both of which read exactly the state the missing names should have gated. choice_tokenizer.py was ruled out (no conditional self._* state at all). Separately audited every check in evals/meaningful_program.py for E618-shaped regex/heuristic misclassification of syntactically-valid current-grammar output; found the E618 fix intact and no new live instance.",
+  "checkpoint": {
+    "run_id": "e617-debug-repro-scratch80-20260720",
+    "location": "outputs/runs/e617-debug-repro-scratch80-20260720/checkpoints/last.pt",
+    "sha256": "119dd41a57573fe408ee1208a9159cafca9a45c7050bd00274571938898a8539",
+    "created": false,
+    "sync": false,
+    "sync_reason": "Reused the real, on-disk E617/E619 checkpoint (re-verified sha256 matches E617/E619's recorded value byte-for-byte). No retraining this iteration."
+  },
+  "part1_class_a_audit": {
+    "attributes_inventoried": [
+      "self._slot_contracts",
+      "self._semantic_role_candidates",
+      "self._semantic_plan_action_scores",
+      "self._semantic_plan_action_counts"
+    ],
+    "choice_tokenizer_py": "no conditional self._* per-row state found; ruled out",
+    "self_slot_contracts": "already fixed by E617; re-verified all 5 readers are covered by the E617 ValueError guard; no 6th reader found",
+    "self_semantic_role_candidates": "self-guarding; semantic_role_decode_weight > 0 already raises ValueError if honest_slot_contract or semantic_role_contract_in_context is unset",
+    "self_semantic_plan_action_scores_counts": "FINDING: plan_weight = max(...) enumerated only 9 of TwoTowerConfig's 11 semantic_plan_*_decode_weight fields, omitting semantic_plan_inline_decode_weight and semantic_plan_repeated_array_close_margin_decode_weight, each the sole gate for a real decode-time bias (_semantic_plan_inline_bias, _semantic_plan_repeated_array_close_bias) that reads this same state",
+    "current_liveness": "masked, not live-broken: every E610-E619 recipe also sets semantic_plan_decode_weight=4.0 (already in the 9-name list) alongside semantic_plan_repeated_array_close_margin_decode_weight=2.0, so plan_weight was always positive by coincidence in every real eval to date. semantic_plan_inline_decode_weight has never been set nonzero in any committed recipe (dormant, same landmine, zero exercised risk so far)."
+  },
+  "part2_class_b_audit": {
+    "binding_correctness": "E618 fix confirmed intact (unconditional AST-based reachability walk); duplicate_binding's _ASSIGNMENT_RE regex checked against current object-frame/typed-array syntax (key: value, never key = value) -- no live false-positive path found, flagged latent-only",
+    "required_inventory_coverage_role_mismatch": "hardcoded term/owner vocabulary applied to AST-derived fields, not a raw-source regex; different/lower-confidence risk category than E618, no repro constructed",
+    "schema_value_role_correctness": "fully AST-based (_matches_schema_value recurses Arr/Obj node kinds); hand-traced typed-array-of-objects value through it; clean",
+    "anti_gaming": "fully AST-based (_subtree_hashes, AST-walked placeholder inventory); no regex DSL-structure fallback; clean",
+    "prompt_contract_inventory_section_re": "regex operates on prompt text, not model DSL output; structurally different bug class from E618; out of scope this iteration",
+    "semantic_contract_for_openui_data_quality_py": "outside evals/ (declared scope) but same regex-mini-parser shape as E618's bug; only fires for legacy record.meta['semantic_contract'] records; not verified whether any current builder populates that field with E613+-era syntax; flagged as scoped-out follow-up, not investigated further",
+    "new_live_class_b_bug_found": false
+  },
+  "fix": {
+    "code_change": "Replaced the 9-item hand-enumerated max(...) literal in _generate_batch_once (src/slm_training/models/twotower.py) with max(getattr(self.config, name, 0.0) or 0.0 for name in SEMANTIC_PLAN_DECODE_WEIGHT_NAMES), a new module-level tuple of all 11 semantic_plan_*_decode_weight/semantic_plan_*_margin_decode_weight field names, defined immediately after TwoTowerConfig.",
+    "fix_kind": "code correction (derive plan_weight from the full field set) plus two regression tests (drift guard + functional confirmation), no new decode-time lever, no more training",
+    "regression_tests": [
+      "test_semantic_plan_decode_weight_names_cover_all_config_fields: dataclasses.fields(TwoTowerConfig) drift guard, fails the build if a future semantic_plan_* weight field is added without being added to SEMANTIC_PLAN_DECODE_WEIGHT_NAMES",
+      "test_semantic_plan_only_weight_still_populates_plan_state (parametrized x2): real end-to-end model.generate_batch_requests() call with only one previously-missing weight set to 8.0, asserts self._semantic_plan_action_scores/_action_counts populate (not None)"
+    ]
+  },
+  "real_before_after_confirmation": {
+    "method": "Loaded the real E617 checkpoint via TwoTowerModel.from_checkpoint, applied E617's exact real evaluation_policy with every semantic_plan_* weight zeroed except one target weight = 8.0, called generate_batch_requests on the real ood_gallery_01 OOD record, before the fix (git stash of only twotower.py) and after.",
+    "record": "ood_gallery_01",
+    "prompt": "Image gallery block with caption text underneath.",
+    "results": [
+      {
+        "isolated_weight": "semantic_plan_repeated_array_close_margin_decode_weight=8.0 (all other semantic_plan_*=0)",
+        "pre_fix_action_scores_populated": false,
+        "pre_fix_action_counts_populated": false,
+        "post_fix_action_scores_populated": true,
+        "post_fix_action_counts_populated": true,
+        "prediction_byte_identical_pre_vs_post": true
+      },
+      {
+        "isolated_weight": "semantic_plan_inline_decode_weight=8.0 (all other semantic_plan_*=0)",
+        "pre_fix_action_scores_populated": false,
+        "pre_fix_action_counts_populated": false,
+        "post_fix_action_scores_populated": true,
+        "post_fix_action_counts_populated": true,
+        "prediction_byte_identical_pre_vs_post": true
+      }
+    ],
+    "interpretation": "State-population root cause confirmed and repaired in both cases. Prediction text is byte-identical before/after on this specific 80-step scratch checkpoint and record -- an honest, checkpoint-quality-dominated null result at the prediction level (same malformed self-nested tree E618 already characterized as decode-level instability), not evidence against the fix. Whether a well-trained checkpoint's output visibly changes under either bias is unanswered and out of scope (no retraining this iteration)."
+  },
+  "suites": [],
+  "no_checkpoint_trained_promoted_or_synced": true,
+  "decision": "Keep the SEMANTIC_PLAN_DECODE_WEIGHT_NAMES fix and both regression tests. Closes a real, evidence-backed live-shaped instance of E617's bug class (masked, not live, in every prior real E610-E619 recipe -- no previously reported metric in this lineage changes). Not a ship claim.",
+  "next": [
+    "Confirm whether any current train-data builder still populates record.meta['semantic_contract'] with E613+-era typed-array/nested-object syntax that data/quality.py's semantic_contract_for_openui regex mini-parser could misclassify.",
+    "Direct fuzz/property test of _ASSIGNMENT_RE's duplicate_binding check against the grammar's real serialization output.",
+    "Re-run an isolated matched-pair eval for semantic_plan_repeated_array_close_margin_decode_weight alone (now a real, non-masked lever) on a more-trained checkpoint."
+  ],
+  "verification": {
+    "unit_tests": "tests/test_models/test_compiler_decode.py: 100 passed (97 pre-existing + 3 new E620 tests: test_semantic_plan_decode_weight_names_cover_all_config_fields, test_semantic_plan_only_weight_still_populates_plan_state x2 parametrized). Run with NODE_OPTIONS unset per the documented E615/E616/E617/E618 fix.",
+    "verify_version_stamps": "python -m scripts.verify_version_stamps --check -> ok (3 changed files, 1 component touched: model.twotower v59->v60)",
+    "repo_policy": "python -m scripts.repo_policy -> ok (tracked + untracked)"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7dfd52664253418133c2648aaaf13eb46621d7fa",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v59"
+    },
+    "stamped_at": "2026-07-20T00:00:00+00:00",
+    "note": "components block reflects registered versions at the start of this iteration (model.twotower v59, code_dirty=true); versions.json was bumped to v60 for model.twotower as part of committing this iteration's SEMANTIC_PLAN_DECODE_WEIGHT_NAMES fix, and python -m scripts.verify_version_stamps --check confirms the bump matches the diff. No real eval harness run was executed against a fresh checkpoint this iteration (the real before/after confirmation used direct generate_batch_requests calls, not scripts.evaluate_model, so no eval_ood.json version_stamp block was produced)."
+  }
+}
