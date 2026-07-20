@@ -3744,3 +3744,17 @@ The first completed run is retained as instrumentation-negative because its
 top-eight cutoff hid the planned `Card` candidate. Evidence:
 [narrative](iter-e605-missing-family-score-trace-20260720.md) and
 [JSON](iter-e605-missing-family-score-trace-20260720.json).
+
+## E606 bounded semantic-plan component margin
+
+E606 floors each still-required planned family two points above the best legal
+component while existing remaining counts prevent over-generation after
+cardinality is met. On matched OOD `n=4`, dashboard now emits Button, Callout,
+Card, and Card, but canonicalization still returns a lone TextContent root.
+Every headline metric therefore remains exactly E605: structure 0.5756, recall
+0.6250, reward 0.8145, strict v2 0, and AgentV 0/1. Reject margin 2 as a
+promotable policy; retain the default-off diagnostic lever and next construct
+a verified root over already-emitted planned bindings. No checkpoint was
+created or synced. Evidence:
+[narrative](iter-e606-semantic-plan-margin-20260720.md) and
+[JSON](iter-e606-semantic-plan-margin-20260720.json).
