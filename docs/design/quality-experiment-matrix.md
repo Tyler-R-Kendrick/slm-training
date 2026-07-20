@@ -2896,6 +2896,16 @@ narrow eligibility to owner labels observed at most four times. Evidence:
 [narrative](iter-e559-owner-coverage2-20260720.md) and
 [JSON](iter-e559-owner-coverage2-20260720.json).
 
+## E560 narrow rare slot-owner coverage
+
+Narrowing 2× eligibility from ≤10 to ≤4 owner labels selects 9/244 records.
+OOD `n=4` structure improves to 0.2181, component recall to 0.2083, and
+AST-node F1 to 0.3389. Fidelity falls to 0.2583 and reward is 0.5403;
+meaning-v1/v2 and AST-edge F1 remain 0, with AgentV 0/1. **Decision:** retain
+as a topology Pareto lever without promotion and test threshold 7. Evidence:
+[narrative](iter-e560-owner-threshold4-20260720.md) and
+[JSON](iter-e560-owner-threshold4-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
