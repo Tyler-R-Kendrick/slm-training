@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E615",
+  "run_id": "e615-e614-objectslotrole8-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Requiring active inline object properties to match visible slot roles will bind Gallery src, alt, and details to their corresponding public slots without regressing E614.",
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "e614-e613-typedobjectstate-r3",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.825,
+      "placeholder_validity": 0.895,
+      "structural_similarity": 0.772925,
+      "component_type_recall": 0.6875,
+      "reward_score": 0.9145,
+      "ast_node_f1": 0.7579365079365079,
+      "ast_edge_f1": 0.6309523809523809,
+      "latency_ms_p50": 4222.1,
+      "latency_ms_p95": 10222.73,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "tokens_emitted": 93
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "comparison_to_e614": {
+    "meaningful_program_rate_delta": 0.0,
+    "strict_v2_delta": 0.0,
+    "placeholder_fidelity_delta": 0.04166666666666663,
+    "placeholder_validity_delta": 0.025000000000000022,
+    "structural_similarity_delta": 0.0,
+    "component_type_recall_delta": 0.0,
+    "reward_score_delta": 0.012499999999999956,
+    "ast_node_f1_delta": 0.0,
+    "ast_edge_f1_delta": 0.0,
+    "latency_ms_p50_delta": -256.0599999999995,
+    "latency_ms_p95_delta": -2374.370000000001,
+    "tokens_emitted_delta": 0
+  },
+  "gallery": {
+    "prediction": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{alt: \":ood.gallery.alt\", src: \":ood.gallery.img\", details: \":ood.gallery.caption\"}])",
+    "placeholder_fidelity": 0.5,
+    "placeholder_validity": 0.7,
+    "structural_similarity": 0.3167,
+    "component_type_recall": 0.0,
+    "reward_score": 0.799,
+    "choice_tokens": 30,
+    "visible_slots_consumed": 3,
+    "failure_reasons": [
+      "required_placeholder_missing",
+      "reference_graph_invalid"
+    ]
+  },
+  "decision": "Retain the generalized inline-object role rule and carry E615 as the next scratch research baseline; it improves slot fidelity and reward without changing structure, recall, AST scores, or output length.",
+  "next": "Repair the binding-aware evaluator so inline object property keys are not treated as unresolved references, then use corrected strict-v2 evidence to target omitted prompt requirements.",
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "diagnostic OOD n=4 is below the required full-suite sample size",
+      "strict binding-aware meaning-v2 is 0.0",
+      "AgentV is 0/1",
+      "smoke, held_out, adversarial, and rico_held suites were not run"
+    ]
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f6b59aa0b1975ee153779885bc5b927c4481825c",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v58"
+    },
+    "stamped_at": "2026-07-20T16:45:38.233283+00:00"
+  }
+}
