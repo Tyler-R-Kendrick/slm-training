@@ -391,12 +391,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-20",
+          "note": "add SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness"
+        },
         {
           "version": "v25",
           "date": "2026-07-20",
@@ -793,6 +798,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design JSON version stamp after harness.experiments v25 bump; report content unchanged"
         },
         {
@@ -820,12 +830,36 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged"
         },
         {
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-144 SPV1-01 archetype + role-set predictor fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.sde4_02_min_controller_capacity": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/sde4_02_min_controller_capacity.py",
+        "scripts/run_sde4_02_min_controller_capacity.py",
+        "tests/test_harnesses/experiments/test_sde4_02_min_controller_capacity.py",
+        "tests/test_scripts/test_run_sde4_02_min_controller_capacity.py",
+        "docs/design/iter-sde4-02-min-controller-capacity-20260720.json",
+        "docs/design/iter-sde4-02-min-controller-capacity-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness"
         }
       ]
     }
