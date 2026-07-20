@@ -1,0 +1,594 @@
+{
+  "claim_class": "wiring",
+  "experiment_id": "slm208-constraint-debt",
+  "falsifier": "The pre/post-mask KL is negative, the legal/full mass invariants are violated, or emitted rows change gradients when telemetry is enabled.",
+  "fixture_summary": "Four synthetic decision events (two decision kinds, train/held-out) evaluated under both full-vocab and legal-renormalized probability spaces. All rows are produced by compute_constraint_debt_v1 directly; no GPU, checkpoint, or model was used.",
+  "generated_at": "2026-07-20T23:19:54.057976+00:00",
+  "honest_caveats": [
+    "Synthetic logits and events only; no real policy checkpoint or tokenizer.",
+    "No ship-gate claim is made; this is wiring/fixture evidence.",
+    "Pre/post-mask KL is a diagnostic divergence, not a training objective or decoder intervention.",
+    "The small fixture cannot represent tail behavior or real grammar-state heterogeneity."
+  ],
+  "hypothesis": "Grammar-mask (legal-token) renormalization distorts the full-vocab distribution in a measurable way; ConstraintDebtV1 exposes the distortion as mass deficit, partition debts, and pre/post-mask KL without changing objectives or gradients.",
+  "matrix_set": "slm208_constraint_debt",
+  "matrix_version": "sde5-v1",
+  "rows": [
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.0,
+      "bad_debt": 1.0986122588627878,
+      "bad_mass": 0.3333333432674408,
+      "bad_support_count": 1,
+      "decision_kind": "component",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 1.0986123085021973,
+      "good_debt": 1.0986122588627878,
+      "good_mass": 0.3333333432674408,
+      "good_support_count": 1,
+      "group_id": "group-a",
+      "legal_debt": 0.4054650783043425,
+      "legal_mass": 0.6666666865348816,
+      "legal_mass_deficit": 0.3333333134651184,
+      "legal_support_count": 2,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": 0.0,
+      "probability_space": "full_vocab",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "train",
+      "state_id": "event-group-a-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057430+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-group-a",
+      "unobserved_mass": 0.3333333134651184,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.0,
+      "bad_debt": 0.6931471805579453,
+      "bad_mass": 0.5,
+      "bad_support_count": 1,
+      "decision_kind": "component",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 1.0986123085021973,
+      "good_debt": 0.6931471805579453,
+      "good_mass": 0.5,
+      "good_support_count": 1,
+      "group_id": "group-a",
+      "legal_debt": -1.000088900581841e-12,
+      "legal_mass": 1.0,
+      "legal_mass_deficit": 0.0,
+      "legal_support_count": 2,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": 0.40546512603759766,
+      "probability_space": "legal_tokens",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "train",
+      "state_id": "event-group-a-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057537+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-group-a",
+      "unobserved_mass": 0.0,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.11419517174363136,
+      "bad_debt": 3.1698460425251556,
+      "bad_mass": 0.04201006516814232,
+      "bad_support_count": 1,
+      "decision_kind": "grammar_comma",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 2.1698460578918457,
+      "good_debt": 0.169846056291237,
+      "good_mass": 0.8437947034835815,
+      "good_support_count": 1,
+      "group_id": "group-b",
+      "legal_debt": 5.9603646573809654e-08,
+      "legal_mass": 0.9999999403953552,
+      "legal_mass_deficit": 5.960464477539063e-08,
+      "legal_support_count": 3,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": -6.286760623197551e-08,
+      "probability_space": "full_vocab",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "train",
+      "state_id": "event-group-b-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057612+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-group-b",
+      "unobserved_mass": 5.960464477539063e-08,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.11419523134827614,
+      "bad_debt": 3.1698460425251556,
+      "bad_mass": 0.04201006516814232,
+      "bad_support_count": 1,
+      "decision_kind": "grammar_comma",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 2.1698460578918457,
+      "good_debt": 0.169846056291237,
+      "good_mass": 0.8437947034835815,
+      "good_support_count": 1,
+      "group_id": "group-b",
+      "legal_debt": -1.000088900581841e-12,
+      "legal_mass": 1.0,
+      "legal_mass_deficit": 0.0,
+      "legal_support_count": 3,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": 0.0,
+      "probability_space": "legal_tokens",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "train",
+      "state_id": "event-group-b-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057677+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-group-b",
+      "unobserved_mass": 0.0,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.0,
+      "bad_debt": 1.0986122588627878,
+      "bad_mass": 0.3333333432674408,
+      "bad_support_count": 1,
+      "decision_kind": "component",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 1.0986123085021973,
+      "good_debt": 1.0986122588627878,
+      "good_mass": 0.3333333432674408,
+      "good_support_count": 1,
+      "group_id": "held-axx",
+      "legal_debt": 0.4054650783043425,
+      "legal_mass": 0.6666666865348816,
+      "legal_mass_deficit": 0.3333333134651184,
+      "legal_support_count": 2,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": 0.0,
+      "probability_space": "full_vocab",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "held_out",
+      "state_id": "event-held-axx-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057742+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-held-axx",
+      "unobserved_mass": 0.3333333134651184,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.0,
+      "bad_debt": 0.6931471805579453,
+      "bad_mass": 0.5,
+      "bad_support_count": 1,
+      "decision_kind": "component",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 1.0986123085021973,
+      "good_debt": 0.6931471805579453,
+      "good_mass": 0.5,
+      "good_support_count": 1,
+      "group_id": "held-axx",
+      "legal_debt": -1.000088900581841e-12,
+      "legal_mass": 1.0,
+      "legal_mass_deficit": 0.0,
+      "legal_support_count": 2,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": 0.40546512603759766,
+      "probability_space": "legal_tokens",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "held_out",
+      "state_id": "event-held-axx-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057802+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-held-axx",
+      "unobserved_mass": 0.0,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.03205858916044235,
+      "bad_debt": 2.4401896532075185,
+      "bad_mass": 0.08714432269334793,
+      "bad_support_count": 1,
+      "decision_kind": "grammar_comma",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 2.4401895999908447,
+      "good_debt": 1.4401896245258916,
+      "good_mass": 0.23688283562660217,
+      "good_support_count": 1,
+      "group_id": "held-bxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "legal_debt": 1.032583713421337,
+      "legal_mass": 0.35608574748039246,
+      "legal_mass_deficit": 0.6439142525196075,
+      "legal_support_count": 3,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": -5.947717340859526e-08,
+      "probability_space": "full_vocab",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "held_out",
+      "state_id": "event-held-bxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057863+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-held-bxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "unobserved_mass": 0.6439142525196075,
+      "verifier_bundle_hash": ""
+    },
+    {
+      "abstract_state_role": null,
+      "ambiguous_mass": 0.09003058075904846,
+      "bad_debt": 1.4076059450134593,
+      "bad_mass": 0.2447284758090973,
+      "bad_support_count": 1,
+      "decision_kind": "grammar_comma",
+      "decode_config_hash": "fixture-decode-hash",
+      "empty_bad_partition": false,
+      "empty_good_partition": false,
+      "epsilon": 1e-12,
+      "full_vocab_log_normalizer": 2.4401895999908447,
+      "good_debt": 0.407605982997008,
+      "good_mass": 0.6652409434318542,
+      "good_support_count": 1,
+      "group_id": "held-bxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "legal_debt": -1.000088900581841e-12,
+      "legal_mass": 1.0,
+      "legal_mass_deficit": 0.0,
+      "legal_support_count": 3,
+      "policy_checkpoint_sha": "fixture-policy-sha",
+      "pre_post_mask_kl": 1.0325835943222046,
+      "probability_space": "legal_tokens",
+      "schema_version": 1,
+      "single_legal_action": false,
+      "split": "held_out",
+      "state_id": "event-held-bxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-(0,)-(1,)",
+      "timestamp": "2026-07-20T23:19:54.057920+00:00",
+      "tokenizer_sha": "fixture-tokenizer-sha",
+      "trajectory_id": "trajectory-held-bxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "unobserved_mass": 0.0,
+      "verifier_bundle_hash": ""
+    }
+  ],
+  "run_id": "slm208-constraint-debt-20260720",
+  "schema": "Slm208ConstraintDebtReportV1",
+  "status": "fixture",
+  "summary": {
+    "by_decision_kind_split_space": {
+      "component::held_out::full_vocab": {
+        "bad_debt": {
+          "mean": 1.0986122588627878,
+          "median": 1.0986122588627878,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 1.0986122588627878,
+          "median": 1.0986122588627878,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": 0.4054650783043425,
+          "median": 0.4054650783043425,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.3333333134651184,
+          "median": 0.3333333134651184,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "component::held_out::legal_tokens": {
+        "bad_debt": {
+          "mean": 0.6931471805579453,
+          "median": 0.6931471805579453,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 0.6931471805579453,
+          "median": 0.6931471805579453,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": -1.000088900581841e-12,
+          "median": -1.000088900581841e-12,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": 0.40546512603759766,
+          "median": 0.40546512603759766,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "component::train::full_vocab": {
+        "bad_debt": {
+          "mean": 1.0986122588627878,
+          "median": 1.0986122588627878,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 1.0986122588627878,
+          "median": 1.0986122588627878,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": 0.4054650783043425,
+          "median": 0.4054650783043425,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.3333333134651184,
+          "median": 0.3333333134651184,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "component::train::legal_tokens": {
+        "bad_debt": {
+          "mean": 0.6931471805579453,
+          "median": 0.6931471805579453,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 0.6931471805579453,
+          "median": 0.6931471805579453,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": -1.000088900581841e-12,
+          "median": -1.000088900581841e-12,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": 0.40546512603759766,
+          "median": 0.40546512603759766,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "grammar_comma::held_out::full_vocab": {
+        "bad_debt": {
+          "mean": 2.4401896532075185,
+          "median": 2.4401896532075185,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 1.4401896245258916,
+          "median": 1.4401896245258916,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": 1.032583713421337,
+          "median": 1.032583713421337,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.6439142525196075,
+          "median": 0.6439142525196075,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": -5.947717340859526e-08,
+          "median": -5.947717340859526e-08,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "grammar_comma::held_out::legal_tokens": {
+        "bad_debt": {
+          "mean": 1.4076059450134593,
+          "median": 1.4076059450134593,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 0.407605982997008,
+          "median": 0.407605982997008,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": -1.000088900581841e-12,
+          "median": -1.000088900581841e-12,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": 1.0325835943222046,
+          "median": 1.0325835943222046,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "grammar_comma::train::full_vocab": {
+        "bad_debt": {
+          "mean": 3.1698460425251556,
+          "median": 3.1698460425251556,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 0.169846056291237,
+          "median": 0.169846056291237,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": 5.9603646573809654e-08,
+          "median": 5.9603646573809654e-08,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 5.960464477539063e-08,
+          "median": 5.960464477539063e-08,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": -6.286760623197551e-08,
+          "median": -6.286760623197551e-08,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      },
+      "grammar_comma::train::legal_tokens": {
+        "bad_debt": {
+          "mean": 3.1698460425251556,
+          "median": 3.1698460425251556,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "count": 1,
+        "empty_bad_partition_fraction": 0.0,
+        "empty_good_partition_fraction": 0.0,
+        "good_debt": {
+          "mean": 0.169846056291237,
+          "median": 0.169846056291237,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_debt": {
+          "mean": -1.000088900581841e-12,
+          "median": -1.000088900581841e-12,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "legal_mass_deficit": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "pre_post_mask_kl": {
+          "mean": 0.0,
+          "median": 0.0,
+          "non_null_count": 1,
+          "null_count": 0
+        },
+        "single_legal_action_fraction": 0.0
+      }
+    },
+    "row_count": 8
+  },
+  "three_way_interpretation": {
+    "abandon": "If the KL ever becomes negative or if enabling the writer alters gradient numerics, retract the instrumentation and fix the mass-bundle math.",
+    "intervene": "Use real checkpoint/events to verify that the full->legal mass deficit correlates with known grammar-constraint severity.",
+    "retain": "The telemetry row schema and KL invariant are internally consistent on synthetic decision events; attach to future preference diagnostic runs."
+  },
+  "timestamp": "2026-07-20T23:19:54.057976+00:00",
+  "version_stamp": {
+    "code_commit": "a284d6ae9e874f17b66674cc2bc52eabf16834b1",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v49",
+      "harness.preference.constraint_debt": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T23:19:54.070690+00:00"
+  }
+}

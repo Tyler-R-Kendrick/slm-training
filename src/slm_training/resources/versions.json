@@ -1785,6 +1785,26 @@
         }
       ]
     },
+    "harness.preference.constraint_debt": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/constraint_debt.py",
+        "src/slm_training/harnesses/preference/local_train.py",
+        "scripts/diagnose_preference_gradient_alignment.py",
+        "tests/test_harnesses/preference/test_constraint_debt.py",
+        "tests/test_harnesses/preference/test_local_train_constraint_debt.py",
+        "docs/design/iter-slm208-constraint-debt-20260720.json",
+        "docs/design/iter-slm208-constraint-debt-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-208 SDE5-01 constraint-debt V1 telemetry and pre/post-mask grammar-distortion KL wiring"
+        }
+      ]
+    },
     "data.test_build": {
       "version": "v2",
       "kind": "data_builder",
