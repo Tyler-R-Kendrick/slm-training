@@ -33,11 +33,11 @@ The dynamic pointer arm cannot beat the current slot-token representation withou
 | arm_id | arm_name | seed | discovery_recall | pointer_top1 | pointer_mrr | binding_fidelity | meaningful_rate | rare_recall | parse_validity | fail_closed | wall_seconds |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | legacy_inventory_in_prompt__s0 | legacy_inventory_in_prompt | 0 | 0.667 | 0.000 | 1.000 | 0.846 | 0.816 | 0.782 | 0.911 | 1.000 | 0.031 |
-| legacy_no_inventory__s0 | legacy_no_inventory | 0 | 0.000 | 0.000 | 0.000 | 0.464 | 0.410 | 0.397 | 0.497 | 1.000 | 0.031 |
+| legacy_no_inventory__s0 | legacy_no_inventory | 0 | 0.000 | 0.000 | 0.000 | 0.464 | 0.410 | 0.397 | 0.497 | 1.000 | 0.033 |
 | dynamic_structured_contract__s0 | dynamic_structured_contract | 0 | 0.000 | 0.000 | 0.000 | 0.773 | 0.734 | 0.717 | 0.831 | 0.000 | 0.038 |
-| dynamic_authored_only__s0 | dynamic_authored_only | 0 | 0.000 | 0.000 | 0.000 | 0.559 | 0.506 | 0.477 | 0.597 | 0.333 | 0.016 |
-| dynamic_inventory_in_prompt__s0 | dynamic_inventory_in_prompt | 0 | 0.667 | 0.000 | 0.163 | 0.825 | 0.789 | 0.755 | 0.868 | 1.000 | 0.032 |
-| dynamic_permuted_order__s0 | dynamic_permuted_order | 0 | 0.000 | 0.000 | 0.000 | 0.746 | 0.705 | 0.685 | 0.805 | 0.333 | 0.036 |
+| dynamic_authored_only__s0 | dynamic_authored_only | 0 | 0.000 | 0.000 | 0.000 | 0.559 | 0.506 | 0.477 | 0.597 | 0.333 | 0.017 |
+| dynamic_inventory_in_prompt__s0 | dynamic_inventory_in_prompt | 0 | 0.667 | 0.000 | 0.163 | 0.825 | 0.789 | 0.755 | 0.868 | 1.000 | 0.037 |
+| dynamic_permuted_order__s0 | dynamic_permuted_order | 0 | 0.000 | 0.000 | 0.000 | 0.746 | 0.705 | 0.685 | 0.805 | 0.333 | 0.037 |
 | dynamic_hidden_text__s0 | dynamic_hidden_text | 0 | 0.000 | 0.000 | 0.000 | 0.672 | 0.608 | 0.586 | 0.703 | 0.000 | 0.030 |
 
 ## Per-arm means

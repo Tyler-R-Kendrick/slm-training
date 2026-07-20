@@ -675,12 +675,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v49",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-20",
+          "note": "add SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
+        },
         {
           "version": "v49",
           "date": "2026-07-20",
@@ -977,6 +982,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1013,6 +1023,11 @@
         "docs/design/iter-slm163-schema-action-embedding-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1055,6 +1070,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1091,6 +1111,11 @@
         "docs/design/iter-slm165-interaction-factorial-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1138,6 +1163,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1182,6 +1212,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1211,6 +1246,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1235,6 +1275,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness"
         }
       ]
@@ -1251,6 +1296,11 @@
         "docs/design/iter-slm172-render-equivalence-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1290,6 +1340,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-176 P14 action-shortlist retrieve-then-rerank fixture harness"
         }
       ]
@@ -1306,6 +1361,11 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1821,6 +1881,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: SLM-209 reuses ConstraintDebtV1 rows and compute_constraint_debt_v1 types only; no behavior changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-208 SDE5-01 constraint-debt V1 telemetry and pre/post-mask grammar-distortion KL wiring"
         }
       ]
@@ -1976,6 +2041,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2060,6 +2130,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2152,6 +2227,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2231,6 +2311,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2305,6 +2390,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2374,6 +2464,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2440,6 +2535,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2501,6 +2601,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2590,6 +2695,11 @@
         "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2703,6 +2813,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2749,6 +2864,11 @@
         "docs/design/iter-slm156-plan-refinement-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2801,6 +2921,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2847,6 +2972,11 @@
         "docs/design/iter-slm159-cross-dsl-replication-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2899,6 +3029,11 @@
         {
           "version": "v2",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2925,6 +3060,30 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-160 SPV4-02 causal architecture disposition docs/spec harness"
+        }
+      ]
+    },
+    "harness.experiments.slm209_debt_targeted_curriculum": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm209_debt_targeted_curriculum.py",
+        "scripts/run_slm209_debt_targeted_curriculum_fixture.py",
+        "tests/test_harnesses/experiments/test_slm209_debt_targeted_curriculum.py",
+        "tests/test_scripts/test_run_slm209_debt_targeted_curriculum_fixture.py",
+        "docs/design/iter-slm209-debt-targeted-curriculum-20260720.json",
+        "docs/design/iter-slm209-debt-targeted-curriculum-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "SLM-209 make debt digests deterministic (drop timestamp); add --design-json/--design-md overrides"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
         }
       ]
     }

@@ -35,8 +35,8 @@ The retrieval shortlist drops the full-set top-1 candidate or collapses to fallb
 | size8_k8_s0 | 8 | True | True | - | 1.000 | 0.001 |
 | size16_k4_s0 | 4 | True | True | - | 1.000 | 0.001 |
 | size16_k8_s0 | 8 | True | True | - | 1.000 | 0.001 |
-| size32_k4_s0 | 4 | True | True | - | 1.000 | 0.002 |
-| size32_k8_s0 | 8 | True | True | - | 1.000 | 0.002 |
+| size32_k4_s0 | 4 | True | True | - | 1.000 | 0.001 |
+| size32_k8_s0 | 8 | True | True | - | 1.000 | 0.001 |
 
 ## Aggregate
 

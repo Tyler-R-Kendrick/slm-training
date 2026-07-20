@@ -32,13 +32,13 @@ All mixers perform identically on the actual workload distribution, recurrent/SS
 
 | Arm | Seed | Records | Loss | Accuracy | Latency ms | Params |
 | --- | --- | --- | --- | --- | --- | --- |
-| T0_no_mixer | 0 | 8 | 2.287 | 0.125 | 14.909 | 4552 |
-| T1_transformer | 0 | 8 | 2.482 | 0.125 | 76.290 | 30760 |
-| S1_mamba_reference | 0 | 8 | 2.449 | 0.125 | 43.280 | 5625 |
-| L1_gated_delta_net | 0 | 8 | 2.296 | 0.125 | 281.913 | 7689 |
-| R1_rwkv_reference | 0 | 8 | 2.557 | 0.250 | 47.397 | 8712 |
-| R2_xlstm_reference | 0 | 8 | 2.288 | 0.125 | 275.832 | 6666 |
-| C1_hyena_reference | 0 | 8 | 2.350 | 0.125 | 54.039 | 6616 |
+| T0_no_mixer | 0 | 8 | 2.287 | 0.125 | 11.232 | 4552 |
+| T1_transformer | 0 | 8 | 2.482 | 0.125 | 344.205 | 30760 |
+| S1_mamba_reference | 0 | 8 | 2.449 | 0.125 | 54.617 | 5625 |
+| L1_gated_delta_net | 0 | 8 | 2.296 | 0.125 | 364.176 | 7689 |
+| R1_rwkv_reference | 0 | 8 | 2.557 | 0.250 | 68.651 | 8712 |
+| R2_xlstm_reference | 0 | 8 | 2.288 | 0.125 | 324.496 | 6666 |
+| C1_hyena_reference | 0 | 8 | 2.350 | 0.125 | 74.819 | 6616 |
 
 ## Verdict
 

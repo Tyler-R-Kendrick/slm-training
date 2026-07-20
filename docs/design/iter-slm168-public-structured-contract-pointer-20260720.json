@@ -9,7 +9,7 @@
       "pointer_mrr": 0.0,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.47695949153780715,
-      "wall_seconds": 0.01628842327054312
+      "wall_seconds": 0.017007202259355238
     },
     "dynamic_hidden_text": {
       "binding_fidelity": 0.6722689293957885,
@@ -20,7 +20,7 @@
       "pointer_mrr": 0.0,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.5861809082870246,
-      "wall_seconds": 0.029592639772746895
+      "wall_seconds": 0.03030618678050972
     },
     "dynamic_inventory_in_prompt": {
       "binding_fidelity": 0.8246392826048017,
@@ -31,7 +31,7 @@
       "pointer_mrr": 0.1625,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.7553964553019051,
-      "wall_seconds": 0.03246149056084489
+      "wall_seconds": 0.0372024825543029
     },
     "dynamic_permuted_order": {
       "binding_fidelity": 0.7456829243650228,
@@ -42,7 +42,7 @@
       "pointer_mrr": 0.0,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.6847450015168433,
-      "wall_seconds": 0.036321474489247746
+      "wall_seconds": 0.037487645490634575
     },
     "dynamic_structured_contract": {
       "binding_fidelity": 0.7733099842260311,
@@ -53,7 +53,7 @@
       "pointer_mrr": 0.0,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.7171282395291814,
-      "wall_seconds": 0.03819772737648382
+      "wall_seconds": 0.03763017237093809
     },
     "legacy_inventory_in_prompt": {
       "binding_fidelity": 0.8463891952764089,
@@ -64,7 +64,7 @@
       "pointer_mrr": 1.0,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.7816074752030548,
-      "wall_seconds": 0.031119148472410568
+      "wall_seconds": 0.031206553474388027
     },
     "legacy_no_inventory": {
       "binding_fidelity": 0.463731318193983,
@@ -75,7 +75,7 @@
       "pointer_mrr": 0.0,
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.3969178245844569,
-      "wall_seconds": 0.031243994552264977
+      "wall_seconds": 0.03259350054976071
     }
   },
   "cells": [
@@ -176,7 +176,7 @@
           "candidate_set_hash": "56988661b8efef2c",
           "candidate_source": "inventory_in_prompt",
           "gold_index": 6,
-          "latency_seconds": 0.00028160000510979444,
+          "latency_seconds": 0.00035988399758934975,
           "mask": [
             true,
             true,
@@ -207,7 +207,7 @@
           "candidate_set_hash": "f0d09b30bce7ffc2",
           "candidate_source": "inventory_in_prompt",
           "gold_index": 6,
-          "latency_seconds": 4.88399964524433e-05,
+          "latency_seconds": 4.9833994125947356e-05,
           "mask": [
             true,
             true,
@@ -238,7 +238,7 @@
           "candidate_set_hash": "91c531d3bac81a24",
           "candidate_source": "inventory_in_prompt",
           "gold_index": null,
-          "latency_seconds": 3.993000427726656e-05,
+          "latency_seconds": 4.073399759363383e-05,
           "mask": [
             true,
             true,
@@ -280,7 +280,7 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.7816074752030548,
       "seed": 0,
-      "wall_seconds": 0.031119148472410568
+      "wall_seconds": 0.031206553474388027
     },
     {
       "arm_id": "legacy_no_inventory__s0",
@@ -294,7 +294,7 @@
           "candidate_set_hash": "f87864be6464c87c",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 3.7949997931718826e-05,
+          "latency_seconds": 3.759200626518577e-05,
           "mask": [
             true,
             true,
@@ -319,7 +319,7 @@
           "candidate_set_hash": "520270ce5c8f05b3",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 3.4649987355805933e-05,
+          "latency_seconds": 3.499200101941824e-05,
           "mask": [
             true,
             true,
@@ -344,7 +344,7 @@
           "candidate_set_hash": "5896cd6fba1b8dd1",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 3.277999348938465e-05,
+          "latency_seconds": 0.00134149199584499,
           "mask": [
             true,
             true,
@@ -380,7 +380,7 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.3969178245844569,
       "seed": 0,
-      "wall_seconds": 0.031243994552264977
+      "wall_seconds": 0.03259350054976071
     },
     {
       "arm_id": "dynamic_structured_contract__s0",
@@ -394,7 +394,7 @@
           "candidate_set_hash": "f87864be6464c87c",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.01100252999458462,
+          "latency_seconds": 0.008479033000185154,
           "mask": [
             true,
             true,
@@ -419,7 +419,7 @@
           "candidate_set_hash": "520270ce5c8f05b3",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.0057913900091079995,
+          "latency_seconds": 0.0056677840038901195,
           "mask": [
             true,
             true,
@@ -444,7 +444,7 @@
           "candidate_set_hash": "5896cd6fba1b8dd1",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.007115129992598668,
+          "latency_seconds": 0.009183091999148019,
           "mask": [
             true,
             true,
@@ -480,7 +480,7 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.7171282395291814,
       "seed": 0,
-      "wall_seconds": 0.03819772737648382
+      "wall_seconds": 0.03763017237093809
     },
     {
       "arm_id": "dynamic_authored_only__s0",
@@ -494,7 +494,7 @@
           "candidate_set_hash": "8a78afa8af052067",
           "candidate_source": "authored_only",
           "gold_index": null,
-          "latency_seconds": 0.006179250005516224,
+          "latency_seconds": 0.00555652599723544,
           "mask": [
             true,
             true,
@@ -517,7 +517,7 @@
           "candidate_set_hash": "ebe9d7d3fcc8b15d",
           "candidate_source": "authored_only",
           "gold_index": null,
-          "latency_seconds": 0.0035826999956043437,
+          "latency_seconds": 0.004601674998411909,
           "mask": [
             true,
             true
@@ -534,7 +534,7 @@
           "candidate_set_hash": "fb5bb94c5bbb19ee",
           "candidate_source": "authored_only",
           "gold_index": null,
-          "latency_seconds": 0.00368951000564266,
+          "latency_seconds": 0.004083624997292645,
           "mask": [
             true,
             true
@@ -564,7 +564,7 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.47695949153780715,
       "seed": 0,
-      "wall_seconds": 0.01628842327054312
+      "wall_seconds": 0.017007202259355238
     },
     {
       "arm_id": "dynamic_inventory_in_prompt__s0",
@@ -578,7 +578,7 @@
           "candidate_set_hash": "56988661b8efef2c",
           "candidate_source": "inventory_in_prompt",
           "gold_index": 6,
-          "latency_seconds": 0.004116310010431334,
+          "latency_seconds": 0.0070392839988926426,
           "mask": [
             true,
             true,
@@ -609,7 +609,7 @@
           "candidate_set_hash": "f0d09b30bce7ffc2",
           "candidate_source": "inventory_in_prompt",
           "gold_index": 6,
-          "latency_seconds": 0.003327280006487854,
+          "latency_seconds": 0.004650317001505755,
           "mask": [
             true,
             true,
@@ -640,7 +640,7 @@
           "candidate_set_hash": "91c531d3bac81a24",
           "candidate_source": "inventory_in_prompt",
           "gold_index": null,
-          "latency_seconds": 0.003519120000419207,
+          "latency_seconds": 0.004062284002429806,
           "mask": [
             true,
             true,
@@ -682,7 +682,7 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.7553964553019051,
       "seed": 0,
-      "wall_seconds": 0.03246149056084489
+      "wall_seconds": 0.0372024825543029
     },
     {
       "arm_id": "dynamic_permuted_order__s0",
@@ -696,7 +696,7 @@
           "candidate_set_hash": "f87864be6464c87c",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.002971319991047494,
+          "latency_seconds": 0.005075526001746766,
           "mask": [
             true,
             true,
@@ -721,7 +721,7 @@
           "candidate_set_hash": "520270ce5c8f05b3",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.0045530099887400866,
+          "latency_seconds": 0.004373200004920363,
           "mask": [
             true,
             true,
@@ -746,7 +746,7 @@
           "candidate_set_hash": "5896cd6fba1b8dd1",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.005359859991585836,
+          "latency_seconds": 0.004657466997741722,
           "mask": [
             true,
             true,
@@ -783,7 +783,7 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.6847450015168433,
       "seed": 0,
-      "wall_seconds": 0.036321474489247746
+      "wall_seconds": 0.037487645490634575
     },
     {
       "arm_id": "dynamic_hidden_text__s0",
@@ -797,7 +797,7 @@
           "candidate_set_hash": "f87864be6464c87c",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.0048698099999455735,
+          "latency_seconds": 0.004299424996133894,
           "mask": [
             true,
             true,
@@ -822,7 +822,7 @@
           "candidate_set_hash": "520270ce5c8f05b3",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.0037766299938084558,
+          "latency_seconds": 0.004476549991522916,
           "mask": [
             true,
             true,
@@ -847,7 +847,7 @@
           "candidate_set_hash": "5896cd6fba1b8dd1",
           "candidate_source": "structured_contract",
           "gold_index": null,
-          "latency_seconds": 0.003622410004027188,
+          "latency_seconds": 0.004223266994813457,
           "mask": [
             true,
             true,
@@ -884,22 +884,22 @@
       "pointer_top1_accuracy": 0.0,
       "rare_component_recall": 0.5861809082870246,
       "seed": 0,
-      "wall_seconds": 0.029592639772746895
+      "wall_seconds": 0.03030618678050972
     }
   ],
   "run_id": "slm168-public-structured-contract-pointer-20260720",
   "schema": "Slm168PublicStructuredContractPointerReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T12:55:52.459513Z",
+  "timestamp": "2026-07-20T23:46:47.589248Z",
   "version_stamp": {
-    "code_commit": "01c5fb492463f439cf9da05ed70c2a361d0a04ef",
+    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v43",
+      "harness.experiments": "v50",
       "harness.experiments.slm168_public_structured_contract_pointer": "v1",
-      "model.twotower": "v43"
+      "model.twotower": "v59"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T12:55:52.458213+00:00"
+    "stamped_at": "2026-07-20T23:46:47.587795+00:00"
   }
 }
