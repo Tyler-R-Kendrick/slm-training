@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-20",
+          "note": "expose and persist the default-off semantic-plan legal-component margin score"
+        },
         {
           "version": "v25",
           "date": "2026-07-20",
@@ -1006,7 +1011,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v44",
+      "version": "v45",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1020,6 +1025,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v45",
+          "date": "2026-07-20",
+          "note": "optionally floor still-required semantic-plan families above the best legal component score"
+        },
         {
           "version": "v44",
           "date": "2026-07-20",

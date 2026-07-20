@@ -249,6 +249,7 @@ class TwoTowerConfig:
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
+    semantic_plan_margin_decode_weight: float = 0.0
     semantic_plan_seed_decode_weight: float = 0.0
     semantic_plan_inline_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
@@ -4055,6 +4056,7 @@ class TwoTowerModel(nn.Module):
         candidate_kinds: tuple[str, ...],
         state: Any | None = None,
         prefix: list[int] | None = None,
+        candidate_scores: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Soft-score missing component instances and distinct-slot closure."""
         weight = float(
@@ -4063,10 +4065,18 @@ class TwoTowerModel(nn.Module):
         seed_weight = float(
             getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
         )
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
         if self._semantic_plan_seed_active(state, candidate_kinds):
             weight += seed_weight
         if (
-            weight <= 0.0
+            (weight <= 0.0 and margin <= 0.0)
             or not self._semantic_plan_action_scores
             or row >= len(self._semantic_plan_action_scores)
         ):
@@ -4105,6 +4115,17 @@ class TwoTowerModel(nn.Module):
             "component_bound",
             "component_root_or_bound",
         }
+        component_score_ceiling = (
+            max(
+                float(candidate_scores[position].item())
+                for position, kind in enumerate(candidate_kinds)
+                if kind in component_kinds
+            )
+            if margin > 0.0
+            and candidate_scores is not None
+            and any(kind in component_kinds for kind in candidate_kinds)
+            else None
+        )
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
@@ -4115,6 +4136,16 @@ class TwoTowerModel(nn.Module):
             )
             if kind in component_kinds and score > 0.0 and still_required:
                 bias[position] = weight * score
+                if component_score_ceiling is not None:
+                    margin_bias = (
+                        component_score_ceiling
+                        + margin
+                        - float(candidate_scores[position].item())
+                    )
+                    bias[position] = max(
+                        float(bias[position].item()),
+                        margin_bias,
+                    )
                 applied = True
         frames = getattr(state, "frames", ())
         if remaining_counts is not None and prefix and frames:
@@ -4302,6 +4333,14 @@ class TwoTowerModel(nn.Module):
             "choice_changed": before != after,
             "semantic_plan_decode_weight": float(
                 getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+            ),
+            "semantic_plan_margin_decode_weight": float(
+                getattr(
+                    self.config,
+                    "semantic_plan_margin_decode_weight",
+                    0.0,
+                )
+                or 0.0
             ),
             "planned_candidates": [
                 {
@@ -6402,6 +6441,7 @@ class TwoTowerModel(nn.Module):
                         candidate_kinds,
                         states[row],
                         ids[row, :position].tolist(),
+                        scores,
                     )
                     semantic_plan_trace = None
                     if semantic_plan_bias is not None:
@@ -7464,6 +7504,12 @@ class TwoTowerModel(nn.Module):
             self._semantic_role_candidates = None
         plan_weight = max(
             getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
             getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0,
             getattr(
                 self.config, "semantic_plan_binding_decode_weight", 0.0

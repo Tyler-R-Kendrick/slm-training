@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E606",
+  "run_id": "e606-e605-planmargin2-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed_rejected_not_promotable",
+  "run_class": "scratch_matrix",
+  "hypothesis": "A bounded margin above the best legal component will recover deeply suppressed planned families without duplicate or quality regression.",
+  "preregistration": {
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_seed_decode_weight": 0.0,
+    "acceptance": "Required-family or root reachability, or strict meaning-v2, must improve without fidelity, validity, reward, or duplicate-cardinality regression."
+  },
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "matched_to": "e605-e604-plan32-trace-r2",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.575625,
+      "component_type_recall": 0.625,
+      "reward_score": 0.8145,
+      "ast_node_f1": 0.6111111111111112,
+      "ast_edge_f1": 0.4642857142857143,
+      "latency_ms_p50": 5081.57,
+      "latency_ms_p95": 15970.85
+    }
+  },
+  "trace_findings": {
+    "dashboard_emitted_families": [
+      "Button",
+      "Callout",
+      "Card",
+      "Card"
+    ],
+    "dashboard_predicted_family_cardinality_satisfied": true,
+    "dashboard_canonical_prediction": "root = TextContent(\":ood.dash.status.body\")",
+    "dashboard_component_type_recall": 0.25,
+    "changed_after_plan": false,
+    "auth_new_failure_reason": "placeholder_spam"
+  },
+  "comparison": {
+    "all_headline_metrics_equal_e605": true,
+    "required_family_stream_coverage_improved": true,
+    "reachable_family_coverage_improved": false,
+    "strict_v2_changed": false
+  },
+  "decision": "Reject margin 2 as a policy. Retain the default-off diagnostic lever and next construct a verified root over already-emitted planned bindings after coverage.",
+  "ship_gates": {
+    "pass": false,
+    "reason": "Diagnostic OOD subset only; strict meaning-v2 is 0, dashboard/gallery canonical roots still miss required families, and AgentV is 0/1."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca3a4a44ae09232eb5a38e5f1725898791032ce6",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v26",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v45"
+    },
+    "stamped_at": "2026-07-20T12:51:21.889032+00:00"
+  }
+}
