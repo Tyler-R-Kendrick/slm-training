@@ -4014,8 +4014,9 @@ class TwoTowerModel(nn.Module):
         row: int,
         candidate_ids: tuple[int, ...],
         candidate_kinds: tuple[str, ...],
+        state: Any | None = None,
     ) -> torch.Tensor | None:
-        """Apply predicted-plan features as a soft score; never change legality."""
+        """Soft-score still-missing predicted component instances."""
         weight = float(
             getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
         )
@@ -4028,6 +4029,28 @@ class TwoTowerModel(nn.Module):
         scores = self._semantic_plan_action_scores[row]
         if not scores:
             return None
+        remaining_counts = (
+            dict(self._semantic_plan_action_counts[row])
+            if state is not None
+            and self._semantic_plan_action_counts
+            and row < len(self._semantic_plan_action_counts)
+            else None
+        )
+        if remaining_counts is not None:
+            family_token_ids = {
+                str(self.tokenizer.id_to_token[token_id])
+                .removeprefix("COMP:")
+                .removeprefix("+"): token_id
+                for token_id in self._component_inventory_token_ids()
+            }
+            for expr_type in getattr(state, "section_types", ()):
+                token_id = family_token_ids.get(
+                    str(expr_type).removeprefix("element:")
+                )
+                if token_id in remaining_counts:
+                    remaining_counts[token_id] = max(
+                        0, remaining_counts[token_id] - 1
+                    )
         bias = torch.zeros(
             len(candidate_ids), device=next(self.parameters()).device
         )
@@ -4041,7 +4064,11 @@ class TwoTowerModel(nn.Module):
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
             score = scores.get(token_id, 0.0)
-            if kind in component_kinds and score > 0.0:
+            still_required = (
+                remaining_counts is None
+                or remaining_counts.get(token_id, 0) > 0
+            )
+            if kind in component_kinds and score > 0.0 and still_required:
                 bias[position] = weight * score
                 applied = True
         return bias if applied else None
@@ -5752,6 +5779,7 @@ class TwoTowerModel(nn.Module):
                         row,
                         candidate_ids,
                         candidate_kinds,
+                        states[row],
                     )
                     if semantic_plan_bias is not None:
                         before_semantic_plan = int(scores.argmax().item())
