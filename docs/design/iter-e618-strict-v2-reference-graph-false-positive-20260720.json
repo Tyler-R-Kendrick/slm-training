@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E618",
+  "run_id": "e618-strict-v2-reference-graph-false-positive-20260720",
+  "date_utc": "2026-07-20",
+  "status": "completed_partial",
+  "run_class": "diagnostic",
+  "hypothesis": "E617 found a real, positive treatment-vs-control delta (placeholder_fidelity +0.042, reward_score +0.0125) on a matched OOD n=4 replay, but binding_aware_meaningful_v2_rate_strict stayed 0.0 in both arms. This iteration asks the ship-gate-blocking question directly: is strict v2's permanent 0 a real model-quality gap plausible at 80 training steps, or is there another silently-misconfigured/no-op mechanism in the eval recipe or the evaluator itself, in the spirit of E617's slot-contract-decode finding?",
+  "environment_note": "Reused the real, on-disk E617 eval artifacts from this same sandbox (outputs/runs/e617-control-eval-r1/eval_ood.json, outputs/runs/e617-treatment-eval-r1/eval_ood.json) rather than retraining -- both files persisted from the prior session and contain the real per-record predictions and the real checkpoint_sha256 (119dd41a...8898a854), matching iter-e617's JSON. No new training run. Node/AgentV commands run with NODE_OPTIONS unset (ambient --import tsx breaks the openui_bridge Node subprocess), matching the documented E615/E616/E617 fix -- verified directly: without unsetting it, slm_training.dsl.parser.parse() itself raises 'OpenUI bridge returned empty output (exit=9): --import tsx is not allowed in NODE_OPTIONS', which cascades into every downstream binding_aware_meaningful_v2 check failing as 'unavailable'/'failed', a red herring that looks like a real evaluator bug but is only environment misconfiguration.",
+  "method": "Loaded the real E617 control/treatment predictions for all 4 OOD records (ood_dashboard_01, ood_gallery_01, ood_modal_01, ood_auth_01) from outputs/runs/e617-{control,treatment}-eval-r1/eval_ood.json and called src/slm_training/evals/meaningful_program.py's binding_aware_meaningful_v2() directly against each real prediction + the real gold record, printing every one of the 8 sub-checks' status and reason codes (a live instrumentation pass, same style as E617's temporary print-based diagnosis). Found ood_gallery_01 and ood_modal_01 both failed the 'binding_correctness' check with reason 'reference_graph_invalid' in both arms. Traced this into _binding_check (src/slm_training/evals/meaningful_program.py): for any prediction without $/Query/Mutation/@ 'runtime syntax', the function fell back to a regex-based Gate.REFERENCES check (src/slm_training/data/verify/stack.py's _reference_graph) instead of the graph-based reachability check used for runtime sources. That regex (_NAME_RE = r'\\b([a-z_][A-Za-z0-9_]*)\\b') strips quoted strings but not bare identifiers, so it misreads bare object-literal property keys (e.g. `src:`/`alt:` in a typed-array item like `{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\"}`, the exact syntax E614/E615/E617's own object-frame lineage targets) as unresolved variable references. Confirmed with a standalone repro: evaluate_gate(Gate.REFERENCES, ...) on `root = Stack([v0], \"column\")\\nv0 = ImageGallery([{src: \\\":ood.gallery.img\\\", alt: \\\":ood.gallery.alt\\\"}])` returns FAIL, detail 'unresolved reference: alt' -- even though the official parser (slm_training.dsl.parser.parse/validate, the real grammar) accepts the source cleanly and reports zero unresolved/orphaned bindings in program.meta. Grepped docs/design/iter-e612..e617*.json and found 'reference_graph_invalid' already present in E612, E613, E614's own eval evidence, confirming this is not new to E617 -- it has been silently pinning strict v2 toward 0 for at least six prior experiments in this lineage.",
+  "root_cause": {
+    "summary": "src/slm_training/evals/meaningful_program.py's _binding_check() used program.meta-derived unresolved/orphaned reference data (from the official parser, authoritative for both structural and runtime sources) for most of its checking, but for any source lacking $/Query/Mutation/Action/@ syntax it ALSO ran a second, redundant regex-based Gate.REFERENCES fallback that was written before typed-array object-literal items existed as valid DSL syntax. That fallback's identifier regex cannot distinguish a JS-object-literal property key (`src:`) from a genuine bare variable reference, so it fails 'binding_correctness' -- and with it binding_aware_meaningful_v2's strict all-checks-pass verdict -- for any correctly formed typed-array-of-objects prediction, independent of model quality or decode weights.",
+    "scope": "Affects binding_aware_meaningful_v2 (evals.meaningful_program, the strict v2 ship-gate metric) only. Does not affect the shared Gate.REFERENCES/_reference_graph implementation in data/verify/stack.py itself (untouched, still used elsewhere in the verify stack for its original purpose), nor meaningful_program_v1, nor any decode-time lever.",
+    "fix_kind": "evaluator bug fix (not a recipe flag, not more training) -- meaningful_program.py METRIC_VERSION 2.0.0 -> 2.1.0"
+  },
+  "code_change": "_binding_check no longer branches on whether the source contains $/Query/Mutation/Action/@ syntax. It always runs the graph-based dependency-reachability pass (the code previously reserved for runtime sources): walk $state/Query/Mutation dependencies and report 'unreachable_binding' for genuinely dead runtime bindings. For structural-only (placeholder scaffold) sources, state_declarations/query_statements/mutation_statements are empty, so this is a verified no-op -- structural correctness is already fully covered by the official-parser-derived unresolved/orphaned checks that already ran unconditionally above it. The buggy regex Gate.REFERENCES fallback and its 'reference_graph_invalid' reason code are removed from this call site entirely (data/verify/stack.py itself is unmodified). Added a regression test, tests/test_evals/test_meaningful_program.py::test_v2_typed_array_object_item_keys_are_not_treated_as_unresolved_refs, asserting binding_correctness PASSes and reference_graph_invalid never appears for a typed-array object-literal-item prediction.",
+  "real_result_reproduction": {
+    "checkpoint_sha256": "119dd41a57573fe408ee1208a9159cafca9a45c7050bd00274571938898a8539",
+    "checkpoint_note": "Same E616/E617 80-step CPU scratch checkpoint; no new training this iteration.",
+    "pre_fix_reasons_by_record": {
+      "control": {
+        "ood_dashboard_01": ["placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Callout.variant", "schema_value_role_mismatch:Card.variant", "placeholder_spam"],
+        "ood_gallery_01": ["required_inventory_unknown", "reference_graph_invalid"],
+        "ood_modal_01": ["placeholder_semantic_role_mismatch", "reference_graph_invalid", "schema_value_role_mismatch:Modal.children", "schema_value_role_mismatch:Modal.open", "schema_value_role_mismatch:Stack.children", "schema_value_role_mismatch:Stack.direction", "schema_value_role_mismatch:Stack.gap", "schema_value_role_mismatch:TextContent.size", "duplicate_subtree_spam", "placeholder_spam"],
+        "ood_auth_01": ["placeholder_semantic_role_mismatch"]
+      },
+      "treatment": {
+        "ood_dashboard_01": ["placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Callout.variant", "schema_value_role_mismatch:Card.variant", "placeholder_spam"],
+        "ood_gallery_01": ["required_inventory_unknown", "reference_graph_invalid"],
+        "ood_modal_01": ["placeholder_semantic_role_mismatch", "reference_graph_invalid", "schema_value_role_mismatch:Modal.children", "schema_value_role_mismatch:Modal.open", "schema_value_role_mismatch:Stack.align", "schema_value_role_mismatch:Stack.children", "schema_value_role_mismatch:Stack.direction", "schema_value_role_mismatch:Stack.gap", "schema_value_role_mismatch:TextContent.size", "duplicate_subtree_spam", "placeholder_spam"],
+        "ood_auth_01": ["placeholder_semantic_role_mismatch", "placeholder_spam"]
+      },
+      "reproduction_method": "Obtained by temporarily `git stash push` on only meaningful_program.py (reverting to pre-fix code, leaving the rest of the working tree, including the same real predictions, untouched), re-running the identical re-score script, then `git stash pop` to restore the fix. Same real predictions, same real records, both before and after."
+    },
+    "post_fix_reasons_by_record": {
+      "control": {
+        "ood_dashboard_01": ["placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Callout.variant", "schema_value_role_mismatch:Card.variant", "placeholder_spam"],
+        "ood_gallery_01": ["required_inventory_unknown"],
+        "ood_modal_01": ["placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Modal.children", "schema_value_role_mismatch:Modal.open", "schema_value_role_mismatch:Stack.children", "schema_value_role_mismatch:Stack.direction", "schema_value_role_mismatch:Stack.gap", "schema_value_role_mismatch:TextContent.size", "duplicate_subtree_spam", "placeholder_spam"],
+        "ood_auth_01": ["placeholder_semantic_role_mismatch"]
+      },
+      "treatment": {
+        "ood_dashboard_01": ["placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Callout.variant", "schema_value_role_mismatch:Card.variant", "placeholder_spam"],
+        "ood_gallery_01": ["required_inventory_unknown"],
+        "ood_modal_01": ["placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Modal.children", "schema_value_role_mismatch:Modal.open", "schema_value_role_mismatch:Stack.align", "schema_value_role_mismatch:Stack.children", "schema_value_role_mismatch:Stack.direction", "schema_value_role_mismatch:Stack.gap", "schema_value_role_mismatch:TextContent.size", "duplicate_subtree_spam", "placeholder_spam"],
+        "ood_auth_01": ["placeholder_semantic_role_mismatch", "placeholder_spam"]
+      }
+    },
+    "binding_aware_meaningful_v2_rate_strict_before": 0.0,
+    "binding_aware_meaningful_v2_rate_strict_after": 0.0,
+    "honest_conclusion": "The fix is real and confirmed: 'reference_graph_invalid' -- a genuine false positive -- disappears from both ood_gallery_01 and ood_modal_01 in both arms, in a live re-score of the exact real E617 predictions (not fabricated or hypothetical). But the aggregate binding_aware_meaningful_v2_rate_strict does NOT move off 0.0 for this specific checkpoint's predictions, because the other checks that were already failing these two records independently of the bug (required_inventory_unknown for ood_gallery_01; a long list of schema_value_role_mismatch / placeholder_semantic_role_mismatch / duplicate_subtree_spam / placeholder_spam reasons for ood_modal_01, whose raw prediction is deeply malformed and self-nesting -- consistent with an undertrained 80-step CPU scratch checkpoint, not an evaluator artifact) still fail on their own merits. ood_dashboard_01 and ood_auth_01 never triggered the bug at all (no object-literal syntax in their predictions) and are unaffected either way -- both fail strict v2 on real schema/placeholder-role mismatches. This is a genuine, checkpoint-quality-driven gap for this specific 80-step diagnostic run, separate from the fixed bug."
+  },
+  "secondary_finding_not_fixed_this_iteration": {
+    "summary": "required_inventory_coverage is CheckStatus.UNKNOWN (not a real judged PASS/FAIL) for every one of these 4 OOD records, in both pre- and post-fix runs, because none of the E611-E617 eval recipes ever set --slot-contract-in-context. _effective_request_for() (harnesses/model_build/eval_runner.py) zeroes GenerationRequest.slot_contract unless config.slot_contract_in_context is true, and the same effective request is passed into binding_aware_meaningful_v2's _prompt_contract() for coverage scoring. None of these OOD prompts contain a literal 'placeholders:' inventory line either, so contract.placeholder_coverage_known is False and the check degrades to UNKNOWN. UNKNOWN counts as a verdict failure exactly like FAIL, so on its own this does not explain why strict v2 stays 0 for this specific checkpoint (the checks that are FAILing above are sufficient on their own), but it means required_inventory_coverage is never actually exercised as a real judged check in this eval recipe -- structurally similar in shape to E617's finding (an orthogonal, never-set flag silently degrading a metric), just with UNKNOWN in place of a hard no-op. Left unfixed and undecided this iteration to keep scope to the one binding_correctness bug; flagged here as the clear next candidate (try --slot-contract-in-context on a real matched pair and see whether required_inventory_coverage starts reporting real PASS/FAIL instead of UNKNOWN).",
+    "recommended_next_step": "Re-run a matched E611/E612/E613/E615/E617-style control/treatment pair with --slot-contract-in-context added, on either this same checkpoint or (better, per E617's own 'next' note) a real trained/warm-started checkpoint, and check whether required_inventory_coverage starts reporting real PASS/FAIL and whether binding_aware_meaningful_v2_rate_strict moves at all once both this fix and that flag are combined."
+  },
+  "decision": "Keep the _binding_check fix (evals.meaningful_program 2.0.0 -> 2.1.0); it removes a confirmed, real false positive that has been present in eval evidence since at least E612. Do not claim this moves strict v2 off 0 -- honestly, for this exact checkpoint's real predictions, it does not; the remaining failures are genuine 80-step-checkpoint quality gaps (malformed/self-nested ood_modal_01 output, schema/placeholder role mismatches) plus the unrelated, still-open required_inventory_coverage/slot_contract_in_context gap noted above. No checkpoint trained, promoted, or synced this iteration. Not a ship claim.",
+  "suites": ["ood"],
+  "n": 4,
+  "ship_gates": {
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "promotable": false,
+    "reason": "Fixed a real evaluator false positive but strict v2 remains 0.0 on this checkpoint's real predictions for independent, genuine reasons (checkpoint quality + a separate unresolved slot_contract_in_context coverage gap). n=4 is diagnostic, not confirmatory."
+  },
+  "verification": {
+    "unit_tests": "tests/test_evals/test_meaningful_program.py: 29 passed (28 pre-existing + 1 new regression test, test_v2_typed_array_object_item_keys_are_not_treated_as_unresolved_refs). Also reran tests/test_evals/test_metric_gaming.py (10 passed), tests/test_scripts/test_matrix_meaningful_metrics.py + test_audit_meaningful_program.py (19 passed combined), tests/test_harness_core/test_gate_engine_golden.py + test_versioning/test_mirrors.py (covered in the same 19), tests/test_harnesses/model_build/test_eval_gates.py + tests/test_harnesses/experiments/test_rejected_lever_registry.py (41 passed combined), tests/test_harnesses/model_build/test_loop.py (3 passed) -- all run with NODE_OPTIONS unset, no regressions.",
+    "verify_version_stamps": "python -m scripts.verify_version_stamps --check -> ok (2 changed files, 1 component touched: evals.meaningful_program 2.0.0 -> 2.1.0)",
+    "repo_policy": "python -m scripts.repo_policy -> pending final run before commit"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "71cbd509a068a69609218304657d49f601a5643d",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v59"
+    },
+    "note": "This iteration changes only evals.meaningful_program (2.0.0 -> 2.1.0). harness.model_build.eval/evals.scoring/model.twotower versions are carried over unchanged from the E617 commit (71cbd50) this branch is built on; no eval_runner.py, scoring, or twotower.py code changed this iteration."
+  },
+  "next": "Try --slot-contract-in-context on a matched pair (see secondary_finding_not_fixed_this_iteration) to find out whether required_inventory_coverage starts reporting real judgments instead of UNKNOWN, and whether that -- combined with this fix -- moves binding_aware_meaningful_v2_rate_strict off 0.0 on a real (ideally non-scratch) checkpoint. Separately, ood_modal_01's raw prediction (a deeply self-nested, malformed Modal/Stack tree) is worth a closer look on its own merits as a checkpoint-capacity/decode-stability question, independent of any evaluator issue."
+}

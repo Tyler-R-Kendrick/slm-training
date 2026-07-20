@@ -3887,6 +3887,150 @@ E615 as the next scratch research baseline. Strict v2 remains 0, AgentV is
 [narrative](iter-e615-typed-object-slot-role-20260720.md) and
 [JSON](iter-e615-typed-object-slot-role-20260720.json).
 
+## E616 object-frame slot-bias replay on an 80-step scratch checkpoint
+
+E616 replays E615's matched OOD `n=4` control (`schema_role_slot_decode_weight=0`)
+vs treatment (`=8.0`) eval pair against a fresh scratch checkpoint trained for
+80 steps instead of E615's 8 (same corpus, seed, and architecture; loss
+26.5243 vs 37.9045). Unlike E615, all 4 OOD predictions are now non-empty and
+syntactically valid (`syntax_parse_rate` 0.0→1.0). Both arms remain
+byte-identical, but for a diagnosable reason this time: `ood_gallery_01`
+decodes to `ImageGallery([])` in both arms — the typed array closes empty
+before any item object is ever opened, so the E615 object-frame lever's
+precondition (an open `{` inside a typed-array item) is never reached. This
+reproduces E612's already-rejected finding (undertrained checkpoints close
+typed arrays empty) one level upstream of what E615 targets, rather than
+exposing a new defect. Every headline quality metric is 0.0 in both arms,
+AgentV is 0/1, and no checkpoint was promoted or synced. The E615 fix remains
+verified only at the unit level. Evidence:
+[narrative](iter-e616-object-frame-slot-bias-scratch80-replay-20260720.md) and
+[JSON](iter-e616-object-frame-slot-bias-scratch80-replay-20260720.json).
+
+## E617 the slot-contract decode gap upstream of E612/E615/E616
+
+E617 answers E616's own "next" question: why does
+`semantic_plan_typed_array_nonempty_margin_decode_weight=2.0` (already active
+in the E611-E616 recipe) not prevent an empty-array close? Instrumenting
+`_semantic_plan_typed_array_nonempty_bias` on a byte-identical replay of
+E616's checkpoint shows all 111 calls into the array-decision branch fail the
+very first gate (`not slot_contract`) because `self._slot_contracts[row]` is
+`None`. Root cause: `self._slot_contracts` is only populated when
+`slot_contract_constrained_decode` or `template_fill_decode` is `true`, and
+neither flag was ever passed by the E611-E616 eval recipe (`honest_slot_contract`
+is a different, orthogonal flag). Five decode-time biases —
+`schema_role_slot_decode_weight`, `slot_coverage_close_decode_weight`,
+`semantic_plan_typed_array_nonempty_margin_decode_weight`,
+`semantic_plan_typed_array_item_margin_decode_weight`, and
+`semantic_plan_repeated_slot_margin_decode_weight` — have silently no-opped on
+every decode step across E611-E616, independent of weight or checkpoint
+quality. Replaying E616's exact matched control (`schema_role_slot_decode_weight=0`)
+vs treatment (`=8.0`) pair with `--slot-contract-constrained-decode` added (no
+other value changed, same checkpoint sha256) produces the first non-byte-identical
+result in this lineage: all 4/4 OOD predictions differ, `ood_gallery_01`'s
+`src`/`alt` properties move from both collapsing onto `:ood.gallery.alt`
+(control) to binding their own matching slots, `:ood.gallery.img`/
+`:ood.gallery.alt` (treatment) — E614's narrative bug, E615's fix, now
+observed end-to-end for the first time. `placeholder_fidelity` rises
+0.7417→0.7833, `placeholder_validity` 0.845→0.87, `reward_score`
+0.6493→0.6618, `structural_similarity` 0.5509→0.5548, `ast_node_f1`
+0.6002→0.6047; `parse_rate`/`syntax_parse_rate` (1.0), `meaningful_program_rate`
+(0.5), `binding_aware_meaningful_v2_rate_strict` (0.0), `component_type_recall`
+(0.6875), and `ast_edge_f1` (0.4167) are unchanged. A default-on `ValueError`
+guard was added to `_generate_batch_once` (`model.twotower` v58→v59) so any
+future recipe that sets one of these five weights without
+`slot_contract_constrained_decode`/`template_fill_decode` fails loudly instead
+of silently no-opping; 7 new unit tests cover it. Strict v2 remains 0 in both
+arms and this `n=4` replay is diagnostic, not confirmatory, so no checkpoint
+was created for promotion or synced. Evidence:
+[narrative](iter-e617-slot-contract-decode-gap-20260720.md) and
+[JSON](iter-e617-slot-contract-decode-gap-20260720.json).
+
+## E618 a real false positive in the strict meaning-v2 evaluator
+
+E618 answers E617's own "next" question: is `binding_aware_meaningful_v2_rate_strict`
+("strict v2") staying 0.0 across the E611-E617 lineage a real quality gap or
+another silent misconfiguration? Re-scoring E617's exact real predictions (no
+retraining) against `binding_aware_meaningful_v2` with per-check
+instrumentation found `ood_gallery_01` and `ood_modal_01` failing
+`binding_correctness` with reason `reference_graph_invalid`, in both arms.
+Root cause: `_binding_check` (`src/slm_training/evals/meaningful_program.py`)
+already used the official parser's authoritative `unresolved`/`orphaned`
+analysis, but for any source without `$`/`Query`/`Mutation`/`Action`/`@`
+syntax it *also* ran a redundant regex-based `Gate.REFERENCES` fallback whose
+identifier regex misreads bare object-literal property keys (`src:`/`alt:` in
+a typed-array item like `{src: ..., alt: ...}`, exactly E614/E615/E617's own
+object-frame syntax) as unresolved variable references — even though the real
+official parser accepts the source cleanly. `reference_graph_invalid` is
+already present in E612, E613, and E614's own eval evidence, confirming this
+predates E617 and has been silently pinning strict v2 toward 0 across at
+least six prior experiments. Fix: `_binding_check` now always runs the
+graph-based dependency-reachability pass previously reserved for runtime
+sources (a verified no-op for structural sources, since their
+`state_declarations`/`query_statements`/`mutation_statements` are empty); the
+buggy regex fallback is removed from this call site (the shared
+`Gate.REFERENCES`/`_reference_graph` implementation itself, used elsewhere in
+the verify stack, is untouched). `evals.meaningful_program` 2.0.0 → 2.1.0; new
+regression test
+`test_v2_typed_array_object_item_keys_are_not_treated_as_unresolved_refs`.
+**Honest result:** re-scoring the same real E617 predictions before/after (via
+a temporary `git stash` of only the fixed file) confirms `reference_graph_invalid`
+disappears from both records in both arms — a real, confirmed false positive
+removed — but `binding_aware_meaningful_v2_rate_strict` stays 0.0 → 0.0 on this
+checkpoint: `ood_gallery_01` still fails on `required_inventory_unknown`
+(separate, unfixed — see below), and `ood_modal_01`'s raw prediction is a
+deeply malformed, self-nested `Modal`/`Stack` tree consistent with genuine
+80-step-checkpoint undertraining, not an evaluator artifact.
+`ood_dashboard_01`/`ood_auth_01` never triggered the bug and fail on real
+schema/placeholder-role mismatches either way. **Secondary finding, not fixed
+this iteration:** `required_inventory_coverage` is `UNKNOWN` (never a real
+judged PASS/FAIL) for every OOD record because none of the E611-E617 recipes
+ever set `--slot-contract-in-context`, so `_effective_request_for` zeroes
+`GenerationRequest.slot_contract` before it reaches the evaluator's own
+`_prompt_contract` — the same shape as E617's finding (an orthogonal flag
+nobody sets, silently degrading a metric), left open as the clear next step.
+No checkpoint trained, promoted, or synced this iteration; not a ship claim.
+Evidence: [narrative](iter-e618-strict-v2-reference-graph-false-positive-20260720.md)
+and [JSON](iter-e618-strict-v2-reference-graph-false-positive-20260720.json).
+
+## E619 chasing the `--slot-contract-in-context` gap
+
+E619 closes E618's open "next" question with a real matched eval instead of
+leaving it a hypothesis. Before touching the recipe, checked whether
+`--slot-contract-in-context` is safe to add: `apply_runtime_overrides`
+(`src/slm_training/harnesses/model_build/factory.py`) lists it among its
+documented eval-time-only override fields (same category as
+`slot_contract_constrained_decode`, which E617 already validated), and
+`_resolve_slot_contract` (`src/slm_training/models/twotower.py`) only falls
+back to `gold.placeholders` when `honest_slot_contract=False` — every
+E611-E618 recipe already sets `honest_slot_contract=True`, so the exercised
+path derives the inventory only from the user-visible prompt/DESIGN.md text,
+never the gold answer. Confirmed safe (no gold-label leakage). Reused the real
+E617 checkpoint (sha256 `119dd41a…8898a854`, no retraining) and replayed
+E617's exact matched control/treatment recipe with `--slot-contract-in-context`
+added — this requires real fresh generation (the flag changes model input),
+unlike E618's pure re-score, so two real eval runs were executed.
+**Result:** headline metrics (`parse_rate`, `placeholder_fidelity`,
+`reward_score`, etc.) are unchanged from E617's baseline in both arms; 3 of 4
+OOD predictions are byte-identical to E617's, and the 4th
+(`ood_modal_01`, already a malformed self-nested tree) differs by one
+character deep in its garbage tail with no metric impact.
+`required_inventory_coverage` moves from `UNKNOWN` to a real judged verdict
+for all 4 records in both arms (`binding_aware_meaningful_v2_coverage`
+0.75 → 1.0) — E618's hypothesis, confirmed. All 4 records genuinely FAIL it
+(`required_placeholder_missing` and/or `placeholder_semantic_role_mismatch`
+reason codes, e.g. `ood_gallery_01` is missing 5 of its 6 required
+placeholders); `binding_correctness` still PASSes for all 4 (E618's fix
+holds). **`binding_aware_meaningful_v2_rate_strict` stays 0.0 → 0.0 in both
+arms — no OOD item flips to a strict-v2 pass.** This is a real, honest 0:
+the previously-silent `UNKNOWN` gap is now fully accounted for, and the
+checkpoint genuinely does not yet emit the full required placeholder set. No
+code changed (`verify_version_stamps --check`: 0 components touched); no
+checkpoint trained, promoted, or synced. Not a ship claim. Recommend adding
+`--slot-contract-in-context` to future recipes in this lineage going forward
+(strict honesty improvement, no measured cost).
+Evidence: [narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
+and [JSON](iter-e619-slot-contract-in-context-gap-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

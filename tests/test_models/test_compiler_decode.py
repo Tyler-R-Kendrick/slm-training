@@ -631,6 +631,56 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
     assert bias.tolist() == [10.0, 0.0, 0.0]
 
 
+@pytest.mark.parametrize(
+    "weight_name",
+    [
+        "schema_role_slot_decode_weight",
+        "slot_coverage_close_decode_weight",
+        "semantic_plan_typed_array_nonempty_margin_decode_weight",
+        "semantic_plan_typed_array_item_margin_decode_weight",
+        "semantic_plan_repeated_slot_margin_decode_weight",
+    ],
+)
+def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
+    weight_name: str,
+) -> None:
+    """E617: these biases read ``self._slot_contracts[row]``, which only gets
+
+    populated by ``_generate_batch_once`` when ``slot_contract_constrained_decode``
+    (or ``template_fill_decode``) is enabled. E611-E616 replayed a matched
+    control/treatment eval with one of these weights set >0 but neither flag
+    enabled, so the bias silently no-opped on every decode step regardless of
+    weight or checkpoint quality. Fail loud instead of reproducing that footgun.
+    """
+    model = _model(output_tokenizer="choice", **{weight_name: 8.0})
+    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+
+    with pytest.raises(ValueError, match="slot_contract_constrained_decode"):
+        model.generate_batch_requests([request])
+
+
+@pytest.mark.parametrize(
+    "enabling_flag",
+    ["slot_contract_constrained_decode", "template_fill_decode"],
+)
+def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
+    enabling_flag: str,
+) -> None:
+    """Either companion flag populates ``self._slot_contracts`` and clears the
+
+    E617 guard; this only asserts the guard itself does not fire (generation may
+    still legitimately fail/parse-fallback for other reasons on this tiny model).
+    """
+    model = _model(
+        output_tokenizer="choice",
+        schema_role_slot_decode_weight=8.0,
+        **{enabling_flag: True},
+    )
+    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+
+    model.generate_batch_requests([request])  # must not raise ValueError
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
