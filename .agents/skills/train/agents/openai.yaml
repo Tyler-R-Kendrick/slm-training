@@ -1,4 +1,0 @@
-interface:
-  display_name: "Train OpenUI SLMs"
-  short_description: "Operate every training pipeline phase"
-  default_prompt: "Use $train to run the requested training pipeline phase with honest gates, canonical artifact roots, and documented results."

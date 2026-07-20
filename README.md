@@ -187,7 +187,7 @@ pip install -e ".[rico]"
 
 Every pipeline phase is also reachable through the unified `slm` CLI
 (`slm list` shows the full command map; `slm guide <phase>` prints the
-matching operating reference from `.agents/skills/train/references/`). The
+matching operating reference from `.agents/skills/autotrain/references/`). The
 `python -m scripts.<name>` forms below remain the direct equivalents.
 
 ```bash

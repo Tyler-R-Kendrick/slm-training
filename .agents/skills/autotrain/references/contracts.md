@@ -12,6 +12,17 @@ suite `n`, honesty mode) and honest pass/fail vs gates. Numbers only in
 when a run is launched through wrapper commands. REQUIRED SKILL:
 `documenting-experiment-results`.
 
+## Hard run cap (every command in every phase)
+
+Every train / eval / bench / profile / telemetry / matrix / reproduction and
+supporting shell command must finish within **three minutes** total (AGENTS.md
+"Hard run cap"): agent commands interrupt at 170 s and force-kill 10 s later.
+The command examples below are shown at fixture / smoke scale for this reason —
+scale `--steps` / `--rico-limit` / sizes to fit the cap. Where a harness exposes
+it (e.g. `scripts.autoresearch`, `scripts.run_scaling_ladder`), pass
+`--max-wall-minutes 3` (the field defaults to 3 and rejects any larger value).
+A timed-out, interrupted, or killed run is never evidence.
+
 ## Model-card duty
 
 Every checkpoint that is created, synced, bootstrapped, or promoted updates

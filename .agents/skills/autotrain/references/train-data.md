@@ -27,9 +27,9 @@ slm data store verify train v1
 ```
 
 Every `slm` command equals `python -m scripts.<module> …` (`slm list` shows the
-mapping). Aux synthesis helpers stay direct:
-`python -m scripts.generate_progspecs`, `scripts.synthesize_pack`,
-`scripts.build_solver_supervision`, `scripts.verify_data_synthesis`.
+mapping). Aux synthesis helpers stay direct: `python -m scripts.generate_progspecs`,
+`python -m scripts.synthesize_pack`, `python -m scripts.build_solver_supervision`,
+`python -m scripts.verify_data_synthesis`.
 
 ## Key flags
 
@@ -48,7 +48,7 @@ produce it with `slm sft train … --emit-record-nll`),
 redundancy / decontamination / warnings), `rejected.jsonl` (every drop with
 stage + reason), `synthesis_feedback.json` (per-family and per-synthesizer
 yields, recommendations, experiment candidates). Builds register a lineage
-DataSnapshot; sibling typed roots hold preference/trajectory/ProgramSpec/
+DataSnapshot; sibling-typed roots hold preference/trajectory/ProgramSpec/
 mixture data. Rejected-ledger preference negatives:
 `python -m scripts.mine_rejected_preferences --dataset <version>`.
 
@@ -61,10 +61,11 @@ mixture data. Rejected-ledger preference negatives:
 
 ## Close out
 
-- **REQUIRED after every build**: read `synthesis_feedback.json` and act on it
-  per the `synthesis-feedback` skill (fix producers/synthesizers, file the
-  experiment candidates). Cross-snapshot overlap:
-  `python -m scripts.audit_data_corpora`.
+- **REQUIRED after every build**: read `quality_report.json`, `rejected.jsonl`,
+  **and** `synthesis_feedback.json`, and act on them per the `synthesis-feedback`
+  skill — fix the synthesis harness / producers and file the emitted experiment
+  candidates; never weaken the quality gates to raise yield. Cross-snapshot
+  overlap: `python -m scripts.audit_data_corpora`.
 - Shared duties: [contracts.md](contracts.md).
 - Docs: `docs/design/data-synthesis.md`. Checks:
   `pytest -q tests/test_harnesses/train_data tests/test_data`.

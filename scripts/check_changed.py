@@ -20,7 +20,9 @@ GLOBAL_TEST_FILES = {
     "tests/conftest.py",
 }
 SUITES_BY_PREFIX = (
-    (".agents/skills/train/", ("tests/test_scripts/test_slm_cli.py",)),
+    (".agents/skills/autotrain/", ("tests/test_scripts/test_slm_cli.py",)),
+    (".agents/skills/autoresearch/", ("tests/test_scripts/test_autoresearch_skill.py",)),
+    ("docs/brains/", ("tests/test_scripts/test_autoresearch_skill.py",)),
     ("gpu_multi_farm/", ("tests/test_gpu_multi_farm",)),
     ("src/slm_training/dsl/grammars/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
     (

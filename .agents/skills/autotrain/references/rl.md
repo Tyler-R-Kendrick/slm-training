@@ -21,6 +21,7 @@ slm rl train --checkpoint outputs/runs/<id>/last.pt \
   --rl-readiness-report <approved.json> --steps 15 --group-size 4
 
 # External backends (env-configured wrappers; no argparse flags):
+# remote/paid jobs — get explicit user approval before submit or reconcile
 slm rl nemo    # NVIDIA NeMo-RL — see nemo-rl-hf-jobs-etiquette
 slm rl molt    # MOLT
 ```
@@ -29,7 +30,8 @@ slm rl molt    # MOLT
 `scripts.run_molt_rl`.) Prefer submitting/reconciling external jobs through the
 lifecycle CLI so lineage stays canonical:
 `slm cycle submit-nemo|reconcile-nemo|submit-molt|reconcile-molt`
-(checkpoints reference).
+(checkpoints reference). Submission and reconciliation are remote/paid actions —
+get explicit user approval first (approvals contract).
 
 ## Key flags
 

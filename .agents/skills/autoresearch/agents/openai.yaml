@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenUI Research Orchestrator"
+  short_description: "Coordinate brains, OpenWiki, discovery, the hypothesis loop, and Linear"
+  default_prompt: "Use $autoresearch to run the knowledge-driven OpenUI research loop: read and update the repo and personal brains (OKF/Obsidian) and OpenWiki, discover prior work, drive the autotrain hypothesis loop, and file grounded ideas and experiments as Linear issues, milestones, and projects."
