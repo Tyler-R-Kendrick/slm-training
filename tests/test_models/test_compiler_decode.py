@@ -301,7 +301,7 @@ def test_visible_semantic_roles_gate_unmatched_learned_slot_bias() -> None:
     assert bias.tolist() == [4.0, 0.0]
 
 
-def test_visible_semantic_roles_abstain_with_incomplete_remaining_coverage() -> None:
+def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> None:
     from types import MethodType
 
     model = _model(
@@ -326,7 +326,7 @@ def test_visible_semantic_roles_abstain_with_incomplete_remaining_coverage() -> 
     bias = model._slot_component_bias(
         ctx,
         ctx_pad,
-        [tokenizer.bos_id],
+        [tokenizer.bos_id, tokenizer.sym_id(1)],
         (tokenizer.token_to_id["Modal"], tokenizer.token_to_id["Button"]),
         ("component_bound", "component_bound"),
         [":modal.title", ":modal.body"],

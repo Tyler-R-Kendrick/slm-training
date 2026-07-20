@@ -8,6 +8,7 @@ def test_select_tests_is_scoped_and_conservative() -> None:
         "tests/test_dsl/test_parser.py"
     ]
     assert select_tests(["docs/design/note.md"]) == []
+    assert select_tests([".github/workflows/ci.yml"]) == []
     assert select_tests(["pyproject.toml"]) == ["tests"]
     assert select_tests(["unknown/tool.ts"]) == ["tests"]
 

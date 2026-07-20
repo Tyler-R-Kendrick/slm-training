@@ -697,7 +697,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -708,6 +708,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-20",
+          "note": "bind visible-role gating confidence to complete coverage of the original slot contract so uncovered consumed roles cannot enable it late"
+        },
         {
           "version": "v22",
           "date": "2026-07-20",

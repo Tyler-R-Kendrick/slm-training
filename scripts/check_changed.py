@@ -182,6 +182,8 @@ def select_tests(paths: list[str]) -> list[str]:
             ".txt",
         }:
             continue
+        if path.startswith(".github/workflows/"):
+            continue
         if Path(path).suffix in CODE_SUFFIXES:
             unknown_code = True
     if targets:
