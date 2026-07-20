@@ -682,7 +682,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -692,6 +692,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-20",
+          "note": "soft-close repeated predicted component instances after their first visible slot so later instances can bind distinct prompt slots"
+        },
         {
           "version": "v18",
           "date": "2026-07-20",

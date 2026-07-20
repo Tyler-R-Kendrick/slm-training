@@ -365,6 +365,46 @@ def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> No
     assert complete_bias is None
 
 
+def test_prompt_semantic_plan_bias_reserves_distinct_repeated_slots() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["+Input"]
+    slot0 = tokenizer.token_to_id["@0"]
+    close = tokenizer.token_to_id["-"]
+    model._semantic_plan_action_scores = [{input_id: 1.0}]
+    model._semantic_plan_action_counts = [{input_id: 2}]
+    first = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert first.advance_id(input_id)
+    assert first.advance_id(slot0)
+
+    reserve_bias = model._semantic_plan_bias(
+        0,
+        (close, tokenizer.token_to_id["@1"]),
+        ("structural", "slot"),
+        first,
+        [input_id, slot0],
+    )
+
+    assert reserve_bias is not None
+    assert reserve_bias.tolist() == [3.0, 0.0]
+    assert first.advance_id(close)
+    second = first.clone()
+    assert second.advance_id(input_id)
+    assert second.advance_id(tokenizer.token_to_id["@1"])
+    assert model._semantic_plan_bias(
+        0,
+        (close,),
+        ("structural",),
+        second,
+        [input_id, slot0, close, input_id, tokenizer.token_to_id["@1"]],
+    ) is None
+
+
 def test_prompt_semantic_plan_binding_bias_prefers_matching_unused_references() -> None:
     from types import SimpleNamespace
 

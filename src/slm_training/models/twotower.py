@@ -4015,8 +4015,9 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         candidate_kinds: tuple[str, ...],
         state: Any | None = None,
+        prefix: list[int] | None = None,
     ) -> torch.Tensor | None:
-        """Soft-score still-missing predicted component instances."""
+        """Soft-score missing component instances and distinct-slot closure."""
         weight = float(
             getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
         )
@@ -4036,13 +4037,13 @@ class TwoTowerModel(nn.Module):
             and row < len(self._semantic_plan_action_counts)
             else None
         )
+        family_token_ids = {
+            str(self.tokenizer.id_to_token[token_id])
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
         if remaining_counts is not None:
-            family_token_ids = {
-                str(self.tokenizer.id_to_token[token_id])
-                .removeprefix("COMP:")
-                .removeprefix("+"): token_id
-                for token_id in self._component_inventory_token_ids()
-            }
             for expr_type in getattr(state, "section_types", ()):
                 token_id = family_token_ids.get(
                     str(expr_type).removeprefix("element:")
@@ -4071,6 +4072,41 @@ class TwoTowerModel(nn.Module):
             if kind in component_kinds and score > 0.0 and still_required:
                 bias[position] = weight * score
                 applied = True
+        frames = getattr(state, "frames", ())
+        if remaining_counts is not None and prefix and frames:
+            frame = frames[-1]
+            family = str(getattr(frame, "expr_type", "")).removeprefix(
+                "element:"
+            )
+            family_token_id = family_token_ids.get(family)
+            family_score = scores.get(family_token_id, 0.0)
+            close_id = self.tokenizer.token_to_id.get(
+                str(getattr(frame, "close", ""))
+            )
+            if (
+                getattr(frame, "kind", None) == "component"
+                and family_token_id is not None
+                and family_score > 0.0
+                and remaining_counts.get(family_token_id, 0) > 1
+                and close_id in candidate_ids
+            ):
+                open_position = max(
+                    (
+                        position
+                        for position, token_id in enumerate(prefix)
+                        if token_id == family_token_id
+                    ),
+                    default=-1,
+                )
+                has_visible_slot = any(
+                    str(self.tokenizer.id_to_token.get(token_id, "")).startswith(
+                        "@"
+                    )
+                    for token_id in prefix[open_position + 1 :]
+                )
+                if has_visible_slot:
+                    bias[candidate_ids.index(close_id)] = weight * family_score
+                    applied = True
         return bias if applied else None
 
     def _semantic_plan_binding_bias(
@@ -5780,6 +5816,7 @@ class TwoTowerModel(nn.Module):
                         candidate_ids,
                         candidate_kinds,
                         states[row],
+                        ids[row, :position].tolist(),
                     )
                     if semantic_plan_bias is not None:
                         before_semantic_plan = int(scores.argmax().item())
