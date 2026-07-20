@@ -2992,6 +2992,18 @@ return to no-design-metadata context. Evidence:
 [narrative](iter-e568-design-context-continuation-20260720.md) and
 [JSON](iter-e568-design-context-continuation-20260720.json).
 
+## E569 matched E561 continuation
+
+The corrected 48-step no-design-context continuation completes in 75.20s and
+writes local SHA `8254fcf7…c6535f73`. OOD `n=4` meaningful-v1 rises to 0.25,
+recall to 0.3333, reward to 0.6920, and AST-node F1 to 0.3389. Fidelity
+regresses to 0.2583, structure to 0.2031, edge F1 to 0, binding-aware
+meaning-v2 remains 0, and AgentV remains 0/1. **Decision:** retain as a local
+semantic-coverage Pareto for targeted strict-meaning research; do not promote
+or sync. Evidence:
+[narrative](iter-e569-matched-continuation-20260720.md) and
+[JSON](iter-e569-matched-continuation-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
