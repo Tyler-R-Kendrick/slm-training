@@ -350,6 +350,25 @@
         }
       ]
     },
+    "evals.judge_resolution": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/judge_resolution.py",
+        "scripts/run_judge_resolution_audit.py",
+        "tests/test_evals/test_judge_resolution.py",
+        "tests/test_scripts/test_run_judge_resolution_audit.py",
+        "docs/design/iter-slm185-judge-resolution-20260720.json",
+        "docs/design/iter-slm185-judge-resolution-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-185 FFE0-03 judge test-retest reliability, canonical-equivalence invariance, and semantic resolution floor wiring/fixture harness"
+        }
+      ]
+    },
     "evals.meaningful_program": {
       "version": "2.1.0",
       "kind": "metric",
@@ -520,6 +539,11 @@
       "history": [
         {
           "version": "openui_ship_gates_v1",
+          "date": "2026-07-20",
+          "note": "no-bump: align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.0.0 to 2.1.0 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation"
+        },
+        {
+          "version": "openui_ship_gates_v1",
           "date": "2026-07-19",
           "note": "no-bump: relocate the generic gate-check loop to harness_core.gate_engine behind a normalize_suite/default_min_n seam; policy, thresholds, and the gates.json payload stay byte-identical (pinned by tests/test_harness_core/test_gate_engine_golden.py)"
         },
@@ -531,12 +555,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v2",
+      "version": "v3",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-20",
+          "note": "add SLM-185 default-off --resolution-manifest integration; apply_resolution_manifest annotates summary with semantic_resolution labels without altering raw metrics or gates"
+        },
         {
           "version": "v2",
           "date": "2026-07-20",
@@ -647,6 +676,11 @@
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-07-20",
+          "note": "no-bump: SLM-185 reuses harness.experiments constants (MATRIX_SET/MATRIX_VERSION/EXPERIMENT_ID pattern) only; no harness behavior changed"
+        },
         {
           "version": "v49",
           "date": "2026-07-20",

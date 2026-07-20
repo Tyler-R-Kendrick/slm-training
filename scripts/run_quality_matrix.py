@@ -26,6 +26,12 @@ from slm_training.harnesses.model_build.ship_gates import (
     evaluate_ship_gates,
 )
 
+# SLM-185: optional semantic-resolution annotation (default-off, no gate weakening).
+from slm_training.evals.judge_resolution import (
+    SemanticResolutionManifestV1,
+    apply_resolution_manifest,
+)
+
 
 SUITES = ["smoke", "held_out", "adversarial", "ood", "rico_held"]
 
@@ -2591,6 +2597,16 @@ def main(argv: list[str] | None = None) -> int:
             "docs/design for non-default run roots)."
         ),
     )
+    parser.add_argument(
+        "--resolution-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional SLM-185 SemanticResolutionManifestV1 JSON. When provided, "
+            "the summary is annotated with semantic_resolution labels per endpoint "
+            "without altering raw metrics or gates."
+        ),
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument(
         "--context-backend", choices=("scratch", "hf"), default="scratch"
@@ -3160,6 +3176,18 @@ def main(argv: list[str] | None = None) -> int:
             "gates.ship",
         ),
     }
+    # SLM-185: optional semantic-resolution annotation (default-off).
+    if args.resolution_manifest is not None:
+        try:
+            manifest_data = json.loads(args.resolution_manifest.read_text(encoding="utf-8"))
+            manifest = SemanticResolutionManifestV1.from_dict(manifest_data)
+            out = apply_resolution_manifest(out, manifest)
+        except (OSError, ValueError, KeyError) as exc:
+            print(
+                f"warning: could not apply resolution manifest: {exc}",
+                file=sys.stderr,
+            )
+
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     _persist_progress("complete")
