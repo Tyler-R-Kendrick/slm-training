@@ -816,6 +816,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration of SLM-144 SPV1-01 archetype + role-set predictor fixture harness"
         }
       ]

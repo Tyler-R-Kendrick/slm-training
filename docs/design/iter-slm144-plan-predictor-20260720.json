@@ -1,5 +1,12 @@
 {
   "claim_class": "wiring",
+  "corpus": {
+    "archetypes": 5,
+    "families": 8,
+    "roles": 4,
+    "train": 51,
+    "val": 13
+  },
   "manifest": {
     "arms": [
       {
@@ -58,121 +65,9 @@
   },
   "matrix_set": "slm144_plan_predictor",
   "matrix_version": "spv1-01-v1",
-  "rows": [
-    {
-      "archetype_accuracy": 0.0,
-      "arm_id": "baseline_none",
-      "inventory_token_accuracy": null,
-      "latency_ms": 20.71311899635475,
-      "notes": [
-        "archetype_source=none",
-        "role_set_source=none",
-        "fixture-only: tiny CPU net, no real checkpoint"
-      ],
-      "role_f1": 0.0,
-      "role_precision": 0.0,
-      "role_recall": 0.0,
-      "status": "fixture"
-    },
-    {
-      "archetype_accuracy": 0.23076923076923078,
-      "arm_id": "frequency_prior",
-      "inventory_token_accuracy": null,
-      "latency_ms": 21.140261000255123,
-      "notes": [
-        "archetype_source=frequency",
-        "role_set_source=frequency",
-        "fixture-only: tiny CPU net, no real checkpoint"
-      ],
-      "role_f1": 0.8444444444444443,
-      "role_precision": 0.7307692307692307,
-      "role_recall": 1.0,
-      "status": "fixture"
-    },
-    {
-      "archetype_accuracy": 0.0,
-      "arm_id": "serialized_inventory",
-      "inventory_token_accuracy": 0.7307692170143127,
-      "latency_ms": 21.033555996837094,
-      "notes": [
-        "archetype_source=none",
-        "role_set_source=serialized",
-        "fixture-only: tiny CPU net, no real checkpoint",
-        "training wall time: 11544.4 ms"
-      ],
-      "role_f1": 0.8444444444444443,
-      "role_precision": 0.7307692307692307,
-      "role_recall": 1.0,
-      "status": "fixture"
-    },
-    {
-      "archetype_accuracy": 0.0,
-      "arm_id": "set_matching",
-      "inventory_token_accuracy": null,
-      "latency_ms": 20.756853999046143,
-      "notes": [
-        "archetype_source=none",
-        "role_set_source=predicted",
-        "fixture-only: tiny CPU net, no real checkpoint",
-        "training wall time: 11544.4 ms"
-      ],
-      "role_f1": 1.0,
-      "role_precision": 1.0,
-      "role_recall": 1.0,
-      "status": "fixture"
-    },
-    {
-      "archetype_accuracy": 1.0,
-      "arm_id": "gold_archetype",
-      "inventory_token_accuracy": null,
-      "latency_ms": 21.34421500522876,
-      "notes": [
-        "archetype_source=gold",
-        "role_set_source=predicted",
-        "fixture-only: tiny CPU net, no real checkpoint",
-        "training wall time: 11544.4 ms"
-      ],
-      "role_f1": 1.0,
-      "role_precision": 1.0,
-      "role_recall": 1.0,
-      "status": "fixture"
-    },
-    {
-      "archetype_accuracy": 0.9230769230769231,
-      "arm_id": "gold_role_set",
-      "inventory_token_accuracy": null,
-      "latency_ms": 25.109082998824306,
-      "notes": [
-        "archetype_source=predicted",
-        "role_set_source=gold",
-        "fixture-only: tiny CPU net, no real checkpoint",
-        "training wall time: 11544.4 ms"
-      ],
-      "role_f1": 1.0,
-      "role_precision": 1.0,
-      "role_recall": 1.0,
-      "status": "fixture"
-    },
-    {
-      "archetype_accuracy": 1.0,
-      "arm_id": "gold_both",
-      "inventory_token_accuracy": null,
-      "latency_ms": 35.869305000233,
-      "notes": [
-        "archetype_source=gold",
-        "role_set_source=gold",
-        "fixture-only: tiny CPU net, no real checkpoint"
-      ],
-      "role_f1": 1.0,
-      "role_precision": 1.0,
-      "role_recall": 1.0,
-      "status": "fixture"
-    }
-  ],
-  "run_id": "slm144_fixture",
   "schema": "Slm144PlanPredictorReportV1",
-  "status": "fixture",
-  "timestamp": "2026-07-20T00:51:38.609824Z",
+  "status": "plan_only",
+  "timestamp": "2026-07-20T00:52:30.315887Z",
   "version_stamp": {
     "code_commit": "2732c0366431d8c82999f70958f6fac9422aebef",
     "code_dirty": true,
@@ -181,6 +76,6 @@
       "harness.experiments.slm144_plan_predictor": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T00:51:38.608440+00:00"
+    "stamped_at": "2026-07-20T00:52:30.315762+00:00"
   }
 }
