@@ -33,6 +33,11 @@ jobs:
             src/apps/openui_bridge/package-lock.json
             src/apps/design_md_bridge/package-lock.json
             src/apps/graphql_bridge/package-lock.json
+      - name: Install CPU-only Torch
+        run: >-
+          python -m pip install --only-binary=:all:
+          --index-url https://download.pytorch.org/whl/cpu
+          "torch>=2.2,<2.6"
       - run: python -m pip install -e ".[dev,mcp,web]"
       - name: Install Node dependencies
         run: |
