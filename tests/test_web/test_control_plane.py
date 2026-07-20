@@ -1524,6 +1524,23 @@ def test_e590_opaque_close_ladder_is_persisted_without_new_checkpoint(
     assert primary_id not in checkpoint_ids
 
 
+def test_e591_role_slot_ladder_is_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    for run_id in (
+        "e591-e590-role0-control-r1",
+        "e591-e590-role2-r1",
+        "e591-e590-role4-r1",
+    ):
+        assert readers.run(run_id)["provenance"] == "committed"
+    assert "e591-e590-role2-r1" not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

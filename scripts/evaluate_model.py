@@ -219,6 +219,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Prefer legal closure at optional unconstrained arguments.",
     )
     parser.add_argument(
+        "--schema-role-slot-decode-weight",
+        type=float,
+        default=None,
+        help="Prefer visible slots compatible with the active content property owner.",
+    )
+    parser.add_argument(
         "--semantic-plan-decode-weight",
         type=float,
         default=None,
@@ -548,6 +554,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
+        schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         semantic_plan_binding_decode_weight=(
             args.semantic_plan_binding_decode_weight

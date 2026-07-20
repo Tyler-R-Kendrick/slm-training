@@ -239,6 +239,7 @@ class TwoTowerConfig:
     schema_value_decode_weight: float = 0.0
     schema_opaque_decode_weight: float = 0.0
     schema_opaque_close_decode_weight: float = 0.0
+    schema_role_slot_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
     semantic_plan_root_decode_weight: float = 0.0
@@ -4221,6 +4222,56 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _schema_role_slot_bias(
+        self,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+        slot_contract: list[str] | None,
+        semantic_role_candidates: dict[str, tuple[str, ...]] | None,
+    ) -> torch.Tensor | None:
+        """Prefer visible slots compatible with the active content property owner."""
+        weight = float(
+            getattr(self.config, "schema_role_slot_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if (
+            weight <= 0.0
+            or not frames
+            or not slot_contract
+            or not semantic_role_candidates
+        ):
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        component = str(getattr(frame, "expr_type", "")).removeprefix("element:")
+        if (
+            getattr(frame, "kind", None) != "component"
+            or index < 0
+            or index >= len(schemas)
+            or not schemas[index].get("x-openui-placeholder")
+            or not component
+        ):
+            return None
+        from slm_training.dsl.production_codec import SLOT_PREFIX
+
+        bias = scores.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if not token.startswith(SLOT_PREFIX):
+                continue
+            try:
+                slot_index = int(token[len(SLOT_PREFIX) :])
+                slot = slot_contract[slot_index]
+            except (ValueError, IndexError):
+                continue
+            if component in semantic_role_candidates.get(slot, ()):
+                bias[position] = weight
+                applied = True
+        return bias if applied else None
+
     @staticmethod
     def _schema_contains_enum(schema: dict[str, Any]) -> bool:
         if schema.get("enum"):
@@ -5949,6 +6000,25 @@ class TwoTowerModel(nn.Module):
                     )
                     if schema_opaque_close_bias is not None:
                         scores = scores + schema_opaque_close_bias
+                    schema_role_slot_bias = self._schema_role_slot_bias(
+                        states[row],
+                        candidate_ids,
+                        scores,
+                        (
+                            self._slot_contracts[row]
+                            if self._slot_contracts
+                            and row < len(self._slot_contracts)
+                            else None
+                        ),
+                        (
+                            self._semantic_role_candidates[row]
+                            if self._semantic_role_candidates
+                            and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
+                    )
+                    if schema_role_slot_bias is not None:
+                        scores = scores + schema_role_slot_bias
                     semantic_plan_bias = self._semantic_plan_bias(
                         row,
                         candidate_ids,

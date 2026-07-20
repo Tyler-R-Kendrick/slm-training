@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E591",
+  "date_utc": "2026-07-20",
+  "run_id": "e591-e590-role2-r1",
+  "run_class": "scratch_matrix",
+  "status": "positive_diagnostic_not_promotable",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 4.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_role_slot_decode_weights": [0.0, 2.0, 4.0],
+    "schema_opaque_close_decode_weight": 4.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e591-e590-role0-control-r1",
+      "schema_role_slot_decode_weight": 0.0,
+      "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.25, "binding_aware_meaningful_v2_rate_strict": 0.0, "placeholder_fidelity": 0.425, "placeholder_validity": 0.655, "structural_similarity": 0.406875, "component_type_recall": 0.4583333333333333, "reward_score": 0.7585, "ast_node_f1": 0.48888888888888893, "ast_edge_f1": 0.25, "latency_ms_p50": 10505.46, "latency_ms_p95": 16688.34}},
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e591-e590-role4-r1",
+      "schema_role_slot_decode_weight": 4.0,
+      "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.25, "binding_aware_meaningful_v2_rate_strict": 0.0, "placeholder_fidelity": 0.5916666666666667, "placeholder_validity": 0.755, "structural_similarity": 0.40437500000000004, "component_type_recall": 0.4583333333333333, "reward_score": 0.8085, "ast_node_f1": 0.5198412698412698, "ast_edge_f1": 0.325, "latency_ms_p50": 6313.7, "latency_ms_p95": 17546.77}},
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.25, "binding_aware_meaningful_v2_rate_strict": 0.0, "placeholder_fidelity": 0.5916666666666667, "placeholder_validity": 0.755, "structural_similarity": 0.40437500000000004, "component_type_recall": 0.4583333333333333, "reward_score": 0.8085, "ast_node_f1": 0.5198412698412698, "ast_edge_f1": 0.325, "latency_ms_p50": 6598.1, "latency_ms_p95": 17239.1}},
+  "comparison": {
+    "baseline": "e591-e590-role0-control-r1",
+    "placeholder_fidelity_delta": 0.16666666666666669,
+    "placeholder_validity_delta": 0.1,
+    "structural_similarity_delta": -0.0024999999999999467,
+    "reward_score_delta": 0.05,
+    "ast_node_f1_delta": 0.030952380952380898,
+    "ast_edge_f1_delta": 0.075,
+    "matches_weight4_replication": true,
+    "auth_role_correction": "Input(name,email) plus Button(create) replaces duplicate Inputs with create consumed as an Input placeholder"
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {"pass": false, "agentv_pass": false, "reason": "Strict meaning-v2 remains zero, AgentV fails, and this is OOD n=4."},
+  "decision": "Use weight 2 as the next scratch baseline; do not promote or sync.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d0c008d6c97a28b02bad647b246f02c47c0043ff",
+    "code_dirty": true,
+    "components": {"harness.model_build.eval": "v20", "evals.meaningful_program": "2.0.0", "evals.scoring": "v11", "model.twotower": "v27"},
+    "stamped_at": "2026-07-20T08:42:12.736601+00:00"
+  }
+}

@@ -3558,3 +3558,13 @@ diversion. Treat 4 as a behavioral scratch threshold only. Keep the lever
 default-off and do not promote or sync: strict meaning-v2 is 0 and AgentV is
 0/1. Evidence: [narrative](iter-e590-opaque-close-score-20260720.md) and
 [JSON](iter-e590-opaque-close-score-20260720.json).
+
+## E591 content-property owner slot score
+
+E591's visible property-owner slot score improves OOD `n=4` fidelity
+0.4250→0.5917, validity 0.6550→0.7550, reward 0.7585→0.8085,
+AST-node F1 0.4889→0.5198, and AST-edge F1 0.25→0.325 at weights 2 and
+4, with structure nearly flat. Use 2 as the next scratch baseline; do not
+promote or sync because strict v2 is 0 and AgentV is 0/1. Evidence:
+[narrative](iter-e591-property-role-slot-20260720.md) and
+[JSON](iter-e591-property-role-slot-20260720.json).

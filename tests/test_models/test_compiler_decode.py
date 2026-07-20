@@ -404,6 +404,34 @@ def test_schema_opaque_close_bias_rewards_only_optional_empty_schema_close() -> 
     assert bias.tolist() == [0.0, 4.0]
 
 
+def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
+    from slm_training.dsl.production_codec import OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=3)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
+    assert state.advance_id(tokenizer.sym_id(0))
+    name_id = tokenizer.sym_id(0)
+    email_id = tokenizer.sym_id(1)
+    create_id = tokenizer.sym_id(2)
+    bias = model._schema_role_slot_bias(
+        state,
+        (name_id, email_id, create_id),
+        torch.zeros(3),
+        [":auth.name", ":auth.email", ":auth.create"],
+        {
+            ":auth.name": ("Input",),
+            ":auth.email": ("Input",),
+            ":auth.create": ("Button",),
+        },
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [4.0, 4.0, 0.0]
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
