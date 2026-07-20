@@ -520,6 +520,11 @@
       "history": [
         {
           "version": "openui_ship_gates_v1",
+          "date": "2026-07-20",
+          "note": "no-bump: E616-E624 consolidation pass — correct MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] from a stale '2.0.0' to '2.1.0' to mirror evals.meaningful_program's E618 bump; this field is a provenance/reporting label only (thresholds stay None/candidate_pending_calibration), never read by any gate decision, so no threshold or gate behavior changes. Caught by tests/test_versioning/test_mirrors.py::test_meaningful_program_version_is_mirrored during the consolidation pass's full verification re-run; E618's own commit updated evals.meaningful_program's registry entry but missed this mirrored constant."
+        },
+        {
+          "version": "openui_ship_gates_v1",
           "date": "2026-07-19",
           "note": "no-bump: relocate the generic gate-check loop to harness_core.gate_engine behind a normalize_suite/default_min_n seam; policy, thresholds, and the gates.json payload stay byte-identical (pinned by tests/test_harness_core/test_gate_engine_golden.py)"
         },
