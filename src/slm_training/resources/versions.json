@@ -1442,7 +1442,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v62",
+      "version": "v63",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1457,6 +1457,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v63",
+          "date": "2026-07-20",
+          "note": "E630: prefer explicit prompt-owned component candidates over broad schema-only role matches when preventing premature slot-coverage closure"
+        },
         {
           "version": "v62",
           "date": "2026-07-20",
