@@ -2847,6 +2847,17 @@ AgentV remain zero.
 [narrative](iter-e554-slot-next-context-20260720.md) and
 [JSON](iter-e554-slot-next-context-20260720.json).
 
+## E555 slot-pair interaction
+
+Multiplicative slot-pair context keeps E553 fidelity 0.3000 and reward 0.5453
+while raising structure to 0.1594, recall to 0.1250, and AST node F1 to 0.2389.
+It also matches E554 topology while recovering its fidelity/reward loss.
+Meaning and AgentV remain zero.
+
+**Decision:** retain the Pareto lever, reject checkpoint promotion. Full
+evidence: [narrative](iter-e555-slot-pair-interaction-20260720.md) and
+[JSON](iter-e555-slot-pair-interaction-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
