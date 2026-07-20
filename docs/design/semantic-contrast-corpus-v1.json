@@ -1,0 +1,88 @@
+{
+  "builder_version": "1.0.0",
+  "dataset_id": "semantic_contrast_v1",
+  "seed": 0,
+  "source_count": 12,
+  "pairs": 66,
+  "records": 132,
+  "rejected": 15,
+  "scoreboard": [
+    {
+      "family": "binding",
+      "n_total": 14,
+      "n_admitted": 14,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 1.0,
+      "top_reasons": [
+        "required_placeholder_missing"
+      ]
+    },
+    {
+      "family": "content",
+      "n_total": 24,
+      "n_admitted": 24,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 2.4166666666666665,
+      "top_reasons": [
+        "required_placeholder_missing",
+        "prompt_component_missing",
+        "required_component_missing",
+        "placeholder_semantic_role_mismatch",
+        "mechanical_inventory_coverage"
+      ]
+    },
+    {
+      "family": "contract",
+      "n_total": 14,
+      "n_admitted": 14,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 1.4285714285714286,
+      "top_reasons": [
+        "required_placeholder_missing",
+        "prompt_component_missing",
+        "required_component_missing",
+        "mechanical_inventory_coverage"
+      ]
+    },
+    {
+      "family": "positive",
+      "n_total": 78,
+      "n_admitted": 66,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 1.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 0.0,
+      "top_reasons": []
+    },
+    {
+      "family": "topology",
+      "n_total": 2,
+      "n_admitted": 2,
+      "verifier_pass_rate": 1.0,
+      "meaningful_pass_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "mean_reason_count": 2.0,
+      "top_reasons": [
+        "required_placeholder_missing",
+        "prompt_component_missing",
+        "required_component_missing"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9792cab2a43e9dfd6b15ece005a0215b5c3a480e",
+    "code_dirty": true,
+    "components": {
+      "data.semantic_contrast": "v1",
+      "evals.meaningful_program": "2.0.0"
+    },
+    "stamped_at": "2026-07-20T05:44:38.605554+00:00"
+  }
+}
