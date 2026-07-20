@@ -1,0 +1,343 @@
+{
+  "arm_means": {
+    "alpha_renamed": {
+      "equivalent": 1.0,
+      "tier0_binding_graph_equal": 1.0,
+      "tier0_canonical_exact": 1.0,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "wall_seconds": 0.002553750000311993
+    },
+    "binding_corruption": {
+      "equivalent": 0.0,
+      "tier0_binding_graph_equal": 1.0,
+      "tier0_canonical_exact": 0.0,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "wall_seconds": 0.02240325000800658
+    },
+    "canonical_exact": {
+      "equivalent": 1.0,
+      "tier0_binding_graph_equal": 1.0,
+      "tier0_canonical_exact": 1.0,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "wall_seconds": 0.002821049998397939
+    },
+    "component_substitution": {
+      "equivalent": 0.0,
+      "tier0_binding_graph_equal": 1.0,
+      "tier0_canonical_exact": 0.0,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 0.6666666666666666,
+      "tier1_interaction_dependency_match": 0.0,
+      "tier1_normalized_render_tree_distance": 0.6666666666666667,
+      "tier1_role_match": 0.5,
+      "tier1_topology_match": 0.5,
+      "wall_seconds": 0.002414159996784292
+    },
+    "metric_gaming_minimal_valid": {
+      "equivalent": 0.0,
+      "tier0_binding_graph_equal": 0.0,
+      "tier0_canonical_exact": 0.0,
+      "tier1_binding_graph_match": 0.0,
+      "tier1_cardinality_match": 0.6666666666666666,
+      "tier1_component_type_match": 0.4,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 0.33333333333333337,
+      "tier1_role_match": 0.0,
+      "tier1_topology_match": 0.0,
+      "wall_seconds": 0.023552310008904898
+    },
+    "style_only_change": {
+      "equivalent": 1.0,
+      "tier0_binding_graph_equal": 1.0,
+      "tier0_canonical_exact": 1.0,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "wall_seconds": 0.00263569999858737
+    },
+    "topology_corruption": {
+      "equivalent": 0.0,
+      "tier0_binding_graph_equal": 1.0,
+      "tier0_canonical_exact": 0.0,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 0.75,
+      "tier1_component_type_match": 0.8571428571428571,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 0.5,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 0.4,
+      "wall_seconds": 0.02345925000170246
+    }
+  },
+  "cells": [
+    {
+      "arm_id": "canonical_exact__s0",
+      "arm_name": "canonical_exact",
+      "seed": 0
+    },
+    {
+      "arm_id": "alpha_renamed__s0",
+      "arm_name": "alpha_renamed",
+      "seed": 0
+    },
+    {
+      "arm_id": "style_only_change__s0",
+      "arm_name": "style_only_change",
+      "seed": 0
+    },
+    {
+      "arm_id": "topology_corruption__s0",
+      "arm_name": "topology_corruption",
+      "seed": 0
+    },
+    {
+      "arm_id": "binding_corruption__s0",
+      "arm_name": "binding_corruption",
+      "seed": 0
+    },
+    {
+      "arm_id": "component_substitution__s0",
+      "arm_name": "component_substitution",
+      "seed": 0
+    },
+    {
+      "arm_id": "metric_gaming_minimal_valid__s0",
+      "arm_name": "metric_gaming_minimal_valid",
+      "seed": 0
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [
+    "Depends on slm_training.evals.render_equivalence; tier-2 visual diff is capability-gated and reports not_available when Playwright/chromium is unavailable.",
+    "Semantic-contrast pairs are sampled from a small deterministic builder corpus; real OOD distributions may differ.",
+    "No model is trained; this is wiring evidence only."
+  ],
+  "disposition": "calibrated",
+  "disposition_rationale": "Canonical exact, alpha-renamed, and style-only pairs are equivalent, while all structural corruptions and metric-gaming traps are rejected.",
+  "experiment_id": "slm172-render-equivalence",
+  "falsifier": "A structural corruption (topology, binding, component substitution) is marked equivalent, or a canonical exact match is rejected.",
+  "hypothesis": "Canonical AST signature, normalized render-tree overlap, and optional visual-diff surrogate agree on semantic equivalence and reject structural corruptions.",
+  "matrix_set": "slm172_render_equivalence",
+  "matrix_version": "sde2-05-v1",
+  "rows": [
+    {
+      "arm_id": "canonical_exact__s0",
+      "arm_name": "canonical_exact",
+      "equivalent": true,
+      "gold": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "pred": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "reason_codes": [
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": true,
+      "tier0_canonical_exact": true,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.002821049998397939
+    },
+    {
+      "arm_id": "alpha_renamed__s0",
+      "arm_name": "alpha_renamed",
+      "equivalent": true,
+      "gold": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "pred": "root = Stack([t, c])\nt = TextContent(\":card.title\")\nc = Button(\":card.action\")\n",
+      "reason_codes": [
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": true,
+      "tier0_canonical_exact": true,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.002553750000311993
+    },
+    {
+      "arm_id": "style_only_change__s0",
+      "arm_name": "style_only_change",
+      "equivalent": true,
+      "gold": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "pred": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\", \"primary\")\n",
+      "reason_codes": [
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": true,
+      "tier0_canonical_exact": true,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.00263569999858737
+    },
+    {
+      "arm_id": "topology_corruption__s0",
+      "arm_name": "topology_corruption",
+      "equivalent": false,
+      "gold": "root = Stack([Card([title]), cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "pred": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "reason_codes": [
+        "canonical_mismatch",
+        "component_type_mismatch",
+        "topology_mismatch",
+        "cardinality_mismatch",
+        "render_tree_distance_mismatch",
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": true,
+      "tier0_canonical_exact": false,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 0.75,
+      "tier1_component_type_match": 0.8571428571428571,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 0.5,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 0.4,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.02345925000170246
+    },
+    {
+      "arm_id": "binding_corruption__s0",
+      "arm_name": "binding_corruption",
+      "equivalent": false,
+      "gold": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\ndead = TextContent(\":dead.text\")\n",
+      "pred": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "reason_codes": [
+        "canonical_mismatch",
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": true,
+      "tier0_canonical_exact": false,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 1.0,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 1.0,
+      "tier1_role_match": 1.0,
+      "tier1_topology_match": 1.0,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.02240325000800658
+    },
+    {
+      "arm_id": "component_substitution__s0",
+      "arm_name": "component_substitution",
+      "equivalent": false,
+      "gold": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = Button(\":card.action\")\n",
+      "pred": "root = Stack([title, cta])\ntitle = TextContent(\":card.title\")\ncta = TextContent(\":card.action\")\n",
+      "reason_codes": [
+        "canonical_mismatch",
+        "component_type_mismatch",
+        "role_mismatch",
+        "topology_mismatch",
+        "interaction_dependency_mismatch",
+        "render_tree_distance_mismatch",
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": true,
+      "tier0_canonical_exact": false,
+      "tier1_binding_graph_match": 1.0,
+      "tier1_cardinality_match": 1.0,
+      "tier1_component_type_match": 0.6666666666666666,
+      "tier1_interaction_dependency_match": 0.0,
+      "tier1_normalized_render_tree_distance": 0.6666666666666667,
+      "tier1_role_match": 0.5,
+      "tier1_topology_match": 0.5,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.002414159996784292
+    },
+    {
+      "arm_id": "metric_gaming_minimal_valid__s0",
+      "arm_name": "metric_gaming_minimal_valid",
+      "equivalent": false,
+      "gold": "root = Card([header, body])\nheader = CardHeader(\":card.title\")\nbody = TextContent(\":card.body\")\n",
+      "pred": "root = Stack([TextContent(\":placeholder.text\")])\n",
+      "reason_codes": [
+        "canonical_mismatch",
+        "binding_graph_mismatch",
+        "component_type_mismatch",
+        "role_mismatch",
+        "topology_mismatch",
+        "cardinality_mismatch",
+        "binding_graph_submatch_mismatch",
+        "render_tree_distance_mismatch",
+        "visual_not_available"
+      ],
+      "seed": 0,
+      "tier0_binding_graph_equal": false,
+      "tier0_canonical_exact": false,
+      "tier1_binding_graph_match": 0.0,
+      "tier1_cardinality_match": 0.6666666666666666,
+      "tier1_component_type_match": 0.4,
+      "tier1_interaction_dependency_match": 1.0,
+      "tier1_normalized_render_tree_distance": 0.33333333333333337,
+      "tier1_role_match": 0.0,
+      "tier1_topology_match": 0.0,
+      "tier2_status": "not_available",
+      "tier2_visual_similarity": null,
+      "wall_seconds": 0.023552310008904898
+    }
+  ],
+  "run_id": "slm172-render-equivalence-20260720",
+  "schema": "Slm172RenderEquivalenceReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T14:06:16.535606Z",
+  "version_stamp": {
+    "code_commit": "bde806bf7f180845ca9a5c8a21b5341739d81c13",
+    "code_dirty": true,
+    "components": {
+      "evals.render_equivalence": "v1",
+      "harness.experiments": "v45",
+      "harness.experiments.slm172_render_equivalence": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T14:06:16.535190+00:00"
+  }
+}

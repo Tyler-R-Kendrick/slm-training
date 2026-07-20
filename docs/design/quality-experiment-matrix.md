@@ -3813,3 +3813,27 @@ adherence. This is wiring/fixture evidence only; no ship claim is made.
 ```bash
 python -m scripts.run_slm170_exposure_targeted_rare_action_fixture --mode fixture
 ```
+
+## H11 render-equivalence surrogates (SLM-172, SDE2-05)
+
+H11 calibrates canonical AST signature, normalized render-tree overlap, and an
+optional Playwright/chromium visual-diff surrogate for OpenUI semantic
+equivalence. The default `render_equivalence_mode` is `off`; only `off` and
+`diagnostic` are authorized, and `selector_feature` / `reward` are never enabled
+by default. Tier 2 is capability-gated and reports `not_available` when
+Playwright/chromium is unavailable. The fixture runs CPU-only over synthetic
+pairs, semantic-contrast corruptions, and metric-gaming traps. This is
+wiring/fixture evidence only; no ship claim is made.
+
+```bash
+python -m scripts.run_slm172_render_equivalence_fixture --mode fixture
+```
+
+Honest caveats:
+
+- Visual diff is optional; the aggregate equivalence decision is driven by tiers
+  0 and 1 and cannot be overridden by pixels.
+- The fixture pairs are synthetic and adversarially selected, not a
+  representative evaluation distribution.
+- No model was trained; real predictions may expose failure modes the current
+  surrogates do not capture.

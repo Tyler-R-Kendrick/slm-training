@@ -344,6 +344,21 @@
         }
       ]
     },
+    "evals.render_equivalence": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/render_equivalence.py",
+        "tests/test_evals/test_render_equivalence.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-172 SDE2-05 tiered canonical/render-tree/visual-diff render-equivalence surrogate"
+        }
+      ]
+    },
     "evals.loss_suite": {
       "version": "v1",
       "kind": "metric",
@@ -367,12 +382,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v11",
+      "version": "v12",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-20",
+          "note": "wire default-off render_equivalence surrogate into task_scoreboard; RENDER_EQUIVALENCE_MODE remains off"
+        },
         {
           "version": "v11",
           "date": "2026-07-20",
@@ -571,12 +591,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v44",
+      "version": "v45",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v45",
+          "date": "2026-07-20",
+          "note": "add SLM-172 SDE2-05 render-equivalence wiring/fixture harness"
+        },
         {
           "version": "v44",
           "date": "2026-07-20",
@@ -1083,6 +1108,25 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm172_render_equivalence": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm172_render_equivalence.py",
+        "scripts/run_slm172_render_equivalence_fixture.py",
+        "tests/test_harnesses/experiments/test_slm172_render_equivalence.py",
+        "tests/test_scripts/test_run_slm172_render_equivalence_fixture.py",
+        "docs/design/iter-slm172-render-equivalence-20260720.json",
+        "docs/design/iter-slm172-render-equivalence-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-172 SDE2-05 render-equivalence wiring/fixture harness"
         }
       ]
     },
