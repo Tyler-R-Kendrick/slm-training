@@ -682,7 +682,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -692,6 +692,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-07-20",
+          "note": "preserve repeated authored component mentions in predicted plans and require their family cardinality before verified root closure"
+        },
         {
           "version": "v16",
           "date": "2026-07-20",

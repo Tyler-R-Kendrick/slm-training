@@ -315,6 +315,23 @@ def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     ) is None
 
 
+def test_prompt_semantic_plan_preserves_repeated_authored_component_mentions() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Sign-up column with name input, email input, and create button.\n"
+        "Components: Button, Input\n"
+        "Semantic roles: auth(name -> Input, email -> Input, create -> Button)"
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Button",
+        "Input",
+        "Input",
+    ]
+
+
 def test_prompt_semantic_plan_binding_bias_prefers_matching_unused_references() -> None:
     from types import SimpleNamespace
 
@@ -472,6 +489,34 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
         None,
         (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
     ) is None
+
+
+def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["+Input"]
+    button_id = tokenizer.token_to_id["+Button"]
+    model._semantic_plan_action_scores = [{input_id: 1.0, button_id: 1.0}]
+    model._semantic_plan_action_counts = [{input_id: 2, button_id: 1}]
+    incomplete = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button"],
+    )
+    complete = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Input", "element:Button"],
+    )
+    candidates = (tokenizer.token_to_id["+Stack"], tokenizer.eos_id)
+
+    assert model._semantic_plan_root_bias(0, incomplete, None, candidates) is None
+    assert model._semantic_plan_root_bias(0, complete, None, candidates) is not None
 
 
 def test_prompt_semantic_plan_root_bias_follows_only_verified_closure() -> None:

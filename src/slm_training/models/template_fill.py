@@ -125,9 +125,24 @@ def prompt_semantic_plan(prompt: str):
         RoleSlot,
         SemanticPlanV1,
     )
-    from slm_training.data.quality import _prompt_component_mentions
+    from slm_training.data.quality import (
+        _prompt_component_mentions,
+        _prompt_component_requirements,
+    )
 
-    components = sorted(_prompt_component_mentions(prompt))
+    authored_prompt = "\n".join(
+        line
+        for line in prompt.splitlines()
+        if not line.startswith(("Placeholders:", "Components:", "Semantic roles:"))
+    )
+    components = list(
+        _prompt_component_requirements(
+            authored_prompt,
+            preserve_repeated_mentions=True,
+        )
+    )
+    if not components:
+        components = sorted(_prompt_component_mentions(prompt))
     if not components:
         return None
     return SemanticPlanV1(
