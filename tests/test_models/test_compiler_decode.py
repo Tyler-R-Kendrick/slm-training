@@ -1129,6 +1129,42 @@ def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     assert end_bias.tolist() == [0.0, 0.0, 2.0]
 
 
+def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+        tokenizer.token_to_id["+Button"]: 1.0,
+    }]
+    candidates = (
+        tokenizer.token_to_id["+Stack"],
+        tokenizer.token_to_id["+TextContent"],
+        tokenizer.eos_id,
+    )
+    covered = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button"],
+    )
+
+    bias = model._semantic_plan_root_bias(
+        0,
+        covered,
+        None,
+        candidates,
+        torch.tensor([-44.0, 29.0, -10.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [75.0, 0.0, 0.0]
+
+
 def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
     from types import SimpleNamespace
 

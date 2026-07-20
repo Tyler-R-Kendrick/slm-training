@@ -278,6 +278,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Soft-score legal Stack root construction after prompt-plan coverage.",
     )
     parser.add_argument(
+        "--semantic-plan-root-margin-decode-weight",
+        type=float,
+        default=None,
+        help="Floor a verified plan-root token above the best legal score.",
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -603,6 +609,9 @@ def main(argv: list[str] | None = None) -> int:
             args.semantic_plan_binding_decode_weight
         ),
         semantic_plan_root_decode_weight=args.semantic_plan_root_decode_weight,
+        semantic_plan_root_margin_decode_weight=(
+            args.semantic_plan_root_margin_decode_weight
+        ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
         binder_component_plan_decode_weight=(
