@@ -389,12 +389,22 @@
       ]
     },
     "harness.experiments": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-20",
+          "note": "no-bump: replace randomized string hash with stable action-index mapping in cap2-04 fixture; matrix semantics unchanged"
+        },
+        {
+          "version": "v25",
+          "date": "2026-07-20",
+          "note": "add SLM-144 SPV1-01 archetype + role-set predictor fixture wiring harness"
+        },
         {
           "version": "v24",
           "date": "2026-07-19",
@@ -649,13 +659,18 @@
       ]
     },
     "model.quantization": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-20",
+          "note": "use deterministic action-index mapping in GlobalMaskedHead and ResidualTritPlaneHead to eliminate per-process hash randomization"
+        },
         {
           "version": "v4",
           "date": "2026-07-19",
@@ -773,8 +788,35 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v25 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration of semantic regret decomposition fixture harness (SLM-143)"
+        }
+      ]
+    },
+    "harness.experiments.slm144_plan_predictor": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm144_plan_predictor_matrix.py",
+        "src/slm_training/models/semantic_plan_predictor.py",
+        "src/slm_training/data/semantic_plan/corpus.py",
+        "scripts/run_slm144_plan_predictor_fixture.py",
+        "tests/test_harnesses/experiments/test_slm144_plan_predictor_matrix.py",
+        "tests/test_models/test_semantic_plan_predictor.py",
+        "tests/test_scripts/test_run_slm144_plan_predictor_fixture.py",
+        "docs/design/iter-slm144-plan-predictor-20260720.json",
+        "docs/design/iter-slm144-plan-predictor-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-144 SPV1-01 archetype + role-set predictor fixture harness"
         }
       ]
     }
