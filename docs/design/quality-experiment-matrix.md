@@ -2979,6 +2979,19 @@ created. Evidence:
 [narrative](iter-e567-slot-component-decode0-20260720.md) and
 [JSON](iter-e567-slot-component-decode0-20260720.json).
 
+## E568 design-context E561 continuation
+
+A 48-step E561 warm start with threshold-7 twofold owner sampling completes
+in 116.24s and writes local SHA `8dcc0804…0283a12b`. The successful recipe
+retains design-metadata context, unlike E561, so this is not a duration-only
+comparison. OOD `n=4` reward improves to 0.6920, but fidelity falls to
+0.2583, structure to 0.1375, AST-node F1 to 0.1833, and AST-edge F1 to 0.
+Meaning-v1/v2 remain 0 and AgentV remains 0/1. **Decision:** reject for
+promotion, preserve as a local reward Pareto/recipe-drift diagnostic, and
+return to no-design-metadata context. Evidence:
+[narrative](iter-e568-design-context-continuation-20260720.md) and
+[JSON](iter-e568-design-context-continuation-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
