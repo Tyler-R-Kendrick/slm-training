@@ -213,7 +213,7 @@ def test_global_head_masks_illegal_actions() -> None:
     out = head.score(_hidden(), StateContext("global"), legal)
     assert out.logits is not None
     # Illegal positions (not in legal set) should be -inf.
-    legal_indices = {hash(a) % 16 for a in legal}
+    legal_indices = set(out.metadata["legal_indices"].tolist())
     for idx in range(16):
         value = out.logits[0, idx].item()
         if idx in legal_indices:

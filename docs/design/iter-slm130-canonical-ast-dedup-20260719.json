@@ -1,0 +1,123 @@
+{
+  "arm_reports": {
+    "A_raw_no_dedup": {
+      "arm": "A_raw_no_dedup",
+      "canonical_group_hard_disagreements": 0,
+      "duplicate_multiplicity": 1,
+      "effective_finalist_occupancy": 4,
+      "hard_valid_pass_at_k": 0.6,
+      "latency_ms": null,
+      "memory_bytes": null,
+      "pool_size": 5,
+      "prompt_hash": "fixture_prompt_abc123",
+      "raw_valid_count": 4,
+      "schema": "DiversityCoverageReportV1",
+      "semantic_pass_at_k": 0.4,
+      "semantic_report_disagreements": 0,
+      "unique_abstract_mode_signatures": 2,
+      "unique_canonical_ast": 4,
+      "unique_output_strings": 4
+    },
+    "B_exact_output_dedup": {
+      "arm": "B_exact_output_dedup",
+      "canonical_group_hard_disagreements": 0,
+      "duplicate_multiplicity": 0,
+      "effective_finalist_occupancy": 4,
+      "hard_valid_pass_at_k": 0.75,
+      "latency_ms": null,
+      "memory_bytes": null,
+      "pool_size": 4,
+      "prompt_hash": "fixture_prompt_abc123",
+      "raw_valid_count": 3,
+      "schema": "DiversityCoverageReportV1",
+      "semantic_pass_at_k": 0.25,
+      "semantic_report_disagreements": 0,
+      "unique_abstract_mode_signatures": 2,
+      "unique_canonical_ast": 4,
+      "unique_output_strings": 4
+    },
+    "C_terminal_canonical_ast": {
+      "arm": "C_terminal_canonical_ast",
+      "canonical_group_hard_disagreements": 0,
+      "duplicate_multiplicity": 1,
+      "effective_finalist_occupancy": 4,
+      "hard_valid_pass_at_k": 0.6,
+      "latency_ms": null,
+      "memory_bytes": null,
+      "pool_size": 5,
+      "prompt_hash": "fixture_prompt_abc123",
+      "raw_valid_count": 4,
+      "schema": "DiversityCoverageReportV1",
+      "semantic_pass_at_k": 0.4,
+      "semantic_report_disagreements": 0,
+      "unique_abstract_mode_signatures": 2,
+      "unique_canonical_ast": 4,
+      "unique_output_strings": 4
+    },
+    "D_unique_slot_truncation": {
+      "arm": "D_unique_slot_truncation",
+      "canonical_group_hard_disagreements": 0,
+      "duplicate_multiplicity": 0,
+      "effective_finalist_occupancy": 4,
+      "hard_valid_pass_at_k": 0.75,
+      "latency_ms": null,
+      "memory_bytes": null,
+      "pool_size": 4,
+      "prompt_hash": "fixture_prompt_abc123",
+      "raw_valid_count": 3,
+      "schema": "DiversityCoverageReportV1",
+      "semantic_pass_at_k": 0.25,
+      "semantic_report_disagreements": 0,
+      "unique_abstract_mode_signatures": 2,
+      "unique_canonical_ast": 4,
+      "unique_output_strings": 4
+    },
+    "E_abstract_mode_spread": {
+      "arm": "E_abstract_mode_spread",
+      "canonical_group_hard_disagreements": 0,
+      "duplicate_multiplicity": 1,
+      "effective_finalist_occupancy": 4,
+      "hard_valid_pass_at_k": 0.6,
+      "latency_ms": null,
+      "memory_bytes": null,
+      "pool_size": 5,
+      "prompt_hash": "fixture_prompt_abc123",
+      "raw_valid_count": 4,
+      "schema": "DiversityCoverageReportV1",
+      "semantic_pass_at_k": 0.4,
+      "semantic_report_disagreements": 0,
+      "unique_abstract_mode_signatures": 2,
+      "unique_canonical_ast": 4,
+      "unique_output_strings": 4
+    }
+  },
+  "claim_class": "wiring / fixture only",
+  "group_count": 4,
+  "group_disagreements": {
+    "hard": 0,
+    "semantic": 0
+  },
+  "pool_size": 5,
+  "prompt_hash": "fixture_prompt_abc123",
+  "representative_ids": [
+    "c0_base",
+    "c2_distinct",
+    "c3_invalid",
+    "c4_unknown"
+  ],
+  "run_date": "2026-07-19T23:13:32.378062Z",
+  "truncated_ids_k3": [
+    "c0_base",
+    "c2_distinct",
+    "c3_invalid"
+  ],
+  "version_stamp": {
+    "code_commit": "ea45c3d974e262cdb8efd4a9fc8cea2ed75449c2",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.canonical_ast_dedup": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T23:13:32.378037+00:00"
+  }
+}

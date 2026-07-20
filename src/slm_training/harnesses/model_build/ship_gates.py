@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
+
+from slm_training.harness_core.gate_engine import run_gate_checks
 
 # Per-suite minimums. Smoke is a canary; generalization requires the rest.
 #
@@ -92,6 +94,42 @@ def _meaningful_metric_policy(
     }
 
 
+def _slim_suite(metrics: Mapping[str, Any]) -> dict[str, Any]:
+    """Project a scoreboard suite onto the gated OpenUI metric fields."""
+    slim = {
+        "n": metrics.get("n"),
+        "parse_rate": metrics.get("parse_rate"),
+        "meaningful_program_rate": metrics.get("meaningful_program_rate"),
+        "meaningful_program_v1_rate": metrics.get(
+            "meaningful_program_v1_rate",
+            metrics.get("meaningful_program_rate"),
+        ),
+        "binding_aware_meaningful_v2_rate_strict": metrics.get(
+            "binding_aware_meaningful_v2_rate_strict"
+        ),
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": metrics.get(
+            "binding_aware_meaningful_v2_rate_coverage_conditioned"
+        ),
+        "binding_aware_meaningful_v2_coverage": metrics.get(
+            "binding_aware_meaningful_v2_coverage"
+        ),
+        "syntax_parse_rate": metrics.get("syntax_parse_rate"),
+        "placeholder_fidelity": metrics.get("placeholder_fidelity"),
+        "placeholder_validity": metrics.get("placeholder_validity"),
+        "structural_similarity": metrics.get("structural_similarity"),
+        "component_type_recall": metrics.get("component_type_recall"),
+        "reward_score": metrics.get("reward_score"),
+    }
+    if (
+        slim["meaningful_program_rate"] is None
+        and metrics.get("syntax_parse_rate") is None
+    ):
+        # Historical scoreboards used parse_rate for meaningful-program
+        # quality. New scoreboards persist both metrics explicitly.
+        slim["meaningful_program_rate"] = metrics.get("parse_rate")
+    return slim
+
+
 def evaluate_ship_gates(
     suites: dict[str, dict[str, Any]],
     *,
@@ -104,84 +142,12 @@ def evaluate_ship_gates(
     reported as `missing_suite` failures (cannot claim pass without evidence).
     """
     policy = thresholds or DEFAULT_SHIP_GATES
-    checks: dict[str, bool] = {}
-    actual: dict[str, dict[str, Any]] = {}
-    failures: list[str] = []
-
-    for suite_name, mins in policy.items():
-        metrics = suites.get(suite_name)
-        if metrics is None:
-            key = f"{suite_name}:missing_suite"
-            checks[key] = False
-            failures.append(key)
-            continue
-        slim = {
-            "n": metrics.get("n"),
-            "parse_rate": metrics.get("parse_rate"),
-            "meaningful_program_rate": metrics.get("meaningful_program_rate"),
-            "meaningful_program_v1_rate": metrics.get(
-                "meaningful_program_v1_rate",
-                metrics.get("meaningful_program_rate"),
-            ),
-            "binding_aware_meaningful_v2_rate_strict": metrics.get(
-                "binding_aware_meaningful_v2_rate_strict"
-            ),
-            "binding_aware_meaningful_v2_rate_coverage_conditioned": metrics.get(
-                "binding_aware_meaningful_v2_rate_coverage_conditioned"
-            ),
-            "binding_aware_meaningful_v2_coverage": metrics.get(
-                "binding_aware_meaningful_v2_coverage"
-            ),
-            "syntax_parse_rate": metrics.get("syntax_parse_rate"),
-            "placeholder_fidelity": metrics.get("placeholder_fidelity"),
-            "placeholder_validity": metrics.get("placeholder_validity"),
-            "structural_similarity": metrics.get("structural_similarity"),
-            "component_type_recall": metrics.get("component_type_recall"),
-            "reward_score": metrics.get("reward_score"),
-        }
-        if (
-            slim["meaningful_program_rate"] is None
-            and metrics.get("syntax_parse_rate") is None
-        ):
-            # Historical scoreboards used parse_rate for meaningful-program
-            # quality. New scoreboards persist both metrics explicitly.
-            slim["meaningful_program_rate"] = metrics.get("parse_rate")
-        actual[suite_name] = slim
-        fallback_count = metrics.get("fallback_count")
-        fallback_key = f"{suite_name}:certified_fallback"
-        if fallback_count is None:
-            # Unmeasured must never certify: a board without fallback telemetry
-            # cannot claim learned (fallback-free) quality.
-            checks[fallback_key] = False
-            failures.append(
-                f"{fallback_key} unmeasured (fallback_count absent) need=0 "
-                "for learned-quality claims"
-            )
-        else:
-            fallback_count = int(fallback_count)
-            checks[fallback_key] = fallback_count == 0
-            if fallback_count:
-                failures.append(
-                    f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims"
-                )
-        min_n = int(mins.get("min_n", DEFAULT_MIN_SUITE_N))
-        n_value = metrics.get("n")
-        n_key = f"{suite_name}:insufficient_n"
-        n_ok = isinstance(n_value, (int, float)) and int(n_value) >= min_n
-        checks[n_key] = n_ok
-        if not n_ok:
-            failures.append(f"{n_key} actual={n_value!r} need>={min_n}")
-        for metric, minimum in mins.items():
-            if metric == "min_n":
-                continue
-            key = f"{suite_name}:{metric}"
-            value = slim.get(metric, metrics.get(metric))
-            ok = value is not None and float(value) >= float(minimum)
-            checks[key] = ok
-            if not ok:
-                failures.append(
-                    f"{key} actual={value!r} need>={minimum}"
-                )
+    actual, checks, failures = run_gate_checks(
+        suites,
+        policy,
+        normalize_suite=_slim_suite,
+        default_min_n=DEFAULT_MIN_SUITE_N,
+    )
 
     return {
         "policy": policy,

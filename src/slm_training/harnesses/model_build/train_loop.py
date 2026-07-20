@@ -63,6 +63,57 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
         torch.nn.utils.clip_grad_norm_(group["params"], max_norm)
 
 
+def _strict_root_reference_identity_records(records, tokenizer) -> list:
+    """Find records whose terminal root uses a nonempty strict section subset."""
+    from slm_training.models.choice_tokenizer import (
+        structural_root_reference_identity_target,
+    )
+
+    strict = []
+    for record in records:
+        token_ids = tokenizer.encode(
+            record.openui, placeholders=list(record.placeholders or ())
+        )
+        target = structural_root_reference_identity_target(
+            tokenizer,
+            token_ids,
+            slot_count=len(record.placeholders or ()),
+        )
+        if target is None:
+            continue
+        references, section_count = target
+        if references and len(references) < section_count:
+            strict.append(record)
+    return strict
+
+
+def _rare_slot_component_owner_records(
+    records, owner_for_source, threshold: int
+) -> tuple[list, dict[str, int], list[str]]:
+    """Find records containing visible slot-owner labels below a corpus ceiling."""
+    from collections import Counter
+
+    counts: Counter[str] = Counter()
+    owners_by_record: list[set[str]] = []
+    for record in records:
+        owners = owner_for_source(record.openui)
+        visible = [
+            owners[slot]
+            for slot in record.placeholders
+            if slot in owners
+        ]
+        counts.update(visible)
+        owners_by_record.append(set(visible))
+    rare = sorted(owner for owner, count in counts.items() if count <= threshold)
+    rare_set = set(rare)
+    selected = [
+        record
+        for record, owners in zip(records, owners_by_record, strict=True)
+        if owners & rare_set
+    ]
+    return selected, dict(sorted(counts.items())), rare
+
+
 def _write_record_nll(run_dir: Path, plugin, records) -> Path:
     """Per-record NLL under the final model — Superfiltering difficulty evidence.
 
@@ -176,8 +227,68 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         raise ValueError("initialization_weight_retention requires initialize_from")
 
     plugin = model or build_model(config, records)
+    strict_subset_multiplier = int(
+        getattr(config, "root_reference_identity_strict_subset_multiplier", 1) or 1
+    )
+    if strict_subset_multiplier < 1:
+        raise ValueError(
+            "root_reference_identity_strict_subset_multiplier must be at least 1"
+        )
+    strict_subset_records = []
+    audit_strict_subsets = strict_subset_multiplier > 1 or float(
+        getattr(config, "root_reference_identity_loss_weight", 0.0) or 0.0
+    ) > 0.0
+    if audit_strict_subsets:
+        tokenizer = getattr(plugin, "tokenizer", None)
+        if tokenizer is None:
+            raise ValueError(
+                "root-reference strict-subset sampling requires a tokenizer"
+            )
+        strict_subset_records = _strict_root_reference_identity_records(
+            records, tokenizer
+        )
+        if strict_subset_multiplier > 1 and not strict_subset_records:
+            raise ValueError("no strict-subset root-reference records found")
+    owner_rare_threshold = int(
+        getattr(config, "slot_component_owner_rare_threshold", 0) or 0
+    )
+    owner_rare_multiplier = int(
+        getattr(config, "slot_component_owner_rare_multiplier", 1) or 1
+    )
+    if owner_rare_threshold < 0:
+        raise ValueError("slot_component_owner_rare_threshold must be nonnegative")
+    if owner_rare_multiplier < 1:
+        raise ValueError("slot_component_owner_rare_multiplier must be at least 1")
+    if owner_rare_multiplier > 1 and owner_rare_threshold < 1:
+        raise ValueError(
+            "slot_component_owner_rare_multiplier requires a positive threshold"
+        )
+    if owner_rare_multiplier > 1 and (
+        replay_fraction
+        or getattr(config, "use_curriculum", False)
+        or getattr(config, "mixture_manifest", None)
+    ):
+        raise ValueError(
+            "slot-owner rare sampling cannot be combined with replay, curriculum, "
+            "or mixture sampling"
+        )
+    owner_rare_records = []
+    owner_counts: dict[str, int] = {}
+    rare_owners: list[str] = []
+    if owner_rare_threshold > 0:
+        owner_for_source = getattr(plugin, "_slot_component_owners", None)
+        if not callable(owner_for_source):
+            raise ValueError("slot-owner rare sampling requires owner extraction")
+        owner_rare_records, owner_counts, rare_owners = (
+            _rare_slot_component_owner_records(
+                records, owner_for_source, owner_rare_threshold
+            )
+        )
+        if owner_rare_multiplier > 1 and not owner_rare_records:
+            raise ValueError("no rare slot-owner records found")
     initialized_from: str | None = None
     initialized_prior_fields: list[str] = []
+    rebuilt_prior_fields: list[str] = []
     if initialize_path:
         initialize_path = Path(initialize_path)
         if not initialize_path.is_file():
@@ -187,9 +298,25 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         loader = getattr(plugin, "load", None)
         if not callable(loader):
             raise TypeError(f"{type(plugin).__name__} does not support initialize_from")
+        plugin_config = getattr(plugin, "config", None)
+        corpus_priors = {
+            field_name: getattr(plugin_config, field_name)
+            for field_name in (
+                "slot_component_lexeme_priors",
+                "slot_component_span_priors",
+            )
+            if plugin_config is not None and hasattr(plugin_config, field_name)
+        }
         loader(initialize_path)
         initialized_from = str(initialize_path)
         initialized_prior_fields = list(getattr(plugin, "initialized_prior_fields", ()))
+        # These priors are deterministic corpus statistics, not learned weights.
+        # Warm starts must keep the current corpus/model formula rather than
+        # silently restoring stale values cached in the parent checkpoint.
+        for field_name, values in corpus_priors.items():
+            setattr(plugin.config, field_name, values)
+            if field_name in initialized_prior_fields:
+                rebuilt_prior_fields.append(field_name)
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
@@ -360,6 +487,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
             return batched(drawn, config.batch_size)
         shuffled = list(records)
+        if strict_subset_multiplier > 1:
+            shuffled.extend(
+                strict_subset_records * (strict_subset_multiplier - 1)
+            )
+        if owner_rare_multiplier > 1:
+            shuffled.extend(owner_rare_records * (owner_rare_multiplier - 1))
         rng.shuffle(shuffled)
         return batched(shuffled, config.batch_size)
 
@@ -971,6 +1104,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "resumed_from": resumed_from,
         "initialized_from": initialized_from,
         "initialized_prior_fields": initialized_prior_fields,
+        "rebuilt_prior_fields": rebuilt_prior_fields,
         "initialized_weight_count": sum(
             parameter.numel() for parameter, _anchor in initialized_weight_anchor
         ),
@@ -1045,11 +1179,26 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_class_balance_power": getattr(
                 config, "slot_component_class_balance_power", 0.0
             ),
+            "slot_component_owner_rare_threshold": owner_rare_threshold,
+            "slot_component_owner_rare_multiplier": owner_rare_multiplier,
+            "slot_component_owner_counts": owner_counts,
+            "slot_component_owner_rare_classes": rare_owners,
+            "slot_component_owner_rare_records": len(owner_rare_records),
+            "slot_component_owner_sampling_records": (
+                len(records)
+                + len(owner_rare_records) * (owner_rare_multiplier - 1)
+            ),
             "slot_component_decode_weight": getattr(
                 config, "slot_component_decode_weight", 0.0
             ),
             "slot_component_prompt_context": bool(
                 getattr(config, "slot_component_prompt_context", False)
+            ),
+            "slot_component_next_context": bool(
+                getattr(config, "slot_component_next_context", False)
+            ),
+            "slot_component_pair_interaction": bool(
+                getattr(config, "slot_component_pair_interaction", False)
             ),
             "slot_contract_in_context": bool(
                 getattr(config, "slot_contract_in_context", False)
@@ -1089,6 +1238,31 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "binder_arity_decode_weight": getattr(
                 config, "binder_arity_decode_weight", 0.0
+            ),
+            "root_reference_arity_loss_weight": getattr(
+                config, "root_reference_arity_loss_weight", 0.0
+            ),
+            "root_reference_arity_decode_weight": getattr(
+                config, "root_reference_arity_decode_weight", 0.0
+            ),
+            "root_reference_identity_loss_weight": getattr(
+                config, "root_reference_identity_loss_weight", 0.0
+            ),
+            "root_reference_identity_negative_weight": getattr(
+                config, "root_reference_identity_negative_weight", 1.0
+            ),
+            "root_reference_identity_strict_subset_multiplier": (
+                strict_subset_multiplier
+            ),
+            "root_reference_identity_strict_subset_records": len(
+                strict_subset_records
+            ),
+            "root_reference_identity_sampling_records": (
+                len(records)
+                + len(strict_subset_records) * (strict_subset_multiplier - 1)
+            ),
+            "root_reference_identity_decode_weight": getattr(
+                config, "root_reference_identity_decode_weight", 0.0
             ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),

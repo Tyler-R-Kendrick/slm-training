@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E560",
+  "run_id": "e560-e544-owner-threshold4-r1-24s",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_pareto_result_not_ship",
+  "hypothesis": "Restricting twofold owner coverage to classes with at most four labels will recover structure and reward while retaining some E559 component recall.",
+  "checkpoint": {
+    "location": "outputs/runs/e560-e544-owner-threshold4-r1-24s/checkpoints/last.pt",
+    "sha256": "dae11cee1e8fc1a2178b6397e558db9b0e4a723bbfbaf38f63af94557d7686a3",
+    "sync": false,
+    "sync_reason": "Local scratch diagnostic; fidelity, binding-aware meaning, AST-edge, and AgentV gates fail."
+  },
+  "training": {
+    "parent_run_id": "e544-e543-root-identity1-r2-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1312,
+    "elapsed_wall_seconds": 42.26375769999868,
+    "max_wall_minutes": 3.0,
+    "slot_component_pair_interaction": true,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_owner_rare_threshold": 4,
+    "slot_component_owner_rare_multiplier": 2,
+    "slot_component_owner_rare_records": 9,
+    "slot_component_owner_sampling_records": 253,
+    "slot_component_owner_rare_classes": [
+      "CardHeader",
+      "FormControl",
+      "Input",
+      "Slider",
+      "SwitchItem"
+    ],
+    "last_loss": 17.872953414916992,
+    "hard_process_cap_seconds": 170
+  },
+  "eval_recipe": {
+    "eval_run_id": "e560-owner-threshold4-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.2583333333333333,
+      "placeholder_validity": 0.455,
+      "structural_similarity": 0.218125,
+      "component_type_recall": 0.20833333333333331,
+      "reward_score": 0.54025,
+      "ast_node_f1": 0.3388888888888889,
+      "ast_edge_f1": 0.0
+    }
+  },
+  "comparison": {
+    "baseline": "E555",
+    "placeholder_fidelity_delta": -0.041666666666666685,
+    "structural_similarity_delta": 0.05874999999999997,
+    "component_type_recall_delta": 0.08333333333333331,
+    "reward_score_delta": -0.0050000000000000044,
+    "ast_node_f1_delta": 0.1,
+    "ast_edge_f1_delta": 0.0,
+    "interpretation": "Narrow rare-owner exposure is a topology-oriented Pareto lever, not a semantic or fidelity win."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaning-v1/v2 and AST-edge F1 remain zero; fidelity regresses and AgentV fails."
+  },
+  "decision": "Retain the threshold-4 sampler as a topology Pareto lever without promotion; test threshold 7 in E561.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "548a0667377a711ce401cd2e261874345f550732",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v15",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v10"
+    },
+    "stamped_at": "2026-07-20T01:27:48.599545+00:00"
+  }
+}

@@ -1,0 +1,368 @@
+{
+  "b3_id": "efs-b3-capacity-v2",
+  "manifest": {
+    "arms": [
+      {
+        "decode_fingerprint": "surface_lexer_v1:grammar_constrained=True,ltr_primary=False",
+        "representation": "lexer",
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "widths": [
+          64,
+          128,
+          192
+        ]
+      },
+      {
+        "decode_fingerprint": "choice_native_v1:grammar_constrained=True,e288_forced_singleton=True",
+        "representation": "choice",
+        "seeds": [
+          0,
+          1,
+          2
+        ],
+        "widths": [
+          64,
+          128,
+          192
+        ]
+      }
+    ],
+    "b3_id": "efs-b3-capacity-v2",
+    "base_recipe": {
+      "base_token_budget": 50000,
+      "batch_size": 2,
+      "best_of_n": 1,
+      "checkpoint_sync": false,
+      "context_backend": "scratch",
+      "denoiser_backend": "scratch",
+      "device": "cpu",
+      "eval_suites": "smoke,held_out,adversarial,ood,rico_held",
+      "eval_version": "remediated",
+      "gen_steps": 8,
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "learning_rate": 0.0003,
+      "mask_pattern": "diffusion",
+      "max_wall_minutes": 3.0,
+      "parallel_unmask": "adaptive",
+      "train_version": "e218_schema_normalized_judge_v5"
+    },
+    "base_recipe_hash": "e7d39a90aea773d618e1cfdc4ec9883eadc116609d08d24d170be42f1b2627b0",
+    "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+    "claim_class": "frontier",
+    "falsifier": "After matched semantic-example exposure and correct representation-native decoding, the surface and choice curves are equivalent or surface is better across all three widths; the 2.25\u00d7 target-bit reduction then does not translate into useful model-capacity savings under this recipe.",
+    "hypothesis": "Externalizing non-lexical syntax into the choice codec shifts the semantic quality-vs-capacity curve left: at a preregistered semantic target, the choice representation reaches the target with fewer parameters or a smaller d_model than the surface representation after correcting the E288 choice-native decoder state.",
+    "matrix_set": "b3-capacity-v2",
+    "matrix_version": "efs3-03-v1",
+    "parent_checkpoint_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json",
+    "primary_metric": "binding_aware_meaningful_v2_rate_strict",
+    "status": "frontier_pending_gpu"
+  },
+  "matrix_set": "b3-capacity-v2",
+  "matrix_version": "efs3-03-v1",
+  "rows": [
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 64,
+      "notes": [
+        "planned lexer width 64 seed 0",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t12500_x1__s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "target_token_budget": 12500
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 64,
+      "notes": [
+        "planned lexer width 64 seed 1",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t12500_x1__s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "target_token_budget": 12500
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 64,
+      "notes": [
+        "planned lexer width 64 seed 2",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t12500_x1__s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "target_token_budget": 12500
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 128,
+      "notes": [
+        "planned lexer width 128 seed 0",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d128_h4_c2_dn4_t50000_x1__s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "target_token_budget": 50000
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 128,
+      "notes": [
+        "planned lexer width 128 seed 1",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d128_h4_c2_dn4_t50000_x1__s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "target_token_budget": 50000
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 128,
+      "notes": [
+        "planned lexer width 128 seed 2",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d128_h4_c2_dn4_t50000_x1__s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "target_token_budget": 50000
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 192,
+      "notes": [
+        "planned lexer width 192 seed 0",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d192_h6_c3_dn6_t112500_x1__s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "target_token_budget": 112500
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 192,
+      "notes": [
+        "planned lexer width 192 seed 1",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d192_h6_c3_dn6_t112500_x1__s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "target_token_budget": 112500
+    },
+    {
+      "arm": "lexer",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 192,
+      "notes": [
+        "planned lexer width 192 seed 2",
+        "fixture-only: no model trained",
+        "decode_fingerprint: surface_lexer_v1:grammar_constrained=True,ltr_primary=False"
+      ],
+      "representation": "lexer",
+      "run_id": "capacity_lexer_v1__d192_h6_c3_dn6_t112500_x1__s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "target_token_budget": 112500
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 64,
+      "notes": [
+        "planned choice width 64 seed 0",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t12500_x1__s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "target_token_budget": 12500
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 64,
+      "notes": [
+        "planned choice width 64 seed 1",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t12500_x1__s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "target_token_budget": 12500
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 64,
+      "notes": [
+        "planned choice width 64 seed 2",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t12500_x1__s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "target_token_budget": 12500
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 128,
+      "notes": [
+        "planned choice width 128 seed 0",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d128_h4_c2_dn4_t50000_x1__s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "target_token_budget": 50000
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 128,
+      "notes": [
+        "planned choice width 128 seed 1",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d128_h4_c2_dn4_t50000_x1__s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "target_token_budget": 50000
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 128,
+      "notes": [
+        "planned choice width 128 seed 2",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d128_h4_c2_dn4_t50000_x1__s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "target_token_budget": 50000
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 192,
+      "notes": [
+        "planned choice width 192 seed 0",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d192_h6_c3_dn6_t112500_x1__s0",
+      "seed": 0,
+      "status": "fixture_planned",
+      "target_token_budget": 112500
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 192,
+      "notes": [
+        "planned choice width 192 seed 1",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d192_h6_c3_dn6_t112500_x1__s1",
+      "seed": 1,
+      "status": "fixture_planned",
+      "target_token_budget": 112500
+    },
+    {
+      "arm": "choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "d_model": 192,
+      "notes": [
+        "planned choice width 192 seed 2",
+        "fixture-only: no model trained",
+        "decode_fingerprint: choice_native_v1:grammar_constrained=True,e288_forced_singleton=True"
+      ],
+      "representation": "choice",
+      "run_id": "capacity_choice_v1__d192_h6_c3_dn6_t112500_x1__s2",
+      "seed": 2,
+      "status": "fixture_planned",
+      "target_token_budget": 112500
+    }
+  ],
+  "run_id": "slm124_fixture",
+  "status": "fixture",
+  "version_stamp": {
+    "code_commit": "c1ced20f20865cf7d1e0a98794fc3d02f2e70af9",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v19"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T21:56:38.718639+00:00"
+  }
+}

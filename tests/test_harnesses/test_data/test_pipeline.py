@@ -205,3 +205,77 @@ def test_rico_train_and_test_are_disjoint(tmp_path: Path) -> None:
     train_ids = set(train_result["manifest"]["ids"])
     test_ids = set(test_result["manifest"]["ids"])
     assert train_ids.isdisjoint(test_ids)
+
+
+def test_test_builder_sanitizes_gold_with_shared_transform(tmp_path: Path) -> None:
+    from slm_training.harnesses.train_data.sanitize import (
+        SanitizeOptions,
+        sanitize_openui,
+    )
+
+    seeds = tmp_path / "sanitize_seeds.jsonl"
+    gold = (
+        'root = Stack([hero], "column")\n'
+        "hero = Card([hdr])\n"
+        'hdr = CardHeader(":hero.title")'
+    )
+    write_jsonl(
+        seeds,
+        [
+            ExampleRecord(
+                id="sanitize_smoke",
+                prompt="Hero card.",
+                openui=gold,
+                placeholders=[":hero.title"],
+                split="smoke",
+                meta={"suite": "smoke"},
+            )
+        ],
+    )
+    result = build_test_data(
+        TestDataConfig(
+            seed_path=seeds,
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "eval",
+            version="vsan",
+            suites=("smoke",),
+            train_manifest=None,
+            require_train_manifest=False,
+        )
+    )
+    assert result["stats"]["sanitize_mode"] == "enforce"
+    assert result["stats"]["sanitize"]["sanitized"] == 1
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "eval" / "vsan" / "suites" / "smoke" / "records.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    expected = sanitize_openui(gold, options=SanitizeOptions(mode="enforce")).openui
+    assert records[0]["openui"] == expected
+    assert '"column"' not in records[0]["openui"]
+
+    off = build_test_data(
+        TestDataConfig(
+            seed_path=seeds,
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "eval_off",
+            version="voff",
+            suites=("smoke",),
+            train_manifest=None,
+            require_train_manifest=False,
+            sanitize_mode="off",
+        )
+    )
+    off_records = [
+        json.loads(line)
+        for line in (
+            tmp_path / "eval_off" / "voff" / "suites" / "smoke" / "records.jsonl"
+        )
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert '"column"' in off_records[0]["openui"]
+    assert off["stats"]["sanitize"] == {"mode": "off"}

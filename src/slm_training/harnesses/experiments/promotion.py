@@ -2,26 +2,42 @@
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
-from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain_lcb
+from slm_training.harness_core.promotion_engine import (
+    PromotionCriteria,
+    check_rank_stability,
+)
+from slm_training.harness_core.promotion_engine import (
+    check_category_regression as _check_category_regression,
+)
+from slm_training.harness_core.promotion_engine import (
+    evaluate_promotion as _evaluate_promotion,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
 
+__all__ = [
+    "HARD_CATEGORIES",
+    "PromotionCriteria",
+    "check_category_regression",
+    "check_data_integrity",
+    "check_rank_stability",
+    "evaluate_promotion",
+    "register_promoted_checkpoint",
+]
+
 HARD_CATEGORIES = ("binding", "structural", "repair")
 
 
-@dataclass(frozen=True)
-class PromotionCriteria:
-    category_regression_tolerance: float = 0.02
-    require_rank_stable_top2: bool = True
-    eg_time_lcb_min: float = 1.0
-    ship_gate_policy: dict[str, dict[str, float]] | None = None
+def _openui_gate_evaluator(
+    suites: dict[str, dict[str, Any]],
+    policy: dict[str, dict[str, float]] | None,
+) -> dict[str, Any]:
+    return evaluate_ship_gates(suites, thresholds=policy or DEFAULT_SHIP_GATES)
 
 
 def check_data_integrity(
@@ -61,12 +77,6 @@ def check_data_integrity(
     }
 
 
-def _category_mean(report: dict[str, Any], name: str) -> float | None:
-    cat = (report.get("categories") or {}).get(name) or {}
-    mean = (cat.get("aggregate") or {}).get("mean_nll")
-    return float(mean) if mean is not None else None
-
-
 def check_category_regression(
     baseline: dict[str, Any],
     candidate: dict[str, Any],
@@ -74,47 +84,12 @@ def check_category_regression(
     tolerance: float = 0.02,
 ) -> dict[str, Any]:
     """No hard category may regress more than ``tolerance`` relatively."""
-    details: dict[str, Any] = {}
-    ok = True
-    for name in HARD_CATEGORIES:
-        base = _category_mean(baseline, name)
-        cand = _category_mean(candidate, name)
-        if base is None or cand is None:
-            details[name] = {"pass": False, "reason": "missing"}
-            ok = False
-            continue
-        # Higher NLL is worse; allow cand <= base * (1 + tol).
-        limit = base * (1.0 + tolerance) if base > 0 else base + tolerance
-        passed = cand <= limit
-        details[name] = {
-            "pass": passed,
-            "baseline": base,
-            "candidate": cand,
-            "limit": limit,
-        }
-        ok = ok and passed
-    return {"pass": ok, "categories": details}
-
-
-def check_rank_stability(
-    rankings: dict[str, list[str]],
-    *,
-    top_k: int = 1,
-) -> dict[str, Any]:
-    """Top candidate must be stable across the largest two ladder points."""
-    if not rankings:
-        return {"pass": False, "reason": "empty_rankings"}
-    # Prefer keys that look like the largest points (sorted descending).
-    keys = sorted(rankings.keys(), reverse=True)[:2]
-    if len(keys) < 2:
-        return {"pass": False, "reason": "need_two_ladder_points", "keys": keys}
-    tops = [tuple((rankings[k] or [])[:top_k]) for k in keys]
-    stable = len(set(tops)) == 1 and all(tops)
-    return {
-        "pass": stable,
-        "keys": keys,
-        "tops": {k: list(t) for k, t in zip(keys, tops)},
-    }
+    return _check_category_regression(
+        baseline,
+        candidate,
+        categories=HARD_CATEGORIES,
+        tolerance=tolerance,
+    )
 
 
 def evaluate_promotion(
@@ -128,85 +103,17 @@ def evaluate_promotion(
     criteria: PromotionCriteria | None = None,
 ) -> dict[str, Any]:
     """Return ``{promotable, checks, failures}`` mirroring ship-gates shape."""
-    crit = criteria or PromotionCriteria()
-    checks: dict[str, Any] = {}
-    failures: list[str] = []
-
-    if integrity is not None:
-        checks["integrity"] = integrity
-        if not integrity.get("pass"):
-            failures.append("integrity")
-
-    if baseline_loss_report is not None and candidate_loss_report is not None:
-        cat = check_category_regression(
-            baseline_loss_report,
-            candidate_loss_report,
-            tolerance=crit.category_regression_tolerance,
-        )
-        checks["category_regression"] = cat
-        if not cat["pass"]:
-            failures.append("category_regression")
-        base_w = (baseline_loss_report.get("aggregate") or {}).get("weighted_nll")
-        cand_w = (candidate_loss_report.get("aggregate") or {}).get("weighted_nll")
-        nll_improved = (
-            base_w is not None
-            and cand_w is not None
-            and float(cand_w) < float(base_w)
-        )
-        checks["weighted_nll_improved"] = {
-            "pass": nll_improved,
-            "baseline": base_w,
-            "candidate": cand_w,
-        }
-        if not nll_improved:
-            failures.append("weighted_nll_improved")
-
-    if rankings is not None and crit.require_rank_stable_top2:
-        stab = check_rank_stability(rankings)
-        checks["rank_stability"] = stab
-        if not stab["pass"]:
-            failures.append("rank_stability")
-
-    if eg_time_by_seed is not None:
-        mean, lcb, ucb = efficiency_gain_lcb(eg_time_by_seed)
-        eg_ok = lcb >= crit.eg_time_lcb_min and math.isfinite(lcb)
-        checks["eg_time"] = {
-            "pass": eg_ok,
-            "mean": mean,
-            "lcb": lcb,
-            "ucb": ucb,
-            "min": crit.eg_time_lcb_min,
-        }
-        if not eg_ok:
-            failures.append("eg_time")
-
-    if ship_suites is not None:
-        gates = evaluate_ship_gates(
-            ship_suites,
-            thresholds=crit.ship_gate_policy or DEFAULT_SHIP_GATES,
-        )
-        checks["ship_gates"] = gates
-        if not gates.get("pass"):
-            failures.append("ship_gates")
-
-    comparative_checks = {
-        "weighted_nll_improved",
-        "rank_stability",
-        "eg_time",
-        "ship_gates",
-    }
-    if not comparative_checks & checks.keys():
-        checks["sufficient_evidence"] = {
-            "pass": False,
-            "reason": "promotion requires quality, rank, efficiency, or ship evidence",
-        }
-        failures.append("sufficient_evidence")
-
-    return {
-        "promotable": not failures,
-        "checks": checks,
-        "failures": failures,
-    }
+    return _evaluate_promotion(
+        integrity=integrity,
+        baseline_loss_report=baseline_loss_report,
+        candidate_loss_report=candidate_loss_report,
+        rankings=rankings,
+        eg_time_by_seed=eg_time_by_seed,
+        ship_suites=ship_suites,
+        criteria=criteria,
+        hard_categories=HARD_CATEGORIES,
+        gate_evaluator=_openui_gate_evaluator,
+    )
 
 
 def register_promoted_checkpoint(

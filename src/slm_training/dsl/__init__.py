@@ -25,8 +25,11 @@ from slm_training.dsl.production_codec import (
     ProductionVocab,
     build_vocab_from_corpus,
     decode_productions,
+    emit_statement_bindings,
     encode_openui,
+    parse_statement_bindings,
     roundtrip_openui,
+    statement_binding_order,
 )
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 
@@ -40,6 +43,7 @@ __all__ = [
     "bridge_available",
     "build_vocab_from_corpus",
     "decode_productions",
+    "emit_statement_bindings",
     "encode_openui",
     "extract_placeholders",
     "generate_system_prompt",
@@ -47,7 +51,9 @@ __all__ = [
     "library_schema",
     "load_jsonl",
     "parse",
+    "parse_statement_bindings",
     "roundtrip_openui",
+    "statement_binding_order",
     "serialize",
     "stream_check",
     "validate",

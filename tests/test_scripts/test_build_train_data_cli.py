@@ -68,3 +68,25 @@ def test_changed_rebuild_of_same_version_fails_loudly(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="differs"):
         build_main(_args(tmp_path, "--programspec-seed", "7"))
+
+
+def test_sanitize_mode_flag_reflected_in_stats(tmp_path: Path) -> None:
+    assert build_main(_args(tmp_path, "--no-publish", "--sanitize-mode", "audit")) == 0
+    stats = json.loads(
+        (tmp_path / "out" / "train" / "vtest" / "stats.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert stats["sanitize_mode"] == "audit"
+    assert stats["sanitize"]["mode"] == "audit"
+
+
+def test_sanitize_mode_defaults_to_profile(tmp_path: Path) -> None:
+    # strict (default profile) resolves the unset flag to enforce.
+    assert build_main(_args(tmp_path, "--no-publish")) == 0
+    stats = json.loads(
+        (tmp_path / "out" / "train" / "vtest" / "stats.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert stats["sanitize_mode"] == "enforce"

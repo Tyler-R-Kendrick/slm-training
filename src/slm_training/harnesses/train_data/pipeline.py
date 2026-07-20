@@ -6,8 +6,11 @@ import json
 from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from collections import Counter
+
+if TYPE_CHECKING:
+    from slm_training.harnesses.train_data.sanitize import SanitizeOptions
 
 from slm_training.data.leakage import (
     fingerprint_design_md,
@@ -78,6 +81,11 @@ class TrainDataConfig:
     # Group visible placeholder namespaces into semantic roles and annotate
     # schema-compatible owners from the already-visible component type set.
     prompt_semantic_role_contract: bool = False
+    # Deterministic target sanitization (D2 canonicalization + schema-checked
+    # AST optimization + content-literal templatization) applied inside
+    # _normalize_record before the official validate. off | audit | enforce;
+    # None = the profile decides (strict=enforce, permissive=off).
+    sanitize_mode: str | None = None
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -158,6 +166,7 @@ PROFILES: dict[str, dict[str, Any]] = {
         "max_records_per_parent": 6,
         "semantic_dedup": True,
         "ngram_decontam": True,
+        "sanitize_mode": "enforce",
     },
     "permissive": {},
 }
@@ -180,7 +189,11 @@ def resolve_profile(config: TrainDataConfig) -> TrainDataConfig:
     return replace(config, **updates) if updates else config
 
 
-def _normalize_record(record: ExampleRecord) -> ExampleRecord:
+def _normalize_record(
+    record: ExampleRecord,
+    *,
+    sanitize: "SanitizeOptions | None" = None,
+) -> ExampleRecord:
     from slm_training.data.contract import normalize_example_record
     from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
@@ -236,10 +249,34 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         )
 
     scrubbed = strip_style_literals(record.openui)
+    # Deterministic sanitization runs on the style-stripped source *before*
+    # the official validate, so the semantic contract, prompt remediation,
+    # judge, stamp, dedup and manifest fingerprints all see the final bytes —
+    # and templatization can repair content-policy literals the official
+    # parser would otherwise reject at this very validate.
+    sanitize_meta: dict[str, Any] | None = None
+    if sanitize is not None and sanitize.enabled:
+        from slm_training.harnesses.train_data.sanitize import (
+            sanitize_openui,
+            should_sanitize,
+        )
+
+        eligible, skip_reason = should_sanitize(record)
+        if not eligible:
+            sanitize_meta = {"mode": sanitize.mode, "skip_reason": skip_reason}
+        else:
+            outcome = sanitize_openui(
+                scrubbed, prompt=record.prompt, options=sanitize
+            )
+            sanitize_meta = outcome.to_meta(sanitize.mode)
+            if sanitize.mode == "enforce" and outcome.applied:
+                scrubbed = outcome.openui
     program = validate(scrubbed)
     placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
     openui = strip_style_literals(program.serialized or scrubbed.strip())
     meta = dict(record.meta)
+    if sanitize_meta is not None:
+        meta["sanitize"] = sanitize_meta
     original_meta_keys = set(meta)
     if "verification" in meta:
         meta["upstream_verification"] = meta["verification"]
@@ -1081,6 +1118,18 @@ def build_train_data(
 ) -> dict:
     """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
     config = resolve_profile(config)
+    from slm_training.harnesses.train_data.sanitize import (
+        SANITIZE_MODES,
+        SanitizeOptions,
+    )
+
+    sanitize_mode = config.sanitize_mode or "off"
+    if sanitize_mode not in SANITIZE_MODES:
+        raise ValueError(
+            f"unknown sanitize_mode {config.sanitize_mode!r}; "
+            f"expected one of {SANITIZE_MODES}"
+        )
+    sanitize_options = SanitizeOptions(mode=sanitize_mode)
     if config.immutable and (config.output_dir / "manifest.json").exists():
         raise FileExistsError(
             f"immutable training-data snapshot already exists: {config.output_dir}"
@@ -1243,7 +1292,9 @@ def build_train_data(
             candidate = _apply_governance_gate(candidate)
             lineage_index[candidate.id] = lineage_entry(candidate)
             try:
-                collected.append(_normalize_record(candidate))
+                collected.append(
+                    _normalize_record(candidate, sanitize=sanitize_options)
+                )
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
                 rejections.append(
@@ -1337,6 +1388,17 @@ def build_train_data(
     reserved_test_structures = load_reserved_test_structure_fingerprints(
         config.test_seed_path
     )
+    if sanitize_options.enabled:
+        # Sanitized records live in a different structural-fingerprint family
+        # than the raw fixtures; reserve both forms so the test-structure
+        # firewall never weakens.
+        from slm_training.harnesses.train_data.sanitize import (
+            sanitized_reserved_structures,
+        )
+
+        reserved_test_structures = reserved_test_structures | (
+            sanitized_reserved_structures(config.test_seed_path, sanitize_options)
+        )
     structure_reserved_rejected: list[dict] = []
 
     deduped: list[ExampleRecord] = []
@@ -1399,7 +1461,7 @@ def build_train_data(
         for stress in synthesize_stress_adversarial_records():
             lineage_index[stress.id] = lineage_entry(stress)
             try:
-                normalized = _normalize_record(stress)
+                normalized = _normalize_record(stress, sanitize=sanitize_options)
             except (ParseError, ValueError) as exc:
                 errors.append({"id": stress.id, "error": str(exc)})
                 rejections.append(
@@ -1693,6 +1755,13 @@ def build_train_data(
     from slm_training.versioning import build_version_stamp
 
     version_stamp = build_version_stamp("harness.train_data")
+    from slm_training.harnesses.train_data.sanitize import aggregate_sanitization
+
+    sanitization_section = (
+        aggregate_sanitization(collected, mode=sanitize_mode)
+        if sanitize_options.enabled
+        else {"mode": sanitize_mode}
+    )
     quality_report = build_quality_report(
         version=config.version,
         profile=config.profile,
@@ -1701,6 +1770,7 @@ def build_train_data(
         collected_count=len(collected),
         admitted=deduped,
         rejections=rejections,
+        sanitization=sanitization_section,
         source_error_count=producer_error_count,
         cluster_exposure=source_families.get("cluster_exposure") or {},
         per_family=synthesis_rows,
@@ -1784,6 +1854,8 @@ def build_train_data(
         "prompt_semantic_role_contract": bool(
             config.prompt_semantic_role_contract
         ),
+        "sanitize_mode": sanitize_mode,
+        "sanitize": sanitization_section,
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "max_records_per_parent": config.max_records_per_parent,

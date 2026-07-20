@@ -1,0 +1,143 @@
+{
+  "capacity_threshold_not_identifiable": true,
+  "manifest": {
+    "action_count": 5,
+    "base_recipe": {
+      "batch_mode": "cyclic",
+      "device": "cpu",
+      "eval_split": "holdout_25_percent_states",
+      "learning_rate": 0.01,
+      "loss": "cross_entropy",
+      "max_wall_minutes": 3.0,
+      "optimizer": "Adam",
+      "train_steps": 200
+    },
+    "base_recipe_hash": "069beebc4af67de54ad3545e311ca1b0334ddeed5c8357e12786ab148f00738a",
+    "claim_class": "wiring",
+    "competence_target": 0.66,
+    "falsifier": "No rung in the ladder reaches the competence target on the training split, or a smaller-width rung consistently outperforms every larger rung, indicating that the ladder does not monotonically characterize controller capacity for this recipe.",
+    "hypothesis": "A minimum-width CPU controller can be identified for a deterministic synthetic decision task: as MLP hidden dimension increases, train accuracy crosses a fixed competence threshold and the smallest qualifying rung marks the minimum viable controller capacity.",
+    "matrix_set": "sde4-02-min-controller",
+    "matrix_version": "sde4-02-v1",
+    "rungs": [
+      {
+        "hidden_dim": 8,
+        "rank": 1,
+        "rung_id": "rung_001_h8"
+      },
+      {
+        "hidden_dim": 16,
+        "rank": 2,
+        "rung_id": "rung_002_h16"
+      },
+      {
+        "hidden_dim": 32,
+        "rank": 3,
+        "rung_id": "rung_003_h32"
+      },
+      {
+        "hidden_dim": 64,
+        "rank": 4,
+        "rung_id": "rung_004_h64"
+      },
+      {
+        "hidden_dim": 128,
+        "rank": 5,
+        "rung_id": "rung_005_h128"
+      }
+    ],
+    "seeds": [
+      0
+    ],
+    "semantic_dim": 8,
+    "state_count": 8,
+    "status": "plan_only"
+  },
+  "matrix_set": "sde4-02-min-controller",
+  "matrix_version": "sde4-02-v1",
+  "rows": [
+    {
+      "active_parameters": 0,
+      "hidden_dim": 8,
+      "meets_competence_target": false,
+      "notes": [
+        "plan-only: no model trained"
+      ],
+      "rung_id": "rung_001_h8",
+      "seed": 0,
+      "status": "plan_only",
+      "train_accuracy": 0.0,
+      "trainable_parameters": 0,
+      "val_accuracy": 0.0
+    },
+    {
+      "active_parameters": 0,
+      "hidden_dim": 16,
+      "meets_competence_target": false,
+      "notes": [
+        "plan-only: no model trained"
+      ],
+      "rung_id": "rung_002_h16",
+      "seed": 0,
+      "status": "plan_only",
+      "train_accuracy": 0.0,
+      "trainable_parameters": 0,
+      "val_accuracy": 0.0
+    },
+    {
+      "active_parameters": 0,
+      "hidden_dim": 32,
+      "meets_competence_target": false,
+      "notes": [
+        "plan-only: no model trained"
+      ],
+      "rung_id": "rung_003_h32",
+      "seed": 0,
+      "status": "plan_only",
+      "train_accuracy": 0.0,
+      "trainable_parameters": 0,
+      "val_accuracy": 0.0
+    },
+    {
+      "active_parameters": 0,
+      "hidden_dim": 64,
+      "meets_competence_target": false,
+      "notes": [
+        "plan-only: no model trained"
+      ],
+      "rung_id": "rung_004_h64",
+      "seed": 0,
+      "status": "plan_only",
+      "train_accuracy": 0.0,
+      "trainable_parameters": 0,
+      "val_accuracy": 0.0
+    },
+    {
+      "active_parameters": 0,
+      "hidden_dim": 128,
+      "meets_competence_target": false,
+      "notes": [
+        "plan-only: no model trained"
+      ],
+      "rung_id": "rung_005_h128",
+      "seed": 0,
+      "status": "plan_only",
+      "train_accuracy": 0.0,
+      "trainable_parameters": 0,
+      "val_accuracy": 0.0
+    }
+  ],
+  "run_id": "sde4_02_plan",
+  "selected_rung_id": null,
+  "status": "plan_only",
+  "version_stamp": {
+    "code_commit": "f42877574511d3ea43510fc3926f459850b8c4b9",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v27",
+      "harness.experiments.sde4_02_min_controller_capacity": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T01:58:30.598169+00:00"
+  }
+}

@@ -44,6 +44,12 @@ class ModelBuildConfig:
     # scratch | hf — B4: adapt the pretrained hf_model_name causal LM into the
     # (trainable) masked denoiser instead of the from-scratch DenoiserTower.
     denoiser_backend: str = "scratch"
+    # stacked | shared_recursive — SLM-138 shared recursive denoiser tower.
+    denoiser_arch: str = "stacked"
+    # SLM-138: recurrence and transition-depth knobs for shared_recursive.
+    recursive_steps: int = 1
+    recursive_transition_layers: int = 0
+    recursive_depth_supervision_weights: tuple[float, ...] = ()
     grammar_constrained: bool = True
     # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout
     grammar_dsl: str = "openui"
@@ -247,6 +253,8 @@ class ModelBuildConfig:
     slot_component_loss_weight: float = 0.0
     slot_component_focal_gamma: float = 0.0
     slot_component_class_balance_power: float = 0.0
+    slot_component_owner_rare_threshold: int = 0
+    slot_component_owner_rare_multiplier: int = 1
     slot_component_decode_weight: float | None = None
     semantic_role_decode_weight: float | None = None
     visible_reference_decode_weight: float | None = None
@@ -265,6 +273,12 @@ class ModelBuildConfig:
     binder_topology_decode_weight: float | None = None
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float | None = None
+    root_reference_arity_loss_weight: float = 0.0
+    root_reference_arity_decode_weight: float | None = None
+    root_reference_identity_loss_weight: float = 0.0
+    root_reference_identity_negative_weight: float = 1.0
+    root_reference_identity_strict_subset_multiplier: int = 1
+    root_reference_identity_decode_weight: float | None = None
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
@@ -333,6 +347,9 @@ class ModelBuildConfig:
     eval_cache_mode: str = "off"  # off | read | read_write | refresh
     eval_cache_root: Path = field(default_factory=lambda: Path("outputs/eval_cache"))
     eval_shards: int = 1
+    # LDI2-01: optional removable TwoTower low-rank adapter directory.
+    adapter_spec: Path | None = None
+    adapter_trainable: bool = True
 
     @property
     def run_dir(self) -> Path:

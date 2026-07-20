@@ -21,6 +21,53 @@ from slm_training.harnesses.experiments.efficiency_gain import (
     efficiency_gain,
     efficiency_gain_lcb,
 )
+from slm_training.harnesses.experiments.external_ceiling_matrix import (
+    MATRIX_SET as EXTERNAL_CEILING_MATRIX_SET,
+    MATRIX_VERSION as EXTERNAL_CEILING_MATRIX_VERSION,
+    ExternalCeilingArm,
+    ExternalCeilingManifest,
+    ExternalCeilingReport,
+    build_external_ceiling_manifest,
+    render_markdown as render_external_ceiling_markdown,
+    run_fixture_matrix as run_external_ceiling_fixture_matrix,
+    validate_external_ceiling_manifest,
+)
+from slm_training.harnesses.experiments.causal_peft_ftpo import (
+    CAUSAL_PEFT_FTPO_ID,
+    MATRIX_SET as CAUSAL_PEFT_FTPO_MATRIX_SET,
+    MATRIX_VERSION as CAUSAL_PEFT_FTPO_MATRIX_VERSION,
+    CausalPeftFtpoManifest,
+    CausalPeftFtpoReport,
+    FtpoArmResult,
+    build_causal_peft_ftpo_manifest,
+    render_markdown as render_causal_peft_ftpo_markdown,
+    run_fixture_ftpo,
+    validate_manifest as validate_causal_peft_ftpo_manifest,
+)
+from slm_training.harnesses.experiments.corruption_curriculum import (
+    CORRUPTION_CURRICULUM_ID,
+    MATRIX_SET as CORRUPTION_CURRICULUM_MATRIX_SET,
+    MATRIX_VERSION as CORRUPTION_CURRICULUM_MATRIX_VERSION,
+    CorruptionCurriculumManifest,
+    CorruptionCurriculumReport,
+    CurriculumArmResult,
+    build_corruption_curriculum_manifest,
+    render_markdown as render_corruption_curriculum_markdown,
+    run_fixture_curriculum,
+    validate_manifest as validate_corruption_curriculum_manifest,
+)
+from slm_training.harnesses.experiments.e228_exposure_ladder import (
+    LADDER_ID as E228_EXPOSURE_LADDER_ID,
+    MATRIX_SET as E228_EXPOSURE_MATRIX_SET,
+    MATRIX_VERSION as E228_EXPOSURE_MATRIX_VERSION,
+    E228ExposureLadderManifest,
+    E228ExposureReport,
+    build_e228_exposure_ladder,
+    build_e228_recipe_config,
+    render_markdown as render_e228_exposure_markdown,
+    run_fixture_ladder as run_e228_fixture_ladder,
+    validate_manifest as validate_e228_exposure_manifest,
+)
 from slm_training.harnesses.experiments.pretrained_denoiser_activation import (
     DEFAULT_ACTIVATION_GATES,
     DEFAULT_ARMS,
@@ -103,6 +150,31 @@ from slm_training.harnesses.experiments.verified_solver_matrix import (
     render_markdown,
     run_fixture_matrix,
 )
+from slm_training.harnesses.experiments.ast_sketch_retrieval_factorial import (
+    AST_SKETCH_RETRIEVAL_ID,
+    DATA_SAMPLING_ARMS,
+    MATRIX_SET as AST_SKETCH_RETRIEVAL_MATRIX_SET,
+    MATRIX_VERSION as AST_SKETCH_RETRIEVAL_MATRIX_VERSION,
+    RETRIEVAL_MODES,
+    AstSketchRetrievalArm,
+    AstSketchRetrievalManifest,
+    AstSketchRetrievalReport,
+    AstSketchRetrievalRow,
+    AstTrainingSketchV1,
+    ChoiceRetrievalExemplarV1,
+    DataSampling,
+    RetrievalMode,
+    build_ast_sketch_retrieval_manifest,
+    build_ast_training_sketch,
+    build_choice_exemplar_bank,
+    build_choice_retrieval_exemplar,
+    format_choice_exemplar_context,
+    nearest_choice_exemplars,
+    random_choice_exemplars,
+    render_markdown as render_ast_sketch_retrieval_markdown,
+    run_fixture_matrix as run_ast_sketch_retrieval_fixture_matrix,
+    validate_manifest as validate_ast_sketch_retrieval_manifest,
+)
 
 try:
     from slm_training.harnesses.experiments.cap2_bottleneck import (
@@ -153,8 +225,68 @@ _LAZY_LADDER_EXPORTS = {
     "scratch_ladder_default",
 }
 
+_LAZY_B3_EXPORTS = {
+    "B3_CAPACITY_V2_ID": "B3_CAPACITY_V2_ID",
+    "B3_CAPACITY_V2_MATRIX_SET": "MATRIX_SET",
+    "B3_CAPACITY_V2_MATRIX_VERSION": "MATRIX_VERSION",
+    "B3CapacityV2Arm": "B3CapacityV2Arm",
+    "B3CapacityV2Manifest": "B3CapacityV2Manifest",
+    "B3CapacityV2Report": "B3CapacityV2Report",
+    "B3CapacityV2Row": "B3CapacityV2Row",
+    "build_b3_capacity_v2_manifest": "build_b3_capacity_v2_manifest",
+    "render_b3_capacity_v2_markdown": "render_markdown",
+    "run_b3_capacity_v2_fixture_ladder": "run_fixture_ladder",
+    "validate_b3_capacity_v2_manifest": "validate_manifest",
+}
+
+_LAZY_SDE4_02_EXPORTS = {
+    "SDE4_02_COMPETENCE_TARGET": "COMPETENCE_TARGET",
+    "SDE4_02_MATRIX_SET": "MATRIX_SET",
+    "SDE4_02_MATRIX_VERSION": "MATRIX_VERSION",
+    "ControllerCapacityArm": "ControllerCapacityArm",
+    "ControllerCapacityManifest": "ControllerCapacityManifest",
+    "ControllerCapacityReport": "ControllerCapacityReport",
+    "ControllerCapacityRow": "ControllerCapacityRow",
+    "ControllerCapacityRung": "ControllerCapacityRung",
+    "build_sde4_02_manifest": "build_manifest",
+    "render_sde4_02_markdown": "render_markdown",
+    "run_sde4_02_fixture_ladder": "run_fixture_ladder",
+}
+
+_LAZY_SLM135_EXPORTS = {
+    "SLM135_MATRIX_SET": "MATRIX_SET",
+    "SLM135_MATRIX_VERSION": "MATRIX_VERSION",
+    "Slm135Arm": "Slm135Arm",
+    "Slm135Manifest": "Slm135Manifest",
+    "Slm135Report": "Slm135Report",
+    "Slm135Row": "Slm135Row",
+    "build_slm135_manifest": "build_manifest",
+    "render_slm135_markdown": "render_markdown",
+    "run_slm135_fixture_matrix": "run_fixture_matrix",
+}
+
 
 def __getattr__(name: str):
+    if name in _LAZY_B3_EXPORTS:
+        from slm_training.harnesses.experiments import b3_capacity_v2
+
+        value = getattr(b3_capacity_v2, _LAZY_B3_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SDE4_02_EXPORTS:
+        from slm_training.harnesses.experiments import sde4_02_min_controller_capacity
+
+        value = getattr(sde4_02_min_controller_capacity, _LAZY_SDE4_02_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM135_EXPORTS:
+        from slm_training.harnesses.experiments import slm135_trailed_assumptions_ablation
+
+        value = getattr(
+            slm135_trailed_assumptions_ablation, _LAZY_SLM135_EXPORTS[name]
+        )
+        globals()[name] = value
+        return value
     if name in _LAZY_LADDER_EXPORTS:
         from slm_training.harnesses.experiments import ladder
 
@@ -165,6 +297,62 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "AST_SKETCH_RETRIEVAL_ID",
+    "AST_SKETCH_RETRIEVAL_MATRIX_SET",
+    "AST_SKETCH_RETRIEVAL_MATRIX_VERSION",
+    "B3_CAPACITY_V2_ID",
+    "B3_CAPACITY_V2_MATRIX_SET",
+    "B3_CAPACITY_V2_MATRIX_VERSION",
+    "B3CapacityV2Arm",
+    "B3CapacityV2Manifest",
+    "B3CapacityV2Report",
+    "B3CapacityV2Row",
+    "SDE4_02_COMPETENCE_TARGET",
+    "SDE4_02_MATRIX_SET",
+    "SDE4_02_MATRIX_VERSION",
+    "ControllerCapacityArm",
+    "ControllerCapacityManifest",
+    "ControllerCapacityReport",
+    "ControllerCapacityRow",
+    "ControllerCapacityRung",
+    "SLM135_MATRIX_SET",
+    "SLM135_MATRIX_VERSION",
+    "Slm135Arm",
+    "Slm135Manifest",
+    "Slm135Report",
+    "Slm135Row",
+    "DATA_SAMPLING_ARMS",
+    "RETRIEVAL_MODES",
+    "AstSketchRetrievalArm",
+    "AstSketchRetrievalManifest",
+    "AstSketchRetrievalReport",
+    "AstSketchRetrievalRow",
+    "AstTrainingSketchV1",
+    "ChoiceRetrievalExemplarV1",
+    "DataSampling",
+    "RetrievalMode",
+    "CAUSAL_PEFT_FTPO_ID",
+    "CAUSAL_PEFT_FTPO_MATRIX_SET",
+    "CAUSAL_PEFT_FTPO_MATRIX_VERSION",
+    "CausalPeftFtpoManifest",
+    "CausalPeftFtpoReport",
+    "FtpoArmResult",
+    "CORRUPTION_CURRICULUM_ID",
+    "CORRUPTION_CURRICULUM_MATRIX_SET",
+    "CORRUPTION_CURRICULUM_MATRIX_VERSION",
+    "CorruptionCurriculumManifest",
+    "CorruptionCurriculumReport",
+    "CurriculumArmResult",
+    "E228_EXPOSURE_LADDER_ID",
+    "E228_EXPOSURE_MATRIX_SET",
+    "E228_EXPOSURE_MATRIX_VERSION",
+    "E228ExposureLadderManifest",
+    "E228ExposureReport",
+    "EXTERNAL_CEILING_MATRIX_SET",
+    "EXTERNAL_CEILING_MATRIX_VERSION",
+    "ExternalCeilingArm",
+    "ExternalCeilingManifest",
+    "ExternalCeilingReport",
     "ACTIVATION_VERDICTS",
     "CAMPAIGN_VERDICTS",
     "CONSTRAINT_BACKEND_BENCHMARK_SCHEMA",
@@ -204,10 +392,47 @@ __all__ = [
     "TeacherTraceContract",
     "build_cap5_campaign_manifest",
     "build_constraint_backend_benchmark_manifest",
+    "build_ast_sketch_retrieval_manifest",
+    "build_ast_training_sketch",
+    "build_b3_capacity_v2_manifest",
+    "build_choice_exemplar_bank",
+    "build_choice_retrieval_exemplar",
+    "build_causal_peft_ftpo_manifest",
+    "build_corruption_curriculum_manifest",
+    "build_sde4_02_manifest",
+    "format_choice_exemplar_context",
+    "nearest_choice_exemplars",
+    "random_choice_exemplars",
+    "render_ast_sketch_retrieval_markdown",
+    "render_sde4_02_markdown",
+    "run_ast_sketch_retrieval_fixture_matrix",
+    "run_sde4_02_fixture_ladder",
+    "build_slm135_manifest",
+    "render_slm135_markdown",
+    "run_slm135_fixture_matrix",
+    "validate_ast_sketch_retrieval_manifest",
+    "build_e228_exposure_ladder",
+    "build_e228_recipe_config",
+    "build_external_ceiling_manifest",
     "build_pretrained_denoiser_activation_manifest",
     "build_proxy_metric_calibration_manifest",
     "build_scaffold_distillation_activation_manifest",
     "build_teacher_paraphrase_activation_manifest",
+    "render_b3_capacity_v2_markdown",
+    "render_causal_peft_ftpo_markdown",
+    "render_corruption_curriculum_markdown",
+    "render_e228_exposure_markdown",
+    "render_external_ceiling_markdown",
+    "run_e228_fixture_ladder",
+    "run_b3_capacity_v2_fixture_ladder",
+    "run_fixture_curriculum",
+    "run_fixture_ftpo",
+    "run_external_ceiling_fixture_matrix",
+    "validate_b3_capacity_v2_manifest",
+    "validate_causal_peft_ftpo_manifest",
+    "validate_corruption_curriculum_manifest",
+    "validate_e228_exposure_manifest",
+    "validate_external_ceiling_manifest",
     "validate_cap5_campaign_manifest",
     "validate_constraint_backend_benchmark_manifest",
     "validate_pretrained_denoiser_activation_manifest",

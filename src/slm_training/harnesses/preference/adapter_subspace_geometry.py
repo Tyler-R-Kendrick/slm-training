@@ -28,8 +28,8 @@ from __future__ import annotations
 
 import gc
 import tracemalloc
-from collections.abc import Callable, Sequence
-from typing import Any
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Literal
 
 import torch
 
@@ -59,7 +59,9 @@ from slm_training.lineage.records import content_sha
 
 __all__ = [
     "PROTECTED_OBJECTIVES",
+    "AuthorizationDecision",
     "SubspaceGeometryError",
+    "authorize_adapter_geometry",
     "profile_adapter_subspace_geometry",
     "profile_corpus_cell",
     "write_geometry_report",
@@ -460,9 +462,84 @@ def profile_adapter_subspace_geometry(
     report["objective"] = objective
     report["matrix_cells"] = [_cell_label(cell) for cell in matrix]
     report["corpus_states"] = len(corpus)
+    decision, reason = authorize_adapter_geometry(report)
+    report["authorization"] = {"decision": decision, "reason": reason}
     if report.get("result") is not None:
         report["result_content_sha"] = content_sha(report["result"])
     return report
+
+
+AuthorizationDecision = Literal[
+    "authorized", "repair_evidence", "no_safe_direction", "expired"
+]
+
+
+def authorize_adapter_geometry(
+    report: Mapping[str, Any],
+) -> tuple[AuthorizationDecision, str]:
+    """Map a completed adapter-subspace geometry report to a training authorization.
+
+    Fail-closed: only an explicit bounded common-descent certificate authorizes a
+    training arm. Support gaps are routed to ``repair_evidence`` (the corpus is
+    incomplete), not to a training decision. This keeps the diagnostic honest:
+    a solver result is evidence, not authorization.
+    """
+    status = report.get("status")
+    if status == "expired":
+        return "expired", "diagnostic expired before all cells completed"
+    if status == "not_authorized":
+        return "no_safe_direction", str(
+            report.get("reason", "diagnostic refused the request")
+        )
+    if status != "completed":
+        return (
+            "no_safe_direction",
+            f"unexpected diagnostic status {status!r}; failing closed",
+        )
+
+    result = report.get("result")
+    if not isinstance(result, Mapping) or not result:
+        return "no_safe_direction", "completed diagnostic carried no result to authorize"
+
+    def _rank_sort(label_cell: tuple[str, Any]) -> int:
+        label = label_cell[0]
+        prefix = label.split(":", 1)[0]
+        try:
+            return int(prefix.replace("rank", ""))
+        except ValueError:
+            return 999999
+
+    for label, cell in sorted(result.items(), key=_rank_sort):
+        if not isinstance(cell, Mapping):
+            return "no_safe_direction", f"cell {label!r} is not a mapping; invalid report"
+        if cell.get("status") != "profiled":
+            return "repair_evidence", f"cell {label!r} was not profiled"
+        support = cell.get("support") or {}
+        coverage = support.get("held_out_coverage") or {}
+        if not coverage.get("passed", True):
+            uncovered = coverage.get("uncovered", [])
+            return (
+                "repair_evidence",
+                f"cell {label!r} has {len(uncovered)} uncovered held-out objective signature(s)",
+            )
+
+    for label, cell in sorted(result.items(), key=_rank_sort):
+        variants = (cell.get("pooled") or {}).get("gradient_variants", {})
+        unit = variants.get("unit_norm", {})
+        if unit.get("status") != "solved":
+            continue
+        mgda = unit.get("mgda", {})
+        if bool(mgda.get("common_descent")) and bool(mgda.get("descends_all")):
+            return (
+                "authorized",
+                f"bounded common descent certified in cell {label!r}; "
+                "adapter training arm may be scheduled",
+            )
+
+    return (
+        "no_safe_direction",
+        "no rank/module cell certified a common descent direction on the protected objectives",
+    )
 
 
 def _cell_label(cell: dict[str, Any]) -> str:

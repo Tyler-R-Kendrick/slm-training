@@ -40,6 +40,11 @@ narrow backends so the model-generation/training surface stays out of the CPU sm
   - `FixtureBackend` — deterministic, torch-free generation + training for the smoke.
 - `scripts/run_remine_campaign.py` — `--describe` (resolve config/stages/arms/identities,
   no run) and `--smoke` (bounded one-iteration wiring-only run under a campaign root).
+- `scripts/autoresearch.py remine` — exposes the same campaign through the existing
+  autoresearch CLI (`--describe` and `--smoke`) without adding a new scheduler.
+- Version registry entry `harness.preference.remine_campaign` v1.
+- Tests: `tests/test_harnesses/preference/test_remine_campaign.py` and
+  `tests/test_scripts/test_autoresearch_remine.py`.
 
 ## Immutability, resume, and duplicate-safety
 
@@ -63,11 +68,15 @@ Committed manifest: `docs/design/ldi3-04-remine-intervene-campaign-report-202607
 
 ```bash
 python -m pytest tests/test_harnesses/preference/test_remine_campaign.py -q   # 20 passed
+python -m pytest tests/test_scripts/test_autoresearch_remine.py -q              # 2 passed
 python -m pytest tests/test_harnesses/preference tests/test_autoresearch -q
 python -m scripts.run_remine_campaign --describe
 python -m scripts.run_remine_campaign --smoke --root outputs/autoresearch
-python -m ruff check src/slm_training/harnesses/preference/remine_campaign.py scripts/run_remine_campaign.py
+python -m scripts.autoresearch remine --describe
+python -m scripts.autoresearch --root outputs/autoresearch remine --smoke
+python -m ruff check src/slm_training/harnesses/preference/remine_campaign.py scripts/run_remine_campaign.py scripts/autoresearch.py
 python -m scripts.repo_policy
+python -m scripts.verify_version_stamps --check
 ```
 
 Tests cover: unknown-field / out-of-contract config fail-closed and deterministic

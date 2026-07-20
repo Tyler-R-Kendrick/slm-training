@@ -323,3 +323,50 @@ def test_protected_objectives_cover_the_guarded_quantities() -> None:
     assert PROTECTED_OBJECTIVES == (
         "loss", "good_probability_mass", "bad_probability_mass", "mean_margin"
     )
+
+
+# --- Authorization ----------------------------------------------------------------------
+
+
+def test_authorization_is_no_safe_direction_for_fixture_conflict() -> None:
+    report = profile_adapter_subspace_geometry(
+        _model,
+        _corpus(),
+        _spec_factory,
+        [{"rank": 4, "target_modules": _RESTRICTED}],
+    )
+    assert report["authorization"]["decision"] == "no_safe_direction"
+    assert "authorization" in report
+    assert report["authorization"]["reason"]
+
+
+def test_authorization_repairs_evidence_on_uncovered_held_out_signature() -> None:
+    # Held-out objective signature with no matching train support.
+    held_only = _group("held_out", "obj-unique")
+    corpus = _corpus() + [
+        (
+            _state(held_only, kind="grammar_semicolon", role="grammar_slot"),
+            _view(good=(10,), bad=(4,)),
+        ),
+    ]
+    report = profile_adapter_subspace_geometry(
+        _model,
+        corpus,
+        _spec_factory,
+        [{"rank": 4, "target_modules": _RESTRICTED}],
+    )
+    assert report["authorization"]["decision"] == "repair_evidence"
+
+
+def test_authorization_expired_when_budget_expires(monkeypatch) -> None:
+    ticks = iter([0.0] + [10_000.0] * 50)
+    monkeypatch.setattr(dd.time, "monotonic", lambda: next(ticks))
+    report = profile_adapter_subspace_geometry(
+        _model,
+        _corpus(),
+        _spec_factory,
+        [{"rank": 2, "target_modules": _RESTRICTED}],
+        budget=DiagnosticBudget(max_wall_minutes=1.0),
+    )
+    assert report["status"] == "expired"
+    assert report["authorization"]["decision"] == "expired"

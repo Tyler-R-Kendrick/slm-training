@@ -14,6 +14,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
+import zlib
 
 import torch
 import torch.nn.functional as F
@@ -113,6 +114,11 @@ def _check_forced(legal_actions: list[str]) -> ActionDecision | None:
     return None
 
 
+def _stable_action_index(action: str, vocab_size: int) -> int:
+    """Deterministic action -> output index mapping (stable across processes)."""
+    return (zlib.crc32(action.encode("utf-8")) & 0xFFFFFFFF) % vocab_size
+
+
 class GlobalMaskedHead(LocalActionHead):
     """Global output-class logits followed by an exact legal mask."""
 
@@ -132,7 +138,7 @@ class GlobalMaskedHead(LocalActionHead):
     ) -> LocalActionOutput:
         # Map legal action identities to indices in [0, max_vocabulary).
         legal_indices = torch.tensor(
-            [hash(a) % self.max_vocabulary for a in legal_actions],
+            [_stable_action_index(a, self.max_vocabulary) for a in legal_actions],
             dtype=torch.long,
             device=hidden.device,
         )
@@ -156,7 +162,7 @@ class GlobalMaskedHead(LocalActionHead):
             return forced
         assert output.logits is not None
         legal_indices = torch.tensor(
-            [hash(a) % self.max_vocabulary for a in legal_actions],
+            [_stable_action_index(a, self.max_vocabulary) for a in legal_actions],
             dtype=torch.long,
             device=output.logits.device,
         )
@@ -588,7 +594,7 @@ class ResidualTritPlaneHead(LocalActionHead):
         return_diagnostics: bool = False,
     ) -> LocalActionOutput:
         indices = torch.tensor(
-            [hash(a) % self.max_actions for a in legal_actions],
+            [_stable_action_index(a, self.max_actions) for a in legal_actions],
             dtype=torch.long,
             device=hidden.device,
         )

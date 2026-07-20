@@ -8,11 +8,16 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from typing import TYPE_CHECKING
+
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+
+if TYPE_CHECKING:
+    from slm_training.harnesses.train_data.sanitize import SanitizeOptions
 
 DEFAULT_SUITES = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 
@@ -38,6 +43,11 @@ class TestDataConfig:
     # Keep pulling / converting until at least this many non-leaking records
     # are kept (None disables). Useful for large HF expansions.
     target_records: int | None = None
+    # Shared deterministic target sanitization (harnesses.train_data.sanitize):
+    # eval gold must match the sanitized train distribution, so enforce is the
+    # default. off | audit | enforce. Committed snapshots stay immutable —
+    # only newly built versions carry sanitized gold.
+    sanitize_mode: str = "enforce"
 
     # Prevent pytest from collecting this dataclass as a test class.
     __test__ = False
@@ -47,15 +57,39 @@ class TestDataConfig:
         return self.output_root / self.version
 
 
-def _normalize(record: ExampleRecord) -> ExampleRecord:
+def _normalize(
+    record: ExampleRecord,
+    *,
+    sanitize: "SanitizeOptions | None" = None,
+) -> ExampleRecord:
     from slm_training.data.structure import strip_style_literals
 
     # Scaffold gold is structure-only — strip gaps / typography / color-role args.
     scrubbed = strip_style_literals(record.openui)
+    sanitize_meta: dict[str, object] | None = None
+    if sanitize is not None and sanitize.enabled:
+        from slm_training.harnesses.train_data.sanitize import (
+            sanitize_openui,
+            should_sanitize,
+        )
+
+        eligible, skip_reason = should_sanitize(record)
+        if not eligible:
+            sanitize_meta = {"mode": sanitize.mode, "skip_reason": skip_reason}
+        else:
+            outcome = sanitize_openui(
+                scrubbed, prompt=record.prompt, options=sanitize
+            )
+            sanitize_meta = outcome.to_meta(sanitize.mode)
+            if sanitize.mode == "enforce" and outcome.applied:
+                scrubbed = outcome.openui
     program = validate(scrubbed)
     placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
     openui = program.serialized or scrubbed.strip()
     openui = strip_style_literals(openui)
+    meta = {**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True}
+    if sanitize_meta is not None:
+        meta["sanitize"] = sanitize_meta
     out = ExampleRecord(
         id=record.id,
         prompt=record.prompt.strip(),
@@ -63,7 +97,7 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
         placeholders=placeholders,
         split=record.split,
         source=record.source,
-        meta={**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True},
+        meta=meta,
         design_md=record.design_md,
     )
     try:
@@ -73,6 +107,17 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
     except Exception:  # noqa: BLE001
         pass
     return out
+
+
+def _aggregate_sanitize(
+    by_suite: dict[str, list[ExampleRecord]], *, mode: str
+) -> dict:
+    if mode == "off":
+        return {"mode": mode}
+    from slm_training.harnesses.train_data.sanitize import aggregate_sanitization
+
+    records = [record for suite in sorted(by_suite) for record in by_suite[suite]]
+    return aggregate_sanitization(records, mode=mode)
 
 
 def _fixture_seeds(config: TestDataConfig) -> list[ExampleRecord]:
@@ -132,6 +177,18 @@ def build_test_data(config: TestDataConfig) -> dict:
         raise ValueError(
             "train_manifest is required to guarantee test data excludes training data"
         )
+    from slm_training.harnesses.train_data.sanitize import (
+        SANITIZE_MODES,
+        SanitizeOptions,
+    )
+
+    sanitize_mode = config.sanitize_mode or "off"
+    if sanitize_mode not in SANITIZE_MODES:
+        raise ValueError(
+            f"unknown sanitize_mode {config.sanitize_mode!r}; "
+            f"expected one of {SANITIZE_MODES}"
+        )
+    sanitize_options = SanitizeOptions(mode=sanitize_mode)
 
     train_fps = load_train_fingerprints(config.train_manifest)
     source = (config.source or "both").lower()
@@ -157,12 +214,23 @@ def build_test_data(config: TestDataConfig) -> dict:
         if seed.id in seen_ids:
             continue
         try:
-            normalized = _normalize(seed)
+            normalized = _normalize(seed, sanitize=sanitize_options)
         except (ParseError, ValueError) as exc:
             errors.append({"id": seed.id, "error": str(exc)})
             continue
 
         reasons = find_leakage(normalized, train_fps)
+        if sanitize_options.enabled:
+            # Older train manifests fingerprint unsanitized bytes — check the
+            # pre-sanitize form too so leakage detection never weakens.
+            try:
+                plain = _normalize(seed, sanitize=None)
+            except (ParseError, ValueError):
+                plain = None
+            if plain is not None:
+                for reason in find_leakage(plain, train_fps):
+                    if reason not in reasons:
+                        reasons.append(reason)
         if reasons:
             item = {"id": normalized.id, "reasons": reasons, "source": normalized.source}
             leakage.append(item)
@@ -250,6 +318,8 @@ def build_test_data(config: TestDataConfig) -> dict:
             str(config.rico_hf_cache_path) if config.rico_hf_cache_path else None
         ),
         "target_records": config.target_records,
+        "sanitize_mode": sanitize_mode,
+        "sanitize": _aggregate_sanitize(by_suite, mode=sanitize_mode),
         "suite_counts": suite_counts,
         "total_records": sum(suite_counts.values()),
         "error_count": len(errors),

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E562",
+  "run_id": "e562-e561-component-plan-decode1-eval-r1",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_decode_pareto_not_ship",
+  "hypothesis": "Enabling E561's trained component-plan head at decode weight 1.0 will improve required-component coverage and meaningful-program rate.",
+  "checkpoint": {
+    "run_id": "e561-e544-owner-threshold7-r1-24s",
+    "location": "outputs/runs/e561-e544-owner-threshold7-r1-24s/checkpoints/last.pt",
+    "sha256": "35a4fe6dd1b0eb2f59c33cb6d4ae11472c693f43a15fa3e6abc46db323a127f9",
+    "created": false
+  },
+  "eval_recipe": {
+    "eval_run_id": "e562-e561-component-plan-decode1-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "component_plan_decode_weight": 1.0,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.7416666666666667,
+      "placeholder_validity": 0.845,
+      "structural_similarity": 0.273175,
+      "component_type_recall": 0.14583333333333331,
+      "reward_score": 0.3985,
+      "ast_node_f1": 0.3236111111111111,
+      "ast_edge_f1": 0.03846153846153846,
+      "latency_ms_p50": 5341.92,
+      "latency_ms_p95": 9158.38
+    }
+  },
+  "decode_telemetry": {
+    "component_plan_applications": 136,
+    "component_plan_choice_changes": 5
+  },
+  "comparison": {
+    "baseline": "E561",
+    "placeholder_fidelity_delta": 0.16666666666666674,
+    "structural_similarity_delta": 0.03125,
+    "component_type_recall_delta": 0.0,
+    "reward_score_delta": -0.17675000000000002,
+    "ast_node_f1_delta": 0.011111111111111127,
+    "ast_edge_f1_delta": 0.0,
+    "interpretation": "Weight 1 improves fidelity and structure but does not change semantic pass rate and sharply lowers reward."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaning-v1/v2 remain zero and AgentV fails."
+  },
+  "decision": "Reject weight 1 as a semantic fix; preserve it as non-semantic decode evidence and test weight 0.5 in E563.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "625b739d6b2c6d13ba833af4685af14296e765c5",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v10"
+    },
+    "stamped_at": "2026-07-20T01:42:34.511820+00:00"
+  }
+}

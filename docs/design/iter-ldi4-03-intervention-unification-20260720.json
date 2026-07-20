@@ -1,0 +1,374 @@
+{
+  "claim_class": "wiring",
+  "closeout_index": {
+    "artifact_count": 4,
+    "best_deployable": "peft-1",
+    "best_deployable_statement": "best deployable intervention: peft-1",
+    "by_kind": {
+      "causal_peft": [
+        "peft-1"
+      ],
+      "reft": [
+        "reft-1"
+      ],
+      "sae_diagnostic": [
+        "sae-1"
+      ],
+      "twotower_delta": [
+        "delta-1"
+      ]
+    },
+    "by_status": {
+      "diagnostic": [
+        "delta-1",
+        "sae-1"
+      ],
+      "eligible": [
+        "reft-1"
+      ],
+      "promoted": [
+        "peft-1"
+      ],
+      "rejected": [],
+      "wiring": []
+    },
+    "lineage_cycle": null,
+    "version": "ldi4-03-v1"
+  },
+  "kinds": [
+    "causal_peft",
+    "twotower_delta",
+    "reft",
+    "sae_diagnostic"
+  ],
+  "lineage_cycle": false,
+  "manifests": [
+    {
+      "action_evidence_sha": "",
+      "artifact_files": [
+        {
+          "name": "adapter_model.pt",
+          "sha256": "deadbeef",
+          "size_bytes": 128
+        }
+      ],
+      "base": {
+        "architecture": "twotower",
+        "base_compatibility_fingerprint": "compat-abc",
+        "base_model_id": "parent-x",
+        "base_model_revision": "rev1",
+        "tokenizer_sha": "tok1"
+      },
+      "config_fingerprint": "cfg-123",
+      "corpus_manifest_sha": "",
+      "created_at": "",
+      "dependency_versions": {},
+      "deployable": true,
+      "evaluation_bundle_sha": "",
+      "intervention_id": "peft-1",
+      "kind": "causal_peft",
+      "kind_payload": {},
+      "method": "low_rank",
+      "module_site_map": [
+        [
+          "denoiser.block.3",
+          "residual"
+        ]
+      ],
+      "objective_config_sha": "",
+      "objective_materializer_sha": "",
+      "parameter_shapes": [
+        [
+          "A",
+          [
+            4,
+            16
+          ]
+        ]
+      ],
+      "parent_intervention_ids": [],
+      "status": "promoted",
+      "trainable_parameter_count": 64,
+      "training_run_identity": "",
+      "version": "ldi4-03-v1"
+    },
+    {
+      "action_evidence_sha": "",
+      "artifact_files": [
+        {
+          "name": "adapter_model.pt",
+          "sha256": "deadbeef",
+          "size_bytes": 128
+        }
+      ],
+      "base": {
+        "architecture": "twotower",
+        "base_compatibility_fingerprint": "compat-abc",
+        "base_model_id": "parent-x",
+        "base_model_revision": "rev1",
+        "tokenizer_sha": "tok1"
+      },
+      "config_fingerprint": "cfg-123",
+      "corpus_manifest_sha": "",
+      "created_at": "",
+      "dependency_versions": {},
+      "deployable": true,
+      "evaluation_bundle_sha": "",
+      "intervention_id": "delta-1",
+      "kind": "twotower_delta",
+      "kind_payload": {},
+      "method": "low_rank",
+      "module_site_map": [
+        [
+          "denoiser.block.3",
+          "residual"
+        ]
+      ],
+      "objective_config_sha": "",
+      "objective_materializer_sha": "",
+      "parameter_shapes": [
+        [
+          "A",
+          [
+            4,
+            16
+          ]
+        ]
+      ],
+      "parent_intervention_ids": [],
+      "status": "diagnostic",
+      "trainable_parameter_count": 64,
+      "training_run_identity": "",
+      "version": "ldi4-03-v1"
+    },
+    {
+      "action_evidence_sha": "",
+      "artifact_files": [
+        {
+          "name": "adapter_model.pt",
+          "sha256": "deadbeef",
+          "size_bytes": 128
+        }
+      ],
+      "base": {
+        "architecture": "twotower",
+        "base_compatibility_fingerprint": "compat-abc",
+        "base_model_id": "parent-x",
+        "base_model_revision": "rev1",
+        "tokenizer_sha": "tok1"
+      },
+      "config_fingerprint": "cfg-123",
+      "corpus_manifest_sha": "",
+      "created_at": "",
+      "dependency_versions": {},
+      "deployable": true,
+      "evaluation_bundle_sha": "",
+      "intervention_id": "reft-1",
+      "kind": "reft",
+      "kind_payload": {},
+      "method": "reft_r1",
+      "module_site_map": [
+        [
+          "denoiser.block.3",
+          "residual"
+        ]
+      ],
+      "objective_config_sha": "",
+      "objective_materializer_sha": "",
+      "parameter_shapes": [
+        [
+          "A",
+          [
+            4,
+            16
+          ]
+        ]
+      ],
+      "parent_intervention_ids": [],
+      "status": "eligible",
+      "trainable_parameter_count": 64,
+      "training_run_identity": "",
+      "version": "ldi4-03-v1"
+    },
+    {
+      "action_evidence_sha": "",
+      "artifact_files": [
+        {
+          "name": "adapter_model.pt",
+          "sha256": "deadbeef",
+          "size_bytes": 128
+        }
+      ],
+      "base": {
+        "architecture": "twotower",
+        "base_compatibility_fingerprint": "compat-abc",
+        "base_model_id": "parent-x",
+        "base_model_revision": "rev1",
+        "tokenizer_sha": "tok1"
+      },
+      "config_fingerprint": "cfg-123",
+      "corpus_manifest_sha": "",
+      "created_at": "",
+      "dependency_versions": {},
+      "deployable": false,
+      "evaluation_bundle_sha": "",
+      "intervention_id": "sae-1",
+      "kind": "sae_diagnostic",
+      "kind_payload": {},
+      "method": "reft_r1",
+      "module_site_map": [
+        [
+          "denoiser.block.3",
+          "residual"
+        ]
+      ],
+      "objective_config_sha": "",
+      "objective_materializer_sha": "",
+      "parameter_shapes": [
+        [
+          "A",
+          [
+            4,
+            16
+          ]
+        ]
+      ],
+      "parent_intervention_ids": [],
+      "status": "diagnostic",
+      "trainable_parameter_count": 64,
+      "training_run_identity": "",
+      "version": "ldi4-03-v1"
+    }
+  ],
+  "matrix_set": "ldi4-03-intervention-unification",
+  "matrix_version": "ldi4-03-v1",
+  "one_active_asserted": true,
+  "promotions": [
+    {
+      "failures": [],
+      "from": "wiring",
+      "intervention_id": "peft-1",
+      "ok": true,
+      "to": "diagnostic"
+    },
+    {
+      "failures": [],
+      "from": "diagnostic",
+      "intervention_id": "peft-1",
+      "ok": true,
+      "to": "eligible"
+    },
+    {
+      "failures": [],
+      "from": "eligible",
+      "intervention_id": "peft-1",
+      "ok": true,
+      "to": "promoted"
+    },
+    {
+      "failures": [
+        "protected ship gate failed; cannot become eligible"
+      ],
+      "from": "diagnostic",
+      "intervention_id": "delta-1",
+      "ok": false,
+      "to": "eligible"
+    },
+    {
+      "failures": [],
+      "from": "diagnostic",
+      "intervention_id": "reft-1",
+      "ok": true,
+      "to": "eligible"
+    },
+    {
+      "failures": [],
+      "from": "wiring",
+      "intervention_id": "sae-1",
+      "ok": true,
+      "to": "diagnostic"
+    },
+    {
+      "failures": [
+        "illegal transition diagnostic -> promoted"
+      ],
+      "from": "diagnostic",
+      "intervention_id": "sae-1",
+      "ok": false,
+      "to": "promoted"
+    }
+  ],
+  "run_id": "ldi4_03_fixture",
+  "status": "wiring_only",
+  "validations": {
+    "delta-1": {
+      "artifact_shas": [
+        "deadbeef"
+      ],
+      "base_compatibility_fingerprint": "compat-abc",
+      "deployable": true,
+      "failures": [],
+      "intervention_id": "delta-1",
+      "kind": "twotower_delta",
+      "method": "low_rank",
+      "parent_intervention_ids": [],
+      "status": "diagnostic",
+      "trainable_parameter_count": 64,
+      "valid": true
+    },
+    "peft-1": {
+      "artifact_shas": [
+        "deadbeef"
+      ],
+      "base_compatibility_fingerprint": "compat-abc",
+      "deployable": true,
+      "failures": [],
+      "intervention_id": "peft-1",
+      "kind": "causal_peft",
+      "method": "low_rank",
+      "parent_intervention_ids": [],
+      "status": "wiring",
+      "trainable_parameter_count": 64,
+      "valid": true
+    },
+    "reft-1": {
+      "artifact_shas": [
+        "deadbeef"
+      ],
+      "base_compatibility_fingerprint": "compat-abc",
+      "deployable": true,
+      "failures": [],
+      "intervention_id": "reft-1",
+      "kind": "reft",
+      "method": "reft_r1",
+      "parent_intervention_ids": [],
+      "status": "diagnostic",
+      "trainable_parameter_count": 64,
+      "valid": true
+    },
+    "sae-1": {
+      "artifact_shas": [
+        "deadbeef"
+      ],
+      "base_compatibility_fingerprint": "compat-abc",
+      "deployable": false,
+      "failures": [],
+      "intervention_id": "sae-1",
+      "kind": "sae_diagnostic",
+      "method": "reft_r1",
+      "parent_intervention_ids": [],
+      "status": "wiring",
+      "trainable_parameter_count": 64,
+      "valid": true
+    }
+  },
+  "version_stamp": {
+    "code_commit": "5f501be5bfee1b4b1c357b9ea99dc79d6c7d03e0",
+    "code_dirty": true,
+    "components": {
+      "harness_core.lineage.interventions": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T02:09:33.866688+00:00"
+  }
+}

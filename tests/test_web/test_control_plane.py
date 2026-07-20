@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
+from slm_training.lineage.store import LineageStore
 from slm_training.web import jobs as jobs_mod
 from slm_training.web.app import create_app
 from slm_training.web.observability import Readers
@@ -572,6 +573,482 @@ def test_e539_structural_reference_runs_are_persisted() -> None:
     assert control["placeholder_fidelity"] == 0.3833333333333333
     assert ood["placeholder_fidelity"] == 0.4666666666666667
     assert intervention["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e540_reference_phase_telemetry_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e540-e531-ood160-role4-reference4-phase-trace-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert listed["pass"] is False
+    detail = readers.run(run_id)
+    ood = detail["scoreboard"]["suites"]["ood"]
+    assert ood["n"] == 4
+    assert ood["placeholder_fidelity"] == 0.4666666666666667
+    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v2"]
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e541_root_reference_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e541-e531-ood160-role4-root-reference4-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert listed["pass"] is False
+    detail = readers.run(run_id)
+    ood = detail["scoreboard"]["suites"]["ood"]
+    assert ood["n"] == 4
+    assert ood["placeholder_fidelity"] == 0.3833333333333333
+    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v2"]
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e544_root_identity_run_and_checkpoint_are_persisted(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e544-e543-root-identity1-r2-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e545_matched_train_summaries_and_checkpoints_are_persisted(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e545-e544-root-identity-neg1-control-r1-24s",
+        "e545-e544-root-identity-neg4-r2-24s",
+    }
+
+    for run_id in run_ids:
+        detail = readers.run(run_id)
+        assert detail["provenance"] == "committed"
+        assert detail["train_summary"]["steps"] == 24
+        assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.0
+        assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids <= checkpoint_ids
+
+
+def test_e546_matched_train_summaries_and_checkpoints_are_persisted(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e546-e544-strict-subset1-control-r1-24s",
+        "e546-e544-strict-subset5-r2-24s",
+    }
+
+    for run_id in run_ids:
+        detail = readers.run(run_id)
+        assert detail["provenance"] == "committed"
+        assert detail["train_summary"]["steps"] == 24
+        assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.0
+        assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids <= checkpoint_ids
+
+
+def test_e547_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e547-e544-strict-subset2-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.2248
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e548_eval_run_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    detail = readers.run("e548-e547-semantic-role8-eval-r2")
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.2248
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
+        0.2583333333333333
+    )
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e549_eval_run_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    detail = readers.run("e549-e547-slot-component0-eval-r1")
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.27125
+    assert detail["scoreboard"]["suites"]["ood"]["component_type_recall"] == 0.0
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e550_eval_run_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    detail = readers.run("e550-e547-slot-component2-eval-r1")
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.2248
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e551_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e551-e544-strict-subset2-no-lexeme-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e552_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e552-e544-strict-subset2-lexeme05-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
+        0.13333333333333333
+    )
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e553_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e553-e544-prior-proportional-r3-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == (
+        0.12437500000000001
+    )
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e554_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e554-e544-slot-next-context-r2-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
+        0.2583333333333333
+    )
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e555_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e555-e544-slot-pair-interaction-r2-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e556_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e556-e544-slot-context-combined-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
+        0.21666666666666667
+    )
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e557_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e557-e544-slot-pair-balance1-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.3
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e558_runs_and_checkpoints_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    trial_id = "e558-e544-owner-coverage-r1-24s"
+    run_id = "e558-e544-owner-coverage-r2-24s"
+
+    trial = readers.run(trial_id)
+    detail = readers.run(run_id)
+    assert trial["provenance"] == "committed"
+    assert trial["train_summary"]["steps"] == 24
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.425
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert {trial_id, run_id} <= checkpoint_ids
+
+
+def test_e559_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e559-e544-owner-coverage2-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert (
+        detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"]
+        == 0.44166666666666665
+    )
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e560_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e560-e544-owner-threshold4-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.218125
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e561_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e561-e544-owner-threshold7-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e562_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e562-e561-component-plan-decode1-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert (
+        detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"]
+        == 0.7416666666666667
+    )
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.273175
+
+
+def test_e563_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e563-e561-component-plan-decode05-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert (
+        detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"]
+        == 0.4083333333333333
+    )
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.201925
+
+
+def test_e564_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e564-e561-semantic-role-decode2-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.241925
+
+
+def test_e565_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e565-e561-semantic-role-decode0-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.241925
+
+
+def test_e566_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e566-e561-slot-component-decode2-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.241925
+
+
+def test_e567_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e567-e561-slot-component-decode0-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert (
+        detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"]
+        == 0.5333333333333333
+    )
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.219425
+
+
+def test_e568_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e568-e561-cont48-r1-48s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 48
+    assert detail["scoreboard"]["suites"]["ood"]["reward_score"] == 0.692
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e569_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e569-e561-matched-cont48-r1-48s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 48
+    assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
 
 
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
