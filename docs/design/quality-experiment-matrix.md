@@ -4111,6 +4111,53 @@ was masked, not live); not a ship claim.
 Evidence: [narrative](iter-e620-semantic-plan-weight-gate-gap-20260720.md)
 and [JSON](iter-e620-semantic-plan-weight-gate-gap-20260720.json).
 
+## E621 auditing `semantic_contract_for_openui` for E617/E618-shape bugs (clean)
+
+E620 explicitly scoped out `data/quality.py`'s `semantic_contract_for_openui`
+(a regex-based mini-parser: `_ASSIGNMENT_RE`/`_DECLARATION_COMPONENT_RE`/
+`_IDENTIFIER_RE`/`_QUOTED_RE`, the same *shape* as E618's bug) as unverified,
+and named its own next step: confirm whether any current train-data builder
+populates `record.meta["semantic_contract"]` together with E613+-era
+typed-array/nested-object output. This iteration traces every real caller
+(`teacher_paraphrase_activation.py:573`'s `render_canonical_request` — the
+consequential one, since its output becomes the literal GENERATE-mode
+training prompt text; `train_data/pipeline.py:303`; `data/edits/__init__.py:502`;
+`data/quality.py:348`'s `_semantic_contract_reasons` admission-gate
+re-derivation) and confirms **no caller in `twotower.py`, `choice_tokenizer.py`,
+or `meaningful_program.py`** — unlike E617/E618/E620's targets, this is a
+data-build-time / admission-gate-only path over synthesizer-controlled
+input, never a decode-time bias or a scorer of free model output.
+**Three concrete E618-shape failure modes checked, all clean:** (1) the
+`_ASSIGNMENT_RE`'s lack of `DOTALL` really does truncate references to a
+statement's first line when hand-fed a multi-line example (bug reproduces
+in isolation) — but the entire on-disk training corpus confirms the real
+canonical serializer always emits one physical line per statement, so this
+is unreachable via any current builder; (2) object-literal property
+key/binder-name collision (e.g. `ImageGallery`'s `src`/`alt`/`details` keys
+colliding with a same-named declared variable, spuriously adding a false
+reference) is **structurally prevented**: schema-wide scan confirms
+`ImageGallery` is the only object-literal component and its key set is
+`{src, alt, details}`; corpus-wide scan of all 473 real binder names finds
+none of those three; and the binder-name generator itself
+(`_TypedBuilder._binder`, `data/progspec/generate.py:287-290`) is traced to
+stem names only from schema component-type names, never property keys —
+disjoint by construction, not by luck; (3) `ImageGallery` item values are
+schema-typed as strings only, so there is no cross-statement reference to
+miss inside an object literal in the current grammar. **Directly closes
+E620's own next-step question:** scanning every `records.jsonl` for
+`meta.semantic_contract` populated together with `ImageGallery` object-frame
+syntax (`{src`/`{alt`) returns **zero matches** anywhere in the on-disk
+corpus. **E617-shape check:** the one `data/quality.py` helper consumed at
+decode time, `object_property_matches_slot_role`, is called from
+`twotower.py`'s `_schema_role_slot_bias` only inside the branch already
+gated on `self._slot_contracts` (E617-fixed, E620-reverified); no new gap.
+No code change, no regression test needed (no reachable bug to guard
+against), no checkpoint trained/promoted/synced, no metric changes, not a
+ship claim. Closes the "audit for E617/E618-class bugs" thread opened by
+E617/E618/E620.
+Evidence: [narrative](iter-e621-semantic-contract-audit-20260720.md) and
+[JSON](iter-e621-semantic-contract-audit-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
