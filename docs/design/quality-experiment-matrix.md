@@ -4226,3 +4226,32 @@ Evidence:
 [iter-e621-coverage-aware-closure-20260720.md](iter-e621-coverage-aware-closure-20260720.md),
 [r2 JSON](iter-e621-coverage-aware-closure-20260720.json), and
 [rejected r1 JSON](iter-e621-coverage-aware-closure-r1-20260720.json).
+
+## E622 coverage-closure intervention trace
+
+E622 adds bounded, behavior-neutral traces around E621's closure policy and
+replays the exact E621 r2 OOD `n=4` recipe on the byte-identical rejected E620
+checkpoint. All outputs and semantic metrics reproduce exactly; no training or
+checkpoint creation occurred.
+
+| OOD `n=4` | E621 r2 | E622 trace |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
+| fidelity / validity | 0.5917 / 0.7550 | 0.5917 / 0.7550 |
+| structure / component recall | 0.4029 / 0.5000 | 0.4029 / 0.5000 |
+| reward | 0.8175 | 0.8175 |
+| AST node / edge F1 | 0.4690 / 0.2625 | 0.4690 / 0.2625 |
+| closure applications / immediate changes | — | 11 / 8 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+Two Gallery closure choices were later overridden. The Auth failure was not:
+inside `Button`, broad schema-role matching changed closure to `SwitchGroup`
+for missing name/email even though the prompt explicitly asks for two Inputs.
+Dashboard interventions occurred only after wrong owners were already chosen.
+Next prefer prompt-owned component mentions in coverage continuation ranking;
+handle Dashboard's upstream inventory error separately. No ship claim.
+
+Evidence:
+[iter-e622-coverage-closure-trace-20260720.md](iter-e622-coverage-closure-trace-20260720.md)
+and [JSON](iter-e622-coverage-closure-trace-20260720.json).
