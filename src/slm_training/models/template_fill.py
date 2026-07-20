@@ -185,6 +185,12 @@ def prompt_semantic_plan(prompt: str):
             preserve_repeated_mentions=True,
         )
     )
+    normalized_prompt = re.sub(r"[^a-z0-9]+", " ", authored_prompt.lower())
+    if "Button" not in components and any(
+        re.search(rf"\b{re.escape(hint)}\b", normalized_prompt)
+        for hint in _BUTTON_HINTS
+    ):
+        components.append("Button")
     if not components:
         components = sorted(_prompt_component_mentions(prompt))
     if not components:

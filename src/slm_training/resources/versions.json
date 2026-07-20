@@ -752,7 +752,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -764,6 +764,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-07-20",
+          "note": "infer Button in predicted partial plans from authored action and confirmation semantics"
+        },
         {
           "version": "v30",
           "date": "2026-07-20",

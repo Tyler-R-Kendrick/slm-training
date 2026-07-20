@@ -3604,3 +3604,15 @@ lever default-off and retain E592 as baseline. Strict v2 remains 0, AgentV is
 0/1, and no checkpoint was created or synced. Evidence:
 [narrative](iter-e594-inline-plan-family-20260720.md) and
 [JSON](iter-e594-inline-plan-family-20260720.json).
+
+## E595 action-semantic plan inference
+
+E595 adds Button to predicted partial plans from authored action semantics.
+Against E592 on OOD `n=4`, structure improves 0.4169→0.4694, recall
+0.5417→0.6250, AST-node F1 0.5198→0.5532, and AST-edge F1
+0.3429→0.3875, while reward is flat. The Button is semantically misbound to
+Modal body and overgeneralizes to dashboard action prose. Keep this as mixed
+diagnostic evidence only; strict v2 remains 0, AgentV is 0/1, and no
+checkpoint was created or synced. Evidence:
+[narrative](iter-e595-action-plan-inference-20260720.md) and
+[JSON](iter-e595-action-plan-inference-20260720.json).

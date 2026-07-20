@@ -532,6 +532,20 @@ def test_prompt_semantic_plan_preserves_repeated_authored_component_mentions() -
     ]
 
 
+def test_prompt_semantic_plan_infers_button_from_action_semantics() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Modal dialog confirming a destructive delete action."
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Modal",
+        "Button",
+    ]
+
+
 def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> None:
     from types import SimpleNamespace
 
