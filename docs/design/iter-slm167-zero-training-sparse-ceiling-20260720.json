@@ -3,7 +3,7 @@
     "bi_encoder_similarity": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0006919595828852227,
+      "mean_latency_seconds": 0.0005793034579255618,
       "mean_reciprocal_rank": 0.5,
       "meaningful_program_rate": 0.2451217946996777,
       "ndcg_at_5": 0.5,
@@ -14,12 +14,12 @@
       "top1_accuracy": 0.5,
       "top3_accuracy": 0.5,
       "top5_accuracy": 0.5,
-      "wall_seconds": 0.0632481113586693
+      "wall_seconds": 0.06307100485876453
     },
     "compiler_local_frequency": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0008214112494897563,
+      "mean_latency_seconds": 0.0005431382918080392,
       "mean_reciprocal_rank": 0.12390364265364266,
       "meaningful_program_rate": 0.16585453879180118,
       "ndcg_at_5": 0.13897133025474726,
@@ -30,12 +30,12 @@
       "top1_accuracy": 0.041666666666666664,
       "top3_accuracy": 0.125,
       "top5_accuracy": 0.25,
-      "wall_seconds": 0.061410515588509254
+      "wall_seconds": 0.06068302758402318
     },
     "frozen_continuation": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.000713478334849545,
+      "mean_latency_seconds": 0.0006765914179898875,
       "mean_reciprocal_rank": 0.5,
       "meaningful_program_rate": 0.2710450742346262,
       "ndcg_at_5": 0.5,
@@ -46,12 +46,12 @@
       "top1_accuracy": 0.5,
       "top3_accuracy": 0.5,
       "top5_accuracy": 0.5,
-      "wall_seconds": 0.05152125291781871
+      "wall_seconds": 0.0515307739158105
     },
     "global_frequency": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0005845125021248047,
+      "mean_latency_seconds": 0.0005405426654760959,
       "mean_reciprocal_rank": 0.10490196078431373,
       "meaningful_program_rate": 0.14570063806144828,
       "ndcg_at_5": 0.09473773393621181,
@@ -62,12 +62,12 @@
       "top1_accuracy": 0.041666666666666664,
       "top3_accuracy": 0.08333333333333333,
       "top5_accuracy": 0.16666666666666666,
-      "wall_seconds": 0.06429293996797615
+      "wall_seconds": 0.06471403495988316
     },
     "hybrid_retrieval_rerank": {
       "full_set_recall": 0.9683646664238639,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0006997329158669648,
+      "mean_latency_seconds": 0.0006193868345386969,
       "mean_reciprocal_rank": 0.5,
       "meaningful_program_rate": 0.2995115395606756,
       "ndcg_at_5": 0.5,
@@ -78,12 +78,12 @@
       "top1_accuracy": 0.5,
       "top3_accuracy": 0.5,
       "top5_accuracy": 0.5,
-      "wall_seconds": 0.06290718838636711
+      "wall_seconds": 0.06225674789084767
     },
     "permuted_descriptions": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0010383633349799006,
+      "mean_latency_seconds": 0.001199868459176893,
       "mean_reciprocal_rank": 0.17250076312576312,
       "meaningful_program_rate": 0.10595486328785675,
       "ndcg_at_5": 0.2142081326706542,
@@ -94,12 +94,12 @@
       "top1_accuracy": 0.041666666666666664,
       "top3_accuracy": 0.25,
       "top5_accuracy": 0.375,
-      "wall_seconds": 0.0687868667007589
+      "wall_seconds": 0.0687995912010248
     },
     "random_uniform": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0009871629178329993,
+      "mean_latency_seconds": 0.0005438062495765431,
       "mean_reciprocal_rank": 0.15668282132097924,
       "meaningful_program_rate": 0.09624959550669111,
       "ndcg_at_5": 0.14840026298520212,
@@ -110,12 +110,12 @@
       "top1_accuracy": 0.08333333333333333,
       "top3_accuracy": 0.16666666666666666,
       "top5_accuracy": 0.20833333333333334,
-      "wall_seconds": 0.06461688356826352
+      "wall_seconds": 0.06511631556527726
     },
     "small_model_control": {
       "full_set_recall": 1.0,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0007318987494121151,
+      "mean_latency_seconds": 0.0005826394177953869,
       "mean_reciprocal_rank": 0.4583333333333333,
       "meaningful_program_rate": 0.36848630492655327,
       "ndcg_at_5": 0.46924414613095483,
@@ -126,7 +126,7 @@
       "top1_accuracy": 0.4166666666666667,
       "top3_accuracy": 0.5,
       "top5_accuracy": 0.5,
-      "wall_seconds": 0.06516671815903649
+      "wall_seconds": 0.06397303216350522
     }
   },
   "cells": [
@@ -313,7 +313,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0014645766677858774,
+      "mean_latency_seconds": 0.0005652651658844358,
       "mean_reciprocal_rank": 0.3133656426419585,
       "meaningful_program_rate": 0.10532136027292464,
       "ndcg_at_5": 0.29680052597040424,
@@ -334,7 +334,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.00038192000647541136,
+          "latency_seconds": 0.0005535839882213622,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -401,7 +401,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0005286599916871637,
+          "latency_seconds": 0.0003879420110024512,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -473,7 +473,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0005639699957100675,
+          "latency_seconds": 0.0006936580030014738,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -585,7 +585,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0005338299961294979,
+          "latency_seconds": 0.0005880329990759492,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -687,7 +687,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0005541800055652857,
+          "latency_seconds": 0.0005877079966012388,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -799,7 +799,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0002598200080683455,
+          "latency_seconds": 0.0002710499975364655,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -851,7 +851,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0005191999953240156,
+          "latency_seconds": 0.0005404749972512946,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -953,7 +953,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.000551760007510893,
+          "latency_seconds": 0.0005873829941265285,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -1065,7 +1065,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.011990219994913787,
+          "latency_seconds": 0.0006961500039324164,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -1202,7 +1202,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0005888299929210916,
+          "latency_seconds": 0.0007550830050604418,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -1319,7 +1319,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0005475800135172904,
+          "latency_seconds": 0.0005470829928526655,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -1421,7 +1421,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0005549500056076795,
+          "latency_seconds": 0.000575033001950942,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -1533,7 +1533,7 @@
       "top3_accuracy": 0.3333333333333333,
       "top5_accuracy": 0.4166666666666667,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.07110828795915843
+      "wall_seconds": 0.072105748959383
     },
     {
       "arm_id": "random_uniform__free_running__s0",
@@ -1543,7 +1543,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.000509749167880121,
+      "mean_latency_seconds": 0.0005223473332686505,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.08717783074045758,
       "ndcg_at_5": 0.0,
@@ -1564,7 +1564,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0003760899999178946,
+          "latency_seconds": 0.0004739580035675317,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -1631,7 +1631,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.00035936999483965337,
+          "latency_seconds": 0.0003701750101754442,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -1703,7 +1703,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005721100023947656,
+          "latency_seconds": 0.000573516997974366,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -1815,7 +1815,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005354799941414967,
+          "latency_seconds": 0.0005151250079507008,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -1917,7 +1917,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005687000084435567,
+          "latency_seconds": 0.0005646339996019378,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -2029,7 +2029,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0002679600002011284,
+          "latency_seconds": 0.000276467006187886,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -2081,7 +2081,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005031400069128722,
+          "latency_seconds": 0.0005124169983901083,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -2183,7 +2183,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005673800042131916,
+          "latency_seconds": 0.0005595409893430769,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -2295,7 +2295,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006869500066386536,
+          "latency_seconds": 0.0007165169954532757,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -2432,7 +2432,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006041199958417565,
+          "latency_seconds": 0.0006234579923329875,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -2549,7 +2549,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005032500048400834,
+          "latency_seconds": 0.0005154499958734959,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -2651,7 +2651,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005724399961763993,
+          "latency_seconds": 0.000566909002372995,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -2763,7 +2763,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.05812547917736862
+      "wall_seconds": 0.05812688217117153
     },
     {
       "arm_id": "global_frequency__gold_state__s0",
@@ -2773,7 +2773,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0005807358381086184,
+      "mean_latency_seconds": 0.0005466952485827884,
       "mean_reciprocal_rank": 0.20980392156862746,
       "meaningful_program_rate": 0.16017904391360951,
       "ndcg_at_5": 0.18947546787242361,
@@ -2794,7 +2794,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.00033726000401657075,
+          "latency_seconds": 0.00035110898897983134,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -2861,7 +2861,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.00035662000300362706,
+          "latency_seconds": 0.00036269999691285193,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -2933,7 +2933,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0005797000048914924,
+          "latency_seconds": 0.0006003839953336865,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -3045,7 +3045,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0005149100034032017,
+          "latency_seconds": 0.0005263909988570958,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -3147,7 +3147,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0014189999928930774,
+          "latency_seconds": 0.0005996249965392053,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -3259,7 +3259,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.00026015000184997916,
+          "latency_seconds": 0.0002698579919524491,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -3311,7 +3311,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0005326200043782592,
+          "latency_seconds": 0.0005247670051176101,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -3413,7 +3413,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.0005487900052685291,
+          "latency_seconds": 0.0006051499949535355,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -3525,7 +3525,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0007407400116790086,
+          "latency_seconds": 0.0007232330099213868,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -3662,7 +3662,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0005900400137761608,
+          "latency_seconds": 0.0006060169980628416,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -3779,7 +3779,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0005171100056031719,
+          "latency_seconds": 0.0007883420039433986,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -3881,7 +3881,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0005718900065403432,
+          "latency_seconds": 0.0006027670024195686,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -3993,7 +3993,7 @@
       "top3_accuracy": 0.16666666666666666,
       "top5_accuracy": 0.3333333333333333,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.05865063125943748
+      "wall_seconds": 0.059491754253171214
     },
     {
       "arm_id": "global_frequency__free_running__s0",
@@ -4003,7 +4003,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0005882891661409909,
+      "mean_latency_seconds": 0.0005343900823694033,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.13122223220928703,
       "ndcg_at_5": 0.0,
@@ -4024,7 +4024,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0003568399988580495,
+          "latency_seconds": 0.00045532500371336937,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -4091,7 +4091,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0003709199954755604,
+          "latency_seconds": 0.00044546599383465946,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -4163,7 +4163,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005523099971469492,
+          "latency_seconds": 0.0005994079983793199,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -4275,7 +4275,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005189799994695932,
+          "latency_seconds": 0.0005337589973350987,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -4377,7 +4377,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005511000053957105,
+          "latency_seconds": 0.0005792579904664308,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -4489,7 +4489,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005645199998980388,
+          "latency_seconds": 0.00031535798916593194,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -4541,7 +4541,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009610699926270172,
+          "latency_seconds": 0.0005242250044830143,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -4643,7 +4643,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005503300053533167,
+          "latency_seconds": 0.000568425006349571,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -4755,7 +4755,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006850799982203171,
+          "latency_seconds": 0.0007034079899312928,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -4892,7 +4892,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005952099891146645,
+          "latency_seconds": 0.000604608008870855,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -5009,7 +5009,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006790300103602931,
+          "latency_seconds": 0.0005234660056885332,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -5111,7 +5111,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006740800017723814,
+          "latency_seconds": 0.000559975000214763,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -5223,7 +5223,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.06993524867651482
+      "wall_seconds": 0.06993631566659511
     },
     {
       "arm_id": "compiler_local_frequency__gold_state__s0",
@@ -5233,7 +5233,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0005839624973305035,
+      "mean_latency_seconds": 0.0005446910836326424,
       "mean_reciprocal_rank": 0.24780728530728532,
       "meaningful_program_rate": 0.18023293984555763,
       "ndcg_at_5": 0.2779426605094945,
@@ -5254,7 +5254,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.0003670699952635914,
+          "latency_seconds": 0.0003725589922396466,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -5321,7 +5321,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.00037245999556034803,
+          "latency_seconds": 0.0003800330014200881,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -5393,7 +5393,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0005800299986731261,
+          "latency_seconds": 0.0006022250017849728,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -5505,7 +5505,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0005237099976511672,
+          "latency_seconds": 0.0006063409964554012,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -5607,7 +5607,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0009957199945347384,
+          "latency_seconds": 0.0005949670012341812,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -5719,7 +5719,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0003435300022829324,
+          "latency_seconds": 0.00027830799808725715,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -5771,7 +5771,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0005814600008307025,
+          "latency_seconds": 0.0005581330042332411,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -5873,7 +5873,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.0006669299909844995,
+          "latency_seconds": 0.0005868419975740835,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -5985,7 +5985,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.000751190003938973,
+          "latency_seconds": 0.0007330920052481815,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -6122,7 +6122,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0006382199935615063,
+          "latency_seconds": 0.0006088340014684945,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -6239,7 +6239,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0005703499919036403,
+          "latency_seconds": 0.0006137090094853193,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -6341,7 +6341,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0006168800027808174,
+          "latency_seconds": 0.0006012499943608418,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -6453,7 +6453,7 @@
       "top3_accuracy": 0.25,
       "top5_accuracy": 0.5,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.052337952350668134
+      "wall_seconds": 0.05088541934632835
     },
     {
       "arm_id": "compiler_local_frequency__free_running__s0",
@@ -6463,7 +6463,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.001058860001649009,
+      "mean_latency_seconds": 0.0005415854999834361,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.15147613773804472,
       "ndcg_at_5": 0.0,
@@ -6484,7 +6484,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005201900057727471,
+          "latency_seconds": 0.0003852340014418587,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -6551,7 +6551,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.005285279999952763,
+          "latency_seconds": 0.00040397499105893075,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -6623,7 +6623,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006985000072745606,
+          "latency_seconds": 0.0005814250034745783,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -6735,7 +6735,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005345999961718917,
+          "latency_seconds": 0.0005413420003606007,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -6837,7 +6837,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005783800006611273,
+          "latency_seconds": 0.0007166249997681007,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -6949,7 +6949,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.00026740999601315707,
+          "latency_seconds": 0.0002815589978126809,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -7001,7 +7001,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005382300005294383,
+          "latency_seconds": 0.0005223829939495772,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -7103,7 +7103,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0011339900083839893,
+          "latency_seconds": 0.0005995160026941448,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -7215,7 +7215,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009623899968573824,
+          "latency_seconds": 0.000719767005648464,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -7352,7 +7352,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007825400098226964,
+          "latency_seconds": 0.000619558006292209,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -7469,7 +7469,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006815599917899817,
+          "latency_seconds": 0.0005288829997880384,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -7571,7 +7571,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007232500065583736,
+          "latency_seconds": 0.00059875899751205,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -7683,7 +7683,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.07048307882635037
+      "wall_seconds": 0.070480635821718
     },
     {
       "arm_id": "permuted_descriptions__gold_state__s0",
@@ -7693,7 +7693,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0011268400024467458,
+      "mean_latency_seconds": 0.0014230667535836499,
       "mean_reciprocal_rank": 0.34500152625152625,
       "meaningful_program_rate": 0.11575587683450442,
       "ndcg_at_5": 0.4284162653413084,
@@ -7714,7 +7714,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.0007261100108735263,
+          "latency_seconds": 0.0006075330020394176,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -7781,7 +7781,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0007792399992467836,
+          "latency_seconds": 0.0006366750021697953,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -7853,7 +7853,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0012604900111909956,
+          "latency_seconds": 0.0010509420098969713,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -7965,7 +7965,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0012074700061930344,
+          "latency_seconds": 0.0008948330068960786,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -8067,7 +8067,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0017443800024921075,
+          "latency_seconds": 0.0010106420086231083,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -8179,7 +8179,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0005148000054759905,
+          "latency_seconds": 0.0011052170011680573,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -8231,7 +8231,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.001151039992691949,
+          "latency_seconds": 0.0010016500018537045,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -8333,7 +8333,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.0012476200063247234,
+          "latency_seconds": 0.0010317670094082132,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -8445,7 +8445,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0019610799936344847,
+          "latency_seconds": 0.004059466999024153,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -8582,7 +8582,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0010440100013511255,
+          "latency_seconds": 0.0022606999991694465,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -8699,7 +8699,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0008973799995146692,
+          "latency_seconds": 0.0019669000030262396,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -8801,7 +8801,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0009884600003715605,
+          "latency_seconds": 0.0014504749997286126,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -8913,7 +8913,7 @@
       "top3_accuracy": 0.5,
       "top5_accuracy": 0.75,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.08184757703522201
+      "wall_seconds": 0.08187615204907935
     },
     {
       "arm_id": "permuted_descriptions__free_running__s0",
@@ -8923,7 +8923,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0009498866675130557,
+      "mean_latency_seconds": 0.0009766701647701363,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.09615384974120908,
       "ndcg_at_5": 0.0,
@@ -8944,7 +8944,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005811299924971536,
+          "latency_seconds": 0.0006061250023776665,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -9011,7 +9011,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005978499975753948,
+          "latency_seconds": 0.0006355910009006038,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -9083,7 +9083,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009935199923347682,
+          "latency_seconds": 0.001005983998766169,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -9195,7 +9195,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0008982599974842742,
+          "latency_seconds": 0.0009154159924946725,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -9297,7 +9297,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0010151900060009211,
+          "latency_seconds": 0.001011182990623638,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -9409,7 +9409,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0004035900055896491,
+          "latency_seconds": 0.0004181669937679544,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -9461,7 +9461,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0008727399981580675,
+          "latency_seconds": 0.0009199670021189377,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -9563,7 +9563,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.000974599999608472,
+          "latency_seconds": 0.001003707991912961,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -9675,7 +9675,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0012536700087366626,
+          "latency_seconds": 0.0013867749948985875,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -9812,7 +9812,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0010457700118422508,
+          "latency_seconds": 0.0017999590054387227,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -9929,7 +9929,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0012719299993477762,
+          "latency_seconds": 0.0009220250067301095,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -10031,7 +10031,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0014903900009812787,
+          "latency_seconds": 0.0010951419972116128,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -10143,7 +10143,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.05572615636629577
+      "wall_seconds": 0.05572303035297024
     },
     {
       "arm_id": "bi_encoder_similarity__gold_state__s0",
@@ -10153,7 +10153,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0006940449990603762,
+      "mean_latency_seconds": 0.0005630354171444196,
       "mean_reciprocal_rank": 1.0,
       "meaningful_program_rate": 0.27028723185712894,
       "ndcg_at_5": 1.0,
@@ -10174,7 +10174,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.0004725600010715425,
+          "latency_seconds": 0.0004161079996265471,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -10241,7 +10241,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0004903799999738112,
+          "latency_seconds": 0.00039769199793227017,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -10313,7 +10313,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0007966200064402074,
+          "latency_seconds": 0.0006403579900506884,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -10425,7 +10425,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0007012499991105869,
+          "latency_seconds": 0.0005671249964507297,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -10527,7 +10527,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0007872699934523553,
+          "latency_seconds": 0.0006640830106334761,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -10639,7 +10639,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.00038059998769313097,
+          "latency_seconds": 0.0002801500086206943,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -10691,7 +10691,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0006971800030441955,
+          "latency_seconds": 0.0005742750072386116,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -10793,7 +10793,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.0007596600044053048,
+          "latency_seconds": 0.0006300670065684244,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -10905,7 +10905,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0009439099958399311,
+          "latency_seconds": 0.0007620169926667586,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -11042,7 +11042,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0008109199989121407,
+          "latency_seconds": 0.0006399249978130683,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -11159,7 +11159,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0007213799981400371,
+          "latency_seconds": 0.0005679919995600358,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -11261,7 +11261,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0007668100006412715,
+          "latency_seconds": 0.0006166329985717312,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -11373,7 +11373,7 @@
       "top3_accuracy": 1.0,
       "top5_accuracy": 1.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.07313246120697854
+      "wall_seconds": 0.07277946821063792
     },
     {
       "arm_id": "bi_encoder_similarity__free_running__s0",
@@ -11383,7 +11383,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0006898741667100694,
+      "mean_latency_seconds": 0.000595571498706704,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.2199563575422265,
       "ndcg_at_5": 0.0,
@@ -11404,7 +11404,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0004899399937130511,
+          "latency_seconds": 0.0005640919989673421,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -11471,7 +11471,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.00048719000187702477,
+          "latency_seconds": 0.0004187079903203994,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -11543,7 +11543,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007569099980173633,
+          "latency_seconds": 0.0007724169990979135,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -11655,7 +11655,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.00070807000156492,
+          "latency_seconds": 0.0006261670059757307,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -11757,7 +11757,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007778099970892072,
+          "latency_seconds": 0.0006289839948294684,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -11869,7 +11869,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0003468300128588453,
+          "latency_seconds": 0.0002851330064004287,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -11921,7 +11921,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007151099998736754,
+          "latency_seconds": 0.0005638750008074567,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -12023,7 +12023,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007514099997933954,
+          "latency_seconds": 0.0006743749981978908,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -12135,7 +12135,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009406099998159334,
+          "latency_seconds": 0.000761040995712392,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -12272,7 +12272,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007899100019130856,
+          "latency_seconds": 0.0006861830042907968,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -12389,7 +12389,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006969599926378578,
+          "latency_seconds": 0.0005630079976981506,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -12491,7 +12491,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0008177400013664737,
+          "latency_seconds": 0.0006028749921824783,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -12603,7 +12603,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.053363761510360055
+      "wall_seconds": 0.05336254150689114
     },
     {
       "arm_id": "frozen_continuation__gold_state__s0",
@@ -12613,7 +12613,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0007973350002430379,
+      "mean_latency_seconds": 0.0005650486661276469,
       "mean_reciprocal_rank": 1.0,
       "meaningful_program_rate": 0.29644817826729275,
       "ndcg_at_5": 1.0,
@@ -12634,7 +12634,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.00046815999667160213,
+          "latency_seconds": 0.0003766750014619902,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -12701,7 +12701,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0005162300076335669,
+          "latency_seconds": 0.00041437499749008566,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -12773,7 +12773,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0007762699970044196,
+          "latency_seconds": 0.0006502169999293983,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -12885,7 +12885,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0007329299987759441,
+          "latency_seconds": 0.000577199985855259,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -12987,7 +12987,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0008150999929057434,
+          "latency_seconds": 0.0006294170016190037,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -13099,7 +13099,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0003568399988580495,
+          "latency_seconds": 0.00028491699777077883,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -13151,7 +13151,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0007141199894249439,
+          "latency_seconds": 0.0005850000015925616,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -13253,7 +13253,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.0007965100085129961,
+          "latency_seconds": 0.0006217250047484413,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -13365,7 +13365,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0025076699967030436,
+          "latency_seconds": 0.0007784830086166039,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -13502,7 +13502,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0006996000010985881,
+          "latency_seconds": 0.0006599670014111325,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -13619,7 +13619,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0005634200060740113,
+          "latency_seconds": 0.0005816409975523129,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -13721,7 +13721,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0006211700092535466,
+          "latency_seconds": 0.0006209669954841956,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -13833,7 +13833,7 @@
       "top3_accuracy": 1.0,
       "top5_accuracy": 1.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.051555269877753655
+      "wall_seconds": 0.051573121861765596
     },
     {
       "arm_id": "frozen_continuation__free_running__s0",
@@ -13843,7 +13843,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0006296216694560522,
+      "mean_latency_seconds": 0.0007881341698521283,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.2456419702019597,
       "ndcg_at_5": 0.0,
@@ -13864,7 +13864,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.00038543999835383147,
+          "latency_seconds": 0.0007148909935494885,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -13931,7 +13931,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0003998500033048913,
+          "latency_seconds": 0.0009566910011926666,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -14003,7 +14003,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.000638000012258999,
+          "latency_seconds": 0.0010577670036582276,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -14115,7 +14115,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006310700118774548,
+          "latency_seconds": 0.0008669920061947778,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -14217,7 +14217,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006246900011319667,
+          "latency_seconds": 0.0012452920054784045,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -14329,7 +14329,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0002845699928002432,
+          "latency_seconds": 0.0002982420119224116,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -14381,7 +14381,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005929000035393983,
+          "latency_seconds": 0.0009327500010840595,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -14483,7 +14483,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006174300069687888,
+          "latency_seconds": 0.0006721000099787489,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -14595,7 +14595,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007668100006412715,
+          "latency_seconds": 0.000790183010394685,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -14732,7 +14732,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.000659009994706139,
+          "latency_seconds": 0.0006735089991707355,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -14849,7 +14849,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005586900078924373,
+          "latency_seconds": 0.0005805590044474229,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -14951,7 +14951,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.001396999999997206,
+          "latency_seconds": 0.0006686339911539108,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -15063,7 +15063,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.051487235957883765
+      "wall_seconds": 0.051488425969855395
     },
     {
       "arm_id": "hybrid_retrieval_rerank__gold_state__s0",
@@ -15073,7 +15073,7 @@
       "full_set_recall": 0.9722217124772969,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.000623021665281461,
+      "mean_latency_seconds": 0.0006671799152779082,
       "mean_reciprocal_rank": 1.0,
       "meaningful_program_rate": 0.314917782777087,
       "ndcg_at_5": 1.0,
@@ -15095,7 +15095,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.00037927999801468104,
+          "latency_seconds": 0.00038913299795240164,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -15162,7 +15162,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0009828499896684662,
+          "latency_seconds": 0.00040191698644775897,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -15234,7 +15234,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0007275400130311027,
+          "latency_seconds": 0.0006264910043682903,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -15346,7 +15346,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.000604779997956939,
+          "latency_seconds": 0.0005772000004071742,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -15448,7 +15448,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0006397599936462939,
+          "latency_seconds": 0.0006520579918287694,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -15560,7 +15560,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0002894100034609437,
+          "latency_seconds": 0.00030040899582672864,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -15612,7 +15612,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0005903699930058792,
+          "latency_seconds": 0.0008277750021079555,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -15714,7 +15714,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.000626559994998388,
+          "latency_seconds": 0.0006399249978130683,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -15826,7 +15826,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0007661499985260889,
+          "latency_seconds": 0.0007670000049984083,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -15963,7 +15963,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0006697900098515674,
+          "latency_seconds": 0.0006547670054715127,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -16080,7 +16080,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0005647399957524613,
+          "latency_seconds": 0.0013804920017719269,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -16182,7 +16182,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0006350299954647198,
+          "latency_seconds": 0.0007889919943409041,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -16294,7 +16294,7 @@
       "top3_accuracy": 1.0,
       "top5_accuracy": 1.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.05896588811089533
+      "wall_seconds": 0.05766909011078315
     },
     {
       "arm_id": "hybrid_retrieval_rerank__free_running__s0",
@@ -16304,7 +16304,7 @@
       "full_set_recall": 0.9645076203704308,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0007764441664524687,
+      "mean_latency_seconds": 0.0005715937537994856,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.28410529634426424,
       "ndcg_at_5": 0.0,
@@ -16326,7 +16326,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.000440329997218214,
+          "latency_seconds": 0.00039812500472180545,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -16393,7 +16393,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0004221800045343116,
+          "latency_seconds": 0.0004092840099474415,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -16465,7 +16465,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0017135800007963553,
+          "latency_seconds": 0.0006337500090012327,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -16577,7 +16577,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.000581349988351576,
+          "latency_seconds": 0.0006132750131655484,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -16679,7 +16679,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006485600024461746,
+          "latency_seconds": 0.0006445839972002432,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -16791,7 +16791,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0003502400068100542,
+          "latency_seconds": 0.00028989999555051327,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -16843,7 +16843,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005865199927939102,
+          "latency_seconds": 0.000578715989831835,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -16945,7 +16945,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.000621390005107969,
+          "latency_seconds": 0.000652383008855395,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -17057,7 +17057,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0014002999960212037,
+          "latency_seconds": 0.0007684090087423101,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -17194,7 +17194,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009949499944923446,
+          "latency_seconds": 0.0006791409978177398,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -17311,7 +17311,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007631799962837249,
+          "latency_seconds": 0.0005668000085279346,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -17413,7 +17413,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007947500125737861,
+          "latency_seconds": 0.0006247580022318289,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -17525,7 +17525,7 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.06684848866183887
+      "wall_seconds": 0.06684440567091218
     },
     {
       "arm_id": "small_model_control__gold_state__s0",
@@ -17535,7 +17535,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.000748064166449088,
+      "mean_latency_seconds": 0.0005864537536884503,
       "mean_reciprocal_rank": 0.9166666666666666,
       "meaningful_program_rate": 0.3952417369862367,
       "ndcg_at_5": 0.9384882922619097,
@@ -17556,7 +17556,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": "+TextCallout",
-          "latency_seconds": 0.0005000599921913818,
+          "latency_seconds": 0.00038837500324007124,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -17623,7 +17623,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0004969799920218065,
+          "latency_seconds": 0.000396392002585344,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -17695,7 +17695,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0007770400115987286,
+          "latency_seconds": 0.000620751001406461,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -17807,7 +17807,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+ScatterChart",
-          "latency_seconds": 0.0008281899936264381,
+          "latency_seconds": 0.0005855420022271574,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -17909,7 +17909,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0009893399983411655,
+          "latency_seconds": 0.0006389500049408525,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -18021,7 +18021,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": "+Form",
-          "latency_seconds": 0.0003772999916691333,
+          "latency_seconds": 0.0004531590093392879,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -18073,7 +18073,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+Slice",
-          "latency_seconds": 0.0007152200123528019,
+          "latency_seconds": 0.000610999995842576,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -18175,7 +18175,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+Point",
-          "latency_seconds": 0.0007876000017859042,
+          "latency_seconds": 0.0006372170028043911,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -18287,7 +18287,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.000966899999184534,
+          "latency_seconds": 0.0007938670023577288,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -18424,7 +18424,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": "+CardHeader",
-          "latency_seconds": 0.0008122400031425059,
+          "latency_seconds": 0.0006575830047950149,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -18541,7 +18541,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": "+FormControl",
-          "latency_seconds": 0.0009311500034527853,
+          "latency_seconds": 0.0006208590057212859,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -18643,7 +18643,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": "+StepsItem",
-          "latency_seconds": 0.0007947499980218709,
+          "latency_seconds": 0.0006337500090012327,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -18755,7 +18755,7 @@
       "top3_accuracy": 1.0,
       "top5_accuracy": 1.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.06771438640032469
+      "wall_seconds": 0.06532910840075969
     },
     {
       "arm_id": "small_model_control__free_running__s0",
@@ -18765,7 +18765,7 @@
       "full_set_recall": 1.0,
       "k_retrieve": 8,
       "mean_candidate_set_size": 15.583333333333334,
-      "mean_latency_seconds": 0.0007157333323751421,
+      "mean_latency_seconds": 0.0005788250819023233,
       "mean_reciprocal_rank": 0.0,
       "meaningful_program_rate": 0.3417308728668698,
       "ndcg_at_5": 0.0,
@@ -18786,7 +18786,7 @@
           "candidate_set_size": 9,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0005067699967185035,
+          "latency_seconds": 0.0004222839925205335,
           "legal_action_ids": [
             "*Round",
             "*Sort",
@@ -18853,7 +18853,7 @@
           "candidate_set_size": 10,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0004976400086889043,
+          "latency_seconds": 0.0004033250006614253,
           "legal_action_ids": [
             "*Each",
             "*First",
@@ -18925,7 +18925,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007761599990772083,
+          "latency_seconds": 0.0006860749999759719,
           "legal_action_ids": [
             "$=",
             "*Min",
@@ -19037,7 +19037,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007624099962413311,
+          "latency_seconds": 0.0005720000044675544,
           "legal_action_ids": [
             "*Ceil",
             "*Each",
@@ -19139,7 +19139,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009012299997266382,
+          "latency_seconds": 0.0006285499985096976,
           "legal_action_ids": [
             "*Max",
             "*Round",
@@ -19251,7 +19251,7 @@
           "candidate_set_size": 6,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.00035540999670047313,
+          "latency_seconds": 0.00030950800282880664,
           "legal_action_ids": [
             "*Set",
             "+Button",
@@ -19303,7 +19303,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007246799941640347,
+          "latency_seconds": 0.0005962669965811074,
           "legal_action_ids": [
             "*Ceil",
             "*Max",
@@ -19405,7 +19405,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007881500059738755,
+          "latency_seconds": 0.0006429579952964559,
           "legal_action_ids": [
             "*Ceil",
             "*Filter",
@@ -19517,7 +19517,7 @@
           "candidate_set_size": 23,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0009662399970693514,
+          "latency_seconds": 0.0007689500052947551,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -19654,7 +19654,7 @@
           "candidate_set_size": 19,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0008220299932872877,
+          "latency_seconds": 0.000675674993544817,
           "legal_action_ids": [
             "$=",
             "*Avg",
@@ -19771,7 +19771,7 @@
           "candidate_set_size": 16,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0006993800052441657,
+          "latency_seconds": 0.0006036339909769595,
           "legal_action_ids": [
             "*Abs",
             "*Filter",
@@ -19873,7 +19873,7 @@
           "candidate_set_size": 18,
           "free_running_diverged": false,
           "gold_action_id": null,
-          "latency_seconds": 0.0007886999956099316,
+          "latency_seconds": 0.0006366750021697953,
           "legal_action_ids": [
             "$=",
             "*Each",
@@ -19985,21 +19985,21 @@
       "top3_accuracy": 0.0,
       "top5_accuracy": 0.0,
       "use_expanded_descriptions": false,
-      "wall_seconds": 0.0626190499177483
+      "wall_seconds": 0.06261695592625077
     }
   ],
   "run_id": "slm167-zero-training-sparse-ceiling-20260720",
   "schema": "Slm167ZeroTrainingSparseCeilingReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T12:37:14.345947Z",
+  "timestamp": "2026-07-20T23:46:47.475319Z",
   "version_stamp": {
-    "code_commit": "2d9d1019bfb7ab4d0f99eb39672a8add33db12b0",
+    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v42",
+      "harness.experiments": "v50",
       "harness.experiments.slm167_zero_training_sparse_ceiling": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T12:37:14.321052+00:00"
+    "stamped_at": "2026-07-20T23:46:47.454142+00:00"
   }
 }

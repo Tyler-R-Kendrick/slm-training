@@ -32,13 +32,13 @@ Aliased descriptions collapse into a single cluster or nearest-neighbor geometry
 
 | arm_id | arm_name | seed | n_actions | mean_nearest_cosine | family_purity | held_out_transfer | canonical_unseen | leakage | wall_seconds |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| canonical_name_plus_description__s0 | canonical_name_plus_description | 0 | 79 | 0.396 | 0.127 | - | - | no | 0.029 |
-| canonical_name_description_without_name__s0 | canonical_name_description_without_name | 0 | 79 | 0.549 | 0.278 | - | - | no | 0.017 |
-| fixed_alias_description_without_name__s0 | fixed_alias_description_without_name | 0 | 79 | 0.430 | 0.063 | - | - | no | 0.014 |
-| multiple_alias_augmentation_held_out__s0 | multiple_alias_augmentation_held_out | 0 | 79 | 0.422 | 0.089 | 0.580 | - | no | 0.080 |
-| multiple_alias_shuffled_descriptions__s0 | multiple_alias_shuffled_descriptions | 0 | 79 | 0.413 | 0.051 | - | - | no | 0.022 |
-| alias_signature_only__s0 | alias_signature_only | 0 | 79 | 0.430 | 0.089 | - | - | no | 0.015 |
-| canonical_evaluated_under_unseen_alias__s0 | canonical_evaluated_under_unseen_alias | 0 | 79 | 0.422 | 0.089 | - | 0.570 | no | 0.075 |
+| canonical_name_plus_description__s0 | canonical_name_plus_description | 0 | 79 | 0.396 | 0.127 | - | - | no | 0.019 |
+| canonical_name_description_without_name__s0 | canonical_name_description_without_name | 0 | 79 | 0.549 | 0.278 | - | - | no | 0.013 |
+| fixed_alias_description_without_name__s0 | fixed_alias_description_without_name | 0 | 79 | 0.430 | 0.063 | - | - | no | 0.015 |
+| multiple_alias_augmentation_held_out__s0 | multiple_alias_augmentation_held_out | 0 | 79 | 0.422 | 0.089 | 0.580 | - | no | 0.085 |
+| multiple_alias_shuffled_descriptions__s0 | multiple_alias_shuffled_descriptions | 0 | 79 | 0.413 | 0.051 | - | - | no | 0.034 |
+| alias_signature_only__s0 | alias_signature_only | 0 | 79 | 0.430 | 0.089 | - | - | no | 0.021 |
+| canonical_evaluated_under_unseen_alias__s0 | canonical_evaluated_under_unseen_alias | 0 | 79 | 0.422 | 0.089 | - | 0.570 | no | 0.089 |
 
 ## Per-arm means
 

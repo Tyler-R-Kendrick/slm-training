@@ -33,12 +33,12 @@ A structural corruption (topology, binding, component substitution) is marked eq
 | arm_id | arm_name | seed | canonical_exact | binding_graph_equal | component_type | role | topology | cardinality | binding_graph | interaction_dep | render_tree_dist | tier2_status | equivalent | wall_seconds |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | canonical_exact__s0 | canonical_exact | 0 | 1 | 1 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | not_available | 1 | 0.003 |
-| alpha_renamed__s0 | alpha_renamed | 0 | 1 | 1 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | not_available | 1 | 0.003 |
+| alpha_renamed__s0 | alpha_renamed | 0 | 1 | 1 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | not_available | 1 | 0.002 |
 | style_only_change__s0 | style_only_change | 0 | 1 | 1 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | not_available | 1 | 0.003 |
-| topology_corruption__s0 | topology_corruption | 0 | 0 | 1 | 0.857 | 1.000 | 0.400 | 0.750 | 1.000 | 1.000 | 0.500 | not_available | 0 | 0.023 |
-| binding_corruption__s0 | binding_corruption | 0 | 0 | 1 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | not_available | 0 | 0.022 |
-| component_substitution__s0 | component_substitution | 0 | 0 | 1 | 0.667 | 0.500 | 0.500 | 1.000 | 1.000 | 0.000 | 0.667 | not_available | 0 | 0.002 |
-| metric_gaming_minimal_valid__s0 | metric_gaming_minimal_valid | 0 | 0 | 0 | 0.400 | 0.000 | 0.000 | 0.667 | 0.000 | 1.000 | 0.333 | not_available | 0 | 0.024 |
+| topology_corruption__s0 | topology_corruption | 0 | 0 | 1 | 0.857 | 1.000 | 0.400 | 0.750 | 1.000 | 1.000 | 0.500 | not_available | 0 | 0.033 |
+| binding_corruption__s0 | binding_corruption | 0 | 0 | 1 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | not_available | 0 | 0.032 |
+| component_substitution__s0 | component_substitution | 0 | 0 | 1 | 0.667 | 0.500 | 0.500 | 1.000 | 1.000 | 0.000 | 0.667 | not_available | 0 | 0.003 |
+| metric_gaming_minimal_valid__s0 | metric_gaming_minimal_valid | 0 | 0 | 0 | 0.400 | 0.000 | 0.000 | 0.667 | 0.000 | 1.000 | 0.333 | not_available | 0 | 0.027 |
 
 ## Per-arm means
 

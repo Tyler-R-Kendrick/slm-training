@@ -69,7 +69,7 @@
       "scenario_id": "size8_k4_s0",
       "seed": 0,
       "shortlist_size": 4,
-      "wall_seconds": 0.0016039059953764081
+      "wall_seconds": 0.0016201010110089556
     },
     {
       "fallback_reason": null,
@@ -81,7 +81,7 @@
       "scenario_id": "size8_k8_s0",
       "seed": 0,
       "shortlist_size": 8,
-      "wall_seconds": 0.0013702510002767667
+      "wall_seconds": 0.0013666000120574609
     },
     {
       "fallback_reason": null,
@@ -93,7 +93,7 @@
       "scenario_id": "size16_k4_s0",
       "seed": 0,
       "shortlist_size": 4,
-      "wall_seconds": 0.001352485993062146
+      "wall_seconds": 0.0013719079977599904
     },
     {
       "fallback_reason": null,
@@ -105,7 +105,7 @@
       "scenario_id": "size16_k8_s0",
       "seed": 0,
       "shortlist_size": 8,
-      "wall_seconds": 0.0013464199980953708
+      "wall_seconds": 0.0013572830028133467
     },
     {
       "fallback_reason": null,
@@ -117,7 +117,7 @@
       "scenario_id": "size32_k4_s0",
       "seed": 0,
       "shortlist_size": 4,
-      "wall_seconds": 0.0016140890036476776
+      "wall_seconds": 0.0013547910018824041
     },
     {
       "fallback_reason": null,
@@ -129,23 +129,23 @@
       "scenario_id": "size32_k8_s0",
       "seed": 0,
       "shortlist_size": 8,
-      "wall_seconds": 0.0015942650022916496
+      "wall_seconds": 0.001368332999642007
     }
   ],
   "run_id": "slm176-action-shortlist-rerank-20260720",
   "schema": "Slm176ActionShortlistRerankReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T15:57:07.572188Z",
+  "timestamp": "2026-07-20T23:46:47.987091Z",
   "version_stamp": {
-    "code_commit": "f30b0c448597c4c5319b19cd99939b98e2544e55",
+    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
     "code_dirty": true,
     "components": {
       "dsl.action_descriptions": "v2",
       "dsl.action_shortlist": "v1",
-      "harness.experiments": "v47",
+      "harness.experiments": "v50",
       "harness.experiments.slm176_action_shortlist_rerank": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T15:57:07.571776+00:00"
+    "stamped_at": "2026-07-20T23:46:47.986842+00:00"
   }
 }

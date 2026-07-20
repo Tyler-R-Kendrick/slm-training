@@ -32,7 +32,7 @@ Exposure-targeted sampling fails to increase rare-action exposure or violates th
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | current__s0 | current | 0 | 64 | 39 | 11.0 | 28.0 | 1.000 | 25 | 25 | 6 | 1.000 | 0.064 |
 | e396_balanced__s0 | e396_balanced | 0 | 52 | 52 | 12.0 | 40.0 | 1.000 | 27 | 27 | 0 | 0.812 | 0.054 |
-| sqrt_inverse_frequency__s0 | sqrt_inverse_frequency | 0 | 52 | 52 | 12.0 | 40.0 | 1.000 | 27 | 27 | 0 | 0.812 | 0.054 |
+| sqrt_inverse_frequency__s0 | sqrt_inverse_frequency | 0 | 52 | 52 | 12.0 | 40.0 | 1.000 | 27 | 27 | 0 | 0.812 | 0.053 |
 | minimum_exposure_floor__s0 | minimum_exposure_floor | 0 | 52 | 52 | 12.0 | 40.0 | 1.000 | 27 | 27 | 0 | 0.812 | 0.054 |
 | root_template_balanced_control__s0 | root_template_balanced_control | 0 | 52 | 52 | 12.0 | 40.0 | 1.000 | 27 | 27 | 0 | 0.812 | 0.054 |
 
