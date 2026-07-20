@@ -1157,6 +1157,32 @@ def test_e575_matched_eval_arms_are_persisted_without_new_checkpoint(
     assert primary_id not in checkpoint_ids
 
 
+def test_e576_matched_eval_arms_are_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    primary_id = "e576-e569-plan-binding1-r2"
+    primary = readers.run(primary_id)
+    assert primary["provenance"] == "committed"
+    assert primary["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
+    assert primary["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7345
+
+    for run_id in (
+        "e576-e569-plan-binding-control-r2",
+        "e576-e569-plan-binding2-r2",
+    ):
+        assert readers.run(run_id)["provenance"] == "committed"
+
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert primary_id not in checkpoint_ids
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

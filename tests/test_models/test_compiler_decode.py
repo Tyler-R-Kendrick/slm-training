@@ -315,6 +315,67 @@ def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     ) is None
 
 
+def test_prompt_semantic_plan_binding_bias_prefers_matching_unused_references() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_binding_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+        tokenizer.token_to_id["+Button"]: 1.0,
+    }]
+    ref0 = tokenizer.token_to_id["&0"]
+    ref1 = tokenizer.token_to_id["&1"]
+    ref2 = tokenizer.token_to_id["&2"]
+    close = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[SimpleNamespace(kind="variadic", expr_type="array")],
+        section_types=["element:Input", "element:Slider", "element:Button"],
+    )
+
+    bias = model._semantic_plan_binding_bias(
+        0,
+        state,
+        [tokenizer.bos_id, ref0],
+        (ref0, ref1, ref2, close),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 0.0, 3.0, 0.0]
+
+
+def test_prompt_semantic_plan_binding_bias_is_root_list_only() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_binding_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+    }]
+    nested = SimpleNamespace(
+        mode="structural",
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Modal"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+        ],
+        section_types=["element:Input"],
+    )
+
+    assert model._semantic_plan_binding_bias(
+        0,
+        nested,
+        [tokenizer.bos_id],
+        (tokenizer.token_to_id["&0"],),
+    ) is None
+
+
 def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None:
     from types import SimpleNamespace
 
