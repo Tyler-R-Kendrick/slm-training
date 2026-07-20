@@ -3534,3 +3534,16 @@ confirming a plateau. Use 8 as the next diagnostic baseline, but do not
 promote or sync: strict meaning-v2 remains 0 and AgentV fails 0/1. Evidence:
 [narrative](iter-e588-root-closure-strength-20260720.md) and
 [JSON](iter-e588-root-closure-strength-20260720.json).
+
+## E589 optional opaque-argument slot penalty
+
+E589 adds a default-off, legality-preserving penalty for visible slot pointers
+in optional unconstrained (`{}`) component arguments. On E588's OOD `n=4`
+baseline, weights 4 and 8 are identical: fidelity, validity, recall, reward,
+meaning-v1, and strict v2 are flat, while structure regresses
+0.4069→0.3319, AST-node F1 0.4889→0.4611, and AST-edge F1 0.25→0.2143.
+The Button action diverts into a legal nested list rather than closing. Keep
+the lever default-off; do not promote or sync. Next directly score legal
+closure instead of suppressing one expression class. Evidence:
+[narrative](iter-e589-opaque-slot-penalty-20260720.md) and
+[JSON](iter-e589-opaque-slot-penalty-20260720.json).

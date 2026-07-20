@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-20",
+          "note": "expose the default-off schema-opaque decode weight and persist it in canonical evaluation policy"
+        },
         {
           "version": "v17",
           "date": "2026-07-20",
@@ -712,7 +717,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -723,6 +728,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-20",
+          "note": "add a default-off legality-preserving bias against visible placeholders in optional unconstrained component arguments"
+        },
         {
           "version": "v24",
           "date": "2026-07-20",
