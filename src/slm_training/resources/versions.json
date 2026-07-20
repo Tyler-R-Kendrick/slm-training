@@ -530,12 +530,22 @@
       ]
     },
     "harness.experiments": {
-      "version": "v35",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-07-20",
+          "note": "update SLM-160 SPV4-02 disposition rationale for SLM-157 now that the fixture evidence document exists"
+        },
+        {
+          "version": "v36",
+          "date": "2026-07-20",
+          "note": "add SLM-157 SPV3-04 flow / consistency / trajectory-imitation wiring/fixture harness"
+        },
         {
           "version": "v35",
           "date": "2026-07-20",
@@ -720,6 +730,25 @@
           "version": "v1",
           "date": "2026-07-18",
           "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"
+        }
+      ]
+    },
+    "harness.experiments.slm157_flow_consistency": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm157_flow_consistency.py",
+        "scripts/run_slm157_flow_consistency_fixture.py",
+        "tests/test_harnesses/experiments/test_slm157_flow_consistency.py",
+        "tests/test_scripts/test_run_slm157_flow_consistency_fixture.py",
+        "docs/design/iter-slm157-flow-consistency-20260720.json",
+        "docs/design/iter-slm157-flow-consistency-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-157 SPV3-04 flow / consistency / trajectory-imitation wiring/fixture harness"
         }
       ]
     },
@@ -1164,6 +1193,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1223,6 +1257,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1290,6 +1329,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1344,6 +1388,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1393,6 +1442,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1437,6 +1491,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1478,6 +1537,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1514,6 +1578,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1578,6 +1647,11 @@
         "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1666,6 +1740,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1687,6 +1766,11 @@
         "docs/design/iter-slm156-plan-refinement-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1714,6 +1798,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1738,6 +1827,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refreshed design artifact timestamps/metrics only; harness behavior and thresholds unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
         },
         {
@@ -1748,7 +1842,7 @@
       ]
     },
     "harness.experiments.slm160_spv_disposition": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm160_spv_disposition.py",
@@ -1759,6 +1853,11 @@
         "docs/design/iter-slm160-spv-disposition-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "update SLM-157 flow/consistency disposition rationale now that the fixture evidence document exists"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",

@@ -10,9 +10,9 @@
 
 **Claim class:** wiring / disposition audit only. No GPU was used, no production TwoTower wiring was touched, and no ship-gate claim is made.
 
-**Evidence cutoff commit:** `001349bcec2902cc4bd91ac1816a8d16a970101f`
+**Evidence cutoff commit:** `55afe65bfa54e161b3d486776cbf384db643f5e7`
 
-**Generated at:** 2026-07-20T09:23:57.729755Z
+**Generated at:** 2026-07-20T10:05:26.761878Z
 
 ## Executive finding
 
@@ -58,7 +58,7 @@ The audit aggregated the following committed ``docs/design`` artifacts:
 | semantic_repair | SPV2-05 | retain_diagnostic | off | Wiring-only fixture baseline; real verifier-backed counterfactual action values require SLM-131/VSS finite replay. |
 | plan_refinement_slm156 | SLM-156 | retain_diagnostic | off | Fixture-only synthetic plan-state recovery; no downstream completion or ship-gate evidence. |
 | mixer_slm158 | SLM-158 | retain_diagnostic | off | Fixture-only synthetic token-pattern classifier; no OpenUI completion or ship-gate evidence. |
-| flow_consistency_slm157 | SLM-157 | blocked | blocked | Blocked: upstream dependencies SLM-99/SLM-148 are not done and no implementation exists. The evidence document is also absent. [Evidence missing at audit time: docs/design/iter-slm157-flow-consistency-20260720.json] |
+| flow_consistency_slm157 | SLM-157 | blocked | blocked | Blocked: upstream dependency SLM-99/SLM-148 is not done and the new fixture evidence is wiring-only, so the mechanism remains blocked. |
 | multi_pack_graphql | SLM-159 | retain_diagnostic | off | GraphQL replication fixture succeeds, but it is wiring-only with no predictor claim and no ship-gate evidence. |
 | multi_pack_second_pack | SLM-159, SLM-44, SLM-45 | blocked | blocked | No SLM-44 or SLM-45 pack is registered; only design documents exist. A syntax-only toy pack cannot satisfy the readiness rubric. |
 | prompt_plan_soft_scoring_e575_e576_e579 | E575, E576, E579 | retain_diagnostic | off | E575/E576/E579 report local/structural gains but are explicitly not promotable: binding-aware meaning-v2 and AgentV remain zero. |

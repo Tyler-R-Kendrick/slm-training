@@ -1038,6 +1038,36 @@ that it improves OpenUI quality, or that it is ready for production. Real teache
 scoring requires the SLM-108 external scorer and is not run here. Evidence:
 [`iter-spv2-03-legal-set-distillation-20260720.md`](iter-spv2-03-legal-set-distillation-20260720.md).
 
+## Discrete flow / consistency / trajectory-imitation (SPV3-04 / SLM-157)
+
+**Fidelity label: adapted / surrogate.** SLM-157 wires a deterministic,
+CPU-only simulation of discrete-flow, consistency, and trajectory-imitation
+policies over the existing hard-valid tree-edit state space. The design borrows
+the *mechanism* vocabulary of consistency models, flow-matching, and imitation
+learning for discrete structures, but deliberately narrows it to a **wiring
+fixture**: every policy scores only compiler-verified legal edits, no neural
+scorer is trained, and every arm is explicitly non-promotable.
+
+| | |
+| --- | --- |
+| **Lineage** | Consistency models; discrete flow-matching; trajectory imitation / inverse reinforcement learning over structured actions |
+| **Fidelity** | **Surrogate** — hard-valid state space and verified patch paths are real; the policies, distance scores, and boundary predictions are synthetic stand-ins for future trained models |
+| **Code** | `src/slm_training/harnesses/experiments/slm157_flow_consistency.py`, `scripts/run_slm157_flow_consistency_fixture.py` |
+| **Config** | `--mode plan-only|fixture`, `--n-records`, `--steps`, `--seeds` |
+
+**What we took:** reuse of `TreeEditSpace`, `diff_programs` / `apply_patch`, the
+fixture plan corpus, and exact legal-edit enumeration to materialize source,
+target, and reference paths; per-arm policies for greedy X22 teacher, direct
+trajectory imitation, consistency boundary matching, discrete flow-rate softmax,
+random control, AR/X22 hybrid placeholder, and an oracle boundary diagnostic;
+and a version-stamped fixture report with honest go/no-go language.
+
+**What we did not take:** any claim that a particular policy improves OpenUI
+quality, reaches a real target, or is ready for production. The mechanism
+remains `retain_diagnostic` / `blocked_pending_real_model` until a trained
+scorer and AgentV evaluation are available. Evidence:
+[`iter-slm157-flow-consistency-20260720.md`](iter-slm157-flow-consistency-20260720.md).
+
 ## Evidence-First Semantic SLM causal synthesis (EFS4-04 / SLM-140)
 
 **Fidelity label: adapted.** SLM-140 publishes a preregistered campaign manifest,

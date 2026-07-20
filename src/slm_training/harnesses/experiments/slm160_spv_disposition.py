@@ -493,8 +493,8 @@ def _mechanism_specs() -> list[dict[str, Any]]:
             ),
             "disposition": Disposition.BLOCKED,
             "rationale": (
-                "Blocked: upstream dependencies SLM-99/SLM-148 are not done and no "
-                "implementation exists. The evidence document is also absent."
+                "Blocked: upstream dependency SLM-99/SLM-148 is not done and the "
+                "new fixture evidence is wiring-only, so the mechanism remains blocked."
             ),
             "next_action": (
                 "Implement SLM-99/SLM-148 dependencies, then create a fixture or "

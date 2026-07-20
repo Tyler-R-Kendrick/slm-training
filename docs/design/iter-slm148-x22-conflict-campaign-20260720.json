@@ -2914,15 +2914,15 @@
     "S6_retrieved_prototype",
     "S7_plan_reranked_retrieval"
   ],
-  "timestamp": "2026-07-20T09:23:39.702688Z",
+  "timestamp": "2026-07-20T10:05:12.972309Z",
   "version_stamp": {
-    "code_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
+    "code_commit": "55afe65bfa54e161b3d486776cbf384db643f5e7",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v35",
+      "harness.experiments": "v37",
       "harness.experiments.slm148_x22_conflict_campaign": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T09:23:39.699467+00:00"
+    "stamped_at": "2026-07-20T10:05:12.968350+00:00"
   }
 }

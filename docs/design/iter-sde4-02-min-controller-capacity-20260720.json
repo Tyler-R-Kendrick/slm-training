@@ -131,13 +131,13 @@
   "selected_rung_id": null,
   "status": "plan_only",
   "version_stamp": {
-    "code_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
+    "code_commit": "55afe65bfa54e161b3d486776cbf384db643f5e7",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v35",
+      "harness.experiments": "v37",
       "harness.experiments.sde4_02_min_controller_capacity": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T09:23:22.759782+00:00"
+    "stamped_at": "2026-07-20T10:04:55.999529+00:00"
   }
 }
