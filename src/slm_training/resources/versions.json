@@ -752,18 +752,24 @@
       ]
     },
     "model.twotower": {
-      "version": "v31",
+      "version": "v32",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/template_fill.py",
+        "src/slm_training/data/quality.py",
         "src/slm_training/models/adapters/",
         "src/slm_training/harnesses/model_build/config.py",
         "src/slm_training/harnesses/model_build/factory.py",
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v32",
+          "date": "2026-07-20",
+          "note": "map visible body and action role aliases to compatible schema properties for prompt-role binding"
+        },
         {
           "version": "v31",
           "date": "2026-07-20",

@@ -458,6 +458,21 @@ def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
     assert bias.tolist() == [4.0, 4.0, 0.0]
 
 
+def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":modal.title", ":modal.body", ":modal.confirm"],
+        ["Modal", "TextContent", "Button"],
+    )
+
+    assert candidates == {
+        ":modal.body": ("TextContent",),
+        ":modal.confirm": ("Button",),
+        ":modal.title": ("Modal",),
+    }
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

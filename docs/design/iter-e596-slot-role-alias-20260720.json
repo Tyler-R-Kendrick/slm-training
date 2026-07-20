@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E596",
+  "date_utc": "2026-07-20",
+  "run_id": "e596-e595-role-alias-r1",
+  "run_class": "scratch_matrix",
+  "status": "neutral_not_promotable",
+  "hypothesis": "Mapping visible body and action aliases to schema properties will bind the inferred Button to confirmation rather than body.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "matched_to": "e595-e592-action-plan-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.46937500000000004,
+      "component_type_recall": 0.625,
+      "reward_score": 0.8115,
+      "ast_node_f1": 0.5531746031746032,
+      "ast_edge_f1": 0.38749999999999996,
+      "latency_ms_p50": 6251.6,
+      "latency_ms_p95": 18202.58
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "comparison": {
+    "baseline": "e595-e592-action-plan-r1",
+    "aggregate_metrics_changed": false,
+    "predictions_changed": false,
+    "diagnosis": "Role aliases are correct, but component-family selection consumes the first remaining slot before property-role scoring; Button still binds body."
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict meaning-v2 remains zero, AgentV fails, and the target binding is unchanged."
+  },
+  "decision": "Preserve as neutral diagnostic evidence; do not promote or sync. Next repair component-to-slot assignment order.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5413046b003f1eab597f7025e10f689c8a038696",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v22",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v32"
+    },
+    "stamped_at": "2026-07-20T09:56:34.769896+00:00"
+  }
+}
