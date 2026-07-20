@@ -682,7 +682,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -692,6 +692,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-20",
+          "note": "soft-follow a compiler- and verifier-valid Stack closure after predicted SemanticPlanV1 component coverage, failing closed without a valid completion"
+        },
         {
           "version": "v15",
           "date": "2026-07-20",
