@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E575",
+  "run_id": "e575-e569-prompt-plan1-r3",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_decode_pareto_not_ship",
+  "hypothesis": "A predicted partial SemanticPlanV1 built only from explicit schema-owned prompt component mentions can soft-score legal root and bound component choices, improve semantic coverage, and preserve legality without using gold output structure.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "component_plan_decode_weight": 0.0,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.425,
+      "placeholder_validity": 0.655,
+      "structural_similarity": 0.16875,
+      "component_type_recall": 0.2708333333333333,
+      "reward_score": 0.7345,
+      "ast_node_f1": 0.2833333333333333,
+      "ast_edge_f1": 0.0,
+      "latency_ms_p50": 11287.38,
+      "latency_ms_p95": 21724.55
+    }
+  },
+  "decode_telemetry": {
+    "semantic_plan_applications": 52,
+    "semantic_plan_choice_changes": 3,
+    "hard_candidate_removals": 0,
+    "legal_candidate_set_changed": false
+  },
+  "matched_runs": [
+    {
+      "run_id": "e575-e569-prompt-plan-control-r3",
+      "label": "plan_weight_0_control",
+      "semantic_plan_decode_weight": 0.0,
+      "checkpoint_sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.3416666666666667,
+          "placeholder_validity": 0.605,
+          "structural_similarity": 0.125,
+          "component_type_recall": 0.14583333333333331,
+          "reward_score": 0.7095,
+          "ast_node_f1": 0.18333333333333335,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 16039.62,
+          "latency_ms_p95": 20687.68
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    },
+    {
+      "run_id": "e575-e569-prompt-plan2-r3",
+      "label": "plan_weight_2_treatment",
+      "semantic_plan_decode_weight": 2.0,
+      "checkpoint_sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.2583333333333333,
+          "placeholder_validity": 0.5549999999999999,
+          "structural_similarity": 0.16875,
+          "component_type_recall": 0.2708333333333333,
+          "reward_score": 0.6845,
+          "ast_node_f1": 0.2833333333333333,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 12396.37,
+          "latency_ms_p95": 20653.63
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "comparison": {
+    "baseline": "e575-e569-prompt-plan-control-r3",
+    "weight_1_deltas": {
+      "meaningful_program_rate": 0.25,
+      "placeholder_fidelity": 0.08333333333333331,
+      "placeholder_validity": 0.050000000000000044,
+      "structural_similarity": 0.04375000000000001,
+      "component_type_recall": 0.125,
+      "reward_score": 0.025000000000000022,
+      "ast_node_f1": 0.09999999999999995,
+      "ast_edge_f1": 0.0
+    },
+    "weight_2_vs_weight_1": {
+      "semantic_plan_choice_changes": 2,
+      "placeholder_fidelity": -0.16666666666666669,
+      "placeholder_validity": -0.10000000000000009,
+      "reward_score": -0.050000000000000044,
+      "all_other_quality_metrics": 0.0
+    },
+    "interpretation": "Weight 1 is the bounded Pareto: it improves every non-latency quality aggregate except AST-edge F1, which remains zero. Weight 2 changes more choices but overpowers placeholder selection and regresses fidelity, validity, and reward."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Binding-aware meaning-v2 remains zero and AgentV fails."
+  },
+  "decision": "Retain the generalized prompt-plan soft scorer and weight 1 as a local decode Pareto, default-off. Reject weight 2, checkpoint promotion, and checkpoint sync. Next improve predicted plan topology/binding factors rather than increasing this scalar.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "11813e60e8b241159656b0030c9e58c52cd88b96",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v14",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v12"
+    },
+    "stamped_at": "2026-07-20T04:04:04.719426+00:00"
+  }
+}
