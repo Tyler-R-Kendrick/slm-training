@@ -662,6 +662,35 @@ def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> No
     assert complete_bias is None
 
 
+def test_prompt_semantic_plan_margin_floors_only_missing_families() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["+Card"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    button_id = tokenizer.token_to_id["+Button"]
+    candidates = (card_id, text_id, button_id)
+    kinds = ("component_bound", "component_bound", "component_bound")
+    model._semantic_plan_action_scores = [{card_id: 1.0, button_id: 1.0}]
+    model._semantic_plan_action_counts = [{card_id: 1, button_id: 1}]
+    state = SimpleNamespace(section_types=["element:Button"])
+
+    bias = model._semantic_plan_bias(
+        0,
+        candidates,
+        kinds,
+        state,
+        candidate_scores=torch.tensor([-36.0, 30.0, 12.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [68.0, 0.0, 0.0]
+
+
 def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() -> None:
     from types import SimpleNamespace
 
@@ -808,6 +837,7 @@ def test_prompt_semantic_plan_missing_family_trace_records_remaining_counts() ->
             "final_token": "+TextContent",
             "changed_after_plan": True,
             "semantic_plan_decode_weight": 32.0,
+            "semantic_plan_margin_decode_weight": 0.0,
             "planned_candidates": [
                 {
                     "token": "+Card",

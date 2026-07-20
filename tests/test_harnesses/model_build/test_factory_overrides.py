@@ -54,6 +54,20 @@ def test_compiler_search_overrides_are_typed() -> None:
     assert model.config.compiler_search_width == 8
 
 
+def test_semantic_plan_margin_is_an_explicit_runtime_override() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(semantic_plan_margin_decode_weight=0.0)
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        semantic_plan_margin_decode_weight=2.0,
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.semantic_plan_margin_decode_weight == 2.0
+
+
 def test_design_md_dropout_overrides_resumed_checkpoint() -> None:
     model = SimpleNamespace(config=SimpleNamespace(design_md_dropout=0.0))
     config = ModelBuildConfig(train_dir=Path("."), design_md_dropout=0.5)
