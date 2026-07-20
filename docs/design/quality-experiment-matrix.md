@@ -3467,3 +3467,16 @@ role weight 4 for this recipe, and next isolate learned-versus-visible role
 score composition. No checkpoint was created or synced. Evidence:
 [narrative](iter-e583-prompt-local-slot-family-20260720.md) and
 [JSON](iter-e583-prompt-local-slot-family-20260720.json).
+
+## E584 visible-role-gated slot head
+
+E584 removes the auxiliary learned slot-head bonus from visible-role-mismatched
+families without changing base scores or legal candidates. Auth reaches perfect
+AST node/edge/tree similarity and exact reference topology, but modal collapses
+to an empty Stack. On clean matched E569 OOD `n=4`, reward regresses
+0.7760→0.5743, fidelity 0.5083→0.3417, validity 0.7050→0.5050, and recall
+0.4583→0.3750. Strict meaning-v2 remains 0 and AgentV fails 0/1. Reject
+unconditional gating, keep default-off, and next test confidence-aware
+arbitration. No checkpoint was created or synced. Evidence:
+[narrative](iter-e584-role-gated-slot-head-20260720.md) and
+[JSON](iter-e584-role-gated-slot-head-20260720.json).
