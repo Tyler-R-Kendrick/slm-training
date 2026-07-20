@@ -238,6 +238,7 @@ class TwoTowerConfig:
     semantic_role_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
+    semantic_plan_root_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4056,11 +4057,20 @@ class TwoTowerModel(nn.Module):
             getattr(self.config, "semantic_plan_binding_decode_weight", 0.0)
             or 0.0
         )
+        frames = list(getattr(state, "frames", ()))
         structural_root_list = bool(
             getattr(state, "mode", None) == "structural"
-            and len(getattr(state, "frames", ())) == 1
-            and state.frames[-1].kind == "variadic"
-            and state.frames[-1].expr_type == "array"
+            and frames
+            and frames[-1].kind == "variadic"
+            and frames[-1].expr_type == "array"
+            and (
+                len(frames) == 1
+                or (
+                    len(frames) == 2
+                    and frames[-2].kind == "component"
+                    and frames[-2].expr_type == "element:Stack"
+                )
+            )
         )
         if (
             weight <= 0.0
@@ -4107,6 +4117,61 @@ class TwoTowerModel(nn.Module):
                 bias[position] = weight * confidence
                 applied = True
         return bias if applied else None
+
+    def _semantic_plan_root_bias(
+        self,
+        row: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Build and terminate a Stack root after predicted role coverage."""
+        weight = float(
+            getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or getattr(state, "mode", None) != "structural"
+            or getattr(state, "frames", ())
+            or not self._semantic_plan_action_scores
+            or row >= len(self._semantic_plan_action_scores)
+        ):
+            return None
+        action_scores = self._semantic_plan_action_scores[row]
+        required_ids = {
+            token_id for token_id, confidence in action_scores.items()
+            if confidence > 0.0
+        }
+        if not required_ids:
+            return None
+        family_token_ids = {
+            str(self.tokenizer.id_to_token[token_id]).removeprefix("COMP:").removeprefix(
+                "+"
+            ): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        section_types = tuple(getattr(state, "section_types", ()))
+        covered_ids = {
+            family_token_ids.get(str(expr_type).removeprefix("element:"))
+            for expr_type in section_types
+            if str(expr_type).startswith("element:")
+        }
+        if not required_ids.issubset(covered_ids):
+            return None
+        stack_complete = bool(
+            section_types and section_types[-1] == "element:Stack"
+        )
+        target_id = (
+            self.tokenizer.eos_id
+            if stack_complete
+            else self.tokenizer.token_to_id.get("+Stack")
+        )
+        if target_id is None or target_id not in candidate_ids:
+            return None
+        bias = torch.zeros(
+            len(candidate_ids), dtype=torch.float32, device=self.device_name
+        )
+        bias[candidate_ids.index(target_id)] = weight
+        return bias
 
     def _component_edge_bias(
         self,
@@ -5623,6 +5688,19 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
+                    semantic_plan_root_bias = self._semantic_plan_root_bias(
+                        row,
+                        states[row],
+                        candidate_ids,
+                    )
+                    if semantic_plan_root_bias is not None:
+                        before_plan_root = int(scores.argmax().item())
+                        scores = scores + semantic_plan_root_bias
+                        if stats is not None:
+                            stats.semantic_plan_root_applications += 1
+                            stats.semantic_plan_root_choice_changes += int(
+                                int(scores.argmax().item()) != before_plan_root
+                            )
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -6617,6 +6695,7 @@ class TwoTowerModel(nn.Module):
                 self.config, "semantic_plan_binding_decode_weight", 0.0
             )
             or 0.0,
+            getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0,
         )
         if plan_weight > 0.0:
             if not choice_constrained:

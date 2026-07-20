@@ -376,6 +376,103 @@ def test_prompt_semantic_plan_binding_bias_is_root_list_only() -> None:
     ) is None
 
 
+def test_prompt_semantic_plan_binding_bias_reaches_stack_child_list() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_binding_decode_weight=3.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+    }]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+        ],
+        section_types=["element:Input", "element:Slider"],
+    )
+
+    bias = model._semantic_plan_binding_bias(
+        0,
+        state,
+        [tokenizer.bos_id],
+        (
+            tokenizer.token_to_id["&0"],
+            tokenizer.token_to_id["&1"],
+            tokenizer.token_to_id["]"],
+        ),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [3.0, 0.0, 0.0]
+
+
+def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+        tokenizer.token_to_id["+Button"]: 1.0,
+    }]
+    candidates = (
+        tokenizer.token_to_id["+Stack"],
+        tokenizer.token_to_id["+Card"],
+        tokenizer.eos_id,
+    )
+    covered = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button"],
+    )
+    completed = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button", "element:Stack"],
+    )
+
+    build_bias = model._semantic_plan_root_bias(0, covered, candidates)
+    end_bias = model._semantic_plan_root_bias(0, completed, candidates)
+
+    assert build_bias is not None
+    assert build_bias.tolist() == [2.0, 0.0, 0.0]
+    assert end_bias is not None
+    assert end_bias.tolist() == [0.0, 0.0, 2.0]
+
+
+def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+        tokenizer.token_to_id["+Button"]: 1.0,
+    }]
+    incomplete = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input"],
+    )
+
+    assert model._semantic_plan_root_bias(
+        0,
+        incomplete,
+        (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
+    ) is None
+
+
 def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None:
     from types import SimpleNamespace
 
