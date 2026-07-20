@@ -3452,3 +3452,18 @@ still-required second Input. Strict meaning-v2 remains 0 and AgentV fails 0/1.
 Retain default-off for partial structural diagnosis; do not promote or sync.
 Evidence: [narrative](iter-e582-distinct-slot-instances-20260720.md) and
 [JSON](iter-e582-distinct-slot-instances-20260720.json).
+
+## E583 prompt-local slot-family scoring
+
+E583 derives honest slot-to-family candidates from local authored phrases in
+addition to exact schema property names. On a clean matched E569 OOD `n=4`
+role-weight 0/4 pair with E582's plan and root settings fixed, weight 4 is
+quality-null on meaning, structure, recall, and AST metrics, while fidelity
+regresses 0.5083→0.4250, validity 0.7050→0.6550, and reward 0.7760→0.7510.
+Auth is byte-identical and still assigns email to TextContent; the only changed
+program is modal, where the treatment loses the body placeholder. Strict
+meaning-v2 remains 0 and AgentV fails 0/1. Record the honest association, reject
+role weight 4 for this recipe, and next isolate learned-versus-visible role
+score composition. No checkpoint was created or synced. Evidence:
+[narrative](iter-e583-prompt-local-slot-family-20260720.md) and
+[JSON](iter-e583-prompt-local-slot-family-20260720.json).
