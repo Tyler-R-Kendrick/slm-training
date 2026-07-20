@@ -2992,6 +2992,18 @@ return to no-design-metadata context. Evidence:
 [narrative](iter-e568-design-context-continuation-20260720.md) and
 [JSON](iter-e568-design-context-continuation-20260720.json).
 
+## E569 matched E561 continuation
+
+The corrected 48-step no-design-context continuation completes in 75.20s and
+writes local SHA `8254fcf7…c6535f73`. OOD `n=4` meaningful-v1 rises to 0.25,
+recall to 0.3333, reward to 0.6920, and AST-node F1 to 0.3389. Fidelity
+regresses to 0.2583, structure to 0.2031, edge F1 to 0, binding-aware
+meaning-v2 remains 0, and AgentV remains 0/1. **Decision:** retain as a local
+semantic-coverage Pareto for targeted strict-meaning research; do not promote
+or sync. Evidence:
+[narrative](iter-e569-matched-continuation-20260720.md) and
+[JSON](iter-e569-matched-continuation-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
@@ -3096,3 +3108,19 @@ python -m scripts.run_quality_matrix --matrix v18 --only E300,E301,E303 \
 Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
 `outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
 `docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.
+
+## V19 stochastic recursive width (SLM-139) — closed
+
+SLM-139 gates on a positive shared-recursive verdict from SLM-138.  SLM-138
+landed as a wiring-only fixture with no GPU matched-block evaluation, so the
+activation gate returned `no_supported_probabilistic_regime`.  No stochastic
+production code was added.  The closeout report is at
+`outputs/runs/slm139-stochastic-recursive-width-20260720/` with mirrored design
+artifacts `docs/design/iter-slm139-stochastic-recursive-width-20260720.json`
+and `.md`.
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| E305 | High-level learned stochastic latent | GRAM-style width vs depth | blocked by SLM-138 gate |
+| E306 | Low-level trained stochastic state | Noise-locus ablation | blocked by SLM-138 gate |
+| E307 | Inference-only low-level noise | PTRM-style control lineage | blocked by SLM-138 gate |
