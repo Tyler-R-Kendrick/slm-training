@@ -1133,6 +1133,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1187,6 +1192,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1249,6 +1259,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1298,6 +1313,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1342,6 +1362,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1381,6 +1406,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1417,6 +1447,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1448,6 +1483,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1507,6 +1547,11 @@
         "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1590,6 +1635,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-155 SPV3-02 matched AR vs plan-conditioned X22 factorization comparison wiring/fixture harness"
         }
       ]
@@ -1606,6 +1656,11 @@
         "docs/design/iter-slm156-plan-refinement-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1628,6 +1683,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness"
         }
       ]
@@ -1644,6 +1704,11 @@
         "docs/design/iter-slm159-cross-dsl-replication-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
