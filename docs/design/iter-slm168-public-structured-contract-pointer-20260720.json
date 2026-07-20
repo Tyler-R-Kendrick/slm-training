@@ -1,0 +1,905 @@
+{
+  "arm_means": {
+    "dynamic_authored_only": {
+      "binding_fidelity": 0.5592423449186694,
+      "candidate_discovery_recall": 0.0,
+      "fail_closed_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.5057171661441064,
+      "parse_validity_rate": 0.5968974460762341,
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.47695949153780715,
+      "wall_seconds": 0.01628842327054312
+    },
+    "dynamic_hidden_text": {
+      "binding_fidelity": 0.6722689293957885,
+      "candidate_discovery_recall": 0.0,
+      "fail_closed_rate": 0.0,
+      "meaningful_program_rate": 0.6083692700433522,
+      "parse_validity_rate": 0.70312001393218,
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.5861809082870246,
+      "wall_seconds": 0.029592639772746895
+    },
+    "dynamic_inventory_in_prompt": {
+      "binding_fidelity": 0.8246392826048017,
+      "candidate_discovery_recall": 0.6666666666666666,
+      "fail_closed_rate": 1.0,
+      "meaningful_program_rate": 0.78930817322946,
+      "parse_validity_rate": 0.8675689536457301,
+      "pointer_mrr": 0.1625,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.7553964553019051,
+      "wall_seconds": 0.03246149056084489
+    },
+    "dynamic_permuted_order": {
+      "binding_fidelity": 0.7456829243650228,
+      "candidate_discovery_recall": 0.0,
+      "fail_closed_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.7052934799545062,
+      "parse_validity_rate": 0.8045111821440663,
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.6847450015168433,
+      "wall_seconds": 0.036321474489247746
+    },
+    "dynamic_structured_contract": {
+      "binding_fidelity": 0.7733099842260311,
+      "candidate_discovery_recall": 0.0,
+      "fail_closed_rate": 0.0,
+      "meaningful_program_rate": 0.7344709378280486,
+      "parse_validity_rate": 0.8306617592913869,
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.7171282395291814,
+      "wall_seconds": 0.03819772737648382
+    },
+    "legacy_inventory_in_prompt": {
+      "binding_fidelity": 0.8463891952764089,
+      "candidate_discovery_recall": 0.6666666666666666,
+      "fail_closed_rate": 1.0,
+      "meaningful_program_rate": 0.8158323931499084,
+      "parse_validity_rate": 0.9112916587798312,
+      "pointer_mrr": 1.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.7816074752030548,
+      "wall_seconds": 0.031119148472410568
+    },
+    "legacy_no_inventory": {
+      "binding_fidelity": 0.463731318193983,
+      "candidate_discovery_recall": 0.0,
+      "fail_closed_rate": 1.0,
+      "meaningful_program_rate": 0.40981657609751815,
+      "parse_validity_rate": 0.4965660734744621,
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.3969178245844569,
+      "wall_seconds": 0.031243994552264977
+    }
+  },
+  "cells": [
+    {
+      "arm_id": "legacy_inventory_in_prompt__s0",
+      "arm_name": "legacy_inventory_in_prompt",
+      "candidate_source": "inventory_in_prompt",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "legacy_tokens",
+      "seed": 0
+    },
+    {
+      "arm_id": "legacy_no_inventory__s0",
+      "arm_name": "legacy_no_inventory",
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "legacy_tokens",
+      "seed": 0
+    },
+    {
+      "arm_id": "dynamic_structured_contract__s0",
+      "arm_name": "dynamic_structured_contract",
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "seed": 0
+    },
+    {
+      "arm_id": "dynamic_authored_only__s0",
+      "arm_name": "dynamic_authored_only",
+      "candidate_source": "authored_only",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "seed": 0
+    },
+    {
+      "arm_id": "dynamic_inventory_in_prompt__s0",
+      "arm_name": "dynamic_inventory_in_prompt",
+      "candidate_source": "inventory_in_prompt",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "seed": 0
+    },
+    {
+      "arm_id": "dynamic_permuted_order__s0",
+      "arm_name": "dynamic_permuted_order",
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "seed": 0
+    },
+    {
+      "arm_id": "dynamic_hidden_text__s0",
+      "arm_name": "dynamic_hidden_text",
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "seed": 0
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [
+    "Depends on SLM-161 decode-scaffolding conventions for inventory factors.",
+    "Depends on SLM-162 metric-gaming suite for inventory-free stress cases.",
+    "Dynamic scorer is not wired into live TwoTower decode."
+  ],
+  "disposition": "inventory_equivalent",
+  "disposition_rationale": "The dynamic pointer head matches legacy inventory-in-prompt fidelity when inventory is available, but authored-only discovery remains weaker.",
+  "experiment_id": "slm168-public-structured-contract-pointer",
+  "falsifier": "The dynamic pointer arm cannot beat the current slot-token representation without prompt inventory, or gains vanish under candidate-order permutation.",
+  "hypothesis": "Explicit contract-index pointer supervision can preserve binding fidelity with prompt inventory removed because pointer identity is learned relative to a live request-visible candidate set rather than as a global vocabulary item.",
+  "matrix_set": "slm168_public_structured_contract_pointer",
+  "matrix_version": "sde2-01-v1",
+  "rows": [
+    {
+      "arm_id": "legacy_inventory_in_prompt__s0",
+      "arm_name": "legacy_inventory_in_prompt",
+      "binding_fidelity": 0.8463891952764089,
+      "candidate_discovery_recall": 0.6666666666666666,
+      "candidate_source": "inventory_in_prompt",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "56988661b8efef2c",
+          "candidate_source": "inventory_in_prompt",
+          "gold_index": 6,
+          "latency_seconds": 0.00028160000510979444,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "legacy_tokens",
+          "scores": [
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728
+          ],
+          "selected_index": 0,
+          "state_signature": "state_legacy_inventory_in_prompt__s0_0"
+        },
+        {
+          "candidate_set_hash": "f0d09b30bce7ffc2",
+          "candidate_source": "inventory_in_prompt",
+          "gold_index": 6,
+          "latency_seconds": 4.88399964524433e-05,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "legacy_tokens",
+          "scores": [
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728,
+            0.1111111044883728
+          ],
+          "selected_index": 0,
+          "state_signature": "state_legacy_inventory_in_prompt__s0_1"
+        },
+        {
+          "candidate_set_hash": "91c531d3bac81a24",
+          "candidate_source": "inventory_in_prompt",
+          "gold_index": null,
+          "latency_seconds": 3.993000427726656e-05,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "legacy_tokens",
+          "scores": [
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125
+          ],
+          "selected_index": 0,
+          "state_signature": "state_legacy_inventory_in_prompt__s0_2"
+        }
+      ],
+      "fail_closed_rate": 1.0,
+      "meaningful_program_rate": 0.8158323931499084,
+      "notes": [
+        "pointer_mode=legacy_tokens",
+        "candidate_source=inventory_in_prompt",
+        "fixture-only: synthetic pointer supervision comparison"
+      ],
+      "parse_validity_rate": 0.9112916587798312,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "legacy_tokens",
+      "pointer_mrr": 1.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.7816074752030548,
+      "seed": 0,
+      "wall_seconds": 0.031119148472410568
+    },
+    {
+      "arm_id": "legacy_no_inventory__s0",
+      "arm_name": "legacy_no_inventory",
+      "binding_fidelity": 0.463731318193983,
+      "candidate_discovery_recall": 0.0,
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "f87864be6464c87c",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 3.7949997931718826e-05,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "legacy_tokens",
+          "scores": [
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592
+          ],
+          "selected_index": 0,
+          "state_signature": "state_legacy_no_inventory__s0_0"
+        },
+        {
+          "candidate_set_hash": "520270ce5c8f05b3",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 3.4649987355805933e-05,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "legacy_tokens",
+          "scores": [
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592,
+            0.1666666567325592
+          ],
+          "selected_index": 0,
+          "state_signature": "state_legacy_no_inventory__s0_1"
+        },
+        {
+          "candidate_set_hash": "5896cd6fba1b8dd1",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 3.277999348938465e-05,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "legacy_tokens",
+          "scores": [
+            0.19999998807907104,
+            0.19999998807907104,
+            0.19999998807907104,
+            0.19999998807907104,
+            0.19999998807907104
+          ],
+          "selected_index": 0,
+          "state_signature": "state_legacy_no_inventory__s0_2"
+        }
+      ],
+      "fail_closed_rate": 1.0,
+      "meaningful_program_rate": 0.40981657609751815,
+      "notes": [
+        "pointer_mode=legacy_tokens",
+        "candidate_source=structured_contract",
+        "fixture-only: synthetic pointer supervision comparison"
+      ],
+      "parse_validity_rate": 0.4965660734744621,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "legacy_tokens",
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.3969178245844569,
+      "seed": 0,
+      "wall_seconds": 0.031243994552264977
+    },
+    {
+      "arm_id": "dynamic_structured_contract__s0",
+      "arm_name": "dynamic_structured_contract",
+      "binding_fidelity": 0.7733099842260311,
+      "candidate_discovery_recall": 0.0,
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "f87864be6464c87c",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.01100252999458462,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.1927165538072586,
+            0.20551154017448425,
+            0.3044780492782593,
+            0.23408763110637665,
+            0.02900872938334942,
+            0.03419746086001396
+          ],
+          "selected_index": 2,
+          "state_signature": "state_dynamic_structured_contract__s0_0"
+        },
+        {
+          "candidate_set_hash": "520270ce5c8f05b3",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.0057913900091079995,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.20684631168842316,
+            0.2270929515361786,
+            0.25249183177948,
+            0.2014998346567154,
+            0.05656925216317177,
+            0.05549982935190201
+          ],
+          "selected_index": 2,
+          "state_signature": "state_dynamic_structured_contract__s0_1"
+        },
+        {
+          "candidate_set_hash": "5896cd6fba1b8dd1",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.007115129992598668,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.3009994328022003,
+            0.3665888011455536,
+            0.23322579264640808,
+            0.04944877326488495,
+            0.04973726347088814
+          ],
+          "selected_index": 1,
+          "state_signature": "state_dynamic_structured_contract__s0_2"
+        }
+      ],
+      "fail_closed_rate": 0.0,
+      "meaningful_program_rate": 0.7344709378280486,
+      "notes": [
+        "pointer_mode=dynamic_head",
+        "candidate_source=structured_contract",
+        "fixture-only: synthetic pointer supervision comparison"
+      ],
+      "parse_validity_rate": 0.8306617592913869,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.7171282395291814,
+      "seed": 0,
+      "wall_seconds": 0.03819772737648382
+    },
+    {
+      "arm_id": "dynamic_authored_only__s0",
+      "arm_name": "dynamic_authored_only",
+      "binding_fidelity": 0.5592423449186694,
+      "candidate_discovery_recall": 0.0,
+      "candidate_source": "authored_only",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "8a78afa8af052067",
+          "candidate_source": "authored_only",
+          "gold_index": null,
+          "latency_seconds": 0.006179250005516224,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.18409854173660278,
+            0.1559319645166397,
+            0.16318266093730927,
+            0.23960578441619873,
+            0.25718098878860474
+          ],
+          "selected_index": 4,
+          "state_signature": "state_dynamic_authored_only__s0_0"
+        },
+        {
+          "candidate_set_hash": "ebe9d7d3fcc8b15d",
+          "candidate_source": "authored_only",
+          "gold_index": null,
+          "latency_seconds": 0.0035826999956043437,
+          "mask": [
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.47632771730422974,
+            0.5236722826957703
+          ],
+          "selected_index": 1,
+          "state_signature": "state_dynamic_authored_only__s0_1"
+        },
+        {
+          "candidate_set_hash": "fb5bb94c5bbb19ee",
+          "candidate_source": "authored_only",
+          "gold_index": null,
+          "latency_seconds": 0.00368951000564266,
+          "mask": [
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.5559265613555908,
+            0.4440734386444092
+          ],
+          "selected_index": 0,
+          "state_signature": "state_dynamic_authored_only__s0_2"
+        }
+      ],
+      "fail_closed_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.5057171661441064,
+      "notes": [
+        "pointer_mode=dynamic_head",
+        "candidate_source=authored_only",
+        "fixture-only: synthetic pointer supervision comparison"
+      ],
+      "parse_validity_rate": 0.5968974460762341,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.47695949153780715,
+      "seed": 0,
+      "wall_seconds": 0.01628842327054312
+    },
+    {
+      "arm_id": "dynamic_inventory_in_prompt__s0",
+      "arm_name": "dynamic_inventory_in_prompt",
+      "binding_fidelity": 0.8246392826048017,
+      "candidate_discovery_recall": 0.6666666666666666,
+      "candidate_source": "inventory_in_prompt",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "56988661b8efef2c",
+          "candidate_source": "inventory_in_prompt",
+          "gold_index": 6,
+          "latency_seconds": 0.004116310010431334,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.04021066427230835,
+            0.052289947867393494,
+            0.051048070192337036,
+            0.04644366353750229,
+            0.04026734456419945,
+            0.06198083609342575,
+            0.05876731872558594,
+            0.3474486768245697,
+            0.3015434741973877
+          ],
+          "selected_index": 7,
+          "state_signature": "state_dynamic_inventory_in_prompt__s0_0"
+        },
+        {
+          "candidate_set_hash": "f0d09b30bce7ffc2",
+          "candidate_source": "inventory_in_prompt",
+          "gold_index": 6,
+          "latency_seconds": 0.003327280006487854,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.1298755705356598,
+            0.13710027933120728,
+            0.13291262090206146,
+            0.14395959675312042,
+            0.1556563377380371,
+            0.11860235035419464,
+            0.12075147032737732,
+            0.03153132647275925,
+            0.029610460624098778
+          ],
+          "selected_index": 4,
+          "state_signature": "state_dynamic_inventory_in_prompt__s0_1"
+        },
+        {
+          "candidate_set_hash": "91c531d3bac81a24",
+          "candidate_source": "inventory_in_prompt",
+          "gold_index": null,
+          "latency_seconds": 0.003519120000419207,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.1468791514635086,
+            0.0973394438624382,
+            0.13945715129375458,
+            0.1303148865699768,
+            0.1256231963634491,
+            0.12921331822872162,
+            0.11349266767501831,
+            0.11768016219139099
+          ],
+          "selected_index": 0,
+          "state_signature": "state_dynamic_inventory_in_prompt__s0_2"
+        }
+      ],
+      "fail_closed_rate": 1.0,
+      "meaningful_program_rate": 0.78930817322946,
+      "notes": [
+        "pointer_mode=dynamic_head",
+        "candidate_source=inventory_in_prompt",
+        "fixture-only: synthetic pointer supervision comparison"
+      ],
+      "parse_validity_rate": 0.8675689536457301,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "pointer_mrr": 0.1625,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.7553964553019051,
+      "seed": 0,
+      "wall_seconds": 0.03246149056084489
+    },
+    {
+      "arm_id": "dynamic_permuted_order__s0",
+      "arm_name": "dynamic_permuted_order",
+      "binding_fidelity": 0.7456829243650228,
+      "candidate_discovery_recall": 0.0,
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "f87864be6464c87c",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.002971319991047494,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.16915439069271088,
+            0.168757364153862,
+            0.17883123457431793,
+            0.16203507781028748,
+            0.15591779351234436,
+            0.1653042584657669
+          ],
+          "selected_index": 2,
+          "state_signature": "state_dynamic_permuted_order__s0_0"
+        },
+        {
+          "candidate_set_hash": "520270ce5c8f05b3",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.0045530099887400866,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.28538936376571655,
+            0.09624176472425461,
+            0.09122499823570251,
+            0.1229117214679718,
+            0.2826777994632721,
+            0.12155435234308243
+          ],
+          "selected_index": 0,
+          "state_signature": "state_dynamic_permuted_order__s0_1"
+        },
+        {
+          "candidate_set_hash": "5896cd6fba1b8dd1",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.005359859991585836,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.18050254881381989,
+            0.16785567998886108,
+            0.15481089055538177,
+            0.26437386870384216,
+            0.2324570119380951
+          ],
+          "selected_index": 3,
+          "state_signature": "state_dynamic_permuted_order__s0_2"
+        }
+      ],
+      "fail_closed_rate": 0.3333333333333333,
+      "meaningful_program_rate": 0.7052934799545062,
+      "notes": [
+        "pointer_mode=dynamic_head",
+        "candidate_source=structured_contract",
+        "fixture-only: synthetic pointer supervision comparison",
+        "candidate order permuted per example"
+      ],
+      "parse_validity_rate": 0.8045111821440663,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.6847450015168433,
+      "seed": 0,
+      "wall_seconds": 0.036321474489247746
+    },
+    {
+      "arm_id": "dynamic_hidden_text__s0",
+      "arm_name": "dynamic_hidden_text",
+      "binding_fidelity": 0.6722689293957885,
+      "candidate_discovery_recall": 0.0,
+      "candidate_source": "structured_contract",
+      "d_model": 64,
+      "decisions": [
+        {
+          "candidate_set_hash": "f87864be6464c87c",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.0048698099999455735,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.12331663817167282,
+            0.14108878374099731,
+            0.15900181233882904,
+            0.1175200417637825,
+            0.23738107085227966,
+            0.22169172763824463
+          ],
+          "selected_index": 4,
+          "state_signature": "state_dynamic_hidden_text__s0_0"
+        },
+        {
+          "candidate_set_hash": "520270ce5c8f05b3",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.0037766299938084558,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.03709762543439865,
+            0.045425161719322205,
+            0.03375224396586418,
+            0.03243959695100784,
+            0.46596160531044006,
+            0.38532373309135437
+          ],
+          "selected_index": 4,
+          "state_signature": "state_dynamic_hidden_text__s0_1"
+        },
+        {
+          "candidate_set_hash": "5896cd6fba1b8dd1",
+          "candidate_source": "structured_contract",
+          "gold_index": null,
+          "latency_seconds": 0.003622410004027188,
+          "mask": [
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "pointer_mode": "dynamic_head",
+          "scores": [
+            0.06272140145301819,
+            0.06751488894224167,
+            0.06356777250766754,
+            0.4438309669494629,
+            0.36236488819122314
+          ],
+          "selected_index": 3,
+          "state_signature": "state_dynamic_hidden_text__s0_2"
+        }
+      ],
+      "fail_closed_rate": 0.0,
+      "meaningful_program_rate": 0.6083692700433522,
+      "notes": [
+        "pointer_mode=dynamic_head",
+        "candidate_source=structured_contract",
+        "fixture-only: synthetic pointer supervision comparison",
+        "display text hidden, kind/type retained"
+      ],
+      "parse_validity_rate": 0.70312001393218,
+      "permutation_equivariant": true,
+      "pointer_heads": 4,
+      "pointer_hidden_dim": 256,
+      "pointer_mode": "dynamic_head",
+      "pointer_mrr": 0.0,
+      "pointer_top1_accuracy": 0.0,
+      "rare_component_recall": 0.5861809082870246,
+      "seed": 0,
+      "wall_seconds": 0.029592639772746895
+    }
+  ],
+  "run_id": "slm168-public-structured-contract-pointer-20260720",
+  "schema": "Slm168PublicStructuredContractPointerReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T12:55:52.459513Z",
+  "version_stamp": {
+    "code_commit": "01c5fb492463f439cf9da05ed70c2a361d0a04ef",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v43",
+      "harness.experiments.slm168_public_structured_contract_pointer": "v1",
+      "model.twotower": "v43"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T12:55:52.458213+00:00"
+  }
+}
