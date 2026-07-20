@@ -3880,3 +3880,26 @@ Honest caveats:
   representative evaluation distribution.
 - No model was trained; real predictions may expose failure modes the current
   surrogates do not capture.
+
+## H16 action-alias generalization (SLM-174, SDE2-07)
+
+H16 tests whether schema-derived action descriptions remain semantically
+clusterable when canonical action names are replaced by opaque aliases.  The
+default `action_alias_mode` is `canonical` (canonical names preserved).  Alias
+maps are deterministic from `seed` + `pack_id`, reversible, and validated to
+contain no canonical-name substrings.  The fixture encodes descriptions under
+several name/alias regimes, measures nearest-neighbor separability and
+sibling-family purity, and reports whether aliased descriptions still cluster by
+semantics.  This is wiring/fixture evidence only; no ship claim is made.
+
+```bash
+python -m scripts.run_slm174_action_alias_generalization_fixture --mode fixture
+```
+
+Honest caveats:
+
+- The fixture uses a deterministic hash-based description encoder, not a trained
+  language model; real HF text geometry may differ.
+- Sibling-family grouping is a coarse semantic proxy.
+- No model was trained; real action-embedding generalization must be validated
+  with a trained checkpoint and AgentV evaluation.

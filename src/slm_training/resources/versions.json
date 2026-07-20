@@ -606,12 +606,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v45",
+      "version": "v46",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v46",
+          "date": "2026-07-20",
+          "note": "add SLM-174 SDE2-07 action-alias generalization wiring/fixture harness"
+        },
         {
           "version": "v45",
           "date": "2026-07-20",
@@ -1145,6 +1150,38 @@
         }
       ]
     },
+    "harness.experiments.slm174_action_alias_generalization": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm174_action_alias_generalization.py",
+        "scripts/run_slm174_action_alias_generalization_fixture.py",
+        "tests/test_harnesses/experiments/test_slm174_action_alias_generalization.py",
+        "tests/test_scripts/test_run_slm174_action_alias_generalization_fixture.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-174 SDE2-07 action-alias generalization fixture harness"
+        }
+      ]
+    },
+    "dsl.action_descriptions": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/action_descriptions.py",
+        "tests/test_dsl/test_action_descriptions.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-174 SDE2-07 action-alias map and alias-aware description sources"
+        }
+      ]
+    },
     "matrix.causal_peft_ftpo": {
       "version": "v1",
       "kind": "matrix",
@@ -1174,7 +1211,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v53",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1189,6 +1226,16 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-07-20",
+          "note": "optionally start empty slot-bearing typed arrays inside authored prompt-plan components"
+        },
+        {
+          "version": "v53",
+          "date": "2026-07-20",
+          "note": "add SLM-174 SDE2-07 action-alias mode/manifest/name-mode config fields, CLI args, and teacher-init wiring; defaults preserve canonical behavior"
+        },
         {
           "version": "v53",
           "date": "2026-07-20",

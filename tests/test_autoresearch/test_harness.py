@@ -1421,3 +1421,28 @@ def test_remote_sync_is_explicit_and_non_destructive(tmp_path: Path) -> None:
     assert plan["command"][:3] == ["hf", "buckets", "sync"]
     assert "--no-delete" in plan["command"]
     assert str(plan["remote_uri"]).endswith("/autoresearch/test-campaign")
+
+
+def test_compile_action_alias_knobs() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            action_embedding_init="alias_aware_description",
+            action_embedding_train="frozen",
+            action_alias_mode="fixed",
+            action_alias_manifest="/tmp/alias_map.json",
+            action_description_name_mode="alias_aware_description",
+        )
+    )
+    train = next(
+        command
+        for command in compile_commands(campaign(), spec)
+        if "scripts.train_model" in command
+    )
+    assert train[train.index("--action-embedding-init") + 1] == "alias_aware_description"
+    assert train[train.index("--action-embedding-train") + 1] == "frozen"
+    assert train[train.index("--action-alias-mode") + 1] == "fixed"
+    assert train[train.index("--action-alias-manifest") + 1] == "/tmp/alias_map.json"
+    assert (
+        train[train.index("--action-description-name-mode") + 1]
+        == "alias_aware_description"
+    )

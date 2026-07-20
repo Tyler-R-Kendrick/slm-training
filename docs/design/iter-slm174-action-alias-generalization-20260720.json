@@ -1,0 +1,199 @@
+{
+  "arm_means": {
+    "alias_signature_only": {
+      "family_purity": 0.08860759493670886,
+      "mean_nearest_cosine": 0.4297081530094147,
+      "n_actions": 79.0,
+      "wall_seconds": 0.014917354997829535
+    },
+    "canonical_evaluated_under_unseen_alias": {
+      "canonical_unseen_alias_score": 0.5696926140226424,
+      "family_purity": 0.08860759493670886,
+      "mean_nearest_cosine": 0.42174893617630005,
+      "n_actions": 79.0,
+      "wall_seconds": 0.07487445600761566
+    },
+    "canonical_name_description_without_name": {
+      "family_purity": 0.27848101265822783,
+      "mean_nearest_cosine": 0.5492731928825378,
+      "n_actions": 79.0,
+      "wall_seconds": 0.017456251993076877
+    },
+    "canonical_name_plus_description": {
+      "family_purity": 0.12658227848101267,
+      "mean_nearest_cosine": 0.395616352558136,
+      "n_actions": 79.0,
+      "wall_seconds": 0.028759100004914218
+    },
+    "fixed_alias_description_without_name": {
+      "family_purity": 0.06329113924050633,
+      "mean_nearest_cosine": 0.4296678900718689,
+      "n_actions": 79.0,
+      "wall_seconds": 0.01390344299923163
+    },
+    "multiple_alias_augmentation_held_out": {
+      "family_purity": 0.08860759493670886,
+      "held_out_transfer_score": 0.5801231099758297,
+      "mean_nearest_cosine": 0.42174893617630005,
+      "n_actions": 79.0,
+      "wall_seconds": 0.08012448499700986
+    },
+    "multiple_alias_shuffled_descriptions": {
+      "family_purity": 0.05063291139240506,
+      "mean_nearest_cosine": 0.41266462206840515,
+      "n_actions": 79.0,
+      "wall_seconds": 0.02173472400661558
+    }
+  },
+  "cells": [
+    {
+      "arm_id": "canonical_name_plus_description__s0",
+      "arm_name": "canonical_name_plus_description",
+      "seed": 0
+    },
+    {
+      "arm_id": "canonical_name_description_without_name__s0",
+      "arm_name": "canonical_name_description_without_name",
+      "seed": 0
+    },
+    {
+      "arm_id": "fixed_alias_description_without_name__s0",
+      "arm_name": "fixed_alias_description_without_name",
+      "seed": 0
+    },
+    {
+      "arm_id": "multiple_alias_augmentation_held_out__s0",
+      "arm_name": "multiple_alias_augmentation_held_out",
+      "seed": 0
+    },
+    {
+      "arm_id": "multiple_alias_shuffled_descriptions__s0",
+      "arm_name": "multiple_alias_shuffled_descriptions",
+      "seed": 0
+    },
+    {
+      "arm_id": "alias_signature_only__s0",
+      "arm_name": "alias_signature_only",
+      "seed": 0
+    },
+    {
+      "arm_id": "canonical_evaluated_under_unseen_alias__s0",
+      "arm_name": "canonical_evaluated_under_unseen_alias",
+      "seed": 0
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [
+    "Depends on slm_training.dsl.action_descriptions and the deterministic FixtureDescriptionEncoder; real HF text encoders may produce different geometry.",
+    "Sibling-family grouping is a coarse semantic proxy; real action similarity is richer than family identity.",
+    "No model is trained; this is wiring evidence only."
+  ],
+  "disposition": "baseline_unreliable",
+  "disposition_rationale": "Canonical-name-plus-description baseline does not cluster by family; the fixture encoder or catalog is not representative.",
+  "experiment_id": "slm174-action-alias-generalization",
+  "falsifier": "Aliased descriptions collapse into a single cluster or nearest-neighbor geometry no longer reflects sibling families.",
+  "hypothesis": "Action descriptions remain semantically clusterable even when canonical action names are replaced by opaque aliases.",
+  "matrix_set": "slm174_action_alias_generalization",
+  "matrix_version": "sde2-07-v1",
+  "rows": [
+    {
+      "arm_id": "canonical_name_plus_description__s0",
+      "arm_name": "canonical_name_plus_description",
+      "canonical_unseen_alias_score": null,
+      "family_purity": 0.12658227848101267,
+      "held_out_transfer_score": null,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.395616352558136,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.028759100004914218
+    },
+    {
+      "arm_id": "canonical_name_description_without_name__s0",
+      "arm_name": "canonical_name_description_without_name",
+      "canonical_unseen_alias_score": null,
+      "family_purity": 0.27848101265822783,
+      "held_out_transfer_score": null,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.5492731928825378,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.017456251993076877
+    },
+    {
+      "arm_id": "fixed_alias_description_without_name__s0",
+      "arm_name": "fixed_alias_description_without_name",
+      "canonical_unseen_alias_score": null,
+      "family_purity": 0.06329113924050633,
+      "held_out_transfer_score": null,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.4296678900718689,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.01390344299923163
+    },
+    {
+      "arm_id": "multiple_alias_augmentation_held_out__s0",
+      "arm_name": "multiple_alias_augmentation_held_out",
+      "canonical_unseen_alias_score": null,
+      "family_purity": 0.08860759493670886,
+      "held_out_transfer_score": 0.5801231099758297,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.42174893617630005,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.08012448499700986
+    },
+    {
+      "arm_id": "multiple_alias_shuffled_descriptions__s0",
+      "arm_name": "multiple_alias_shuffled_descriptions",
+      "canonical_unseen_alias_score": null,
+      "family_purity": 0.05063291139240506,
+      "held_out_transfer_score": null,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.41266462206840515,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.02173472400661558
+    },
+    {
+      "arm_id": "alias_signature_only__s0",
+      "arm_name": "alias_signature_only",
+      "canonical_unseen_alias_score": null,
+      "family_purity": 0.08860759493670886,
+      "held_out_transfer_score": null,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.4297081530094147,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.014917354997829535
+    },
+    {
+      "arm_id": "canonical_evaluated_under_unseen_alias__s0",
+      "arm_name": "canonical_evaluated_under_unseen_alias",
+      "canonical_unseen_alias_score": 0.5696926140226424,
+      "family_purity": 0.08860759493670886,
+      "held_out_transfer_score": null,
+      "leakage_findings": [],
+      "mean_nearest_cosine": 0.42174893617630005,
+      "n_actions": 79,
+      "seed": 0,
+      "wall_seconds": 0.07487445600761566
+    }
+  ],
+  "run_id": "slm174-action-alias-generalization-20260720",
+  "schema": "Slm174ActionAliasGeneralizationReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T15:36:48.008357Z",
+  "version_stamp": {
+    "code_commit": "a7a180cbb7b685bcfaa258eb2a580c253b0afbfc",
+    "code_dirty": true,
+    "components": {
+      "dsl.action_descriptions": "v1",
+      "harness.experiments": "v46",
+      "harness.experiments.slm174_action_alias_generalization": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T15:36:48.007431+00:00"
+  }
+}

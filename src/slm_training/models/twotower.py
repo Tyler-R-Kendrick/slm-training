@@ -433,6 +433,19 @@ class TwoTowerConfig:
     action_embedding_init: str = "none"
     # SLM-163: how to treat action embeddings during training (frozen | trainable).
     action_embedding_train: str = "frozen"
+    # SLM-174 (SDE2-07): action alias mode for description-mediated
+    # generalization.  ``off`` / ``canonical`` preserves canonical names;
+    # ``fixed`` uses a single deterministic alias map; ``held_out`` trains on
+    # one alias map and evaluates on a fresh map.
+    action_alias_mode: str = "canonical"
+    # Optional path to a persisted alias manifest (JSON).  When None the alias
+    # map is built deterministically from seed + pack hash.
+    action_alias_manifest: Path | None = None
+    # How canonical names are rendered in description sources:
+    # schema | alias_aware_description | alias_aware_signature_only |
+    # alias_aware_shuffled | description_without_canonical_name |
+    # canonical_name_plus_description | signature_only.
+    action_description_name_mode: str = "schema"
     # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
     # sparse grammar-action scorer.  ``none`` is identity; other values select a
     # standalone connector variant for future wiring.
@@ -9593,13 +9606,58 @@ class TwoTowerModel(nn.Module):
             assert isinstance(self.context, HFContextEncoder)
 
             init_source = str(getattr(self.config, "action_embedding_init", "none") or "none")
-            use_catalog = init_source in {"schema_description", "expanded_description", "shuffled"}
+            alias_sources = {
+                "alias_aware_description",
+                "alias_aware_signature_only",
+                "alias_aware_shuffled",
+            }
+            canonical_sources = {
+                "schema_description",
+                "expanded_description",
+                "shuffled",
+                "description_without_canonical_name",
+                "canonical_name_plus_description",
+                "signature_only",
+            }
+            use_catalog = init_source in canonical_sources or init_source in alias_sources
+            alias_mode = str(
+                getattr(self.config, "action_alias_mode", "canonical") or "canonical"
+            )
+            name_mode = str(
+                getattr(self.config, "action_description_name_mode", "schema") or "schema"
+            )
+            use_alias = alias_mode not in {"off", "canonical"} or init_source in alias_sources
 
+            alias_map = None
             if use_catalog:
                 from slm_training.dsl.action_descriptions import ActionDescriptionCatalog
 
                 catalog = ActionDescriptionCatalog.build()
-                descriptions = catalog.descriptions_for(init_source)
+
+            if use_alias:
+                from slm_training.dsl.action_descriptions import (
+                    ActionAliasMap,
+                    build_alias_map,
+                )
+
+                manifest_path = getattr(self.config, "action_alias_manifest", None)
+                if manifest_path is not None and Path(manifest_path).is_file():
+                    alias_map = ActionAliasMap.from_dict(
+                        json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+                    )
+                elif use_catalog:
+                    alias_map = build_alias_map(
+                        seed=int(getattr(self.config, "seed", 0) or 0),
+                        pack_id=f"{init_source}:{alias_mode}",
+                        action_keys=catalog.keys(),
+                    )
+
+            if use_catalog:
+                descriptions = catalog.descriptions_for(
+                    init_source,
+                    alias_map=alias_map,
+                    name_mode=name_mode,
+                )
                 fallback = catalog.descriptions_for("current_stub")
             else:
                 catalog = None  # type: ignore[assignment]

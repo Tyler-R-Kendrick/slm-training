@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -27,8 +28,11 @@ from slm_training.dsl.production_codec import (
 from slm_training.models.choice_tokenizer import _BUILTIN_NAMES
 
 __all__ = [
+    "ActionAlias",
+    "ActionAliasMap",
     "ActionDescription",
     "ActionDescriptionCatalog",
+    "build_alias_map",
     "FixtureDescriptionEncoder",
     "masked_mean_pool",
     "coverage_report",
@@ -151,6 +155,179 @@ class ActionDescription:
         )
 
 
+def _replace_word(text: str, word: str, replacement: str) -> str:
+    """Replace whole-word occurrences of ``word`` in ``text``.
+
+    Falls back to literal replacement when ``word`` is empty.
+    """
+    if not word:
+        return text
+    pattern = re.compile(r"\b" + re.escape(word) + r"\b")
+    return pattern.sub(replacement, text)
+
+
+def _remove_word(text: str, word: str) -> str:
+    """Remove whole-word occurrences of ``word`` and collapse whitespace."""
+    cleaned = _replace_word(text, word, " ")
+    return " ".join(cleaned.split())
+
+
+@dataclass(frozen=True)
+class ActionAlias:
+    """Immutable mapping from one canonical action key to an opaque alias."""
+
+    action_key: str
+    alias: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"action_key": self.action_key, "alias": self.alias}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ActionAlias":
+        return cls(action_key=str(data["action_key"]), alias=str(data["alias"]))
+
+
+@dataclass(frozen=True)
+class ActionAliasMap:
+    """Deterministic, reversible alias mapping for a fixed action vocabulary.
+
+    Aliases are opaque identifiers like ``ACT_0007``.  They are assigned via a
+    permutation keyed by ``seed`` and ``pack_id`` so that neither the canonical
+    name, frequency, nor lexicographic order leaks into the alias value.
+    """
+
+    aliases: tuple[ActionAlias, ...]
+    by_key: dict[str, str] = field(default_factory=dict, repr=False)
+    by_alias: dict[str, str] = field(default_factory=dict, repr=False)
+    seed: int = 0
+    pack_id: str = ""
+
+    def __post_init__(self) -> None:
+        if len(self.by_key) != len(self.aliases) or len(self.by_alias) != len(
+            self.aliases
+        ):
+            object.__setattr__(
+                self, "by_key", {a.action_key: a.alias for a in self.aliases}
+            )
+            object.__setattr__(
+                self, "by_alias", {a.alias: a.action_key for a in self.aliases}
+            )
+
+    def apply_to_description(self, entry: ActionDescription, name_mode: str) -> str:
+        """Return a description string for ``entry`` under ``name_mode``.
+
+        Supported modes:
+        - ``alias_aware_description``: alias substituted into the semantic
+          description; the full semantic text is preserved.
+        - ``alias_aware_signature_only``: alias substituted into the signature
+          only.
+        - ``description_without_canonical_name``: description with the canonical
+          short name removed.
+        - ``canonical_name_plus_description``: canonical short name prepended to
+          the description.
+        - ``signature_only``: raw signature (no alias).
+        """
+        alias = self.by_key.get(entry.action_key, entry.short_name)
+        if name_mode == "alias_aware_description":
+            return _replace_word(entry.description, entry.short_name, alias)
+        if name_mode == "alias_aware_signature_only":
+            if entry.signature == entry.action_key:
+                return alias
+            return entry.signature.replace(entry.short_name, alias)
+        if name_mode == "description_without_canonical_name":
+            return _remove_word(entry.description, entry.short_name)
+        if name_mode == "canonical_name_plus_description":
+            return f"{entry.short_name}: {entry.description}"
+        if name_mode == "signature_only":
+            return entry.signature
+        raise ValueError(f"unsupported name_mode for alias map: {name_mode!r}")
+
+    def invert(self, alias: str) -> str | None:
+        """Return the canonical action key for ``alias`` if known."""
+        return self.by_alias.get(alias)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "seed": self.seed,
+            "pack_id": self.pack_id,
+            "aliases": [a.to_dict() for a in self.aliases],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ActionAliasMap":
+        aliases = tuple(
+            ActionAlias.from_dict(a) for a in data.get("aliases", []) if isinstance(a, dict)
+        )
+        return cls(
+            aliases=aliases,
+            seed=int(data.get("seed", 0)),
+            pack_id=str(data.get("pack_id", "")),
+        )
+
+    def validate_no_leakage(
+        self,
+        descriptions: Mapping[str, str],
+        entries: Mapping[str, ActionDescription] | None = None,
+    ) -> list[str]:
+        """Return a list of leakage findings for alias-aware ``descriptions``.
+
+        Leakage means an action's own canonical short name or action key appears
+        in its alias-aware text, or an alias itself contains a canonical
+        substring.  Cross-references to other actions (e.g. in schema type refs)
+        are allowed because they are part of the semantic description.
+        """
+        findings: list[str] = []
+        key_to_short: dict[str, str] = {}
+        for alias, key in self.by_alias.items():
+            if entries is not None and key in entries:
+                key_to_short[key] = entries[key].short_name
+            else:
+                key_to_short[key] = key.lstrip("+*")
+        for key, text in descriptions.items():
+            canonical_short = key_to_short.get(key, "")
+            alias = self.by_key.get(key, "")
+            if canonical_short:
+                # Whole-word self-reference in the produced text.
+                if re.search(r"\b" + re.escape(canonical_short) + r"\b", text):
+                    findings.append(
+                        f"{key}: text contains canonical short_name {canonical_short!r}"
+                    )
+            if key in text:
+                findings.append(
+                    f"{key}: text contains canonical action_key {key!r}"
+                )
+            if alias and canonical_short and canonical_short in alias:
+                findings.append(
+                    f"{key}: alias {alias!r} contains canonical short_name {canonical_short!r}"
+                )
+        return findings
+
+
+def build_alias_map(
+    seed: int, pack_id: str, action_keys: list[str] | tuple[str, ...]
+) -> ActionAliasMap:
+    """Build an opaque, deterministic alias map.
+
+    The alias assignment is a permutation keyed by ``seed`` and ``pack_id``.
+    Alias values are ``ACT_{index:04d}`` and carry no substring of any canonical
+    name, frequency, or sorted order.
+    """
+    keys = sorted(set(action_keys))
+    if not keys:
+        return ActionAliasMap(aliases=(), seed=seed, pack_id=pack_id)
+    n = len(keys)
+    digest = hashlib.sha256(
+        f"{seed}:{pack_id}:alias_map".encode("utf-8")
+    ).digest()
+    rng = random.Random(int.from_bytes(digest[:8], byteorder="big", signed=False))
+    alias_pool = [f"ACT_{i:04d}" for i in range(n)]
+    rng.shuffle(alias_pool)
+    aliases = tuple(
+        ActionAlias(action_key=key, alias=alias) for key, alias in zip(keys, alias_pool)
+    )
+    return ActionAliasMap(aliases=aliases, seed=seed, pack_id=pack_id)
+
+
 @dataclass(frozen=True)
 class ActionDescriptionCatalog:
     """Deterministic catalog of action descriptions built from the OpenUI schema."""
@@ -261,8 +438,19 @@ class ActionDescriptionCatalog:
     def keys(self) -> tuple[str, ...]:
         return tuple(entry.action_key for entry in self.entries)
 
-    def descriptions_for(self, source: str) -> dict[str, str]:
-        """Return a mapping from action key to description string for ``source``."""
+    def descriptions_for(
+        self,
+        source: str,
+        *,
+        alias_map: ActionAliasMap | None = None,
+        name_mode: str = "schema",
+    ) -> dict[str, str]:
+        """Return a mapping from action key to description string for ``source``.
+
+        ``alias_map`` and ``name_mode`` are used by alias-aware sources to
+        substitute opaque action identifiers into the description text while
+        preserving semantic content.
+        """
         if source == "none":
             return {}
 
@@ -288,6 +476,81 @@ class ActionDescriptionCatalog:
             rng = random.Random(163)
             rng.shuffle(values)
             return dict(zip(keys, values))
+
+        if source == "description_without_canonical_name":
+            return {
+                entry.action_key: alias_map.apply_to_description(
+                    entry, "description_without_canonical_name"
+                )
+                if alias_map is not None
+                else _remove_word(entry.description, entry.short_name)
+                for entry in self.entries
+            }
+
+        if source == "canonical_name_plus_description":
+            return {
+                entry.action_key: alias_map.apply_to_description(
+                    entry, "canonical_name_plus_description"
+                )
+                if alias_map is not None
+                else f"{entry.short_name}: {entry.description}"
+                for entry in self.entries
+            }
+
+        if source == "signature_only":
+            return {
+                entry.action_key: alias_map.apply_to_description(
+                    entry, "signature_only"
+                )
+                if alias_map is not None
+                else entry.signature
+                for entry in self.entries
+            }
+
+        if source == "alias_aware_description":
+            if alias_map is None:
+                raise ValueError(
+                    f"source={source!r} requires an alias_map"
+                )
+            return {
+                entry.action_key: alias_map.apply_to_description(
+                    entry, "alias_aware_description"
+                )
+                for entry in self.entries
+            }
+
+        if source == "alias_aware_signature_only":
+            if alias_map is None:
+                raise ValueError(
+                    f"source={source!r} requires an alias_map"
+                )
+            return {
+                entry.action_key: alias_map.apply_to_description(
+                    entry, "alias_aware_signature_only"
+                )
+                for entry in self.entries
+            }
+
+        if source == "alias_aware_shuffled":
+            if alias_map is None:
+                raise ValueError(
+                    f"source={source!r} requires an alias_map"
+                )
+            alias_aware = {
+                entry.action_key: alias_map.apply_to_description(
+                    entry, "alias_aware_description"
+                )
+                for entry in self.entries
+            }
+            keys = sorted(alias_aware)
+            values = [alias_aware[k] for k in keys]
+            rng = random.Random(163)
+            rng.shuffle(values)
+            shuffled = dict(zip(keys, values))
+            return {
+                key: f"{alias_map.by_key[key]} {text}"
+                for key, text in shuffled.items()
+            }
 
         raise ValueError(f"unknown description source: {source!r}")
 
