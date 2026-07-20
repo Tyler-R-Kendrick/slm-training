@@ -258,6 +258,7 @@ class TwoTowerConfig:
     semantic_plan_repeated_array_close_margin_decode_weight: float = 0.0
     semantic_plan_repeated_slot_margin_decode_weight: float = 0.0
     semantic_plan_typed_array_nonempty_margin_decode_weight: float = 0.0
+    semantic_plan_typed_array_item_margin_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4851,13 +4852,25 @@ class TwoTowerModel(nn.Module):
             )
             or 0.0
         )
+        typed_margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_item_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
         frames = list(getattr(state, "frames", ()))
         slot_contract = (
             self._slot_contracts[row]
             if self._slot_contracts and row < len(self._slot_contracts)
             else None
         )
-        if margin <= 0.0 or len(frames) < 2 or not slot_contract:
+        if (
+            max(margin, typed_margin) <= 0.0
+            or len(frames) < 2
+            or not slot_contract
+        ):
             return None
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
@@ -4897,18 +4910,30 @@ class TwoTowerModel(nn.Module):
         close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
         if close_id not in candidate_ids:
             return None
-        targets = [
-            position
-            for position, token_id in enumerate(candidate_ids)
-            if token_id != close_id
-        ]
+        typed_target_id = None
+        if typed_margin > 0.0:
+            try:
+                typed_target_id = state._minimal_schema_id(dict(schemas[0]))
+            except (AttributeError, KeyError, TypeError, ValueError):
+                return None
+            if typed_target_id not in candidate_ids:
+                return None
+            targets = [candidate_ids.index(typed_target_id)]
+        else:
+            targets = [
+                position
+                for position, token_id in enumerate(candidate_ids)
+                if token_id != close_id
+            ]
         if not targets:
             return None
         target = max(targets, key=lambda position: float(scores[position].item()))
         bias = scores.new_zeros(len(candidate_ids))
         bias[target] = max(
             0.0,
-            float(scores.max().item()) + margin - float(scores[target].item()),
+            float(scores.max().item())
+            + max(margin, typed_margin)
+            - float(scores[target].item()),
         )
         return bias
 
@@ -7944,6 +7969,12 @@ class TwoTowerModel(nn.Module):
             getattr(
                 self.config,
                 "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_typed_array_item_margin_decode_weight",
                 0.0,
             )
             or 0.0,
