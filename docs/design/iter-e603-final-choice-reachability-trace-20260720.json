@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E603",
+  "run_id": "e603-e602-final-choice-trace-r2",
+  "date_utc": "2026-07-20",
+  "status": "diagnostic_success_not_promotable",
+  "run_class": "scratch_matrix",
+  "hypothesis": "A score layer after the first-component semantic-plan seed overturns the plan-stage winner before the choice stream is rendered.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_seed_decode_weight": 32.0,
+    "matched_visible_contract_policy": true,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e603-e602-final-choice-trace-r1",
+      "label": "policy_mismatch_missing_visible_contract_overrides",
+      "comparable_to_e602": false,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.0,
+          "placeholder_validity": 0.0,
+          "structural_similarity": 0.2175,
+          "component_type_recall": 0.0625,
+          "reward_score": 0.0,
+          "ast_node_f1": 0.28695652173913044,
+          "ast_edge_f1": 0.07142857142857142,
+          "latency_ms_p50": 5169.35,
+          "latency_ms_p95": 10870.93
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.516875,
+      "component_type_recall": 0.625,
+      "reward_score": 0.8115,
+      "ast_node_f1": 0.5753968253968254,
+      "ast_edge_f1": 0.41428571428571426,
+      "latency_ms_p50": 6913.45,
+      "latency_ms_p95": 21803.81
+    }
+  },
+  "trace_summary": {
+    "post_plan_overwrites": 0,
+    "rows": [
+      {
+        "id": "ood_dashboard_01",
+        "before_plan": "+TextArea",
+        "after_plan": "+Button",
+        "final_legal_token": "+Button",
+        "post_plan_bias": 0.0,
+        "first_binding_referenced": false,
+        "rendered_root": "TextContent"
+      },
+      {
+        "id": "ood_gallery_01",
+        "before_plan": "+Image",
+        "after_plan": "+ImageGallery",
+        "final_legal_token": "+ImageGallery",
+        "post_plan_bias": 0.0,
+        "first_binding_referenced": false,
+        "rendered_root": "TextContent"
+      },
+      {
+        "id": "ood_modal_01",
+        "before_plan": "+TextContent",
+        "after_plan": "+Button",
+        "final_legal_token": "+Button",
+        "post_plan_bias": 0.0,
+        "first_binding_referenced": true,
+        "rendered_root": "Stack"
+      },
+      {
+        "id": "ood_auth_01",
+        "before_plan": "+TextArea",
+        "after_plan": "+Input",
+        "final_legal_token": "+Input",
+        "post_plan_bias": 0.0,
+        "first_binding_referenced": true,
+        "rendered_root": "Stack"
+      }
+    ]
+  },
+  "diagnosis": "The plan-stage winner is never overwritten. Structural choice decoding names the last expression root; canonicalization removes unreachable earlier bindings. The dashboard Button and gallery ImageGallery therefore disappear because no later root expression references binding zero.",
+  "decision": "Reject the downstream-score-overwrite hypothesis. Do not promote or sync. Next target reachability and missing-family coverage rather than adding more first-choice pressure.",
+  "ship_gates": {
+    "pass": false,
+    "reason": "Diagnostic OOD subset only; strict meaning-v2 is 0 and AgentV is 0/1."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "590fe0a727009af85d7a386fe1a1d3f8f71716be",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v25",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v41"
+    },
+    "stamped_at": "2026-07-20T11:59:49.242623+00:00"
+  }
+}
