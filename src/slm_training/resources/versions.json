@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-20",
+          "note": "expose plan-coverage-gated legal Stack root construction and termination scoring in canonical evaluation"
+        },
         {
           "version": "v15",
           "date": "2026-07-20",
@@ -672,7 +677,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -682,6 +687,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v15", "date": "2026-07-20", "note": "build and terminate a legal Stack root only after predicted SemanticPlanV1 component-family coverage and extend plan binding into its nested child list"},
         {"version": "v14", "date": "2026-07-20", "note": "compose predicted semantic-plan binding evidence after learned root-reference identity ranking so identity cannot erase the plan factor"},
         {"version": "v13", "date": "2026-07-20", "note": "soft-rank legal unused terminal-root references whose generated component families match the predicted prompt SemanticPlanV1"},
         {"version": "v12", "date": "2026-07-20", "note": "consume prompt-derived predicted SemanticPlanV1 component features as legality-preserving choice-codec score bias with intervention telemetry"},
