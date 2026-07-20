@@ -32,28 +32,12 @@ def _make_leaf(counter: int, family: str) -> dict[str, Any]:
     }
 
 
-def _make_program(index: int, rng: random.Random) -> dict[str, Any]:
-    root_type = rng.choice(_ROOT_CONTAINERS)
-    n_children = rng.randint(1, 3)
-    children: list[dict[str, Any]] = []
-    base = index * 10
-    for offset in range(n_children):
-        family = rng.choice(_LEAF_COMPONENTS)
-        children.append(_make_leaf(base + offset, family))
-
-    props: dict[str, Any] = {"children": children}
-    if root_type == "Stack":
-        props["direction"] = rng.choice(_DIRECTIONS)
-
-    return {
-        "typeName": root_type,
-        "props": props,
-    }
-
-
 def build_fixture_plan_corpus(
     count: int = 64,
     seed: int = 0,
+    *,
+    root_containers: list[str] | None = None,
+    leaf_components: list[str] | None = None,
 ) -> dict[str, list[tuple[ProgramSpec, SemanticPlanV1]]]:
     """Generate a deterministic fixture corpus of ProgramSpec + gold plans.
 
@@ -65,6 +49,26 @@ def build_fixture_plan_corpus(
     pack = get_pack("openui")
     extractor = OpenUISemanticPlanExtractor()
     contract_id = current_contract_id()
+    root_pool = root_containers if root_containers is not None else _ROOT_CONTAINERS
+    leaf_pool = leaf_components if leaf_components is not None else _LEAF_COMPONENTS
+
+    def _make_program(index: int, rng: random.Random) -> dict[str, Any]:
+        root_type = rng.choice(root_pool)
+        n_children = rng.randint(1, 3)
+        children: list[dict[str, Any]] = []
+        base = index * 10
+        for offset in range(n_children):
+            family = rng.choice(leaf_pool)
+            children.append(_make_leaf(base + offset, family))
+
+        props: dict[str, Any] = {"children": children}
+        if root_type == "Stack":
+            props["direction"] = rng.choice(_DIRECTIONS)
+
+        return {
+            "typeName": root_type,
+            "props": props,
+        }
 
     records: list[tuple[ProgramSpec, SemanticPlanV1]] = []
     for i in range(count):
