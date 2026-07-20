@@ -249,6 +249,7 @@ class TwoTowerConfig:
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
+    semantic_plan_seed_decode_weight: float = 0.0
     semantic_plan_inline_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
     semantic_plan_root_decode_weight: float = 0.0
@@ -4048,6 +4049,15 @@ class TwoTowerModel(nn.Module):
         weight = float(
             getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
         )
+        seed_weight = float(
+            getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
+        )
+        if (
+            state is not None
+            and not tuple(getattr(state, "section_types", ()))
+            and not tuple(getattr(state, "frames", ()))
+        ):
+            weight += seed_weight
         if (
             weight <= 0.0
             or not self._semantic_plan_action_scores
@@ -7194,6 +7204,7 @@ class TwoTowerModel(nn.Module):
             self._semantic_role_candidates = None
         plan_weight = max(
             getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0,
+            getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0,
             getattr(
                 self.config, "semantic_plan_binding_decode_weight", 0.0
             )

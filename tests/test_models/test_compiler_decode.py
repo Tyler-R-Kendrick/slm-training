@@ -662,6 +662,35 @@ def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> No
     assert complete_bias is None
 
 
+def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_seed_decode_weight=5.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["+Card"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    candidates = (card_id, text_id)
+    kinds = ("component_root", "component_root")
+    model._semantic_plan_action_scores = [{card_id: 1.0}]
+
+    initial = SimpleNamespace(section_types=[], frames=[])
+    after_first = SimpleNamespace(section_types=["element:TextContent"], frames=[])
+
+    initial_bias = model._semantic_plan_bias(
+        0, candidates, kinds, initial
+    )
+    later_bias = model._semantic_plan_bias(
+        0, candidates, kinds, after_first
+    )
+
+    assert initial_bias is not None
+    assert initial_bias.tolist() == [5.0, 0.0]
+    assert later_bias is None
+
+
 def test_prompt_semantic_plan_inline_bias_targets_only_missing_families() -> None:
     model = _model(
         output_tokenizer="choice",

@@ -142,6 +142,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "schema_opaque_close_decode_weight",
         "schema_role_slot_decode_weight",
         "semantic_plan_decode_weight",
+        "semantic_plan_seed_decode_weight",
         "semantic_plan_inline_decode_weight",
         "semantic_plan_binding_decode_weight",
         "semantic_plan_root_decode_weight",
@@ -470,6 +471,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         semantic_plan_decode_weight=float(
             getattr(config, "semantic_plan_decode_weight", 0.0) or 0.0
+        ),
+        semantic_plan_seed_decode_weight=float(
+            getattr(config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
         ),
         semantic_plan_inline_decode_weight=float(
             getattr(config, "semantic_plan_inline_decode_weight", 0.0) or 0.0
