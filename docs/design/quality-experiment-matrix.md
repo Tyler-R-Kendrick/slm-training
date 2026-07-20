@@ -4190,3 +4190,38 @@ Evidence:
 [iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
 and
 [JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+
+## E621 the typed-array nonempty margin is subsumed by its item-margin sibling
+
+E621 pursues E620's own "powered multi-seed replay sweeping a decode-time
+margin lever" next step, applied to a lever already on this branch
+(`semantic_plan_typed_array_nonempty_margin_decode_weight`) rather than the
+new lever an unmerged PR (#625, "E626") adds on a different branch. Trained 3
+fresh 800-step scratch checkpoints (seeds 0/1/2; seed0 loss 4.0680 reproduces
+E620's 4.0680) and replayed the full E619/E620 standard recipe 3 times per
+seed, sweeping only that one weight at 0/2/6 (9 real OOD `n=4` evals, 36
+predictions). **Result: all 36 predictions are byte-identical across every
+dose and seed** — a true null, not underpowered noise. Pooled `meaningful_v1`
+(H19's `wilson_interval`, applied to real multi-seed records for the first
+time) is 5/12 = 0.4167 [0.1933, 0.6805] at every margin value; the paired
+bootstrap CI on the margin=6 vs 0 fidelity delta is a degenerate `[0, 0]`.
+Real seed variance dominates instead: `meaningful_v1` is 0.50/0.50/0.25 and
+mean fidelity 0.55/0.6333/0.625 across seeds 0/1/2. Temporary instrumentation
+around `_semantic_plan_typed_array_nonempty_bias` shows why: across 191 calls
+it returns non-`None` exactly once (for `ImageGallery`, pushing `{`), and its
+own target-selection branches on the *sibling* weight
+`semantic_plan_typed_array_item_margin_decode_weight` (fixed at 2.0 in every
+E617-E620 recipe) whenever that sibling is `>0` — the swept weight only
+contributes a shared `max(margin, typed_margin)` magnitude ceiling that was
+already saturated at 2. A confirmatory run zeroing *both* weights together
+(the true full ablation) reproduces E610/E612/E616's "closes empty" failure
+(`ImageGallery([])`, fidelity 0.55→0.4667, validity 0.73→0.58, reward
+0.814→0.6267), proving the sibling weight — not the one this iteration swept
+— is what keeps the array nonempty. Reject sweeping this weight in isolation
+as a route to a dose-response finding while its sibling stays active; the
+next attempt should sweep the sibling itself or zero both together as
+control. Strict v2 remains 0.0 in every arm, no code changed
+(`verify_version_stamps --check`: 0 components touched), and no checkpoint
+was promoted or synced. Not a ship claim. Evidence:
+[narrative](iter-e621-typed-array-margin-decoupling-20260720.md) and
+[JSON](iter-e621-typed-array-margin-decoupling-20260720.json).

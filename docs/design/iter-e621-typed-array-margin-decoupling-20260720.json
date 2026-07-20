@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "run_id": "e621-typed-array-margin-decoupling-20260720",
+  "experiment_id": "E621",
+  "date_utc": "2026-07-20",
+  "status": "completed_negative",
+  "run_class": "scratch_matrix",
+  "hypothesis": "A powered, multi-seed dose sweep of semantic_plan_typed_array_nonempty_margin_decode_weight (0/2/6), holding the rest of the E619/E620 standard recipe fixed, will show a real dose-response effect on OOD quality metrics (E626/PR#625's deferred next step, applied to a lever already present on this branch instead of duplicating its new required_slot_margin_decode_weight lever).",
+  "falsifier": "The three dose levels produce byte-identical predictions across all seeds/records, and code-level instrumentation shows why.",
+  "method": "Trained 3 fresh 800-step scratch twotower checkpoints (seeds 0, 1, 2; same corpus/architecture as E619/E620) and replayed the full E619/E620 standard eval recipe (schema_role_slot_decode_weight=8, semantic_role_decode_weight=8, slot_coverage_close_decode_weight=2, schema_value_decode_weight=4, schema_opaque_close_decode_weight=4, semantic_plan_decode_weight=4, semantic_plan_margin_decode_weight=2, semantic_plan_binding_decode_weight=1, semantic_plan_root_decode_weight=8, semantic_plan_root_margin_decode_weight=2, semantic_plan_repeated_array_close_margin_decode_weight=2, semantic_plan_repeated_slot_margin_decode_weight=2, semantic_plan_typed_array_item_margin_decode_weight=2 (fixed, NOT swept), honest_slot_contract/slot_contract_constrained_decode/slot_contract_in_context=true, grammar_ltr_max_tokens=160) 3 times per seed with only semantic_plan_typed_array_nonempty_margin_decode_weight varied at 0, 2, 6 (9 real eval runs, OOD n=4 each, 36 predictions total). Combined the 3-seed pooled outcomes with the committed SLM-183/H19 statistical protocol (slm_training.evals.power_protocol: wilson_interval, bootstrap_paired_ci, intraclass_correlation) for a real powered read, then added temporary (uncommitted, not shipped) instrumentation around TwoTowerModel._semantic_plan_typed_array_nonempty_bias to trace the exact decode-time mechanism, and ran one additional confirmatory arm with BOTH semantic_plan_typed_array_nonempty_margin_decode_weight and semantic_plan_typed_array_item_margin_decode_weight set to 0 together (a true full ablation) to close the loop.",
+  "checkpoints": {
+    "seed0": {
+      "run_id": "e621-margin-sweep-seed0-scratch800-20260720",
+      "location": "outputs/runs/e621-margin-sweep-seed0-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "8ab4f5deeb0e1322064259ca92837e71dfdf662d25b46371172ad8779668a4cd",
+      "last_loss": 4.0680131912231445,
+      "elapsed_wall_seconds": 28.653412673000048,
+      "synced": false,
+      "promoted": false
+    },
+    "seed1": {
+      "run_id": "e621-margin-sweep-seed1-scratch800-20260720",
+      "location": "outputs/runs/e621-margin-sweep-seed1-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "86573aa519e86b59f6b64a84ef87899da30cda8e90c9b4ca3698837dc2b7b866",
+      "last_loss": 4.599752426147461,
+      "elapsed_wall_seconds": 28.887689028999944,
+      "synced": false,
+      "promoted": false
+    },
+    "seed2": {
+      "run_id": "e621-margin-sweep-seed2-scratch800-20260720",
+      "location": "outputs/runs/e621-margin-sweep-seed2-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "49a8a64ebca4a549789b8c3df648aeaea11f897425bd73e5ce456d0bf73ebb99",
+      "last_loss": 3.4020028114318848,
+      "elapsed_wall_seconds": 31.26966358800007,
+      "synced": false,
+      "promoted": false
+    }
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "device": "cpu",
+    "steps": 800,
+    "batch_size": 1,
+    "max_wall_minutes": 3.0,
+    "note": "seed0's loss (4.068013) reproduces E620's seed-0 800-step loss (4.068010) to 4 decimal places; the checkpoint sha256 differs from E620's own artifact because this is a fresh training invocation (metadata/timing are not bit-identical across sessions), consistent with prior sessions' 'faithful replay' standard in this lineage (loss match, not byte-identical weights file)."
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_schema_candidates": true,
+    "semantic_role_decode_weight": 8.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight_swept": [0.0, 2.0, 6.0],
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "E619/E620's full evaluation_policy (the same fixed weights both iterations record), with only semantic_plan_typed_array_nonempty_margin_decode_weight varied and 3 fresh seeded checkpoints instead of 1"
+  },
+  "results_by_seed_and_margin": [
+    {"seed": 0, "margin": 0.0, "meaningful_v1": 0.5, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.55, "validity": 0.73, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "latency_ms_p50": 1417.7, "latency_ms_p95": 9424.27, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 0, "margin": 2.0, "meaningful_v1": 0.5, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.55, "validity": 0.73, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "latency_ms_p50": 1417.7, "latency_ms_p95": 9424.27, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 0, "margin": 6.0, "meaningful_v1": 0.5, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.55, "validity": 0.73, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "latency_ms_p50": 1417.7, "latency_ms_p95": 9424.27, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "margin": 0.0, "meaningful_v1": 0.5, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.6333333333333333, "validity": 0.78, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.8375, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "margin": 2.0, "meaningful_v1": 0.5, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.6333333333333333, "validity": 0.78, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.8375, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "margin": 6.0, "meaningful_v1": 0.5, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.6333333333333333, "validity": 0.78, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.8375, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "margin": 0.0, "meaningful_v1": 0.25, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.625, "validity": 0.675, "structure": 0.436825, "recall": 0.5, "reward": 0.443, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "margin": 2.0, "meaningful_v1": 0.25, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.625, "validity": 0.675, "structure": 0.436825, "recall": 0.5, "reward": 0.443, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "margin": 6.0, "meaningful_v1": 0.25, "strict_v2": 0.0, "v2_coverage": 1.0, "fidelity": 0.625, "validity": 0.675, "structure": 0.436825, "recall": 0.5, "reward": 0.443, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0}
+  ],
+  "byte_identical_predictions_check": {
+    "n_predictions_compared": 36,
+    "n_seeds": 3,
+    "n_records_per_seed": 4,
+    "margin_pairs_checked": ["0_vs_2", "0_vs_6"],
+    "result": "all 36 predictions byte-identical across margin in {0,2,6} for every seed/record"
+  },
+  "power_protocol_analysis": {
+    "method_ref": "slm_training.evals.power_protocol (wilson_interval, bootstrap_paired_ci, intraclass_correlation), the same statistical primitives wired by SLM-183/H19 (docs/design/iter-slm183-power-protocol-20260720.md), applied here to real multi-seed eval records for the first time (prior H19 usage was synthetic-fixture or single-seed analyze-existing only)",
+    "pooled_meaningful_v1_by_margin": {
+      "margin_0": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805},
+      "margin_2": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805},
+      "margin_6": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805}
+    },
+    "icc_meaningful_v1_by_seed": {"icc": -0.2222, "between": 0.0833, "within": 0.3056, "n_clusters": 3, "note": "negative ICC on n=3 clusters of 4 is a small-sample estimation artifact (within-seed variance exceeds between-seed variance here), not evidence of a real negative correlation; not over-interpreted."},
+    "paired_bootstrap_delta_fidelity_margin6_minus_margin0": {"estimate": 0.0, "low": 0.0, "high": 0.0, "resamples": 1000, "alpha": 0.05, "note": "degenerate [0,0] CI because every paired record is byte-identical between margin=0 and margin=6, not because the sample size was too small to detect an effect"},
+    "seed_variance_note": "Real, substantial seed variance exists independent of the margin sweep: pooled meaningful_v1 0.4167 masks 0.50 (seed0), 0.50 (seed1), 0.25 (seed2); mean fidelity 0.55 (seed0), 0.6333 (seed1), 0.625 (seed2). Seed is the dominant source of variance in this recipe, not the swept margin weight."
+  },
+  "instrumentation_trace": {
+    "method": "Temporary (uncommitted) monkeypatch wrapper around TwoTowerModel._semantic_plan_typed_array_nonempty_bias counting calls/returns and logging owner_family/target-token on every non-None return, run against the seed0 checkpoint with margin=6.",
+    "calls_total": 191,
+    "non_none_returns": 1,
+    "item_count_distribution_at_call": {"0": 70, "null_no_frames": 66, "1": 15, "2": 11, "3": 10, "4": 8, "5": 7, "6": 2, "7": 1, "8": 1},
+    "single_firing_site": {"owner_family": "ImageGallery", "target_token": "{ (object-open)", "argmax_before_bias": "position 0", "argmax_after_bias": "position 1 (the biased target)", "argmax_changed": true},
+    "root_cause": "The function's own target selection (twotower.py _semantic_plan_typed_array_nonempty_bias, ~line 5107-5121) branches on `semantic_plan_typed_array_item_margin_decode_weight` (typed_margin), NOT on the swept `semantic_plan_typed_array_nonempty_margin_decode_weight` (margin): when typed_margin > 0 (true throughout the E617-E620 standard recipe, fixed at 2.0), `targets` collapses to the single schema-derived minimal-completion id (`state._minimal_schema_id(schemas[0])`) regardless of `margin`'s value. `margin` only enters via `max(margin, typed_margin)` as a shared bias-MAGNITUDE ceiling (line ~5126-5131), and in this checkpoint/example the bias needed to flip the local argmax toward the object-open token was already reached at magnitude 2 (i.e. by typed_margin alone) at the one place this bias fires across all 3 seeds x 3 dose levels x 4 records. Raising margin to 6 cannot change which candidate wins once its target is already argmax at margin=2 -- more headroom above the runner-up does not change the winner.",
+    "ablation_confirmation": {
+      "run_id": "e621-seed0-bothzero-r1",
+      "config": "semantic_plan_typed_array_nonempty_margin_decode_weight=0 AND semantic_plan_typed_array_item_margin_decode_weight=0 (both zeroed together, unlike the swept arms which held item_margin fixed at 2)",
+      "checkpoint_sha256": "8ab4f5deeb0e1322064259ca92837e71dfdf662d25b46371172ad8779668a4cd",
+      "ood_gallery_01_prediction": "root = Stack([v0], \"column\")\nv0 = ImageGallery([])",
+      "meaningful_v1": 0.5,
+      "strict_v2": 0.0,
+      "fidelity": 0.4666666666666667,
+      "validity": 0.58,
+      "structure": 0.48855,
+      "reward": 0.6267499999999999,
+      "ast_node_f1": 0.5436507936507936,
+      "ast_edge_f1": 0.375,
+      "latency_ms_p50": 1296.96,
+      "latency_ms_p95": 7891.92,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "finding": "When BOTH weights are truly zero, ImageGallery reverts to closing its typed array empty -- E610/E612/E616's already-rejected failure mode -- and fidelity/validity/reward drop measurably (0.55->0.4667, 0.73->0.58, 0.814->0.6267) while structure/AST/recall are unchanged. This confirms semantic_plan_typed_array_item_margin_decode_weight (not the swept nonempty-margin weight) is the one doing the real work of keeping this array nonempty in the standard recipe."
+    }
+  },
+  "decision": "Reject sweeping semantic_plan_typed_array_nonempty_margin_decode_weight in isolation as a way to find a dose-response effect in the standard recipe: as long as its sibling semantic_plan_typed_array_item_margin_decode_weight stays active (true in every E617-E620 recipe), the swept weight's own target-selection branch never executes, and its only remaining contribution (a shared magnitude ceiling via max()) is already saturated at this checkpoint scale. This is a genuine implementation coupling, not a training or gating bug (contrast with E617's silent-no-op bug, which was a missing flag). No checkpoint promoted or synced. Not a ship claim.",
+  "next_step": "To actually test a dose-response margin effect, either (a) sweep semantic_plan_typed_array_item_margin_decode_weight itself (the lever that actually drives target selection here), or (b) zero both nonempty/item margins together as the control arm before sweeping nonempty_margin upward, so the two levers are not confounded via max(). Separately, E620/E626's open 'required slots still missing after full coverage' and 'Input.name role swap' findings remain unaddressed by this iteration.",
+  "test_plan": [
+    "3 real 800-step CPU scratch trains (seeds 0/1/2), each under the 3-minute cap",
+    "9 real matched OOD n=4 eval runs (3 seeds x 3 margin doses), each under the 3-minute cap",
+    "1 additional real ablation eval run (both weights zeroed)",
+    "python -m scripts.verify_version_stamps --check -> ok, 0 components touched (no source changed)",
+    "python -m scripts.repo_policy -> ok"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "218a347476faf3ddea3133f469e31b6973edcfd5",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v59"
+    },
+    "stamped_at": "2026-07-20T23:39:13.380023+00:00"
+  }
+}
