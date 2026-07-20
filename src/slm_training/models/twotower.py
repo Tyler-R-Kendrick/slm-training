@@ -4227,7 +4227,113 @@ class TwoTowerModel(nn.Module):
         stats.constrained_selection_traces.append(trace)
         return trace
 
-    def _finalize_semantic_plan_seed_trace(
+    def _record_semantic_plan_missing_family_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        scores_before: torch.Tensor,
+        plan_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+    ) -> dict[str, object] | None:
+        """Record bounded score evidence for a planned family after the first."""
+        section_types = tuple(getattr(state, "section_types", ()))
+        component_kinds = {
+            "component_root",
+            "component_bound",
+            "component_root_or_bound",
+        }
+        if (
+            not section_types
+            or len(stats.constrained_selection_traces) >= 64
+            or not any(
+                kind in component_kinds and float(plan_bias[index].item()) > 0.0
+                for index, kind in enumerate(candidate_kinds)
+            )
+        ):
+            return None
+        remaining = (
+            dict(self._semantic_plan_action_counts[row])
+            if self._semantic_plan_action_counts
+            and row < len(self._semantic_plan_action_counts)
+            else {}
+        )
+        family_token_ids = {
+            str(self.tokenizer.id_to_token[token_id])
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        for expr_type in section_types:
+            token_id = family_token_ids.get(str(expr_type).removeprefix("element:"))
+            if token_id in remaining:
+                remaining[token_id] = max(0, remaining[token_id] - 1)
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        trace: dict[str, object] = {
+            "phase": "semantic_plan_missing_family",
+            "row": int(row),
+            "position": int(position),
+            "emitted_families": [
+                str(expr_type).removeprefix("element:")
+                for expr_type in section_types
+            ],
+            "remaining_planned_families": {
+                str(self.tokenizer.id_to_token.get(token_id, ""))
+                .removeprefix("COMP:")
+                .removeprefix("+"): int(count)
+                for token_id, count in remaining.items()
+                if count > 0
+            },
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "choice_changed": before != after,
+            "semantic_plan_decode_weight": float(
+                getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+            ),
+            "planned_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "kind": candidate_kinds[index],
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(plan_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in range(len(candidate_ids))
+                if candidate_kinds[index] in component_kinds
+                and float(plan_bias[index].item()) > 0.0
+            ],
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "kind": candidate_kinds[index],
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(plan_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
+
+    def _finalize_semantic_plan_trace(
         self,
         trace: dict[str, object] | None,
         *,
@@ -4242,25 +4348,29 @@ class TwoTowerModel(nn.Module):
         trace["final_token"] = final_token
         trace["changed_after_plan"] = final_token != trace["chosen_token"]
         candidates = trace.get("top_candidates")
-        if not isinstance(candidates, list):
-            return
         score_by_token = {
             str(self.tokenizer.id_to_token.get(token_id, "")): round(
                 float(scores[index].item()), 6
             )
             for index, token_id in enumerate(candidate_ids)
         }
-        for candidate in candidates:
-            if not isinstance(candidate, dict):
+        for candidate_group in (
+            trace.get("planned_candidates"),
+            candidates,
+        ):
+            if not isinstance(candidate_group, list):
                 continue
-            token = str(candidate.get("token", ""))
-            final_score = score_by_token.get(token)
-            if final_score is None:
-                continue
-            candidate["post_plan_bias"] = round(
-                final_score - float(candidate["score_after"]), 6
-            )
-            candidate["final_score"] = final_score
+            for candidate in candidate_group:
+                if not isinstance(candidate, dict):
+                    continue
+                token = str(candidate.get("token", ""))
+                final_score = score_by_token.get(token)
+                if final_score is None:
+                    continue
+                candidate["post_plan_bias"] = round(
+                    final_score - float(candidate["score_after"]), 6
+                )
+                candidate["final_score"] = final_score
 
     def _schema_value_bias(
         self,
@@ -6293,7 +6403,7 @@ class TwoTowerModel(nn.Module):
                         states[row],
                         ids[row, :position].tolist(),
                     )
-                    semantic_plan_seed_trace = None
+                    semantic_plan_trace = None
                     if semantic_plan_bias is not None:
                         scores_before_semantic_plan = scores.clone()
                         before_semantic_plan = int(scores.argmax().item())
@@ -6303,7 +6413,7 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
-                            semantic_plan_seed_trace = (
+                            semantic_plan_trace = (
                                 self._record_semantic_plan_seed_trace(
                                     stats,
                                     row=row,
@@ -6316,6 +6426,20 @@ class TwoTowerModel(nn.Module):
                                     scores_after=scores,
                                 )
                             )
+                            if semantic_plan_trace is None:
+                                semantic_plan_trace = (
+                                    self._record_semantic_plan_missing_family_trace(
+                                        stats,
+                                        row=row,
+                                        position=position,
+                                        state=states[row],
+                                        candidate_ids=candidate_ids,
+                                        candidate_kinds=candidate_kinds,
+                                        scores_before=scores_before_semantic_plan,
+                                        plan_bias=semantic_plan_bias,
+                                        scores_after=scores,
+                                    )
+                                )
                     semantic_plan_inline_bias = self._semantic_plan_inline_bias(
                         row,
                         ids[row, :position].tolist(),
@@ -6474,8 +6598,8 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
-                    self._finalize_semantic_plan_seed_trace(
-                        semantic_plan_seed_trace,
+                    self._finalize_semantic_plan_trace(
+                        semantic_plan_trace,
                         candidate_ids=candidate_ids,
                         scores=scores,
                     )

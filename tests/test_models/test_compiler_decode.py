@@ -721,7 +721,7 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
         plan_bias=torch.tensor([12.0, 0.0]),
         scores_after=torch.tensor([13.0, 5.0]),
     )
-    model._finalize_semantic_plan_seed_trace(
+    model._finalize_semantic_plan_trace(
         trace,
         candidate_ids=(card_id, text_id),
         scores=torch.tensor([12.0, 15.0]),
@@ -757,6 +757,86 @@ def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
                     "score_after": 5.0,
                     "post_plan_bias": 10.0,
                     "final_score": 15.0,
+                },
+            ],
+        }
+    ]
+
+
+def test_prompt_semantic_plan_missing_family_trace_records_remaining_counts() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=32.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["+Card"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    model._semantic_plan_action_counts = [{card_id: 1, text_id: 1}]
+    stats = DecodeStats()
+
+    trace = model._record_semantic_plan_missing_family_trace(
+        stats,
+        row=0,
+        position=12,
+        state=SimpleNamespace(section_types=["element:TextContent"]),
+        candidate_ids=(card_id, text_id),
+        candidate_kinds=("component_bound", "component_bound"),
+        scores_before=torch.tensor([1.0, 5.0]),
+        plan_bias=torch.tensor([32.0, 0.0]),
+        scores_after=torch.tensor([33.0, 5.0]),
+    )
+    model._finalize_semantic_plan_trace(
+        trace,
+        candidate_ids=(card_id, text_id),
+        scores=torch.tensor([30.0, 35.0]),
+    )
+
+    assert stats.constrained_selection_traces == [
+        {
+            "phase": "semantic_plan_missing_family",
+            "row": 0,
+            "position": 12,
+            "emitted_families": ["TextContent"],
+            "remaining_planned_families": {"Card": 1},
+            "before_token": "+TextContent",
+            "chosen_token": "+Card",
+            "choice_changed": True,
+            "final_token": "+TextContent",
+            "changed_after_plan": True,
+            "semantic_plan_decode_weight": 32.0,
+            "planned_candidates": [
+                {
+                    "token": "+Card",
+                    "kind": "component_bound",
+                    "score_before": 1.0,
+                    "plan_bias": 32.0,
+                    "score_after": 33.0,
+                    "post_plan_bias": -3.0,
+                    "final_score": 30.0,
+                }
+            ],
+            "top_candidates": [
+                {
+                    "token": "+Card",
+                    "kind": "component_bound",
+                    "score_before": 1.0,
+                    "plan_bias": 32.0,
+                    "score_after": 33.0,
+                    "post_plan_bias": -3.0,
+                    "final_score": 30.0,
+                },
+                {
+                    "token": "+TextContent",
+                    "kind": "component_bound",
+                    "score_before": 5.0,
+                    "plan_bias": 0.0,
+                    "score_after": 5.0,
+                    "post_plan_bias": 30.0,
+                    "final_score": 35.0,
                 },
             ],
         }
