@@ -38,10 +38,20 @@ def _seed_file(tmp_path: Path) -> Path:
         placeholders=list(good.placeholders),
         split="train",
     )
+    # Content-policy literals; the structure is deliberately distinctive so
+    # the sanitized form does not collide with reserved test-fixture
+    # structures (trivial rescued layouts are correctly firewalled there).
     garbage = ExampleRecord(
         id="garbage_literal",
         prompt="Show a welcome banner.",
-        openui='root = Stack([msg])\nmsg = TextContent("Welcome!")',
+        openui=(
+            'root = Stack([hero, foot], "column")\n'
+            "hero = Card([hd, ln1])\n"
+            'hd = CardHeader("Welcome!")\n'
+            'ln1 = TextContent("We missed you")\n'
+            "foot = Buttons([b])\n"
+            'b = Button("Continue")'
+        ),
         placeholders=[],
         split="train",
     )
@@ -108,7 +118,11 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert report["schema_version"] == 1
     assert report["profile"] == "strict"
     assert report["version_stamp"]["stamp_schema"] == "version_stamp/v1"
-    assert report["version_stamp"]["components"]["harness.train_data"] == "v7"
+    from slm_training.versioning import component_version
+
+    assert report["version_stamp"]["components"]["harness.train_data"] == (
+        component_version("harness.train_data")
+    )
 
     # The ledger and the report agree, and nothing was dropped silently.
     rejected_rows = [
@@ -119,14 +133,42 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     by_stage = report["counts"]["by_stage"]
     assert sum(by_stage.values()) == len(rejected_rows)
 
-    # The broken seed and the literal-content seed both fail normalization
-    # (the contract layer enforces the placeholder rules before scoring) and
-    # keep their payloads for repair mining.
+    # The broken seed still fails normalization and keeps its payload for
+    # repair mining. The literal-content seed is now *rescued*: strict-profile
+    # sanitization templatizes its content literal before the official
+    # validate, so it no longer dies at the normalize stage.
     normalize_rows = [r for r in rejected_rows if r["stage"] == "normalize"]
     assert any(r["id"] == "broken_dsl" for r in normalize_rows)
-    assert any(r["id"] == "garbage_literal" for r in normalize_rows)
+    assert not any(r["id"] == "garbage_literal" for r in normalize_rows)
     assert all("record" in r for r in normalize_rows)
-    assert by_stage["normalize"] >= 2
+    assert by_stage["normalize"] >= 1
+
+    # Sanitization ran in enforce mode and reported the rescue.
+    assert stats["sanitize_mode"] == "enforce"
+    sanitization = report["sanitization"]
+    assert sanitization["mode"] == "enforce"
+    assert sanitization["sanitized"] >= 1
+    assert sanitization["literals_templatized"] >= 1
+    assert sanitization["fallbacks"] == 0
+    assert set(sanitization["rewrites"]) == {
+        "defaults_elided",
+        "dead_bindings_removed",
+        "containers_flattened",
+        "flatten_opportunities",
+    }
+    from slm_training.dsl.schema import load_jsonl as _load_records
+
+    rescued = [
+        r
+        for r in _load_records(out_dir / "records.jsonl")
+        if str((r.meta or {}).get("parent_id") or r.id).startswith("garbage_literal")
+        or r.id.startswith("garbage_literal")
+    ]
+    assert rescued, "templatized literal seed should be admitted"
+    for record in rescued:
+        assert '"Welcome!"' not in record.openui
+        block = record.meta.get("sanitize")
+        assert isinstance(block, dict) and block["mode"] == "enforce"
 
     # The wide seed parses but fails the quality gate with a hard reason.
     quality_rows = [r for r in rejected_rows if r["stage"] == "quality"]
@@ -232,3 +274,16 @@ def test_permissive_profile_still_emits_report(tmp_path: Path) -> None:
     # Exact dedup + quality gate still run under permissive.
     assert report["counts"]["by_stage"].get("dedup", 0) >= 1
     assert report["counts"]["by_stage"].get("quality", 0) >= 1
+    # Sanitization stays off, so the literal seed dies at normalize as before.
+    assert stats["sanitize_mode"] == "off"
+    assert report["sanitization"] == {"mode": "off"}
+    rejected_rows = [
+        json.loads(line)
+        for line in (Path(result["output_dir"]) / "rejected.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert any(
+        r["id"] == "garbage_literal" and r["stage"] == "normalize"
+        for r in rejected_rows
+    )

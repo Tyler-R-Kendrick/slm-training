@@ -264,6 +264,18 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--sanitize-mode",
+        choices=["off", "audit", "enforce"],
+        default=None,
+        help=(
+            "Deterministic target sanitization (D2 canonicalization + "
+            "schema-checked AST optimization + content-literal "
+            "templatization). 'audit' reports without changing bytes; "
+            "'enforce' stores the sanitized targets. Default: the profile "
+            "decides (strict=enforce, permissive=off)."
+        ),
+    )
+    parser.add_argument(
         "--max-records-per-parent",
         type=int,
         default=None,
@@ -400,6 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         prompt_component_contract=args.prompt_component_contract,
         prompt_component_contract_mode=args.prompt_component_contract_mode,
         prompt_semantic_role_contract=args.prompt_semantic_role_contract,
+        sanitize_mode=args.sanitize_mode,
         max_records_per_parent=args.max_records_per_parent,
         fuzzy_dedup=bool(args.fuzzy_dedup),
         fuzzy_jaccard=float(args.fuzzy_jaccard),

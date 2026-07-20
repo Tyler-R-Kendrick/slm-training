@@ -283,10 +283,13 @@ def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
     write_jsonl(
         path,
         [
+            # Structurally broken source — content-policy literals are no
+            # longer "invalid" (sanitization templatizes them; see
+            # test_sanitize.py), but a syntax error can never be rescued.
             ExampleRecord(
                 id="bad1",
                 prompt="Bad",
-                openui='root = Stack([cta])\ncta = Button("nope")',
+                openui="root = Stack([cta])\ncta = Button(",
                 split="train",
             )
         ],

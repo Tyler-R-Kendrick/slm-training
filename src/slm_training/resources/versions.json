@@ -120,7 +120,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -129,6 +129,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "add deterministic target sanitization (D2 canonicalization + schema-checked default-elision/dead-binding removal/guarded Stack flattening + content-literal templatization) behind sanitize_mode off/audit/enforce; strict profile defaults to enforce"
+        },
         {
           "version": "v7",
           "date": "2026-07-19",
@@ -655,13 +660,18 @@
       ]
     },
     "data.test_build": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "apply the shared deterministic target sanitization (enforce by default) so future eval gold matches the sanitized train distribution; committed snapshots stay immutable"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",

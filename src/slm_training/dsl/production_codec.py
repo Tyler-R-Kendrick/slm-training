@@ -1004,6 +1004,116 @@ def roundtrip_openui(
 
 
 # ---------------------------------------------------------------------------
+# Public statement-binding AST API (used by slm_training.dsl.analysis).
+#
+# The binding AST is the plain-dict statement view produced by
+# ``_parse_bindings``: binder name -> RHS node, where a node is a scalar, a
+# list, ``{"type": "ref", "name": ...}``, or
+# ``{"type": "element", "typeName": ..., "props": {...}}``. Rewrites over this
+# view stay re-emittable because emission follows the same declared prop order
+# and statement order as ``encode_openui``.
+# ---------------------------------------------------------------------------
+
+
+def parse_statement_bindings(
+    source: str, *, dsl: str | None = None, validate: bool = True
+) -> dict[str, Any]:
+    """Statement-binding AST for ``source`` (style literals stripped).
+
+    Statement-structural OpenUI only — v0.5 typed programs (state, queries,
+    expressions) are rejected with ``ParseError`` because their statements are
+    not representable in the binding-dict view.
+
+    ``validate`` (default) first round-trips the source through the grammar
+    backend, which on the official bridge also enforces the placeholder
+    content policy. ``validate=False`` skips that check so policy-repair
+    passes (literal → placeholder templatization) can read sources the
+    official parser still rejects; syntax errors in the statement grammar
+    raise either way.
+    """
+    scrubbed = strip_style_literals(source or "").strip()
+    if _requires_v05_codec(scrubbed):
+        raise ParseError("v0.5 typed programs have no statement-binding AST")
+    if not scrubbed:
+        raise ParseError("empty source")
+    if validate:
+        return _parse_bindings(scrubbed, dsl)
+    bindings: dict[str, Any] = {}
+    for match in _STMT_RE.finditer(scrubbed):
+        bindings[match.group(1)] = _parse_rhs_value(match.group(2).strip(), dsl)
+    if "root" not in bindings:
+        raise ParseError("missing root binding")
+    return bindings
+
+
+def statement_binding_order(
+    bindings: dict[str, Any], *, dsl: str | None = None
+) -> list[str]:
+    """Deterministic emission order for ``bindings`` (root always last)."""
+    return _statement_order(bindings, dsl)
+
+
+def emit_statement_bindings(bindings: dict[str, Any], *, dsl: str | None = None) -> str:
+    """Deterministically re-emit a binding AST as D2-canonical OpenUI source.
+
+    Encodes the bindings through the production stream and decodes them back,
+    so the result carries the codec's normal form: topological statement
+    order, De Bruijn ``v0, v1, …`` binder names with ``root`` emitted first,
+    and slot pointers for every placeholder. ``emit(parse(x))`` equals
+    ``canonicalize(x)`` by construction. The output is not re-validated here —
+    callers that mutate bindings must round-trip the result through the
+    official parser before trusting it.
+    """
+    order = _statement_order(bindings, dsl)
+    contract: list[str] = []
+    seen_slots: set[str] = set()
+
+    def collect(value: Any) -> None:
+        if isinstance(value, str):
+            if is_placeholder(value) and value not in seen_slots:
+                seen_slots.add(value)
+                contract.append(value)
+            return
+        if isinstance(value, list):
+            for item in value:
+                collect(item)
+            return
+        if isinstance(value, dict) and value.get("type") == "element":
+            props = dict(value.get("props") or {})
+            for item in _ordered_prop_values(
+                str(value.get("typeName") or ""), props, dsl
+            ):
+                collect(item)
+            return
+        if isinstance(value, dict) and value.get("type") == "call":
+            name = str(value.get("name") or "")
+            props = map_positional_props(
+                name, list(value.get("args") or []), _prop_order(dsl)
+            )
+            for item in _ordered_prop_values(name, props, dsl):
+                collect(item)
+
+    for name in order:
+        collect(_resolve_binding(bindings, name))
+
+    slot_index = {ph: i for i, ph in enumerate(contract)}
+    stmt_index = {name: i for i, name in enumerate(order)}
+    tokens: list[str] = []
+    for position, name in enumerate(order):
+        tokens.append(STMT)
+        tokens.extend(
+            _encode_expr(
+                bindings[name],
+                slot_index=slot_index,
+                stmt_index=stmt_index,
+                stmt_limit=position,
+                dsl=dsl,
+            )
+        )
+    return decode_productions(tokens, contract)
+
+
+# ---------------------------------------------------------------------------
 # B1 (SLM-42): pure grammar-choice stream.
 #
 # ``encode_choices`` emits ONLY semantic decisions — every token answers

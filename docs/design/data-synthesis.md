@@ -313,3 +313,16 @@ Keep E530's clean projection as diagnostic evidence, reject E531, and move
 future work to explicit visible-contract reference-edge learning or decoding
 rather than synthesis admission changes. See
 [E531](iter-e531-visible-semantic-roles-continuation-20260719.md).
+
+## Deterministic target sanitization (2026-07-19)
+
+Document targets are now sanitized inside `_normalize_record` before the
+official validate — D2 canonicalization plus schema-checked default elision,
+dead-binding removal, guarded Stack flattening, and content-literal →
+placeholder templatization — behind `sanitize_mode: off | audit | enforce`
+(strict profile enforces; the test-data builder enforces so future eval gold
+matches). Audit mode is byte-identical to off (verified by content
+fingerprint); reserved-structure decontamination reserves both raw and
+sanitized fingerprint families so the test firewall never weakens. Measured
+evidence, gate-interaction analysis, and follow-ups:
+[train-target-sanitization-20260719.md](train-target-sanitization-20260719.md).

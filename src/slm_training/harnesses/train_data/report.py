@@ -172,6 +172,7 @@ def build_quality_report(
     per_family: list[dict[str, Any]],
     engines: dict[str, Any],
     decontamination_extra: dict[str, Any] | None = None,
+    sanitization: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     by_stage = _stage_histogram(rejections)
     parse_failures = by_stage.get("normalize", 0)
@@ -254,6 +255,25 @@ def build_quality_report(
                 "(possible under the permissive profile)",
             }
         )
+    sanitize_fallbacks = int((sanitization or {}).get("fallbacks") or 0)
+    if sanitize_fallbacks:
+        warnings.append(
+            {
+                "code": "sanitize_fallbacks",
+                "value": sanitize_fallbacks,
+                "message": "sanitization fell back to unchanged targets for some "
+                "records; inspect sanitization.fallback_reasons",
+            }
+        )
+    if (sanitization or {}).get("mode") == "audit" and profile == "strict":
+        warnings.append(
+            {
+                "code": "sanitize_audit_only",
+                "value": 1,
+                "message": "the strict profile is running sanitization in audit "
+                "mode; stored targets are not yet canonical/templatized",
+            }
+        )
     return {
         "schema_version": REPORT_SCHEMA_VERSION,
         "version": version,
@@ -304,6 +324,7 @@ def build_quality_report(
             "top_clusters": top_clusters,
         },
         "decontamination": decontamination,
+        "sanitization": sanitization or {"mode": "off"},
         "per_family": per_family,
         "engines": engines,
         "warnings": warnings,
