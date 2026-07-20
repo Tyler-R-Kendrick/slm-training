@@ -1260,7 +1260,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1275,6 +1275,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-07-20",
+          "note": "preserve closed object schemas through choice decoding and require declared properties"
+        },
         {
           "version": "v56",
           "date": "2026-07-20",

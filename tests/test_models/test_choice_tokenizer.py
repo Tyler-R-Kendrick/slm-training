@@ -230,6 +230,55 @@ def test_choice_state_enforces_component_array_item_schema(
     assert state.advance_id(tok.eos_id)
 
 
+def test_choice_state_enforces_closed_typed_object_properties(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=1)
+    for token in ("+ImageGallery", "[", "{"):
+        assert state.advance_id(tok.token_to_id[token])
+
+    frame = state.frames[-1]
+    assert frame.kind == "object"
+    assert frame.property_names == ("src", "alt", "details")
+    assert frame.required_properties == ("src",)
+
+    close = tok.token_to_id["}"]
+    src = tok.token_to_id[f"{NAME_PREFIX}src"]
+    unknown = next(
+        token_id
+        for token_id, token in tok.id_to_token.items()
+        if token.startswith(NAME_PREFIX)
+        and token[len(NAME_PREFIX) :] not in frame.property_names
+    )
+    allowed = state.allowed_ids(8)
+    assert src in allowed
+    assert close not in allowed
+    assert unknown not in allowed
+    assert tok.token_to_id[NAME_STR] not in allowed
+
+    assert state.advance_id(src)
+    assert state.advance_id(tok.token_to_id["@0"])
+    assert src not in state.allowed_ids(6)
+    assert close in state.allowed_ids(6)
+    for token in ("}", "]", "-", "<eos>"):
+        assert state.advance_id(tok.token_to_id[token])
+
+
+def test_choice_state_signature_tracks_variadic_item_count(
+    tok: ChoiceTokenizer,
+) -> None:
+    empty = ChoiceDecodeState(tok, slot_count=1)
+    for token in ("+Card", "["):
+        assert empty.advance_id(tok.token_to_id[token])
+    nonempty = empty.clone()
+    for token in ("+TextContent", "@0", "-"):
+        assert nonempty.advance_id(tok.token_to_id[token])
+
+    assert empty.frames[-1].item_count == 0
+    assert nonempty.frames[-1].item_count == 1
+    assert empty.signature() != nonempty.signature()
+
+
 def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
     tok.allowed_cache.clear()
     tok.allowed_cache_hits = 0
