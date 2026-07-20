@@ -1119,6 +1119,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_prompt_context": bool(
                 getattr(config, "slot_component_prompt_context", False)
             ),
+            "slot_component_next_context": bool(
+                getattr(config, "slot_component_next_context", False)
+            ),
+            "slot_component_pair_interaction": bool(
+                getattr(config, "slot_component_pair_interaction", False)
+            ),
             "slot_contract_in_context": bool(
                 getattr(config, "slot_contract_in_context", False)
             ),

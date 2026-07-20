@@ -182,6 +182,8 @@ def test_initialize_from_resets_state_for_new_corpus(
         "output_tokenizer": "choice",
         "slot_component_loss_weight": 1.0,
         "slot_component_lexeme_prior_weight": 1.0,
+        "slot_component_next_context": True,
+        "slot_component_pair_interaction": True,
     }
     source = train(_cfg(train_dir, tmp_path, "source", 2, **prior_recipe))
     source_checkpoint = Path(source["checkpoint"])
@@ -234,6 +236,8 @@ def test_initialize_from_resets_state_for_new_corpus(
     assert initialized["seen_target_tokens"] == 0
     assert initialized["recipe"]["slot_component_loss_weight"] == 1.0
     assert initialized["recipe"]["slot_component_lexeme_prior_weight"] == 1.0
+    assert initialized["recipe"]["slot_component_next_context"] is True
+    assert initialized["recipe"]["slot_component_pair_interaction"] is True
     assert initialized["initialized_prior_fields"] == [
         "slot_component_lexeme_priors",
         "slot_component_span_priors",

@@ -2836,6 +2836,17 @@ excluded as confounded. Full evidence:
 [narrative](iter-e553-slot-prior-proportional-smoothing-20260720.md) and
 [JSON](iter-e553-slot-prior-proportional-smoothing-20260720.json).
 
+## E554 next-slot context
+
+Adding the next visible slot to slot-owner encoding raises OOD `n=4` structure
+0.1244→0.1594, recall 0.0625→0.1250, and AST node F1 0.1556→0.2389 versus
+E553, but fidelity falls 0.3000→0.2583 and reward 0.5453→0.5328. Meaning and
+AgentV remain zero.
+
+**Decision:** reject the mixed checkpoint. Full evidence:
+[narrative](iter-e554-slot-next-context-20260720.md) and
+[JSON](iter-e554-slot-next-context-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

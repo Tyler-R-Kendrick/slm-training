@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E554",
+  "run_id": "e554-e544-slot-next-context-r2-24s",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_mixed_result_not_ship",
+  "hypothesis": "Encoding the next visible slot with each slot-owner example will improve compositional owner prediction over E553.",
+  "discarded_attempts": [
+    {
+      "run_id": "e554-e544-slot-next-context-r1-24s",
+      "reason": "The checkpoint exercised the treatment, but the train summary did not yet persist the architecture flag; excluded from durable evidence."
+    }
+  ],
+  "checkpoint": {
+    "location": "outputs/runs/e554-e544-slot-next-context-r2-24s/checkpoints/last.pt",
+    "sha256": "af3cbce7ca8c2adfbccc8d5ad0550361e2c30f56a6da04f6390615d40c67b579",
+    "sync": false,
+    "sync_reason": "Explicit local-only 24-step scratch diagnostic; semantic and AgentV gates fail."
+  },
+  "training": {
+    "parent_run_id": "e544-e543-root-identity1-r2-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1304,
+    "elapsed_wall_seconds": 39.91360204699595,
+    "max_wall_minutes": 3.0,
+    "slot_component_next_context": true,
+    "slot_component_pair_interaction": false,
+    "slot_component_lexeme_prior_weight": 1.0,
+    "root_reference_identity_strict_subset_multiplier": 2,
+    "last_loss": 12.705745697021484,
+    "hard_process_cap_seconds": 170
+  },
+  "eval_recipe": {
+    "eval_run_id": "e554-slot-next-context-eval-r2",
+    "suite": "ood",
+    "n": 4,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.2583333333333333,
+      "placeholder_validity": 0.455,
+      "structural_similarity": 0.15937500000000002,
+      "component_type_recall": 0.125,
+      "reward_score": 0.5327500000000001,
+      "ast_node_f1": 0.2388888888888889,
+      "ast_edge_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0
+    }
+  },
+  "comparison": {
+    "baseline": "E553",
+    "fidelity_delta": -0.041666666666666685,
+    "structure_delta": 0.035,
+    "recall_delta": 0.0625,
+    "reward_delta": -0.012499999999999956,
+    "ast_node_f1_delta": 0.08333333333333334
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaningful-v1, strict-v2, AST edge F1, and AgentV remain zero; gains are mixed and below E547 topology."
+  },
+  "decision": "Reject the checkpoint. Next-slot context partially restores topology but trades away fidelity and reward; test pair interaction or change supervision.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1e802e61a8e21a7008d01590d0d130d66bae46a5",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v14",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-20T00:18:32.935254+00:00"
+  }
+}
