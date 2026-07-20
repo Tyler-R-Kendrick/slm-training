@@ -1,0 +1,427 @@
+{
+  "arms": [
+    {
+      "arm_id": "A_none",
+      "description": "No margin loss; baseline zero metrics.",
+      "name": "none",
+      "promotable": false,
+      "source": "none"
+    },
+    {
+      "arm_id": "B_uniform",
+      "description": "E228-style hardest-contrast margin over the contrast set.",
+      "name": "uniform",
+      "promotable": false,
+      "source": "uniform"
+    },
+    {
+      "arm_id": "C_targeted_hardest",
+      "description": "Hardest-contrast margin focused on the targeted siblings.",
+      "name": "targeted_hardest",
+      "promotable": false,
+      "source": "targeted_hardest"
+    },
+    {
+      "arm_id": "D_targeted_weighted",
+      "description": "Weighted log-sum-exp margin over all targeted contrasts.",
+      "name": "targeted_weighted",
+      "promotable": false,
+      "source": "targeted_weighted"
+    },
+    {
+      "arm_id": "E_shuffled",
+      "description": "Control arm: same rows with family labels randomly reassigned.",
+      "name": "shuffled",
+      "promotable": false,
+      "source": "shuffled"
+    }
+  ],
+  "claim_class": "wiring",
+  "experiment_id": "slm164-targeted-margin",
+  "manifest": {
+    "families": [
+      "empty_vs_child",
+      "stack_vs_card",
+      "rare_component_substitution",
+      "binder_arity",
+      "slot_pointer",
+      "same_type_different_role"
+    ],
+    "manifest_id": "slm164_synthetic_seed0",
+    "rows": [
+      {
+        "contrast_actions": [
+          "+SwitchItem",
+          "slot0",
+          "slot1"
+        ],
+        "expected_action": "+Card",
+        "family": "empty_vs_child",
+        "provenance": "synthetic:empty_vs_child:0",
+        "state_signature": "b52a3ba1abdd04cb",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Tabs",
+          "close"
+        ],
+        "expected_action": "+SwitchItem",
+        "family": "empty_vs_child",
+        "provenance": "synthetic:empty_vs_child:1",
+        "state_signature": "b2f1ca56991b191a",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "slot0"
+        ],
+        "expected_action": "close",
+        "family": "empty_vs_child",
+        "provenance": "synthetic:empty_vs_child:2",
+        "state_signature": "10b0cec8522c7adb",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Tabs"
+        ],
+        "expected_action": "+Form",
+        "family": "empty_vs_child",
+        "provenance": "synthetic:empty_vs_child:3",
+        "state_signature": "7f954e01dc848d30",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Form",
+          "close",
+          "slot0"
+        ],
+        "expected_action": "arity_2",
+        "family": "stack_vs_card",
+        "provenance": "synthetic:stack_vs_card:0",
+        "state_signature": "134ae5866c74fe61",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Card",
+          "+Stack"
+        ],
+        "expected_action": "close",
+        "family": "stack_vs_card",
+        "provenance": "synthetic:stack_vs_card:1",
+        "state_signature": "924b329124c7a60b",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Form",
+          "arity_1",
+          "arity_2"
+        ],
+        "expected_action": "+Tabs",
+        "family": "stack_vs_card",
+        "provenance": "synthetic:stack_vs_card:2",
+        "state_signature": "27dee4aee88daa8f",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Button",
+          "arity_2"
+        ],
+        "expected_action": "+Tabs",
+        "family": "stack_vs_card",
+        "provenance": "synthetic:stack_vs_card:3",
+        "state_signature": "94eb1b0322ba39cd",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Slider"
+        ],
+        "expected_action": "+Stack",
+        "family": "rare_component_substitution",
+        "provenance": "synthetic:rare_component_substitution:0",
+        "state_signature": "f96fd175ff880b6f",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "close"
+        ],
+        "expected_action": "slot0",
+        "family": "rare_component_substitution",
+        "provenance": "synthetic:rare_component_substitution:1",
+        "state_signature": "d1d13a632047b1c9",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Form",
+          "+Stack"
+        ],
+        "expected_action": "+Button",
+        "family": "rare_component_substitution",
+        "provenance": "synthetic:rare_component_substitution:2",
+        "state_signature": "38f96f6cd0547605",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "arity_2",
+          "slot0",
+          "slot1"
+        ],
+        "expected_action": "+Input",
+        "family": "rare_component_substitution",
+        "provenance": "synthetic:rare_component_substitution:3",
+        "state_signature": "f16769c763e4cfe4",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "arity_2"
+        ],
+        "expected_action": "+Stack",
+        "family": "binder_arity",
+        "provenance": "synthetic:binder_arity:0",
+        "state_signature": "dc19d4d674445134",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Slider",
+          "+SwitchItem",
+          "slot0"
+        ],
+        "expected_action": "arity_1",
+        "family": "binder_arity",
+        "provenance": "synthetic:binder_arity:1",
+        "state_signature": "b0773362a9b629f3",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Card"
+        ],
+        "expected_action": "+Slider",
+        "family": "binder_arity",
+        "provenance": "synthetic:binder_arity:2",
+        "state_signature": "8beb5e9a9610c4c0",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Slider",
+          "close"
+        ],
+        "expected_action": "+Card",
+        "family": "binder_arity",
+        "provenance": "synthetic:binder_arity:3",
+        "state_signature": "77eed3297346adf8",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Button",
+          "+Slider",
+          "+Stack"
+        ],
+        "expected_action": "+SwitchItem",
+        "family": "slot_pointer",
+        "provenance": "synthetic:slot_pointer:0",
+        "state_signature": "e628cb980893787d",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Input",
+          "+SwitchItem",
+          "slot1"
+        ],
+        "expected_action": "+Button",
+        "family": "slot_pointer",
+        "provenance": "synthetic:slot_pointer:1",
+        "state_signature": "0b80d773b1957113",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Button",
+          "+Input",
+          "close"
+        ],
+        "expected_action": "+Card",
+        "family": "slot_pointer",
+        "provenance": "synthetic:slot_pointer:2",
+        "state_signature": "5c6d780dffe82303",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Stack",
+          "+Tabs",
+          "close"
+        ],
+        "expected_action": "slot1",
+        "family": "slot_pointer",
+        "provenance": "synthetic:slot_pointer:3",
+        "state_signature": "ef259d70c30dd99c",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Button",
+          "+Form",
+          "+Stack"
+        ],
+        "expected_action": "+Tabs",
+        "family": "same_type_different_role",
+        "provenance": "synthetic:same_type_different_role:0",
+        "state_signature": "5d6ad74f73de50e4",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "+Button",
+          "+Card",
+          "+SwitchItem"
+        ],
+        "expected_action": "+Slider",
+        "family": "same_type_different_role",
+        "provenance": "synthetic:same_type_different_role:1",
+        "state_signature": "0ed7734792e31961",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "close"
+        ],
+        "expected_action": "+Input",
+        "family": "same_type_different_role",
+        "provenance": "synthetic:same_type_different_role:2",
+        "state_signature": "c539b6548bf163e7",
+        "weight": 1.0
+      },
+      {
+        "contrast_actions": [
+          "arity_1"
+        ],
+        "expected_action": "+Form",
+        "family": "same_type_different_role",
+        "provenance": "synthetic:same_type_different_role:3",
+        "state_signature": "b1ff9ca6e2801839",
+        "weight": 1.0
+      }
+    ],
+    "source_hashes": [
+      "79f3399a9e296bd31f4fcadb82dda74515956c02a61def581c720ec053558ce0"
+    ]
+  },
+  "matrix_set": "slm164_targeted_margin",
+  "matrix_version": "sde1-02-v1",
+  "rows": [
+    {
+      "active_contrasts": 24,
+      "arm_id": "A_none",
+      "family_coverage": 1.0,
+      "family_violation_rates": {
+        "binder_arity": 0.0,
+        "empty_vs_child": 0.0,
+        "rare_component_substitution": 0.0,
+        "same_type_different_role": 0.0,
+        "slot_pointer": 0.0,
+        "stack_vs_card": 0.0
+      },
+      "mean_margin_loss": 0.0,
+      "seed": 0,
+      "source": "none",
+      "violation_rate": 0.0
+    },
+    {
+      "active_contrasts": 24,
+      "arm_id": "B_uniform",
+      "family_coverage": 1.0,
+      "family_violation_rates": {
+        "binder_arity": 0.5,
+        "empty_vs_child": 0.75,
+        "rare_component_substitution": 0.5,
+        "same_type_different_role": 0.5,
+        "slot_pointer": 0.75,
+        "stack_vs_card": 1.0
+      },
+      "mean_margin_loss": 1.7698,
+      "seed": 0,
+      "source": "uniform",
+      "violation_rate": 0.6666666666666666
+    },
+    {
+      "active_contrasts": 24,
+      "arm_id": "C_targeted_hardest",
+      "family_coverage": 1.0,
+      "family_violation_rates": {
+        "binder_arity": 0.5,
+        "empty_vs_child": 0.75,
+        "rare_component_substitution": 0.5,
+        "same_type_different_role": 0.5,
+        "slot_pointer": 0.75,
+        "stack_vs_card": 1.0
+      },
+      "mean_margin_loss": 1.7698,
+      "seed": 0,
+      "source": "targeted_hardest",
+      "violation_rate": 0.6666666666666666
+    },
+    {
+      "active_contrasts": 24,
+      "arm_id": "D_targeted_weighted",
+      "family_coverage": 1.0,
+      "family_violation_rates": {
+        "binder_arity": 0.5,
+        "empty_vs_child": 0.75,
+        "rare_component_substitution": 0.5,
+        "same_type_different_role": 0.5,
+        "slot_pointer": 0.75,
+        "stack_vs_card": 1.0
+      },
+      "mean_margin_loss": 2.2090917807289983,
+      "seed": 0,
+      "source": "targeted_weighted",
+      "violation_rate": 0.6666666666666666
+    },
+    {
+      "active_contrasts": 24,
+      "arm_id": "E_shuffled",
+      "family_coverage": 1.0,
+      "family_violation_rates": {
+        "binder_arity": 0.5,
+        "empty_vs_child": 0.5,
+        "rare_component_substitution": 1.0,
+        "same_type_different_role": 0.75,
+        "slot_pointer": 0.75,
+        "stack_vs_card": 0.5
+      },
+      "mean_margin_loss": 2.2090917807289983,
+      "seed": 0,
+      "source": "shuffled",
+      "violation_rate": 0.6666666666666666
+    }
+  ],
+  "run_id": "slm164-targeted-margin-20260720",
+  "schema": "Slm164TargetedMarginReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T11:03:50.667598Z",
+  "version_stamp": {
+    "code_commit": "53139db187e0fb96126ffe089b8d6da8d953469f",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v39",
+      "harness.experiments.slm164_targeted_margin": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T11:03:50.667136+00:00"
+  }
+}

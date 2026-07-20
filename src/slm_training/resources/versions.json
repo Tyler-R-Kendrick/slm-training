@@ -535,12 +535,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-07-20",
+          "note": "add SLM-164 targeted legal-sibling contrast margin wiring/fixture harness"
+        },
         {
           "version": "v38",
           "date": "2026-07-20",
@@ -781,6 +786,25 @@
         }
       ]
     },
+    "harness.experiments.slm164_targeted_margin": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm164_targeted_margin.py",
+        "scripts/run_slm164_targeted_margin_fixture.py",
+        "tests/test_harnesses/experiments/test_slm164_targeted_margin.py",
+        "tests/test_scripts/test_run_slm164_targeted_margin_fixture.py",
+        "docs/design/iter-slm164-targeted-margin-20260720.json",
+        "docs/design/iter-slm164-targeted-margin-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-164 confusion-targeted legal-sibling contrast margin wiring/fixture harness"
+        }
+      ]
+    },
     "matrix.causal_peft_ftpo": {
       "version": "v1",
       "kind": "matrix",
@@ -810,7 +834,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -823,6 +847,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-07-20",
+          "note": "add SLM-164 legal_margin_mode / targeted_margin_* plumbing; defaults preserve existing behavior"
+        },
         {
           "version": "v34",
           "date": "2026-07-20",
