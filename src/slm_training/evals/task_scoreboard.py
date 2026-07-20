@@ -12,6 +12,12 @@ from typing import Any
 from slm_training.data.leakage import norm_text
 from slm_training.dsl.parser import ParseError, lexical_tokens, validate, validate_output
 from slm_training.dsl.schema import OutputTarget
+from slm_training.evals.render_equivalence import render_equivalence
+
+# Default-off render-equivalence surrogate.  Only "off" and "diagnostic" are
+# authorized; "selector_feature" is accepted only when explicitly passed by a
+# caller that has opted in, and never enabled by default.
+RENDER_EQUIVALENCE_MODE = "off"
 
 _BINDER_RE = re.compile(r"(?m)^\s*([a-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 _IDENT_RE = re.compile(r"\b([a-z_][A-Za-z0-9_]*)\b")
@@ -283,7 +289,11 @@ def _equivalence_metrics(
     return metrics
 
 
-def score_case(case: Mapping[str, Any]) -> dict[str, Any]:
+def score_case(
+    case: Mapping[str, Any],
+    *,
+    render_equivalence_mode: str = RENDER_EQUIVALENCE_MODE,
+) -> dict[str, Any]:
     prediction = str(case.get("prediction") or "")
     gold = str(case.get("gold") or "")
     task = str(case.get("task") or "unknown")
@@ -374,12 +384,33 @@ def score_case(case: Mapping[str, Any]) -> dict[str, Any]:
     ):
         if name in evidence:
             metrics[name] = _numeric_evidence(evidence, name)
-    metrics.update(_equivalence_metrics(case.get("abstraction_level"), evidence))
+    active_evidence = dict(evidence)
+    if (
+        render_equivalence_mode in {"diagnostic", "selector_feature"}
+        and task == "document"
+    ):
+        try:
+            render_report = render_equivalence(prediction, gold)
+            active_evidence["render_equivalence"] = (
+                1.0 if render_report.equivalent else 0.0
+            )
+        except Exception:
+            active_evidence.setdefault("render_equivalence", 0.0)
+    metrics.update(
+        _equivalence_metrics(case.get("abstraction_level"), active_evidence)
+    )
     return {"id": str(case.get("id") or ""), "task": task, "metrics": metrics}
 
 
-def build_task_scoreboard(cases: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    scored = [score_case(case) for case in cases]
+def build_task_scoreboard(
+    cases: Sequence[Mapping[str, Any]],
+    *,
+    render_equivalence_mode: str = RENDER_EQUIVALENCE_MODE,
+) -> dict[str, Any]:
+    scored = [
+        score_case(case, render_equivalence_mode=render_equivalence_mode)
+        for case in cases
+    ]
     task_names = sorted({row["task"] for row in scored})
     tasks: dict[str, Any] = {}
     for task in task_names:
