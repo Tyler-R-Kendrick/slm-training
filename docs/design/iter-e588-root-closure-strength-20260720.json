@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E588",
+  "date_utc": "2026-07-20",
+  "run_id": "e588-e587-root8-r1",
+  "run_class": "scratch_matrix",
+  "status": "positive_diagnostic_not_promotable",
+  "hypothesis": "Increasing the existing plan-root closure score will terminate after E587's valid schema-corrected Stack instead of appending repeated sections and selecting an early Input as root.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 4.0,
+    "schema_value_decode_weight": 4.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weights": [4.0, 8.0, 12.0],
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e588-e587-root4-control-r1",
+      "label": "root_weight_4_control",
+      "semantic_plan_root_decode_weight": 4.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.2583333333333333,
+          "placeholder_validity": 0.5549999999999999,
+          "structural_similarity": 0.215625,
+          "component_type_recall": 0.3333333333333333,
+          "reward_score": 0.692,
+          "ast_node_f1": 0.3388888888888889,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 7998.4,
+          "latency_ms_p95": 11687.11
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e588-e587-root12-r1",
+      "label": "root_weight_12_plateau_replication",
+      "semantic_plan_root_decode_weight": 12.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.425,
+          "placeholder_validity": 0.655,
+          "structural_similarity": 0.406875,
+          "component_type_recall": 0.4583333333333333,
+          "reward_score": 0.7585,
+          "ast_node_f1": 0.48888888888888893,
+          "ast_edge_f1": 0.25,
+          "latency_ms_p50": 8722.97,
+          "latency_ms_p95": 11857.86
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.425,
+      "placeholder_validity": 0.655,
+      "structural_similarity": 0.406875,
+      "component_type_recall": 0.4583333333333333,
+      "reward_score": 0.7585,
+      "ast_node_f1": 0.48888888888888893,
+      "ast_edge_f1": 0.25,
+      "latency_ms_p50": 8416.24,
+      "latency_ms_p95": 12579.18
+    }
+  },
+  "comparison": {
+    "baseline": "e588-e587-root4-control-r1",
+    "meaningful_program_rate_delta": 0.0,
+    "placeholder_fidelity_delta": 0.16666666666666669,
+    "placeholder_validity_delta": 0.10000000000000009,
+    "structural_similarity_delta": 0.19125,
+    "component_type_recall_delta": 0.125,
+    "reward_score_delta": 0.0665,
+    "ast_node_f1_delta": 0.15,
+    "ast_edge_f1_delta": 0.25,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0,
+    "matches_root12_replication": true,
+    "auth_ast_node_f1": 1.0,
+    "auth_ast_edge_f1": 1.0,
+    "interpretation": "Root weight 8 is sufficient to close the schema-corrected plan, recover perfect auth topology, and stop before enum properties. Weight 12 is identical and unnecessary."
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict meaning-v2 remains zero, AgentV fails, and this is an OOD n=4 scratch diagnostic."
+  },
+  "decision": "Use root weight 8 as the next diagnostic baseline, do not promote or sync a checkpoint, and next target remaining non-enum placeholder spam and modal binding.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "43a114dd6ba68239c16b39fef5ad2b49e6c4370a",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v17",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v24"
+    },
+    "stamped_at": "2026-07-20T07:52:08.078858+00:00"
+  }
+}
