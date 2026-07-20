@@ -10,6 +10,7 @@ from slm_training.data.mixture import (
     DEFAULT_TASK_WEIGHTS,
     NEW_FAMILIES,
     MixtureManifest,
+    build_exposure_ledger,
     corpus_diagnostics,
     default_base_weights,
     fit_weight_regression,
@@ -17,6 +18,7 @@ from slm_training.data.mixture import (
     local_probe_candidates,
     mixture_hash,
     propose_from_fit,
+    record_action_counts,
     sample_mixture_batch,
     task_group,
     write_mixture_manifest,
@@ -356,3 +358,179 @@ def test_scope_graded_families_carry_default_weights() -> None:
         assert base[family] > 0
     # Deliberate ranking bias: canonical outweighs its identity twin.
     assert base["scope_canonical_document"] > base["scope_identity_document"]
+
+
+def test_record_action_counts_extracts_components_and_placeholders() -> None:
+    record = ExampleRecord(
+        id="r1",
+        prompt="p1",
+        openui='root = Card([Button(":x")])',
+        placeholders=["email"],
+        meta={"source_family": "fixture"},
+    )
+    counts = record_action_counts(record)
+    assert counts["Card"] == 1
+    assert counts["Button"] == 1
+    assert counts["email"] == 1
+
+
+def test_build_exposure_ledger_reports_action_and_aggregate_stats() -> None:
+    records = [
+        ExampleRecord(
+            id="r1",
+            prompt="p1",
+            openui='root = Button(":x")',
+            meta={
+                "source_family": "fixture",
+                "root_parent_id": "root_a",
+                "parent_id": "template_a",
+            },
+        ),
+        ExampleRecord(
+            id="r2",
+            prompt="p2",
+            openui='root = Card([Button(":x")])',
+            meta={
+                "source_family": "fixture",
+                "root_parent_id": "root_a",
+                "parent_id": "template_b",
+            },
+        ),
+    ]
+    ledger = build_exposure_ledger(records)
+    assert ledger["aggregate"]["total_records"] == 2
+    assert ledger["aggregate"]["total_decisions"] == 3
+    assert ledger["actions"]["Button"]["raw_target_decision_count"] == 2
+    assert ledger["actions"]["Card"]["unique_prompt_template_count"] == 1
+
+
+def test_exposure_targeted_sampling_is_deterministic() -> None:
+    records = [
+        ExampleRecord(
+            id=f"r{i}",
+            prompt=f"p{i}",
+            openui='root = Button(":x")',
+            meta={"source_family": "fixture"},
+        )
+        for i in range(10)
+    ]
+    action_targets = {"Button": 5.0}
+    a = sample_mixture_batch(
+        records,
+        weights={"fixture": 1.0},
+        batch_size=5,
+        rng=random.Random(7),
+        sampling_policy="exposure_targeted",
+        action_targets=action_targets,
+        total_decision_budget=5,
+    )
+    b = sample_mixture_batch(
+        records,
+        weights={"fixture": 1.0},
+        batch_size=5,
+        rng=random.Random(7),
+        sampling_policy="exposure_targeted",
+        action_targets=action_targets,
+        total_decision_budget=5,
+    )
+    assert [r.id for r in a] == [r.id for r in b]
+
+
+def test_exposure_targeted_respects_total_budget() -> None:
+    records = [
+        ExampleRecord(
+            id=f"r{i}",
+            prompt=f"p{i}",
+            openui='root = Button(":x")',
+            meta={"source_family": "fixture"},
+        )
+        for i in range(20)
+    ]
+    batch = sample_mixture_batch(
+        records,
+        weights={"fixture": 1.0},
+        batch_size=10,
+        rng=random.Random(3),
+        sampling_policy="exposure_targeted",
+        action_targets={"Button": 5.0},
+        total_decision_budget=5,
+    )
+    assert len(batch) == 10
+    assert len({r.id for r in batch}) <= 10
+
+
+def test_exposure_targeted_respects_root_and_template_caps() -> None:
+    records = [
+        ExampleRecord(
+            id=f"r{i}",
+            prompt=f"p{i}",
+            openui='root = Button(":x")',
+            meta={
+                "source_family": "fixture",
+                "root_parent_id": "root_1",
+                "parent_id": "template_1",
+            },
+        )
+        for i in range(20)
+    ]
+    batch = sample_mixture_batch(
+        records,
+        weights={"fixture": 1.0},
+        batch_size=10,
+        rng=random.Random(3),
+        sampling_policy="exposure_targeted",
+        action_targets={"Button": 100.0},
+        total_decision_budget=10,
+        per_root_cap=2,
+        per_template_cap=2,
+    )
+    root_counts = Counter()
+    template_counts = Counter()
+    for record in batch:
+        meta = record.meta or {}
+        root_counts[meta.get("root_parent_id")] += 1
+        template_counts[meta.get("parent_id")] += 1
+    assert all(c <= 2 for c in root_counts.values())
+    assert all(c <= 2 for c in template_counts.values())
+
+
+def test_exposure_targeted_increases_rare_action_exposure() -> None:
+    common = [
+        ExampleRecord(
+            id=f"common_{i}",
+            prompt=f"p{i}",
+            openui='root = Button(":x")',
+            meta={"source_family": "fixture"},
+        )
+        for i in range(40)
+    ]
+    rare = [
+        ExampleRecord(
+            id=f"rare_{i}",
+            prompt=f"r{i}",
+            openui='root = Map(":x")',
+            meta={"source_family": "fixture"},
+        )
+        for i in range(3)
+    ]
+    records = common + rare
+
+    baseline = sample_mixture_batch(
+        records,
+        weights={"fixture": 1.0},
+        batch_size=32,
+        rng=random.Random(5),
+        sampling_policy="with_replacement",
+    )
+    targeted = sample_mixture_batch(
+        records,
+        weights={"fixture": 1.0},
+        batch_size=32,
+        rng=random.Random(5),
+        sampling_policy="exposure_targeted",
+        action_targets={"Button": 10.0, "Map": 10.0},
+        total_decision_budget=32,
+    )
+    baseline_map = sum(1 for r in baseline if "Map" in r.openui)
+    targeted_map = sum(1 for r in targeted if "Map" in r.openui)
+    assert targeted_map >= baseline_map

@@ -1,0 +1,584 @@
+{
+  "arm_means": {
+    "current": {
+      "budget_adherence": 1.0,
+      "cap_violations": 6.0,
+      "common_action_exposure": 28.0,
+      "observed_decisions": 39.0,
+      "rare_action_exposure": 11.0,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.29464285714285715,
+      "sampled_records": 64.0,
+      "unique_roots": 25.0,
+      "unique_templates": 25.0,
+      "wall_seconds": 0.06435431000287645
+    },
+    "e396_balanced": {
+      "budget_adherence": 0.8125,
+      "cap_violations": 0.0,
+      "common_action_exposure": 40.0,
+      "observed_decisions": 52.0,
+      "rare_action_exposure": 12.0,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52.0,
+      "unique_roots": 27.0,
+      "unique_templates": 27.0,
+      "wall_seconds": 0.05361359000776429
+    },
+    "minimum_exposure_floor": {
+      "budget_adherence": 0.8125,
+      "cap_violations": 0.0,
+      "common_action_exposure": 40.0,
+      "observed_decisions": 52.0,
+      "rare_action_exposure": 12.0,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52.0,
+      "unique_roots": 27.0,
+      "unique_templates": 27.0,
+      "wall_seconds": 0.05357124000543263
+    },
+    "root_template_balanced_control": {
+      "budget_adherence": 0.8125,
+      "cap_violations": 0.0,
+      "common_action_exposure": 40.0,
+      "observed_decisions": 52.0,
+      "rare_action_exposure": 12.0,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52.0,
+      "unique_roots": 27.0,
+      "unique_templates": 27.0,
+      "wall_seconds": 0.05367276999854949
+    },
+    "sqrt_inverse_frequency": {
+      "budget_adherence": 0.8125,
+      "cap_violations": 0.0,
+      "common_action_exposure": 40.0,
+      "observed_decisions": 52.0,
+      "rare_action_exposure": 12.0,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52.0,
+      "unique_roots": 27.0,
+      "unique_templates": 27.0,
+      "wall_seconds": 0.05350908999785316
+    }
+  },
+  "cells": [
+    {
+      "action_targets": null,
+      "arm_id": "current__s0",
+      "arm_name": "current",
+      "max_importance_weight": 10.0,
+      "per_root_cap": 4,
+      "per_template_cap": 4,
+      "policy": "with_replacement",
+      "seed": 0,
+      "total_decision_budget": 64
+    },
+    {
+      "action_targets": null,
+      "arm_id": "e396_balanced__s0",
+      "arm_name": "e396_balanced",
+      "max_importance_weight": 10.0,
+      "per_root_cap": 4,
+      "per_template_cap": 4,
+      "policy": "exposure_targeted",
+      "seed": 0,
+      "total_decision_budget": 64
+    },
+    {
+      "action_targets": null,
+      "arm_id": "sqrt_inverse_frequency__s0",
+      "arm_name": "sqrt_inverse_frequency",
+      "max_importance_weight": 10.0,
+      "per_root_cap": 4,
+      "per_template_cap": 4,
+      "policy": "exposure_targeted",
+      "seed": 0,
+      "total_decision_budget": 64
+    },
+    {
+      "action_targets": null,
+      "arm_id": "minimum_exposure_floor__s0",
+      "arm_name": "minimum_exposure_floor",
+      "max_importance_weight": 10.0,
+      "per_root_cap": 4,
+      "per_template_cap": 4,
+      "policy": "exposure_targeted",
+      "seed": 0,
+      "total_decision_budget": 64
+    },
+    {
+      "action_targets": null,
+      "arm_id": "root_template_balanced_control__s0",
+      "arm_name": "root_template_balanced_control",
+      "max_importance_weight": 10.0,
+      "per_root_cap": 4,
+      "per_template_cap": 4,
+      "policy": "exposure_targeted",
+      "seed": 0,
+      "total_decision_budget": 64
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [
+    "Depends on slm_training.data.mixture exposure_targeted sampler.",
+    "Synthetic records use a fixed action vocabulary; real corpus rare-action distributions may differ.",
+    "No model is trained; this is wiring evidence only."
+  ],
+  "disposition": "no_exposure_lift",
+  "disposition_rationale": "Exposure-targeted arms do not materially increase rare-action recall or rare-to-common exposure ratio versus the with_replacement baseline.",
+  "experiment_id": "slm170-exposure-targeted-rare-action",
+  "falsifier": "Exposure-targeted sampling fails to increase rare-action exposure or violates the total budget / diversity caps.",
+  "hypothesis": "Exposure-targeted sampling with bounded importance weights and diversity caps increases rare-action exposure within a fixed total decision budget.",
+  "matrix_set": "slm170_exposure_targeted_rare_action",
+  "matrix_version": "sde2-03-v1",
+  "rows": [
+    {
+      "arm_id": "current__s0",
+      "arm_name": "current",
+      "budget_adherence": 1.0,
+      "cap_violations": 6,
+      "common_action_exposure": 28,
+      "ledger": {
+        "actions": {
+          "Button": {
+            "raw_record_count": 6,
+            "raw_target_decision_count": 6,
+            "unique_prompt_template_count": 9,
+            "unique_root_count": 9
+          },
+          "Calendar": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Card": {
+            "raw_record_count": 8,
+            "raw_target_decision_count": 8,
+            "unique_prompt_template_count": 11,
+            "unique_root_count": 11
+          },
+          "Chart": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "ImageGallery": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Map": {
+            "raw_record_count": 2,
+            "raw_target_decision_count": 2,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "TextContent": {
+            "raw_record_count": 14,
+            "raw_target_decision_count": 14,
+            "unique_prompt_template_count": 14,
+            "unique_root_count": 14
+          }
+        },
+        "aggregate": {
+          "selected_decisions": 39,
+          "selected_records": 39,
+          "total_decisions": 52,
+          "total_records": 52,
+          "unique_actions": 7
+        },
+        "observed_decisions_per_run": {
+          "Button": 6,
+          "Calendar": 3,
+          "Card": 8,
+          "Chart": 3,
+          "ImageGallery": 3,
+          "Map": 2,
+          "TextContent": 14
+        }
+      },
+      "notes": [
+        "policy=with_replacement",
+        "total_decision_budget=64",
+        "fixture-only: synthetic rare-action exposure comparison"
+      ],
+      "observed_decisions": 39,
+      "policy": "with_replacement",
+      "rare_action_exposure": 11,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.29464285714285715,
+      "sampled_records": 64,
+      "seed": 0,
+      "total_decision_budget": 64,
+      "unique_roots": 25,
+      "unique_templates": 25,
+      "wall_seconds": 0.06435431000287645
+    },
+    {
+      "arm_id": "e396_balanced__s0",
+      "arm_name": "e396_balanced",
+      "budget_adherence": 0.8125,
+      "cap_violations": 0,
+      "common_action_exposure": 40,
+      "ledger": {
+        "actions": {
+          "Button": {
+            "raw_record_count": 10,
+            "raw_target_decision_count": 10,
+            "unique_prompt_template_count": 9,
+            "unique_root_count": 9
+          },
+          "Calendar": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Card": {
+            "raw_record_count": 13,
+            "raw_target_decision_count": 13,
+            "unique_prompt_template_count": 11,
+            "unique_root_count": 11
+          },
+          "Chart": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "ImageGallery": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Map": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "TextContent": {
+            "raw_record_count": 17,
+            "raw_target_decision_count": 17,
+            "unique_prompt_template_count": 14,
+            "unique_root_count": 14
+          }
+        },
+        "aggregate": {
+          "selected_decisions": 52,
+          "selected_records": 52,
+          "total_decisions": 52,
+          "total_records": 52,
+          "unique_actions": 7
+        },
+        "observed_decisions_per_run": {
+          "Button": 10,
+          "Calendar": 3,
+          "Card": 13,
+          "Chart": 3,
+          "ImageGallery": 3,
+          "Map": 3,
+          "TextContent": 17
+        }
+      },
+      "notes": [
+        "policy=exposure_targeted",
+        "total_decision_budget=64",
+        "fixture-only: synthetic rare-action exposure comparison",
+        "max_importance_weight=10.0"
+      ],
+      "observed_decisions": 52,
+      "policy": "exposure_targeted",
+      "rare_action_exposure": 12,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52,
+      "seed": 0,
+      "total_decision_budget": 64,
+      "unique_roots": 27,
+      "unique_templates": 27,
+      "wall_seconds": 0.05361359000776429
+    },
+    {
+      "arm_id": "sqrt_inverse_frequency__s0",
+      "arm_name": "sqrt_inverse_frequency",
+      "budget_adherence": 0.8125,
+      "cap_violations": 0,
+      "common_action_exposure": 40,
+      "ledger": {
+        "actions": {
+          "Button": {
+            "raw_record_count": 10,
+            "raw_target_decision_count": 10,
+            "unique_prompt_template_count": 9,
+            "unique_root_count": 9
+          },
+          "Calendar": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Card": {
+            "raw_record_count": 13,
+            "raw_target_decision_count": 13,
+            "unique_prompt_template_count": 11,
+            "unique_root_count": 11
+          },
+          "Chart": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "ImageGallery": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Map": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "TextContent": {
+            "raw_record_count": 17,
+            "raw_target_decision_count": 17,
+            "unique_prompt_template_count": 14,
+            "unique_root_count": 14
+          }
+        },
+        "aggregate": {
+          "selected_decisions": 52,
+          "selected_records": 52,
+          "total_decisions": 52,
+          "total_records": 52,
+          "unique_actions": 7
+        },
+        "observed_decisions_per_run": {
+          "Button": 10,
+          "Calendar": 3,
+          "Card": 13,
+          "Chart": 3,
+          "ImageGallery": 3,
+          "Map": 3,
+          "TextContent": 17
+        }
+      },
+      "notes": [
+        "policy=exposure_targeted",
+        "total_decision_budget=64",
+        "fixture-only: synthetic rare-action exposure comparison",
+        "max_importance_weight=10.0"
+      ],
+      "observed_decisions": 52,
+      "policy": "exposure_targeted",
+      "rare_action_exposure": 12,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52,
+      "seed": 0,
+      "total_decision_budget": 64,
+      "unique_roots": 27,
+      "unique_templates": 27,
+      "wall_seconds": 0.05350908999785316
+    },
+    {
+      "arm_id": "minimum_exposure_floor__s0",
+      "arm_name": "minimum_exposure_floor",
+      "budget_adherence": 0.8125,
+      "cap_violations": 0,
+      "common_action_exposure": 40,
+      "ledger": {
+        "actions": {
+          "Button": {
+            "raw_record_count": 10,
+            "raw_target_decision_count": 10,
+            "unique_prompt_template_count": 9,
+            "unique_root_count": 9
+          },
+          "Calendar": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Card": {
+            "raw_record_count": 13,
+            "raw_target_decision_count": 13,
+            "unique_prompt_template_count": 11,
+            "unique_root_count": 11
+          },
+          "Chart": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "ImageGallery": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Map": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "TextContent": {
+            "raw_record_count": 17,
+            "raw_target_decision_count": 17,
+            "unique_prompt_template_count": 14,
+            "unique_root_count": 14
+          }
+        },
+        "aggregate": {
+          "selected_decisions": 52,
+          "selected_records": 52,
+          "total_decisions": 52,
+          "total_records": 52,
+          "unique_actions": 7
+        },
+        "observed_decisions_per_run": {
+          "Button": 10,
+          "Calendar": 3,
+          "Card": 13,
+          "Chart": 3,
+          "ImageGallery": 3,
+          "Map": 3,
+          "TextContent": 17
+        }
+      },
+      "notes": [
+        "policy=exposure_targeted",
+        "total_decision_budget=64",
+        "fixture-only: synthetic rare-action exposure comparison",
+        "max_importance_weight=10.0"
+      ],
+      "observed_decisions": 52,
+      "policy": "exposure_targeted",
+      "rare_action_exposure": 12,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52,
+      "seed": 0,
+      "total_decision_budget": 64,
+      "unique_roots": 27,
+      "unique_templates": 27,
+      "wall_seconds": 0.05357124000543263
+    },
+    {
+      "arm_id": "root_template_balanced_control__s0",
+      "arm_name": "root_template_balanced_control",
+      "budget_adherence": 0.8125,
+      "cap_violations": 0,
+      "common_action_exposure": 40,
+      "ledger": {
+        "actions": {
+          "Button": {
+            "raw_record_count": 10,
+            "raw_target_decision_count": 10,
+            "unique_prompt_template_count": 9,
+            "unique_root_count": 9
+          },
+          "Calendar": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Card": {
+            "raw_record_count": 13,
+            "raw_target_decision_count": 13,
+            "unique_prompt_template_count": 11,
+            "unique_root_count": 11
+          },
+          "Chart": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "ImageGallery": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "Map": {
+            "raw_record_count": 3,
+            "raw_target_decision_count": 3,
+            "unique_prompt_template_count": 2,
+            "unique_root_count": 2
+          },
+          "TextContent": {
+            "raw_record_count": 17,
+            "raw_target_decision_count": 17,
+            "unique_prompt_template_count": 14,
+            "unique_root_count": 14
+          }
+        },
+        "aggregate": {
+          "selected_decisions": 52,
+          "selected_records": 52,
+          "total_decisions": 52,
+          "total_records": 52,
+          "unique_actions": 7
+        },
+        "observed_decisions_per_run": {
+          "Button": 10,
+          "Calendar": 3,
+          "Card": 13,
+          "Chart": 3,
+          "ImageGallery": 3,
+          "Map": 3,
+          "TextContent": 17
+        }
+      },
+      "notes": [
+        "policy=exposure_targeted",
+        "total_decision_budget=64",
+        "fixture-only: synthetic rare-action exposure comparison",
+        "max_importance_weight=10.0"
+      ],
+      "observed_decisions": 52,
+      "policy": "exposure_targeted",
+      "rare_action_exposure": 12,
+      "rare_action_recall": 1.0,
+      "rare_to_common_ratio": 0.225,
+      "sampled_records": 52,
+      "seed": 0,
+      "total_decision_budget": 64,
+      "unique_roots": 27,
+      "unique_templates": 27,
+      "wall_seconds": 0.05367276999854949
+    }
+  ],
+  "run_id": "slm170-exposure-targeted-rare-action-20260720",
+  "schema": "Slm170ExposureTargetedRareActionReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T13:35:36.247668Z",
+  "version_stamp": {
+    "code_commit": "5c4304643e49d247a7626b8d7e426bec43f1b623",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v44",
+      "harness.experiments.slm170_exposure_targeted_rare_action": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T13:35:36.246927+00:00"
+  }
+}

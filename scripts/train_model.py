@@ -145,9 +145,43 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--mixture-sampling-policy",
-        choices=("with_replacement", "capacity_aware", "quota_capacity_aware"),
+        choices=(
+            "with_replacement",
+            "capacity_aware",
+            "quota_capacity_aware",
+            "exposure_targeted",
+        ),
         default="with_replacement",
-        help="Draw mixture rows with replacement or capacity-aware per window.",
+        help="Draw mixture rows with replacement, capacity-aware, or exposure-targeted.",
+    )
+    parser.add_argument(
+        "--mixture-exposure-target-profile",
+        default=None,
+        help="SDE2-03: named exposure-target profile (audit label).",
+    )
+    parser.add_argument(
+        "--mixture-total-decision-budget",
+        type=int,
+        default=None,
+        help="SDE2-03: total decision budget for exposure-targeted sampling.",
+    )
+    parser.add_argument(
+        "--mixture-per-root-cap",
+        type=int,
+        default=None,
+        help="SDE2-03: max records per root parent for exposure-targeted sampling.",
+    )
+    parser.add_argument(
+        "--mixture-per-template-cap",
+        type=int,
+        default=None,
+        help="SDE2-03: max records per prompt template for exposure-targeted sampling.",
+    )
+    parser.add_argument(
+        "--mixture-max-importance-weight",
+        type=float,
+        default=None,
+        help="SDE2-03: cap on per-action importance weights.",
     )
     parser.add_argument(
         "--register-promoted",
@@ -1072,6 +1106,11 @@ def main(argv: list[str] | None = None) -> int:
         mixture_manifest=args.mixture_manifest,
         mixture_min_quality_score=args.mixture_min_quality_score,
         mixture_sampling_policy=args.mixture_sampling_policy,
+        mixture_exposure_target_profile=args.mixture_exposure_target_profile,
+        mixture_total_decision_budget=args.mixture_total_decision_budget,
+        mixture_per_root_cap=args.mixture_per_root_cap,
+        mixture_per_template_cap=args.mixture_per_template_cap,
+        mixture_max_importance_weight=args.mixture_max_importance_weight,
         register_promoted=bool(args.register_promoted),
         telemetry=not bool(args.no_telemetry),
         checkpoint_bucket=(

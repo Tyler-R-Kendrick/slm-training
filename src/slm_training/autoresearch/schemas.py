@@ -67,6 +67,11 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "min_quality_score",
         "mixture_weights",
         "mixture_sampling_policy",
+        "mixture_exposure_target_profile",
+        "mixture_total_decision_budget",
+        "mixture_per_root_cap",
+        "mixture_per_template_cap",
+        "mixture_max_importance_weight",
         "output_tokenizer",
         "seed",
         "schema_in_context",
@@ -246,8 +251,16 @@ class ExperimentKnobs(StrictModel):
     min_quality_score: float | None = Field(default=None, ge=0, le=1)
     mixture_weights: dict[str, float] | None = None
     mixture_sampling_policy: (
-        Literal["with_replacement", "capacity_aware", "quota_capacity_aware"] | None
+        Literal[
+            "with_replacement", "capacity_aware", "quota_capacity_aware", "exposure_targeted"
+        ]
+        | None
     ) = None
+    mixture_exposure_target_profile: str | None = None
+    mixture_total_decision_budget: int | None = Field(default=None, ge=1)
+    mixture_per_root_cap: int | None = Field(default=None, ge=1)
+    mixture_per_template_cap: int | None = Field(default=None, ge=1)
+    mixture_max_importance_weight: float | None = Field(default=None, ge=1.0)
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)

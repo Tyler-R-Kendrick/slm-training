@@ -443,6 +443,22 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "min_quality_score": min_quality,
             "filtered_record_count": len(records),
         }
+        if mixture_sampling_policy == "exposure_targeted":
+            mixture_meta["exposure_target_profile"] = getattr(
+                config, "mixture_exposure_target_profile", None
+            )
+            mixture_meta["total_decision_budget"] = getattr(
+                config, "mixture_total_decision_budget", None
+            )
+            mixture_meta["per_root_cap"] = getattr(
+                config, "mixture_per_root_cap", None
+            )
+            mixture_meta["per_template_cap"] = getattr(
+                config, "mixture_per_template_cap", None
+            )
+            mixture_meta["max_importance_weight"] = getattr(
+                config, "mixture_max_importance_weight", None
+            )
         family_pools = index_family_pools(records)
         if mixture_task_weights:
             task_family_pools = index_task_family_pools(records)
@@ -460,16 +476,34 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             from slm_training.data.mixture import sample_mixture_batch
 
             target = config.batch_size * 8
-            drawn = sample_mixture_batch(
-                records,
-                weights=mixture_weights,
-                batch_size=target,
-                rng=rng,
-                pools=family_pools,
-                task_weights=mixture_task_weights,
-                task_pools=task_family_pools,
-                sampling_policy=mixture_sampling_policy,
-            )
+            sample_kwargs: dict[str, object] = {
+                "weights": mixture_weights,
+                "batch_size": target,
+                "rng": rng,
+                "pools": family_pools,
+                "task_weights": mixture_task_weights,
+                "task_pools": task_family_pools,
+                "sampling_policy": mixture_sampling_policy,
+            }
+            if mixture_sampling_policy == "exposure_targeted":
+                sample_kwargs.update(
+                    {
+                        "total_decision_budget": (
+                            getattr(config, "mixture_total_decision_budget", None)
+                            or target
+                        ),
+                        "per_root_cap": getattr(
+                            config, "mixture_per_root_cap", None
+                        ),
+                        "per_template_cap": getattr(
+                            config, "mixture_per_template_cap", None
+                        ),
+                        "max_importance_weight": getattr(
+                            config, "mixture_max_importance_weight", None
+                        ),
+                    }
+                )
+            drawn = sample_mixture_batch(records, **sample_kwargs)
             return batched(drawn, config.batch_size)
         if getattr(config, "use_curriculum", False):
             from slm_training.harnesses.quality import sample_curriculum_batch
