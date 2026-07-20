@@ -201,6 +201,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal component choices using only visible semantic-role candidates.",
     )
     parser.add_argument(
+        "--schema-value-decode-weight",
+        type=float,
+        default=None,
+        help="Penalize visible placeholders in legal enum-valued component arguments.",
+    )
+    parser.add_argument(
         "--semantic-plan-decode-weight",
         type=float,
         default=None,
@@ -527,6 +533,7 @@ def main(argv: list[str] | None = None) -> int:
         component_plan_decode_weight=args.component_plan_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
         semantic_role_decode_weight=args.semantic_role_decode_weight,
+        schema_value_decode_weight=args.schema_value_decode_weight,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         semantic_plan_binding_decode_weight=(
             args.semantic_plan_binding_decode_weight

@@ -257,6 +257,7 @@ class ModelBuildConfig:
     slot_component_owner_rare_multiplier: int = 1
     slot_component_decode_weight: float | None = None
     semantic_role_decode_weight: float | None = None
+    schema_value_decode_weight: float | None = None
     semantic_plan_decode_weight: float | None = None
     semantic_plan_binding_decode_weight: float | None = None
     semantic_plan_root_decode_weight: float | None = None
