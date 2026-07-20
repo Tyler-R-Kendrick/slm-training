@@ -611,12 +611,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v46",
+      "version": "v47",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v47",
+          "date": "2026-07-20",
+          "note": "add SLM-176 P14 action-shortlist retrieve-then-rerank wiring/fixture harness"
+        },
         {
           "version": "v46",
           "date": "2026-07-20",
@@ -1172,8 +1177,27 @@
         }
       ]
     },
-    "dsl.action_descriptions": {
+    "harness.experiments.slm176_action_shortlist_rerank": {
       "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm176_action_shortlist_rerank.py",
+        "scripts/run_slm176_action_shortlist_rerank_fixture.py",
+        "tests/test_harnesses/experiments/test_slm176_action_shortlist_rerank.py",
+        "tests/test_scripts/test_run_slm176_action_shortlist_rerank_fixture.py",
+        "docs/design/iter-slm176-action-shortlist-rerank-20260720.json",
+        "docs/design/iter-slm176-action-shortlist-rerank-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-176 P14 action-shortlist retrieve-then-rerank fixture harness"
+        }
+      ]
+    },
+    "dsl.action_descriptions": {
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/action_descriptions.py",
@@ -1181,9 +1205,29 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "add fixture_vectors helper for deterministic description vector generation used by SLM-176 shortlist wiring"
+        },
+        {
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-174 SDE2-07 action-alias map and alias-aware description sources"
+        }
+      ]
+    },
+    "dsl.action_shortlist": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/action_shortlist.py",
+        "tests/test_dsl/test_action_shortlist.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-176 P14 description-based retrieve-then-rerank policy and wiring helpers"
         }
       ]
     },
@@ -1216,7 +1260,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v55",
+      "version": "v56",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1231,6 +1275,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v56",
+          "date": "2026-07-20",
+          "note": "add SLM-176 P14 action-shortlist mode/config fields, CLI args, and optional retrieve-then-rerank in _select_compiler_path; defaults preserve off behavior"
+        },
         {
           "version": "v55",
           "date": "2026-07-20",

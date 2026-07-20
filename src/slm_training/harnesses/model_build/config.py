@@ -319,6 +319,14 @@ class ModelBuildConfig:
     action_alias_mode: str = "canonical"
     action_alias_manifest: Path | None = None
     action_description_name_mode: str = "schema"
+    # SLM-176 (P14): description-based retrieve-then-rerank over live legal
+    # action sets.  All defaults are off; this is wiring/fixture evidence only.
+    action_shortlist_mode: str = "off"
+    action_shortlist_k: int = 8
+    action_shortlist_min_legal_size: int = 16
+    action_shortlist_score_margin: float = 0.0
+    action_shortlist_fallback_policy: str = "confidence_and_coverage"
+    action_shortlist_shadow_full_score: bool = False
     # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
     # sparse grammar-action scorer.  ``none`` is identity and preserves behavior.
     semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
