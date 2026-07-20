@@ -575,7 +575,6 @@ def test_slot_coverage_close_trace_records_owner_and_missing_slots() -> None:
     assert trace["phase"] == "slot_coverage_close"
     assert trace["mode"] == "coverage_continue"
     assert trace["missing_slots"] == [":dialog.confirm"]
-    assert trace["prompt_owned_candidates"] == {}
     assert trace["owner_component"] == "Stack"
     assert trace["chosen_token"] == "+Button"
     assert trace["final_token"] == "]"
@@ -1101,52 +1100,6 @@ def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
         (model.tokenizer.token_to_id["+Card"],),
         ("component_root",),
     ) is None
-
-
-def test_slot_coverage_close_bias_prefers_prompt_owned_component() -> None:
-    from types import SimpleNamespace
-
-    model = _model(
-        output_tokenizer="choice",
-        slot_coverage_close_decode_weight=2.0,
-    )
-    tokenizer = model.tokenizer
-    switch_id = tokenizer.token_to_id["+SwitchGroup"]
-    input_id = tokenizer.token_to_id["+Input"]
-    close_id = tokenizer.token_to_id["-"]
-    state = SimpleNamespace(
-        frames=[
-            SimpleNamespace(
-                kind="component",
-                expr_type="element:Button",
-                arg_index=1,
-                schemas=({"type": "string"}, {"type": "object"}),
-                close="-",
-            )
-        ]
-    )
-    slots = [":auth.name", ":auth.email"]
-    broad = {
-        ":auth.name": ("Input", "SwitchGroup"),
-        ":auth.email": ("Input", "SwitchGroup"),
-    }
-    prompt_owned = {
-        ":auth.name": ("Input",),
-        ":auth.email": ("Input",),
-    }
-
-    bias = model._slot_coverage_close_bias(
-        state,
-        [],
-        (switch_id, input_id, close_id),
-        torch.tensor([10.0, 1.0, 12.0]),
-        slots,
-        broad,
-        prompt_owned,
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [0.0, 13.0, 0.0]
 
 
 def test_prompt_semantic_plan_preserves_repeated_authored_component_mentions() -> None:

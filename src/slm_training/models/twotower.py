@@ -947,7 +947,6 @@ class TwoTowerModel(nn.Module):
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
-        self._prompt_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._semantic_plan_action_counts: list[dict[int, int]] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
@@ -4944,7 +4943,6 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
-        prompt_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
         """Prefer coverage-compatible continuations before legal frame closure."""
         weight = float(
@@ -5004,22 +5002,11 @@ class TwoTowerModel(nn.Module):
             "",
         )
 
-        def candidates_for(slot: str) -> tuple[str, ...]:
-            prompt_owned = (
-                prompt_role_candidates.get(slot, ())
-                if prompt_role_candidates
-                else ()
-            )
-            return prompt_owned or (
-                semantic_role_candidates.get(slot, ())
-                if semantic_role_candidates
-                else ()
-            )
-
         def owner_matches(slot: str) -> bool:
             return bool(
                 owner_component
-                and owner_component in candidates_for(slot)
+                and semantic_role_candidates
+                and owner_component in semantic_role_candidates.get(slot, ())
             )
 
         active_schema: dict[str, Any] | None = None
@@ -5046,7 +5033,7 @@ class TwoTowerModel(nn.Module):
             if token.startswith(OPEN_PREFIX):
                 component = token[len(OPEN_PREFIX) :]
                 if semantic_role_candidates and any(
-                    component in candidates_for(slot)
+                    component in semantic_role_candidates.get(slot, ())
                     for _index, slot in missing
                 ):
                     targets.append(position)
@@ -5100,7 +5087,6 @@ class TwoTowerModel(nn.Module):
         coverage_bias: torch.Tensor,
         scores_after: torch.Tensor,
         slot_contract: list[str] | None,
-        prompt_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> dict[str, object] | None:
         """Record bounded evidence for a visible-slot closure intervention."""
         if len(stats.constrained_selection_traces) >= 64:
@@ -5150,11 +5136,6 @@ class TwoTowerModel(nn.Module):
                 else "coverage_continue"
             ),
             "missing_slots": missing_slots,
-            "prompt_owned_candidates": {
-                slot: list(prompt_role_candidates.get(slot, ()))
-                for slot in missing_slots
-                if prompt_role_candidates and prompt_role_candidates.get(slot)
-            },
             "owner_component": owner_component,
             "active_property": str(getattr(frame, "active_property", "") or ""),
             "before_token": str(
@@ -7234,12 +7215,6 @@ class TwoTowerModel(nn.Module):
                             and row < len(self._semantic_role_candidates)
                             else None
                         ),
-                        (
-                            self._prompt_role_candidates[row]
-                            if self._prompt_role_candidates
-                            and row < len(self._prompt_role_candidates)
-                            else None
-                        ),
                     )
                     slot_coverage_close_trace = None
                     if slot_coverage_close_bias is not None:
@@ -7267,12 +7242,6 @@ class TwoTowerModel(nn.Module):
                                         self._slot_contracts[row]
                                         if self._slot_contracts
                                         and row < len(self._slot_contracts)
-                                        else None
-                                    ),
-                                    prompt_role_candidates=(
-                                        self._prompt_role_candidates[row]
-                                        if self._prompt_role_candidates
-                                        and row < len(self._prompt_role_candidates)
                                         else None
                                     ),
                                 )
@@ -8424,21 +8393,8 @@ class TwoTowerModel(nn.Module):
                 )
                 for i, prompt in enumerate(prompts)
             ]
-            self._prompt_role_candidates = [
-                prompt_semantic_role_candidates(
-                    prompt,
-                    (
-                        self._slot_contracts[i]
-                        if self._slot_contracts and i < len(self._slot_contracts)
-                        else None
-                    ),
-                    include_schema_candidates=False,
-                )
-                for i, prompt in enumerate(prompts)
-            ]
         else:
             self._semantic_role_candidates = None
-            self._prompt_role_candidates = None
         plan_weight = max(
             getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0,
             getattr(

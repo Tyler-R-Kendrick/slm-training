@@ -1442,7 +1442,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1457,6 +1457,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-07-20",
+          "note": "E630 rejection: restore v62 broad schema-role closure behavior after prompt-owned filtering nested Input inside Button and regressed every aggregate quality metric"
+        },
         {
           "version": "v63",
           "date": "2026-07-20",
