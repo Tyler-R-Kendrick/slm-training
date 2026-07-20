@@ -3898,6 +3898,25 @@ no checkpoint was synced. Evidence:
 [narrative](iter-e615-object-frame-schema-role-slot-20260720.md) and
 [JSON](iter-e615-object-frame-schema-role-slot-20260720.json).
 
+## E616 object-frame slot-bias replay on an 80-step scratch checkpoint
+
+E616 replays E615's matched OOD `n=4` control (`schema_role_slot_decode_weight=0`)
+vs treatment (`=8.0`) eval pair against a fresh scratch checkpoint trained for
+80 steps instead of E615's 8 (same corpus, seed, and architecture; loss
+26.5243 vs 37.9045). Unlike E615, all 4 OOD predictions are now non-empty and
+syntactically valid (`syntax_parse_rate` 0.0→1.0). Both arms remain
+byte-identical, but for a diagnosable reason this time: `ood_gallery_01`
+decodes to `ImageGallery([])` in both arms — the typed array closes empty
+before any item object is ever opened, so the E615 object-frame lever's
+precondition (an open `{` inside a typed-array item) is never reached. This
+reproduces E612's already-rejected finding (undertrained checkpoints close
+typed arrays empty) one level upstream of what E615 targets, rather than
+exposing a new defect. Every headline quality metric is 0.0 in both arms,
+AgentV is 0/1, and no checkpoint was promoted or synced. The E615 fix remains
+verified only at the unit level. Evidence:
+[narrative](iter-e616-object-frame-slot-bias-scratch80-replay-20260720.md) and
+[JSON](iter-e616-object-frame-slot-bias-scratch80-replay-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
