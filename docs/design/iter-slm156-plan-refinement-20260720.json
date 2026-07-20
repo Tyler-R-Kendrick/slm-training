@@ -1,0 +1,276 @@
+{
+  "claim_class": "wiring",
+  "experiment_id": "slm156-plan-refinement",
+  "manifest": {
+    "arms": [
+      {
+        "adaptive": false,
+        "arm_id": "A_one_pass",
+        "depth": 1,
+        "description": "Single forward through a parameter-matched one-pass predictor.",
+        "diagnostic": false,
+        "kind": "one_pass",
+        "name": "one_pass_predictor",
+        "promotable": true,
+        "stochastic": false,
+        "uses_diagnostics": false,
+        "uses_gold": false
+      },
+      {
+        "adaptive": false,
+        "arm_id": "B_deeper_non_shared",
+        "depth": 1,
+        "description": "Deeper non-shared predictor with matched parameter budget.",
+        "diagnostic": false,
+        "kind": "deeper",
+        "name": "deeper_non_shared",
+        "promotable": true,
+        "stochastic": false,
+        "uses_diagnostics": false,
+        "uses_gold": false
+      },
+      {
+        "adaptive": false,
+        "arm_id": "C_shared_fixed_2",
+        "depth": 2,
+        "description": "Shared cell applied for exactly 2 recursions.",
+        "diagnostic": false,
+        "kind": "shared_fixed",
+        "name": "shared_fixed_2",
+        "promotable": true,
+        "stochastic": false,
+        "uses_diagnostics": false,
+        "uses_gold": false
+      },
+      {
+        "adaptive": false,
+        "arm_id": "D_shared_fixed_4",
+        "depth": 4,
+        "description": "Shared cell applied for exactly 4 recursions.",
+        "diagnostic": false,
+        "kind": "shared_fixed",
+        "name": "shared_fixed_4",
+        "promotable": true,
+        "stochastic": false,
+        "uses_diagnostics": false,
+        "uses_gold": false
+      },
+      {
+        "adaptive": true,
+        "arm_id": "E_shared_adaptive",
+        "depth": 4,
+        "description": "Shared cell with calibrated halt/value head.",
+        "diagnostic": false,
+        "kind": "shared_adaptive",
+        "name": "shared_adaptive",
+        "promotable": true,
+        "stochastic": false,
+        "uses_diagnostics": false,
+        "uses_gold": false
+      },
+      {
+        "adaptive": true,
+        "arm_id": "F_shared_diagnostics",
+        "depth": 4,
+        "description": "Adaptive shared cell plus inference-available diagnostics placeholder.",
+        "diagnostic": false,
+        "kind": "shared_adaptive",
+        "name": "shared_with_diagnostics",
+        "promotable": true,
+        "stochastic": false,
+        "uses_diagnostics": true,
+        "uses_gold": false
+      },
+      {
+        "adaptive": false,
+        "arm_id": "G_stochastic_value",
+        "depth": 4,
+        "description": "Stochastic trajectory sampling with value selection (fixture only).",
+        "diagnostic": false,
+        "kind": "shared_fixed",
+        "name": "stochastic_trajectories",
+        "promotable": true,
+        "stochastic": true,
+        "uses_diagnostics": false,
+        "uses_gold": false
+      },
+      {
+        "adaptive": false,
+        "arm_id": "H_gold_oracle",
+        "depth": 0,
+        "description": "Gold plan oracle ceiling.",
+        "diagnostic": true,
+        "kind": "diagnostic",
+        "name": "gold_plan_oracle",
+        "promotable": false,
+        "stochastic": false,
+        "uses_diagnostics": false,
+        "uses_gold": true
+      }
+    ],
+    "claim_class": "wiring",
+    "common_config": {
+      "adaptive_halt_threshold": 0.7,
+      "epochs": 5,
+      "lr": 0.01,
+      "max_depth": 4,
+      "metric_versions": {
+        "meaningful": "2.0.0"
+      },
+      "n_eval": 8,
+      "n_train": 32,
+      "num_archetypes": 4,
+      "num_roles": 8,
+      "seeds": [
+        0
+      ],
+      "state_dim": 13
+    },
+    "experiment_id": "slm156-plan-refinement",
+    "falsifier": "Recursion changes plans but not final correctness, deeper non-shared matches it at equal FLOPs, adaptive halting collapses to min/max depth, or diagnostics leak gold information.",
+    "hypothesis": "A small shared refinement cell applied recursively to SemanticPlanV1 improves plan-factor recovery over a parameter-matched one-pass predictor on coupled corruptions, and adaptive halting preserves quality at lower average depth.",
+    "matrix_set": "slm156_plan_refinement",
+    "matrix_version": "spv3-03-v1",
+    "status": "not_run"
+  },
+  "matrix_set": "slm156_plan_refinement",
+  "matrix_version": "spv3-03-v1",
+  "rows": [
+    {
+      "arm_id": "A_one_pass",
+      "kind": "one_pass",
+      "mean_depth": 0.0,
+      "mean_forwards": 1.0,
+      "mean_plan_score": 0.6968988360216221,
+      "n_records": 8,
+      "notes": [
+        "kind=one_pass",
+        "depth=1",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "B_deeper_non_shared",
+      "kind": "deeper",
+      "mean_depth": 0.0,
+      "mean_forwards": 2.0,
+      "mean_plan_score": 0.6478063656638066,
+      "n_records": 8,
+      "notes": [
+        "kind=deeper",
+        "depth=1",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "C_shared_fixed_2",
+      "kind": "shared_fixed",
+      "mean_depth": 2.0,
+      "mean_forwards": 2.0,
+      "mean_plan_score": 0.6645364003876845,
+      "n_records": 8,
+      "notes": [
+        "kind=shared_fixed",
+        "depth=2",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "D_shared_fixed_4",
+      "kind": "shared_fixed",
+      "mean_depth": 4.0,
+      "mean_forwards": 4.0,
+      "mean_plan_score": 0.7074574871609608,
+      "n_records": 8,
+      "notes": [
+        "kind=shared_fixed",
+        "depth=4",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "E_shared_adaptive",
+      "kind": "shared_adaptive",
+      "mean_depth": 4.0,
+      "mean_forwards": 4.0,
+      "mean_plan_score": 0.7074574871609608,
+      "n_records": 8,
+      "notes": [
+        "kind=shared_adaptive",
+        "depth=4",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "F_shared_diagnostics",
+      "kind": "shared_adaptive",
+      "mean_depth": 4.0,
+      "mean_forwards": 4.0,
+      "mean_plan_score": 0.7074574871609608,
+      "n_records": 8,
+      "notes": [
+        "kind=shared_adaptive",
+        "depth=4",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "G_stochastic_value",
+      "kind": "shared_fixed",
+      "mean_depth": 4.0,
+      "mean_forwards": 4.0,
+      "mean_plan_score": 0.7074574871609608,
+      "n_records": 8,
+      "notes": [
+        "kind=shared_fixed",
+        "depth=4",
+        "fixture-only: synthetic plan-state recovery"
+      ],
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "H_gold_oracle",
+      "kind": "diagnostic",
+      "mean_depth": 0.0,
+      "mean_forwards": 0.0,
+      "mean_plan_score": 0.7708333333333334,
+      "n_records": 8,
+      "notes": [
+        "kind=diagnostic",
+        "depth=0",
+        "fixture-only: synthetic plan-state recovery",
+        "diagnostic arm",
+        "non-promotable"
+      ],
+      "promotable": false,
+      "seed": 0
+    }
+  ],
+  "run_id": "slm156_fixture",
+  "schema": "Slm156PlanRefinementReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T08:13:09.182162Z",
+  "version_stamp": {
+    "code_commit": "43a114dd6ba68239c16b39fef5ad2b49e6c4370a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v32",
+      "harness.experiments.slm156_plan_refinement": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T08:13:09.181425+00:00"
+  }
+}
