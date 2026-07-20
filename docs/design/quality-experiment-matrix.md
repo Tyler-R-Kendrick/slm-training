@@ -4203,6 +4203,47 @@ checkpoint promoted or synced; no previously reported metric changes.
 Evidence: [narrative](iter-e622-training-time-decode-gate-scratch40-20260720.md)
 and [JSON](iter-e622-training-time-decode-gate-scratch40-20260720.json).
 
+## E623 — close the train_model.py decode-weight CLI gap, then exercise it (2026-07-20)
+
+Verified E622's finding directly (`grep -c semantic_plan
+scripts/train_model.py scripts/evaluate_model.py` -> `0` vs `18`) and traced
+that every target field already exists in `ModelBuildConfig`/`TwoTowerConfig`
+and is already read generically by `factory.py` -- the gap was exclusively
+`train_model.py`'s argparse surface. Added the 21 missing flags
+(`--semantic-role-contract-in-context`, `--semantic-role-decode-weight`,
+`--semantic-role-schema-candidates`, `--slot-coverage-close-decode-weight`,
+`--schema-value-decode-weight`, `--schema-opaque-decode-weight`,
+`--schema-enum-close-decode-weight`, `--schema-opaque-close-decode-weight`,
+`--schema-role-slot-decode-weight`, all nine `--semantic-plan-*-decode-weight`
+flags, `--visible-reference-decode-weight`) to `scripts/train_model.py`,
+mirroring `scripts/evaluate_model.py`'s exact flag names and config wiring,
+plus a new CLI-wiring test.
+
+Reran E622's exact 40-step scratch recipe as a fresh paired control/treatment:
+control byte-reproduced E622's own checkpoint (`last.pt` sha256
+`6b7aaf2b...`) and eval numbers exactly, confirming a true paired rerun.
+Training loss is identical between arms (`last_loss` 15.396740913391113 in
+both -- expected, these levers are decode-only). The `ood`-suite periodic
+eval (n=4) differs sharply once the newly-wired levers are set to E617's own
+treatment values: `meaningful_program_rate` 0.0->0.75,
+`placeholder_fidelity` 0.0->0.5667, `structural_similarity`
+0.190625->0.6439, `reward_score` 0.0->0.67475, `ship_score`
+0.03465909090909091->0.657201515151515. `scoreboard.json`'s
+`evaluation_policy` confirms every treatment weight landed exactly as
+passed -- the first time in the E610-E623 lineage these decode-time levers
+have been exercised inside a real `slm sft train` process's own periodic
+eval rather than only via standalone `evaluate_model.py` replay.
+
+Honest caveats: `n=4`, single seed, both checkpoints far too undertrained to
+promote or sync (`--no-sync-checkpoints`); the large delta vs. E617's own
++0.042 effect is most plausibly a floor effect (this checkpoint's unbiased
+decode is near-degenerate, so legal-candidate biasing has more room to help)
+rather than evidence the effect scales with checkpoint quality -- not
+established either way by this run. Not a ship claim.
+
+Evidence: [narrative](iter-e623-decode-weight-cli-gap-closed-scratch40-20260720.md)
+and [JSON](iter-e623-decode-weight-cli-gap-closed-scratch40-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

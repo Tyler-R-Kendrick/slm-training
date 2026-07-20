@@ -1314,7 +1314,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1329,6 +1329,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-20",
+          "note": "E623: expose the semantic_role_contract_in_context / semantic_role_*, schema_*, schema_role_slot_decode_weight, semantic_plan_*_decode_weight, and visible_reference_decode_weight CLI flags in scripts/train_model.py, mirroring scripts/evaluate_model.py's existing flag names and ModelBuildConfig wiring exactly; these levers (all already-present ModelBuildConfig/TwoTowerConfig fields, E617/E620) could previously only be exercised via standalone evaluate_model.py replay, never during a real slm sft train run (E622 finding)"
+        },
         {
           "version": "v60",
           "date": "2026-07-20",
