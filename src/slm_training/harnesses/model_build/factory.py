@@ -149,6 +149,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_plan_root_decode_weight",
         "semantic_plan_root_margin_decode_weight",
         "semantic_plan_repeated_array_close_margin_decode_weight",
+        "semantic_plan_repeated_slot_margin_decode_weight",
         "visible_reference_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
@@ -514,6 +515,14 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(
                 config,
                 "semantic_plan_repeated_array_close_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        ),
+        semantic_plan_repeated_slot_margin_decode_weight=float(
+            getattr(
+                config,
+                "semantic_plan_repeated_slot_margin_decode_weight",
                 0.0,
             )
             or 0.0

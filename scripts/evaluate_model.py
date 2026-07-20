@@ -290,6 +290,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Close nested arrays after one item inside repeated plan families.",
     )
     parser.add_argument(
+        "--semantic-plan-repeated-slot-margin-decode-weight",
+        type=float,
+        default=None,
+        help="Floor the best unused visible slot inside repeated plan instances.",
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -620,6 +626,9 @@ def main(argv: list[str] | None = None) -> int:
         ),
         semantic_plan_repeated_array_close_margin_decode_weight=(
             args.semantic_plan_repeated_array_close_margin_decode_weight
+        ),
+        semantic_plan_repeated_slot_margin_decode_weight=(
+            args.semantic_plan_repeated_slot_margin_decode_weight
         ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,

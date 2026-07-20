@@ -283,6 +283,7 @@ class ModelBuildConfig:
     semantic_plan_root_decode_weight: float | None = None
     semantic_plan_root_margin_decode_weight: float | None = None
     semantic_plan_repeated_array_close_margin_decode_weight: float | None = None
+    semantic_plan_repeated_slot_margin_decode_weight: float | None = None
     visible_reference_decode_weight: float | None = None
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
