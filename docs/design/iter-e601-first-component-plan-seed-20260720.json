@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "E601",
   "date_utc": "2026-07-20",
-  "run_id": "e601-e600-rootseed8-r1",
+  "run_id": "e601-e600-rootseed8-r2",
   "run_class": "scratch_matrix",
   "status": "negative_not_promotable",
   "hypothesis": "Strong prompt-plan pressure restricted to the first root component will repair collapsed component selection without later duplicate-component regressions.",
@@ -134,6 +134,28 @@
         }
       },
       "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e601-e600-rootseed8-r2",
+      "label": "v39_root_candidate_seed_8_post_rebase",
+      "model_version": "v39",
+      "semantic_plan_seed_decode_weight": 8.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.516875,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5753968253968254,
+          "ast_edge_f1": 0.41428571428571426
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
     }
   ],
   "suites": {
@@ -168,14 +190,14 @@
   "decision": "Keep the lever default-off, capture first-family score decomposition next, and do not promote or sync.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "6045d4d7fa00cba780234c2583dff18c2c259e6c",
+    "code_commit": "b514354842861f6fe4a3ad08e1e8f435342735c3",
     "code_dirty": false,
     "components": {
       "harness.model_build.eval": "v25",
       "evals.meaningful_program": "2.0.0",
       "evals.scoring": "v11",
-      "model.twotower": "v38"
+      "model.twotower": "v39"
     },
-    "stamped_at": "2026-07-20T11:21:10.372560+00:00"
+    "stamped_at": "2026-07-20T11:26:57.844672+00:00"
   }
 }

@@ -20,9 +20,11 @@ meaning-v2 0, fidelity 0.5917, validity 0.7550, structure 0.5169, component
 recall 0.6250, reward 0.8115, AST-node F1 0.5754, and AST-edge F1 0.4143.
 Dashboard and gallery remain collapsed to `TextContent`.
 
-All five runs completed within 170 seconds and emitted AgentEvals JSONL plus
-AgentV bundles. AgentV remains 0/1. Keep the lever default-off; do not promote,
-create, or sync a checkpoint. The next experiment should capture the actual
-first-family score decomposition before adding more pressure.
+After rebasing onto concurrent SLM-164, model version v39 repeats the corrected
+weight-8 arm exactly. All six runs completed within 170 seconds and emitted
+AgentEvals JSONL plus AgentV bundles. AgentV remains 0/1. Keep the lever
+default-off; do not promote, create, or sync a checkpoint. The next experiment
+should capture the actual first-family score decomposition before adding more
+pressure.
 
 Evidence: [JSON](iter-e601-first-component-plan-seed-20260720.json).

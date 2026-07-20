@@ -1726,6 +1726,7 @@ def test_e601_first_component_seed_ladder_is_persisted_without_new_checkpoint(
         "e601-e600-planseed32-r1",
         "e601-e600-rootseed8-r1",
         "e601-e600-rootseed32-r1",
+        "e601-e600-rootseed8-r2",
     }
     for run_id in run_ids:
         run = readers.run(run_id)
