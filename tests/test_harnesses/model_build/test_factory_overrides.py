@@ -98,3 +98,22 @@ def test_explicit_runtime_override_fields_preserve_unrelated_checkpoint_config()
     assert model.config.compiler_search_mode == "gram"
     assert model.config.schema_in_context is True
     assert model.config.output_tokenizer == "lexer"
+
+
+def test_action_alias_overrides_round_trip() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(
+            action_alias_mode="canonical",
+            action_description_name_mode="schema",
+        )
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        action_alias_mode="fixed",
+        action_description_name_mode="alias_aware_description",
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.action_alias_mode == "fixed"
+    assert model.config.action_description_name_mode == "alias_aware_description"

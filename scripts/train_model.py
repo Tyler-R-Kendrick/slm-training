@@ -735,6 +735,56 @@ def main(argv: list[str] | None = None) -> int:
         help="Generate N candidates and pick by composite reward.",
     )
     parser.add_argument(
+        "--action-embedding-init",
+        default="none",
+        choices=(
+            "none",
+            "current_stub",
+            "schema_description",
+            "expanded_description",
+            "shuffled",
+            "alias_aware_description",
+            "alias_aware_signature_only",
+            "alias_aware_shuffled",
+            "description_without_canonical_name",
+            "canonical_name_plus_description",
+            "signature_only",
+        ),
+        help="SLM-163/174: source text used to initialize action embedding rows.",
+    )
+    parser.add_argument(
+        "--action-embedding-train",
+        default="frozen",
+        choices=("frozen", "trainable"),
+        help="SLM-163: whether action embeddings are frozen or trainable.",
+    )
+    parser.add_argument(
+        "--action-alias-mode",
+        default="canonical",
+        choices=("canonical", "off", "fixed", "held_out"),
+        help="SLM-174: use anonymized action aliases for description-mediated generalization.",
+    )
+    parser.add_argument(
+        "--action-alias-manifest",
+        type=Path,
+        default=None,
+        help="SLM-174: optional persisted alias map JSON.",
+    )
+    parser.add_argument(
+        "--action-description-name-mode",
+        default="schema",
+        choices=(
+            "schema",
+            "alias_aware_description",
+            "alias_aware_signature_only",
+            "alias_aware_shuffled",
+            "description_without_canonical_name",
+            "canonical_name_plus_description",
+            "signature_only",
+        ),
+        help="SLM-174: how canonical names are rendered in action-description sources.",
+    )
+    parser.add_argument(
         "--curriculum",
         action="store_true",
         help="Sample train batches by curriculum stage A→B→C (soft mix by default).",
@@ -1077,6 +1127,11 @@ def main(argv: list[str] | None = None) -> int:
         honest_slot_contract=args.honest_slot_contract,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
+        action_embedding_init=args.action_embedding_init,
+        action_embedding_train=args.action_embedding_train,
+        action_alias_mode=args.action_alias_mode,
+        action_alias_manifest=args.action_alias_manifest,
+        action_description_name_mode=args.action_description_name_mode,
         use_curriculum=args.curriculum,
         mix_curriculum=not bool(args.hard_curriculum),
         use_amp=use_amp,
