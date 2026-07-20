@@ -4150,3 +4150,43 @@ Honest caveats:
 - Synthetic mixed-effects outcomes are a caricature of real eval correlation.
 - No model was trained; the protocol must be validated on actual suite results
   before it can size a confirmatory experiment.
+
+## E620 required-slot coverage on an 800-step scratch checkpoint
+
+E620 tests E619's explicit next hypothesis with a real train and matched eval:
+does scaling the same scratch recipe from 80 to 800 steps make fully judged
+required-slot coverage pass?
+
+The clean CPU run completed 800 steps in 80.96 seconds under the three-minute
+cap, lowering loss from E619's checkpoint value of 26.5243 to 4.0680. It wrote
+local-only serving SHA `3ce5c9ef…363ecc5f`; no bucket sync or promotion was
+attempted.
+
+| OOD `n=4` | Control | Treatment (`schema_role_slot_decode_weight=8`) |
+| --- | ---: | ---: |
+| syntax parse | 1.0000 | 1.0000 |
+| meaningful v1 | 0.5000 | 0.5000 |
+| strict meaning v2 | 0.0000 | 0.0000 |
+| v2 coverage | 1.0000 | 1.0000 |
+| placeholder fidelity | 0.5083 | 0.5500 |
+| placeholder validity | 0.7050 | 0.7300 |
+| structural similarity | 0.4569 | 0.4886 |
+| component recall | 0.5417 | 0.4792 |
+| reward | 0.7910 | 0.8140 |
+| AST node / edge F1 | 0.5556 / 0.3750 | 0.5437 / 0.3750 |
+| latency p50 / p95 | 3366.95 / 14562.73 ms | 3116.67 / 13704.44 ms |
+| AgentV | 0/1 | 0/1 |
+
+No run timed out or fell back. Treatment retains E615's matched fidelity,
+validity, structure, reward, and latency benefit, but strict meaning stays 0.0.
+Three records still miss required placeholders; Auth covers all visible slots
+but assigns Input roles incorrectly. Compared with E619's 80-step treatment,
+fidelity falls 0.7833→0.5500 and structure 0.5548→0.4886 despite the much lower
+training loss. Reject duration-only scaling and the checkpoint. Next work should
+target coverage-aware component/property closure, not another longer scratch
+train.
+
+Evidence:
+[iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
+and
+[JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
