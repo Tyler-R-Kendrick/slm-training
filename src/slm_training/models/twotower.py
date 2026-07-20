@@ -3983,18 +3983,27 @@ class TwoTowerModel(nn.Module):
             if required <= 0:
                 continue
             consumed = min(required, len(remaining_slots))
-            if logits is not None:
-                bias[position] = learned_weight * logits[:consumed, index].mean()
+            matches = 0
+            visible_role_available = False
             if role_weight > 0.0 and semantic_role_candidates:
                 token = str(self.tokenizer.id_to_token.get(token_id, ""))
                 for prefix in ("COMP:", "+"):
                     if token.startswith(prefix):
                         token = token[len(prefix) :]
                         break
+                visible_role_available = any(
+                    semantic_role_candidates.get(slot, ())
+                    for slot in remaining_slots[:consumed]
+                )
                 matches = sum(
                     token in semantic_role_candidates.get(slot, ())
                     for slot in remaining_slots[:consumed]
                 )
+            if logits is not None and (
+                not visible_role_available or matches > 0
+            ):
+                bias[position] = learned_weight * logits[:consumed, index].mean()
+            if role_weight > 0.0 and semantic_role_candidates:
                 bias[position] += role_weight * matches / consumed
             if span_weight > 0.0 and consumed == required and required > 1:
                 key = "\x1f".join(

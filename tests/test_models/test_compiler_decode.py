@@ -258,6 +258,49 @@ def test_visible_semantic_role_bias_does_not_require_learned_slot_head() -> None
     assert submit_bias[1] == 4.0
 
 
+def test_visible_semantic_roles_gate_unmatched_learned_slot_bias() -> None:
+    from types import MethodType
+
+    model = _model(
+        slot_component_decode_weight=2.0,
+        semantic_role_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    component_ids = model._component_inventory_token_ids()
+    component_index = {
+        tokenizer.id_to_token[token_id]: index
+        for index, token_id in enumerate(component_ids)
+    }
+
+    def logits(self, slots, context, pad_mask, context_rows, next_slots=None):
+        rows = torch.zeros(
+            (len(slots), len(component_ids)),
+            dtype=context.dtype,
+            device=context.device,
+        )
+        rows[:, component_index["Button"]] = 3.0
+        return rows
+
+    model._slot_component_logits = MethodType(logits, model)
+    ctx, ctx_pad = model._encode_context(["email input and submit button"])
+    candidates = (
+        tokenizer.token_to_id["Input"],
+        tokenizer.token_to_id["Button"],
+    )
+    bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id],
+        candidates,
+        ("component_bound", "component_bound"),
+        [":form.email"],
+        {":form.email": ("Input",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [4.0, 0.0]
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
