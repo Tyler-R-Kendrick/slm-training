@@ -3785,3 +3785,16 @@ zero reward, and required components/placeholders remain missing. AgentV is
 0/1. No checkpoint was created or synced. Evidence:
 [narrative](iter-e608-semantic-plan-root-margin-20260720.md) and
 [JSON](iter-e608-semantic-plan-root-margin-20260720.json).
+
+## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
+
+H4 wires the `exposure_targeted` mixture sampling policy and its bounded
+importance-weight / diversity-cap knobs. The default `with_replacement` sampler
+remains unchanged. A CPU-only fixture builds synthetic records with skewed
+action counts, runs `sample_mixture_batch` under each policy arm, and reports
+rare-action exposure, root/template cap respect, and total-decision-budget
+adherence. This is wiring/fixture evidence only; no ship claim is made.
+
+```bash
+python -m scripts.run_slm170_exposure_targeted_rare_action_fixture --mode fixture
+```
