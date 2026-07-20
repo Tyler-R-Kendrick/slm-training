@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-20",
+          "note": "expose the default-off first-component semantic-plan seed score in canonical evaluation policy"
+        },
         {
           "version": "v24",
           "date": "2026-07-20",
@@ -839,7 +844,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v37",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -852,6 +857,16 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-07-20",
+          "note": "gate first-component prompt-plan scoring on compiler root candidate kinds rather than parser frame emptiness"
+        },
+        {
+          "version": "v38",
+          "date": "2026-07-20",
+          "note": "add a default-off prompt-plan score restricted to the first component-family choice"
+        },
         {
           "version": "v37",
           "date": "2026-07-20",
