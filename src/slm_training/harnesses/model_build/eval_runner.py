@@ -371,6 +371,9 @@ def _effective_evaluation_policy(
         "semantic_role_decode_weight": float(
             value("semantic_role_decode_weight") or 0.0
         ),
+        "semantic_plan_decode_weight": float(
+            value("semantic_plan_decode_weight") or 0.0
+        ),
         "visible_reference_decode_weight": float(
             value("visible_reference_decode_weight") or 0.0
         ),
@@ -1164,11 +1167,14 @@ def evaluate(
     suite_path = run_dir / f"eval_{config.suite}.json"
     from slm_training.versioning import build_version_stamp
 
-    metrics["version_stamp"] = build_version_stamp(
+    version_components = [
         "harness.model_build.eval",
         "evals.meaningful_program",
         "evals.scoring",
-    )
+    ]
+    if config.model_name == "twotower":
+        version_components.append("model.twotower")
+    metrics["version_stamp"] = build_version_stamp(*version_components)
     metrics["output"] = str(suite_path)
     if publish_agentv:
         if config.suite in DEFAULT_SHIP_GATES:
@@ -1253,9 +1259,14 @@ def evaluate_suites(
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "version_stamp": build_version_stamp(
-            "harness.model_build.eval",
-            "evals.meaningful_program",
-            "evals.scoring",
+            *(
+                [
+                    "harness.model_build.eval",
+                    "evals.meaningful_program",
+                    "evals.scoring",
+                ]
+                + (["model.twotower"] if config.model_name == "twotower" else [])
+            )
         ),
     }
     # Ceiling + length-budget diagnostics ride with every board so a zero

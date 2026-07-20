@@ -70,6 +70,7 @@ from slm_training.models.template_fill import (
     ensure_prompt_inventory,
     ensure_prompt_semantic_roles,
     inventory_from_prompt,
+    prompt_semantic_plan,
     prompt_semantic_role_candidates,
     template_mask_positions,
 )
@@ -235,6 +236,7 @@ class TwoTowerConfig:
     slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
     semantic_role_decode_weight: float = 0.0
+    semantic_plan_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -878,6 +880,7 @@ class TwoTowerModel(nn.Module):
         self._semantic_role_candidates: (
             list[dict[str, tuple[str, ...]]] | None
         ) = None
+        self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -4003,6 +4006,43 @@ class TwoTowerModel(nn.Module):
             )
         return bias if applied else None
 
+    def _semantic_plan_bias(
+        self,
+        row: int,
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+    ) -> torch.Tensor | None:
+        """Apply predicted-plan features as a soft score; never change legality."""
+        weight = float(
+            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or not self._semantic_plan_action_scores
+            or row >= len(self._semantic_plan_action_scores)
+        ):
+            return None
+        scores = self._semantic_plan_action_scores[row]
+        if not scores:
+            return None
+        bias = torch.zeros(
+            len(candidate_ids), device=next(self.parameters()).device
+        )
+        applied = False
+        component_kinds = {
+            "component_root",
+            "component_bound",
+            "component_root_or_bound",
+        }
+        for position, (token_id, kind) in enumerate(
+            zip(candidate_ids, candidate_kinds, strict=True)
+        ):
+            score = scores.get(token_id, 0.0)
+            if kind in component_kinds and score > 0.0:
+                bias[position] = weight * score
+                applied = True
+        return bias if applied else None
+
     def _component_edge_bias(
         self,
         ctx: torch.Tensor,
@@ -5505,6 +5545,19 @@ class TwoTowerModel(nn.Module):
                             stats.slot_component_choice_changes += int(
                                 int(scores.argmax().item()) != before_slot
                             )
+                    semantic_plan_bias = self._semantic_plan_bias(
+                        row,
+                        candidate_ids,
+                        candidate_kinds,
+                    )
+                    if semantic_plan_bias is not None:
+                        before_semantic_plan = int(scores.argmax().item())
+                        scores = scores + semantic_plan_bias
+                        if stats is not None:
+                            stats.semantic_plan_applications += 1
+                            stats.semantic_plan_choice_changes += int(
+                                int(scores.argmax().item()) != before_semantic_plan
+                            )
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -6477,6 +6530,41 @@ class TwoTowerModel(nn.Module):
             ]
         else:
             self._semantic_role_candidates = None
+        plan_weight = float(
+            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+        )
+        if plan_weight > 0.0:
+            if not choice_constrained:
+                raise ValueError(
+                    "semantic_plan_decode_weight currently requires choice-codec "
+                    "constrained decode"
+                )
+            from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
+
+            component_ids = self._component_inventory_token_ids()
+            action_ids = []
+            for token_id in component_ids:
+                action = str(self.tokenizer.id_to_token.get(token_id, ""))
+                for prefix in ("COMP:", "+"):
+                    if action.startswith(prefix):
+                        action = action[len(prefix) :]
+                        break
+                action_ids.append(action)
+            compiler = OpenUISemanticPlanCompiler(honesty_mode="production")
+            self._semantic_plan_action_scores = []
+            for prompt in prompts:
+                plan = prompt_semantic_plan(prompt)
+                features = compiler.annotate_actions(None, action_ids, plan)
+                self._semantic_plan_action_scores.append({
+                    token_id: feature.plan_confidence
+                    for token_id, feature in zip(
+                        component_ids, features, strict=True
+                    )
+                    if feature.component_family_compatible
+                    and not feature.conflict_or_unknown
+                })
+        else:
+            self._semantic_plan_action_scores = None
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
