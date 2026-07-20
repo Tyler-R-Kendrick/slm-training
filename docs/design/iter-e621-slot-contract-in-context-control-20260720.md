@@ -1,4 +1,4 @@
-# E620 — the real `slot_contract_in_context` control arm, and a correction to E618/E619
+# E621 — the real `slot_contract_in_context` control arm, and a correction to E618/E619
 
 Date: 2026-07-20
 Status: completed, real scoring gap closed, no headline quality metric moved,
@@ -21,9 +21,14 @@ concurrent session that also answered E618's question and landed as
 (`docs/design/iter-e619-slot-contract-in-context-gap-20260720.{md,json}`,
 run IDs `e619-slotcontext-control-r1` / `e619-slotcontext-treatment-r1`).
 Both sessions independently reach the same headline conclusion. This
-iteration is renumbered **E620** to avoid a duplicate experiment ID, and adds
-one real finding the concurrent E619 session did not have: a genuinely live
-control arm (see "Correction to E618 and the concurrent E619" below).
+iteration was renumbered once already, to E620, but a *second* concurrent
+session also landed a commit on the same base branch under that number
+(`## E620 the E617 bug class had a second, still-live instance`, a distinct
+topic — a `semantic_plan_*` decode-weight gating gap, not
+`slot_contract_in_context`) while this renumbering was in progress. Final
+number is **E621**. It adds one real finding neither concurrent session had:
+a genuinely live control arm for the `slot_contract_in_context` flag itself
+(see "Correction to E618 and the concurrent E619" below).
 
 ## Method
 
@@ -198,6 +203,9 @@ trained/warm-started (non-scratch) checkpoint, to see whether closing this
 scoring gap changes anything once the Gallery `src`/`alt` collapse itself is
 also fixed by the treatment arm.
 
-Evidence: [JSON](iter-e620-slot-contract-in-context-control-20260720.json).
-Concurrent session: [E619 narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
-and [JSON](iter-e619-slot-contract-in-context-gap-20260720.json).
+Evidence: [JSON](iter-e621-slot-contract-in-context-control-20260720.json).
+Concurrent sessions on the same base branch: [E619 narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
+/ [JSON](iter-e619-slot-contract-in-context-gap-20260720.json) (same question,
+no live control) and [E620 narrative](iter-e620-semantic-plan-weight-gate-gap-20260720.md)
+/ [JSON](iter-e620-semantic-plan-weight-gate-gap-20260720.json) (a different
+topic: a `semantic_plan_*` decode-weight gating gap).

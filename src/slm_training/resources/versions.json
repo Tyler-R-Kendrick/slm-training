@@ -1314,7 +1314,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1329,6 +1329,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-20",
+          "note": "E620: derive plan_weight in _generate_batch_once from the new module-level SEMANTIC_PLAN_DECODE_WEIGHT_NAMES tuple (all 11 semantic_plan_*_decode_weight config fields) instead of a 9-item hand-enumerated literal that omitted semantic_plan_inline_decode_weight and semantic_plan_repeated_array_close_margin_decode_weight, silently no-opping _semantic_plan_inline_bias/_semantic_plan_repeated_array_close_bias whenever no other semantic_plan_* weight was also set (masked-not-live in E610-E619 recipes, which always also set semantic_plan_decode_weight)"
+        },
         {
           "version": "v59",
           "date": "2026-07-20",

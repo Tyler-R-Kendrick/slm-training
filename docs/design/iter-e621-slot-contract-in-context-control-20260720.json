@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E620",
+  "experiment_id": "E621",
   "run_id": "e619-slot-contract-in-context-scratch80-20260720",
   "date_utc": "2026-07-20",
   "status": "completed_metric_gap_closed_corrects_concurrent_e619_control_arm",
@@ -216,10 +216,11 @@
     },
     "stamped_at": "2026-07-20T19:38:55.616201+00:00"
   },
-  "relationship_to_concurrent_e619": {
+  "run_id_note": "This experiment is numbered E620 in the doc ledger (see relationship_to_concurrent_e619), but its on-disk run/checkpoint/eval directory names retain their original e619- prefix (created before the naming collision with the concurrent E619 session was discovered). Paths above are the real, unmodified artifact names.",
+  "relationship_to_concurrent_e619_and_e620": {
     "note": "E619 (docs/design/iter-e619-slot-contract-in-context-gap-20260720.json, run_id e619-slotcontext-control-r1/e619-slotcontext-treatment-r1) was drafted concurrently, in a different sandbox session, answering the same E618 'next' question. It reused E617's on-disk checkpoint rather than retraining, and reached the same headline conclusion (required_inventory_coverage becomes a real judged verdict, no headline quality metric moves, strict v2 stays 0.0->0.0).",
     "discrepancy_found": "E619's own eval_recipe sets slot_contract_in_context=true as a single flat value applied to BOTH its control and treatment runs (its control.binding_aware_meaningful_v2_coverage is already 1.0, not 0.75) -- the only lever E619 varied live was schema_role_slot_decode_weight (0 vs 8, an unrelated E614/E615/E617 lever). E619's claim that required_inventory_coverage 'moves from UNKNOWN to a real judged verdict for all 4 records' was carried over from E618's own (separately overbroad) prose, not measured live with the flag genuinely off in E619's own session.",
-    "this_experiment_e620_contribution": "Ran a genuinely live control (--slot-contract-in-context unset) in the same session as the treatment, on a byte-identical replay checkpoint. The live control shows only ood_gallery_01 is truly UNKNOWN; ood_dashboard_01/ood_modal_01/ood_auth_01 are already real FAILs via the unconditional role_mismatch check. Both E618's original 'every OOD record' framing and E619's 'all 4 records' framing are therefore overbroad. The treatment-arm numbers in this run agree with E619's post-flag numbers (binding_aware_meaningful_v2_coverage 1.0, same headline metrics), so the two sessions agree on the flag's real effect once E620's live control isolates it -- E620 just also captures the true pre-flag baseline E619 never ran."
-  },
-  "run_id_note": "This experiment is numbered E620 in the doc ledger (see relationship_to_concurrent_e619), but its on-disk run/checkpoint/eval directory names retain their original e619- prefix (created before the naming collision with the concurrent E619 session was discovered). Paths above are the real, unmodified artifact names."
+    "this_experiment_e620_contribution": "Ran a genuinely live control (--slot-contract-in-context unset) in the same session as the treatment, on a byte-identical replay checkpoint. The live control shows only ood_gallery_01 is truly UNKNOWN; ood_dashboard_01/ood_modal_01/ood_auth_01 are already real FAILs via the unconditional role_mismatch check. Both E618's original 'every OOD record' framing and E619's 'all 4 records' framing are therefore overbroad. The treatment-arm numbers in this run agree with E619's post-flag numbers (binding_aware_meaningful_v2_coverage 1.0, same headline metrics), so the two sessions agree on the flag's real effect once E620's live control isolates it -- E620 just also captures the true pre-flag baseline E619 never ran.",
+    "numbering_note": "This experiment was originally drafted as 'E619' in its own session (before discovering the concurrent E619 commit above), then renumbered to 'E620' (before discovering a second concurrent commit, E620: audit finds and fixes a second, still-live instance of E617's bug class, docs/design/iter-e620-semantic-plan-weight-gate-gap-20260720.json, a distinct topic -- a semantic_plan_* decode-weight gating gap, not slot_contract_in_context). Final number is E621. The base branch had three independent sessions land real work on it while this session was in progress; each collision was resolved by merge + renumber rather than by force-pushing over any of the other sessions' commits."
+  }
 }

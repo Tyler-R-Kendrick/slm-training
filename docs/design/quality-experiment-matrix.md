@@ -4042,15 +4042,85 @@ checkpoint trained, promoted, or synced. Not a ship claim. Recommend adding
 Evidence: [narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
 and [JSON](iter-e619-slot-contract-in-context-gap-20260720.json).
 
-## E620 the real `slot_contract_in_context` control arm, and a correction to E618/E619
+## E620 the E617 bug class had a second, still-live instance
 
-E620 was drafted concurrently with E619 above (a parallel session answering
-the same E618 "next" question) and independently reaches the same headline
-conclusion — `required_inventory_coverage` becomes a real judged verdict
-instead of `UNKNOWN`, no headline quality metric moves, strict v2 stays
-0.0→0.0 — but starting from a genuinely live **control** arm rather than
-E619's assumption, and that live control surfaces a correction to both E618's
-and E619's framing.
+E620 is a systematic audit for more instances of E617's silently-gated-state
+bug class (in `twotower.py`/`choice_tokenizer.py`) and E618's
+regex-misclassifies-valid-DSL-output bug class (in
+`evals/meaningful_program.py`), rather than another scratch-checkpoint
+attempt to flip strict v2. Traced every `self._*` attribute in
+`TwoTowerModel` populated conditionally and read by a silently-no-opping
+decode-time bias: `self._slot_contracts` (E617-fixed, re-verified all 5
+readers are covered, no 6th found), `self._semantic_role_candidates`
+(self-guarding, already raises), and
+`self._semantic_plan_action_scores`/`self._semantic_plan_action_counts`,
+populated by `plan_weight = max(...)` over a **hand-enumerated 9-name list**.
+**Finding:** `TwoTowerConfig` actually declares 11
+`semantic_plan_*_decode_weight` fields; the list omitted
+`semantic_plan_inline_decode_weight` (gates `_semantic_plan_inline_bias`) and
+`semantic_plan_repeated_array_close_margin_decode_weight` (gates
+`_semantic_plan_repeated_array_close_bias`), both of which read exactly the
+state the list should have gated — the same failure shape as E617's
+`self._slot_contracts` gap, one level removed (a drifted hand-maintained list
+instead of a missing companion flag). **Currently masked, not live-broken:**
+every E610-E619 recipe also sets `semantic_plan_decode_weight=4.0` (already
+listed) alongside `semantic_plan_repeated_array_close_margin_decode_weight=2.0`,
+so `plan_weight` was positive by coincidence in every real eval to date;
+`semantic_plan_inline_decode_weight` has never been set nonzero in any
+committed recipe (dormant, same landmine). `choice_tokenizer.py` has no
+conditional per-row state at all — ruled out clean.
+**Fix:** replaced the 9-item literal with `max(...)` over a new module-level
+`SEMANTIC_PLAN_DECODE_WEIGHT_NAMES` tuple (all 11 names),
+`src/slm_training/models/twotower.py` (`model.twotower` v59→v60). Two new
+regression tests in `tests/test_models/test_compiler_decode.py`: a
+`dataclasses.fields(TwoTowerConfig)` drift guard
+(`test_semantic_plan_decode_weight_names_cover_all_config_fields`) that fails
+the build if a future `semantic_plan_*` weight field is added without being
+added to the tuple, and a real end-to-end functional test
+(`test_semantic_plan_only_weight_still_populates_plan_state`, parametrized
+over both previously-missing names) calling
+`model.generate_batch_requests(...)` with only that one weight set and
+asserting the state populates. `pytest tests/test_models/test_compiler_decode.py`:
+100 passed (97 pre-existing + 3 new).
+**Real before/after confirmation:** no retraining — loaded the real, on-disk
+E617 checkpoint (sha256 `119dd41a…8898a854`, re-verified) via
+`TwoTowerModel.from_checkpoint`, applied E617's exact real
+`evaluation_policy` with every `semantic_plan_*` weight zeroed except one
+target weight = 8.0, and called `generate_batch_requests` on the real
+`ood_gallery_01` OOD record, before the fix (`git stash` of only
+`twotower.py`) and after. For both previously-missing weights,
+`self._semantic_plan_action_scores`/`_action_counts` are `None`/`None`
+pre-fix (bug reproduced) and populated/populated post-fix — root cause
+confirmed and repaired. The raw prediction text is byte-identical
+pre/post-fix in both cases on this specific 80-step scratch checkpoint and
+record (the same malformed self-nested tree E618 already characterized as
+decode-level instability) — an honest, checkpoint-quality-dominated null
+result at the prediction level, not evidence against the fix.
+**Class-B audit:** traced every check in `binding_aware_meaningful_v2()` for
+an E618-shaped regex/heuristic misclassifying valid current-grammar output;
+the E618 fix is confirmed intact, `duplicate_binding`'s `_ASSIGNMENT_RE`
+regex is checked against current object-frame syntax (`key:` not `key =`,
+no live false-positive path found, flagged latent-only), and every other
+check (`schema_value_role_correctness`, `anti_gaming`) is already fully
+AST-based. `data/quality.py`'s `semantic_contract_for_openui` (outside
+`evals/`, legacy admission-gate track) has the same regex-mini-parser shape
+as E618's bug but wasn't verified as live; flagged as a scoped-out follow-up.
+No new Class-B bug found. No checkpoint trained, promoted, or synced this
+iteration; no previously reported metric in this lineage changes (the gap
+was masked, not live); not a ship claim.
+Evidence: [narrative](iter-e620-semantic-plan-weight-gate-gap-20260720.md)
+and [JSON](iter-e620-semantic-plan-weight-gate-gap-20260720.json).
+
+## E621 the real `slot_contract_in_context` control arm, and a correction to E618/E619
+
+E621 was drafted concurrently with E619 above (a parallel session answering
+the same E618 "next" question, before E620's audit landed on this branch
+too) and independently reaches the same headline conclusion —
+`required_inventory_coverage` becomes a real judged verdict instead of
+`UNKNOWN`, no headline quality metric moves, strict v2 stays 0.0→0.0 — but
+starting from a genuinely live **control** arm rather than E619's assumption,
+and that live control surfaces a correction to both E618's and E619's
+framing.
 
 **The gap in E619's own control arm.** E619's `eval_recipe` sets
 `slot_contract_in_context: true` as a single flat value shared by both its
@@ -4064,7 +4134,7 @@ for all 4 records" is therefore not something E619 measured live — it is
 carried over from E618's own (separately overbroad, see below) prose, not
 from a rerun with the flag genuinely off in this session.
 
-**E620's live control (flag genuinely unset) shows the true baseline, and it
+**E621's live control (flag genuinely unset) shows the true baseline, and it
 is not "UNKNOWN for all 4."** Reused E616/E617's exact training recipe on a
 fresh scratch checkpoint (this sandbox's `outputs/` started empty, same as
 every prior E615-E619 session); the resulting checkpoint's sha256
@@ -4118,8 +4188,9 @@ join the standard recipe alongside E617's `--slot-contract-constrained-decode`
 going forward, and recommend any future write-up of this finding cite "moves
 `ood_gallery_01` specifically" rather than "all 4 records," per this
 session's live control evidence. Evidence:
-[narrative](iter-e620-slot-contract-in-context-control-20260720.md) and
-[JSON](iter-e620-slot-contract-in-context-control-20260720.json).
+[narrative](iter-e621-slot-contract-in-context-control-20260720.md) and
+[JSON](iter-e621-slot-contract-in-context-control-20260720.json).
+
 
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 

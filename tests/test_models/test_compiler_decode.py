@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import pytest
@@ -26,7 +27,11 @@ from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 from slm_training.models.grammar import make_grammar_state
-from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+from slm_training.models.twotower import (
+    SEMANTIC_PLAN_DECODE_WEIGHT_NAMES,
+    TwoTowerConfig,
+    TwoTowerModel,
+)
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
 
@@ -679,6 +684,59 @@ def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
     request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
 
     model.generate_batch_requests([request])  # must not raise ValueError
+
+
+def test_semantic_plan_decode_weight_names_cover_all_config_fields() -> None:
+    """E620 drift guard.
+
+    ``_generate_batch_once`` populates ``self._semantic_plan_action_scores`` /
+    ``self._semantic_plan_action_counts`` from
+    ``plan_weight = max(SEMANTIC_PLAN_DECODE_WEIGHT_NAMES)``. Before E620, the
+    equivalent hand-enumerated list omitted
+    ``semantic_plan_inline_decode_weight`` and
+    ``semantic_plan_repeated_array_close_margin_decode_weight`` even though
+    ``_semantic_plan_inline_bias`` and ``_semantic_plan_repeated_array_close_bias``
+    read that same state -- both biases silently no-opped whenever no other
+    ``semantic_plan_*`` weight was also set. Fail the build instead of letting a
+    future ``semantic_plan_*_decode_weight``/``semantic_plan_*_margin_decode_weight``
+    config field go unlisted the same way.
+    """
+    config_fields = {
+        field.name
+        for field in dataclasses.fields(TwoTowerConfig)
+        if field.name.startswith("semantic_plan_")
+        and field.name.endswith("_decode_weight")
+    }
+    assert config_fields == set(SEMANTIC_PLAN_DECODE_WEIGHT_NAMES)
+
+
+@pytest.mark.parametrize(
+    "weight_name",
+    [
+        "semantic_plan_inline_decode_weight",
+        "semantic_plan_repeated_array_close_margin_decode_weight",
+    ],
+)
+def test_semantic_plan_only_weight_still_populates_plan_state(
+    weight_name: str,
+) -> None:
+    """E620: these two biases read ``self._semantic_plan_action_scores``/
+
+    ``self._semantic_plan_action_counts``, populated only when
+    ``plan_weight = max(SEMANTIC_PLAN_DECODE_WEIGHT_NAMES) > 0``. Before E620 the
+    literal ``max(...)`` omitted both weight names, so setting either one alone
+    (no other ``semantic_plan_*`` weight active) left ``plan_weight <= 0`` and the
+    state stayed ``None`` -- the bias silently no-opped every decode step
+    regardless of weight. Every E610-E619 recipe happened to also set
+    ``semantic_plan_decode_weight`` nonzero, which masked the gap by coincidence.
+    """
+    model = _model(output_tokenizer="choice", **{weight_name: 8.0})
+    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+
+    model.generate_batch_requests([request])
+
+    assert model._semantic_plan_action_scores is not None
+    assert model._semantic_plan_action_counts is not None
 
 
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
