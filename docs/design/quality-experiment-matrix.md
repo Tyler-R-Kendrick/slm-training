@@ -3147,6 +3147,23 @@ construction/topology cardinality, not reference-ranker ordering. Evidence:
 [narrative](iter-e577-plan-binding-order-20260720.md) and
 [JSON](iter-e577-plan-binding-order-20260720.json).
 
+## E578 plan-aware Stack root construction
+
+E578 waits for predicted component-family coverage, then soft-scores legal
+`Stack` construction, plan-compatible nested child references, and legal
+termination. On a clean matched E569 OOD `n=4` 0/1/2 ladder, the root factor
+activates 21 times and changes one latent choice at weight 1; weight 2 changes
+two. All final programs and quality metrics remain identical to control:
+meaning-v1 0.25, strict meaning-v2 0, AST-edge F1 0, reward 0.7345, and AgentV
+0/1.
+
+**Decision:** reject weights 1 and 2 as quality interventions, keep the root
+factor default-off, and do not promote or sync. The next topology experiment
+must test a compiler-validated planned-root seed/state rather than another
+score increase. Evidence:
+[narrative](iter-e578-plan-root-container-20260720.md) and
+[JSON](iter-e578-plan-root-container-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
