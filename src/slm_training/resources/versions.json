@@ -667,7 +667,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -677,6 +677,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v14", "date": "2026-07-20", "note": "compose predicted semantic-plan binding evidence after learned root-reference identity ranking so identity cannot erase the plan factor"},
         {"version": "v13", "date": "2026-07-20", "note": "soft-rank legal unused terminal-root references whose generated component families match the predicted prompt SemanticPlanV1"},
         {"version": "v12", "date": "2026-07-20", "note": "consume prompt-derived predicted SemanticPlanV1 component features as legality-preserving choice-codec score bias with intervention telemetry"},
         {"version": "v11", "date": "2026-07-20", "note": "add SLM-138 shared recursive denoiser tower wiring, deep-supervision plumbing, and migration helper"},
