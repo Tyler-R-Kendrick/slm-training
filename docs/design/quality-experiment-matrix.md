@@ -4190,3 +4190,59 @@ Evidence:
 [iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
 and
 [JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+
+## E626 a decode-time margin that floors still-missing required slots directly
+
+E626 pursues E620's "coverage-aware component/property closure" recommendation
+(and an open, unmerged PR #625's more concrete framing: floor still-missing
+*required slots* directly, analogous to how `semantic_plan_margin_decode_weight`
+already floors still-required *plan families*). A new default-off field,
+`required_slot_margin_decode_weight`, was threaded end to end
+(`TwoTowerConfig`/`ModelBuildConfig`, `apply_runtime_overrides`,
+`_effective_evaluation_policy`, CLI flags on `evaluate_model.py` and
+`train_model.py`, the E617 contract-gated `ValueError` guard) and unit-tested
+to fire only for slots genuinely still missing from the decode prefix, not
+already-filled ones.
+
+Reused E620's exact scratch recipe (E530-r2 corpus, 800 steps, seed 0); the
+fresh checkpoint's loss (4.068013) matches E620's (4.068010) to 4 decimal
+places. A matched OOD `n=4` control (`required_slot_margin_decode_weight=0`)
+vs two treatment arms replayed the full E617-era recipe
+(`schema_role_slot_decode_weight=8` plus the whole `semantic_plan_*` family
+fixed in every arm); the control reproduces E620's treatment numbers and
+per-record predictions exactly, confirming a faithful replay.
+
+| Metric | Control (0) | Treatment margin=2 | Treatment margin=6 |
+| --- | ---: | ---: | ---: |
+| meaningful v1 | 0.5000 | 0.7500 | 0.2500 |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
+| placeholder fidelity | 0.5500 | 0.8333 | 0.3000 |
+| placeholder validity | 0.7300 | 0.9000 | 0.4800 |
+| structural similarity | 0.4886 | 0.5473 | 0.4261 |
+| component recall | 0.4792 | 0.5625 | 0.3958 |
+| reward | 0.8140 | 0.9005 | 0.5693 |
+| AST node / edge F1 | 0.5437 / 0.3750 | 0.6137 / 0.3485 | 0.4770 / 0.2500 |
+| AgentV | 0/1 | 0/1 | 0/1 |
+
+The result is real and dose-dependent: a moderate margin (2.0, matching the
+scale of sibling `*_margin_decode_weight` levers already in the recipe) raises
+every headline metric except AST edge F1 (Dashboard gains a `Callout` + `Card`s
+it previously omitted; Auth gains correctly role-matched components instead of
+one overloaded `Button`). A strong margin (6.0) instead regresses every
+headline metric below control — Dashboard collapses to a bare `Button` and
+Gallery's typed array closes empty again (E612's rejected failure mode
+reappearing), showing an overly large floor can hijack early root/component
+choice, not just fill slots. `binding_aware_meaningful_v2_rate_strict` (strict
+v2) stays 0.0 in all three arms — at least one record per arm still fails
+`required_placeholder_missing` and/or `placeholder_semantic_role_mismatch`.
+No decode timeouts or fallbacks in any arm. This is a single `n=4` matched-pair
+replay on one scratch checkpoint, not a confirmatory suite; no checkpoint was
+promoted or synced; not a ship claim. Retain the lever default-off at a
+moderate margin scale (~2.0); reject margin=6 as a default. Next: a powered
+multi-seed/full-suite replay sweeping the margin, and a root-cause trace of
+why margin=6 hijacks root-component choice.
+
+Evidence:
+[iter-e626-required-slot-margin-decode-weight-20260720.md](iter-e626-required-slot-margin-decode-weight-20260720.md)
+and
+[JSON](iter-e626-required-slot-margin-decode-weight-20260720.json).

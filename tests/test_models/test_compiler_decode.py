@@ -389,6 +389,53 @@ def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> N
     )
 
 
+def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
+    """E626: floor the best-scoring legal slot candidate that is genuinely
+
+    still missing from the prefix; already-filled slots and the fully-covered
+    case are both no-ops, and the default-off weight never fires.
+    """
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+
+    # slot0 already appears in the prefix; only slot1 is still missing.
+    prefix = [tokenizer.bos_id, slot0]
+    bias = model._required_slot_margin_bias(
+        prefix, candidates, scores, slot_contract
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # Once every visible slot has appeared, the lever no-ops (nothing missing).
+    assert (
+        model._required_slot_margin_bias(
+            [*prefix, slot1], candidates, scores, slot_contract
+        )
+        is None
+    )
+
+    # Default-off weight never fires, even with missing slots present.
+    off_model = _model(required_slot_margin_decode_weight=0.0)
+    assert (
+        off_model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract
+        )
+        is None
+    )
+
+    # No slot contract -> no-op regardless of weight.
+    assert (
+        model._required_slot_margin_bias(prefix, candidates, scores, None) is None
+    )
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
@@ -639,6 +686,7 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
         "semantic_plan_typed_array_nonempty_margin_decode_weight",
         "semantic_plan_typed_array_item_margin_decode_weight",
         "semantic_plan_repeated_slot_margin_decode_weight",
+        "required_slot_margin_decode_weight",
     ],
 )
 def test_contract_gated_decode_weight_without_slot_contract_decode_raises(

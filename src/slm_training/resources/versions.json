@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v32",
+      "version": "v33",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v33",
+          "date": "2026-07-20",
+          "note": "E626: expose and persist the default-off required-slot margin decode weight"
+        },
         {
           "version": "v32",
           "date": "2026-07-20",
@@ -1377,7 +1382,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1392,6 +1397,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-20",
+          "note": "E626: add required_slot_margin_decode_weight, a default-off decode-time margin that floors the best legal candidate filling a still-missing required slot (analogous to semantic_plan_margin_decode_weight for plan families); contract-gated by the E617 slot_contract_constrained_decode guard"
+        },
         {
           "version": "v59",
           "date": "2026-07-20",

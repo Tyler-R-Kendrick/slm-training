@@ -638,6 +638,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias terminal root-list references by learned inclusion.",
     )
     parser.add_argument(
+        "--required-slot-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Floor the best legal candidate that fills a still-missing required "
+            "slot above the current best score (requires "
+            "--slot-contract-constrained-decode or --template-fill-decode)."
+        ),
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -1138,6 +1148,9 @@ def main(argv: list[str] | None = None) -> int:
         ),
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight
+        ),
+        required_slot_margin_decode_weight=(
+            args.required_slot_margin_decode_weight
         ),
         fidelity_loss_weight=args.fidelity_loss_weight,
         grammar_ltr_primary=args.grammar_ltr_primary,

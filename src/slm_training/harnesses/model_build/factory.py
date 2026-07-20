@@ -141,6 +141,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "schema_opaque_decode_weight",
         "schema_opaque_close_decode_weight",
         "schema_role_slot_decode_weight",
+        "required_slot_margin_decode_weight",
         "semantic_plan_decode_weight",
         "semantic_plan_margin_decode_weight",
         "semantic_plan_seed_decode_weight",

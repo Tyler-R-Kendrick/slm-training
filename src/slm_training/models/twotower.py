@@ -255,6 +255,10 @@ class TwoTowerConfig:
     schema_opaque_decode_weight: float = 0.0
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
+    # E626: floor the best-scoring legal candidate that fills a required slot
+    # still absent anywhere in the prefix (targets required_inventory_coverage
+    # directly, unlike schema_role_slot_decode_weight's flat role-compatible bonus).
+    required_slot_margin_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
     semantic_plan_margin_decode_weight: float = 0.0
     semantic_plan_seed_decode_weight: float = 0.0
@@ -4971,6 +4975,58 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _required_slot_margin_bias(
+        self,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+        slot_contract: list[str] | None,
+    ) -> torch.Tensor | None:
+        """Floor the best legal candidate that fills a still-missing required slot.
+
+        E626: analogous to how ``semantic_plan_margin_decode_weight`` floors a
+        still-required plan family above the best legal component score, this
+        floors whichever legal visible-slot candidate corresponds to a required
+        slot that has not appeared anywhere in the prefix yet, directly above
+        the current best candidate score. Unlike ``_schema_role_slot_bias``
+        (a flat bonus for any role-compatible slot, filled or not) it only
+        fires for slots ``required_inventory_coverage`` would otherwise still
+        judge missing, and it is a no-op once every candidate slot in this
+        legal set has already been emitted.
+        """
+        margin = float(
+            getattr(self.config, "required_slot_margin_decode_weight", 0.0) or 0.0
+        )
+        if margin <= 0.0 or not slot_contract:
+            return None
+        sym_slots = int(getattr(self.tokenizer, "sym_slots", 0) or 0)
+        if sym_slots <= 0:
+            return None
+        try:
+            visible_slot_ids = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(min(len(slot_contract), sym_slots))
+            }
+        except (AttributeError, KeyError, ValueError):
+            return None
+        if not visible_slot_ids:
+            return None
+        filled = set(prefix)
+        targets = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if token_id in visible_slot_ids and token_id not in filled
+        ]
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
+        return bias
+
     def _semantic_plan_repeated_owner_id(
         self,
         row: int,
@@ -7007,6 +7063,18 @@ class TwoTowerModel(nn.Module):
                     )
                     if slot_coverage_close_bias is not None:
                         scores = scores + slot_coverage_close_bias
+                    required_slot_margin_bias = self._required_slot_margin_bias(
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                        (
+                            self._slot_contracts[row]
+                            if self._slot_contracts and row < len(self._slot_contracts)
+                            else None
+                        ),
+                    )
+                    if required_slot_margin_bias is not None:
+                        scores = scores + required_slot_margin_bias
                     repeated_array_close_bias = (
                         self._semantic_plan_repeated_array_close_bias(
                             row,
@@ -8074,22 +8142,24 @@ class TwoTowerModel(nn.Module):
             self._slot_contracts = None
         if not use_contract_decode:
             # E617: schema_role_slot_decode_weight, slot_coverage_close_decode_weight,
-            # and the semantic_plan_typed_array_*/repeated_slot_margin decode weights
-            # all gate their own bias functions on a populated `self._slot_contracts`
-            # row (see `_schema_role_slot_bias`, `_slot_coverage_close_bias`,
+            # the semantic_plan_typed_array_*/repeated_slot_margin decode weights,
+            # and (E626) required_slot_margin_decode_weight all gate their own bias
+            # functions on a populated `self._slot_contracts` row (see
+            # `_schema_role_slot_bias`, `_slot_coverage_close_bias`,
             # `_semantic_plan_typed_array_nonempty_bias`,
-            # `_semantic_plan_repeated_slot_bias`), which this method only populates
-            # when `slot_contract_constrained_decode` (or `template_fill_decode`) is
-            # enabled. Setting one of these weights without either flag used to
-            # silently no-op every step (E611-E616 replayed a matched control/
-            # treatment eval this way without ever observing a difference). Fail
-            # loud instead of reproducing that footgun.
+            # `_semantic_plan_repeated_slot_bias`, `_required_slot_margin_bias`),
+            # which this method only populates when `slot_contract_constrained_decode`
+            # (or `template_fill_decode`) is enabled. Setting one of these weights
+            # without either flag used to silently no-op every step (E611-E616
+            # replayed a matched control/treatment eval this way without ever
+            # observing a difference). Fail loud instead of reproducing that footgun.
             _contract_gated_weight_names = (
                 "schema_role_slot_decode_weight",
                 "slot_coverage_close_decode_weight",
                 "semantic_plan_typed_array_nonempty_margin_decode_weight",
                 "semantic_plan_typed_array_item_margin_decode_weight",
                 "semantic_plan_repeated_slot_margin_decode_weight",
+                "required_slot_margin_decode_weight",
             )
             _active_contract_gated_weights = sorted(
                 name
