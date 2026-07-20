@@ -4158,6 +4158,51 @@ E617/E618/E620.
 Evidence: [narrative](iter-e621-semantic-contract-audit-20260720.md) and
 [JSON](iter-e621-semantic-contract-audit-20260720.json).
 
+## E622 the E617 decode gate can now go live during training, but nothing behind it fires yet
+
+E616-E621 always exercised the E617/E620 decode-bias fixes through standalone
+`evaluate_model.py` replays against an already-trained checkpoint, never
+through a live `slm sft train` process. This iteration pivots to a real
+training run: does `self._slot_contracts` (E617's gate) ever get populated
+as a side effect of training's own periodic eval
+(`train_loop.py:753 _maybe_eval` -> `eval_runner.evaluate_suites`)? Plain
+SFT's forward/loss step never decodes; GRPO-lite RL's on-policy rollout
+would exercise it every step, but `slm rl train` is fail-closed on an
+approved `RLReadinessReport` and none exists in this repo, so periodic eval
+was the only reachable path this session.
+
+**First attempt over the cap, discarded.** 80 steps + two periodic-eval
+passes (`--eval-every 40`) on the same E616/E617 corpus ran past the 3-minute
+hard cap — killed at real wall 3m18.134s. Per the iron law, discarded as
+non-evidence; its `outputs/runs/` directory was deleted before retrying.
+
+**Second attempt, scaled to fit, completed honestly.** `--steps 40
+--eval-every 40` (single periodic-eval pass) completed in 51.285s real
+(`elapsed_wall_seconds` 48.681), with 88.78% of wall time in the single
+`eval_suites` span — periodic eval, not training, is the cap-relevant cost
+(~40s/pass on this suite/backend, not per-step).
+
+**Finding:** `scoreboard.json`'s in-training `evaluation_policy` shows
+`slot_contract_constrained_decode: true` — the first time in this lineage
+`self._slot_contracts` is populated inside a live `slm sft train` process
+rather than only a standalone eval replay. But every weighted lever E617/E620
+gate on it (`schema_role_slot_decode_weight`, `semantic_role_decode_weight`,
+all nine `semantic_plan_*_decode_weight` fields, etc.) is `0.0` in that same
+policy block: `scripts/train_model.py`'s CLI has zero `semantic_plan` flags
+(confirmed by grep) and `ModelBuildConfig` defaults them to `None`. The gate
+opens for the first time during live training; nothing behind it fires — a
+different, still-live CLI-surface gap between `train_model.py` and
+`evaluate_model.py`, not the bugs E617/E618/E620 already fixed. Real numbers
+(ood suite, n=4, 40-step checkpoint, not a ship claim): `parse_rate` 1.0,
+`meaningful_program_rate` 0.0, `structural_similarity` 0.190625,
+`placeholder_fidelity` 0.0, `reward_score` 0.0, `ship_score` 0.0347.
+
+No code change this iteration (reported, not silently patched, to avoid
+re-opening the just-closed E617-E621 audit thread under time pressure). No
+checkpoint promoted or synced; no previously reported metric changes.
+Evidence: [narrative](iter-e622-training-time-decode-gate-scratch40-20260720.md)
+and [JSON](iter-e622-training-time-decode-gate-scratch40-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
