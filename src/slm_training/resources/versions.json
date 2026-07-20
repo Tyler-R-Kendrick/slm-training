@@ -815,7 +815,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v35",
+      "version": "v36",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -828,6 +828,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v36",
+          "date": "2026-07-20",
+          "note": "preserve explicit component counts when one descriptive modifier separates the count from the component family"
+        },
         {
           "version": "v35",
           "date": "2026-07-20",
