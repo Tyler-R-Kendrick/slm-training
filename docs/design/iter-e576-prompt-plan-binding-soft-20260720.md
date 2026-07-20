@@ -12,7 +12,7 @@ gold topology, is neutral in nested lists, and remains default-off.
 
 ## Matched result
 
-All arms use commit `4b60437e`, E569 checkpoint SHA
+All arms use commit `64e617f5`, E569 checkpoint SHA
 `8254fcf7…c6535f73`, CPU, frozen local HF context, OOD `n=4`, honest visible
 slot and semantic-role context, component-plan weight 1, choice-codec
 constrained LTR, 8 generation steps, 4 attempts, and a 160-token canvas. Each
@@ -21,9 +21,9 @@ v15 and TwoTower v13.
 
 | Binding weight | Run | meaning-v1 / v2 | fidelity | validity | structure | recall | reward | AST node / edge | binding applications / changes | AgentV |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0 | `e576-e569-plan-binding-control-r1` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 0 / 0 | 0/1 |
-| 1 | `e576-e569-plan-binding1-r1` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 5 / 0 | 0/1 |
-| 2 | `e576-e569-plan-binding2-r1` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 5 / 0 | 0/1 |
+| 0 | `e576-e569-plan-binding-control-r2` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 0 / 0 | 0/1 |
+| 1 | `e576-e569-plan-binding1-r2` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 5 / 0 | 0/1 |
+| 2 | `e576-e569-plan-binding2-r2` | 0.25 / 0.00 | 0.4250 | 0.6550 | 0.1688 | 0.2708 | 0.7345 | 0.2833 / 0.0000 | 5 / 0 | 0/1 |
 
 Both treatments are exact quality nulls. Weight 2 changes the subsequent
 root-arity and root-identity intervention counts, showing an interaction with

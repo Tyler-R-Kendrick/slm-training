@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "experiment_id": "E576",
-  "run_id": "e576-e569-plan-binding1-r1",
+  "run_id": "e576-e569-plan-binding1-r2",
   "date_utc": "2026-07-20",
   "run_class": "scratch_matrix",
   "status": "completed_null_not_ship",
@@ -44,8 +44,8 @@
       "reward_score": 0.7345,
       "ast_node_f1": 0.2833333333333333,
       "ast_edge_f1": 0.0,
-      "latency_ms_p50": 9607.28,
-      "latency_ms_p95": 16778.0
+      "latency_ms_p50": 7608.57,
+      "latency_ms_p95": 12322.91
     }
   },
   "decode_telemetry": {
@@ -60,7 +60,7 @@
   },
   "matched_runs": [
     {
-      "run_id": "e576-e569-plan-binding-control-r1",
+      "run_id": "e576-e569-plan-binding-control-r2",
       "label": "binding_weight_0_control",
       "semantic_plan_binding_decode_weight": 0.0,
       "checkpoint_sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
@@ -77,8 +77,8 @@
           "reward_score": 0.7345,
           "ast_node_f1": 0.2833333333333333,
           "ast_edge_f1": 0.0,
-          "latency_ms_p50": 9134.58,
-          "latency_ms_p95": 16754.73
+          "latency_ms_p50": 8578.08,
+          "latency_ms_p95": 15191.8
         }
       },
       "agentv": {
@@ -88,7 +88,7 @@
       }
     },
     {
-      "run_id": "e576-e569-plan-binding2-r1",
+      "run_id": "e576-e569-plan-binding2-r2",
       "label": "binding_weight_2_treatment",
       "semantic_plan_binding_decode_weight": 2.0,
       "checkpoint_sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
@@ -105,8 +105,8 @@
           "reward_score": 0.7345,
           "ast_node_f1": 0.2833333333333333,
           "ast_edge_f1": 0.0,
-          "latency_ms_p50": 9883.08,
-          "latency_ms_p95": 16657.93
+          "latency_ms_p50": 6085.36,
+          "latency_ms_p95": 13111.78
         }
       },
       "agentv": {
@@ -117,7 +117,7 @@
     }
   ],
   "comparison": {
-    "baseline": "e576-e569-plan-binding-control-r1",
+    "baseline": "e576-e569-plan-binding-control-r2",
     "weight_1_quality_deltas": {
       "meaningful_program_rate": 0.0,
       "binding_aware_meaningful_v2_rate_strict": 0.0,
@@ -155,7 +155,7 @@
   "decision": "Reject weights 1 and 2 as quality interventions and keep the generalized factor default-off for diagnostics only. Do not promote or sync a checkpoint. Next target plan-aware root construction or explicit topology cardinality rather than stronger reference scoring.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "4b60437e1fec0ccc4e2e7cc7f72b345771d4f673",
+    "code_commit": "64e617f54c95a7f79e992963f454a82d44e3093f",
     "code_dirty": false,
     "components": {
       "harness.model_build.eval": "v15",
@@ -163,6 +163,6 @@
       "evals.scoring": "v10",
       "model.twotower": "v13"
     },
-    "stamped_at": "2026-07-20T04:20:23.262158+00:00"
+    "stamped_at": "2026-07-20T04:25:51.125908+00:00"
   }
 }

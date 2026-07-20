@@ -1165,15 +1165,15 @@ def test_e576_matched_eval_arms_are_persisted_without_new_checkpoint(
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
 
-    primary_id = "e576-e569-plan-binding1-r1"
+    primary_id = "e576-e569-plan-binding1-r2"
     primary = readers.run(primary_id)
     assert primary["provenance"] == "committed"
     assert primary["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
     assert primary["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7345
 
     for run_id in (
-        "e576-e569-plan-binding-control-r1",
-        "e576-e569-plan-binding2-r1",
+        "e576-e569-plan-binding-control-r2",
+        "e576-e569-plan-binding2-r2",
     ):
         assert readers.run(run_id)["provenance"] == "committed"
 
