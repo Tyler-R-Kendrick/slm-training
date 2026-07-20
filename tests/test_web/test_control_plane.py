@@ -964,6 +964,19 @@ def test_e563_eval_is_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.201925
 
 
+def test_e564_eval_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e564-e561-semantic-role-decode2-eval-r1"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.241925
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
