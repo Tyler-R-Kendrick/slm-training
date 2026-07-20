@@ -1508,6 +1508,25 @@
           "note": "initial registration; SLM-151 SPV2-03 dense legal-set distillation fixture wiring baseline"
         }
       ]
+    },
+    "harness.experiments.slm155_factorization_comparison": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm155_factorization_comparison.py",
+        "scripts/run_slm155_factorization_comparison_fixture.py",
+        "tests/test_harnesses/experiments/test_slm155_factorization_comparison.py",
+        "tests/test_scripts/test_run_slm155_factorization_comparison_fixture.py",
+        "docs/design/iter-slm155-factorization-comparison-20260720.json",
+        "docs/design/iter-slm155-factorization-comparison-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-155 SPV3-02 matched AR vs plan-conditioned X22 factorization comparison wiring/fixture harness"
+        }
+      ]
     }
   }
 }
