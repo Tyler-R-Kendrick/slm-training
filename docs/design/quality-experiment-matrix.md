@@ -4255,3 +4255,32 @@ handle Dashboard's upstream inventory error separately. No ship claim.
 Evidence:
 [iter-e622-coverage-closure-trace-20260720.md](iter-e622-coverage-closure-trace-20260720.md)
 and [JSON](iter-e622-coverage-closure-trace-20260720.json).
+
+## E630 prompt-owned closure filtering
+
+E630 tested E622's Auth diagnosis by preferring prompt-mentioned compatible
+components over broad schema-role matches during closure continuation. It
+reused the exact E622 checkpoint and OOD `n=4` recipe; no training or new
+checkpoint occurred.
+
+| OOD `n=4` | E622 baseline | E630 treatment |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.5000 / 0.0000 |
+| fidelity / validity | 0.5917 / 0.7550 | 0.5083 / 0.7050 |
+| structure / component recall | 0.4029 / 0.5000 | 0.3379 / 0.3750 |
+| reward | 0.8175 | 0.7850 |
+| AST node / edge F1 | 0.4690 / 0.2625 | 0.3857 / 0.2625 |
+| latency p50 / p95 | 3067.47 / 6277.99 ms | 3449.90 / 14871.38 ms |
+| closure applications / changes | 11 / 8 | 14 / 9 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+The intended Auth choice changed from `SwitchGroup` to `Input`, but it nested
+that Input inside the already-wrong Button owner and later collapsed Auth to
+`TextContent(email)`. Every aggregate quality metric regressed or stayed flat.
+Reject and revert; model v64 restores v62. A follow-up must be frame-aware and
+place prompt-owned families as siblings after closing a wrong owner.
+
+Evidence:
+[iter-e630-prompt-owned-closure-20260720.md](iter-e630-prompt-owned-closure-20260720.md)
+and [JSON](iter-e630-prompt-owned-closure-20260720.json).
