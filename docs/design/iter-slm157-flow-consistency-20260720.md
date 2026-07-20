@@ -37,9 +37,9 @@ The existing legal-edit enumeration cannot produce non-trivial paths between dis
 | B_direct_trajectory_imitation | 0 | 4 | 2 | 0.000 | 0.000 | 0.000 | 0.00 | 3.00 | 0.00 | 0.000 | 0.000 | 0.000 |
 | C_consistency_student_x22 | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 1.50 | 1.50 | 0.38 | 0.500 | 0.000 | 0.000 |
 | D_consistency_student_coarse | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 1.50 | 2.00 | 0.38 | 0.500 | 0.000 | 0.000 |
-| E_discrete_flow_rate | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 4.00 | 6.00 | 1.50 | 0.375 | 3.623 | 0.000 |
-| F_random_path_control | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 4.00 | 5.50 | 1.50 | 0.500 | 3.860 | 0.000 |
-| G_ar_x22_hybrid_placeholder | 0 | 4 | 2 | 0.000 | 0.000 | 0.500 | 2.00 | 2.50 | 0.50 | 0.500 | 0.000 | 0.000 |
+| E_discrete_flow_rate | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 4.00 | 4.50 | 1.50 | 0.625 | 3.601 | 0.000 |
+| F_random_path_control | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 4.00 | 4.50 | 1.50 | 0.625 | 3.841 | 0.000 |
+| G_ar_x22_hybrid_placeholder | 0 | 4 | 2 | 0.000 | 0.000 | 1.000 | 4.00 | 3.00 | 1.50 | 0.625 | 0.000 | 0.000 |
 | H_oracle_boundary | 0 | 4 | 2 | 0.000 | 0.000 | 0.375 | 1.50 | 1.50 | 0.38 | 0.500 | 0.000 | 0.000 |
 
 ## Go / no-go decision

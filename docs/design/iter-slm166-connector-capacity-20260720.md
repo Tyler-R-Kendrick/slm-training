@@ -35,10 +35,10 @@ The linear connector matches or exceeds the cross-attention connector on rare-co
 | current__s0 | current | 0 | 0 | 0 | 0 | 0.348 | 0.321 | 0.432 | 0.404 | 0.341 | 0.001 |
 | linear__s0 | linear | 0 | 4160 | 0 | 9216 | 0.396 | 0.382 | 0.475 | 0.440 | 0.393 | 0.001 |
 | low_rank__s0 | low_rank | 0 | 33216 | 0 | 66560 | 0.441 | 0.425 | 0.515 | 0.484 | 0.436 | 0.001 |
-| cross_attention__s0 | cross_attention | 0 | 17024 | 0 | 12288 | 0.490 | 0.469 | 0.568 | 0.545 | 0.477 | 0.005 |
+| cross_attention__s0 | cross_attention | 0 | 17024 | 0 | 12288 | 0.490 | 0.469 | 0.568 | 0.545 | 0.477 | 0.001 |
 | linear_plus_action_residuals__s0 | linear_plus_action_residuals | 0 | 4160 | 0 | 9216 | 0.426 | 0.403 | 0.515 | 0.481 | 0.407 | 0.001 |
 | linear_shuffled_context__s0 | linear_shuffled_context | 0 | 4160 | 0 | 9216 | 0.355 | 0.337 | 0.437 | 0.410 | 0.341 | 0.001 |
-| local_target__s0 | local_target | 0 | 17280 | 0 | 24576 | 0.545 | 0.530 | 0.626 | 0.601 | 0.536 | 0.006 |
+| local_target__s0 | local_target | 0 | 17280 | 0 | 24576 | 0.545 | 0.530 | 0.626 | 0.601 | 0.536 | 0.002 |
 
 ## Per-arm means
 
