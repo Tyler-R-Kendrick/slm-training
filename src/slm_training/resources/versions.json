@@ -697,7 +697,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -708,6 +708,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-20",
+          "note": "gate the auxiliary learned slot-head bonus to visible role-matching families when honest role evidence is available"
+        },
         {
           "version": "v20",
           "date": "2026-07-20",
