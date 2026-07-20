@@ -253,6 +253,18 @@ _LAZY_SDE4_02_EXPORTS = {
     "run_sde4_02_fixture_ladder": "run_fixture_ladder",
 }
 
+_LAZY_SLM135_EXPORTS = {
+    "SLM135_MATRIX_SET": "MATRIX_SET",
+    "SLM135_MATRIX_VERSION": "MATRIX_VERSION",
+    "Slm135Arm": "Slm135Arm",
+    "Slm135Manifest": "Slm135Manifest",
+    "Slm135Report": "Slm135Report",
+    "Slm135Row": "Slm135Row",
+    "build_slm135_manifest": "build_manifest",
+    "render_slm135_markdown": "render_markdown",
+    "run_slm135_fixture_matrix": "run_fixture_matrix",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -265,6 +277,14 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import sde4_02_min_controller_capacity
 
         value = getattr(sde4_02_min_controller_capacity, _LAZY_SDE4_02_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM135_EXPORTS:
+        from slm_training.harnesses.experiments import slm135_trailed_assumptions_ablation
+
+        value = getattr(
+            slm135_trailed_assumptions_ablation, _LAZY_SLM135_EXPORTS[name]
+        )
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -295,6 +315,12 @@ __all__ = [
     "ControllerCapacityReport",
     "ControllerCapacityRow",
     "ControllerCapacityRung",
+    "SLM135_MATRIX_SET",
+    "SLM135_MATRIX_VERSION",
+    "Slm135Arm",
+    "Slm135Manifest",
+    "Slm135Report",
+    "Slm135Row",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
@@ -381,6 +407,9 @@ __all__ = [
     "render_sde4_02_markdown",
     "run_ast_sketch_retrieval_fixture_matrix",
     "run_sde4_02_fixture_ladder",
+    "build_slm135_manifest",
+    "render_slm135_markdown",
+    "run_slm135_fixture_matrix",
     "validate_ast_sketch_retrieval_manifest",
     "build_e228_exposure_ladder",
     "build_e228_recipe_config",
