@@ -3880,6 +3880,36 @@ remains default off. No checkpoint was created or synced. Evidence:
 python -m scripts.run_e614_typed_object_required_property_fixture
 ```
 
+## E615 typed-object required-property closure: broadened coverage
+
+E615 broadens E614's fixture/unit-test coverage of
+`require_object_schema_properties` without changing `choice_tokenizer.py`
+itself. E614 only drove the typed-array-item `OBJ_OPEN` branch with one
+required key; E615 adds three grammar-only checks: (1) the sibling
+directly-typed-component-argument branch (via a synthetic `_ChoiceFrame`,
+since no shipped component names a required directly-typed object argument),
+(2) a regression check that no-required-property objects (true of every
+shipped directly-typed object argument today) stay unaffected by the opt-in
+flag, and (3) two required keys filled in both orders on a synthetically
+widened `ImageGallery` item schema. All 10 fixture checks and 3 new unit
+tests pass. One honest, non-regression finding: `_completion_id`'s
+minimal-completion target always resolves the first still-missing key in
+schema-declared order, not the key actually being filled next — correct for
+its feasibility-proof purpose, but order-oblivious. No prior checkpoint was
+available in this environment (same finding as E614), so a matched OOD
+quality-metric replay remains deferred. Strict v2, AgentV, and the E608-E613
+aggregate scoreboard are untouched; the lever remains default off. No
+metric/gate/harness/matrix file changed, so no version bump applies
+(`verify_version_stamps --check`: 0 components touched). No checkpoint was
+created or synced. Evidence:
+[narrative](iter-e615-typed-object-multi-key-closure-20260720.md) and
+[JSON](iter-e615-typed-object-multi-key-closure-20260720.json).
+
+```bash
+python -m scripts.run_e615_typed_object_multi_key_closure_fixture
+python -m pytest tests/test_models/test_choice_tokenizer.py -k required_property_closure
+```
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

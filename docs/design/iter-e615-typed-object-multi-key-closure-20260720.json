@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E615",
+  "run_id": "e615-typed-object-multi-key-closure-fixture-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "fixture",
+  "hypothesis": "E614's required-property closure gate (ChoiceDecodeState.require_object_schema_properties) generalizes beyond the single typed-array-item / single-required-key case it shipped with: it also gates the sibling directly-typed-component-argument OBJ_OPEN branch, leaves no-required-key objects unaffected, and correctly sequences and order-independently tracks two required keys without creating a decode dead end.",
+  "recipe": {
+    "component": "synthetic component-argument frame + widened ImageGallery.images[] item schema",
+    "field": "object_required tuple widened to (src, alt); no shipped schema currently requires two keys or names required keys on a directly-typed (non-array) object argument",
+    "mode": "grammar-only fixture; no trained checkpoint available in this environment (same finding as E614)",
+    "max_wall_minutes": 3.0
+  },
+  "checkpoint": {
+    "created": false,
+    "note": "No prior checkpoint (e.g. e569-e561-matched-cont48-r1-48s used by E608-E613) was present under outputs/ in this environment; a matched OOD quality-metric replay remains deferred to the next iteration that has checkpoint access."
+  },
+  "probes": {
+    "component_argument_branch": {
+      "object_opened": true,
+      "object_required_derived": [
+        "src",
+        "alt"
+      ],
+      "close_legal_with_zero_keys": false,
+      "required_property_name_legal": true
+    },
+    "component_argument_branch_no_required": {
+      "object_opened": true,
+      "object_required_derived": [],
+      "bare_close_still_legal": true
+    },
+    "multi_key_forward_order": {
+      "order": [
+        "src",
+        "alt"
+      ],
+      "steps": [
+        {
+          "filled": "src",
+          "pre_fill_close_blocked": true,
+          "pre_fill_completion_targeted": "n:src"
+        },
+        {
+          "filled": "alt",
+          "pre_fill_close_blocked": true,
+          "pre_fill_completion_targeted": "n:alt"
+        }
+      ],
+      "final_close_legal": true
+    },
+    "multi_key_reverse_order": {
+      "order": [
+        "alt",
+        "src"
+      ],
+      "steps": [
+        {
+          "filled": "alt",
+          "pre_fill_close_blocked": true,
+          "pre_fill_completion_targeted": "n:src"
+        },
+        {
+          "filled": "src",
+          "pre_fill_close_blocked": true,
+          "pre_fill_completion_targeted": "n:src"
+        }
+      ],
+      "final_close_legal": true
+    }
+  },
+  "checks": {
+    "component_argument_branch_derives_required": true,
+    "component_argument_branch_blocks_bare_close": true,
+    "component_argument_branch_offers_required_key": true,
+    "no_required_object_argument_unaffected": true,
+    "forward_order_blocks_until_both_filled": true,
+    "forward_order_targets_next_missing_key": true,
+    "forward_order_reaches_close": true,
+    "reverse_order_blocks_until_both_filled": true,
+    "reverse_order_completion_target_is_declaration_order": true,
+    "reverse_order_reaches_close": true
+  },
+  "all_checks_passed": true,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "aa2adecf26146fde452133591880ad4c3517c2e9",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v57",
+      "harness.model_build.eval": "v33"
+    },
+    "stamped_at": "2026-07-20T16:52:08.170578+00:00"
+  },
+  "generated_at": "2026-07-20T16:52:08.170591Z"
+}

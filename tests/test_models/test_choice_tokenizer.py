@@ -9,6 +9,7 @@ import pytest
 from slm_training.dsl.lang_core import bridge_available
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.dsl.production_codec import CLOSE
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
     DIR_PREFIX,
@@ -19,6 +20,7 @@ from slm_training.models.choice_tokenizer import (
     TERNARY_OP,
     ChoiceDecodeState,
     ChoiceTokenizer,
+    _ChoiceFrame,
     _component_contracts,
     is_choice_tokenizer,
 )
@@ -276,6 +278,105 @@ def test_choice_state_required_property_closure_survives_minimal_completion(
     assert state.advance_id(tok.token_to_id["["])
     assert state.advance_id(tok.token_to_id["{"])
     assert state.minimal_completion_length() < 1025
+
+
+def test_choice_state_required_property_closure_component_argument_path(
+    tok: ChoiceTokenizer,
+) -> None:
+    """E615: the direct typed-component-argument branch (not array-wrapped).
+
+    E614's own object frames only exercised the ``parent.kind == "variadic"``
+    branch (a typed-array item, e.g. ``ImageGallery.images[]``) taken at
+    ``choice_tokenizer.py``'s ``OBJ_OPEN`` handler. No component currently
+    ships a directly-typed (non-array) object argument with a non-empty
+    ``required`` list, so this drives the sibling ``parent.kind ==
+    "component"`` branch with a synthetic schema pushed directly onto the
+    pushdown stack, confirming it resolves ``object_required`` the same way.
+    """
+    state = ChoiceDecodeState(tok, slot_count=1, require_object_schema_properties=True)
+    state.frames.append(
+        _ChoiceFrame(
+            "component",
+            "element:Synthetic",
+            close=CLOSE,
+            schemas=({"type": "object", "required": ["src", "alt"]},),
+            required_args=1,
+            arg_index=0,
+        )
+    )
+    assert state.advance_id(tok.token_to_id["{"])
+    assert state.frames[-1].object_required == ("src", "alt")
+
+    probe = state.clone()
+    assert not probe.advance_id(tok.token_to_id["}"])
+    allowed = state.allowed_ids(16)
+    assert tok.token_to_id["}"] not in allowed
+    assert tok.token_to_id["n:src"] in allowed
+
+
+def test_choice_state_required_property_closure_component_argument_no_required(
+    tok: ChoiceTokenizer,
+) -> None:
+    """Regression: an object argument with no required keys stays unaffected.
+
+    Every real component with a directly-typed object argument today (e.g.
+    ``Input.rules``) declares no ``required`` list, so opting into
+    ``require_object_schema_properties`` must not spuriously block a bare
+    close for those — the flag only bites when a schema actually names
+    required properties.
+    """
+    state = ChoiceDecodeState(tok, slot_count=1, require_object_schema_properties=True)
+    state.frames.append(
+        _ChoiceFrame(
+            "component",
+            "element:Synthetic",
+            close=CLOSE,
+            schemas=({"type": "object"},),
+            required_args=1,
+            arg_index=0,
+        )
+    )
+    assert state.advance_id(tok.token_to_id["{"])
+    assert state.frames[-1].object_required == ()
+    assert state.advance_id(tok.token_to_id["}"])
+
+
+def test_choice_state_required_property_closure_multi_key_order_independent(
+    tok: ChoiceTokenizer,
+) -> None:
+    """E615: two required properties close only once both are filled, in either order."""
+
+    def opened() -> ChoiceDecodeState:
+        state = ChoiceDecodeState(
+            tok, slot_count=1, require_object_schema_properties=True
+        )
+        assert state.advance_id(tok.token_to_id["+ImageGallery"])
+        assert state.advance_id(tok.token_to_id["["])
+        assert state.advance_id(tok.token_to_id["{"])
+        # Synthetically widen ImageGallery's real single-required-key schema
+        # (`src`) to two required keys (`src`, `alt`) to exercise ordering
+        # and independence; no shipped schema currently requires two keys.
+        state.frames[-1].object_required = ("src", "alt")
+        return state
+
+    forward = opened()
+    assert forward._completion_id() == tok.token_to_id["n:src"]
+    assert not forward.clone().advance_id(tok.token_to_id["}"])
+    assert forward.advance_id(tok.token_to_id["n:src"])
+    assert forward.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert forward._completion_id() == tok.token_to_id["n:alt"]
+    assert not forward.clone().advance_id(tok.token_to_id["}"])
+    assert forward.advance_id(tok.token_to_id["n:alt"])
+    assert forward.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert forward.advance_id(tok.token_to_id["}"])
+
+    reverse = opened()
+    assert reverse.advance_id(tok.token_to_id["n:alt"])
+    assert reverse.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert not reverse.clone().advance_id(tok.token_to_id["}"])
+    assert reverse.advance_id(tok.token_to_id["n:src"])
+    assert reverse.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert reverse.advance_id(tok.token_to_id["}"])
 
 
 def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
