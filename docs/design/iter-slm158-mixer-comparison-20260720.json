@@ -1,0 +1,234 @@
+{
+  "claim_class": "wiring",
+  "experiment_id": "slm158-mixer-comparison",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "T0_no_mixer",
+        "blocked": false,
+        "blocker": "",
+        "description": "Mean-pooled token embedding floor with no learned sequence mixer.",
+        "family": "no_mixer",
+        "name": "no_mixer_floor",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "T1_transformer",
+        "blocked": false,
+        "blocker": "",
+        "description": "Small Transformer encoder (baseline).",
+        "family": "transformer",
+        "name": "small_transformer",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "S1_mamba_reference",
+        "blocked": false,
+        "blocker": "",
+        "description": "Simplified Mamba-family selective SSM reference.",
+        "family": "mamba_reference",
+        "name": "mamba_reference",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "L1_gated_delta_net",
+        "blocked": false,
+        "blocker": "",
+        "description": "Simplified Gated DeltaNet-style linear-attention reference.",
+        "family": "gated_delta_net",
+        "name": "gated_delta_net_reference",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "R1_rwkv_reference",
+        "blocked": false,
+        "blocker": "",
+        "description": "Simplified RWKV-style recurrent time-mixing reference.",
+        "family": "rwkv",
+        "name": "rwkv_reference",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "R2_xlstm_reference",
+        "blocked": false,
+        "blocker": "",
+        "description": "Simplified xLSTM mLSTM-style matrix-memory reference.",
+        "family": "xlstm",
+        "name": "xlstm_reference",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "C1_hyena_reference",
+        "blocked": false,
+        "blocker": "",
+        "description": "Simplified Hyena-style long-convolution reference.",
+        "family": "hyena",
+        "name": "hyena_reference",
+        "promotable": true,
+        "reference": true
+      }
+    ],
+    "claim_class": "wiring",
+    "common_config": {
+      "batch_size": 16,
+      "d_model": 32,
+      "epochs": 2,
+      "lr": 0.01,
+      "metric_versions": {
+        "meaningful": "2.0.0"
+      },
+      "mixer_state_dim": 16,
+      "n_classes": 8,
+      "n_eval": 8,
+      "n_layers": 2,
+      "n_train": 32,
+      "seeds": [
+        0
+      ],
+      "seq_len": 32,
+      "vocab_size": 64
+    },
+    "experiment_id": "slm158-mixer-comparison",
+    "falsifier": "All mixers perform identically on the actual workload distribution, recurrent/SSM mixers require unrealistic lengths to show a cost win, or simplified references cannot be trained stably enough to separate mixer family effects from implementation noise.",
+    "hypothesis": "A narrow sequence-mixer protocol with simplified reference implementations can expose whether non-Transformer mixers preserve task accuracy and improve latency/memory on a shared synthetic sequence task, before productionizing any one family.",
+    "matrix_set": "slm158_mixer_comparison",
+    "matrix_version": "spv3-05-v1",
+    "status": "not_run"
+  },
+  "matrix_set": "slm158_mixer_comparison",
+  "matrix_version": "spv3-05-v1",
+  "rows": [
+    {
+      "arm_id": "T0_no_mixer",
+      "family": "no_mixer",
+      "mean_accuracy": 0.125,
+      "mean_latency_ms": 8.386867499211803,
+      "mean_loss": 2.2872016429901123,
+      "n_records": 8,
+      "notes": [
+        "family=no_mixer",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 4552,
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "T1_transformer",
+      "family": "transformer",
+      "mean_accuracy": 0.125,
+      "mean_latency_ms": 183.94243999864557,
+      "mean_loss": 2.4824721813201904,
+      "n_records": 8,
+      "notes": [
+        "family=transformer",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 30760,
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "S1_mamba_reference",
+      "family": "mamba_reference",
+      "mean_accuracy": 0.125,
+      "mean_latency_ms": 47.13796999931219,
+      "mean_loss": 2.4494223594665527,
+      "n_records": 8,
+      "notes": [
+        "family=mamba_reference",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 5625,
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "L1_gated_delta_net",
+      "family": "gated_delta_net",
+      "mean_accuracy": 0.125,
+      "mean_latency_ms": 343.9360099982878,
+      "mean_loss": 2.295823097229004,
+      "n_records": 8,
+      "notes": [
+        "family=gated_delta_net",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 7689,
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "R1_rwkv_reference",
+      "family": "rwkv",
+      "mean_accuracy": 0.25,
+      "mean_latency_ms": 66.14583249756834,
+      "mean_loss": 2.5568695068359375,
+      "n_records": 8,
+      "notes": [
+        "family=rwkv",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 8712,
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "R2_xlstm_reference",
+      "family": "xlstm",
+      "mean_accuracy": 0.125,
+      "mean_latency_ms": 316.56484750055824,
+      "mean_loss": 2.287919044494629,
+      "n_records": 8,
+      "notes": [
+        "family=xlstm",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 6666,
+      "promotable": true,
+      "seed": 0
+    },
+    {
+      "arm_id": "C1_hyena_reference",
+      "family": "hyena",
+      "mean_accuracy": 0.125,
+      "mean_latency_ms": 58.298899999499554,
+      "mean_loss": 2.3500213623046875,
+      "n_records": 8,
+      "notes": [
+        "family=hyena",
+        "fixture-only: synthetic token-pattern classifier",
+        "reference implementation"
+      ],
+      "param_count": 6616,
+      "promotable": true,
+      "seed": 0
+    }
+  ],
+  "run_id": "slm158_fixture",
+  "schema": "Slm158MixerComparisonReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T08:38:17.068920Z",
+  "version_stamp": {
+    "code_commit": "304a7c626cb959b02891f09d1a194175f926c5f3",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v33",
+      "harness.experiments.slm158_mixer_comparison": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T08:38:17.055936+00:00"
+  }
+}
