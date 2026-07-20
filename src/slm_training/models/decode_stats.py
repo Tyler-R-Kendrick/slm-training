@@ -40,6 +40,8 @@ class DecodeStats:
     semantic_plan_choice_changes: int = 0
     semantic_plan_binding_applications: int = 0
     semantic_plan_binding_choice_changes: int = 0
+    semantic_plan_root_applications: int = 0
+    semantic_plan_root_choice_changes: int = 0
     slot_component_applications: int = 0
     slot_component_choice_changes: int = 0
     visible_reference_applications: int = 0
@@ -224,6 +226,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "semantic_plan_choice_changes",
         "semantic_plan_binding_applications",
         "semantic_plan_binding_choice_changes",
+        "semantic_plan_root_applications",
+        "semantic_plan_root_choice_changes",
         "slot_component_applications",
         "slot_component_choice_changes",
         "visible_reference_applications",
