@@ -2947,6 +2947,17 @@ No checkpoint was created. Evidence:
 [narrative](iter-e564-semantic-role-decode2-20260720.md) and
 [JSON](iter-e564-semantic-role-decode2-20260720.json).
 
+## E565 semantic-role decode weight 0
+
+The decisive on/off ablation retains visible role context but disables its
+decode bias. Every matched OOD `n=4` aggregate and failure-reason prevalence
+remains identical to E561 and E564; meaning-v1/v2 remain 0 and AgentV remains
+0/1. **Decision:** close the semantic-role decode-weight ladder as inactive
+for E561 and move to a different semantic mechanism. No checkpoint was
+created. Evidence:
+[narrative](iter-e565-semantic-role-decode0-20260720.md) and
+[JSON](iter-e565-semantic-role-decode0-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
