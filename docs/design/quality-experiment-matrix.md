@@ -4244,6 +4244,46 @@ established either way by this run. Not a ship claim.
 Evidence: [narrative](iter-e623-decode-weight-cli-gap-closed-scratch40-20260720.md)
 and [JSON](iter-e623-decode-weight-cli-gap-closed-scratch40-20260720.json).
 
+## E624 — multi-seed replication of E623's decode-weight finding (2026-07-20)
+
+E623's positive control/treatment eval delta rested on a single seed
+(`seed=0`). Reran the identical paired 40-step scratch recipe at `seed=1` and
+`seed=2` (no code changes) to test whether the direction holds.
+
+Result is genuinely mixed, not a clean replication: `seed=2` reproduces
+`seed=0`'s pattern -- control near-degenerate (`reward_score=0.0`,
+`ship_score=0.043`), treatment large positive delta (`reward_score` +0.825,
+`ship_score` +0.529, `meaningful_program_rate` 0.0->0.5). But `seed=1`'s
+control arm already produces strong *unbiased* decode with zero
+decode-time biasing (`meaningful_program_rate=0.75`, `reward_score=0.8475`,
+`ship_score=0.6725`), and adding the treatment weights there is roughly flat
+to slightly negative on `reward_score`/`ship_score` (`-0.0255`, `-0.0291`)
+while trading `placeholder_fidelity` (-0.275) for `structural_similarity`
+(+0.403). Training loss is identical between arms at each seed, reconfirming
+these levers are decode-only.
+
+Honest reading: the effect's sign/size looks contingent on whether the
+control checkpoint's own unbiased decode is already near-degenerate at that
+seed -- when it is (seed 0, seed 2), decode-time biasing has room to help and
+does, by a large margin; when it isn't (seed 1), the same biasing is roughly
+a wash on `reward_score`/`ship_score`. This strengthens E623's own
+floor-effect hypothesis but falsifies the naive unconditional reading of its
+single-seed result: 2/3 seeds show a large positive `reward_score`/
+`ship_score` delta, 1/3 shows a small negative one. Not averaged away here;
+reported per-seed as the honest finding. An unrelated environment quirk was
+also found and worked around: the session's ambient
+`NODE_OPTIONS="--import tsx" ...` breaks the OpenUI bridge subprocess
+`train_model.py` invokes internally (`node: --import tsx is not allowed in
+NODE_OPTIONS`); overriding `NODE_OPTIONS` to drop `--import tsx` for the
+`train_model` command fixed it, no repo code touched.
+
+All four new checkpoints remain far too undertrained to promote or sync
+(`--no-sync-checkpoints`); this iteration made no code changes and is not a
+ship claim.
+
+Evidence: [narrative](iter-e624-multiseed-replication-decode-weight-20260720.md)
+and [JSON](iter-e624-multiseed-replication-decode-weight-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

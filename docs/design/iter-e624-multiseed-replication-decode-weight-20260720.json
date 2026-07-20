@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E624",
+  "run_ids": [
+    "e624-control-scratch40-seed1-20260720",
+    "e624-treatment-scratch40-seed1-20260720",
+    "e624-control-scratch40-seed2-20260720",
+    "e624-treatment-scratch40-seed2-20260720"
+  ],
+  "date_utc": "2026-07-20",
+  "status": "completed_mixed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "E623 found a large positive control(weight=0)/treatment(E617 weights) delta on a single seed (seed=0): reward_score 0->0.67, ship_score 0.035->0.657, with the explicit caveat n=4, single seed, tiny 40-step checkpoint, not a ship claim. This iteration reruns the identical paired recipe at seed=1 and seed=2 to test whether the positive direction holds, is noise, or is mixed across seeds.",
+  "method": {
+    "recipe": "Identical to E623's control/treatment recipe (same train_dir e530_visible_semantic_roles_r2_20260719, model twotower, device cpu, context_backend scratch, output_tokenizer choice, steps 40, batch_size 1, test_dir eval/remediated, eval_every 40, eval_suites ood, honest-slot-contract + slot-contract-constrained-decode, --no-sync-checkpoints), varying only --seed (1 and 2 this iteration vs 0 in E623). Treatment arm uses E617's exact weight values again: semantic_role_decode_weight=8.0 (with --semantic-role-contract-in-context), schema_role_slot_decode_weight=8.0, slot_coverage_close_decode_weight=2.0, schema_value_decode_weight=4.0, schema_opaque_close_decode_weight=4.0, semantic_plan_decode_weight=4.0, semantic_plan_margin_decode_weight=2.0, semantic_plan_binding_decode_weight=1.0, semantic_plan_root_decode_weight=8.0, semantic_plan_root_margin_decode_weight=2.0, semantic_plan_repeated_array_close_margin_decode_weight=2.0, semantic_plan_repeated_slot_margin_decode_weight=2.0, semantic_plan_typed_array_nonempty_margin_decode_weight=2.0, semantic_plan_typed_array_item_margin_decode_weight=2.0.",
+    "environment_note": "First seed=1 control attempt failed pre-training with RuntimeError: OpenUI bridge returned empty output (exit=9): /opt/node22/bin/node: --import tsx is not allowed in NODE_OPTIONS. The session's ambient NODE_OPTIONS=\"--import tsx\" --max-old-space-size=8192 is rejected by the node binary the OpenUI bridge subprocess (src/slm_training/dsl/lang_core.py) invokes internally. Overriding NODE_OPTIONS=\"--max-old-space-size=8192\" (dropping --import tsx) for the train_model invocation fixed it; no repo code was touched. Unrelated to E623's code change; an environment/session quirk noted for future iterations.",
+    "verification": "Each treatment run's eval_ood.json evaluation_policy block was checked directly (not assumed) to confirm every weight landed exactly as passed for both seed=1 and seed=2. No code changed this iteration; verify_version_stamps --check reports 0 components touched."
+  },
+  "finding": "The positive direction from E623 (seed=0) holds at seed=2 (reward_score 0.0->0.825, ship_score 0.043068->0.572161, meaningful_program_rate 0.0->0.5) but does not hold at seed=1, where the control arm's unbiased decode was already strong (meaningful_program_rate=0.75, reward_score=0.8475, ship_score=0.672492 with zero decode-time biasing) and the treatment arm was roughly flat to slightly negative on the two metrics that matter most (reward_score -0.0255, ship_score -0.029077), while placeholder_fidelity dropped sharply (-0.275) and structural_similarity rose (+0.402825) -- a real but mixed-direction shift, not a clean regression either. Training loss is identical between control and treatment at each seed (seed1: 9.207306861877441 both arms; seed2: 9.675814628601074 both arms), reconfirming E623's finding that these levers are decode-only and never touch the teacher-forced training loop. The honest reading across all 3 seeds (E623's seed=0 plus this iteration's seed=1, seed=2) is that the effect's sign and magnitude are contingent on whether the untreated control checkpoint's own unbiased decode is already near-degenerate at that seed: when it is (seed=0, seed=2), decode-time compiler-legal/prompt-plan-compatible biasing has a lot of room to help and does, by a large margin; when it isn't (seed=1), the same biasing has little room to help and produces a wash on reward_score/ship_score. This strengthens rather than contradicts E623's own floor-effect hypothesis, but falsifies the naive unconditional reading of E623's single-seed result -- 2 of 3 seeds show a large positive reward_score/ship_score delta, 1 of 3 shows a small negative one. Averaging across seeds would obscure this mixed result; it is reported as-is per seed.",
+  "decision": "No code changed this iteration (pure multi-seed replication of E623's already-landed CLI flags). All four new checkpoints remain far too undertrained to be promotable or synced (--no-sync-checkpoints). This does not overturn E623's decision to retain the CLI flags (the CLI gap closure itself is unaffected by this finding), but it does materially narrow the strength of E623's own eval-delta claim: the effect is conditional, not unconditional, across seeds at this tiny 40-step scale.",
+  "not_a_ship_claim": true,
+  "checkpoints": {
+    "control_seed1": {
+      "run_id": "e624-control-scratch40-seed1-20260720",
+      "location": "outputs/runs/e624-control-scratch40-seed1-20260720/checkpoints/last.pt",
+      "sha256": "2e51fe1c0bd8073b3d72c2815a12bfe3f300bb3a6b4c1d122d6e0ab8d4787925",
+      "created": true,
+      "sync": false,
+      "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); not promotable."
+    },
+    "treatment_seed1": {
+      "run_id": "e624-treatment-scratch40-seed1-20260720",
+      "location": "outputs/runs/e624-treatment-scratch40-seed1-20260720/checkpoints/last.pt",
+      "sha256": "f821027cd2d0978644bea0d89aef30f4f3cc185bd268400557065d3f844feac2",
+      "created": true,
+      "sync": false,
+      "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); not promotable."
+    },
+    "control_seed2": {
+      "run_id": "e624-control-scratch40-seed2-20260720",
+      "location": "outputs/runs/e624-control-scratch40-seed2-20260720/checkpoints/last.pt",
+      "sha256": "e6f3a891a6f1d339943d69da465facf2303f6fb33fad68e26f668376b68f69f6",
+      "created": true,
+      "sync": false,
+      "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); not promotable."
+    },
+    "treatment_seed2": {
+      "run_id": "e624-treatment-scratch40-seed2-20260720",
+      "location": "outputs/runs/e624-treatment-scratch40-seed2-20260720/checkpoints/last.pt",
+      "sha256": "3239025bc1145e4a137994064ac962b6a998e8e4eee36249dd8dc63cce7b4595",
+      "created": true,
+      "sync": false,
+      "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); heavily undertrained, not promotable."
+    }
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "model": "twotower",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "steps": 40,
+    "batch_size": 1,
+    "no_sync_checkpoints": true,
+    "seed1": {
+      "control_elapsed_wall_seconds": 99.64484566200008,
+      "treatment_elapsed_wall_seconds": 15.059848554999917,
+      "control_last_loss": 9.207306861877441,
+      "treatment_last_loss": 9.207306861877441,
+      "last_loss_delta": 0.0
+    },
+    "seed2": {
+      "control_elapsed_wall_seconds": 90.9564598729994,
+      "treatment_elapsed_wall_seconds": 18.791581969999243,
+      "control_last_loss": 9.675814628601074,
+      "treatment_last_loss": 9.675814628601074,
+      "last_loss_delta": 0.0
+    }
+  },
+  "eval": {
+    "suite": "ood",
+    "n": 4,
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "eval_every": 40,
+    "fired_at_step": 40,
+    "seed0_e623_reference": {
+      "control": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.190625,
+        "reward_score": 0.0,
+        "ship_score": 0.03465909090909091
+      },
+      "treatment": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.75,
+        "placeholder_fidelity": 0.5666666666666667,
+        "structural_similarity": 0.6439,
+        "reward_score": 0.67475,
+        "ship_score": 0.657201515151515
+      },
+      "delta": {
+        "meaningful_program_rate": 0.75,
+        "placeholder_fidelity": 0.5666666666666667,
+        "structural_similarity": 0.4532749999999999,
+        "reward_score": 0.67475,
+        "ship_score": 0.6225424151515151
+      }
+    },
+    "seed1": {
+      "control": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.75,
+        "meaningful_program_v1_rate": 0.75,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+        "binding_aware_meaningful_v2_coverage": 1.0,
+        "placeholder_fidelity": 0.7916666666666666,
+        "structural_similarity": 0.191625,
+        "reward_score": 0.8475,
+        "ship_score": 0.6724924242424243,
+        "ship_best": true
+      },
+      "treatment": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.75,
+        "meaningful_program_v1_rate": 0.75,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+        "binding_aware_meaningful_v2_coverage": 0.75,
+        "placeholder_fidelity": 0.5166666666666666,
+        "structural_similarity": 0.59445,
+        "reward_score": 0.822,
+        "ship_score": 0.6434151515151515,
+        "ship_best": true
+      },
+      "delta": {
+        "parse_rate": 0.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": -0.275,
+        "structural_similarity": 0.402825,
+        "reward_score": -0.0255,
+        "ship_score": -0.0290772727272728
+      }
+    },
+    "seed2": {
+      "control": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "meaningful_program_v1_rate": 0.0,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+        "binding_aware_meaningful_v2_coverage": 1.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.236875,
+        "reward_score": 0.0,
+        "ship_score": 0.04306818181818182,
+        "ship_best": true
+      },
+      "treatment": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.5,
+        "meaningful_program_v1_rate": 0.5,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+        "binding_aware_meaningful_v2_coverage": 0.75,
+        "placeholder_fidelity": 0.5916666666666667,
+        "structural_similarity": 0.55105,
+        "reward_score": 0.825,
+        "ship_score": 0.5721606060606061,
+        "ship_best": true
+      },
+      "delta": {
+        "parse_rate": 0.0,
+        "meaningful_program_rate": 0.5,
+        "placeholder_fidelity": 0.5916666666666667,
+        "structural_similarity": 0.314175,
+        "reward_score": 0.825,
+        "ship_score": 0.5290924242424243
+      }
+    },
+    "treatment_evaluation_policy_confirmed_seed1": {
+      "semantic_role_contract_in_context": true,
+      "semantic_role_decode_weight": 8.0,
+      "schema_role_slot_decode_weight": 8.0,
+      "semantic_plan_root_decode_weight": 8.0,
+      "schema_value_decode_weight": 4.0
+    },
+    "treatment_evaluation_policy_confirmed_seed2": {
+      "semantic_role_contract_in_context": true,
+      "semantic_role_decode_weight": 8.0,
+      "schema_role_slot_decode_weight": 8.0,
+      "semantic_plan_root_decode_weight": 8.0,
+      "schema_value_decode_weight": 4.0
+    }
+  },
+  "no_metric_changes": "No previously reported ship-gate or matrix metric changes; these are four fresh standalone diagnostic checkpoints' own numbers, not a comparison against any shipped/promoted baseline.",
+  "next": [
+    "3 seeds total (0, 1, 2) is still not statistically powered; H19's power protocol (run_flow_power_protocol) would be the right tool to properly separate target effect from seed variance if this line of investigation continues.",
+    "Understanding why seed=1's control arm already produces strong unbiased decode at only 40 steps (while seed=0 and seed=2 controls are both near-degenerate) is itself an open question -- possibly random-init luck, possibly a seed/corpus-ordering interaction -- not resolved by this run.",
+    "If this effect is pursued further, the more informative next step is probably not more seeds at 40 steps but testing whether the effect direction changes as a checkpoint moves off the floor (a longer, still cap-respecting run), which would show whether the conditional-on-floor reading in this iteration's finding is robust across step counts too."
+  ],
+  "verification": {
+    "commands": [
+      "python -m scripts.verify_version_stamps --check",
+      "python -m scripts.repo_policy",
+      "NODE_OPTIONS=\"--max-old-space-size=8192\" python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 1 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --no-sync-checkpoints --run-id e624-control-scratch40-seed1-20260720",
+      "NODE_OPTIONS=\"--max-old-space-size=8192\" python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 1 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --semantic-role-contract-in-context --semantic-role-decode-weight 8.0 --schema-role-slot-decode-weight 8.0 --slot-coverage-close-decode-weight 2.0 --schema-value-decode-weight 4.0 --schema-opaque-close-decode-weight 4.0 --semantic-plan-decode-weight 4.0 --semantic-plan-margin-decode-weight 2.0 --semantic-plan-binding-decode-weight 1.0 --semantic-plan-root-decode-weight 8.0 --semantic-plan-root-margin-decode-weight 2.0 --semantic-plan-repeated-array-close-margin-decode-weight 2.0 --semantic-plan-repeated-slot-margin-decode-weight 2.0 --semantic-plan-typed-array-nonempty-margin-decode-weight 2.0 --semantic-plan-typed-array-item-margin-decode-weight 2.0 --no-sync-checkpoints --run-id e624-treatment-scratch40-seed1-20260720",
+      "NODE_OPTIONS=\"--max-old-space-size=8192\" python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 2 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --no-sync-checkpoints --run-id e624-control-scratch40-seed2-20260720",
+      "NODE_OPTIONS=\"--max-old-space-size=8192\" python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 2 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --semantic-role-contract-in-context --semantic-role-decode-weight 8.0 --schema-role-slot-decode-weight 8.0 --slot-coverage-close-decode-weight 2.0 --schema-value-decode-weight 4.0 --schema-opaque-close-decode-weight 4.0 --semantic-plan-decode-weight 4.0 --semantic-plan-margin-decode-weight 2.0 --semantic-plan-binding-decode-weight 1.0 --semantic-plan-root-decode-weight 8.0 --semantic-plan-root-margin-decode-weight 2.0 --semantic-plan-repeated-array-close-margin-decode-weight 2.0 --semantic-plan-repeated-slot-margin-decode-weight 2.0 --semantic-plan-typed-array-nonempty-margin-decode-weight 2.0 --semantic-plan-typed-array-item-margin-decode-weight 2.0 --no-sync-checkpoints --run-id e624-treatment-scratch40-seed2-20260720"
+    ],
+    "notes": "No repo code changed this iteration. verify_version_stamps --check reports 0 components touched. All four train_model runs completed within the 165s internal timeout (well inside the 3-minute hard run cap): control seed1 99.6s, treatment seed1 15.1s, control seed2 91.0s, treatment seed2 18.8s (each run's own elapsed_wall_seconds)."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d4a2c28f357dbf41cab3e72819c13ef686538055",
+    "code_dirty": false,
+    "components_touched": 0,
+    "components": {}
+  }
+}
