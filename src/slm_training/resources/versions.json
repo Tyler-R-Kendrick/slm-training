@@ -1382,7 +1382,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1397,6 +1397,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-20",
+          "note": "E628: _required_slot_margin_bias now excludes frame_depth == 0 (no component/object frame open yet) from its target set, fixing E627's traced margin=6 root hijack -- the bias only fires once decoding is already inside a real component/object frame; default weight (0.0) and E617 contract-gating unchanged"
+        },
         {
           "version": "v60",
           "date": "2026-07-20",

@@ -4313,3 +4313,77 @@ Evidence:
 [iter-e627-required-slot-margin-root-cause-trace-20260720.md](iter-e627-required-slot-margin-root-cause-trace-20260720.md)
 and
 [JSON](iter-e627-required-slot-margin-root-cause-trace-20260720.json).
+
+## E628 excluding `frame_depth == 0` fixes margin=6's root hijack
+
+E628 implements E627's mitigation (2): `_required_slot_margin_bias`
+(`src/slm_training/models/twotower.py`) now takes an optional `state` and
+returns `None` (no fire at all) whenever `len(state.frames) == 0` — no
+component/object frame open yet, the exact condition E627 traced every
+margin=6 hijack to. Mitigation (1) (reorder the bias stack) was considered
+and rejected as less principled: the stack already applies
+`semantic_plan_root*` after `required_slot_margin_bias` and margin=2 already
+wins that race, so reordering would not remove the race, only change which
+correction gets the last additive word on the same score tensor — margin=6
+would still be large enough to escape whichever single correction runs last.
+Excluding `frame_depth == 0` instead matches the lever's own original intent
+(floor still-missing slots as *argument* fills, never as root/top-level
+choice) and removes the magnitude race entirely, at any margin. Default
+(`0.0`) and E617 contract-gating unchanged; `model.twotower` v60 -> v61.
+New unit test `test_required_slot_margin_bias_excludes_frame_depth_zero`
+proves the no-op at `frame_depth == 0` and unchanged firing at
+`frame_depth == 1`.
+
+Reused E626's own already-trained scratch checkpoint verbatim (sha256
+verified to match) and replayed the identical matched OOD `n=4` recipe
+(`ood` suite, `src/slm_training/resources/data/eval/remediated`), varying
+only `required_slot_margin_decode_weight` over `{0, 2, 6}`. The `margin=0`
+control reproduces E626's own control exactly (all metrics to 4 decimal
+places).
+
+| Metric | Control (0) | Margin=2 | Margin=6 |
+| --- | ---: | ---: | ---: |
+| meaningful v1 | 0.5000 | 0.7500 | 0.7500 |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
+| placeholder fidelity | 0.5500 | 0.8333 | 0.8333 |
+| placeholder validity | 0.7300 | 0.9000 | 0.9000 |
+| structural similarity | 0.4886 | 0.5473 | 0.5473 |
+| component recall | 0.4792 | 0.5625 | 0.5625 |
+| reward | 0.8140 | 0.9005 | 0.9005 |
+| AST node / edge F1 | 0.5437 / 0.3750 | 0.6137 / 0.3485 | 0.6137 / 0.3485 |
+| AgentV | 0/1 | 0/1 | 0/1 |
+
+**The regression is fixed, not merely reduced.** Margin=6 — E626's worst arm,
+regressing every headline metric below control — is now **byte-identical**
+to margin=2's already-verified positive arm: same per-record predictions
+across all 4 OOD records, same `required_slot_margin_applications_sum` (17)
+and `choice_changes_sum` (9) in both arms, and the new
+`constrained_selection_traces` confirm all 17 fires land at
+`frame_depth` in `{1, 2, 3}` — zero at `frame_depth == 0` — in both arms.
+Both of E626's headline failure signatures are independently confirmed
+fixed by inspecting the actual predicted programs: Dashboard now predicts
+`root = Stack([v0, v1, v3, v4], "column")` with a real `Callout` + `Card`s
+(not the bare `Button`), and Gallery's `ImageGallery` array is
+`[{src: ":ood.gallery.img", alt: ":ood.gallery.alt"}]` (not empty). Margin=2's
+benefit is unaffected, matching E626's own margin=2 numbers to 4 decimal
+places, confirming E627's prediction that margin=2 never hit this failure
+mode. `binding_aware_meaningful_v2_rate_strict` stays 0.0 in every arm,
+unchanged from E626 — this fix targets structural hijacking, not the
+remaining strict-v2 placeholder/role failures.
+
+Single small (`n=4`) matched-pair OOD replay on one reused scratch
+checkpoint, not a confirmatory multi-seed/full-suite result; not a ship
+claim; no checkpoint trained, promoted, or synced. Does not prove safety at
+arbitrary margin — only that the specific dose-dependent hijack observed
+within `{0, 2, 6}` on this checkpoint/suite is gone; a wider sweep or a
+different checkpoint/seed could still surface a different failure mode once
+the floor dominates a legitimate `frame_depth >= 1` argument-position
+competition, untested here. E626's powered multi-seed/`rico_held` sweep
+remains open; strict v2 remains 0.0 at every margin tested across
+E626/E627/E628 -- coverage-aware component/property closure remains the
+next lever after this one.
+
+Evidence:
+[iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md)
+and
+[JSON](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.json).

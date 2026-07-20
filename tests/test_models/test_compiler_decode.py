@@ -436,6 +436,65 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
     )
 
 
+def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
+    """E628: exclude the root/top-level statement position from the floor.
+
+    E627 traced margin=6's Dashboard regression to every hijack firing at
+    ``frame_depth == 0`` -- a fresh top-level statement's value, where the
+    grammar legally allows a bare visible-slot token as an alternative to
+    opening a real component. Passing a ``state`` whose ``frames`` is empty
+    (frame_depth 0) must now make the bias a no-op entirely, even though the
+    same missing-slot/candidate/score setup would otherwise floor it (as
+    ``test_required_slot_margin_bias_floors_only_still_missing_slots`` proves
+    above). Once inside a real component/object frame (``frames`` non-empty,
+    frame_depth >= 1) the bias still fires exactly as before -- this lever
+    should keep flooring slots-as-arguments, only no longer compete for the
+    root/top-level choice.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # frame_depth == 0 (no frame open yet): the bias must not fire at all,
+    # regardless of how genuinely missing slot1 is.
+    root_state = SimpleNamespace(frames=[])
+    assert (
+        model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract, state=root_state
+        )
+        is None
+    )
+
+    # frame_depth == 1 (inside an open component frame): unchanged behavior,
+    # matching the no-state-passed case exactly.
+    inner_frame = SimpleNamespace(
+        kind="component", expr_type="element:Card", phase="args", arg_index=0
+    )
+    inner_state = SimpleNamespace(frames=[inner_frame])
+    bias = model._required_slot_margin_bias(
+        prefix, candidates, scores, slot_contract, state=inner_state
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # state=None (unknown depth, e.g. a lower-level direct call) preserves
+    # the pre-E628 behavior of firing unconditionally.
+    assert (
+        model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract, state=None
+        )
+        is not None
+    )
+
+
 def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> None:
     """E627 root-cause instrumentation for E626's open margin=6 regression.
 
@@ -447,6 +506,14 @@ def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> Non
     ``Button``. The trace must surface this precisely: ``frame_depth == 0``,
     ``chosen_kind == "sym"``, and ``hijacked_non_slot_candidate`` true
     because the pre-bias argmax was a non-slot (component) candidate.
+
+    This test exercises ``_record_required_slot_margin_trace`` directly with a
+    hand-built ``margin_bias`` -- it stays a valid unit test of the trace
+    function's own labeling logic even after E628 makes this exact scenario
+    unreachable in production (``_required_slot_margin_bias`` now returns
+    ``None`` at ``frame_depth == 0``, so this call site is never reached with
+    a live margin_bias there anymore; see
+    ``test_required_slot_margin_bias_excludes_frame_depth_zero``).
     """
     from types import SimpleNamespace
 

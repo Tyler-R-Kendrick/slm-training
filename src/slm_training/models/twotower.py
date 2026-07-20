@@ -5054,6 +5054,7 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
         slot_contract: list[str] | None,
+        state: Any = None,
     ) -> torch.Tensor | None:
         """Floor the best legal candidate that fills a still-missing required slot.
 
@@ -5066,11 +5067,29 @@ class TwoTowerModel(nn.Module):
         fires for slots ``required_inventory_coverage`` would otherwise still
         judge missing, and it is a no-op once every candidate slot in this
         legal set has already been emitted.
+
+        E628: E627's trace showed every margin=6 hijack of Dashboard's root
+        happens at ``frame_depth == 0`` (before any component/object frame has
+        opened, i.e. a fresh top-level statement's value) -- the grammar
+        legally allows a bare visible-slot token there as an alternative to
+        opening a real component, and a large-enough margin floors the slot
+        token above the correct component candidate before the later
+        ``semantic_plan_root*`` corrective biases run. Excluding
+        ``frame_depth == 0`` from this bias's target set removes that
+        magnitude race entirely: the lever now only fires once decoding is
+        already inside a real component/object frame, matching the intent of
+        "fill slots as arguments", not "choose the root". ``state`` is
+        optional (``None`` skips this check, e.g. from lower-level direct
+        unit tests that construct scores/candidates without a full decode
+        state) so existing call sites that only exercise the missing-slot
+        logic are unaffected.
         """
         margin = float(
             getattr(self.config, "required_slot_margin_decode_weight", 0.0) or 0.0
         )
         if margin <= 0.0 or not slot_contract:
+            return None
+        if state is not None and len(getattr(state, "frames", ())) == 0:
             return None
         sym_slots = int(getattr(self.tokenizer, "sym_slots", 0) or 0)
         if sym_slots <= 0:
@@ -7145,6 +7164,7 @@ class TwoTowerModel(nn.Module):
                             if self._slot_contracts and row < len(self._slot_contracts)
                             else None
                         ),
+                        state=states[row],
                     )
                     if required_slot_margin_bias is not None:
                         before_required_slot_margin = int(scores.argmax().item())
