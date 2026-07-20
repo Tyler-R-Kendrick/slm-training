@@ -613,6 +613,11 @@ class _ChoiceFrame:
     arg_index: int = 0
     reference_count: int = 0
     item_count: int = 0
+    property_names: tuple[str, ...] = ()
+    required_properties: tuple[str, ...] = ()
+    seen_properties: tuple[str, ...] = ()
+    active_property: str | None = None
+    additional_properties: bool = True
 
 
 @dataclass
@@ -680,6 +685,22 @@ class ChoiceDecodeState:
             return True
         return expected is None or expr_type in {str(expected), "any"}
 
+    def _active_schema(self) -> dict[str, Any]:
+        if not self.frames:
+            return {}
+        frame = self.frames[-1]
+        if frame.kind == "component" and frame.arg_index < len(frame.schemas):
+            return dict(frame.schemas[frame.arg_index])
+        if frame.kind == "variadic" and frame.schemas:
+            return dict(frame.schemas[0])
+        if (
+            frame.kind == "object"
+            and frame.phase == "value"
+            and 0 <= frame.arg_index < len(frame.schemas)
+        ):
+            return dict(frame.schemas[frame.arg_index])
+        return {}
+
     def _complete_expr(self, expr_type: str) -> bool:
         if not self.frames:
             self.section_types.append(expr_type)
@@ -696,6 +717,17 @@ class ChoiceDecodeState:
                 return self._complete_expr(frame.expr_type)
             return True
         elif frame.kind == "object":
+            if 0 <= frame.arg_index < len(frame.schemas) and not self._schema_accepts(
+                frame.schemas[frame.arg_index], expr_type
+            ):
+                return False
+            if frame.active_property is not None:
+                frame.seen_properties = (
+                    *frame.seen_properties,
+                    frame.active_property,
+                )
+            frame.active_property = None
+            frame.arg_index = -1
             frame.phase = "key"
             return True
         elif frame.kind == "variadic" and frame.schemas:
@@ -779,8 +811,30 @@ class ChoiceDecodeState:
             )
             return True
         if token == OBJ_OPEN:
+            schema = self._active_schema()
+            properties = schema.get("properties")
+            property_map = properties if isinstance(properties, dict) else {}
+            property_names = tuple(str(name) for name in property_map)
+            required = tuple(
+                str(name)
+                for name in schema.get("required", ())
+                if str(name) in property_map
+            )
             self.frames.append(
-                _ChoiceFrame("object", "object", close=OBJ_CLOSE, phase="key")
+                _ChoiceFrame(
+                    "object",
+                    "object",
+                    close=OBJ_CLOSE,
+                    phase="key",
+                    schemas=tuple(
+                        dict(property_map[name]) for name in property_names
+                    ),
+                    arg_index=-1,
+                    property_names=property_names,
+                    required_properties=required,
+                    additional_properties=schema.get("additionalProperties")
+                    is not False,
+                )
             )
             return True
         fixed_arity = {
@@ -895,13 +949,30 @@ class ChoiceDecodeState:
             return self._complete_expr(frame.expr_type)
         if frame.kind == "object" and frame.phase == "key":
             if token == frame.close:
+                if not set(frame.required_properties).issubset(
+                    frame.seen_properties
+                ):
+                    return False
                 self.frames.pop()
-                self._complete_expr(frame.expr_type)
-                return True
+                return self._complete_expr(frame.expr_type)
             if token.startswith(NAME_PREFIX):
+                name = token[len(NAME_PREFIX) :]
+                if name in frame.seen_properties:
+                    return False
+                if name in frame.property_names:
+                    frame.arg_index = frame.property_names.index(name)
+                elif not frame.additional_properties:
+                    return False
+                else:
+                    frame.arg_index = -1
+                frame.active_property = name
                 frame.phase = "value"
                 return True
             if token == NAME_STR:
+                if not frame.additional_properties:
+                    return False
+                frame.arg_index = -1
+                frame.active_property = None
                 self.literal_frame = token
                 self.literal_size = 0
                 self.literal_is_object_key = True
@@ -933,7 +1004,22 @@ class ChoiceDecodeState:
                 schema = frame.schemas[frame.arg_index]
                 return self._minimal_schema_id(schema)
             if frame.kind == "object" and frame.phase == "key":
+                missing = next(
+                    (
+                        name
+                        for name in frame.required_properties
+                        if name not in frame.seen_properties
+                    ),
+                    None,
+                )
+                if missing is not None:
+                    return tok.token_to_id[f"{NAME_PREFIX}{missing}"]
                 return tok.token_to_id[str(frame.close)]
+            if (
+                frame.kind == "object"
+                and 0 <= frame.arg_index < len(frame.schemas)
+            ):
+                return self._minimal_schema_id(frame.schemas[frame.arg_index])
             return tok.token_to_id[f"{LIT_PREFIX}null"]
         if self.can_end():
             return tok.eos_id
@@ -1000,6 +1086,13 @@ class ChoiceDecodeState:
                     frame.phase,
                     frame.required_args,
                     frame.arg_index,
+                    frame.reference_count,
+                    frame.item_count,
+                    frame.property_names,
+                    frame.required_properties,
+                    frame.seen_properties,
+                    frame.active_property,
+                    frame.additional_properties,
                     tuple(
                         json.dumps(schema, sort_keys=True, separators=(",", ":"))
                         for schema in frame.schemas
@@ -1035,9 +1128,17 @@ class ChoiceDecodeState:
         if self.frames:
             frame = self.frames[-1]
             if frame.kind == "object" and frame.phase == "key":
-                return set(tok.candidate_partition("object_key")) | {
-                    tok.token_to_id[str(frame.close)]
-                }
+                if frame.additional_properties:
+                    candidates = set(tok.candidate_partition("object_key"))
+                else:
+                    candidates = {
+                        tok.token_to_id[f"{NAME_PREFIX}{name}"]
+                        for name in frame.property_names
+                        if name not in frame.seen_properties
+                    }
+                if set(frame.required_properties).issubset(frame.seen_properties):
+                    candidates.add(tok.token_to_id[str(frame.close)])
+                return candidates
             candidates = _expression_candidates()
             if frame.kind in {"variadic", "component"}:
                 candidates.add(tok.token_to_id[str(frame.close)])
