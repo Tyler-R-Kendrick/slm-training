@@ -96,7 +96,7 @@
         "source=expanded_description",
         "fixture-only: hash-based encoder, no learned model"
       ],
-      "rare_common_centroid_distance": 0.5960612893104553,
+      "rare_common_centroid_distance": 0.5960613489151001,
       "seed": 0,
       "sibling_separation": 0.9253331422805786,
       "source": "expanded_description"
@@ -120,15 +120,15 @@
   "run_id": "slm163-schema-action-embedding-20260720",
   "schema": "Slm163SchemaActionEmbeddingReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T10:39:58.538815Z",
+  "timestamp": "2026-07-20T11:43:53.546122Z",
   "version_stamp": {
-    "code_commit": "9af9d8917eaa411a3b698779a7171d582e97be24",
+    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v38",
+      "harness.experiments": "v40",
       "harness.experiments.slm163_schema_action_embedding": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T10:39:58.538264+00:00"
+    "stamped_at": "2026-07-20T11:43:53.545622+00:00"
   }
 }

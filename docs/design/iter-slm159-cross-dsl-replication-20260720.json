@@ -212,7 +212,7 @@
     {
       "arm_id": "G1_graphql",
       "extraction_coverage": 1.0,
-      "mean_latency_ms": 226.57871499905013,
+      "mean_latency_ms": 198.17041749774944,
       "n_records": 4,
       "notes": [
         "fixture GraphQL plan round-trip"
@@ -242,15 +242,15 @@
   "run_id": "slm159_fixture",
   "schema": "Slm159CrossDslReplicationReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T10:05:26.745913Z",
+  "timestamp": "2026-07-20T11:43:53.483976Z",
   "version_stamp": {
-    "code_commit": "55afe65bfa54e161b3d486776cbf384db643f5e7",
+    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v37",
+      "harness.experiments": "v40",
       "harness.experiments.slm159_cross_dsl_replication": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T10:05:26.745269+00:00"
+    "stamped_at": "2026-07-20T11:43:53.483307+00:00"
   }
 }
