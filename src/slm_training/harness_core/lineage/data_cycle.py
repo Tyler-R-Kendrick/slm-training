@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
-from slm_training.lineage.records import DataSnapshot, content_sha
-from slm_training.lineage.store import utc_now
+from slm_training.harness_core.lineage.records import DataSnapshot, content_sha
+from slm_training.harness_core.lineage.store import utc_now
 
 if TYPE_CHECKING:
-    from slm_training.lineage.store import LineageStore
+    from slm_training.harness_core.lineage.store import LineageStore
 
 
 @dataclass(frozen=True)

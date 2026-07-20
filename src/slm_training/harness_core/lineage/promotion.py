@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Iterable
 
-from slm_training.lineage.records import EvaluationReport
+from slm_training.harness_core.lineage.records import EvaluationReport
 
 MAX_ARTIFACT_BYTES = 1_000_000_000
 MAX_WARM_P95_SECONDS = 15.0

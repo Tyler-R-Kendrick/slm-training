@@ -247,6 +247,11 @@ class TwoTowerConfig:
     binder_topology_decode_weight: float = 0.0
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
+    root_reference_arity_loss_weight: float = 0.0
+    root_reference_arity_decode_weight: float = 0.0
+    root_reference_identity_loss_weight: float = 0.0
+    root_reference_identity_negative_weight: float = 1.0
+    root_reference_identity_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -489,6 +494,12 @@ def _load_checkpoint_state(
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
     # V7 survival head is likewise a plug-in (trained via survival_train, E73).
     allowed_missing |= {key for key in missing if key.startswith("survival_head.")}
+    allowed_missing |= {
+        key for key in missing if key.startswith("root_reference_arity_head.")
+    }
+    allowed_missing |= {
+        key for key in missing if key.startswith("root_reference_identity_head.")
+    }
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
     # non-factorized path now uses a non-persistent stub, so treat that legacy
@@ -746,6 +757,51 @@ class TwoTowerModel(nn.Module):
             if binder_arity_enabled and binder_plan_ids
             else None
         )
+        root_reference_arity_enabled = (
+            float(
+                getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "root_reference_arity_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.root_reference_arity_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    int(getattr(tokenizer, "ref_slots", 64)) + 1,
+                ),
+                108,
+            )
+            if root_reference_arity_enabled and _is_choice_output(self.config)
+            else None
+        )
+        root_reference_identity_enabled = (
+            float(
+                getattr(self.config, "root_reference_identity_loss_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "root_reference_identity_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.root_reference_identity_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    int(getattr(tokenizer, "ref_slots", 64)),
+                ),
+                110,
+            )
+            if root_reference_identity_enabled and _is_choice_output(self.config)
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 108
@@ -922,6 +978,8 @@ class TwoTowerModel(nn.Module):
             "binder_component_plan_head.",
             "binder_topology_head.",
             "binder_arity_head.",
+            "root_reference_arity_head.",
+            "root_reference_identity_head.",
             "trust_gate.",
             "survival_head.",
         )
@@ -2493,6 +2551,179 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        root_arity_w = float(
+            getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0
+        )
+        if root_arity_w > 0.0 and self.root_reference_arity_head is not None:
+            from slm_training.models.choice_tokenizer import (
+                structural_root_reference_arity_target,
+            )
+
+            root_logits = self.root_reference_arity_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            )
+            root_losses: list[torch.Tensor] = []
+            root_hits: list[torch.Tensor] = []
+            root_class_counts: list[int] = []
+            for row, record in enumerate(batch):
+                target_and_bound = structural_root_reference_arity_target(
+                    self.tokenizer,
+                    target_ids[row].tolist(),
+                    slot_count=len(record.placeholders or ()),
+                )
+                if target_and_bound is None:
+                    continue
+                target, section_count = target_and_bound
+                target = min(int(target), root_logits.size(1) - 1)
+                valid_max = min(
+                    max(target, int(section_count)), root_logits.size(1) - 1
+                )
+                bounded_logits = root_logits[row : row + 1, : valid_max + 1]
+                target_tensor = torch.as_tensor([target], device=ctx.device)
+                root_losses.append(
+                    F.cross_entropy(bounded_logits, target_tensor)
+                )
+                root_hits.append(
+                    bounded_logits[0].argmax().eq(target_tensor[0]).float()
+                )
+                root_class_counts.append(valid_max + 1)
+            root_loss = (
+                torch.stack(root_losses).mean()
+                if root_losses
+                else root_logits.sum() * 0.0
+            )
+            detached = root_arity_w * root_loss
+            if self._detached_auxiliary_loss is not None:
+                detached = detached + self._detached_auxiliary_loss
+            self._detached_auxiliary_loss = detached
+            self.last_training_metrics.update(
+                {
+                    "root_reference_arity_loss": float(root_loss.detach().cpu()),
+                    "root_reference_arity_accuracy": float(
+                        torch.stack(root_hits).mean().detach().cpu()
+                        if root_hits
+                        else 0.0
+                    ),
+                    "root_reference_arity_rows": len(root_losses),
+                    "root_reference_arity_classes_mean": (
+                        sum(root_class_counts) / len(root_class_counts)
+                        if root_class_counts
+                        else 0.0
+                    ),
+                }
+            )
+
+        root_identity_w = float(
+            getattr(self.config, "root_reference_identity_loss_weight", 0.0) or 0.0
+        )
+        root_identity_negative_w = float(
+            getattr(self.config, "root_reference_identity_negative_weight", 1.0)
+        )
+        if root_identity_negative_w < 0.0:
+            raise ValueError("root_reference_identity_negative_weight must be >= 0")
+        if (
+            root_identity_w > 0.0
+            and self.root_reference_identity_head is not None
+        ):
+            from slm_training.models.choice_tokenizer import (
+                structural_root_reference_identity_target,
+            )
+
+            identity_logits = self.root_reference_identity_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            )
+            identity_losses: list[torch.Tensor] = []
+            identity_exact_hits: list[torch.Tensor] = []
+            identity_positive_recalls: list[torch.Tensor] = []
+            identity_negative_accuracies: list[torch.Tensor] = []
+            identity_class_counts: list[int] = []
+            for row, record in enumerate(batch):
+                target_and_bound = structural_root_reference_identity_target(
+                    self.tokenizer,
+                    target_ids[row].tolist(),
+                    slot_count=len(record.placeholders or ()),
+                )
+                if target_and_bound is None:
+                    continue
+                references, section_count = target_and_bound
+                valid_count = min(int(section_count), identity_logits.size(1))
+                if valid_count <= 0:
+                    continue
+                target = identity_logits.new_zeros(valid_count)
+                for reference in references:
+                    if 0 <= reference < valid_count:
+                        target[reference] = 1.0
+                scores = identity_logits[row, :valid_count]
+                prediction = scores >= 0.0
+                element_loss = F.binary_cross_entropy_with_logits(
+                    scores, target, reduction="none"
+                )
+                element_weights = torch.where(
+                    target.bool(),
+                    element_loss.new_ones(()),
+                    element_loss.new_tensor(root_identity_negative_w),
+                )
+                identity_losses.append(
+                    (element_loss * element_weights).sum()
+                    / element_weights.sum().clamp_min(1.0)
+                )
+                identity_exact_hits.append(prediction.eq(target.bool()).all().float())
+                positives = target.sum()
+                identity_positive_recalls.append(
+                    (prediction & target.bool()).float().sum()
+                    / positives.clamp_min(1.0)
+                )
+                negatives = target.eq(0.0)
+                if negatives.any():
+                    identity_negative_accuracies.append(
+                        ((~prediction) & negatives).float().sum()
+                        / negatives.float().sum()
+                    )
+                identity_class_counts.append(valid_count)
+            identity_loss = (
+                torch.stack(identity_losses).mean()
+                if identity_losses
+                else identity_logits.sum() * 0.0
+            )
+            detached = root_identity_w * identity_loss
+            if self._detached_auxiliary_loss is not None:
+                detached = detached + self._detached_auxiliary_loss
+            self._detached_auxiliary_loss = detached
+            self.last_training_metrics.update(
+                {
+                    "root_reference_identity_loss": float(
+                        identity_loss.detach().cpu()
+                    ),
+                    "root_reference_identity_exact_accuracy": float(
+                        torch.stack(identity_exact_hits).mean().detach().cpu()
+                        if identity_exact_hits
+                        else 0.0
+                    ),
+                    "root_reference_identity_positive_recall": float(
+                        torch.stack(identity_positive_recalls).mean().detach().cpu()
+                        if identity_positive_recalls
+                        else 0.0
+                    ),
+                    "root_reference_identity_negative_accuracy": float(
+                        torch.stack(identity_negative_accuracies)
+                        .mean()
+                        .detach()
+                        .cpu()
+                        if identity_negative_accuracies
+                        else 0.0
+                    ),
+                    "root_reference_identity_negative_rows": len(
+                        identity_negative_accuracies
+                    ),
+                    "root_reference_identity_rows": len(identity_losses),
+                    "root_reference_identity_classes_mean": (
+                        sum(identity_class_counts) / len(identity_class_counts)
+                        if identity_class_counts
+                        else 0.0
+                    ),
+                }
+            )
+
         edge_alignment_w = float(
             getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
         )
@@ -3445,7 +3676,7 @@ class TwoTowerModel(nn.Module):
             and next_slots is not None
         ):
             next_context, next_pad = self._encode_context(
-                [slot or "" for slot in next_slots]
+                [slot or "<no-next-slot>" for slot in next_slots]
             )
             next_pooled = self._pool_context(next_context, next_pad)
             present = torch.as_tensor(
@@ -3746,20 +3977,20 @@ class TwoTowerModel(nn.Module):
         prefix: list[int],
         candidate_ids: tuple[int, ...],
     ) -> torch.Tensor | None:
-        """Prefer unused generated element references in root/list aggregation."""
+        """Prefer unused generated element references in terminal root aggregation."""
         weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
-        structural_list = bool(
+        structural_root_list = bool(
             getattr(state, "mode", None) == "structural"
-            and state.frames
+            and len(state.frames) == 1
             and state.frames[-1].kind == "variadic"
             and state.frames[-1].expr_type == "array"
         )
         if (
             weight <= 0.0
             or not state.frames
-            or (state.current_marker != "r=" and not structural_list)
+            or (state.current_marker != "r=" and not structural_root_list)
         ):
             return None
         eligible = {
@@ -3794,6 +4025,170 @@ class TwoTowerModel(nn.Module):
                 bias[position] = weight
                 applied = True
         return bias if applied else None
+
+    def _root_reference_arity_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Learned continue/stop bias for a terminal structural root list."""
+        weight = float(
+            getattr(self.config, "root_reference_arity_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or self.root_reference_arity_head is None
+            or getattr(state, "mode", None) != "structural"
+            or len(getattr(state, "frames", ())) != 1
+            or state.frames[-1].kind != "variadic"
+            or state.frames[-1].expr_type != "array"
+        ):
+            return None
+        emitted = int(getattr(state.frames[-1], "reference_count", 0))
+        logits = self.root_reference_arity_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0]
+        max_reference_count = min(
+            len(getattr(state, "section_types", ())), logits.numel() - 1
+        )
+        if max_reference_count <= 0:
+            return None
+        logits = logits[: max_reference_count + 1]
+        split = min(emitted + 1, logits.numel())
+        stop_score = torch.logsumexp(logits[:split], dim=0)
+        continue_score = (
+            torch.logsumexp(logits[split:], dim=0)
+            if split < logits.numel()
+            else logits.new_tensor(-20.0)
+        )
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if token == "]":
+                bias[position] = weight * stop_score
+                applied = True
+            elif token.startswith("&"):
+                bias[position] = weight * continue_score
+                applied = True
+        return bias if applied else None
+
+    def _root_reference_identity_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Re-rank terminal-root references without changing their best score."""
+        weight = float(
+            getattr(self.config, "root_reference_identity_decode_weight", 0.0)
+            or 0.0
+        )
+        if (
+            weight <= 0.0
+            or self.root_reference_identity_head is None
+            or getattr(state, "mode", None) != "structural"
+            or len(getattr(state, "frames", ())) != 1
+            or state.frames[-1].kind != "variadic"
+            or state.frames[-1].expr_type != "array"
+        ):
+            return None
+        valid_count = min(
+            len(getattr(state, "section_types", ())),
+            self.root_reference_identity_head.out_features,
+        )
+        if valid_count <= 0:
+            return None
+        logits = self.root_reference_identity_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0, :valid_count]
+        used: set[int] = set()
+        for token_id in prefix:
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if token.startswith("&"):
+                try:
+                    used.add(int(token[1:]))
+                except ValueError:
+                    continue
+        references: list[tuple[int, int]] = []
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if not token.startswith("&"):
+                continue
+            try:
+                reference = int(token[1:])
+            except ValueError:
+                continue
+            if not 0 <= reference < valid_count:
+                continue
+            references.append((position, reference))
+        unused = [
+            (position, reference)
+            for position, reference in references
+            if reference not in used
+        ]
+        if not unused:
+            return None
+        ranked_unused = sorted(
+            unused,
+            key=lambda item: float(logits[item[1]].detach().cpu()),
+            reverse=True,
+        )
+        ranked_reference_scores = sorted(
+            (scores[position] for position, _ in references),
+            key=lambda score: float(score.detach().cpu()),
+            reverse=True,
+        )
+        mix = min(weight, 1.0)
+        bias = logits.new_zeros(len(candidate_ids))
+        for rank, (position, _) in enumerate(ranked_unused):
+            bias[position] = mix * (
+                ranked_reference_scores[rank] - scores[position]
+            )
+        for position, reference in references:
+            if reference in used:
+                bias[position] = logits.new_tensor(-20.0) * mix
+        return bias
+
+    @staticmethod
+    def _choice_phase_evidence(state: Any) -> dict[str, object]:
+        """Describe the bounded generated-state phase around a choice."""
+        frames = list(getattr(state, "frames", ()))
+        structural_list = bool(
+            getattr(state, "mode", None) == "structural"
+            and frames
+            and frames[-1].kind == "variadic"
+            and frames[-1].expr_type == "array"
+        )
+        if getattr(state, "current_marker", None) == "r=":
+            aggregation_scope = "v05_root"
+        elif structural_list:
+            aggregation_scope = (
+                "structural_root_list"
+                if len(frames) == 1
+                else "structural_nested_list"
+            )
+        else:
+            aggregation_scope = "other"
+        return {
+            "aggregation_scope": aggregation_scope,
+            "frame_depth": len(frames),
+            "frame_path_truncated": len(frames) > 8,
+            "frame_path": [
+                {
+                    "kind": str(frame.kind),
+                    "expr_type": str(frame.expr_type),
+                    "phase": str(frame.phase),
+                    "arg_index": int(frame.arg_index),
+                }
+                for frame in frames[-8:]
+            ],
+        }
 
     def _binder_component_plan_bias(
         self,
@@ -5033,6 +5428,84 @@ class TwoTowerModel(nn.Module):
                             stats.slot_component_choice_changes += int(
                                 int(scores.argmax().item()) != before_slot
                             )
+                    root_arity_bias = self._root_reference_arity_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        states[row],
+                        candidate_ids,
+                    )
+                    if root_arity_bias is not None:
+                        before_root_arity = int(scores.argmax().item())
+                        scores = scores + root_arity_bias
+                        after_root_arity = int(scores.argmax().item())
+                        if stats is not None:
+                            stats.root_reference_arity_applications += 1
+                            stats.root_reference_arity_choice_changes += int(
+                                after_root_arity != before_root_arity
+                            )
+                            if len(stats.constrained_selection_traces) < 64:
+                                stats.constrained_selection_traces.append(
+                                    {
+                                        "phase": "root_reference_arity",
+                                        "position": position,
+                                        "emitted_references": int(
+                                            states[row].frames[-1].reference_count
+                                        ),
+                                        "before_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[before_root_arity], ""
+                                            )
+                                        ),
+                                        "chosen_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[after_root_arity], ""
+                                            )
+                                        ),
+                                        "choice_changed": (
+                                            after_root_arity != before_root_arity
+                                        ),
+                                        **self._choice_phase_evidence(states[row]),
+                                    }
+                                )
+                    root_identity_bias = self._root_reference_identity_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                    )
+                    if root_identity_bias is not None:
+                        before_root_identity = int(scores.argmax().item())
+                        scores = scores + root_identity_bias
+                        after_root_identity = int(scores.argmax().item())
+                        if stats is not None:
+                            stats.root_reference_identity_applications += 1
+                            stats.root_reference_identity_choice_changes += int(
+                                after_root_identity != before_root_identity
+                            )
+                            if len(stats.constrained_selection_traces) < 64:
+                                stats.constrained_selection_traces.append(
+                                    {
+                                        "phase": "root_reference_identity",
+                                        "position": position,
+                                        "before_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[before_root_identity], ""
+                                            )
+                                        ),
+                                        "chosen_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[after_root_identity], ""
+                                            )
+                                        ),
+                                        "choice_changed": (
+                                            after_root_identity
+                                            != before_root_identity
+                                        ),
+                                        **self._choice_phase_evidence(states[row]),
+                                    }
+                                )
                     reference_bias = self._visible_reference_completeness_bias(
                         states[row],
                         ids[row, :position].tolist(),
@@ -5041,11 +5514,40 @@ class TwoTowerModel(nn.Module):
                     if reference_bias is not None:
                         before_reference = int(scores.argmax().item())
                         scores = scores + reference_bias
+                        after_reference = int(scores.argmax().item())
                         if stats is not None:
                             stats.visible_reference_applications += 1
                             stats.visible_reference_choice_changes += int(
-                                int(scores.argmax().item()) != before_reference
+                                after_reference != before_reference
                             )
+                            if len(stats.constrained_selection_traces) < 64:
+                                stats.constrained_selection_traces.append(
+                                    {
+                                        "phase": "visible_reference_completeness",
+                                        "position": position,
+                                        "before_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[before_reference], ""
+                                            )
+                                        ),
+                                        "chosen_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[after_reference], ""
+                                            )
+                                        ),
+                                        "choice_changed": (
+                                            after_reference != before_reference
+                                        ),
+                                        "legal_references": sorted(
+                                            str(tok.id_to_token.get(token_id, ""))
+                                            for token_id in candidate_ids
+                                            if str(
+                                                tok.id_to_token.get(token_id, "")
+                                            ).startswith("&")
+                                        ),
+                                        **self._choice_phase_evidence(states[row]),
+                                    }
+                                )
                     best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
@@ -5778,6 +6280,7 @@ class TwoTowerModel(nn.Module):
                             "section_count": len(state.section_types),
                             "legal_candidate_count": len(legal),
                             "legal_references": legal_references,
+                            **self._choice_phase_evidence(state),
                         }
                     )
                 if token_id == tok.eos_id:
@@ -5786,7 +6289,7 @@ class TwoTowerModel(nn.Module):
                     break
             rows.append(
                 {
-                    "schema": "choice_decision_trace/v1",
+                    "schema": "choice_decision_trace/v2",
                     "choice_token_count": len(stream),
                     "choice_tokens": [
                         str(tok.id_to_token.get(token_id, ""))
@@ -7410,13 +7913,17 @@ class TwoTowerModel(nn.Module):
                     (class_counts[index] + 1.0) / (total + classes)
                     for index in range(classes)
                 ]
+                prior_mass = 0.5 * classes
                 cfg.slot_component_lexeme_priors = tuple(
                     (
                         token,
                         tuple(
                             math.log(
-                                (counts[index] + 0.5)
-                                / (token_totals[token] + 0.5 * classes)
+                                (
+                                    counts[index]
+                                    + prior_mass * base[index]
+                                )
+                                / (token_totals[token] + prior_mass)
                             )
                             - math.log(base[index])
                             for index in range(classes)

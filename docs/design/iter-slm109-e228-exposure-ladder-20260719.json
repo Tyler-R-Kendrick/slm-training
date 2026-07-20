@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "experiment_id": "SLM-109",
+  "run_id": "slm109_fixture",
+  "date_utc": "2026-07-19",
+  "run_class": "fixture_demo",
+  "status": "completed_wiring",
+  "hypothesis": "Binding-aware semantic quality on the E228 recipe exhibits a clear exposure threshold between 4× and 128× cumulative target tokens.",
+  "falsifier": "Semantic metrics remain flat or degrade through ≥100× exposure while train loss improves or saturates.",
+  "parent_checkpoint": {
+    "run_id": "e228-candidate-margin-matched",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json",
+    "note": "Original E228 1× checkpoint. Required for frontier ladder execution."
+  },
+  "recipe": {
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "train_version": "e218_schema_normalized_judge_v5",
+    "eval_version": "remediated",
+    "output_tokenizer": "lexer",
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_margin": 1.0,
+    "compiler_alignment_stratified": true,
+    "compiler_alignment_semantic_exhaustive": true,
+    "alignment_candidate_scope": "lark_compiler_forest",
+    "compiler_decode_mode": "tree",
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "design_md_in_context": false,
+    "allow_unconstrained_fallback": false,
+    "mixture_sampling_policy": "quota_capacity_aware",
+    "base_target_tokens": 6401,
+    "recipe_hash": "cb77a897141ebf438c1ff5c6a1a3d70628df175d32138a9ae6b30fba29ebd8de"
+  },
+  "ladder": {
+    "multipliers": [1, 4, 16, 64, 128],
+    "target_tokens": [6401, 25604, 102416, 409664, 819328],
+    "seeds": [0, 1, 2],
+    "status": "fixture_planned"
+  },
+  "result": {
+    "status": "fixture",
+    "points_planned": 15,
+    "points_run": 0,
+    "ship_gates": {
+      "pass": false,
+      "reason": "No model was trained. Ship gates cannot be claimed from fixture evidence."
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "components": {
+      "harness.experiments": "v17"
+    }
+  }
+}

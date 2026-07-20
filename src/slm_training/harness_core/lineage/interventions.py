@@ -26,8 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping, Sequence
 
-from slm_training.harnesses.model_build.checkpoint_reference import FileArtifact
-from slm_training.lineage.records import content_sha
+from slm_training.harness_core.checkpoint_reference import FileArtifact
+from slm_training.harness_core.lineage.records import content_sha
 
 __all__ = [
     "MANIFEST_VERSION",

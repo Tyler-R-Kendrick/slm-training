@@ -797,6 +797,137 @@ as exact.
 | Mixed-precision sensitivity allocation | Adapted | Group sensitivity profiling + knapsack allocation (`src/slm_training/harnesses/quantization/sensitivity.py`, `allocation.py`) |
 | Residual quantization / adaptive compute (e.g. BitNet b1.58 residual approximations, adaptive mixed-precision) | Adapted | Residual ternary planes and adaptive-plane routing (`src/slm_training/models/quantization/residual_planes.py`, `adaptive_planes.py`) |
 
+## External constrained-decoding semantic ceiling (EFS1-01 / SLM-108)
+
+**Fidelity label: adapted / adjacent.** SLM-108 treats publicly available
+HuggingFace causal/instruct models as a **control**, not as a deployable
+replacement. The adapter loads a pinned model revision and scores the exact live
+legal action set produced by the OpenUI compiler (`ExternalLegalActionScorer`);
+it never adds or removes candidates. This design borrows the general idea of
+using a strong pretrained model as a semantic ceiling (common in distillation and
+coverage-evaluation work) but is deliberately narrowed to the compiler-owned
+action space so the comparison isolates learned semantic competence from
+constraint-layer correctness.
+
+| | |
+| --- | --- |
+| **Lineage** | External-model baselines for semantic coverage / ceiling estimation; constrained decoding with pretrained LMs (Outlines, Guidance, SynCode family — **Adjacent**) |
+| **Fidelity** | **Adapted** — external scorer is legality-agnostic; constrained decode remains compiler-owned |
+| **Code** | `src/slm_training/models/external_scorer.py`, `src/slm_training/harnesses/experiments/external_ceiling_matrix.py`, `scripts/run_external_ceiling.py` |
+| **Config** | `--matrix-set external-ceiling`, `--checkpoint-reference-uri`, `--mode fixture|frontier` |
+
+**What we took:** a provider-neutral interface for scoring compiler-legal actions
+and complete candidates with a pinned HF causal/instruct model, plus an
+`ExternalScorePolicy` adapter for the existing eval-only score-policy path.
+
+**What we did not take:** any claim that the external model replaces the tiny
+SLM, any fine-tuning of external weights, or any bypass of the compiler in the
+constrained arms. Frontier execution requires durable checkpoint provenance
+(SLM-103) and a GPU host.
+
+## Exposure scaling as a falsifier (EFS1-02 / SLM-109)
+
+**Fidelity label: adapted / adjacent.** SLM-109 applies the classic machine-
+learning diagnostic of scaling compute/data exposure to falsify a specific claim
+(“the tiny SLM is simply underexposed”). The ladder design is borrowed from
+scaling-law and capacity-ladder practice, but narrowed to a **frozen recipe**:
+no architecture, objective, decoder, corpus admission, or evaluation change is
+allowed inside the main ladder. Continuation uses bit-exact resume from
+`last_full_state.pt` so cumulative target-token exposure is the only experimental
+axis.
+
+| | |
+| --- | --- |
+| **Lineage** | Scaling-law / exposure-threshold experiments; capacity ladders; continuation learning |
+| **Fidelity** | **Adapted** — frozen-recipe exposure ladder with bit-exact resume and recipe-hash enforcement |
+| **Code** | `src/slm_training/harnesses/experiments/e228_exposure_ladder.py`, `scripts/run_e228_exposure_ladder.py`; continuation via `scripts/train_model.py --resume-from .../last_full_state.pt --target-token-budget` |
+| **Config** | `--mode fixture|plan-only|frontier`, `--parent-checkpoint-uri`, `--checkpoint-bucket` |
+
+**What we took:** a preregistered ladder over `target_token_budget` (1×, 4×,
+16×, 64×, 128× the original E228 exposure) with recipe-hash freeze and durable
+checkpoint provenance.
+
+**What we did not take:** any claim that the current recipe is sufficient until
+a 128× run completes with paired confidence intervals. Fixture/planning evidence
+is not treated as a result.
+
+## Near-solved semantic corruption curriculum (EFS3-02 / SLM-120)
+
+**Fidelity label: adapted.** SLM-120 tests whether a controlled share of
+one- and two-error states improves recovery and fixed-point stability. The
+curriculum idea is borrowed from curriculum learning and targeted repair
+literature, but narrowed to a **frozen base recipe** and a representation-
+independent severity taxonomy so that the intervention is isolated from the
+model architecture and corruption policy.
+
+| | |
+| --- | --- |
+| **Lineage** | Curriculum learning; targeted repair corpora; corruption severity taxonomies |
+| **Fidelity** | **Adapted** — frozen-recipe factorial over near-solved share (0%, 5%, 10%, 15%, 30%) with S0–S4 severity levels and CorruptionTraceV2 provenance |
+| **Code** | `src/slm_training/data/corrupt/trace.py`, `src/slm_training/harnesses/experiments/corruption_curriculum.py`, `scripts/run_corruption_curriculum.py` |
+| **Config** | `--mode fixture|plan-only|frontier`, `--parent-checkpoint-uri`, `--near-solved-shares` |
+
+**What we took:** a preregistered factorial over near-solved share, a severity
+schema (S0 clean, S1 one semantic error, S2 two semantic errors, S3 medium,
+S4 heavy), and a trace dataclass that can be produced by any representation
+(topology diffusion, tree-edit diffusion, token diffusion, or the formal
+corruption oracle).
+
+**What we did not take:** any claim that a particular near-solved share helps
+until matched A–D arm trains complete with S0 stability, S1/S2 recovery, and
+end-to-end binding-aware meaningful v2 metrics. Fixture/planning evidence is
+not treated as a result.
+
+## Causal PEFT FTPO adapters (LDI1-02 / SLM-121)
+
+**Fidelity label: adapted.** SLM-121 tests whether small removable PEFT
+adapters trained on exact-state causal decision events with FTPO objectives can
+improve binding-aware meaningful-program rate while preserving base-model
+legality. The FTPO idea is borrowed from preference optimization and targeted
+repair literature, but narrowed to **adapter-only updates** on a frozen causal
+base recipe so the intervention is isolated from base-weight changes.
+
+| | |
+| --- | --- |
+| **Lineage** | Parameter-efficient fine-tuning (LoRA/DoRA/PiSSA/AdaLoRA); preference optimization; targeted adapter repair |
+| **Fidelity** | **Adapted** — frozen-recipe factorial over FTPO objectives (`unlikelihood`, `ftpo_single`, `ftpo_set`, `legal_set_mass`) and adapter methods, with recipe-hash freeze and removable adapter constraint |
+| **Code** | `src/slm_training/harnesses/experiments/causal_peft_ftpo.py`, `scripts/run_causal_peft_ftpo.py` |
+| **Config** | `--mode fixture|plan-only|frontier`, `--parent-checkpoint-uri`, `--checkpoint-bucket`, `--objectives`, `--adapter-methods` |
+
+**What we took:** a preregistered factorial over FTPO objectives and adapter
+methods, a frozen base recipe extended with adapter/FTPO hyperparameters, and a
+torch-free fixture runner that validates the manifest and emits a plan.
+
+**What we did not take:** any claim that a particular FTPO objective or adapter
+method improves quality until matched arm trains complete with binding-aware
+meaningful v2 metrics and reference-locality drift. Fixture/planning evidence is
+not treated as a result.
+
+## TwoTower removable low-rank delta adapter (LDI2-01 / SLM-123)
+
+**Fidelity label: adapted.** SLM-123 adds a small repository-owned LoRA-style
+low-rank delta actuator for selected TwoTower denoiser projections. The approach
+is borrowed from parameter-efficient fine-tuning literature, but narrowed to a
+**removable adapter** that leaves parent weights untouched, can be disabled to
+restore the exact parent map, and can be merged one-way into a wrapper-free copy.
+
+| | |
+| --- | --- |
+| **Lineage** | LoRA / parameter-efficient fine-tuning; removable adapter actuators |
+| **Fidelity** | **Adapted** — repository-owned low-rank delta with frozen parent, zero-init identity, deterministic target resolution, save/load/merge, and compatibility fingerprint checks |
+| **Code** | `src/slm_training/models/adapters/`, `src/slm_training/models/twotower.py`, `src/slm_training/harnesses/model_build/config.py`, `src/slm_training/harnesses/model_build/factory.py`, `scripts/train_model.py` |
+| **Config** | `--adapter-spec`, `--adapter-frozen`, `TwoTowerAdapterSpec` |
+
+**What we took:** a deterministic target resolver, a `LowRankAdapter` wrapper
+with frozen parent and zero-initialized `B`, explicit enable/disable/merge
+semantics, adapter-only `trainable_parameters()`, and compatibility-fingerprint
+guards on load.
+
+**What we did not take:** any claim that a low-rank adapter improves OpenUI
+quality until matched adapter-only vs full-update trains complete with
+binding-aware meaningful v2 metrics and merge-parity tests on the target device.
+Fixture/planning evidence is not treated as a result.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

@@ -25,6 +25,7 @@ from slm_training.models.local_action_head import (
     LocalActionOutput,
     LocalFlatHead,
     StateContext,
+    _stable_action_index,
 )
 from slm_training.models.mixed_radix_fsq import MixedRadixFSQCodec, MixedRadixFSQConfig
 
@@ -382,7 +383,7 @@ def _build_model(config: ArmConfig, action_count: int) -> nn.Module:
 
 def _state_family_index(family_id: str) -> int:
     # Deterministic small index for the embedding table.
-    return hash(family_id) % 4
+    return _stable_action_index(family_id, 4)
 
 
 def _oracle_output(
@@ -399,11 +400,11 @@ def _oracle_output(
         out = model.head.score(zero_hidden, StateContext("oracle"), legal)
         logits = out.logits
         assert logits is not None
-        correct_idx = hash(correct) % logits.shape[-1]
+        correct_idx = _stable_action_index(correct, logits.shape[-1])
         biased = torch.full_like(logits, float("-inf"))
         # Also keep all legal indices finite to satisfy "no illegal output" audit.
         legal_indices = torch.tensor(
-            [hash(a) % logits.shape[-1] for a in legal],
+            [_stable_action_index(a, logits.shape[-1]) for a in legal],
             dtype=torch.long,
             device=device,
         )
@@ -480,7 +481,7 @@ def _train_tiny(
         # Cross-entropy on the legal action subset.
         if isinstance(model, (_ImplicitStateModel, _ExplicitExactModel, _DiscreteCodeModel)):
             legal_indices = torch.tensor(
-                [hash(a) % logits.shape[-1] for a in legal],
+                [_stable_action_index(a, logits.shape[-1]) for a in legal],
                 dtype=torch.long,
                 device=device,
             )

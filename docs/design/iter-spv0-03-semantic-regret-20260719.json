@@ -1,0 +1,212 @@
+{
+  "arms": {
+    "greedy": {
+      "completion_snapshot": {
+        "accepted_values": [
+          0.6,
+          1.0,
+          2.0
+        ],
+        "bound_hit": false,
+        "coverage_complete": true,
+        "nodes_visited": 2,
+        "pruned_values": [
+          1.5
+        ],
+        "start_state_id": "start",
+        "terminal_values": [
+          0.0,
+          0.6,
+          1.0,
+          1.5,
+          2.0
+        ]
+      },
+      "max_nodes": 256,
+      "plan_factor_meta": {},
+      "policy_actions": [
+        "prune_high"
+      ],
+      "snapshots": [
+        {
+          "acceptable_action_rank": 1,
+          "candidate_coverage": true,
+          "chosen_action": "prune_high",
+          "global_rank_regret": 0.5,
+          "legal_actions": [
+            "accept_good",
+            "accept_ok",
+            "continue",
+            "prune_high"
+          ],
+          "local_regret": 0.5,
+          "oracle_best_value": 2.0,
+          "plan_regret": 0.0,
+          "pruning_regret": -0.5,
+          "representation_regret": 0.0,
+          "state_id": "start",
+          "unknown": false
+        }
+      ],
+      "start_state_id": "start",
+      "unknown": false
+    },
+    "oracle": {
+      "completion_snapshot": {
+        "accepted_values": [
+          0.6,
+          1.0,
+          2.0
+        ],
+        "bound_hit": false,
+        "coverage_complete": true,
+        "nodes_visited": 2,
+        "pruned_values": [
+          1.5
+        ],
+        "start_state_id": "start",
+        "terminal_values": [
+          0.0,
+          0.6,
+          1.0,
+          1.5,
+          2.0
+        ]
+      },
+      "max_nodes": 256,
+      "plan_factor_meta": {},
+      "policy_actions": [
+        "continue",
+        "target"
+      ],
+      "snapshots": [
+        {
+          "acceptable_action_rank": 1,
+          "candidate_coverage": true,
+          "chosen_action": "continue",
+          "global_rank_regret": 0.0,
+          "legal_actions": [
+            "accept_good",
+            "accept_ok",
+            "continue",
+            "prune_high"
+          ],
+          "local_regret": 0.0,
+          "oracle_best_value": 2.0,
+          "plan_regret": 0.0,
+          "pruning_regret": -0.5,
+          "representation_regret": 0.0,
+          "state_id": "start",
+          "unknown": false
+        },
+        {
+          "acceptable_action_rank": 1,
+          "candidate_coverage": true,
+          "chosen_action": "target",
+          "global_rank_regret": 0.0,
+          "legal_actions": [
+            "dead_end",
+            "target"
+          ],
+          "local_regret": 0.0,
+          "oracle_best_value": 2.0,
+          "plan_regret": 0.0,
+          "pruning_regret": 0.0,
+          "representation_regret": 0.0,
+          "state_id": "mid",
+          "unknown": false
+        }
+      ],
+      "start_state_id": "start",
+      "unknown": false
+    },
+    "representation_unreachable": {
+      "completion_snapshot": {
+        "accepted_values": [
+          0.5,
+          0.8
+        ],
+        "bound_hit": false,
+        "coverage_complete": true,
+        "nodes_visited": 2,
+        "pruned_values": [],
+        "start_state_id": "start",
+        "terminal_values": [
+          0.5,
+          0.8
+        ]
+      },
+      "max_nodes": 256,
+      "plan_factor_meta": {},
+      "policy_actions": [
+        "accept_low"
+      ],
+      "snapshots": [
+        {
+          "acceptable_action_rank": 1,
+          "candidate_coverage": true,
+          "chosen_action": "accept_low",
+          "global_rank_regret": 0.30000000000000004,
+          "legal_actions": [
+            "accept_low",
+            "goto_mid"
+          ],
+          "local_regret": 0.0,
+          "oracle_best_value": 2.0,
+          "plan_regret": 0.0,
+          "pruning_regret": 0.0,
+          "representation_regret": "UNKNOWN",
+          "state_id": "start",
+          "unknown": false
+        }
+      ],
+      "start_state_id": "start",
+      "unknown": false
+    }
+  },
+  "claim_class": "wiring",
+  "plan_deltas": {
+    "archetype": {
+      "baseline_fingerprint": "def0507cb1b4ddfccd19faa70fe870bcc5e6bb94afacc45d6371e3cbd6b4e04e",
+      "baseline_policy": [
+        "prune_high"
+      ],
+      "factor": "archetype",
+      "oracle_fingerprint": "62804436feb83a781a8715cb9d0f8be2ff9a099ab15c52963a7688954f70e960",
+      "oracle_policy": [
+        "continue",
+        "target"
+      ],
+      "per_snapshot": [
+        {
+          "global_rank_regret_delta": -0.5,
+          "local_regret_delta": -0.5,
+          "plan_regret_delta": 0.0,
+          "pruning_regret_delta": 0.0,
+          "representation_regret_delta": 0.0,
+          "state_id": "start"
+        }
+      ],
+      "substituted_fingerprint": "62804436feb83a781a8715cb9d0f8be2ff9a099ab15c52963a7688954f70e960",
+      "substitution_banner": "ORACLE_DIAGNOSTIC: plan_source=gold factors=['archetype'] use_mode=seed",
+      "summary": {
+        "baseline_unknown": false,
+        "n_snapshots": 1,
+        "oracle_unknown": false
+      }
+    }
+  },
+  "schema": "SemanticRegretReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T01:12:24.140056Z",
+  "version_stamp": {
+    "code_commit": "da1a4a05cc77b9124141875dd07a10f52f74a0cf",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v26",
+      "harness.experiments.semantic_regret": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T01:12:24.140062+00:00"
+  }
+}

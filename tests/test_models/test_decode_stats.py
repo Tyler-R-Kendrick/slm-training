@@ -52,6 +52,16 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
     assert summary["choice_completion_cache_misses_sum"] == 3.0
 
 
+def test_decode_stats_aggregates_root_reference_arity_counts() -> None:
+    stats = DecodeStats(
+        root_reference_arity_applications=7,
+        root_reference_arity_choice_changes=2,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["root_reference_arity_applications_sum"] == 7.0
+    assert summary["root_reference_arity_choice_changes_sum"] == 2.0
+
+
 def test_decode_stats_aggregates_dead_end_traces() -> None:
     stats = DecodeStats(constrained_dead_end_traces=[{"position": 1}])
     assert aggregate_stats([stats])["constrained_dead_end_traces"] == [{"position": 1}]

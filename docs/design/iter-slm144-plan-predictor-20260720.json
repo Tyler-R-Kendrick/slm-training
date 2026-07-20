@@ -1,0 +1,81 @@
+{
+  "claim_class": "wiring",
+  "corpus": {
+    "archetypes": 5,
+    "families": 8,
+    "roles": 4,
+    "train": 51,
+    "val": 13
+  },
+  "manifest": {
+    "arms": [
+      {
+        "archetype_source": "none",
+        "arm_id": "baseline_none",
+        "description": "Empty plan baseline: no archetype and no roles.",
+        "role_set_source": "none",
+        "status": "fixture"
+      },
+      {
+        "archetype_source": "frequency",
+        "arm_id": "frequency_prior",
+        "description": "Train-set majority archetype and union role set.",
+        "role_set_source": "frequency",
+        "status": "fixture"
+      },
+      {
+        "archetype_source": "none",
+        "arm_id": "serialized_inventory",
+        "description": "Serialized inventory head decoded into a role set.",
+        "role_set_source": "serialized",
+        "status": "fixture"
+      },
+      {
+        "archetype_source": "none",
+        "arm_id": "set_matching",
+        "description": "Learned-slot bipartite matching role-set head.",
+        "role_set_source": "predicted",
+        "status": "fixture"
+      },
+      {
+        "archetype_source": "gold",
+        "arm_id": "gold_archetype",
+        "description": "Gold archetype + learned role-set head.",
+        "role_set_source": "predicted",
+        "status": "fixture"
+      },
+      {
+        "archetype_source": "predicted",
+        "arm_id": "gold_role_set",
+        "description": "Learned archetype head + gold role set.",
+        "role_set_source": "gold",
+        "status": "fixture"
+      },
+      {
+        "archetype_source": "gold",
+        "arm_id": "gold_both",
+        "description": "Oracle upper bound using gold archetype and role set.",
+        "role_set_source": "gold",
+        "status": "fixture"
+      }
+    ],
+    "hypothesis": "A tiny CPU predictor can learn archetype and role-set factors from a component-family count vector, and learned heads outperform frequency baselines on a controlled fixture corpus.",
+    "matrix_set": "slm144_plan_predictor",
+    "matrix_version": "spv1-01-v1"
+  },
+  "matrix_set": "slm144_plan_predictor",
+  "matrix_version": "spv1-01-v1",
+  "schema": "Slm144PlanPredictorReportV1",
+  "status": "plan_only",
+  "timestamp": "2026-07-20T01:12:33.157112Z",
+  "version_stamp": {
+    "code_commit": "da1a4a05cc77b9124141875dd07a10f52f74a0cf",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v26",
+      "harness.experiments.slm144_plan_predictor": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T01:12:33.156985+00:00"
+  }
+}

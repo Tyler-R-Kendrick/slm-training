@@ -1,0 +1,455 @@
+{
+  "experiment_id": "efs-ast-sketch-retrieval",
+  "manifest": {
+    "arms": [
+      {
+        "context_budget": 400,
+        "data_sampling": "raw_stratified",
+        "k": 4,
+        "retrieval_mode": "none",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "context_budget": 400,
+        "data_sampling": "ast_sketch_balanced",
+        "k": 4,
+        "retrieval_mode": "none",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "context_budget": 400,
+        "data_sampling": "raw_stratified",
+        "k": 4,
+        "retrieval_mode": "choice_exemplar",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "context_budget": 400,
+        "data_sampling": "ast_sketch_balanced",
+        "k": 4,
+        "retrieval_mode": "choice_exemplar",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "context_budget": 400,
+        "data_sampling": "raw_stratified",
+        "k": 4,
+        "retrieval_mode": "random_choice",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "context_budget": 400,
+        "data_sampling": "raw_stratified",
+        "k": 4,
+        "retrieval_mode": "surface_skeleton",
+        "seeds": [
+          0,
+          1,
+          2
+        ]
+      }
+    ],
+    "base_recipe": {
+      "base_token_budget": 50000,
+      "batch_size": 2,
+      "best_of_n": 1,
+      "checkpoint_sync": false,
+      "context_backend": "scratch",
+      "d_model": 128,
+      "denoiser_backend": "scratch",
+      "device": "cpu",
+      "eval_suites": "smoke,held_out,adversarial,ood,rico_held",
+      "eval_version": "remediated",
+      "gen_steps": 8,
+      "grammar_constrained": true,
+      "grammar_ltr_primary": false,
+      "learning_rate": 0.0003,
+      "mask_pattern": "diffusion",
+      "max_wall_minutes": 3.0,
+      "parallel_unmask": "adaptive",
+      "representation": "choice",
+      "retrieval_context_budget": 400,
+      "retrieval_k": 4,
+      "train_version": "e218_schema_normalized_judge_v5"
+    },
+    "base_recipe_hash": "c4842526252a3a1bea8509d11bbec658a583a90a2bf621d76c89f9d88b682e26",
+    "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+    "claim_class": "frontier",
+    "experiment_id": "efs-ast-sketch-retrieval",
+    "falsifier": "After matched exposure and representation-native decoding, sketch balancing produces no quality or coverage gain, nearest choice retrieval is equivalent to random retrieval or surface skeletons, or the interaction is null/negative.",
+    "hypothesis": "At a fixed corpus and exposure budget, AST-sketch balancing increases held-out binding-aware semantic quality and sketch/component/binding coverage versus a stratified raw sample, and nearest train-only choice-native exemplars improve semantic selection over no retrieval and over random/surface-exemplar controls.",
+    "matrix_set": "ast-sketch-retrieval",
+    "matrix_version": "efs3-06-v1",
+    "parent_checkpoint_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json",
+    "primary_metric": "binding_aware_meaningful_v2_rate_strict",
+    "status": "frontier_pending_gpu"
+  },
+  "matrix_set": "ast-sketch-retrieval",
+  "matrix_version": "efs3-06-v1",
+  "rows": [
+    {
+      "arm": "raw_stratified__none",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 none seed 0",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "none",
+      "run_id": "raw_stratified__none__d128__s0",
+      "seed": 0,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__none",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 none seed 1",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "none",
+      "run_id": "raw_stratified__none__d128__s1",
+      "seed": 1,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__none",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 none seed 2",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "none",
+      "run_id": "raw_stratified__none__d128__s2",
+      "seed": 2,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "ast_sketch_balanced__none",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "ast_sketch_balanced",
+      "k": 4,
+      "notes": [
+        "planned ast_sketch_balanced \u00d7 none seed 0",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "none",
+      "run_id": "ast_sketch_balanced__none__d128__s0",
+      "seed": 0,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "ast_sketch_balanced__none",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "ast_sketch_balanced",
+      "k": 4,
+      "notes": [
+        "planned ast_sketch_balanced \u00d7 none seed 1",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "none",
+      "run_id": "ast_sketch_balanced__none__d128__s1",
+      "seed": 1,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "ast_sketch_balanced__none",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "ast_sketch_balanced",
+      "k": 4,
+      "notes": [
+        "planned ast_sketch_balanced \u00d7 none seed 2",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "none",
+      "run_id": "ast_sketch_balanced__none__d128__s2",
+      "seed": 2,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__choice_exemplar",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 choice_exemplar seed 0",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "choice_exemplar",
+      "run_id": "raw_stratified__choice_exemplar__d128__s0",
+      "seed": 0,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__choice_exemplar",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 choice_exemplar seed 1",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "choice_exemplar",
+      "run_id": "raw_stratified__choice_exemplar__d128__s1",
+      "seed": 1,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__choice_exemplar",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 choice_exemplar seed 2",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "choice_exemplar",
+      "run_id": "raw_stratified__choice_exemplar__d128__s2",
+      "seed": 2,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "ast_sketch_balanced__choice_exemplar",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "ast_sketch_balanced",
+      "k": 4,
+      "notes": [
+        "planned ast_sketch_balanced \u00d7 choice_exemplar seed 0",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "choice_exemplar",
+      "run_id": "ast_sketch_balanced__choice_exemplar__d128__s0",
+      "seed": 0,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "ast_sketch_balanced__choice_exemplar",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "ast_sketch_balanced",
+      "k": 4,
+      "notes": [
+        "planned ast_sketch_balanced \u00d7 choice_exemplar seed 1",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "choice_exemplar",
+      "run_id": "ast_sketch_balanced__choice_exemplar__d128__s1",
+      "seed": 1,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "ast_sketch_balanced__choice_exemplar",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "ast_sketch_balanced",
+      "k": 4,
+      "notes": [
+        "planned ast_sketch_balanced \u00d7 choice_exemplar seed 2",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "choice_exemplar",
+      "run_id": "ast_sketch_balanced__choice_exemplar__d128__s2",
+      "seed": 2,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__random_choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 random_choice seed 0",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "random_choice",
+      "run_id": "raw_stratified__random_choice__d128__s0",
+      "seed": 0,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__random_choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 random_choice seed 1",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "random_choice",
+      "run_id": "raw_stratified__random_choice__d128__s1",
+      "seed": 1,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__random_choice",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 random_choice seed 2",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400",
+        "choice-native exemplar context (symbolic labels)"
+      ],
+      "retrieval_mode": "random_choice",
+      "run_id": "raw_stratified__random_choice__d128__s2",
+      "seed": 2,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__surface_skeleton",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 surface_skeleton seed 0",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "surface_skeleton",
+      "run_id": "raw_stratified__surface_skeleton__d128__s0",
+      "seed": 0,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__surface_skeleton",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 surface_skeleton seed 1",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "surface_skeleton",
+      "run_id": "raw_stratified__surface_skeleton__d128__s1",
+      "seed": 1,
+      "status": "fixture_planned"
+    },
+    {
+      "arm": "raw_stratified__surface_skeleton",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "context_budget": 400,
+      "d_model": 128,
+      "data_sampling": "raw_stratified",
+      "k": 4,
+      "notes": [
+        "planned raw_stratified \u00d7 surface_skeleton seed 2",
+        "fixture-only: no model trained",
+        "retrieval k=4 budget=400"
+      ],
+      "retrieval_mode": "surface_skeleton",
+      "run_id": "raw_stratified__surface_skeleton__d128__s2",
+      "seed": 2,
+      "status": "fixture_planned"
+    }
+  ],
+  "run_id": "slm133_fixture",
+  "status": "fixture",
+  "version_stamp": {
+    "code_commit": "9eb24c91da3dbf525f4cd96d6331147a64f72273",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v24"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T23:38:47.108948+00:00"
+  }
+}

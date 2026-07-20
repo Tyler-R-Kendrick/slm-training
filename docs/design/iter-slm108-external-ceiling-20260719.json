@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "experiment_id": "SLM-108",
+  "run_id": "slm108_fixture",
+  "date_utc": "2026-07-19",
+  "run_class": "fixture_demo",
+  "status": "completed_wiring",
+  "hypothesis": "A capable external 1-7B model constrained by the same compiler exceeds the tiny SLM on binding-aware meaningful-program rate while preserving legality.",
+  "checkpoint": {
+    "run_id": "slm108_baseline",
+    "note": "Baseline tiny-SLM arm A is not_run in the fixture; a durable reference URI is required for frontier execution.",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/slm108_baseline/ref.json"
+  },
+  "recipe": {
+    "device": "cpu",
+    "fixture_only": true,
+    "external_models": [
+      {
+        "arm": "B",
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "revision": "main",
+        "decode_mode": "constrained",
+        "claim_class": "fixture"
+      },
+      {
+        "arm": "C",
+        "model_id": "Qwen/Qwen2.5-7B-Instruct",
+        "revision": "main",
+        "decode_mode": "constrained",
+        "claim_class": "frontier",
+        "status": "not_run"
+      },
+      {
+        "arm": "D",
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "revision": "main",
+        "decode_mode": "unconstrained",
+        "claim_class": "fixture"
+      },
+      {
+        "arm": "E",
+        "model_id": "HuggingFaceTB/SmolLM2-135M",
+        "revision": "main",
+        "decode_mode": "complete_rerank",
+        "claim_class": "fixture"
+      }
+    ],
+    "primary_metric": "binding_aware_meaningful_v2_rate_strict",
+    "suites": ["smoke", "held_out", "adversarial"],
+    "hard_process_cap_seconds": 170
+  },
+  "result": {
+    "status": "fixture",
+    "arms_run": ["B", "D", "E"],
+    "arms_not_run": ["A", "C"],
+    "records_evaluated_per_fixture_arm": 2,
+    "candidates_scored_per_fixture_arm": 2,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "non_empty_rate": 1.0,
+    "fallback_rate": 0.0,
+    "oom_or_timeout": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "reason": "Fixture wiring only; no real 1-7B model was evaluated. Ship gates cannot be claimed from fixture evidence."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "note": "AgentV integration is wired but not executed; fixture outputs are not publishable as ship evidence."
+  },
+  "decision": "Accept the harness wiring and defer the frontier campaign to a GPU host with pinned durable checkpoints (SLM-103). The external scorer interface is ready for legal-action ranking and complete-candidate reranking.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "components": {
+      "harness.experiments": "v16",
+      "matrix.quality": "v2"
+    }
+  }
+}

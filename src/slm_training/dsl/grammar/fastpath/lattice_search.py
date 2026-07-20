@@ -11,6 +11,12 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
     CompletionPath,
 )
+from slm_training.harnesses.experiments.canonical_ast_dedup import (
+    CandidateEquivalenceGroupV1,
+    RepresentativePolicy,
+    group_candidates_by_canonical_ast,
+    unique_slot_truncation,
+)
 
 PathKey = tuple[int, ...]
 Nogood = tuple[tuple[int, ...], PathKey]
@@ -138,6 +144,7 @@ class TrajectoryCandidate(Generic[T]):
     model_score: float
     simplicity: int
     fingerprint: str = ""
+    canonical_fingerprint: str = ""
 
 
 def select_trajectory_candidate(
@@ -170,6 +177,52 @@ def select_trajectory_candidate(
     return selected, len(
         {row.fingerprint for row in live if row.valid and row.fingerprint}
     )
+
+
+def group_trajectory_candidates(
+    candidates: tuple[TrajectoryCandidate[T], ...],
+    *,
+    dsl: str | None = None,
+    policy: RepresentativePolicy = RepresentativePolicy.DETERMINISTIC_LEXICOGRAPHIC,
+) -> tuple[CandidateEquivalenceGroupV1, ...]:
+    """Group trajectory candidates by canonical AST fingerprint.
+
+    ``value`` is expected to be a canonical OpenUI source string or an object
+    with a ``__str__`` representation that round-trips through the parser. The
+    generic helper uses ``str(value)`` as the source.
+    """
+    items = []
+    for rank, candidate in enumerate(candidates):
+        context = {
+            "valid": candidate.valid,
+            "contract_satisfied": candidate.contract_satisfied,
+            "generator_score": candidate.model_score,
+            "selector_score": None,
+        }
+        items.append((f"rank_{rank}", str(candidate.value), context))
+    return group_candidates_by_canonical_ast(items, dsl=dsl, policy=policy)
+
+
+def select_unique_slot_truncation(
+    candidates: tuple[TrajectoryCandidate[T], ...],
+    k: int,
+    *,
+    dsl: str | None = None,
+    policy: RepresentativePolicy = RepresentativePolicy.DETERMINISTIC_LEXICOGRAPHIC,
+) -> tuple[TrajectoryCandidate[T], ...]:
+    """Return up to ``k`` finalists with at most one per canonical AST group."""
+    items = []
+    for rank, candidate in enumerate(candidates):
+        context = {
+            "valid": candidate.valid,
+            "contract_satisfied": candidate.contract_satisfied,
+            "generator_score": candidate.model_score,
+            "selector_score": None,
+        }
+        items.append((f"rank_{rank}", str(candidate.value), context))
+    selected_ids = unique_slot_truncation(items, k=k, dsl=dsl, policy=policy)
+    id_to_candidate = {f"rank_{rank}": c for rank, c in enumerate(candidates)}
+    return tuple(id_to_candidate[sid] for sid in selected_ids if sid in id_to_candidate)
 
 
 @dataclass(frozen=True)
@@ -258,9 +311,12 @@ __all__ = [
     "StagnationTracker",
     "TrajectoryCandidate",
     "deduplicate_semantic_candidates",
+    "group_trajectory_candidates",
     "path_key",
     "rank_forest",
     "refine_hard_paths",
     "select_trajectory_candidate",
+    "select_unique_slot_truncation",
     "trajectory_orders",
+    "unique_slot_truncation",
 ]

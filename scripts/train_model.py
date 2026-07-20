@@ -18,6 +18,13 @@ def _probability(value: str) -> float:
     return parsed
 
 
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return parsed
+
+
 def resolve_published_train_version(
     version: str,
     *,
@@ -430,6 +437,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Power applied to inverse corpus owner frequency (0 disables).",
     )
     parser.add_argument(
+        "--slot-component-owner-rare-threshold",
+        type=int,
+        default=0,
+        help="Treat slot-owner classes with at most this many labels as rare (0 disables).",
+    )
+    parser.add_argument(
+        "--slot-component-owner-rare-multiplier",
+        type=_positive_int,
+        default=1,
+        help="Sampler copies for records containing a rare visible slot owner.",
+    )
+    parser.add_argument(
         "--slot-component-decode-weight",
         type=float,
         default=0.0,
@@ -524,6 +543,42 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Bias legal reference-list continue/stop paths by planned arity.",
+    )
+    parser.add_argument(
+        "--root-reference-arity-loss-weight",
+        type=float,
+        default=0.0,
+        help="Choice-codec final-root reference-count CE weight.",
+    )
+    parser.add_argument(
+        "--root-reference-arity-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias terminal root-list continue/stop choices by learned arity.",
+    )
+    parser.add_argument(
+        "--root-reference-identity-loss-weight",
+        type=float,
+        default=0.0,
+        help="Choice-codec terminal-root reference-inclusion BCE weight.",
+    )
+    parser.add_argument(
+        "--root-reference-identity-negative-weight",
+        type=float,
+        default=1.0,
+        help="Relative BCE weight for generated sections excluded from the root.",
+    )
+    parser.add_argument(
+        "--root-reference-identity-strict-subset-multiplier",
+        type=_positive_int,
+        default=1,
+        help="Sampler copies for records whose root references a strict section subset.",
+    )
+    parser.add_argument(
+        "--root-reference-identity-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias terminal root-list references by learned inclusion.",
     )
     parser.add_argument(
         "--no-design-md-context",
@@ -741,6 +796,17 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
+    parser.add_argument(
+        "--adapter-spec",
+        type=Path,
+        default=None,
+        help="LDI2-01: load a removable TwoTower low-rank adapter directory.",
+    )
+    parser.add_argument(
+        "--adapter-frozen",
+        action="store_true",
+        help="Load the adapter as frozen (no adapter parameters train).",
+    )
     args = parser.parse_args(argv)
     data_store = DataStore()
     if args.train_version:
@@ -889,6 +955,12 @@ def main(argv: list[str] | None = None) -> int:
         slot_component_loss_weight=args.slot_component_loss_weight,
         slot_component_focal_gamma=args.slot_component_focal_gamma,
         slot_component_class_balance_power=(args.slot_component_class_balance_power),
+        slot_component_owner_rare_threshold=(
+            args.slot_component_owner_rare_threshold
+        ),
+        slot_component_owner_rare_multiplier=(
+            args.slot_component_owner_rare_multiplier
+        ),
         slot_component_decode_weight=args.slot_component_decode_weight,
         slot_component_prompt_context=args.slot_component_prompt_context,
         slot_component_next_context=args.slot_component_next_context,
@@ -907,6 +979,20 @@ def main(argv: list[str] | None = None) -> int:
         binder_topology_decode_weight=args.binder_topology_decode_weight,
         binder_arity_loss_weight=args.binder_arity_loss_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
+        root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
+        root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
+        root_reference_identity_loss_weight=(
+            args.root_reference_identity_loss_weight
+        ),
+        root_reference_identity_negative_weight=(
+            args.root_reference_identity_negative_weight
+        ),
+        root_reference_identity_strict_subset_multiplier=(
+            args.root_reference_identity_strict_subset_multiplier
+        ),
+        root_reference_identity_decode_weight=(
+            args.root_reference_identity_decode_weight
+        ),
         fidelity_loss_weight=args.fidelity_loss_weight,
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
@@ -977,6 +1063,8 @@ def main(argv: list[str] | None = None) -> int:
             else False
         ),
         checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
+        adapter_spec=args.adapter_spec,
+        adapter_trainable=not bool(args.adapter_frozen),
     )
     from slm_training.runtime.telemetry import run_trace
 

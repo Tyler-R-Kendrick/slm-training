@@ -208,6 +208,11 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_topology_decode_weight=0.2,
             binder_arity_loss_weight=0.7,
             binder_arity_decode_weight=0.1,
+                root_reference_arity_loss_weight=0.6,
+                root_reference_arity_decode_weight=0.05,
+                root_reference_identity_loss_weight=0.55,
+                root_reference_identity_negative_weight=3.0,
+                root_reference_identity_decode_weight=0.04,
         ),
     )
     assert model.component_inventory_head is not None
@@ -235,6 +240,10 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.slot_component_decode_weight == 0.25
     assert loaded.config.slot_component_prompt_context is False
     assert loaded.config.slot_component_lexeme_prior_weight == 1.0
+    hero_priors = dict(loaded.config.slot_component_lexeme_priors)["hero"]
+    component_index = loaded._component_name_index()
+    assert hero_priors[component_index["TextContent"]] > 0.0
+    assert hero_priors[component_index["Card"]] < 0.0
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4
@@ -244,6 +253,12 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_topology_decode_weight == 0.2
     assert loaded.config.binder_arity_loss_weight == 0.7
     assert loaded.config.binder_arity_decode_weight == 0.1
+
+    assert loaded.config.root_reference_arity_loss_weight == 0.6
+    assert loaded.config.root_reference_arity_decode_weight == 0.05
+    assert loaded.config.root_reference_identity_loss_weight == 0.55
+    assert loaded.config.root_reference_identity_negative_weight == 3.0
+    assert loaded.config.root_reference_identity_decode_weight == 0.04
 
     apply_runtime_overrides(
         loaded,
@@ -255,6 +270,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_component_plan_decode_weight=0.0,
             binder_topology_decode_weight=0.0,
             binder_arity_decode_weight=0.0,
+            root_reference_arity_decode_weight=0.0,
+            root_reference_identity_decode_weight=0.0,
         ),
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
@@ -263,6 +280,40 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_component_plan_decode_weight == 0.0
     assert loaded.config.binder_topology_decode_weight == 0.0
     assert loaded.config.binder_arity_decode_weight == 0.0
+    assert loaded.config.root_reference_arity_decode_weight == 0.0
+    assert loaded.config.root_reference_identity_decode_weight == 0.0
+
+
+def test_slot_pair_interaction_never_encodes_empty_next_slot() -> None:
+    records = [
+        ExampleRecord(
+            id="pair",
+            prompt="Hero",
+            openui=HERO,
+            placeholders=[":hero.title", ":hero.body"],
+            split="train",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="choice",
+            slot_component_loss_weight=1.0,
+            slot_component_pair_interaction=True,
+        ),
+    )
+    encode_context = model._encode_context
+
+    def assert_nonempty(prompts: list[str], **kwargs):
+        assert all(prompt for prompt in prompts)
+        return encode_context(prompts, **kwargs)
+
+    model._encode_context = assert_nonempty  # type: ignore[method-assign]
+    assert torch.isfinite(model.training_loss(records))
 
 
 def test_optional_heads_do_not_shift_training_rng() -> None:

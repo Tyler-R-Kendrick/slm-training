@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable
 
-from slm_training.lineage.records import RunManifest
+from slm_training.harness_core.lineage.records import RunManifest
 
 
 def validate_merge_manifests(
