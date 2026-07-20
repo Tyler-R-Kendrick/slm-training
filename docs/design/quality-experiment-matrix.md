@@ -2926,6 +2926,16 @@ and AgentV remains 0/1. **Decision:** reject as a semantic fix and test weight
 [narrative](iter-e562-component-plan-decode1-20260720.md) and
 [JSON](iter-e562-component-plan-decode1-20260720.json).
 
+## E563 component-plan decode weight 0.5
+
+The midpoint weight changes seven of 130 component-plan applications, but OOD
+`n=4` fidelity falls to 0.4083, structure to 0.2019, reward to 0.5178, and
+AST-node F1 to 0.2500 versus E561. Meaning-v1/v2 remain 0 and AgentV remains
+0/1. **Decision:** reject as a semantic fix and close the component-plan
+decode-weight ladder. No checkpoint was created. Evidence:
+[narrative](iter-e563-component-plan-decode05-20260720.md) and
+[JSON](iter-e563-component-plan-decode05-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
