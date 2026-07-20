@@ -1377,7 +1377,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1392,6 +1392,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-20",
+          "note": "E621: add the --semantic-role-*/--schema-*/--slot-coverage-close-decode-weight/--semantic-plan-*/--visible-reference-decode-weight CLI flags to scripts/train_model.py, mirroring scripts/evaluate_model.py; these ModelBuildConfig fields already existed but had no CLI path, so live `slm sft train` runs (including periodic in-training eval) could never set them nonzero"
+        },
         {
           "version": "v59",
           "date": "2026-07-20",
