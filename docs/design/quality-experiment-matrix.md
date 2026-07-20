@@ -3410,3 +3410,17 @@ from 0.1688 to 0.3013, component recall from 0.2708 to 0.3958, reward from
 checkpoint was created or synced. Evidence:
 [narrative](iter-e579-verified-plan-root-20260720.md) and
 [JSON](iter-e579-verified-plan-root-20260720.json).
+
+## E580 honest prompt-plan cardinality
+
+E580 preserves repeated authored component mentions and requires their family
+counts before the verifier-gated root closure activates. The OOD auth plan is
+now correctly `Button, Input, Input`. On a clean matched E569 OOD `n=4`
+weight-0/4 pair, weight 4 applies three times but changes no choices; every
+quality metric matches control, strict meaning-v2 remains 0, and AgentV fails
+0/1. This removes E579's AST-edge gain because that gain closed auth topology
+after only one of two requested Inputs. Retain the cardinality correction for
+honesty, keep the scorer default-off, and next test count-aware component
+generation. No checkpoint was created or synced. Evidence:
+[narrative](iter-e580-plan-cardinality-20260720.md) and
+[JSON](iter-e580-plan-cardinality-20260720.json).
