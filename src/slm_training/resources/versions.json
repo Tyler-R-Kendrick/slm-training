@@ -351,12 +351,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.0.0",
+      "version": "2.1.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.1.0",
+          "date": "2026-07-20",
+          "note": "E618: _binding_check no longer falls back to the regex-based Gate.REFERENCES gate for structural (non-runtime-syntax) sources -- that fallback treated bare object-literal property keys (e.g. `src:` in a typed-array item `{src: ..., alt: ...}`) as unresolved variable references, permanently failing binding_correctness (reason `reference_graph_invalid`) for any correctly produced typed-array-of-objects prediction. The official-parser-derived unresolved/orphaned checks plus the $state/Query/Mutation dependency-graph reachability pass (already used for runtime sources, a safe no-op for structural sources) now run unconditionally instead."
+        },
         {
           "version": "2.0.0",
           "date": "2026-07-18",

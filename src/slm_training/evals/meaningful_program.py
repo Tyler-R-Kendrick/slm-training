@@ -25,12 +25,9 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 METRIC_NAME = "binding_aware_meaningful_v2"
-METRIC_VERSION = "2.0.0"
+METRIC_VERSION = "2.1.0"
 _ASSIGNMENT_RE = re.compile(
     r"(?m)^\s*(\$?[A-Za-z_][A-Za-z0-9_]*)\s*="
-)
-_RUNTIME_SYNTAX_RE = re.compile(
-    r"(?m)^\s*\$|\b(?:Query|Mutation|Action)\s*\(|@[A-Za-z_]"
 )
 _INVENTORY_SECTION_RE = re.compile(
     r"(?im)(?:placeholders?|slot(?:\s+inventory)?|inventory)\s*:\s*([^\n]*)"
@@ -483,45 +480,57 @@ def _binding_check(
     if orphaned:
         reasons.append("unreachable_binding")
         evidence.extend(_evidence("bindings", value) for value in orphaned)
-    if not _RUNTIME_SYNTAX_RE.search(source):
-        candidate = ExampleRecord.from_dict(
-            {**record.to_dict(), "openui": source, "placeholders": []}
-        )
-        result = evaluate_gate(Gate.REFERENCES, candidate)
-        if result.status is GateStatus.FAIL:
-            reasons.append("reference_graph_invalid")
-            evidence.append(_evidence("bindings", result.detail))
-    else:
-        definitions = set(names)
+    # `unresolved`/`orphaned` above already come from the official parser's
+    # own analysis and are authoritative for both structural (placeholder
+    # scaffold) and runtime ($state/Query/Mutation) sources. This second pass
+    # additionally walks the $state/Query/Mutation dependency graph to catch
+    # *dead* runtime bindings the parser doesn't flag as orphaned (declared,
+    # reachable only through other dead code). It runs unconditionally: for
+    # structural-only sources, state_declarations/query_statements/
+    # mutation_statements are empty, so `dependencies` is empty and this is a
+    # safe no-op.
+    #
+    # This replaces a former regex-based Gate.REFERENCES fallback that ran
+    # instead of this check for any source without $/Query/Mutation/@ syntax.
+    # That fallback treated bare object-literal property keys (e.g. `src:` in
+    # a typed-array item like `{src: ..., alt: ...}`) as unresolved variable
+    # references, so it permanently failed binding_correctness -- and with it
+    # binding_aware_meaningful_v2's strict verdict -- for any correctly
+    # produced typed-array-of-objects prediction, independent of model
+    # quality. Confirmed present in eval evidence back through E612-E617
+    # (`reference_graph_invalid` in docs/design/iter-e612..e617*.json) before
+    # E618 diagnosed and removed it; see
+    # docs/design/iter-e618-strict-v2-reference-graph-false-positive-20260720.md.
+    definitions = set(names)
 
-        def refs(value: Any) -> set[str]:
-            found: set[str] = set()
-            for _path, child, _component, _prop in _walk(value):
-                if (
-                    isinstance(child, dict)
-                    and child.get("k") in {"RuntimeRef", "StateRef", "Ref"}
-                    and isinstance(child.get("n"), str)
-                ):
-                    found.add(child["n"])
-            return found
+    def refs(value: Any) -> set[str]:
+        found: set[str] = set()
+        for _path, child, _component, _prop in _walk(value):
+            if (
+                isinstance(child, dict)
+                and child.get("k") in {"RuntimeRef", "StateRef", "Ref"}
+                and isinstance(child.get("n"), str)
+            ):
+                found.add(child["n"])
+        return found
 
-        dependencies: dict[str, set[str]] = {}
-        for name, value in program.state_declarations.items():
-            dependencies[name] = refs(value)
-        for statement in (*program.query_statements, *program.mutation_statements):
-            dependencies[str(statement.get("statementId"))] = refs(statement)
-        reachable = refs(program.root)
-        frontier = list(reachable)
-        while frontier:
-            name = frontier.pop()
-            for dependency in dependencies.get(name, set()):
-                if dependency not in reachable:
-                    reachable.add(dependency)
-                    frontier.append(dependency)
-        dead_runtime = sorted(definitions.intersection(dependencies) - reachable)
-        if dead_runtime:
-            reasons.append("unreachable_binding")
-            evidence.extend(_evidence("bindings", value) for value in dead_runtime)
+    dependencies: dict[str, set[str]] = {}
+    for name, value in program.state_declarations.items():
+        dependencies[name] = refs(value)
+    for statement in (*program.query_statements, *program.mutation_statements):
+        dependencies[str(statement.get("statementId"))] = refs(statement)
+    reachable = refs(program.root)
+    frontier = list(reachable)
+    while frontier:
+        name = frontier.pop()
+        for dependency in dependencies.get(name, set()):
+            if dependency not in reachable:
+                reachable.add(dependency)
+                frontier.append(dependency)
+    dead_runtime = sorted(definitions.intersection(dependencies) - reachable)
+    if dead_runtime:
+        reasons.append("unreachable_binding")
+        evidence.extend(_evidence("bindings", value) for value in dead_runtime)
     if reasons:
         return SemanticCheckV2(
             "binding_correctness",

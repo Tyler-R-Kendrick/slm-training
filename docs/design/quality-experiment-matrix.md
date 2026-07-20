@@ -3956,6 +3956,53 @@ was created for promotion or synced. Evidence:
 [narrative](iter-e617-slot-contract-decode-gap-20260720.md) and
 [JSON](iter-e617-slot-contract-decode-gap-20260720.json).
 
+## E618 a real false positive in the strict meaning-v2 evaluator
+
+E618 answers E617's own "next" question: is `binding_aware_meaningful_v2_rate_strict`
+("strict v2") staying 0.0 across the E611-E617 lineage a real quality gap or
+another silent misconfiguration? Re-scoring E617's exact real predictions (no
+retraining) against `binding_aware_meaningful_v2` with per-check
+instrumentation found `ood_gallery_01` and `ood_modal_01` failing
+`binding_correctness` with reason `reference_graph_invalid`, in both arms.
+Root cause: `_binding_check` (`src/slm_training/evals/meaningful_program.py`)
+already used the official parser's authoritative `unresolved`/`orphaned`
+analysis, but for any source without `$`/`Query`/`Mutation`/`Action`/`@`
+syntax it *also* ran a redundant regex-based `Gate.REFERENCES` fallback whose
+identifier regex misreads bare object-literal property keys (`src:`/`alt:` in
+a typed-array item like `{src: ..., alt: ...}`, exactly E614/E615/E617's own
+object-frame syntax) as unresolved variable references — even though the real
+official parser accepts the source cleanly. `reference_graph_invalid` is
+already present in E612, E613, and E614's own eval evidence, confirming this
+predates E617 and has been silently pinning strict v2 toward 0 across at
+least six prior experiments. Fix: `_binding_check` now always runs the
+graph-based dependency-reachability pass previously reserved for runtime
+sources (a verified no-op for structural sources, since their
+`state_declarations`/`query_statements`/`mutation_statements` are empty); the
+buggy regex fallback is removed from this call site (the shared
+`Gate.REFERENCES`/`_reference_graph` implementation itself, used elsewhere in
+the verify stack, is untouched). `evals.meaningful_program` 2.0.0 → 2.1.0; new
+regression test
+`test_v2_typed_array_object_item_keys_are_not_treated_as_unresolved_refs`.
+**Honest result:** re-scoring the same real E617 predictions before/after (via
+a temporary `git stash` of only the fixed file) confirms `reference_graph_invalid`
+disappears from both records in both arms — a real, confirmed false positive
+removed — but `binding_aware_meaningful_v2_rate_strict` stays 0.0 → 0.0 on this
+checkpoint: `ood_gallery_01` still fails on `required_inventory_unknown`
+(separate, unfixed — see below), and `ood_modal_01`'s raw prediction is a
+deeply malformed, self-nested `Modal`/`Stack` tree consistent with genuine
+80-step-checkpoint undertraining, not an evaluator artifact.
+`ood_dashboard_01`/`ood_auth_01` never triggered the bug and fail on real
+schema/placeholder-role mismatches either way. **Secondary finding, not fixed
+this iteration:** `required_inventory_coverage` is `UNKNOWN` (never a real
+judged PASS/FAIL) for every OOD record because none of the E611-E617 recipes
+ever set `--slot-contract-in-context`, so `_effective_request_for` zeroes
+`GenerationRequest.slot_contract` before it reaches the evaluator's own
+`_prompt_contract` — the same shape as E617's finding (an orthogonal flag
+nobody sets, silently degrading a metric), left open as the clear next step.
+No checkpoint trained, promoted, or synced this iteration; not a ship claim.
+Evidence: [narrative](iter-e618-strict-v2-reference-graph-false-positive-20260720.md)
+and [JSON](iter-e618-strict-v2-reference-graph-false-positive-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
