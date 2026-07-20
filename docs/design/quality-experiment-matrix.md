@@ -2958,6 +2958,16 @@ created. Evidence:
 [narrative](iter-e565-semantic-role-decode0-20260720.md) and
 [JSON](iter-e565-semantic-role-decode0-20260720.json).
 
+## E566 slot-component decode weight 2
+
+Halving E561's learned slot-component decode weight from 4 to 2 retains 16
+applications and 14 choice changes, but every matched OOD `n=4` quality
+aggregate is identical. Meaning-v1/v2 remain 0 and AgentV remains 0/1.
+**Decision:** treat weights 2–4 as one saturated selection regime and test
+weight 0 as the decisive head on/off ablation. No checkpoint was created.
+Evidence: [narrative](iter-e566-slot-component-decode2-20260720.md) and
+[JSON](iter-e566-slot-component-decode2-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
