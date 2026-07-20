@@ -2875,6 +2875,17 @@ meaning 0, AgentV 0/1. **Decision:** reject and change data/sampling coverage.
 Evidence: [narrative](iter-e557-slot-balance1-20260720.md) and
 [JSON](iter-e557-slot-balance1-20260720.json).
 
+## E558 rare slot-owner record coverage
+
+The canonical sampler now expands records containing owner labels observed at
+most 10 times. Fourfold exposure selected 75/244 records and expanded the pool
+to 469. OOD `n=4` fidelity improves 0.3000→0.4250, but structure regresses
+0.1594→0.0921, reward 0.5453→0.4075, and AST-node F1 0.2389→0.1393;
+binding-aware meaning remains 0 and AgentV remains 0/1. **Decision:** retain
+the sampler, reject the checkpoint, and test 2× exposure. Evidence:
+[narrative](iter-e558-owner-coverage-20260720.md) and
+[JSON](iter-e558-owner-coverage-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
