@@ -3917,6 +3917,45 @@ verified only at the unit level. Evidence:
 [narrative](iter-e616-object-frame-slot-bias-scratch80-replay-20260720.md) and
 [JSON](iter-e616-object-frame-slot-bias-scratch80-replay-20260720.json).
 
+## E617 the slot-contract decode gap upstream of E612/E615/E616
+
+E617 answers E616's own "next" question: why does
+`semantic_plan_typed_array_nonempty_margin_decode_weight=2.0` (already active
+in the E611-E616 recipe) not prevent an empty-array close? Instrumenting
+`_semantic_plan_typed_array_nonempty_bias` on a byte-identical replay of
+E616's checkpoint shows all 111 calls into the array-decision branch fail the
+very first gate (`not slot_contract`) because `self._slot_contracts[row]` is
+`None`. Root cause: `self._slot_contracts` is only populated when
+`slot_contract_constrained_decode` or `template_fill_decode` is `true`, and
+neither flag was ever passed by the E611-E616 eval recipe (`honest_slot_contract`
+is a different, orthogonal flag). Five decode-time biases —
+`schema_role_slot_decode_weight`, `slot_coverage_close_decode_weight`,
+`semantic_plan_typed_array_nonempty_margin_decode_weight`,
+`semantic_plan_typed_array_item_margin_decode_weight`, and
+`semantic_plan_repeated_slot_margin_decode_weight` — have silently no-opped on
+every decode step across E611-E616, independent of weight or checkpoint
+quality. Replaying E616's exact matched control (`schema_role_slot_decode_weight=0`)
+vs treatment (`=8.0`) pair with `--slot-contract-constrained-decode` added (no
+other value changed, same checkpoint sha256) produces the first non-byte-identical
+result in this lineage: all 4/4 OOD predictions differ, `ood_gallery_01`'s
+`src`/`alt` properties move from both collapsing onto `:ood.gallery.alt`
+(control) to binding their own matching slots, `:ood.gallery.img`/
+`:ood.gallery.alt` (treatment) — E614's narrative bug, E615's fix, now
+observed end-to-end for the first time. `placeholder_fidelity` rises
+0.7417→0.7833, `placeholder_validity` 0.845→0.87, `reward_score`
+0.6493→0.6618, `structural_similarity` 0.5509→0.5548, `ast_node_f1`
+0.6002→0.6047; `parse_rate`/`syntax_parse_rate` (1.0), `meaningful_program_rate`
+(0.5), `binding_aware_meaningful_v2_rate_strict` (0.0), `component_type_recall`
+(0.6875), and `ast_edge_f1` (0.4167) are unchanged. A default-on `ValueError`
+guard was added to `_generate_batch_once` (`model.twotower` v58→v59) so any
+future recipe that sets one of these five weights without
+`slot_contract_constrained_decode`/`template_fill_decode` fails loudly instead
+of silently no-opping; 7 new unit tests cover it. Strict v2 remains 0 in both
+arms and this `n=4` replay is diagnostic, not confirmatory, so no checkpoint
+was created for promotion or synced. Evidence:
+[narrative](iter-e617-slot-contract-decode-gap-20260720.md) and
+[JSON](iter-e617-slot-contract-decode-gap-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
