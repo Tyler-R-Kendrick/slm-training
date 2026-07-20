@@ -760,6 +760,25 @@
           "note": "initial registration; SLM-130 EFS3-05 canonical AST deduplication and valid semantic-mode coverage wiring/fixture harness"
         }
       ]
+    },
+    "harness.experiments.semantic_regret": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/semantic_regret_matrix.py",
+        "scripts/run_semantic_regret_fixture.py",
+        "tests/test_harnesses/experiments/test_semantic_regret_matrix.py",
+        "tests/test_scripts/test_run_semantic_regret_fixture.py",
+        "docs/design/iter-spv0-03-semantic-regret-20260719.json",
+        "docs/design/iter-spv0-03-semantic-regret-20260719.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration of semantic regret decomposition fixture harness (SLM-143)"
+        }
+      ]
     }
   }
 }
