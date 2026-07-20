@@ -520,12 +520,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-07-20",
+          "note": "add SLM-160 SPV4-02 causal architecture disposition docs/spec harness"
+        },
         {
           "version": "v34",
           "date": "2026-07-20",
@@ -1643,6 +1648,25 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-159 SPV4-01 cross-DSL semantic-plan replication wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm160_spv_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm160_spv_disposition.py",
+        "scripts/run_slm160_spv_disposition.py",
+        "tests/test_harnesses/experiments/test_slm160_spv_disposition.py",
+        "tests/test_scripts/test_run_slm160_spv_disposition.py",
+        "docs/design/iter-slm160-spv-disposition-20260720.json",
+        "docs/design/iter-slm160-spv-disposition-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-160 SPV4-02 causal architecture disposition docs/spec harness"
         }
       ]
     }

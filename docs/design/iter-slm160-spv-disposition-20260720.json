@@ -1,0 +1,274 @@
+{
+  "canonical_architecture_recommendation": "Canonical architecture remains the existing honest-slot-contract TwoTower decoder with all plan-aware mechanisms retained as default-off diagnostics. Do not promote or sync checkpoints from E575/E576/E579. Unblock flow/consistency (SLM-157) and second-pack portability only after their upstream dependencies are implemented and measured. The next high-leverage step is a factor-wise oracle-substitution matrix for topology/cardinality/bindings and a versioned hard-valid semantic-contrast corpus.",
+  "claim_class": "wiring",
+  "cross_pack_summary": "SPV4-02 audit covers semantic planning, valid-state init/search, scoring/supervision, generation factorization, and portability. All evidence up through SLM-159 is wiring/fixture, blocked, or measured-not-promotable. No mechanism satisfies the criteria for adopt_primary or adopt_optional. The GraphQL pack replication is a retained diagnostic; all second-pack portability is blocked pending real pack implementations.",
+  "evidence_cutoff_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
+  "experiment_id": "slm160-spv-disposition",
+  "generated_at": "2026-07-20T09:23:57.729755Z",
+  "matrix_set": "slm160_spv_disposition",
+  "matrix_version": "spv4-02-v1",
+  "mechanism_dispositions": [
+    {
+      "default_state": "n/a",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm146-semantic-plan-compiler-20260720.json"
+      ],
+      "falsifier": "A DSL pack cannot populate all factors from its schema/grammar, or the IR silently encodes OpenUI-specific assumptions.",
+      "hypothesis": "A pack-neutral SemanticPlanV1 IR captures archetype, role slots, topology, symbols, and bindings independently of DSL surface syntax.",
+      "issue_ids": [
+        "SLM-43",
+        "SLM-71",
+        "SLM-146"
+      ],
+      "mechanism_id": "semantic_plan_v1_ir",
+      "next_action": "Keep SemanticPlanV1 as the canonical plan contract; require predicted-plan evidence before promotion.",
+      "rationale": "Contract/spec artifact; no predictor claim. GraphQL pack demonstrates factor extraction, but predicted-plan generalization is unproven."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm144-plan-predictor-20260720.json",
+        "docs/design/iter-slm145-plan-predictor-factors-20260720.json"
+      ],
+      "falsifier": "Gold substitution of a factor does not lift downstream semantic metrics, or learned heads are no better than the frequency baseline.",
+      "hypothesis": "Learned archetype, role-set, topology, cardinality, and binding heads recover plan factors from the prompt better than frequency baselines and justify downstream semantic gains.",
+      "issue_ids": [
+        "SLM-144",
+        "SLM-145"
+      ],
+      "mechanism_id": "gold_oracle_factor_heads",
+      "next_action": "Run a factor-wise oracle-substitution matrix on a real or fixture completion corpus before reopening learned factor heads.",
+      "rationale": "Gold oracle arms provide diagnostic ceilings, but SLM-145 closed without factor-wise gold-substitution evidence for topology, cardinality, or bindings; learned heads are not justified."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm146-semantic-plan-compiler-20260720.json"
+      ],
+      "falsifier": "Plan-derived seeds are invalid, soft features alter the legal candidate set, or any non-certified prediction removes a supported candidate in a promotable arm.",
+      "hypothesis": "A deterministic plan compiler produces valid OpenUI seeds, attaches soft action features without changing legal membership, and gates hard restrictions behind certified evidence.",
+      "issue_ids": [
+        "SLM-146"
+      ],
+      "mechanism_id": "plan_seed_builder_soft_restrictions",
+      "next_action": "Integrate with live legal-set oracle and measured completion corpus before promoting beyond diagnostics.",
+      "rationale": "Fixture-only synthetic corpus; no production decoder. Unsafe predicted-hard arm is explicitly non-promotable."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm147-x22-retrieval-20260720.json",
+        "docs/design/iter-slm148-x22-conflict-campaign-20260720.json"
+      ],
+      "falsifier": "Retrieved prototypes are no closer to gold than the minimal seed, or recovery policies do not improve recovery while preserving correct structure.",
+      "hypothesis": "Leakage-safe retrieved hard-valid AST prototypes and conflict-localized repair initialize X22 closer to acceptable programs than a minimal seed.",
+      "issue_ids": [
+        "SLM-147",
+        "SLM-148"
+      ],
+      "mechanism_id": "x22_seed_retrieval_conflict_repair",
+      "next_action": "Evaluate on a real X22 beam-search decode loop with verifier replay before promotion.",
+      "rationale": "Fixture-only evidence; no live X22 model trained or decoded. Oracle and gold-plan arms are diagnostic ceilings only."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm154-legal-action-scorer-20260720.json",
+        "docs/design/iter-slm155-factorization-comparison-20260720.json"
+      ],
+      "falsifier": "X22 produces materially better semantic outcomes at comparable cost, or plan features silently alter legal candidate membership.",
+      "hypothesis": "Direct autoregressive scoring over the live legal action set matches or exceeds plan-conditioned X22 semantic quality at lower deployed cost.",
+      "issue_ids": [
+        "SLM-154",
+        "SLM-155"
+      ],
+      "mechanism_id": "ar_legal_action_scorer",
+      "next_action": "Wire real compiler-owned exact state and live legal sets before claiming a factorization winner.",
+      "rationale": "Wiring-only fixture; no live production decode loop and no ship readiness claim. SLM-154 explicitly labels itself fixture wiring."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-spv2-02-global-semantic-critic-20260720.json"
+      ],
+      "falsifier": "The critic cannot be trained on hard-valid contrasts, factor heads change energy semantics, or abstention is not fail-closed.",
+      "hypothesis": "A global energy-based critic can rerank candidate programs using pack-neutral semantic factors without leaking gold structure.",
+      "issue_ids": [
+        "SLM-150",
+        "SPV2-02"
+      ],
+      "mechanism_id": "global_semantic_critic",
+      "next_action": "Build or locate the hard-valid contrast corpus and rerun the critic fixture before promotion.",
+      "rationale": "Synthetic fixture corpus only; the SPV2-01 hard-valid contrast corpus is absent from the repo."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-spv0-03-semantic-regret-20260719.json",
+        "docs/design/iter-slm120-corruption-curriculum-20260719.json"
+      ],
+      "falsifier": "Contrasts do not isolate factor regret, or the corruption corpus leaks eval-suite examples.",
+      "hypothesis": "Hard-valid semantic contrasts expose factor-specific regret and near-solved corruption curricula that can supervise plan-aware models.",
+      "issue_ids": [
+        "SPV0-03",
+        "SLM-120"
+      ],
+      "mechanism_id": "hard_valid_contrasts",
+      "next_action": "Produce a versioned hard-valid semantic-contrast corpus with n-gram decontamination before using it for training.",
+      "rationale": "SPV0-03 is a fixture regret diagnostic; SLM-120 is a frontier curriculum plan. No production contrast corpus has been built."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-spv2-03-legal-set-distillation-20260720.json",
+        "docs/design/iter-spv2-04-dense-teacher-mixture-20260720.json"
+      ],
+      "falsifier": "Distillation collapses to the argmax, ignores illegal actions, or fails to transfer outside the synthetic fixture.",
+      "hypothesis": "Distilling the dense legal-action set and a teacher-mixture distribution improves data efficiency for small action spaces.",
+      "issue_ids": [
+        "SPV2-03",
+        "SPV2-04"
+      ],
+      "mechanism_id": "dense_legal_set_distillation",
+      "next_action": "Wire the external teacher scorer (SLM-108) and verifier replay before promoting distillation targets.",
+      "rationale": "Both SPV2-03 and SPV2-04 are fixture wiring only; no external teacher model, solver replay, or checkpoint training was performed."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-spv2-05-semantic-repair-20260720.json"
+      ],
+      "falsifier": "Repair policy success does not exceed edit-distance baselines, or it requires oracle counterfactual values to rank decisions.",
+      "hypothesis": "A learned semantic repair scorer selects verifier-backed counterfactual actions that recover valid programs from partial or corrupted seeds.",
+      "issue_ids": [
+        "SPV2-05"
+      ],
+      "mechanism_id": "semantic_repair",
+      "next_action": "Connect to VSS finite replay and measured counterfactual action values before production wiring.",
+      "rationale": "Wiring-only fixture baseline; real verifier-backed counterfactual action values require SLM-131/VSS finite replay."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm156-plan-refinement-20260720.json"
+      ],
+      "falsifier": "Recursion changes plans but not final correctness, or deeper non-shared matches it at equal FLOPs.",
+      "hypothesis": "A small shared refinement cell applied recursively to SemanticPlanV1 improves plan-factor recovery over a parameter-matched one-pass predictor.",
+      "issue_ids": [
+        "SLM-156"
+      ],
+      "mechanism_id": "plan_refinement_slm156",
+      "next_action": "Evaluate recursive refinement on a real decode loop with binding-aware meaning-v2 metrics.",
+      "rationale": "Fixture-only synthetic plan-state recovery; no downstream completion or ship-gate evidence."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm158-mixer-comparison-20260720.json"
+      ],
+      "falsifier": "All mixers perform identically on the workload, or simplified references cannot be trained stably enough to separate family effects from noise.",
+      "hypothesis": "A narrow sequence-mixer protocol with simplified reference implementations can expose whether non-Transformer mixers preserve task accuracy and improve latency/memory before productionizing a family.",
+      "issue_ids": [
+        "SLM-158"
+      ],
+      "mechanism_id": "mixer_slm158",
+      "next_action": "Run the mixer protocol on a representative OpenUI semantic decision task before selecting a production mixer family.",
+      "rationale": "Fixture-only synthetic token-pattern classifier; no OpenUI completion or ship-gate evidence."
+    },
+    {
+      "default_state": "blocked",
+      "disposition": "blocked",
+      "evidence_paths": [
+        "docs/design/iter-slm157-flow-consistency-20260720.json"
+      ],
+      "falsifier": "The layer has no measurable impact on verifier-call budget or semantic quality, or it requires SLM-99/148 infrastructure that is not yet implemented.",
+      "hypothesis": "A flow/consistency layer propagates plan constraints through the decode state to reject inconsistent partial programs early.",
+      "issue_ids": [
+        "SLM-157"
+      ],
+      "mechanism_id": "flow_consistency_slm157",
+      "next_action": "Implement SLM-99/SLM-148 dependencies, then create a fixture or measured matrix for flow/consistency before disposition review.",
+      "rationale": "Blocked: upstream dependencies SLM-99/SLM-148 are not done and no implementation exists. The evidence document is also absent. [Evidence missing at audit time: docs/design/iter-slm157-flow-consistency-20260720.json]"
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-slm159-cross-dsl-replication-20260720.json"
+      ],
+      "falsifier": "Plan factors cannot be defined from GraphQL schema/selection semantics, or the seed builder cannot reproduce schema-valid queries.",
+      "hypothesis": "Pack-neutral SemanticPlanV1 extraction and seed building transfer from OpenUI to GraphQL.",
+      "issue_ids": [
+        "SLM-159"
+      ],
+      "mechanism_id": "multi_pack_graphql",
+      "next_action": "Use GraphQL as the portability reference pack; keep replication as a diagnostic, not a production dependency.",
+      "rationale": "GraphQL replication fixture succeeds, but it is wiring-only with no predictor claim and no ship-gate evidence."
+    },
+    {
+      "default_state": "blocked",
+      "disposition": "blocked",
+      "evidence_paths": [
+        "docs/design/iter-slm159-cross-dsl-replication-20260720.json"
+      ],
+      "falsifier": "The second-pack candidates lack the grammar/parser/oracle/data contract required for non-toy replication.",
+      "hypothesis": "The same pack-neutral plan stack transfers to a structurally different second DSL pack (design-patterns, nomenclature, or ontology).",
+      "issue_ids": [
+        "SLM-159",
+        "SLM-44",
+        "SLM-45"
+      ],
+      "mechanism_id": "multi_pack_second_pack",
+      "next_action": "Implement a real second-pack grammar, oracle, and generator, then rerun the SLM-159 readiness rubric.",
+      "rationale": "No SLM-44 or SLM-45 pack is registered; only design documents exist. A syntax-only toy pack cannot satisfy the readiness rubric."
+    },
+    {
+      "default_state": "off",
+      "disposition": "retain_diagnostic",
+      "evidence_paths": [
+        "docs/design/iter-e575-prompt-semantic-plan-soft-20260720.json",
+        "docs/design/iter-e576-prompt-plan-binding-soft-20260720.json",
+        "docs/design/iter-e579-verified-plan-root-20260720.json"
+      ],
+      "falsifier": "Soft scoring changes legal candidate membership, regresses binding-aware meaning-v2, or fails to produce AgentV passes.",
+      "hypothesis": "Prompt-derived SemanticPlanV1 soft scoring at decode time can improve local structure without gold output structure.",
+      "issue_ids": [
+        "E575",
+        "E576",
+        "E579"
+      ],
+      "mechanism_id": "prompt_plan_soft_scoring_e575_e576_e579",
+      "next_action": "Keep the generalized soft scorers default-off for diagnostics; do not promote or sync a checkpoint until meaning-v2 and AgentV pass.",
+      "rationale": "E575/E576/E579 report local/structural gains but are explicitly not promotable: binding-aware meaning-v2 and AgentV remain zero."
+    }
+  ],
+  "rejected_or_blocked_ids": [
+    "flow_consistency_slm157",
+    "multi_pack_second_pack"
+  ],
+  "run_id": "slm160_disposition_fixture",
+  "schema": "SPVDispositionV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T09:23:57.730138Z",
+  "version_stamp": {
+    "code_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v35",
+      "harness.experiments.slm160_spv_disposition": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T09:23:57.729773+00:00"
+  }
+}
