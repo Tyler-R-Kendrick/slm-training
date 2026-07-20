@@ -525,12 +525,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-07-20",
+          "note": "add SLM-160 SPV4-02 causal architecture disposition docs/spec harness"
+        },
         {
           "version": "v34",
           "date": "2026-07-20",
@@ -1138,6 +1143,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1192,6 +1202,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1254,6 +1269,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1303,6 +1323,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1347,6 +1372,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1386,6 +1416,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1422,6 +1457,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
         },
         {
@@ -1453,6 +1493,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1512,6 +1557,11 @@
         "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1595,6 +1645,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-155 SPV3-02 matched AR vs plan-conditioned X22 factorization comparison wiring/fixture harness"
         }
       ]
@@ -1611,6 +1666,11 @@
         "docs/design/iter-slm156-plan-refinement-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1633,6 +1693,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness"
         }
       ]
@@ -1652,7 +1717,31 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: design artifact re-stamped after harness.experiments v35 bump; timestamp/version_stamp metadata only"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-159 SPV4-01 cross-DSL semantic-plan replication wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm160_spv_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm160_spv_disposition.py",
+        "scripts/run_slm160_spv_disposition.py",
+        "tests/test_harnesses/experiments/test_slm160_spv_disposition.py",
+        "tests/test_scripts/test_run_slm160_spv_disposition.py",
+        "docs/design/iter-slm160-spv-disposition-20260720.json",
+        "docs/design/iter-slm160-spv-disposition-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-160 SPV4-02 causal architecture disposition docs/spec harness"
         }
       ]
     }

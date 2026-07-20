@@ -840,6 +840,25 @@ The closeout report is at
 artifacts `docs/design/iter-slm145-plan-predictor-factors-20260720.json` and
 `.md`.
 
+## SPV4-02 causal architecture disposition (SLM-160)
+
+**Fidelity label: disposition audit / no new experiment.** SLM-160 closes the
+Semantic Planning & Valid-State Learning program by aggregating the preregistered
+hypotheses, oracle ceilings, matched experiments, semantic/cost results, cross-DSL
+evidence, and guarantee-boundary audits into explicit per-mechanism dispositions.
+It does not run a new architecture experiment and it does not override EFS/VSS/CAP/LDI
+dispositions.
+
+The audit finds that all SPV evidence up through SLM-159 is wiring/fixture,
+blocked, or measured-not-promotable. No mechanism satisfies the criteria for
+`adopt_primary` or `adopt_optional`. The canonical architecture remains the
+existing honest-slot-contract TwoTower decoder with all plan-aware mechanisms
+retained as default-off diagnostics.
+
+Evidence and machine-readable disposition artifact:
+[`iter-slm160-spv-disposition-20260720.md`](iter-slm160-spv-disposition-20260720.md)
+/ [`iter-slm160-spv-disposition-20260720.json`](iter-slm160-spv-disposition-20260720.json).
+
 ## Calculated arity, adaptive precision, and quantization (CAP0–CAP4)
 
 **Fidelity label: adapted / adjacent.** The CAP campaign uses coding-theoretic and

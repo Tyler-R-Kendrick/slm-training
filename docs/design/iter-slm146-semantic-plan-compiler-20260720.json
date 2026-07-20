@@ -192,15 +192,15 @@
   "run_id": "slm146_fixture",
   "schema": "Slm146PlanCompilerReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T05:06:58.883608Z",
+  "timestamp": "2026-07-20T09:23:31.393694Z",
   "version_stamp": {
-    "code_commit": "aabd36b658c0678152101fd97d6a8b1f8e18271d",
+    "code_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v31",
+      "harness.experiments": "v35",
       "harness.experiments.slm146_plan_compiler": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T05:06:58.882867+00:00"
+    "stamped_at": "2026-07-20T09:23:31.392894+00:00"
   }
 }

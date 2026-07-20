@@ -262,15 +262,15 @@
   "run_id": "slm156_fixture",
   "schema": "Slm156PlanRefinementReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T08:13:09.182162Z",
+  "timestamp": "2026-07-20T09:23:45.310464Z",
   "version_stamp": {
-    "code_commit": "43a114dd6ba68239c16b39fef5ad2b49e6c4370a",
+    "code_commit": "001349bcec2902cc4bd91ac1816a8d16a970101f",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v32",
+      "harness.experiments": "v35",
       "harness.experiments.slm156_plan_refinement": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T08:13:09.181425+00:00"
+    "stamped_at": "2026-07-20T09:23:45.309673+00:00"
   }
 }
