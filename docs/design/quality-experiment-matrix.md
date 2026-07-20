@@ -2968,6 +2968,17 @@ weight 0 as the decisive head on/off ablation. No checkpoint was created.
 Evidence: [narrative](iter-e566-slot-component-decode2-20260720.md) and
 [JSON](iter-e566-slot-component-decode2-20260720.json).
 
+## E567 slot-component decode weight 0
+
+Disabling E561's learned slot-component head drops matched OOD `n=4` fidelity
+to 0.5333, structure to 0.2194, recall to 0.0833, reward to 0.4110, and
+AST-node F1 to 0.2292. Meaning-v1/v2 remain 0 and AgentV remains 0/1.
+**Decision:** the head helps non-semantic quality but is not the missing
+semantic mechanism; retain weight 4 and close this ladder. No checkpoint was
+created. Evidence:
+[narrative](iter-e567-slot-component-decode0-20260720.md) and
+[JSON](iter-e567-slot-component-decode0-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
