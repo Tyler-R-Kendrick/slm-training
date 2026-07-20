@@ -101,6 +101,7 @@ Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
 
 | Date (UTC) | Run | Sync? | Notes |
 | --- | --- | --- | --- |
+| 2026-07-20 | `e559-e544-owner-coverage2-r1-24s` | No (`--no-sync-checkpoints`) | 31.14s under `max_wall_minutes=3`, SHA `1d11926d6784cac62f6d65249030be9b392d0f185e59b1a4212d9f0ff9aac861`; fidelity/recall improve but reward and semantic gates fail. |
 | 2026-07-20 | `e558-e544-owner-coverage-r2-24s` | No (`--no-sync-checkpoints`) | 43.74s under `max_wall_minutes=3`, SHA `a45909dffd103df353bff944aedbafa1e386b2bf657c5dc02f2d956e06381ede`; fidelity improves but structure/reward and semantic gates fail. |
 | 2026-07-20 | `e558-e544-owner-coverage-r1-24s` | No (`--no-sync-checkpoints`) | 43.31s under `max_wall_minutes=3`, SHA `8a572738407301a9b27aeba52f88942c5c86c101fee8638034108cd01de85382`; dirty-tree engineering trial excluded from decisions. |
 | 2026-07-20 | `e557-e544-slot-pair-balance1-r1-24s` | No (`--no-sync-checkpoints`) | 70.09s under `max_wall_minutes=3`, SHA `438d9871bc8389f6d61d4f3e357d56d280a22aafa26962404f6c47c92b97db05`; metric-identical to E555 and semantic gates fail. |

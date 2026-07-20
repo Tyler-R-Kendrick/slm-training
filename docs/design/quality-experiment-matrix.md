@@ -2886,6 +2886,16 @@ the sampler, reject the checkpoint, and test 2× exposure. Evidence:
 [narrative](iter-e558-owner-coverage-20260720.md) and
 [JSON](iter-e558-owner-coverage-20260720.json).
 
+## E559 twofold rare slot-owner coverage
+
+Reducing the rare-owner multiplier 4×→2× yields OOD `n=4` fidelity 0.4417,
+component recall 0.2708, structure 0.1085, AST-node F1 0.2048, and AST-edge F1
+0.0648. Fidelity and recall beat E555, but meaning-v1/v2 remain 0, reward falls
+to 0.1643, and AgentV remains 0/1. **Decision:** reject the checkpoint and
+narrow eligibility to owner labels observed at most four times. Evidence:
+[narrative](iter-e559-owner-coverage2-20260720.md) and
+[JSON](iter-e559-owner-coverage2-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
