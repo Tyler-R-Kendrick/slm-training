@@ -1,8 +1,8 @@
 # SLM-139 / EFS4-03: Stochastic recursive width gate closeout (slm139_gate_closeout)
 
-Matrix set: `slm139-stochastic-recursive-width`
-Version: `slm139-v1`
-Status: **closeout**
+Matrix set: `slm139-stochastic-recursive-width`  
+Version: `slm139-v1`  
+Status: **closeout**  
 Decision: **no_supported_probabilistic_regime**
 
 ## Activation gate assessment

@@ -48,12 +48,12 @@
   "run_id": "slm145_gate_closeout",
   "status": "closeout",
   "version_stamp": {
-    "code_commit": "685a506f42f6d246036f1c939c9cb1f0da89a8c4",
+    "code_commit": "aabd36b658c0678152101fd97d6a8b1f8e18271d",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v29"
+      "harness.experiments": "v31"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T04:03:41.370711+00:00"
+    "stamped_at": "2026-07-20T05:06:58.851741+00:00"
   }
 }

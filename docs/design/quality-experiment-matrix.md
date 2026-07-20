@@ -3115,6 +3115,45 @@ Evidence:
 [narrative](iter-slm147-x22-retrieval-20260720.md) and
 [JSON](iter-slm147-x22-retrieval-20260720.json).
 
+## SLM-148 / SPV1-05 — plan-conditioned X22 × conflict-slice campaign
+
+First wiring campaign for the staged seed × recovery factorial combining
+SLM-144/145 plan predictors, SLM-146 plan-to-seed compiler, SLM-147
+leakage-safe retrieval, and SLM-113 conflict-slice repair. The fixture runs on
+the same CPU-only corpus as SLM-147 (`n_train=51`, `n_val=13`, seed 0) and
+compares seed validity, seed-to-gold distance, component coverage, and
+synthetic conflict-recovery metrics across all preregistered arms.
+
+Screening results (mean over seeds 0–2):
+
+| Arm | Mean seed-to-gold ratio | Mean component coverage |
+| --- | --- | --- |
+| S0 minimal seed | 0.621 | 0.453 |
+| S1 frequency prior | 0.322 | 0.522 |
+| S2 learned archetype + role set | 0.621 | 0.453 |
+| S3 learned full plan | 0.411 | 0.528 |
+| S4 gold binding factor (diagnostic) | 0.621 | 0.453 |
+| S5 gold plan oracle (diagnostic) | 0.411 | 1.000 |
+| S6 retrieved prototype | 0.851 | 0.387 |
+| S7 plan-reranked retrieval | 0.851 | 0.387 |
+
+All promotable seed arms survived screening (every seed was hard-valid). The
+gold/oracle seed arms are explicitly non-promotable. Recovery arms were crossed
+with the survivors; conflict-slice and full-remask policies run deterministically
+on synthetic analyzer slices, with oracle-recovery arms marked diagnostic.
+No GPU X22 checkpoint or AgentV evaluation was run; these numbers are
+wiring-only distance/recovery diagnostics, not ship-gate claims.
+
+**Decision:** the staged factorial harness is wired. Retrieved/plan-reranked
+prototypes reach the highest seed-to-gold ratio on this fixture, but the corpus
+is too small to separate plan prediction from retrieval. A frontier run with a
+trained X22 checkpoint, SLM-111 beam/depth points, a real conflict analyzer, and
+AgentV evaluation is required before any quality claim.
+
+Evidence:
+[narrative](iter-slm148-x22-conflict-campaign-20260720.md) and
+[JSON](iter-slm148-x22-conflict-campaign-20260720.json).
+
 ## E576 prompt-plan binding soft scorer
 
 E576 soft-ranks legal unused terminal-root references whose already-generated

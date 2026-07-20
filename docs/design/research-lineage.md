@@ -805,6 +805,27 @@ retrieved prototypes shorten the valid-state search path relative to the generic
 minimal X22 seed, leaving the full quality/cost frontier to a later frontier run.
 Evidence: [`iter-slm147-x22-retrieval-20260720.md`](iter-slm147-x22-retrieval-20260720.md).
 
+## SPV1-05 plan-conditioned X22 × conflict-slice campaign (SLM-148)
+
+**Fidelity label: wiring / fixture only.** SLM-148 wires the staged seed ×
+recovery factorial requested by SPV1-05. It combines the SLM-144/145 plan
+predictor, the SLM-146 `OpenUISemanticPlanCompiler`, the SLM-147 leakage-safe
+retrieved-prototype index, and the SLM-113 conflict-slice repair policies into a
+single campaign harness. Seed strategies cover minimal X22, frequency/archetype
+prior, learned archetype+role-set, fully learned plan, a gold-factor diagnostic,
+full gold-plan oracle, retrieved prototype, and plan-reranked retrieval.
+Recovery arms include no recovery, full remask, suffix rollback, conflict-slice
+localized revision, and an oracle-conflict diagnostic.
+
+This is a wiring campaign only: no X22 checkpoint is trained or decoded, no live
+conflict analyzer exists yet, no AgentV evaluation is run, and no ship-gate claim
+is made. It validates that every preregistered seed source can compile to a
+hard-valid initial state, that recovery policies can be applied to those states
+with deterministic bookkeeping, and that gold/oracle arms are correctly flagged
+non-promotable. The full causal bottleneck classification requires a trained X22
+checkpoint, SLM-111 beam/depth points, a real analyzer, and AgentV evaluation.
+Evidence: [`iter-slm148-x22-conflict-campaign-20260720.md`](iter-slm148-x22-conflict-campaign-20260720.md).
+
 ## SPV1 plan-predictor factor gates (SLM-145) — closed
 
 SLM-145 asked for learned topology, cardinality, and live-symbol pointer heads
