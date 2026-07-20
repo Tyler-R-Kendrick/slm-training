@@ -1853,6 +1853,24 @@ def test_e607_root_trace_run_is_persisted_without_new_checkpoint(
     assert run_id not in checkpoints
 
 
+def test_e608_root_margin_run_is_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e608-e607-rootmargin2-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    assert run["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.75
+    assert run["scoreboard"]["suites"]["ood"]["reward_score"] == 0.67875
+    assert run["scoreboard"]["agentv"]["passed"] == 0
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

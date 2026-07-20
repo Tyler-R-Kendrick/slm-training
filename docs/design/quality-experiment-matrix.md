@@ -3773,3 +3773,15 @@ exact validation. Strict v2 remains 0, AgentV is 0/1, and no checkpoint was
 created or synced. Evidence:
 [narrative](iter-e607-semantic-plan-root-trace-20260720.md) and
 [JSON](iter-e607-semantic-plan-root-trace-20260720.json).
+
+## E608 verifier-approved semantic-plan root margin
+
+E608 floors every verifier-approved root/completion token two points above the
+best legal score. The matched OOD `n=4` run completes normally: verified Stack
+roots become reachable, meaningful-v1 improves 0.50→0.75, and structure
+improves 0.5756→0.6698. Reject promotion: strict v2 remains 0, placeholder
+validity regresses 0.755→0.660, reward regresses 0.8145→0.6788, gallery has
+zero reward, and required components/placeholders remain missing. AgentV is
+0/1. No checkpoint was created or synced. Evidence:
+[narrative](iter-e608-semantic-plan-root-margin-20260720.md) and
+[JSON](iter-e608-semantic-plan-root-margin-20260720.json).
