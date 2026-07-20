@@ -301,6 +301,42 @@ def test_visible_semantic_roles_gate_unmatched_learned_slot_bias() -> None:
     assert bias.tolist() == [4.0, 0.0]
 
 
+def test_visible_semantic_roles_abstain_with_incomplete_remaining_coverage() -> None:
+    from types import MethodType
+
+    model = _model(
+        slot_component_decode_weight=2.0,
+        semantic_role_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    component_ids = model._component_inventory_token_ids()
+    button_index = component_ids.index(tokenizer.token_to_id["Button"])
+
+    def logits(self, slots, context, pad_mask, context_rows, next_slots=None):
+        rows = torch.zeros(
+            (len(slots), len(component_ids)),
+            dtype=context.dtype,
+            device=context.device,
+        )
+        rows[:, button_index] = 3.0
+        return rows
+
+    model._slot_component_logits = MethodType(logits, model)
+    ctx, ctx_pad = model._encode_context(["title modal with body"])
+    bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id],
+        (tokenizer.token_to_id["Modal"], tokenizer.token_to_id["Button"]),
+        ("component_bound", "component_bound"),
+        [":modal.title", ":modal.body"],
+        {":modal.title": ("Modal",), ":modal.body": ()},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [4.0, 6.0]
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

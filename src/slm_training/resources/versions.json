@@ -697,7 +697,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -708,6 +708,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-20",
+          "note": "abstain from visible-role gating unless every remaining slot has at least one honest role-family candidate"
+        },
         {
           "version": "v21",
           "date": "2026-07-20",
