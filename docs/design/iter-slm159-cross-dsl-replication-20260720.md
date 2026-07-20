@@ -37,7 +37,7 @@ Plan factors cannot be defined from GraphQL's schema/selection semantics, the se
 
 | Arm | Seed | Records | Extraction | Seed validity | Round-trip | Latency ms |
 | --- | --- | --- | --- | --- | --- | --- |
-| G1_graphql | 0 | 4 | 1.00 | 1.00 | 1.00 | 198.170 |
+| G1_graphql | 0 | 4 | 1.00 | 1.00 | 1.00 | 200.106 |
 | S1_second_pack | 0 | 0 | 0.00 | 0.00 | 0.00 | 0.000 |
 
 ## Verdict

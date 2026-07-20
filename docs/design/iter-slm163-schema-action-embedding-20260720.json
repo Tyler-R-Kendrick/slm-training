@@ -96,7 +96,7 @@
         "source=expanded_description",
         "fixture-only: hash-based encoder, no learned model"
       ],
-      "rare_common_centroid_distance": 0.5960613489151001,
+      "rare_common_centroid_distance": 0.5960612893104553,
       "seed": 0,
       "sibling_separation": 0.9253331422805786,
       "source": "expanded_description"
@@ -111,7 +111,7 @@
         "source=shuffled",
         "fixture-only: hash-based encoder, no learned model"
       ],
-      "rare_common_centroid_distance": 0.6596933603286743,
+      "rare_common_centroid_distance": 0.6596933007240295,
       "seed": 0,
       "sibling_separation": 1.0152247548103333,
       "source": "shuffled"
@@ -120,15 +120,15 @@
   "run_id": "slm163-schema-action-embedding-20260720",
   "schema": "Slm163SchemaActionEmbeddingReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T11:43:53.546122Z",
+  "timestamp": "2026-07-20T12:14:45.377989Z",
   "version_stamp": {
-    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v40",
+      "harness.experiments": "v41",
       "harness.experiments.slm163_schema_action_embedding": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T11:43:53.545622+00:00"
+    "stamped_at": "2026-07-20T12:14:45.377537+00:00"
   }
 }

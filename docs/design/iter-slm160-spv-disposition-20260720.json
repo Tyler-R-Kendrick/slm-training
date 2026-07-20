@@ -2,9 +2,9 @@
   "canonical_architecture_recommendation": "Canonical architecture remains the existing honest-slot-contract TwoTower decoder with all plan-aware mechanisms retained as default-off diagnostics. Do not promote or sync checkpoints from E575/E576/E579. Unblock flow/consistency (SLM-157) and second-pack portability only after their upstream dependencies are implemented and measured. The next high-leverage step is a factor-wise oracle-substitution matrix for topology/cardinality/bindings and a versioned hard-valid semantic-contrast corpus.",
   "claim_class": "wiring",
   "cross_pack_summary": "SPV4-02 audit covers semantic planning, valid-state init/search, scoring/supervision, generation factorization, and portability. All evidence up through SLM-159 is wiring/fixture, blocked, or measured-not-promotable. No mechanism satisfies the criteria for adopt_primary or adopt_optional. The GraphQL pack replication is a retained diagnostic; all second-pack portability is blocked pending real pack implementations.",
-  "evidence_cutoff_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+  "evidence_cutoff_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
   "experiment_id": "slm160-spv-disposition",
-  "generated_at": "2026-07-20T11:43:53.494955Z",
+  "generated_at": "2026-07-20T12:14:45.327300Z",
   "matrix_set": "slm160_spv_disposition",
   "matrix_version": "spv4-02-v1",
   "mechanism_dispositions": [
@@ -260,15 +260,15 @@
   "run_id": "slm160_disposition_fixture",
   "schema": "SPVDispositionV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T11:43:53.495290Z",
+  "timestamp": "2026-07-20T12:14:45.327821Z",
   "version_stamp": {
-    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v40",
+      "harness.experiments": "v41",
       "harness.experiments.slm160_spv_disposition": "v2"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T11:43:53.494964+00:00"
+    "stamped_at": "2026-07-20T12:14:45.327327+00:00"
   }
 }

@@ -157,6 +157,12 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "teacher_init_embeddings",
         "action_embedding_init",
         "action_embedding_train",
+        "semantic_connector",
+        "connector_hidden_dim",
+        "connector_rank",
+        "connector_n_queries",
+        "connector_freeze_encoder",
+        "train_scope",
         "legal_margin_mode",
         "targeted_margin_manifest",
         "targeted_margin_value",
@@ -554,6 +560,14 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
         action_embedding_init=getattr(config, "action_embedding_init", "none"),
         action_embedding_train=getattr(config, "action_embedding_train", "frozen"),
+        semantic_connector=str(getattr(config, "semantic_connector", "none") or "none"),
+        connector_hidden_dim=int(getattr(config, "connector_hidden_dim", 256) or 256),
+        connector_rank=int(getattr(config, "connector_rank", 32) or 32),
+        connector_n_queries=int(getattr(config, "connector_n_queries", 4) or 4),
+        connector_freeze_encoder=bool(
+            getattr(config, "connector_freeze_encoder", True)
+        ),
+        train_scope=str(getattr(config, "train_scope", "current") or "current"),
         runtime_symbol_features=getattr(config, "runtime_symbol_features", "none"),
         symbol_slot_augmentation=bool(
             getattr(config, "symbol_slot_augmentation", False)

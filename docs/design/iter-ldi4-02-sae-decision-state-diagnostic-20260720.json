@@ -118,12 +118,12 @@
   "site": "denoiser.block.0.residual",
   "status": "plan_only",
   "version_stamp": {
-    "code_commit": "fb82090844ae637e545d57764a475e82d2606cd0",
+    "code_commit": "f078aa1cdf5ce95b9644c1f706ea6f2ec4a1f21a",
     "code_dirty": true,
     "components": {
       "harness.representations": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T11:43:23.044231+00:00"
+    "stamped_at": "2026-07-20T12:14:15.659715+00:00"
   }
 }

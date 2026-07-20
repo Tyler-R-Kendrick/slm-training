@@ -302,6 +302,15 @@ class ModelBuildConfig:
     # SLM-163: action-embedding initialization source and trainability.
     action_embedding_init: str = "none"
     action_embedding_train: str = "frozen"
+    # SLM-166 (SDE1-04): semantic connector between frozen context encoder and
+    # sparse grammar-action scorer.  ``none`` is identity and preserves behavior.
+    semantic_connector: str = "none"  # none | linear | low_rank | cross_attention
+    connector_hidden_dim: int = 256
+    connector_rank: int = 32
+    connector_n_queries: int = 4
+    connector_freeze_encoder: bool = True
+    # current | connector_only | connector_plus_action_residuals | small_model
+    train_scope: str = "current"
     runtime_symbol_features: str = "none"  # none | surface | role_gated | replace (C2)
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
