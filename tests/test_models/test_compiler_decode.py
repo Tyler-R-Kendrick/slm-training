@@ -485,6 +485,41 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
     )
 
 
+def test_slot_coverage_close_bias_rejects_wrong_owner_direct_slot() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["-"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Button",
+                arg_index=0,
+                schemas=({"type": "string"},),
+                close="-",
+            )
+        ]
+    )
+
+    assert (
+        model._slot_coverage_close_bias(
+            state,
+            [tokenizer.bos_id],
+            (slot_id, close_id),
+            torch.tensor([1.0, 5.0]),
+            [":auth.email"],
+            {":auth.email": ("Input",)},
+        )
+        is None
+    )
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 

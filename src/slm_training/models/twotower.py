@@ -4987,8 +4987,8 @@ class TwoTowerModel(nn.Module):
             OPEN_PREFIX,
         )
 
-        missing_ids = {
-            int(self.tokenizer.sym_id(index)) for index, _slot in missing
+        missing_slots_by_id = {
+            int(self.tokenizer.sym_id(index)): slot for index, slot in missing
         }
         properties_by_slot = semantic_role_properties(
             [slot for _index, slot in missing]
@@ -5025,8 +5025,10 @@ class TwoTowerModel(nn.Module):
             if token_id == close_id:
                 continue
             token = str(self.tokenizer.id_to_token.get(token_id, ""))
-            if token_id in missing_ids:
-                targets.append(position)
+            if token_id in missing_slots_by_id:
+                slot = missing_slots_by_id[token_id]
+                if not semantic_role_candidates or owner_matches(slot):
+                    targets.append(position)
                 continue
             if token.startswith(OPEN_PREFIX):
                 component = token[len(OPEN_PREFIX) :]

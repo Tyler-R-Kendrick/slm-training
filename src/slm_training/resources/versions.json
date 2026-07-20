@@ -1377,7 +1377,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1392,6 +1392,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-20",
+          "note": "E621: require public-schema owner compatibility before a direct visible-slot continuation can outrank frame closure"
+        },
         {
           "version": "v60",
           "date": "2026-07-20",
