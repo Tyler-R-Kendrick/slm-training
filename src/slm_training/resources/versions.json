@@ -1396,6 +1396,23 @@
           "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
+    },
+    "model.global_semantic_critic": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/global_semantic_critic.py",
+        "src/slm_training/models/global_semantic_critic_selector.py",
+        "tests/test_models/test_global_semantic_critic.py",
+        "tests/test_models/test_global_semantic_critic_selector.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-150 SPV2-02 global semantic energy/value critic baseline wiring/fixture harness"
+        }
+      ]
     }
   }
 }
