@@ -236,6 +236,7 @@ class TwoTowerConfig:
     slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
     semantic_role_decode_weight: float = 0.0
+    schema_value_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
     semantic_plan_root_decode_weight: float = 0.0
@@ -4118,6 +4119,51 @@ class TwoTowerModel(nn.Module):
                     applied = True
         return bias if applied else None
 
+    def _schema_value_bias(
+        self,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Discourage visible placeholders in enum-valued component arguments."""
+        weight = float(
+            getattr(self.config, "schema_value_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not frames:
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        if (
+            getattr(frame, "kind", None) != "component"
+            or index < 0
+            or index >= len(schemas)
+            or not self._schema_contains_enum(schemas[index])
+        ):
+            return None
+        from slm_training.dsl.production_codec import SLOT_PREFIX
+
+        bias = scores.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if token.startswith(SLOT_PREFIX):
+                bias[position] = -weight
+                applied = True
+        return bias if applied else None
+
+    @staticmethod
+    def _schema_contains_enum(schema: dict[str, Any]) -> bool:
+        if schema.get("enum"):
+            return True
+        return any(
+            TwoTowerModel._schema_contains_enum(dict(option))
+            for key in ("anyOf", "oneOf")
+            for option in schema.get(key, ())
+            if isinstance(option, dict)
+        )
+
     def _semantic_plan_binding_bias(
         self,
         row: int,
@@ -5820,6 +5866,11 @@ class TwoTowerModel(nn.Module):
                             stats.slot_component_choice_changes += int(
                                 int(scores.argmax().item()) != before_slot
                             )
+                    schema_value_bias = self._schema_value_bias(
+                        states[row], candidate_ids, scores
+                    )
+                    if schema_value_bias is not None:
+                        scores = scores + schema_value_bias
                     semantic_plan_bias = self._semantic_plan_bias(
                         row,
                         candidate_ids,

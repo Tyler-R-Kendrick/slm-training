@@ -337,6 +337,28 @@ def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> N
     assert bias.tolist() == [4.0, 6.0]
 
 
+def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
+    from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_value_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Button"])
+    slot_id = tokenizer.sym_id(1)
+    close_id = tokenizer.token_to_id[CLOSE]
+    scores = torch.zeros(2)
+
+    assert model._schema_value_bias(state, (slot_id, close_id), scores) is None
+    assert state.advance_id(tokenizer.sym_id(0))
+    assert model._schema_value_bias(state, (slot_id, close_id), scores) is None
+    assert state.advance_id(tokenizer.token_to_id[f"{LIT_PREFIX}null"])
+    bias = model._schema_value_bias(state, (slot_id, close_id), scores)
+
+    assert bias is not None
+    assert bias.tolist() == [-4.0, 0.0]
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
