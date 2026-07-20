@@ -3801,6 +3801,21 @@ construction. AgentV is 0/1. No checkpoint was created or synced. Evidence:
 [narrative](iter-e609-eval-canvas-contract-20260720.md) and
 [JSON](iter-e609-eval-canvas-contract-20260720.json).
 
+## E610 repeated-plan-family array closure
+
+E610 margin-closes nested arrays after one item only when they are owned by a
+prompt-plan family with multiple required instances. Dashboard retains both
+Cards in its verified root while shrinking 163→60 output symbols and recovering
+reward 0→0.865. Aggregate meaningful-v1 rises 0.50→0.75, structure
+0.6667→0.7646, reward 0.4835→0.6998, and p95 latency falls 29.61→12.98 s.
+Fidelity and validity dip 0.70→0.65 and 0.72→0.69 versus E609, so the strict
+no-regression condition fails; both remain above E608 while every other core
+quality metric also improves or matches E608. Retain the default-off lever as
+the next scratch baseline, not a promotion. Strict v2 remains 0, gallery is
+still empty, AgentV is 0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e610-repeated-plan-array-close-20260720.md) and
+[JSON](iter-e610-repeated-plan-array-close-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

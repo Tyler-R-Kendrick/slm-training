@@ -152,6 +152,15 @@ def test_choice_state_rejects_unavailable_slots_and_forward_refs(
     assert tok.token_to_id["&0"] not in state.allowed_ids(8)
 
 
+def test_choice_state_counts_completed_variadic_items(tok: ChoiceTokenizer) -> None:
+    state = ChoiceDecodeState(tok, slot_count=1)
+    for token in ("+Card", "[", "+TextContent", "@0", "-"):
+        assert state.advance_id(tok.token_to_id[token])
+
+    assert state.frames[-1].kind == "variadic"
+    assert state.frames[-1].item_count == 1
+
+
 def test_choice_state_rejects_unbound_names_as_expressions(
     tok: ChoiceTokenizer,
 ) -> None:
