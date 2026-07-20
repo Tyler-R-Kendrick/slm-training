@@ -515,12 +515,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-07-20",
+          "note": "add SLM-159 SPV4-01 cross-DSL semantic-plan replication wiring/fixture harness"
+        },
         {
           "version": "v33",
           "date": "2026-07-20",
@@ -1603,6 +1608,25 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm159_cross_dsl_replication": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm159_cross_dsl_replication.py",
+        "scripts/run_slm159_cross_dsl_replication_fixture.py",
+        "tests/test_harnesses/experiments/test_slm159_cross_dsl_replication.py",
+        "tests/test_scripts/test_run_slm159_cross_dsl_replication_fixture.py",
+        "docs/design/iter-slm159-cross-dsl-replication-20260720.json",
+        "docs/design/iter-slm159-cross-dsl-replication-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-159 SPV4-01 cross-DSL semantic-plan replication wiring/fixture harness"
         }
       ]
     }
