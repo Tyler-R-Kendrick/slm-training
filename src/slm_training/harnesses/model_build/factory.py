@@ -164,6 +164,12 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "connector_n_queries",
         "connector_freeze_encoder",
         "train_scope",
+        "pointer_mode",
+        "pointer_candidate_source",
+        "pointer_hidden_dim",
+        "pointer_heads",
+        "pointer_temperature",
+        "pointer_dropout",
         "legal_margin_mode",
         "targeted_margin_manifest",
         "targeted_margin_value",
@@ -572,6 +578,14 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "connector_freeze_encoder", True)
         ),
         train_scope=str(getattr(config, "train_scope", "current") or "current"),
+        pointer_mode=str(getattr(config, "pointer_mode", "legacy_tokens") or "legacy_tokens"),
+        pointer_candidate_source=str(
+            getattr(config, "pointer_candidate_source", "structured_contract") or "structured_contract"
+        ),
+        pointer_hidden_dim=int(getattr(config, "pointer_hidden_dim", 256) or 256),
+        pointer_heads=int(getattr(config, "pointer_heads", 4) or 4),
+        pointer_temperature=float(getattr(config, "pointer_temperature", 1.0) or 1.0),
+        pointer_dropout=float(getattr(config, "pointer_dropout", 0.0) or 0.0),
         runtime_symbol_features=getattr(config, "runtime_symbol_features", "none"),
         symbol_slot_augmentation=bool(
             getattr(config, "symbol_slot_augmentation", False)

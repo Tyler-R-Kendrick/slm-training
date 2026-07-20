@@ -550,12 +550,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v42",
+      "version": "v43",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v43",
+          "date": "2026-07-20",
+          "note": "add SLM-168 public structured contract-index pointer wiring/fixture harness"
+        },
         {
           "version": "v42",
           "date": "2026-07-20",
@@ -982,6 +987,25 @@
         }
       ]
     },
+    "harness.experiments.slm168_public_structured_contract_pointer": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm168_public_structured_contract_pointer.py",
+        "scripts/run_slm168_public_structured_contract_pointer_fixture.py",
+        "tests/test_harnesses/experiments/test_slm168_public_structured_contract_pointer.py",
+        "tests/test_scripts/test_run_slm168_public_structured_contract_pointer_fixture.py",
+        "docs/design/iter-slm168-public-structured-contract-pointer-20260720.json",
+        "docs/design/iter-slm168-public-structured-contract-pointer-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-168 public structured contract-index pointer wiring/fixture harness"
+        }
+      ]
+    },
     "matrix.causal_peft_ftpo": {
       "version": "v1",
       "kind": "matrix",
@@ -1011,11 +1035,12 @@
       ]
     },
     "model.twotower": {
-      "version": "v46",
+      "version": "v47",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/semantic_connector.py",
+        "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/template_fill.py",
         "src/slm_training/data/quality.py",
@@ -1025,6 +1050,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v47",
+          "date": "2026-07-20",
+          "note": "record bounded score decomposition for verifier-approved semantic-plan root tokens atop default-off SLM-168 pointer plumbing"
+        },
         {
           "version": "v46",
           "date": "2026-07-20",
