@@ -62,6 +62,17 @@ def test_decode_stats_aggregates_root_reference_arity_counts() -> None:
     assert summary["root_reference_arity_choice_changes_sum"] == 2.0
 
 
+def test_decode_stats_aggregates_required_slot_margin_counts() -> None:
+    """E627: root-cause instrumentation counters for E626's required_slot_margin_decode_weight."""
+    stats = DecodeStats(
+        required_slot_margin_applications=5,
+        required_slot_margin_choice_changes=4,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["required_slot_margin_applications_sum"] == 5.0
+    assert summary["required_slot_margin_choice_changes_sum"] == 4.0
+
+
 def test_decode_stats_aggregates_dead_end_traces() -> None:
     stats = DecodeStats(constrained_dead_end_traces=[{"position": 1}])
     assert aggregate_stats([stats])["constrained_dead_end_traces"] == [{"position": 1}]

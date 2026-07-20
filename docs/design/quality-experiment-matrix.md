@@ -4246,3 +4246,70 @@ Evidence:
 [iter-e626-required-slot-margin-decode-weight-20260720.md](iter-e626-required-slot-margin-decode-weight-20260720.md)
 and
 [JSON](iter-e626-required-slot-margin-decode-weight-20260720.json).
+
+## E627 root-causing why margin=6 hijacks Dashboard's root
+
+E627 picks E626's deferred root-cause trace (not the powered multi-seed
+sweep, still open). Added observability only —
+`DecodeStats.required_slot_margin_applications`/`_choice_changes` counters and
+`TwoTowerModel._record_required_slot_margin_trace`, a bounded
+`constrained_selection_traces` entry per fire recording `frame_depth` (via the
+existing `_choice_phase_evidence` helper), before/after argmax token + grammar
+kind, and a `hijacked_non_slot_candidate` flag — following the repo's existing
+`_record_semantic_plan_root_trace` pattern exactly. No bias formula or default
+changed (`model.twotower` stays v60, `no-bump:` history entry).
+
+Reused E626's own already-trained scratch checkpoint verbatim (no retrain) and
+replayed its exact matched recipe with `--eval-limit 1` on `ood_dashboard_01`
+(record 0 of the `ood` suite — the exact record E626 reported collapsing),
+varying only `required_slot_margin_decode_weight` in `{0, 2, 6}`. All three
+reproduce E626's own per-record predictions for this record exactly, then the
+new traces are read directly:
+
+At margin=6, all 5 `required_slot_margin` fires happen at `frame_depth==0`
+(no component frame open yet — a fresh top-level statement's value), 3 of 5
+flipping the argmax away from a real component candidate (`+Image`,
+`+Callout`) or a literal to a bare slot token. The grammar legally allows a
+bare visible-slot token as a complete top-level statement value — an
+alternative production to opening a real component — and the bias's "still
+missing anywhere in the prefix" criterion is true for every required slot at
+decode start, so it fires with maximum force at the very first few statement
+positions. The model front-loads all 5 required slots into degenerate
+one-token `name = @N` statements in the first 5 decode positions before any
+real component tree exists; the lever then goes permanently silent (nothing
+left missing) for the remaining ~150 tokens, which do build a plausible
+Callout/Card/Card/Stack/Button tree — but whichever statement gets serialized
+as `root` was already decided in the corrupted opening stretch, so the real
+structure ends up as dead code the compiler drops. At margin=2, the *same*
+`frame_depth==0` competition is legal at the same position and the bias does
+win its own local before/after comparison there too — but the fixed, active
+`semantic_plan_root_margin_decode_weight=2`/`semantic_plan_root_decode_weight=8`
+biases, applied *later* in the same per-position bias stack
+(`required_slot_margin_bias` runs before `semantic_plan_bias`), push the score
+back above the floored slot token before the position's final `argmax()` is
+taken, so the emitted token is still the real component.
+
+**Answering E626's own framing directly:** not a scope leak in the sense of
+the bias ever scoring a non-slot candidate — it never does, and is exactly as
+narrowly scoped as designed. The leak is structural: the grammar makes a bare
+slot token a legal substitute for opening a component at the *same* decode
+position, and whether the intended behavior or this degenerate pass-through
+wins is decided purely by whether `required_slot_margin_decode_weight`
+exceeds the combined magnitude of the downstream `semantic_plan_root*`
+correction biases that run later in the same stack — not by base-logit
+strength and not by an unbounded scoping gap. A well-specified next code
+change (not attempted here): run `required_slot_margin_bias` after
+`semantic_plan_bias` in the stack, or exclude `frame_depth==0` candidates from
+its target set, then re-run this same trace to confirm the hijack disappears.
+
+This is a single-record (`n=1`), one-checkpoint causal trace, not a quality
+confirmation — E626's own `n=4` numbers remain the quality evidence of
+record. No checkpoint trained/promoted/synced; no gate touched; does not
+replace E626's deferred powered multi-seed sweep (still open). Gallery's
+"typed array re-closes empty" regression was not independently traced here
+and may or may not share this exact mechanism.
+
+Evidence:
+[iter-e627-required-slot-margin-root-cause-trace-20260720.md](iter-e627-required-slot-margin-root-cause-trace-20260720.md)
+and
+[JSON](iter-e627-required-slot-margin-root-cause-trace-20260720.json).

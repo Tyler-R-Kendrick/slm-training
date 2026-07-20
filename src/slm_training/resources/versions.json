@@ -1400,6 +1400,11 @@
         {
           "version": "v60",
           "date": "2026-07-20",
+          "note": "no-bump: E627 adds required_slot_margin_applications/required_slot_margin_choice_changes DecodeStats counters and a bounded required_slot_margin constrained_selection_traces entry (row/position/frame_depth/candidate kinds) purely to observe required_slot_margin_decode_weight's (E626) existing behavior; no bias formula, weight, or default changed"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-20",
           "note": "E626: add required_slot_margin_decode_weight, a default-off decode-time margin that floors the best legal candidate filling a still-missing required slot (analogous to semantic_plan_margin_decode_weight for plan families); contract-gated by the E617 slot_contract_constrained_decode guard"
         },
         {

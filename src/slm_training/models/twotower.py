@@ -4698,6 +4698,79 @@ class TwoTowerModel(nn.Module):
         stats.constrained_selection_traces.append(trace)
         return trace
 
+    def _record_required_slot_margin_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        scores_before: torch.Tensor,
+        margin_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+    ) -> dict[str, object] | None:
+        """Record bounded evidence for one required_slot_margin_decode_weight fire.
+
+        E627 root-cause instrumentation for E626's open question: does the
+        floor ever compete directly against a component/structural candidate
+        at the *same* decode position (a genuine scope leak into
+        root/component choice), or does it only ever win against other slot
+        candidates (correctly scoped, but the chosen value can still starve
+        structural continuation indirectly by winning too early/too often)?
+        ``_choice_phase_evidence``'s ``aggregation_scope`` reports
+        ``"v05_root"`` when this fires at the program's own ``r=`` root
+        assignment position — the direct-hijack signature — and
+        ``candidate_kinds`` reports the grammar kind of both the pre-bias and
+        post-bias argmax token so a slot-vs-component swap is visible even
+        away from the root position.
+        """
+        if len(stats.constrained_selection_traces) >= 64:
+            return None
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        trace: dict[str, object] = {
+            "phase": "required_slot_margin",
+            "row": int(row),
+            "position": int(position),
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "before_kind": candidate_kinds[before],
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "chosen_kind": candidate_kinds[after],
+            "choice_changed": before != after,
+            "hijacked_non_slot_candidate": (
+                before != after and candidate_kinds[before] != "sym"
+            ),
+            "required_slot_margin_decode_weight": float(
+                getattr(self.config, "required_slot_margin_decode_weight", 0.0)
+                or 0.0
+            ),
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "kind": candidate_kinds[index],
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "margin_bias": round(float(margin_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+            **self._choice_phase_evidence(state),
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
+
     def _schema_value_bias(
         self,
         state: Any,
@@ -7074,7 +7147,26 @@ class TwoTowerModel(nn.Module):
                         ),
                     )
                     if required_slot_margin_bias is not None:
+                        before_required_slot_margin = int(scores.argmax().item())
+                        scores_before_required_slot_margin = scores.clone()
                         scores = scores + required_slot_margin_bias
+                        if stats is not None:
+                            stats.required_slot_margin_applications += 1
+                            stats.required_slot_margin_choice_changes += int(
+                                int(scores.argmax().item())
+                                != before_required_slot_margin
+                            )
+                            self._record_required_slot_margin_trace(
+                                stats,
+                                row=row,
+                                position=position,
+                                state=states[row],
+                                candidate_ids=candidate_ids,
+                                candidate_kinds=candidate_kinds,
+                                scores_before=scores_before_required_slot_margin,
+                                margin_bias=required_slot_margin_bias,
+                                scores_after=scores,
+                            )
                     repeated_array_close_bias = (
                         self._semantic_plan_repeated_array_close_bias(
                             row,

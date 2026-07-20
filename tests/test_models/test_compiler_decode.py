@@ -436,6 +436,78 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
     )
 
 
+def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> None:
+    """E627 root-cause instrumentation for E626's open margin=6 regression.
+
+    When a still-missing slot candidate is legal at the *same* decode
+    position as a real component-opening candidate (frame_depth 0, i.e. no
+    component frame has been opened yet), a large-enough margin can floor
+    the slot token above the component token and win the position's argmax
+    -- this is the mechanism E626 observed collapsing Dashboard to a bare
+    ``Button``. The trace must surface this precisely: ``frame_depth == 0``,
+    ``chosen_kind == "sym"``, and ``hijacked_non_slot_candidate`` true
+    because the pre-bias argmax was a non-slot (component) candidate.
+    """
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        required_slot_margin_decode_weight=6.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(3)
+    button_id = tokenizer.token_to_id["+Button"]
+    candidate_ids = (button_id, slot_id)
+    candidate_kinds = ("component_root_or_bound", "sym")
+    stats = DecodeStats()
+
+    trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=1,
+        state=SimpleNamespace(frames=[]),
+        candidate_ids=candidate_ids,
+        candidate_kinds=candidate_kinds,
+        scores_before=torch.tensor([11.8, 10.3]),
+        margin_bias=torch.tensor([0.0, 7.5]),
+        scores_after=torch.tensor([11.8, 17.8]),
+    )
+
+    assert trace is not None
+    assert trace["phase"] == "required_slot_margin"
+    assert trace["frame_depth"] == 0
+    assert trace["before_token"] == "+Button"
+    assert trace["before_kind"] == "component_root_or_bound"
+    assert trace["chosen_token"] == tokenizer.id_to_token[slot_id]
+    assert trace["chosen_kind"] == "sym"
+    assert trace["choice_changed"] is True
+    assert trace["hijacked_non_slot_candidate"] is True
+    assert stats.constrained_selection_traces == [trace]
+
+    # Inside an open component frame, a slot-vs-slot swap is not a hijack:
+    # the pre-bias argmax was already a slot candidate.
+    open_frame = SimpleNamespace(
+        kind="component", expr_type="element:Button", phase="args", arg_index=0
+    )
+    inner_trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=7,
+        state=SimpleNamespace(frames=[open_frame]),
+        candidate_ids=(slot_id, tokenizer.sym_id(4)),
+        candidate_kinds=("sym", "sym"),
+        scores_before=torch.tensor([9.0, 8.0]),
+        margin_bias=torch.tensor([0.0, 2.0]),
+        scores_after=torch.tensor([9.0, 10.0]),
+    )
+    assert inner_trace is not None
+    assert inner_trace["frame_depth"] == 1
+    assert inner_trace["choice_changed"] is True
+    assert inner_trace["hijacked_non_slot_candidate"] is False
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
