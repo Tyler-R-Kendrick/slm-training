@@ -752,6 +752,42 @@ def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
     assert bias.tolist() == [4.0, 4.0, 0.0]
 
 
+def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+    from slm_training.dsl.production_codec import NAME_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=3)
+    for token in (
+        f"{OPEN_PREFIX}ImageGallery",
+        "[",
+        "{",
+        f"{NAME_PREFIX}src",
+    ):
+        assert state.advance_id(tokenizer.token_to_id[token])
+    slots = [":gallery.img", ":gallery.alt", ":gallery.caption"]
+    candidates = semantic_role_candidates(slots, ["ImageGallery"])
+    slot_ids = tuple(tokenizer.sym_id(index) for index in range(3))
+
+    bias = model._schema_role_slot_bias(
+        state,
+        slot_ids,
+        torch.zeros(3),
+        slots,
+        candidates,
+    )
+
+    assert candidates == {
+        ":gallery.alt": ("ImageGallery",),
+        ":gallery.caption": ("ImageGallery",),
+        ":gallery.img": ("ImageGallery",),
+    }
+    assert bias is not None
+    assert bias.tolist() == [4.0, 0.0, 0.0]
+
+
 def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> None:
     from slm_training.data.quality import semantic_role_candidates
 

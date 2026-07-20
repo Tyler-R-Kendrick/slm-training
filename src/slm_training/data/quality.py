@@ -20,6 +20,20 @@ _IDENTIFIER_RE = re.compile(r"\b[a-z_][A-Za-z0-9_]*\b")
 _QUOTED_RE = re.compile(r'"(?:\\.|[^"\\])*"')
 _COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
 _CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
+_SEMANTIC_ROLE_PROPERTY_ALIASES = {
+    "body": {"text"},
+    "caption": {"details", "text"},
+    "copy": {"text"},
+    "description": {"details", "text"},
+    "img": {"image", "src"},
+    "image": {"src"},
+    "confirm": {"action", "label"},
+    "create": {"action", "label"},
+    "save": {"action", "label"},
+    "submit": {"action", "label"},
+    "continue": {"action", "label"},
+    "cta": {"action", "label"},
+}
 
 # Preferred structural vocabulary for high-signal layouts.
 PREFERRED_COMPONENTS = frozenset(
@@ -110,6 +124,37 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     return frozenset(found)
 
 
+def semantic_role_properties(
+    placeholders: list[str],
+) -> dict[str, tuple[str, ...]]:
+    """Map visible slots to public-schema property names implied by their role."""
+    result: dict[str, tuple[str, ...]] = {}
+    for placeholder in sorted(set(placeholders)):
+        role = placeholder.removeprefix(":").split(".")[-1]
+        result[placeholder] = tuple(
+            sorted({role, *_SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, ())})
+        )
+    return result
+
+
+def _inline_schema_property_names(schema: dict[str, Any]) -> frozenset[str]:
+    """Collect inline record fields without traversing component references."""
+    names: set[str] = set()
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        names.update(str(name) for name in properties)
+        for child in properties.values():
+            if isinstance(child, dict) and "$ref" not in child:
+                names.update(_inline_schema_property_names(child))
+    items = schema.get("items")
+    if isinstance(items, dict) and "$ref" not in items:
+        names.update(_inline_schema_property_names(items))
+    for option in schema.get("anyOf", ()):
+        if isinstance(option, dict) and "$ref" not in option:
+            names.update(_inline_schema_property_names(option))
+    return frozenset(names)
+
+
 def semantic_role_candidates(
     placeholders: list[str], component_names: list[str]
 ) -> dict[str, tuple[str, ...]]:
@@ -117,27 +162,18 @@ def semantic_role_candidates(
     from slm_training.dsl.lang_core import library_schema
 
     definitions = library_schema().get("$defs", {})
-    property_aliases = {
-        "body": {"text"},
-        "copy": {"text"},
-        "description": {"text"},
-        "confirm": {"label", "action"},
-        "create": {"label", "action"},
-        "save": {"label", "action"},
-        "submit": {"label", "action"},
-        "continue": {"label", "action"},
-        "cta": {"label", "action"},
+    properties_by_component = {
+        name: _inline_schema_property_names(definitions.get(name, {}))
+        for name in sorted(set(component_names))
     }
+    properties_by_slot = semantic_role_properties(placeholders)
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
-        role = placeholder.removeprefix(":").split(".")[-1]
-        compatible_properties = {role, *property_aliases.get(role, ())}
+        compatible_properties = set(properties_by_slot[placeholder])
         result[placeholder] = tuple(
             name
             for name in sorted(set(component_names))
-            if compatible_properties.intersection(
-                definitions.get(name, {}).get("properties") or {}
-            )
+            if compatible_properties.intersection(properties_by_component[name])
         )
     return result
 
