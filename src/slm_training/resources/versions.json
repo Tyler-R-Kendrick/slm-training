@@ -24,6 +24,11 @@
         {
           "version": "v32",
           "date": "2026-07-20",
+          "note": "no-bump: describe the expanded model-side slot coverage closure policy in CLI help without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
           "note": "expose and persist the default-off schema-derived typed-array item margin"
         },
         {
