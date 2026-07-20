@@ -150,6 +150,34 @@ def test_v2_rejects_unreachable_runtime_or_state_bindings(source: str) -> None:
     assert "unreachable_binding" in report.reason_codes
 
 
+def test_v2_typed_array_object_item_keys_are_not_treated_as_unresolved_refs() -> None:
+    """Regression for E618: a regex-based Gate.REFERENCES fallback used to run
+    for any non-runtime-syntax source and misread bare object-literal property
+    keys (e.g. ``src:``/``alt:`` in a typed-array item like
+    ``{src: ..., alt: ...}``) as unresolved variable references, permanently
+    failing ``binding_correctness`` (reason ``reference_graph_invalid``) for
+    any correctly produced typed-array-of-objects prediction -- independent of
+    model quality. Confirmed live in real E612-E617 eval evidence
+    (docs/design/iter-e612..e617*.json) before this fix."""
+    source = (
+        'root = Stack([v0], "column")\n'
+        'v0 = ImageGallery([{src: ":hero.img", alt: ":hero.alt"}])'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="typed-array-object-item",
+            prompt="Image gallery. Placeholders: :hero.img :hero.alt",
+            openui=source,
+        ),
+    )
+    binding_check = next(
+        check for check in report.checks if check.name == "binding_correctness"
+    )
+    assert binding_check.status is CheckStatus.PASS
+    assert "reference_graph_invalid" not in report.reason_codes
+
+
 def test_v2_resolves_placeholder_through_reachable_state_binding() -> None:
     source = '$label = ":cta.label"\nroot = Button($label)'
     report = binding_aware_meaningful_v2(
