@@ -3521,3 +3521,16 @@ promote or sync, and next separate required content consumption from optional
 schema values. Evidence:
 [narrative](iter-e587-schema-value-role-bias-20260720.md) and
 [JSON](iter-e587-schema-value-role-bias-20260720.json).
+
+## E588 plan-root closure strength
+
+E588 raises only the existing plan-root closure score on E587's aggressive
+schema-value recipe. On a clean E569 OOD `n=4` root-weight 4/8/12 ladder,
+weight 8 improves fidelity 0.2583→0.4250, validity 0.5550→0.6550, structure
+0.2156→0.4069, recall 0.3333→0.4583, reward 0.6920→0.7585, AST-node F1
+0.3389→0.4889, and AST-edge F1 0→0.25. Auth recovers perfect topology and
+closes before enum properties. Weight 12 is byte- and metric-identical,
+confirming a plateau. Use 8 as the next diagnostic baseline, but do not
+promote or sync: strict meaning-v2 remains 0 and AgentV fails 0/1. Evidence:
+[narrative](iter-e588-root-closure-strength-20260720.md) and
+[JSON](iter-e588-root-closure-strength-20260720.json).

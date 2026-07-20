@@ -1443,6 +1443,31 @@ def test_e587_matched_eval_ladder_is_persisted_without_new_checkpoint(
     assert primary_id not in checkpoint_ids
 
 
+def test_e588_root_closure_ladder_is_persisted_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    primary_id = "e588-e587-root8-r1"
+    primary = readers.run(primary_id)
+    assert primary["provenance"] == "committed"
+    assert primary["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7585
+    control = readers.run("e588-e587-root4-control-r1")
+    plateau = readers.run("e588-e587-root12-r1")
+    assert control["provenance"] == "committed"
+    assert control["scoreboard"]["suites"]["ood"]["reward_score"] == 0.692
+    assert plateau["provenance"] == "committed"
+    assert plateau["scoreboard"]["suites"]["ood"]["reward_score"] == 0.7585
+
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert primary_id not in checkpoint_ids
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
