@@ -3858,6 +3858,22 @@ Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or synced.
 Evidence: [narrative](iter-e613-schema-derived-typed-item-20260720.md) and
 [JSON](iter-e613-schema-derived-typed-item-20260720.json).
 
+## E614 typed-object choice state
+
+E614 preserves closed object schemas in the choice state, restricts keys to
+declared properties, requires required keys before closure, and fixes mutable
+variadic counts in decode-cache signatures. The matched E613 policy contracts
+Gallery from a recursive 160-token object to a legal 30-token `ImageGallery`
+item. Against E613, fidelity, validity, structure, reward, and AST-node F1 all
+improve; emitted tokens fall 233→93 and p95 falls 19.20→11.92 s. Against E611,
+structure/recall/AST are unchanged while fidelity rises 0.7000→0.7833,
+validity 0.7200→0.8700, and reward 0.7148→0.9020, at +0.31 s p50 and
++0.46 s p95. Retain the generalized repair and use E614 as the next scratch
+research baseline. Strict v2 remains 0, AgentV is 0/1, and no checkpoint was
+created or synced. Evidence:
+[narrative](iter-e614-typed-object-state-20260720.md) and
+[JSON](iter-e614-typed-object-state-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
