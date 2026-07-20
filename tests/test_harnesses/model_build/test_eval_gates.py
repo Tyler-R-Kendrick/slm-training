@@ -512,6 +512,50 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["fallback_count"] == 0
 
 
+def test_evaluate_passes_reported_canvas_cap_to_request_generation(
+    tmp_path: Path,
+) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = 'root = Button(":prod.cta")'
+    record = ExampleRecord(
+        id="canvas-cap",
+        prompt="CTA",
+        openui=gold,
+        placeholders=[":prod.cta"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class CanvasAwareModel:
+        config = type("Config", (), {"grammar_ltr_max_tokens": 96})()
+
+        def generate_batch_requests(
+            self,
+            requests: list[GenerationRequest],
+            *,
+            max_len: int | None = None,
+        ) -> list[str]:
+            assert max_len == 96
+            return [gold for _ in requests]
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="canvas-cap",
+        model_name="stub",
+    )
+    metrics = evaluate(config, model=CanvasAwareModel(), publish_agentv=False)
+    assert metrics["decode_canvas_cap"] == 96
+    assert metrics["syntax_parse_rate"] == 1.0
+
+
 def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
     tmp_path: Path,
 ) -> None:

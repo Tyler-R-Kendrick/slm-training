@@ -3786,6 +3786,21 @@ zero reward, and required components/placeholders remain missing. AgentV is
 [narrative](iter-e608-semantic-plan-root-margin-20260720.md) and
 [JSON](iter-e608-semantic-plan-root-margin-20260720.json).
 
+## E609 evaluation canvas contract
+
+E609 fixes the evaluator so its reported 160-token canvas actually governs
+request-aware generation instead of silently using the checkpoint's learned
+58-token length. Dashboard now completes `Stack([v0, v1, v2, v3])` and retains
+both planned Card bindings, confirming E608's missing references were a canvas
+artifact. Reject the longer canvas as a quality policy: Dashboard spends the
+budget on deeply nested duplicate Card content, scores zero reward, and drives
+p95 latency from 14.43 s to 29.61 s. Aggregate meaningful-v1 falls 0.75→0.50,
+reward falls 0.6788→0.4835, and strict v2 remains 0. Retain the evidence-contract
+repair; next constrain component-local content cardinality before root
+construction. AgentV is 0/1. No checkpoint was created or synced. Evidence:
+[narrative](iter-e609-eval-canvas-contract-20260720.md) and
+[JSON](iter-e609-eval-canvas-contract-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
