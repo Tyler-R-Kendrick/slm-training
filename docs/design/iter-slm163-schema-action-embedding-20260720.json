@@ -1,0 +1,134 @@
+{
+  "arms": [
+    {
+      "arm_id": "A_none",
+      "description": "No action descriptions; embeddings remain randomly initialized.",
+      "name": "none",
+      "promotable": false,
+      "source": "none"
+    },
+    {
+      "arm_id": "B_current_stub",
+      "description": "Short stub glosses matching the existing teacher_init_embeddings path.",
+      "name": "current_stub",
+      "promotable": false,
+      "source": "current_stub"
+    },
+    {
+      "arm_id": "C_schema_description",
+      "description": "Schema-derived descriptions with property signatures and roles.",
+      "name": "schema_description",
+      "promotable": false,
+      "source": "schema_description"
+    },
+    {
+      "arm_id": "D_expanded_description",
+      "description": "Rich teacher-style descriptions from the committed expanded JSON file.",
+      "name": "expanded_description",
+      "promotable": false,
+      "source": "expanded_description"
+    },
+    {
+      "arm_id": "E_shuffled",
+      "description": "Control arm: schema descriptions randomly reassigned to action keys.",
+      "name": "shuffled",
+      "promotable": false,
+      "source": "shuffled"
+    }
+  ],
+  "claim_class": "wiring",
+  "d_model": 32,
+  "experiment_id": "slm163-schema-action-embedding",
+  "matrix_set": "slm163_schema_action_embedding",
+  "matrix_version": "sde1-01-v1",
+  "rows": [
+    {
+      "arm_id": "A_none",
+      "coverage_fraction": 0.0,
+      "d_model": 32,
+      "mean_nearest_cosine": 0.0,
+      "n_actions": 0,
+      "notes": [
+        "baseline: no action descriptions"
+      ],
+      "rare_common_centroid_distance": 0.0,
+      "seed": 0,
+      "sibling_separation": 0.0,
+      "source": "none"
+    },
+    {
+      "arm_id": "B_current_stub",
+      "coverage_fraction": 1.0,
+      "d_model": 32,
+      "mean_nearest_cosine": 0.4023880660533905,
+      "n_actions": 79,
+      "notes": [
+        "source=current_stub",
+        "fixture-only: hash-based encoder, no learned model"
+      ],
+      "rare_common_centroid_distance": 0.8041509985923767,
+      "seed": 0,
+      "sibling_separation": 1.0585309863090515,
+      "source": "current_stub"
+    },
+    {
+      "arm_id": "C_schema_description",
+      "coverage_fraction": 1.0,
+      "d_model": 32,
+      "mean_nearest_cosine": 0.41567596793174744,
+      "n_actions": 79,
+      "notes": [
+        "source=schema_description",
+        "fixture-only: hash-based encoder, no learned model"
+      ],
+      "rare_common_centroid_distance": 0.5744768977165222,
+      "seed": 0,
+      "sibling_separation": 1.1315218210220337,
+      "source": "schema_description"
+    },
+    {
+      "arm_id": "D_expanded_description",
+      "coverage_fraction": 1.0,
+      "d_model": 32,
+      "mean_nearest_cosine": 0.4188872277736664,
+      "n_actions": 79,
+      "notes": [
+        "source=expanded_description",
+        "fixture-only: hash-based encoder, no learned model"
+      ],
+      "rare_common_centroid_distance": 0.5960612893104553,
+      "seed": 0,
+      "sibling_separation": 0.9253331422805786,
+      "source": "expanded_description"
+    },
+    {
+      "arm_id": "E_shuffled",
+      "coverage_fraction": 1.0,
+      "d_model": 32,
+      "mean_nearest_cosine": 0.4160322844982147,
+      "n_actions": 79,
+      "notes": [
+        "source=shuffled",
+        "fixture-only: hash-based encoder, no learned model"
+      ],
+      "rare_common_centroid_distance": 0.6596933007240295,
+      "seed": 0,
+      "sibling_separation": 1.0152247548103333,
+      "source": "shuffled"
+    }
+  ],
+  "run_id": "slm163-schema-action-embedding-20260720",
+  "schema": "Slm163SchemaActionEmbeddingReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T10:36:26.772572Z",
+  "version_stamp": {
+    "code_commit": "49862e2d48456ba095376084fc4fa9ad5e6b5774",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v38",
+      "harness.experiments.slm163_schema_action_embedding": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T10:36:26.772074+00:00"
+  }
+}

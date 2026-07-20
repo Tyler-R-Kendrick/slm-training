@@ -1,0 +1,12 @@
+{
+  "+Card": "A styled rectangular container that groups related content. Use Card for visually distinct sections such as summary panels, form shells, or media previews. It supports layout direction, gap, alignment, and wrap behavior, and can hold nested children including other containers or content components.",
+  "+Stack": "A flex layout container that arranges children in a row or column. Stack is the primary building block for vertical or horizontal page structure, supporting gap, alignment, justification, and wrapping.",
+  "+Form": "A structured container for data entry that groups fields and explicit action buttons. Use Form when you need labeled inputs, validation rules, and a submit or cancel action bound together.",
+  "+Tabs": "A navigation container that switches between multiple content panels. Each tab has a unique value, a trigger label, and an array of content components shown when the tab is active.",
+  "+SwitchItem": "An individual on/off toggle control inside a SwitchGroup. It carries a label, optional description, a name binding, and a default checked state.",
+  "+Slider": "A numeric range input control that lets the user pick a value between a minimum and maximum, optionally stepped. Use it for volume, brightness, price ranges, or any continuous selection.",
+  "+Button": "A clickable action widget. A Button displays a label, triggers an action such as @Run or @Set, and can be styled by variant, type, and size.",
+  "+TextContent": "A plain text block for labels, paragraphs, headings, or explanatory copy. It supports markdown and can be sized for emphasis.",
+  "+Input": "A single-line text or data entry field. Input captures user values such as names, emails, passwords, or numbers, and supports placeholder text, type hints, and validation rules.",
+  "+Select": "A dropdown control that lets the user choose one option from a list of items. Select supports placeholder text, validation rules, and configurable size."
+}
