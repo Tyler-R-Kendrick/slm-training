@@ -952,7 +952,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v43",
+      "version": "v44",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -966,6 +966,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v44",
+          "date": "2026-07-20",
+          "note": "retain all positively biased planned-family candidates outside the diagnostic top-score cutoff"
+        },
         {
           "version": "v43",
           "date": "2026-07-20",

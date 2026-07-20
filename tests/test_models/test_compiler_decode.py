@@ -808,6 +808,17 @@ def test_prompt_semantic_plan_missing_family_trace_records_remaining_counts() ->
             "final_token": "+TextContent",
             "changed_after_plan": True,
             "semantic_plan_decode_weight": 32.0,
+            "planned_candidates": [
+                {
+                    "token": "+Card",
+                    "kind": "component_bound",
+                    "score_before": 1.0,
+                    "plan_bias": 32.0,
+                    "score_after": 33.0,
+                    "post_plan_bias": -3.0,
+                    "final_score": 30.0,
+                }
+            ],
             "top_candidates": [
                 {
                     "token": "+Card",

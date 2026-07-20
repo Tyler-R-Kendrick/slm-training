@@ -4303,6 +4303,20 @@ class TwoTowerModel(nn.Module):
             "semantic_plan_decode_weight": float(
                 getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
             ),
+            "planned_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "kind": candidate_kinds[index],
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(plan_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in range(len(candidate_ids))
+                if candidate_kinds[index] in component_kinds
+                and float(plan_bias[index].item()) > 0.0
+            ],
             "top_candidates": [
                 {
                     "token": str(
@@ -4334,25 +4348,29 @@ class TwoTowerModel(nn.Module):
         trace["final_token"] = final_token
         trace["changed_after_plan"] = final_token != trace["chosen_token"]
         candidates = trace.get("top_candidates")
-        if not isinstance(candidates, list):
-            return
         score_by_token = {
             str(self.tokenizer.id_to_token.get(token_id, "")): round(
                 float(scores[index].item()), 6
             )
             for index, token_id in enumerate(candidate_ids)
         }
-        for candidate in candidates:
-            if not isinstance(candidate, dict):
+        for candidate_group in (
+            trace.get("planned_candidates"),
+            candidates,
+        ):
+            if not isinstance(candidate_group, list):
                 continue
-            token = str(candidate.get("token", ""))
-            final_score = score_by_token.get(token)
-            if final_score is None:
-                continue
-            candidate["post_plan_bias"] = round(
-                final_score - float(candidate["score_after"]), 6
-            )
-            candidate["final_score"] = final_score
+            for candidate in candidate_group:
+                if not isinstance(candidate, dict):
+                    continue
+                token = str(candidate.get("token", ""))
+                final_score = score_by_token.get(token)
+                if final_score is None:
+                    continue
+                candidate["post_plan_bias"] = round(
+                    final_score - float(candidate["score_after"]), 6
+                )
+                candidate["final_score"] = final_score
 
     def _schema_value_bias(
         self,
