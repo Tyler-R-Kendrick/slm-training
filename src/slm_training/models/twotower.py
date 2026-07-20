@@ -3991,9 +3991,9 @@ class TwoTowerModel(nn.Module):
                     if token.startswith(prefix):
                         token = token[len(prefix) :]
                         break
-                visible_role_available = any(
+                visible_role_available = bool(remaining_slots) and all(
                     semantic_role_candidates.get(slot, ())
-                    for slot in remaining_slots[:consumed]
+                    for slot in remaining_slots
                 )
                 matches = sum(
                     token in semantic_role_candidates.get(slot, ())
