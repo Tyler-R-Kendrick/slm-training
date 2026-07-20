@@ -198,15 +198,15 @@
   },
   "schema": "SemanticRegretReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T00:04:41.509401Z",
+  "timestamp": "2026-07-20T00:49:49.402792Z",
   "version_stamp": {
-    "code_commit": "cf4907fdd2bee35a8f7891115e9eefd5e78f2ceb",
+    "code_commit": "2732c0366431d8c82999f70958f6fac9422aebef",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v24",
+      "harness.experiments": "v25",
       "harness.experiments.semantic_regret": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T00:04:41.520406+00:00"
+    "stamped_at": "2026-07-20T00:49:49.402807+00:00"
   }
 }

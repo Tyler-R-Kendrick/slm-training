@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const root = resolve(here, "../..");
+const root = resolve(here, "../../..");
 const bundle = resolve(root, "src/slm_training/web/static/preview/preview.js");
 
 const chunks = [];
