@@ -8072,6 +8072,39 @@ class TwoTowerModel(nn.Module):
                     )
         else:
             self._slot_contracts = None
+        if not use_contract_decode:
+            # E617: schema_role_slot_decode_weight, slot_coverage_close_decode_weight,
+            # and the semantic_plan_typed_array_*/repeated_slot_margin decode weights
+            # all gate their own bias functions on a populated `self._slot_contracts`
+            # row (see `_schema_role_slot_bias`, `_slot_coverage_close_bias`,
+            # `_semantic_plan_typed_array_nonempty_bias`,
+            # `_semantic_plan_repeated_slot_bias`), which this method only populates
+            # when `slot_contract_constrained_decode` (or `template_fill_decode`) is
+            # enabled. Setting one of these weights without either flag used to
+            # silently no-op every step (E611-E616 replayed a matched control/
+            # treatment eval this way without ever observing a difference). Fail
+            # loud instead of reproducing that footgun.
+            _contract_gated_weight_names = (
+                "schema_role_slot_decode_weight",
+                "slot_coverage_close_decode_weight",
+                "semantic_plan_typed_array_nonempty_margin_decode_weight",
+                "semantic_plan_typed_array_item_margin_decode_weight",
+                "semantic_plan_repeated_slot_margin_decode_weight",
+            )
+            _active_contract_gated_weights = sorted(
+                name
+                for name in _contract_gated_weight_names
+                if float(getattr(self.config, name, 0.0) or 0.0) > 0.0
+            )
+            if _active_contract_gated_weights:
+                raise ValueError(
+                    "The following decode weights require "
+                    "slot_contract_constrained_decode (or template_fill_decode) to "
+                    "be enabled, or they silently no-op every decode step because "
+                    "self._slot_contracts stays None: "
+                    f"{_active_contract_gated_weights}. Pass "
+                    "--slot-contract-constrained-decode (or --template-fill-decode)."
+                )
         if bool(getattr(self.config, "semantic_role_contract_in_context", False)):
             if not honest:
                 raise ValueError(
