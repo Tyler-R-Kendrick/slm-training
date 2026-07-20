@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "run_id": "spv2_05_semantic_repair_fixture",
+  "run_class": "fixture_demo",
+  "suites": {
+    "fixture": {
+      "n_records": 39,
+      "n_families": 6,
+      "families": [
+        "dataflow",
+        "grammar",
+        "lexical",
+        "patch",
+        "reference_graph",
+        "schema"
+      ],
+      "baselines": {
+        "oracle": {
+          "policy": "oracle",
+          "n": 39,
+          "success_rate": 1.0,
+          "mean_cost": 3.948717948717949,
+          "unknown_rate": 0.0
+        },
+        "edit_distance": {
+          "policy": "edit_distance",
+          "n": 39,
+          "success_rate": 1.0,
+          "mean_cost": 3.948717948717949,
+          "unknown_rate": 0.0
+        },
+        "random": {
+          "policy": "random",
+          "n": 39,
+          "success_rate": 1.0,
+          "mean_cost": 3.948717948717949,
+          "unknown_rate": 0.0
+        }
+      },
+      "learned": {
+        "available": true,
+        "n_train_records": 8,
+        "n_decisions": 24,
+        "initial_loss": 0.6083777546882629,
+        "final_loss": 0.001465506968088448,
+        "accepted_rank_one": 8,
+        "accepted_outrank_rate": 1.0
+      }
+    }
+  },
+  "recipe": {
+    "source_program": "root = Stack([cta], \"column\")\ncta = Button(\":cta.label\")",
+    "fixture_steps": 40,
+    "fixture_lr": 0.05,
+    "backend": "cpu",
+    "scorer_id": "semantic-repair-scorer-v1"
+  },
+  "claim_class": "wiring",
+  "status": "wiring_only",
+  "disposition": "fixture_wiring",
+  "honest_verdict": "fixture_wiring",
+  "note": "Wiring-only fixture baseline. No ship readiness claim. Real verifier-backed counterfactual action values require SLM-131 / VSS finite replay.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "98635c380d1d25228c5cf481b6f7b0ba626b5829",
+    "code_dirty": true,
+    "components": {
+      "harness.distill": "v2",
+      "data.semantic_contrast": "v1"
+    },
+    "stamped_at": "2026-07-20T07:01:48.995066+00:00"
+  }
+}

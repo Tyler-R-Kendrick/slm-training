@@ -1451,14 +1451,24 @@
       ]
     },
     "harness.distill": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/distill/legal_set_kl.py",
         "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
-        "tests/test_harnesses/distill/test_legal_set_kl.py"
+        "src/slm_training/harnesses/distill/semantic_repair.py",
+        "scripts/run_spv2_05_semantic_repair_fixture.py",
+        "tests/test_harnesses/distill/test_legal_set_kl.py",
+        "tests/test_harnesses/distill/test_semantic_repair.py",
+        "docs/design/iter-spv2-05-semantic-repair-20260720.md",
+        "docs/design/iter-spv2-05-semantic-repair-20260720.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "add SLM-153 SPV2-05 verifier-guided minimal semantic repair fixture wiring baseline"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
