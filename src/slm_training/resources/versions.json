@@ -844,7 +844,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v39",
+      "version": "v40",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -857,6 +857,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v40",
+          "date": "2026-07-20",
+          "note": "record bounded first-component semantic-plan score decompositions in decode evidence"
+        },
         {
           "version": "v39",
           "date": "2026-07-20",

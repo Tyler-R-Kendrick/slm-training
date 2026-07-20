@@ -695,6 +695,63 @@ def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() ->
     assert later_bias is None
 
 
+def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_seed_decode_weight=8.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["+Card"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    stats = DecodeStats()
+
+    model._record_semantic_plan_seed_trace(
+        stats,
+        row=2,
+        position=3,
+        state=SimpleNamespace(section_types=[]),
+        candidate_ids=(card_id, text_id),
+        candidate_kinds=("component_root", "component_root"),
+        scores_before=torch.tensor([1.0, 5.0]),
+        plan_bias=torch.tensor([12.0, 0.0]),
+        scores_after=torch.tensor([13.0, 5.0]),
+    )
+
+    assert stats.constrained_selection_traces == [
+        {
+            "phase": "semantic_plan_seed",
+            "row": 2,
+            "position": 3,
+            "before_token": "+TextContent",
+            "chosen_token": "+Card",
+            "choice_changed": True,
+            "seed_weight": 8.0,
+            "semantic_plan_decode_weight": 4.0,
+            "top_candidates": [
+                {
+                    "token": "+Card",
+                    "kind": "component_root",
+                    "score_before": 1.0,
+                    "plan_bias": 12.0,
+                    "score_after": 13.0,
+                },
+                {
+                    "token": "+TextContent",
+                    "kind": "component_root",
+                    "score_before": 5.0,
+                    "plan_bias": 0.0,
+                    "score_after": 5.0,
+                },
+            ],
+        }
+    ]
+
+
 def test_prompt_semantic_plan_inline_bias_targets_only_missing_families() -> None:
     model = _model(
         output_tokenizer="choice",

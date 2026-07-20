@@ -4052,14 +4052,7 @@ class TwoTowerModel(nn.Module):
         seed_weight = float(
             getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
         )
-        if (
-            state is not None
-            and not tuple(getattr(state, "section_types", ()))
-            and any(
-                kind in {"component_root", "component_root_or_bound"}
-                for kind in candidate_kinds
-            )
-        ):
+        if self._semantic_plan_seed_active(state, candidate_kinds):
             weight += seed_weight
         if (
             weight <= 0.0
@@ -4148,6 +4141,80 @@ class TwoTowerModel(nn.Module):
                     bias[candidate_ids.index(close_id)] = weight * family_score
                     applied = True
         return bias if applied else None
+
+    @staticmethod
+    def _semantic_plan_seed_active(
+        state: Any | None,
+        candidate_kinds: tuple[str, ...],
+    ) -> bool:
+        return bool(
+            state is not None
+            and not tuple(getattr(state, "section_types", ()))
+            and any(
+                kind in {"component_root", "component_root_or_bound"}
+                for kind in candidate_kinds
+            )
+        )
+
+    def _record_semantic_plan_seed_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        scores_before: torch.Tensor,
+        plan_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+    ) -> None:
+        """Record a bounded first-family score decomposition."""
+        seed_weight = float(
+            getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0
+        )
+        if (
+            seed_weight <= 0.0
+            or len(stats.constrained_selection_traces) >= 64
+            or not self._semantic_plan_seed_active(state, candidate_kinds)
+        ):
+            return
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        stats.constrained_selection_traces.append(
+            {
+                "phase": "semantic_plan_seed",
+                "row": int(row),
+                "position": int(position),
+                "before_token": str(
+                    self.tokenizer.id_to_token.get(candidate_ids[before], "")
+                ),
+                "chosen_token": str(
+                    self.tokenizer.id_to_token.get(candidate_ids[after], "")
+                ),
+                "choice_changed": before != after,
+                "seed_weight": seed_weight,
+                "semantic_plan_decode_weight": float(
+                    getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+                ),
+                "top_candidates": [
+                    {
+                        "token": str(
+                            self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                        ),
+                        "kind": candidate_kinds[index],
+                        "score_before": round(float(scores_before[index].item()), 6),
+                        "plan_bias": round(float(plan_bias[index].item()), 6),
+                        "score_after": round(float(scores_after[index].item()), 6),
+                    }
+                    for index in ranked
+                ],
+            }
+        )
 
     def _schema_value_bias(
         self,
@@ -6181,12 +6248,24 @@ class TwoTowerModel(nn.Module):
                         ids[row, :position].tolist(),
                     )
                     if semantic_plan_bias is not None:
+                        scores_before_semantic_plan = scores.clone()
                         before_semantic_plan = int(scores.argmax().item())
                         scores = scores + semantic_plan_bias
                         if stats is not None:
                             stats.semantic_plan_applications += 1
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
+                            )
+                            self._record_semantic_plan_seed_trace(
+                                stats,
+                                row=row,
+                                position=position,
+                                state=states[row],
+                                candidate_ids=candidate_ids,
+                                candidate_kinds=candidate_kinds,
+                                scores_before=scores_before_semantic_plan,
+                                plan_bias=semantic_plan_bias,
+                                scores_after=scores,
                             )
                     semantic_plan_inline_bias = self._semantic_plan_inline_bias(
                         row,
