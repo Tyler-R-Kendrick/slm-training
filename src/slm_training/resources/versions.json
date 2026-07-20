@@ -515,12 +515,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v32",
+      "version": "v33",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v33",
+          "date": "2026-07-20",
+          "note": "add SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness"
+        },
         {
           "version": "v32",
           "date": "2026-07-20",
@@ -1579,6 +1584,25 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-156 SPV3-03 shared recursive SemanticPlanV1 refinement wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm158_mixer_comparison": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm158_mixer_comparison.py",
+        "scripts/run_slm158_mixer_comparison_fixture.py",
+        "tests/test_harnesses/experiments/test_slm158_mixer_comparison.py",
+        "tests/test_scripts/test_run_slm158_mixer_comparison_fixture.py",
+        "docs/design/iter-slm158-mixer-comparison-20260720.json",
+        "docs/design/iter-slm158-mixer-comparison-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-158 SPV3-05 sequence-mixer comparison wiring/fixture harness"
         }
       ]
     }
