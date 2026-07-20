@@ -236,6 +236,7 @@ class TwoTowerConfig:
     slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
     semantic_role_decode_weight: float = 0.0
+    semantic_role_schema_candidates: bool = False
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
     schema_opaque_decode_weight: float = 0.0
@@ -7117,6 +7118,13 @@ class TwoTowerModel(nn.Module):
                         self._slot_contracts[i]
                         if self._slot_contracts and i < len(self._slot_contracts)
                         else None
+                    ),
+                    include_schema_candidates=bool(
+                        getattr(
+                            self.config,
+                            "semantic_role_schema_candidates",
+                            False,
+                        )
                     ),
                 )
                 for i, prompt in enumerate(prompts)
