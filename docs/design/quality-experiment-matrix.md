@@ -3492,3 +3492,17 @@ already be consumed. Reject it, keep default-off, and next bind confidence to
 the original visible contract. No checkpoint was created or synced. Evidence:
 [narrative](iter-e585-remaining-role-coverage-20260720.md) and
 [JSON](iter-e585-remaining-role-coverage-20260720.json).
+
+## E586 original-contract role coverage
+
+E586 fixes confidence to complete role-family coverage of the original visible
+contract. On a clean E569 OOD `n=4` role-weight 0/4 pair, auth retains perfect
+AST topology and the incomplete modal no longer collapses to `Stack([])`.
+Structure improves 0.3119→0.3819, AST-node F1 0.4264→0.4889, and AST-edge F1
+0.1667→0.2500 with recall unchanged. Fidelity regresses 0.5083→0.4250,
+validity 0.7050→0.6550, and reward 0.7760→0.7510; strict meaning-v2 remains 0
+and AgentV fails 0/1. Retain the stable confidence boundary, keep the role
+weight default-off, and next prevent visible placeholders from filling
+enum-like schema properties. No checkpoint was created or synced. Evidence:
+[narrative](iter-e586-original-role-coverage-20260720.md) and
+[JSON](iter-e586-original-role-coverage-20260720.json).
