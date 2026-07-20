@@ -439,8 +439,8 @@ def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
         section_types=["element:Input", "element:Button", "element:Stack"],
     )
 
-    build_bias = model._semantic_plan_root_bias(0, covered, candidates)
-    end_bias = model._semantic_plan_root_bias(0, completed, candidates)
+    build_bias = model._semantic_plan_root_bias(0, covered, None, candidates)
+    end_bias = model._semantic_plan_root_bias(0, completed, None, candidates)
 
     assert build_bias is not None
     assert build_bias.tolist() == [2.0, 0.0, 0.0]
@@ -469,6 +469,75 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
     assert model._semantic_plan_root_bias(
         0,
         incomplete,
+        None,
+        (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
+    ) is None
+
+
+def test_prompt_semantic_plan_root_bias_follows_only_verified_closure() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+        tokenizer.token_to_id["+Button"]: 1.0,
+    }]
+    model._slot_contracts = [[":auth.email", ":auth.submit"]]
+    prefix_tokens = [
+        "<bos>",
+        "+Input",
+        "@0",
+        "-",
+        "+Button",
+        "@1",
+        "-",
+    ]
+    prefix = [tokenizer.token_to_id[token] for token in prefix_tokens]
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    for token_id in prefix[1:]:
+        assert state.advance_id(token_id)
+    candidates = (
+        tokenizer.token_to_id["+Stack"],
+        tokenizer.token_to_id["+Card"],
+        tokenizer.eos_id,
+    )
+
+    bias = model._semantic_plan_root_bias(0, state, prefix, candidates)
+
+    assert bias is not None
+    assert bias.tolist() == [2.0, 0.0, 0.0]
+
+
+def test_prompt_semantic_plan_root_bias_abstains_when_closure_is_invalid() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    model._semantic_plan_action_scores = [{
+        tokenizer.token_to_id["+Input"]: 1.0,
+    }]
+    model._slot_contracts = [[]]
+    prefix = [
+        tokenizer.bos_id,
+        tokenizer.token_to_id["+Input"],
+        tokenizer.token_to_id["@0"],
+        tokenizer.token_to_id["-"],
+    ]
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    for token_id in prefix[1:]:
+        assert state.advance_id(token_id)
+
+    assert model._semantic_plan_root_bias(
+        0,
+        state,
+        prefix,
         (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
     ) is None
 

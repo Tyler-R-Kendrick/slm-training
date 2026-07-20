@@ -4122,16 +4122,16 @@ class TwoTowerModel(nn.Module):
         self,
         row: int,
         state: Any,
+        prefix: list[int] | None,
         candidate_ids: tuple[int, ...],
     ) -> torch.Tensor | None:
-        """Build and terminate a Stack root after predicted role coverage."""
+        """Soft-follow a verifier-valid Stack closure after plan role coverage."""
         weight = float(
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
         )
         if (
             weight <= 0.0
             or getattr(state, "mode", None) != "structural"
-            or getattr(state, "frames", ())
             or not self._semantic_plan_action_scores
             or row >= len(self._semantic_plan_action_scores)
         ):
@@ -4157,14 +4157,75 @@ class TwoTowerModel(nn.Module):
         }
         if not required_ids.issubset(covered_ids):
             return None
-        stack_complete = bool(
-            section_types and section_types[-1] == "element:Stack"
-        )
-        target_id = (
-            self.tokenizer.eos_id
-            if stack_complete
-            else self.tokenizer.token_to_id.get("+Stack")
-        )
+
+        # Keep the unit seam for callers without a concrete prefix. Production
+        # decode always supplies one and takes the verifier-gated path.
+        if prefix is None:
+            stack_complete = bool(
+                section_types and section_types[-1] == "element:Stack"
+            )
+            target_id = (
+                self.tokenizer.eos_id
+                if stack_complete
+                else self.tokenizer.token_to_id.get("+Stack")
+            )
+        else:
+            tokens = [
+                str(self.tokenizer.id_to_token.get(int(token_id), ""))
+                for token_id in prefix
+                if int(token_id)
+                not in {
+                    self.tokenizer.bos_id,
+                    self.tokenizer.eos_id,
+                    self.tokenizer.pad_id,
+                }
+            ]
+            frames = tuple(getattr(state, "frames", ()))
+            if not frames and section_types and section_types[-1] == "element:Stack":
+                planned = tokens
+                target_id = self.tokenizer.eos_id
+            else:
+                references = [
+                    f"&{index}"
+                    for index, expr_type in enumerate(section_types)
+                    if family_token_ids.get(
+                        str(expr_type).removeprefix("element:")
+                    )
+                    in required_ids
+                ]
+                if not references:
+                    return None
+                closure = ["+Stack", "[", *references, "]", "^column", "-"]
+                if frames:
+                    try:
+                        stack_start = len(tokens) - 1 - tokens[::-1].index("+Stack")
+                    except ValueError:
+                        return None
+                    base = tokens[:stack_start]
+                    consumed = tokens[stack_start:]
+                    if consumed != closure[: len(consumed)]:
+                        return None
+                    planned = [*base, *closure]
+                    if len(consumed) >= len(closure):
+                        return None
+                    target_id = self.tokenizer.token_to_id.get(
+                        closure[len(consumed)]
+                    )
+                else:
+                    planned = [*tokens, *closure]
+                    target_id = self.tokenizer.token_to_id.get(closure[0])
+            try:
+                from slm_training.dsl.parser import validate
+                from slm_training.dsl.production_codec import decode_choices
+
+                slot_contract = (
+                    self._slot_contracts[row]
+                    if self._slot_contracts and row < len(self._slot_contracts)
+                    else ()
+                )
+                validate(decode_choices(planned, slot_contract or ()))
+            except Exception:  # noqa: BLE001 - predicted plans fail closed
+                return None
         if target_id is None or target_id not in candidate_ids:
             return None
         bias = torch.zeros(
@@ -5691,6 +5752,7 @@ class TwoTowerModel(nn.Module):
                     semantic_plan_root_bias = self._semantic_plan_root_bias(
                         row,
                         states[row],
+                        ids[row, :position].tolist(),
                         candidate_ids,
                     )
                     if semantic_plan_root_bias is not None:

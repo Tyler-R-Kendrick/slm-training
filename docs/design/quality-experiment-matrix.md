@@ -3396,3 +3396,17 @@ Durable artifacts:
 - `docs/design/iter-efs4-04-causal-synthesis-20260720.json`
 - `docs/design/iter-efs4-04-causal-synthesis-20260720.md`
 - `docs/design/iter-efs4-04-causal-synthesis-graph.{mmd,dot}`
+
+## E579 verifier-gated planned root closure
+
+E579 soft-follows a complete, compiler-decoded and verifier-valid
+`Stack([&plan-compatible...], "column")` closure after honest predicted-plan
+component coverage. On a clean matched E569 OOD `n=4` weight ladder, weights
+1 and 2 remain quality-null, while weight 4 improves structural similarity
+from 0.1688 to 0.3013, component recall from 0.2708 to 0.3958, reward from
+0.7345 to 0.7480, AST-node F1 from 0.2833 to 0.3976, and AST-edge F1 from
+0 to 0.20. Syntax remains 1.0. Strict meaning-v2 remains 0 and AgentV fails
+0/1, so the result is structural-only, default-off, and non-promotable. No
+checkpoint was created or synced. Evidence:
+[narrative](iter-e579-verified-plan-root-20260720.md) and
+[JSON](iter-e579-verified-plan-root-20260720.json).
