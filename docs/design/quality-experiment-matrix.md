@@ -4190,3 +4190,48 @@ Evidence:
 [iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
 and
 [JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+
+## E621 closing the train_model.py decode-weight CLI gap
+
+A prior session's diagnostic (documented in the still-open, not-yet-merged
+E622 stack) found that live `slm sft train` runs never set
+`schema_role_slot_decode_weight` or any `semantic_plan_*_decode_weight`
+nonzero during their own periodic in-training eval, because
+`scripts/train_model.py`'s CLI had zero `--semantic-plan-*`/`--schema-*`
+flags at all — only `scripts/evaluate_model.py` exposed them.
+`ModelBuildConfig` already declared every field and
+`harnesses/model_build/factory.py` already read them correctly; only the CLI
+surface on the train side was missing.
+
+E621 adds the 19 missing flags to `scripts/train_model.py`, mirroring
+`scripts/evaluate_model.py`'s names/types/help text, with a new regression
+test (`test_train_model_cli_decode_weights.py`) that drives
+`train_model.main(argv)` end to end (with `train()` stubbed) and asserts
+every field lands in the constructed `ModelBuildConfig`. No decode-bias logic
+changed.
+
+Verified live: built a fresh fixture-scale scratch corpus (this container's
+`outputs/` was empty), then ran a matched pair of 20-step scratch trains
+(`--output-tokenizer choice`, `--eval-every 20 --eval-suite smoke`, both
+under the 3-minute cap). Control leaves the new flags at default; treatment
+sets `--schema-role-slot-decode-weight 8 --semantic-plan-decode-weight 4
+--semantic-plan-repeated-array-close-margin-decode-weight 2`. Both runs'
+persisted `scoreboard.json` confirm the fix at the source of truth:
+
+| `evaluation_policy` field | Control | Treatment |
+| --- | ---: | ---: |
+| `schema_role_slot_decode_weight` | 0.0 | 8.0 |
+| `semantic_plan_decode_weight` | 0.0 | 4.0 |
+| `semantic_plan_repeated_array_close_margin_decode_weight` | 0.0 | 2.0 |
+
+Treatment's `decode_stats.constrained_selection_traces` also carries the
+nonzero weight on every recorded decode step, confirming the bias is live in
+generation, not just recorded. Headline smoke (`n=3`) metrics: `meaningful
+v1` 0.0000→0.3333, `placeholder_fidelity` 0.0000→0.3333, `reward` 0.0000→
+0.3023, but `structural_similarity` regresses 0.2650→0.1885 — an honest
+mixed result at this small scale, not a ship claim. `model.twotower` v59→v60.
+
+Evidence:
+[iter-e621-train-model-decode-weight-cli-gap-20260720.md](iter-e621-train-model-decode-weight-cli-gap-20260720.md)
+and
+[JSON](iter-e621-train-model-decode-weight-cli-gap-20260720.json).

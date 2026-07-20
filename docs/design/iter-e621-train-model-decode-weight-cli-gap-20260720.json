@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "run_id": "e621-train-model-decode-weight-cli-gap-20260720",
+  "experiment_id": "E621",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "cli_wiring_fix",
+  "hypothesis": "scripts/train_model.py is missing the --semantic-plan-*/--schema-*/--slot-coverage-close-decode-weight CLI flags that scripts/evaluate_model.py already exposes (E622's finding); adding them lets a live slm sft train run's periodic eval set these decode weights nonzero instead of always inheriting the ModelBuildConfig dataclass default of None/0.0.",
+  "code_change": {
+    "files": [
+      "scripts/train_model.py",
+      "tests/test_harnesses/model_build/test_train_model_cli_decode_weights.py",
+      "src/slm_training/resources/versions.json"
+    ],
+    "new_cli_flags": [
+      "--semantic-role-decode-weight",
+      "--semantic-role-schema-candidates",
+      "--slot-coverage-close-decode-weight",
+      "--schema-value-decode-weight",
+      "--schema-opaque-decode-weight",
+      "--schema-enum-close-decode-weight",
+      "--schema-opaque-close-decode-weight",
+      "--schema-role-slot-decode-weight",
+      "--semantic-plan-decode-weight",
+      "--semantic-plan-margin-decode-weight",
+      "--semantic-plan-seed-decode-weight",
+      "--semantic-plan-inline-decode-weight",
+      "--semantic-plan-binding-decode-weight",
+      "--semantic-plan-root-decode-weight",
+      "--semantic-plan-root-margin-decode-weight",
+      "--semantic-plan-repeated-array-close-margin-decode-weight",
+      "--semantic-plan-repeated-slot-margin-decode-weight",
+      "--semantic-plan-typed-array-nonempty-margin-decode-weight",
+      "--semantic-plan-typed-array-item-margin-decode-weight",
+      "--visible-reference-decode-weight"
+    ],
+    "no_decode_bias_logic_changed": true,
+    "factory_layer_already_correct": "src/slm_training/harnesses/model_build/factory.py already read every field via getattr(config, name, 0.0) or 0.0 before this change"
+  },
+  "corpus_build": {
+    "train": {
+      "version": "e621-cli-gap-scratch",
+      "source": "fixture",
+      "synthesizer": "quality",
+      "path": "outputs/data/train/e621-cli-gap-scratch"
+    },
+    "eval": {
+      "version": "e621-cli-gap-scratch",
+      "source": "fixture",
+      "allow_without_train_manifest": true,
+      "path": "outputs/data/eval/e621-cli-gap-scratch",
+      "suite_counts": {
+        "smoke": 3,
+        "held_out": 5,
+        "adversarial": 4,
+        "ood": 4,
+        "rico_held": 0
+      }
+    },
+    "note": "this container's outputs/ was empty at session start; no prior E-series checkpoint or corpus was available to reuse"
+  },
+  "training": {
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "device": "cpu",
+    "steps": 20,
+    "eval_every": 20,
+    "eval_suite": "smoke",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "max_wall_minutes": 3.0,
+    "no_sync_checkpoints": true,
+    "code_commit": "739406162c6b5a35bffed8674192c1e30e4b8371",
+    "code_dirty": true,
+    "runs": {
+      "control": {
+        "run_id": "e621-cli-gap-control-choice",
+        "elapsed_wall_seconds": 91.71262467500003,
+        "checkpoint_sha256": "026a9df86150173c15db1ab8d584114955e913bb486eb5a07c85ac7027539223"
+      },
+      "treatment": {
+        "run_id": "e621-cli-gap-treatment",
+        "elapsed_wall_seconds": 91.17624110299994,
+        "checkpoint_sha256": "9ed5efbf6b9977dfc23e4b70fc8a5f79581c31cb55b2be58452f7af7c0f6a500",
+        "schema_role_slot_decode_weight": 8.0,
+        "semantic_plan_decode_weight": 4.0,
+        "semantic_plan_repeated_array_close_margin_decode_weight": 2.0
+      }
+    }
+  },
+  "persisted_evaluation_policy_confirmation": {
+    "control": {
+      "schema_role_slot_decode_weight": 0.0,
+      "semantic_plan_decode_weight": 0.0,
+      "semantic_plan_repeated_array_close_margin_decode_weight": 0.0
+    },
+    "treatment": {
+      "schema_role_slot_decode_weight": 8.0,
+      "semantic_plan_decode_weight": 4.0,
+      "semantic_plan_repeated_array_close_margin_decode_weight": 2.0
+    },
+    "treatment_decode_stats_confirms_live_bias": "suites.smoke.decode_stats.constrained_selection_traces[*].semantic_plan_decode_weight == 4.0 on every recorded decode step"
+  },
+  "control": {
+    "n": 3,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_v1_rate": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "structural_similarity": 0.26499999999999996,
+    "component_type_recall": 0.0,
+    "reward_score": 0.0,
+    "ast_node_f1": 0.42857142857142855,
+    "ast_edge_f1": 0.0,
+    "latency_ms_p50": 27147.75,
+    "latency_ms_p95": 29629.98,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {
+      "passed": 0,
+      "total": 1,
+      "execution_errors": 0,
+      "mean_score": 0.5
+    }
+  },
+  "treatment": {
+    "n": 3,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_v1_rate": 0.3333333333333333,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.3333333333333333,
+    "placeholder_validity": 0.3333333333333333,
+    "structural_similarity": 0.1885,
+    "component_type_recall": 0.3333333333333333,
+    "reward_score": 0.30233333333333334,
+    "ast_node_f1": 0.4157509157509158,
+    "ast_edge_f1": 0.1212121212121212,
+    "latency_ms_p50": 28006.78,
+    "latency_ms_p95": 29669.0,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {
+      "passed": 0,
+      "total": 1,
+      "execution_errors": 0,
+      "mean_score": 0.5
+    }
+  },
+  "decision": "Land the CLI wiring fix. Not a promotion or ship claim: n=3 smoke suite, 20-step scratch checkpoint, fresh fixture corpus built this session (not the E610-E621 lineage's usual corpus). Structural similarity regresses (-0.0765) alongside gains in meaningful v1 / fidelity / validity / reward -- an honest mixed result at this scale, consistent with E620's finding that these weights trade structure for fidelity. Next step: replay against the lineage's usual larger corpus once available in this environment.",
+  "ship_gate_result": "not_applicable",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "739406162c6b5a35bffed8674192c1e30e4b8371",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v16",
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v60"
+    }
+  }
+}
