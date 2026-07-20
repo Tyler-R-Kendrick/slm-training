@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E609",
+  "run_id": "e609-e608-canvas160-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed_rejected_not_promotable",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Making the reported 160-token evaluation canvas govern request-aware generation will complete verified root references without degrading semantic quality.",
+  "preregistration": {
+    "single_variable": "request-aware generation max_len: checkpoint gen_len 58 -> declared eval canvas 160",
+    "acceptance": "Recover Dashboard Card references or strict meaning-v2 without meaningful-v1, structure, reward, or latency regression."
+  },
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "e608-e607-rootmargin2-r1",
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.7,
+      "placeholder_validity": 0.72,
+      "structural_similarity": 0.666675,
+      "component_type_recall": 0.6875,
+      "reward_score": 0.4835,
+      "ast_node_f1": 0.6470990695128627,
+      "ast_edge_f1": 0.5568783068783069,
+      "latency_ms_p50": 4534.37,
+      "latency_ms_p95": 29613.75
+    }
+  },
+  "trace_findings": {
+    "semantic_plan_root_applications": 34,
+    "semantic_plan_root_choice_changes": 25,
+    "tokens_emitted": 158,
+    "dashboard_root_reference_complete": true,
+    "dashboard_canonical_root": "root = Stack([v0, v1, v2, v3], \"column\")",
+    "dashboard_card_bindings": 2,
+    "dashboard_output_symbols": 163,
+    "dashboard_reward_score": 0.0,
+    "dashboard_failure": "deeply nested duplicate Card content consumes the extended canvas"
+  },
+  "comparison_to_e608": {
+    "meaningful_program_rate_delta": -0.25,
+    "strict_v2_delta": 0.0,
+    "placeholder_fidelity_delta": 0.09999999999999998,
+    "placeholder_validity_delta": 0.05999999999999994,
+    "structural_similarity_delta": -0.0031250000000000444,
+    "component_type_recall_delta": 0.0625,
+    "reward_score_delta": -0.19525000000000003,
+    "latency_ms_p95_delta": 15183.83
+  },
+  "decision": "Retain the evaluator contract repair, but reject a 160-token canvas as a quality policy for this checkpoint. It recovers root references by permitting severe nested-content spam.",
+  "next": "Constrain component-local content cardinality and close schema-valid planned components before root construction.",
+  "ship_gates": {
+    "pass": false,
+    "reason": "Diagnostic OOD subset only; strict meaning-v2 is 0, meaningful-v1 and reward regress, Dashboard scores zero reward, and AgentV is 0/1."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2536cb14011f7d467ef0871bbbe55bc17d61fe11",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v28",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v49"
+    },
+    "stamped_at": "2026-07-20T13:47:22.192739+00:00"
+  }
+}
