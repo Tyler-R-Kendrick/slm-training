@@ -315,7 +315,7 @@
         {
           "version": "v9",
           "date": "2026-07-19",
-          "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
+          "note": "add EFS2-01 X22 tree-edit beam-width \u00d7 edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"
         },
         {
           "version": "v8",
@@ -480,12 +480,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-07-20",
+          "note": "add SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
+        },
         {
           "version": "v30",
           "date": "2026-07-20",
@@ -524,7 +529,7 @@
         {
           "version": "v24",
           "date": "2026-07-19",
-          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         },
         {
           "version": "v23",
@@ -584,7 +589,7 @@
         {
           "version": "v13",
           "date": "2026-07-19",
-          "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"
+          "note": "add CAP3-05 (SLM-94) equal-byte width \u00d7 precision ladder planner and dry-run manifest support"
         },
         {
           "version": "v12",
@@ -687,21 +692,81 @@
         "scripts/train_model.py"
       ],
       "history": [
-        {"version": "v15", "date": "2026-07-20", "note": "build and terminate a legal Stack root only after predicted SemanticPlanV1 component-family coverage and extend plan binding into its nested child list"},
-        {"version": "v14", "date": "2026-07-20", "note": "compose predicted semantic-plan binding evidence after learned root-reference identity ranking so identity cannot erase the plan factor"},
-        {"version": "v13", "date": "2026-07-20", "note": "soft-rank legal unused terminal-root references whose generated component families match the predicted prompt SemanticPlanV1"},
-        {"version": "v12", "date": "2026-07-20", "note": "consume prompt-derived predicted SemanticPlanV1 component features as legality-preserving choice-codec score bias with intervention telemetry"},
-        {"version": "v11", "date": "2026-07-20", "note": "add SLM-138 shared recursive denoiser tower wiring, deep-supervision plumbing, and migration helper"},
-        {"version": "v10", "date": "2026-07-20", "note": "expose bounded rare slot-owner record sampling in the shared TwoTower training recipe"},
-        {"version": "v9", "date": "2026-07-20", "note": "use a masked non-empty sentinel for terminal slot-pair context so HF tokenization cannot produce a zero-length sequence"},
-        {"version": "v8", "date": "2026-07-19", "note": "smooth slot lexeme-owner priors with class-prior-proportional pseudo-counts so unseen token-class pairs cannot receive spurious positive association"},
-        {"version": "v7", "date": "2026-07-19", "note": "expose the bounded strict-subset root-reference identity sampling multiplier in the shared model-build recipe"},
-        {"version": "v6", "date": "2026-07-19", "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"},
-        {"version": "v5", "date": "2026-07-19", "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"},
-        {"version": "v4", "date": "2026-07-19", "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"},
-        {"version": "v3", "date": "2026-07-19", "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"},
-        {"version": "v2", "date": "2026-07-19", "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"},
-        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
+        {
+          "version": "v15",
+          "date": "2026-07-20",
+          "note": "build and terminate a legal Stack root only after predicted SemanticPlanV1 component-family coverage and extend plan binding into its nested child list"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-20",
+          "note": "compose predicted semantic-plan binding evidence after learned root-reference identity ranking so identity cannot erase the plan factor"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-20",
+          "note": "soft-rank legal unused terminal-root references whose generated component families match the predicted prompt SemanticPlanV1"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-20",
+          "note": "consume prompt-derived predicted SemanticPlanV1 component features as legality-preserving choice-codec score bias with intervention telemetry"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-20",
+          "note": "add SLM-138 shared recursive denoiser tower wiring, deep-supervision plumbing, and migration helper"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-20",
+          "note": "expose bounded rare slot-owner record sampling in the shared TwoTower training recipe"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-20",
+          "note": "use a masked non-empty sentinel for terminal slot-pair context so HF tokenization cannot produce a zero-length sequence"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-19",
+          "note": "smooth slot lexeme-owner priors with class-prior-proportional pseudo-counts so unseen token-class pairs cannot receive spurious positive association"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-19",
+          "note": "expose the bounded strict-subset root-reference identity sampling multiplier in the shared model-build recipe"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-19",
+          "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-19",
+          "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-19",
+          "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-19",
+          "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-19",
+          "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"
+        }
       ]
     },
     "model.recursive_denoiser": {
@@ -904,7 +969,7 @@
         {
           "version": "v1",
           "date": "2026-07-19",
-          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup \u00d7 choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
@@ -938,6 +1003,11 @@
         "docs/design/iter-spv0-03-semantic-regret-20260719.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -990,6 +1060,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1047,6 +1122,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
         },
         {
@@ -1091,6 +1171,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
         },
         {
@@ -1130,6 +1215,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
         },
         {
@@ -1164,6 +1254,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
         },
         {
@@ -1195,6 +1290,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact version stamps and trim trailing whitespace after harness.experiments v29 bump; report content unchanged"
         },
         {
@@ -1221,6 +1321,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact version stamps after harness.experiments v31 bump; report content unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1260,6 +1365,25 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-140 EFS4-04 Evidence-First Semantic SLM causal synthesis manifest and loader"
+        }
+      ]
+    },
+    "harness.experiments.slm148_x22_conflict_campaign": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm148_x22_conflict_campaign.py",
+        "scripts/run_slm148_x22_conflict_campaign.py",
+        "tests/test_harnesses/experiments/test_slm148_x22_conflict_campaign.py",
+        "tests/test_scripts/test_run_slm148_x22_conflict_campaign.py",
+        "docs/design/iter-slm148-x22-conflict-campaign-20260720.json",
+        "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-148 SPV1-05 plan-conditioned X22 \u00d7 conflict-slice staged campaign wiring/fixture harness"
         }
       ]
     }
