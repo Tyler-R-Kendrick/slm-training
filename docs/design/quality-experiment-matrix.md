@@ -149,6 +149,40 @@ python -m scripts.train_rl \
 python -m scripts.bench_telemetry --train-steps 8 --gen-prompts 8
 ```
 
+## Single-touch confirmation firewall (SLM-184)
+
+Preregistered claim manifests and an access broker that enforces one
+prediction-materialized confirmation touch per confirmation suite. Development
+touches on `allowed_dev_suite_ids` are logged but never treated as confirmatory
+evidence. The firewall is default-off in `run_quality_matrix`; a commented usage
+example sits next to `evaluate_suites`.
+
+```bash
+# Print schema and broker rules
+python -m scripts.audit_experiment_firewall --mode describe
+
+# Fixture wiring (CPU, no training): first confirmation touch succeeds, second fails closed
+python -m scripts.audit_experiment_firewall --mode fixture
+
+# Check access for a specific manifest + ledger + suite
+python -m scripts.audit_experiment_firewall --mode check \
+  --manifest outputs/runs/slm184-claim-manifest-20260720/claim_manifest.frozen.json \
+  --ledger outputs/runs/slm184-claim-manifest-20260720/claim_manifest_ledger.json \
+  --suite-id rico_held \
+  --suite-digest sha256:<digest>
+
+# Audit historical iter JSONs under docs/design
+python -m scripts.audit_experiment_firewall --mode audit-history \
+  --iter-dir docs/design \
+  --output outputs/runs/slm184_audit_history/audit_history.json \
+  --output-md outputs/runs/slm184_audit_history/audit_history.md
+```
+
+Primary artifact: a frozen `ExperimentClaimManifestV1`, an append-only
+`TouchLedger`, and a `SuiteAccessBroker` that fails closed on digest mismatch,
+wrong suite, unfrozen manifest, or duplicate prediction-materialized touch.
+Fixture runs are wiring-only and cannot claim ship gates.
+
 ## External semantic ceiling (SLM-108 / EFS1-01)
 
 Off-the-shelf 1–7B instruct/code models scored through the same compiler-owned

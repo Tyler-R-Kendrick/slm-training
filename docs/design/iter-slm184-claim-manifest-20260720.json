@@ -1,0 +1,113 @@
+{
+  "claim_class": "wiring",
+  "dev_touch": {
+    "allowed": true,
+    "reason": "dev access always allowed; touch logged"
+  },
+  "experiment_id": "slm184-claim-manifest",
+  "falsifier": "The firewall allows more than one prediction-materialized confirmation touch.",
+  "first_confirmation": {
+    "allowed": true,
+    "reason": "confirmation access granted under preregistered manifest"
+  },
+  "frozen_manifest": "outputs/runs/slm184-claim-manifest-20260720/claim_manifest.frozen.json",
+  "hypothesis": "A preregistered claim manifest can enforce a single confirmation touch on one suite while allowing unlimited logged development touches.",
+  "ledger": {
+    "records": [
+      {
+        "experiment_family_id": "slm184-fixture-family",
+        "prediction_materialized": true,
+        "reason": "fixture first confirmation",
+        "suite_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "timestamp": "2026-07-20T19:42:36Z",
+        "touch_id": "slm184-fixture-family__rico_held__confirm",
+        "touch_kind": "confirm"
+      },
+      {
+        "experiment_family_id": "slm184-fixture-family",
+        "prediction_materialized": false,
+        "reason": "fixture dev touch",
+        "suite_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "timestamp": "2026-07-20T19:42:36Z",
+        "touch_id": "slm184-fixture-family__smoke__dev__2026-07-20T19:42:36Z",
+        "touch_kind": "dev"
+      }
+    ]
+  },
+  "manifest": {
+    "allowed_dev_suite_ids": [
+      "smoke",
+      "held_out",
+      "adversarial",
+      "ood"
+    ],
+    "alpha": 0.05,
+    "author": "slm184-fixture",
+    "checkpoint_pin": "v1",
+    "codec_pin": "v1",
+    "config_pin": "v1",
+    "confirmation_suite_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "confirmation_suite_id": "rico_held",
+    "confirmation_touch_id": "slm184-fixture-family__rico_held__confirm",
+    "confirmation_touch_limit": 1,
+    "created_at": "2026-07-20T19:42:36Z",
+    "experiment_family_id": "slm184-fixture-family",
+    "frozen_fields": [
+      "experiment_family_id",
+      "primary_hypothesis",
+      "primary_contrast",
+      "primary_endpoint",
+      "confirmation_suite_id",
+      "confirmation_suite_digest",
+      "mde",
+      "alpha",
+      "power"
+    ],
+    "hardware_class": "cpu",
+    "manifest_version": "claim-manifest-v1",
+    "mde": 0.05,
+    "metric_pin": "v1",
+    "multiplicity_family": "primary_only",
+    "power": 0.8,
+    "primary_contrast": "unrestricted access vs. single-touch confirmation",
+    "primary_endpoint": "confirmation_access_granted_once_then_denied",
+    "primary_hypothesis": "A preregistered claim manifest can enforce a single confirmation touch on one suite while allowing unlimited logged development touches.",
+    "secondary_endpoints": [
+      "ledger_completeness",
+      "digest_mismatch_denial"
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "selection_rule": "single primary endpoint; no cherry-picking across suites",
+    "source_commit": "unknown",
+    "source_dirty": null,
+    "stop_rule": "stop at first prediction-materialized confirmation touch",
+    "tunable_fields": [
+      "seeds",
+      "hardware_class"
+    ]
+  },
+  "matrix_set": "slm184_claim_manifest",
+  "matrix_version": "claim-manifest-v1",
+  "run_id": "slm184-claim-manifest-20260720",
+  "schema": "Slm184ClaimManifestReportV1",
+  "second_confirmation": {
+    "allowed": false,
+    "reason": "a prediction-materialized confirmation touch already exists"
+  },
+  "status": "fixture",
+  "timestamp": "2026-07-20T19:42:36.174516Z",
+  "version_stamp": {
+    "code_commit": "b8540f6260ac7b8020438db134eb92bcfd5e2638",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v49",
+      "harness.experiments.claim_manifest": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T19:42:36.174512+00:00"
+  }
+}
