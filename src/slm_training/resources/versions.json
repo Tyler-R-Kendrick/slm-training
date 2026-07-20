@@ -1309,7 +1309,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v57",
+      "version": "v58",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1324,6 +1324,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v58",
+          "date": "2026-07-20",
+          "note": "score visible slots against active inline object properties derived from the public schema"
+        },
         {
           "version": "v57",
           "date": "2026-07-20",

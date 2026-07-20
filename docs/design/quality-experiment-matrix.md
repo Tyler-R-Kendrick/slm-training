@@ -3874,6 +3874,19 @@ created or synced. Evidence:
 [narrative](iter-e614-typed-object-state-20260720.md) and
 [JSON](iter-e614-typed-object-state-20260720.json).
 
+## E615 typed-object slot roles
+
+E615 extends public-schema role matching through inline object/array-item
+fields and requires the active property to match before applying slot bias.
+Gallery now binds `src`, `alt`, and `details` to the public `img`, `alt`, and
+`caption` slots. Against E614, aggregate fidelity rises 0.7833→0.8250,
+validity 0.8700→0.8950, and reward 0.9020→0.9145; structure, recall, AST F1,
+and 93 emitted tokens are unchanged, while p95 falls 12.60→10.22 s. Retain
+E615 as the next scratch research baseline. Strict v2 remains 0, AgentV is
+0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e615-typed-object-slot-role-20260720.md) and
+[JSON](iter-e615-typed-object-slot-role-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded

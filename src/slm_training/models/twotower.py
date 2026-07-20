@@ -4879,17 +4879,40 @@ class TwoTowerModel(nn.Module):
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
         index = int(getattr(frame, "arg_index", -1))
-        component = str(getattr(frame, "expr_type", "")).removeprefix("element:")
-        if (
-            getattr(frame, "kind", None) != "component"
-            or index < 0
-            or index >= len(schemas)
-            or not schemas[index].get("x-openui-placeholder")
-            or not component
-        ):
+        active_property: str | None = None
+        if getattr(frame, "kind", None) == "component":
+            component = str(getattr(frame, "expr_type", "")).removeprefix(
+                "element:"
+            )
+            accepts_slot = (
+                0 <= index < len(schemas)
+                and bool(schemas[index].get("x-openui-placeholder"))
+            )
+        elif getattr(frame, "kind", None) == "object":
+            active_property = getattr(frame, "active_property", None)
+            component = next(
+                (
+                    str(getattr(owner, "expr_type", "")).removeprefix(
+                        "element:"
+                    )
+                    for owner in reversed(frames[:-1])
+                    if getattr(owner, "kind", None) == "component"
+                ),
+                "",
+            )
+            accepts_slot = (
+                active_property is not None
+                and 0 <= index < len(schemas)
+                and self._schema_can_reach_visible_slot(dict(schemas[index]))
+            )
+        else:
             return None
+        if not component or not accepts_slot:
+            return None
+        from slm_training.data.quality import semantic_role_properties
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
+        properties_by_slot = semantic_role_properties(slot_contract)
         bias = scores.new_zeros(len(candidate_ids))
         applied = False
         for position, token_id in enumerate(candidate_ids):
@@ -4901,7 +4924,13 @@ class TwoTowerModel(nn.Module):
                 slot = slot_contract[slot_index]
             except (ValueError, IndexError):
                 continue
-            if component in semantic_role_candidates.get(slot, ()):
+            if (
+                component in semantic_role_candidates.get(slot, ())
+                and (
+                    active_property is None
+                    or active_property in properties_by_slot.get(slot, ())
+                )
+            ):
                 bias[position] = weight
                 applied = True
         return bias if applied else None
