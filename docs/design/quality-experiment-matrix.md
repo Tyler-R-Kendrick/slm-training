@@ -3714,3 +3714,17 @@ run is retained but excluded from the causal comparison. No checkpoint was
 created or synced. Evidence:
 [narrative](iter-e603-final-choice-reachability-trace-20260720.md) and
 [JSON](iter-e603-final-choice-reachability-trace-20260720.json).
+
+## E604 missing-family plan-pressure ladder
+
+E604 preregisters regular semantic-plan weights 16 and 32 with the ineffective
+first-binding seed disabled. The two matched OOD `n=4` arms are
+aggregate-identical: structure 0.5756, recall 0.6250, reward 0.8145, AST-node
+F1 0.6111, AST-edge F1 0.4643, strict v2 0, and AgentV 0/1. The aggregate gain
+is not missing-family repair: dashboard/gallery remain collapsed, while auth
+gains an exact reference graph through duplicate/misbound `Input` structure.
+Reject both weights, retain plan weight 4 as the scratch baseline, and target
+coverage-aware section commitment plus root reachability next. No checkpoint
+was created or synced. Evidence:
+[narrative](iter-e604-missing-family-pressure-20260720.md) and
+[JSON](iter-e604-missing-family-pressure-20260720.json).
