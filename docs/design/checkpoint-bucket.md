@@ -101,6 +101,7 @@ Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
 
 | Date (UTC) | Run | Sync? | Notes |
 | --- | --- | --- | --- |
+| 2026-07-20 | `e572-e569-fidelity2-r1-48s` | No (`--no-sync-checkpoints`) | 84.26s under `max_wall_minutes=3`, SHA `bb6a58ff4400de90da68c1596ee3ed5b5d64ff1f341dbcd1ac2b4e56cc29efa2`; fidelity/reward improve but semantic coverage regresses and strict meaning/AgentV fail. |
 | 2026-07-20 | `e569-e561-matched-cont48-r1-48s` | No (`--no-sync-checkpoints`) | 75.20s under `max_wall_minutes=3`, SHA `8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73`; matched continuation improves meaning-v1/recall/reward but strict meaning and AgentV fail. |
 | 2026-07-20 | `e568-e561-cont48-r1-48s` | No (`--no-sync-checkpoints`) | 116.24s under `max_wall_minutes=3`, SHA `8dcc080449ea945a731c2b206c5a02e7913f3f61b6fd858e555d9d7e0283a12b`; design-context scratch continuation improves reward but regresses fidelity/topology and fails meaning/AgentV. |
 | 2026-07-20 | `e561-e544-owner-threshold7-r1-24s` | No (`--no-sync-checkpoints`) | 41.47s under `max_wall_minutes=3`, SHA `35a4fe6dd1b0eb2f59c33cb6d4ae11472c693f43a15fa3e6abc46db323a127f9`; broad non-semantic gains, but meaning and AgentV fail. |

@@ -3029,6 +3029,17 @@ targeted strict-semantic mechanism. No checkpoint was created. Evidence:
 [narrative](iter-e571-e569-component-plan05-20260720.md) and
 [JSON](iter-e571-e569-component-plan05-20260720.json).
 
+## E572 E569 fidelity-loss weight 2
+
+A matched 48-step E569 warm start with fidelity loss 0.5→2.0 completes in
+84.26s. OOD `n=4` fidelity improves to 0.6500, validity to 0.7900, and reward
+to 0.8170, but structure falls to 0.1438, recall to 0.1458, AST-node F1 to
+0.1833, and meaningful-v1 to 0. Strict meaning-v2 remains 0 and AgentV
+remains 0/1. **Decision:** reject as a semantic candidate; retain the local
+no-sync checkpoint only as a non-semantic fidelity/reward Pareto. Evidence:
+[narrative](iter-e572-e569-fidelity2-20260720.md) and
+[JSON](iter-e572-e569-fidelity2-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

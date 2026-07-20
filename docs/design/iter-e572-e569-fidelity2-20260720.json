@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E572",
+  "run_id": "e572-e569-fidelity2-r1-48s",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_fidelity_pareto_rejected_not_ship",
+  "hypothesis": "Increasing placeholder fidelity loss from 0.5 to 2.0 during a matched 48-step E569 warm start will reduce required-placeholder failures without losing semantic coverage.",
+  "checkpoint": {
+    "location": "outputs/runs/e572-e569-fidelity2-r1-48s/checkpoints/last.pt",
+    "sha256": "bb6a58ff4400de90da68c1596ee3ed5b5d64ff1f341dbcd1ac2b4e56cc29efa2",
+    "sync": false,
+    "sync_reason": "Explicit local scratch diagnostic; strict binding-aware meaning and AgentV gates fail."
+  },
+  "training": {
+    "parent_run_id": "e569-e561-matched-cont48-r1-48s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "choice",
+    "design_md_context": false,
+    "steps": 48,
+    "batch_size": 2,
+    "seen_target_tokens": 2561,
+    "elapsed_wall_seconds": 84.25602357300522,
+    "max_wall_minutes": 3.0,
+    "fidelity_loss_weight": 2.0,
+    "slot_component_pair_interaction": true,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_owner_rare_threshold": 7,
+    "slot_component_owner_rare_multiplier": 2,
+    "last_loss": 14.038743019104004,
+    "hard_process_cap_seconds": 170
+  },
+  "eval_recipe": {
+    "eval_run_id": "e572-e569-fidelity2-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "component_plan_decode_weight": 0.0,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.65,
+      "placeholder_validity": 0.79,
+      "structural_similarity": 0.14375000000000002,
+      "component_type_recall": 0.14583333333333331,
+      "reward_score": 0.817,
+      "ast_node_f1": 0.18333333333333335,
+      "ast_edge_f1": 0.0,
+      "latency_ms_p50": 5947.09,
+      "latency_ms_p95": 12547.15
+    }
+  },
+  "decode_telemetry": {
+    "slot_component_applications": 25,
+    "slot_component_choice_changes": 24,
+    "root_reference_arity_applications": 0,
+    "root_reference_identity_applications": 0
+  },
+  "comparison": {
+    "baseline": "E569",
+    "placeholder_fidelity_delta": 0.3916666666666667,
+    "placeholder_validity_delta": 0.2350000000000001,
+    "structural_similarity_delta": -0.05937499999999998,
+    "component_type_recall_delta": -0.1875,
+    "reward_score_delta": 0.125,
+    "ast_node_f1_delta": -0.15555555555555556,
+    "ast_edge_f1_delta": 0.0,
+    "meaningful_program_v1_delta": -0.25,
+    "interpretation": "Higher fidelity supervision improves placeholder coverage and reward but collapses E569's component coverage, AST-node fidelity, and legacy meaningful pass."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Binding-aware meaning-v2 remains zero and AgentV fails."
+  },
+  "decision": "Reject as a semantic candidate and keep local only. Fidelity weight 2 is a non-semantic placeholder/reward Pareto, not a strict-meaning fix.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d50b4dbbfdec926393d09ded843ee421cdc00472",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v15",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v11"
+    },
+    "stamped_at": "2026-07-20T03:16:53.052742+00:00"
+  }
+}
