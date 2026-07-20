@@ -1,14 +1,16 @@
 ---
-name: train
-description: Operate the OpenUI SLM training pipeline end to end — build train/test data, SFT, distillation, preference, RL, evaluation with honest ship gates, experiment matrices, checkpoints/promotion, benchmarks, annotations, and bounded autoresearch self-improvement. Use when RUNNING any pipeline phase; to CHANGE harness code use improve-openui-harnesses instead.
+name: autotrain
+description: Operate the OpenUI SLM training pipeline end to end — build train/test data, SFT, distillation, preference, RL, evaluation with honest ship gates, experiment matrices, checkpoints/promotion, benchmarks, annotations, and the bounded autoresearch self-improvement + hypothesis loop. Use when RUNNING any pipeline phase; to CHANGE harness code use improve-openui-harnesses instead; for the knowledge-driven research orchestration loop (brains/OpenWiki/Linear) use autoresearch.
 ---
 
-# Train OpenUI SLMs
+# Autotrain OpenUI SLMs
 
 Facade for **operating** the training pipeline with progressive disclosure:
 this file routes; each phase's full instructions live in `references/` and are
 read only when that phase is being run. To modify a harness, use
-`improve-openui-harnesses`.
+`improve-openui-harnesses`. For the higher-level, knowledge-driven research
+loop that *coordinates* this pipeline with brains / OpenWiki / literature
+discovery / Linear, use `autoresearch`.
 
 ## Workflow
 
@@ -21,7 +23,9 @@ read only when that phase is being run. To modify a harness, use
 4. Close out: docs + model-card duties per contracts
    (`documenting-experiment-results`).
 5. Hand off: ship claims → `honest-ship-eval`; matrix methodology →
-   `running-experiment-matrices`; campaign methodology → `openui-autoresearch`.
+   `running-experiment-matrices`; campaign methodology → `openui-autoresearch`;
+   knowledge-driven research orchestration (brains/OpenWiki/Linear) →
+   `autoresearch`.
 
 ## Phase routing
 

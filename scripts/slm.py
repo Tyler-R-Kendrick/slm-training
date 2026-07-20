@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-REFERENCES = REPO_ROOT / ".agents" / "skills" / "train" / "references"
+REFERENCES = REPO_ROOT / ".agents" / "skills" / "autotrain" / "references"
 
 
 @dataclass(frozen=True)
@@ -209,7 +209,7 @@ def _cmd_guide(args: list[str]) -> int:
     if not REFERENCES.is_dir():
         print(
             "slm guide requires a repository checkout "
-            "(missing .agents/skills/train/references)",
+            "(missing .agents/skills/autotrain/references)",
             file=sys.stderr,
         )
         return 2

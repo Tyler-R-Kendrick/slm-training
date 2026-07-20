@@ -1,0 +1,4 @@
+interface:
+  display_name: "Autotrain OpenUI SLMs"
+  short_description: "Operate every training pipeline phase"
+  default_prompt: "Use $autotrain to run the requested training pipeline phase with honest gates, canonical artifact roots, and documented results."

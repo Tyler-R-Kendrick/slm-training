@@ -9,6 +9,10 @@ Use this skill whenever work touches `scripts.autoresearch`, autonomous experime
 selection, research ingestion, campaign evidence, data-synthesis iteration, or RL
 readiness.
 
+This skill owns **campaign execution**. For the higher-level, knowledge-driven
+research loop that coordinates brains / OpenWiki / prior-work discovery / the
+hypothesis loop / Linear tracking around these campaigns, use `autoresearch`.
+
 ## Non-negotiable contracts
 
 - Read `AGENTS.md`, `docs/design/autoresearch-autotraining.md`, and

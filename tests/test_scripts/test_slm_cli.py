@@ -109,7 +109,7 @@ def test_unknown_group_and_action_exit_two(capsys) -> None:
     assert main(["data", "-h"]) == 0
 
 
-SKILL_DIR = REPO / ".agents" / "skills" / "train"
+SKILL_DIR = REPO / ".agents" / "skills" / "autotrain"
 REFERENCES = SKILL_DIR / "references"
 
 
@@ -148,26 +148,26 @@ def test_every_registry_command_is_documented_in_the_skill() -> None:
         assert f"slm {' '.join(key)}" in corpus, key
 
 
-def test_train_skill_frontmatter_sane() -> None:
+def test_autotrain_skill_frontmatter_sane() -> None:
     lines = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").splitlines()
     assert lines[0] == "---"
     closing = lines.index("---", 1)
     fields = dict(
         line.split(":", 1) for line in lines[1:closing] if ":" in line
     )
-    assert fields["name"].strip() == "train"
+    assert fields["name"].strip() == "autotrain"
     description = fields["description"].strip()
     assert description
     assert len(description) <= 1024
 
 
-def test_train_skill_discovery_symlinks() -> None:
+def test_autotrain_skill_discovery_symlinks() -> None:
     import os
 
     for root in (".claude", ".cursor"):
-        link = REPO / root / "skills" / "train"
+        link = REPO / root / "skills" / "autotrain"
         assert link.is_symlink(), link
-        assert os.readlink(link) == "../../.agents/skills/train"
+        assert os.readlink(link) == "../../.agents/skills/autotrain"
 
 
 def test_end_to_end_dispatch_builds_fixture_corpus(tmp_path: Path) -> None:
