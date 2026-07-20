@@ -4190,3 +4190,39 @@ Evidence:
 [iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
 and
 [JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+
+## E625 seed-1 replay of E620's required-slot-coverage control/treatment
+
+E625 replays E620's `schema_role_slot_decode_weight` (0 control vs 8
+treatment) control/treatment recipe on a fresh seed=1, 800-step scratch
+checkpoint to test whether E620's result was seed-0-specific.
+
+The clean CPU run completed 800 steps in 34.20 seconds under the three-minute
+cap, reaching loss 4.5998 (not comparable across seeds). It wrote local-only
+serving SHA `86573aa5…dc2b7b866`; no bucket sync or promotion was attempted.
+
+| OOD `n=4` | Control (seed1) | Treatment (seed1) | E620 control (seed0) | E620 treatment (seed0) |
+| --- | ---: | ---: | ---: | ---: |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| placeholder fidelity | 0.5750 | 0.7833 | 0.5083 | 0.5500 |
+| placeholder validity | 0.7450 | 0.8700 | 0.7050 | 0.7300 |
+| structural similarity | 0.6167 | 0.6081 | 0.4569 | 0.4886 |
+| component recall | 0.7500 | 0.6667 | 0.5417 | 0.4792 |
+| reward | 0.8358 | 0.8983 | 0.7910 | 0.8140 |
+
+Strict meaning-v2 stays exactly 0/4 in all four control/treatment runs across
+both seeds. The treatment's fidelity/validity/reward benefit and
+component-recall cost replicate directionally at seed1, with larger
+magnitude than seed0. `structural_similarity`'s sign flips between seeds, and
+the count of records still missing required placeholders under treatment is
+seed-sensitive (3/4 at seed0, 2/4 at seed1) — neither is a stable per-seed
+point estimate at `n=4`. Retain E615's role bias as a decode-time default
+candidate; the required-slot/strict-meaning gap itself needs a lever that
+floors still-missing required slots (analogous to
+`semantic_plan_margin_decode_weight`'s existing floor on still-required plan
+families), not another seed or duration replay of the existing lever.
+
+Evidence:
+[iter-e625-required-slot-coverage-seed1-replay-20260720.md](iter-e625-required-slot-coverage-seed1-replay-20260720.md)
+and
+[JSON](iter-e625-required-slot-coverage-seed1-replay-20260720.json).
