@@ -213,6 +213,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Penalize visible placeholders in optional unconstrained arguments.",
     )
     parser.add_argument(
+        "--schema-opaque-close-decode-weight",
+        type=float,
+        default=None,
+        help="Prefer legal closure at optional unconstrained arguments.",
+    )
+    parser.add_argument(
         "--semantic-plan-decode-weight",
         type=float,
         default=None,
@@ -541,6 +547,7 @@ def main(argv: list[str] | None = None) -> int:
         semantic_role_decode_weight=args.semantic_role_decode_weight,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
+        schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         semantic_plan_binding_decode_weight=(
             args.semantic_plan_binding_decode_weight

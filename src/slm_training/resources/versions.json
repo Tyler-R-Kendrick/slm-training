@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-20",
+          "note": "expose the default-off optional opaque-argument close score and persist it in canonical evaluation policy"
+        },
         {
           "version": "v18",
           "date": "2026-07-20",
@@ -717,7 +722,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -728,6 +733,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-20",
+          "note": "add a default-off legality-preserving score for closing optional unconstrained component arguments"
+        },
         {
           "version": "v25",
           "date": "2026-07-20",

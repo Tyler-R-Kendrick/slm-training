@@ -3547,3 +3547,14 @@ the lever default-off; do not promote or sync. Next directly score legal
 closure instead of suppressing one expression class. Evidence:
 [narrative](iter-e589-opaque-slot-penalty-20260720.md) and
 [JSON](iter-e589-opaque-slot-penalty-20260720.json).
+
+## E590 optional opaque-argument close score
+
+E590 directly scores legal closure at optional unconstrained (`{}`) arguments.
+On E588's OOD `n=4` baseline, weights 0/2/4/8 leave every aggregate metric
+unchanged. However, 4 and 8 are byte-identical and remove the erroneous second
+Button action argument, while 0 and 2 retain it; this avoids E589's nested-list
+diversion. Treat 4 as a behavioral scratch threshold only. Keep the lever
+default-off and do not promote or sync: strict meaning-v2 is 0 and AgentV is
+0/1. Evidence: [narrative](iter-e590-opaque-close-score-20260720.md) and
+[JSON](iter-e590-opaque-close-score-20260720.json).
