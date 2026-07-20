@@ -613,6 +613,8 @@ class _ChoiceFrame:
     arg_index: int = 0
     reference_count: int = 0
     item_count: int = 0
+    object_required: tuple[str, ...] = ()
+    object_filled: tuple[str, ...] = ()
 
 
 @dataclass
@@ -629,6 +631,7 @@ class ChoiceDecodeState:
     literal_frame: str | None = None
     literal_size: int = 0
     literal_is_object_key: bool = False
+    require_object_schema_properties: bool = False
 
     def clone(self) -> ChoiceDecodeState:
         return ChoiceDecodeState(
@@ -642,6 +645,7 @@ class ChoiceDecodeState:
             literal_frame=self.literal_frame,
             literal_size=self.literal_size,
             literal_is_object_key=self.literal_is_object_key,
+            require_object_schema_properties=self.require_object_schema_properties,
         )
 
     def can_end(self) -> bool:
@@ -779,8 +783,29 @@ class ChoiceDecodeState:
             )
             return True
         if token == OBJ_OPEN:
+            object_required: tuple[str, ...] = ()
+            if self.require_object_schema_properties and self.frames:
+                parent = self.frames[-1]
+                item_schema: dict[str, Any] | None = None
+                if parent.kind == "component" and parent.arg_index < len(
+                    parent.schemas
+                ):
+                    item_schema = parent.schemas[parent.arg_index]
+                elif parent.kind == "variadic" and parent.schemas:
+                    item_schema = parent.schemas[0]
+                if item_schema and item_schema.get("type") == "object":
+                    required = item_schema.get("required") or ()
+                    object_required = tuple(
+                        str(name) for name in required if isinstance(name, str)
+                    )
             self.frames.append(
-                _ChoiceFrame("object", "object", close=OBJ_CLOSE, phase="key")
+                _ChoiceFrame(
+                    "object",
+                    "object",
+                    close=OBJ_CLOSE,
+                    phase="key",
+                    object_required=object_required,
+                )
             )
             return True
         fixed_arity = {
@@ -895,10 +920,18 @@ class ChoiceDecodeState:
             return self._complete_expr(frame.expr_type)
         if frame.kind == "object" and frame.phase == "key":
             if token == frame.close:
+                if any(
+                    name not in frame.object_filled
+                    for name in frame.object_required
+                ):
+                    return False
                 self.frames.pop()
                 self._complete_expr(frame.expr_type)
                 return True
             if token.startswith(NAME_PREFIX):
+                name = token[len(NAME_PREFIX) :]
+                if name not in frame.object_filled:
+                    frame.object_filled = frame.object_filled + (name,)
                 frame.phase = "value"
                 return True
             if token == NAME_STR:
@@ -933,6 +966,15 @@ class ChoiceDecodeState:
                 schema = frame.schemas[frame.arg_index]
                 return self._minimal_schema_id(schema)
             if frame.kind == "object" and frame.phase == "key":
+                missing = [
+                    name
+                    for name in frame.object_required
+                    if name not in frame.object_filled
+                ]
+                if missing:
+                    name_id = tok.token_to_id.get(f"{NAME_PREFIX}{missing[0]}")
+                    if name_id is not None:
+                        return name_id
                 return tok.token_to_id[str(frame.close)]
             return tok.token_to_id[f"{LIT_PREFIX}null"]
         if self.can_end():
@@ -1000,6 +1042,8 @@ class ChoiceDecodeState:
                     frame.phase,
                     frame.required_args,
                     frame.arg_index,
+                    frame.object_required,
+                    frame.object_filled,
                     tuple(
                         json.dumps(schema, sort_keys=True, separators=(",", ":"))
                         for schema in frame.schemas
@@ -1013,6 +1057,7 @@ class ChoiceDecodeState:
             self.literal_frame,
             self.literal_size,
             self.literal_is_object_key,
+            self.require_object_schema_properties,
         )
 
     def _candidate_ids(self) -> set[int]:

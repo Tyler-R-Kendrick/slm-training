@@ -230,6 +230,54 @@ def test_choice_state_enforces_component_array_item_schema(
     assert state.advance_id(tok.eos_id)
 
 
+def test_choice_state_permits_bare_object_close_by_default(
+    tok: ChoiceTokenizer,
+) -> None:
+    """Default-off: authored typed-object items may close with no keys (E614)."""
+    state = ChoiceDecodeState(tok, slot_count=1)
+    assert state.advance_id(tok.token_to_id["+ImageGallery"])
+    assert state.advance_id(tok.token_to_id["["])
+    assert state.advance_id(tok.token_to_id["{"])
+    assert state.advance_id(tok.token_to_id["}"])
+
+
+def test_choice_state_required_property_closure_blocks_bare_object(
+    tok: ChoiceTokenizer,
+) -> None:
+    """E614: opt-in closure gate requires ImageGallery.images[].src before close."""
+    state = ChoiceDecodeState(
+        tok, slot_count=1, require_object_schema_properties=True
+    )
+    assert state.advance_id(tok.token_to_id["+ImageGallery"])
+    assert state.advance_id(tok.token_to_id["["])
+    assert state.advance_id(tok.token_to_id["{"])
+
+    probe = state.clone()
+    assert not probe.advance_id(tok.token_to_id["}"])
+    assert tok.token_to_id["}"] not in state.allowed_ids(16)
+    assert tok.token_to_id["n:src"] in state.allowed_ids(16)
+
+    assert state.advance_id(tok.token_to_id["n:src"])
+    assert state.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert state.advance_id(tok.token_to_id["}"])
+    assert state.advance_id(tok.token_to_id["]"])
+    assert state.advance_id(tok.token_to_id["-"])
+    assert state.advance_id(tok.eos_id)
+
+
+def test_choice_state_required_property_closure_survives_minimal_completion(
+    tok: ChoiceTokenizer,
+) -> None:
+    """Minimal-completion probing must not treat the required object as infeasible."""
+    state = ChoiceDecodeState(
+        tok, slot_count=1, require_object_schema_properties=True
+    )
+    assert state.advance_id(tok.token_to_id["+ImageGallery"])
+    assert state.advance_id(tok.token_to_id["["])
+    assert state.advance_id(tok.token_to_id["{"])
+    assert state.minimal_completion_length() < 1025
+
+
 def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
     tok.allowed_cache.clear()
     tok.allowed_cache_hits = 0

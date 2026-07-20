@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E614",
+  "run_id": "e614-typed-object-required-property-fixture-r1",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "fixture",
+  "hypothesis": "Propagating typed-array item object schemas into the choice-codec pushdown state and gating object closure on required properties will make ImageGallery's schema-derived object frame refuse to close before its required `src` property is filled, without creating a decode dead end.",
+  "recipe": {
+    "component": "ImageGallery",
+    "field": "images[].src (required)",
+    "mode": "grammar-only fixture; no trained checkpoint available in this environment",
+    "max_wall_minutes": 3.0
+  },
+  "checkpoint": {
+    "created": false,
+    "note": "No prior checkpoint (e.g. e569-e561-matched-cont48-r1-48s used by E608-E613) was present under outputs/ in this environment; a matched OOD quality-metric replay is deferred to the next iteration that has checkpoint access."
+  },
+  "probes": {
+    "default_off": {
+      "require_object_schema_properties": false,
+      "close_legal_with_zero_keys": true,
+      "required_property_name_legal": true,
+      "minimal_completion_length": 4,
+      "minimal_completion_feasible": true
+    },
+    "opt_in": {
+      "require_object_schema_properties": true,
+      "close_legal_with_zero_keys": false,
+      "required_property_name_legal": true,
+      "minimal_completion_length": 6,
+      "minimal_completion_feasible": true
+    },
+    "full_completion": {
+      "reached_eos": true
+    }
+  },
+  "checks": {
+    "default_off_preserves_bare_close": true,
+    "opt_in_blocks_bare_close": true,
+    "opt_in_offers_required_property_name": true,
+    "opt_in_completion_remains_feasible": true,
+    "filled_required_property_permits_full_completion": true
+  },
+  "all_checks_passed": true,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2fe6a7e73ccb0541e2d0e15c8891d8548d839e64",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v57",
+      "harness.model_build.eval": "v33"
+    },
+    "stamped_at": "2026-07-20T16:43:17.198299+00:00"
+  },
+  "generated_at": "2026-07-20T16:43:17.198312Z"
+}

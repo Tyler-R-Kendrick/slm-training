@@ -631,6 +631,53 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
     assert bias.tolist() == [10.0, 0.0, 0.0]
 
 
+def test_typed_object_required_property_closure_wires_into_choice_decode_state() -> (
+    None
+):
+    """E614: config flag threads into the real choice-codec decode loop.
+
+    Without the flag, ImageGallery's schema-derived object item may close with
+    no keys (matching E613's observed arbitrary-key bloat). With the flag on,
+    the pushdown grammar refuses to close the object before its schema's
+    required ``src`` property is filled.
+    """
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    off_model = _model(output_tokenizer="choice")
+    on_model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_object_required_property_closure=True,
+    )
+    assert off_model.config.semantic_plan_typed_object_required_property_closure is (
+        False
+    )
+    assert on_model.config.semantic_plan_typed_object_required_property_closure is (
+        True
+    )
+
+    tok = on_model.tokenizer
+    gallery_id = tok.token_to_id["+ImageGallery"]
+    list_open_id = tok.token_to_id["["]
+    obj_open_id = tok.token_to_id["{"]
+    obj_close_id = tok.token_to_id["}"]
+    name_src_id = tok.token_to_id["n:src"]
+
+    off_state = ChoiceDecodeState(tok, slot_count=1)
+    assert off_state.advance_id(gallery_id)
+    assert off_state.advance_id(list_open_id)
+    assert off_state.advance_id(obj_open_id)
+    assert off_state.advance_id(obj_close_id)
+
+    on_state = ChoiceDecodeState(
+        tok, slot_count=1, require_object_schema_properties=True
+    )
+    assert on_state.advance_id(gallery_id)
+    assert on_state.advance_id(list_open_id)
+    assert on_state.advance_id(obj_open_id)
+    assert obj_close_id not in on_state.allowed_ids(16)
+    assert name_src_id in on_state.allowed_ids(16)
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

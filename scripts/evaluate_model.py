@@ -308,6 +308,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Floor the schema-derived item start inside authored typed arrays.",
     )
     parser.add_argument(
+        "--semantic-plan-typed-object-required-property-closure",
+        action="store_true",
+        help=(
+            "Propagate typed-array item schemas into the choice state and refuse "
+            "to close an authored object before its required properties are filled."
+        ),
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -647,6 +655,9 @@ def main(argv: list[str] | None = None) -> int:
         ),
         semantic_plan_typed_array_item_margin_decode_weight=(
             args.semantic_plan_typed_array_item_margin_decode_weight
+        ),
+        semantic_plan_typed_object_required_property_closure=(
+            args.semantic_plan_typed_object_required_property_closure
         ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,

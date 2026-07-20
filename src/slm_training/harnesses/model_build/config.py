@@ -286,6 +286,7 @@ class ModelBuildConfig:
     semantic_plan_repeated_slot_margin_decode_weight: float | None = None
     semantic_plan_typed_array_nonempty_margin_decode_weight: float | None = None
     semantic_plan_typed_array_item_margin_decode_weight: float | None = None
+    semantic_plan_typed_object_required_property_closure: bool | None = None
     visible_reference_decode_weight: float | None = None
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False

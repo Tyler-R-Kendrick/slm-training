@@ -266,6 +266,7 @@ class TwoTowerConfig:
     semantic_plan_repeated_slot_margin_decode_weight: float = 0.0
     semantic_plan_typed_array_nonempty_margin_decode_weight: float = 0.0
     semantic_plan_typed_array_item_margin_decode_weight: float = 0.0
+    semantic_plan_typed_object_required_property_closure: bool = False
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -6813,8 +6814,19 @@ class TwoTowerModel(nn.Module):
             device=self.device_name,
         )
         ids[:, 0] = tok.bos_id
+        require_object_schema_properties = bool(
+            getattr(
+                self.config,
+                "semantic_plan_typed_object_required_property_closure",
+                False,
+            )
+        )
         states = [
-            ChoiceDecodeState(tok, slot_count=len(contract or ()))
+            ChoiceDecodeState(
+                tok,
+                slot_count=len(contract or ()),
+                require_object_schema_properties=require_object_schema_properties,
+            )
             for contract in contracts
         ]
         active = torch.ones(bsz, dtype=torch.bool, device=self.device_name)
@@ -7942,7 +7954,17 @@ class TwoTowerModel(nn.Module):
                 stream.append(int(token_id))
                 if token_id == tok.eos_id:
                     break
-            state = ChoiceDecodeState(tok, slot_count=len(contract or ()))
+            state = ChoiceDecodeState(
+                tok,
+                slot_count=len(contract or ()),
+                require_object_schema_properties=bool(
+                    getattr(
+                        self.config,
+                        "semantic_plan_typed_object_required_property_closure",
+                        False,
+                    )
+                ),
+            )
             reference_decisions: list[dict[str, object]] = []
             for position, token_id in enumerate(stream):
                 if token_id == tok.bos_id:

@@ -3858,6 +3858,28 @@ Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or synced.
 Evidence: [narrative](iter-e613-schema-derived-typed-item-20260720.md) and
 [JSON](iter-e613-schema-derived-typed-item-20260720.json).
 
+## E614 typed-object required-property closure
+
+E614 propagates typed-array item object schemas into the choice-codec
+pushdown state (`ChoiceDecodeState.require_object_schema_properties`,
+default off) and grammar-rejects closing an authored object before its
+schema's required properties are filled, addressing E613's own next-step
+note. No prior checkpoint was available in this environment, so this is
+grammar-only wiring/fixture evidence, not a matched OOD quality-metric
+replay: against the real `ImageGallery` contract, the default-off path still
+permits closing `images[]`'s object item with zero keys, while the opt-in
+path refuses to close until `n:src` is filled, offers it as a legal
+candidate, keeps `minimal_completion_length` finite, and still reaches a
+full legal completion once the key is filled. All 5 checks pass. Strict v2,
+AgentV, and the E608-E613 aggregate scoreboard are untouched; the lever
+remains default off. No checkpoint was created or synced. Evidence:
+[narrative](iter-e614-typed-object-required-property-20260720.md) and
+[JSON](iter-e614-typed-object-required-property-20260720.json).
+
+```bash
+python -m scripts.run_e614_typed_object_required_property_fixture
+```
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
