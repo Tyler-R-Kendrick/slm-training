@@ -153,6 +153,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "root_reference_identity_decode_weight",
         "remask_span",
         "teacher_init_embeddings",
+        "action_embedding_init",
+        "action_embedding_train",
         "runtime_symbol_features",
         "symbol_slot_augmentation",
         "semantic_candidate_masks",
@@ -528,6 +530,8 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         remask_span=getattr(config, "remask_span", "token"),
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
+        action_embedding_init=getattr(config, "action_embedding_init", "none"),
+        action_embedding_train=getattr(config, "action_embedding_train", "frozen"),
         runtime_symbol_features=getattr(config, "runtime_symbol_features", "none"),
         symbol_slot_augmentation=bool(
             getattr(config, "symbol_slot_augmentation", False)

@@ -535,12 +535,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v37",
+      "version": "v38",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v38",
+          "date": "2026-07-20",
+          "note": "add SLM-163 schema-description action-embedding wiring/fixture harness"
+        },
         {
           "version": "v37",
           "date": "2026-07-20",
@@ -757,6 +762,25 @@
         }
       ]
     },
+    "harness.experiments.slm163_schema_action_embedding": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm163_schema_action_embedding.py",
+        "scripts/run_slm163_schema_action_embedding_fixture.py",
+        "tests/test_harnesses/experiments/test_slm163_schema_action_embedding.py",
+        "tests/test_scripts/test_run_slm163_schema_action_embedding_fixture.py",
+        "docs/design/iter-slm163-schema-action-embedding-20260720.json",
+        "docs/design/iter-slm163-schema-action-embedding-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-163 schema-description action-embedding wiring/fixture harness"
+        }
+      ]
+    },
     "matrix.causal_peft_ftpo": {
       "version": "v1",
       "kind": "matrix",
@@ -786,7 +810,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -800,6 +824,11 @@
       ],
       "history": [
         {
+          "version": "v34",
+          "date": "2026-07-20",
+          "note": "add SLM-163 action_embedding_init and action_embedding_train plumbing; defaults preserve existing behavior"
+        },
+        {
           "version": "v33",
           "date": "2026-07-20",
           "note": "no-bump: complete runtime override plumbing for the already registered v33 lever"
@@ -808,6 +837,11 @@
           "version": "v33",
           "date": "2026-07-20",
           "note": "optionally derive component choices from visible slot roles and the public schema"
+        },
+        {
+          "version": "v33",
+          "date": "2026-07-20",
+          "note": "add SLM-163 action_embedding_init and action_embedding_train plumbing; defaults preserve existing behavior"
         },
         {
           "version": "v32",

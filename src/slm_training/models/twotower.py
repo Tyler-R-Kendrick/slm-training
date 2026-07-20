@@ -416,6 +416,11 @@ class TwoTowerConfig:
     remask_span: str = "token"
     # Optional teacher-init of symbol embeddings from HF context (E45).
     teacher_init_embeddings: bool = False
+    # SLM-163: action-embedding initialization source (none | current_stub |
+    # schema_description | expanded_description | shuffled).
+    action_embedding_init: str = "none"
+    # SLM-163: how to treat action embeddings during training (frozen | trainable).
+    action_embedding_train: str = "frozen"
     # V8 request-conditioned dynamic vocabulary; ``none`` is checkpoint-identical.
     # none | surface | role_gated | replace (C2: dynamic pseudo-embeddings —
     # symbol rows become deterministic byte-compositional vectors).
@@ -8795,16 +8800,40 @@ class TwoTowerModel(nn.Module):
             if not is_hf_context(self.context):
                 return
             assert isinstance(self.context, HFContextEncoder)
+
+            init_source = str(getattr(self.config, "action_embedding_init", "none") or "none")
+            use_catalog = init_source in {"schema_description", "expanded_description", "shuffled"}
+
+            if use_catalog:
+                from slm_training.dsl.action_descriptions import ActionDescriptionCatalog
+
+                catalog = ActionDescriptionCatalog.build()
+                descriptions = catalog.descriptions_for(init_source)
+                fallback = catalog.descriptions_for("current_stub")
+            else:
+                catalog = None  # type: ignore[assignment]
+                descriptions = {}
+                fallback = {}
+
             # Map component / fixed-string tokens to short textual glosses.
             glosses: dict[int, str] = {}
             for tid, tok in self.tokenizer.id_to_token.items():
                 kind = self.tokenizer.kind_of(tid)
                 if kind == TokenKind.COMPONENT:
-                    glosses[tid] = f"{tok} UI component"
+                    key = f"+{tok}"
+                    if key in descriptions:
+                        glosses[tid] = descriptions[key]
+                    else:
+                        glosses[tid] = fallback.get(key, f"{tok} UI component")
                 elif kind == TokenKind.LIT and tok.startswith("STR:"):
                     glosses[tid] = tok[4:]
                 elif kind == TokenKind.STRUCT and tok not in {"NL"}:
-                    glosses[tid] = f"punctuation {tok}"
+                    # Structural tokens use production-style keys when available.
+                    key = tok
+                    if key in descriptions:
+                        glosses[tid] = descriptions[key]
+                    else:
+                        glosses[tid] = fallback.get(key, f"punctuation {tok}")
             if not glosses:
                 return
             prompts = [glosses[i] for i in sorted(glosses)]
