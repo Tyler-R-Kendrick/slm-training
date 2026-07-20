@@ -4003,6 +4003,45 @@ No checkpoint trained, promoted, or synced this iteration; not a ship claim.
 Evidence: [narrative](iter-e618-strict-v2-reference-graph-false-positive-20260720.md)
 and [JSON](iter-e618-strict-v2-reference-graph-false-positive-20260720.json).
 
+## E619 chasing the `--slot-contract-in-context` gap
+
+E619 closes E618's open "next" question with a real matched eval instead of
+leaving it a hypothesis. Before touching the recipe, checked whether
+`--slot-contract-in-context` is safe to add: `apply_runtime_overrides`
+(`src/slm_training/harnesses/model_build/factory.py`) lists it among its
+documented eval-time-only override fields (same category as
+`slot_contract_constrained_decode`, which E617 already validated), and
+`_resolve_slot_contract` (`src/slm_training/models/twotower.py`) only falls
+back to `gold.placeholders` when `honest_slot_contract=False` — every
+E611-E618 recipe already sets `honest_slot_contract=True`, so the exercised
+path derives the inventory only from the user-visible prompt/DESIGN.md text,
+never the gold answer. Confirmed safe (no gold-label leakage). Reused the real
+E617 checkpoint (sha256 `119dd41a…8898a854`, no retraining) and replayed
+E617's exact matched control/treatment recipe with `--slot-contract-in-context`
+added — this requires real fresh generation (the flag changes model input),
+unlike E618's pure re-score, so two real eval runs were executed.
+**Result:** headline metrics (`parse_rate`, `placeholder_fidelity`,
+`reward_score`, etc.) are unchanged from E617's baseline in both arms; 3 of 4
+OOD predictions are byte-identical to E617's, and the 4th
+(`ood_modal_01`, already a malformed self-nested tree) differs by one
+character deep in its garbage tail with no metric impact.
+`required_inventory_coverage` moves from `UNKNOWN` to a real judged verdict
+for all 4 records in both arms (`binding_aware_meaningful_v2_coverage`
+0.75 → 1.0) — E618's hypothesis, confirmed. All 4 records genuinely FAIL it
+(`required_placeholder_missing` and/or `placeholder_semantic_role_mismatch`
+reason codes, e.g. `ood_gallery_01` is missing 5 of its 6 required
+placeholders); `binding_correctness` still PASSes for all 4 (E618's fix
+holds). **`binding_aware_meaningful_v2_rate_strict` stays 0.0 → 0.0 in both
+arms — no OOD item flips to a strict-v2 pass.** This is a real, honest 0:
+the previously-silent `UNKNOWN` gap is now fully accounted for, and the
+checkpoint genuinely does not yet emit the full required placeholder set. No
+code changed (`verify_version_stamps --check`: 0 components touched); no
+checkpoint trained, promoted, or synced. Not a ship claim. Recommend adding
+`--slot-contract-in-context` to future recipes in this lineage going forward
+(strict honesty improvement, no measured cost).
+Evidence: [narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
+and [JSON](iter-e619-slot-contract-in-context-gap-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
