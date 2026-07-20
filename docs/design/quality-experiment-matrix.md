@@ -2867,6 +2867,14 @@ and close the factorial. Evidence:
 [narrative](iter-e556-slot-context-combined-20260720.md) and
 [JSON](iter-e556-slot-context-combined-20260720.json).
 
+## E557 full slot-owner class balancing
+
+Changing E555 class-balance power 0.5→1.0 produces identical predictions and
+metrics: fidelity 0.3000, structure 0.1594, recall 0.1250, reward 0.5453,
+meaning 0, AgentV 0/1. **Decision:** reject and change data/sampling coverage.
+Evidence: [narrative](iter-e557-slot-balance1-20260720.md) and
+[JSON](iter-e557-slot-balance1-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

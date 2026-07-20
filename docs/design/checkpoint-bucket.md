@@ -101,6 +101,7 @@ Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
 
 | Date (UTC) | Run | Sync? | Notes |
 | --- | --- | --- | --- |
+| 2026-07-20 | `e557-e544-slot-pair-balance1-r1-24s` | No (`--no-sync-checkpoints`) | 70.09s under `max_wall_minutes=3`, SHA `438d9871bc8389f6d61d4f3e357d56d280a22aafa26962404f6c47c92b97db05`; metric-identical to E555 and semantic gates fail. |
 | 2026-07-20 | `e556-e544-slot-context-combined-r1-24s` | No (`--no-sync-checkpoints`) | 68.42s under `max_wall_minutes=3`, SHA `139c670c7e1d087101111720fbb458f2a0ad1b3284e9d57fa3eff4fa95831f0a`; combined treatment regresses fidelity/reward and fails semantic gates. |
 | 2026-07-20 | `e555-e544-slot-pair-interaction-r2-24s` | No (`--no-sync-checkpoints`) | Explicit 24-step local-only scratch diagnostic; 50.29s under `max_wall_minutes=3`, serving SHA `af53e1619e9749eab78379ae7696a929e7409dbd984a5e33481cfa050addf19e`. Pareto topology gain, but semantic gates and AgentV fail; no promotion. |
 | 2026-07-20 | `e554-e544-slot-next-context-r2-24s` | No (`--no-sync-checkpoints`) | Explicit 24-step local-only scratch diagnostic; 39.91s under `max_wall_minutes=3`, serving SHA `af3cbce7ca8c2adfbccc8d5ad0550361e2c30f56a6da04f6390615d40c67b579`. Mixed topology gains and fidelity/reward regressions; semantic gates and AgentV fail, so no promotion. |

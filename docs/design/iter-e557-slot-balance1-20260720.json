@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E557",
+  "run_id": "e557-e544-slot-pair-balance1-r1-24s",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_null_result_not_ship",
+  "hypothesis": "Full inverse-frequency slot-owner loss weighting will improve rare-owner recall over E555's square-root weighting.",
+  "checkpoint": {
+    "location": "outputs/runs/e557-e544-slot-pair-balance1-r1-24s/checkpoints/last.pt",
+    "sha256": "438d9871bc8389f6d61d4f3e357d56d280a22aafa26962404f6c47c92b97db05",
+    "sync": false,
+    "sync_reason": "Local scratch diagnostic; predictions are metric-identical to E555 and semantic gates fail."
+  },
+  "training": {
+    "parent_run_id": "e544-e543-root-identity1-r2-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "steps": 24,
+    "seen_target_tokens": 1304,
+    "elapsed_wall_seconds": 70.08841872899939,
+    "max_wall_minutes": 3.0,
+    "slot_component_pair_interaction": true,
+    "slot_component_class_balance_power": 1.0,
+    "last_loss": 12.515190124511719,
+    "hard_process_cap_seconds": 170
+  },
+  "eval_recipe": {
+    "eval_run_id": "e557-slot-pair-balance1-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {"ood": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.3,
+    "placeholder_validity": 0.48,
+    "structural_similarity": 0.15937500000000002,
+    "component_type_recall": 0.125,
+    "reward_score": 0.54525,
+    "ast_node_f1": 0.2388888888888889,
+    "ast_edge_f1": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0
+  }},
+  "comparison": {"baseline": "E555", "all_headline_metric_deltas": 0.0, "interpretation": "Weighting power 0.5 and 1.0 produce identical predictions and metrics."},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "ship_gates": {"pass": false, "agentv_pass": false, "reason": "No quality gain; meaning, AST edge F1, and AgentV remain zero."},
+  "decision": "Reject checkpoint and close scalar class-balance tuning; change owner coverage in data or sampling.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "78117bc10b5de4f02b1e122508568b6d54184a6b",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v14",
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v9"
+    },
+    "stamped_at": "2026-07-20T00:48:03.275895+00:00"
+  }
+}
