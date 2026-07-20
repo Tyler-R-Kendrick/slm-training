@@ -107,6 +107,8 @@ class DecodeStats:
     constraint_graph_edges: int = 0
     completion_bound_known: int = 0
     completion_bound_unknown: int = 0
+    # SLM-176: retrieve-then-rerank shortlist decision traces (default empty).
+    action_shortlist_traces: list[dict[str, object]] = field(default_factory=list)
     # VSS1-04 (SLM-64): verified-solver decode work metrics. Zero on every
     # historical/default path (solver disabled); solver wall time is separated
     # from denoiser_ms/projection_ms. Names are stable and documented in

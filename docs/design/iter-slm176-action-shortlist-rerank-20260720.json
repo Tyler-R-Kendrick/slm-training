@@ -1,0 +1,151 @@
+{
+  "cells": [
+    {
+      "k": 4,
+      "legal_set_size": 8,
+      "query_hint": "data visualization",
+      "scenario_id": "size8_k4_s0",
+      "seed": 0
+    },
+    {
+      "k": 8,
+      "legal_set_size": 8,
+      "query_hint": "user input form",
+      "scenario_id": "size8_k8_s0",
+      "seed": 0
+    },
+    {
+      "k": 4,
+      "legal_set_size": 16,
+      "query_hint": "container layout",
+      "scenario_id": "size16_k4_s0",
+      "seed": 0
+    },
+    {
+      "k": 8,
+      "legal_set_size": 16,
+      "query_hint": "structural root",
+      "scenario_id": "size16_k8_s0",
+      "seed": 0
+    },
+    {
+      "k": 4,
+      "legal_set_size": 32,
+      "query_hint": "user input form",
+      "scenario_id": "size32_k4_s0",
+      "seed": 0
+    },
+    {
+      "k": 8,
+      "legal_set_size": 32,
+      "query_hint": "container layout",
+      "scenario_id": "size32_k8_s0",
+      "seed": 0
+    }
+  ],
+  "claim_class": "wiring",
+  "dependency_caveats": [
+    "Depends on slm_training.dsl.action_shortlist and the deterministic FixtureDescriptionEncoder; real text encoders may produce different geometry.",
+    "Legal sets are synthetic permutations of a small fixture catalog, not live compiler legal actions from a real decode step.",
+    "No model is trained; this is wiring evidence only."
+  ],
+  "disposition": "shortlist_wiring_ok",
+  "disposition_rationale": "Deterministic description retrieval retains the full-set top candidate and achieves reasonable recall@k on synthetic legal sets.  Wiring is ready for a trained-model test.",
+  "experiment_id": "slm176-action-shortlist-rerank",
+  "falsifier": "The retrieval shortlist drops the full-set top-1 candidate or collapses to fallback for every non-trivial legal set.",
+  "hypothesis": "A deterministic description-retrieval shortlist preserves the full-set top candidate for synthetic legal action sets.",
+  "matrix_set": "slm176_action_shortlist_rerank",
+  "matrix_version": "p14-v1",
+  "mean_full_top1_retained": 1.0,
+  "mean_recall_at_k": 1.0,
+  "rows": [
+    {
+      "fallback_reason": null,
+      "full_top1_in_shortlist": true,
+      "full_top5_in_shortlist": true,
+      "k": 4,
+      "legal_set_size": 8,
+      "recall_at_k": 1.0,
+      "scenario_id": "size8_k4_s0",
+      "seed": 0,
+      "shortlist_size": 4,
+      "wall_seconds": 0.0016039059953764081
+    },
+    {
+      "fallback_reason": null,
+      "full_top1_in_shortlist": true,
+      "full_top5_in_shortlist": true,
+      "k": 8,
+      "legal_set_size": 8,
+      "recall_at_k": 1.0,
+      "scenario_id": "size8_k8_s0",
+      "seed": 0,
+      "shortlist_size": 8,
+      "wall_seconds": 0.0013702510002767667
+    },
+    {
+      "fallback_reason": null,
+      "full_top1_in_shortlist": true,
+      "full_top5_in_shortlist": true,
+      "k": 4,
+      "legal_set_size": 15,
+      "recall_at_k": 1.0,
+      "scenario_id": "size16_k4_s0",
+      "seed": 0,
+      "shortlist_size": 4,
+      "wall_seconds": 0.001352485993062146
+    },
+    {
+      "fallback_reason": null,
+      "full_top1_in_shortlist": true,
+      "full_top5_in_shortlist": true,
+      "k": 8,
+      "legal_set_size": 15,
+      "recall_at_k": 1.0,
+      "scenario_id": "size16_k8_s0",
+      "seed": 0,
+      "shortlist_size": 8,
+      "wall_seconds": 0.0013464199980953708
+    },
+    {
+      "fallback_reason": null,
+      "full_top1_in_shortlist": true,
+      "full_top5_in_shortlist": true,
+      "k": 4,
+      "legal_set_size": 15,
+      "recall_at_k": 1.0,
+      "scenario_id": "size32_k4_s0",
+      "seed": 0,
+      "shortlist_size": 4,
+      "wall_seconds": 0.0016140890036476776
+    },
+    {
+      "fallback_reason": null,
+      "full_top1_in_shortlist": true,
+      "full_top5_in_shortlist": true,
+      "k": 8,
+      "legal_set_size": 15,
+      "recall_at_k": 1.0,
+      "scenario_id": "size32_k8_s0",
+      "seed": 0,
+      "shortlist_size": 8,
+      "wall_seconds": 0.0015942650022916496
+    }
+  ],
+  "run_id": "slm176-action-shortlist-rerank-20260720",
+  "schema": "Slm176ActionShortlistRerankReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T15:57:07.572188Z",
+  "version_stamp": {
+    "code_commit": "f30b0c448597c4c5319b19cd99939b98e2544e55",
+    "code_dirty": true,
+    "components": {
+      "dsl.action_descriptions": "v2",
+      "dsl.action_shortlist": "v1",
+      "harness.experiments": "v47",
+      "harness.experiments.slm176_action_shortlist_rerank": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T15:57:07.571776+00:00"
+  }
+}

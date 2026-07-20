@@ -15,6 +15,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
 
+import torch
+
 from slm_training.dsl.lang_core import library_schema
 from slm_training.dsl.production_codec import (
     ACTION_STMT,
@@ -100,7 +102,9 @@ def _type_label(prop_schema: dict[str, Any]) -> str:
             return f"ref:{ref.rsplit('/', 1)[-1]}"
         return "ref"
     if "anyOf" in prop_schema:
-        labels = sorted({_type_label(dict(o)) for o in prop_schema["anyOf"] if isinstance(o, dict)})
+        labels = sorted(
+            {_type_label(dict(o)) for o in prop_schema["anyOf"] if isinstance(o, dict)}
+        )
         return "|".join(labels) if labels else "any"
     expected = prop_schema.get("type")
     if isinstance(expected, list):
@@ -256,7 +260,9 @@ class ActionAliasMap:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ActionAliasMap":
         aliases = tuple(
-            ActionAlias.from_dict(a) for a in data.get("aliases", []) if isinstance(a, dict)
+            ActionAlias.from_dict(a)
+            for a in data.get("aliases", [])
+            if isinstance(a, dict)
         )
         return cls(
             aliases=aliases,
@@ -293,9 +299,7 @@ class ActionAliasMap:
                         f"{key}: text contains canonical short_name {canonical_short!r}"
                     )
             if key in text:
-                findings.append(
-                    f"{key}: text contains canonical action_key {key!r}"
-                )
+                findings.append(f"{key}: text contains canonical action_key {key!r}")
             if alias and canonical_short and canonical_short in alias:
                 findings.append(
                     f"{key}: alias {alias!r} contains canonical short_name {canonical_short!r}"
@@ -316,9 +320,7 @@ def build_alias_map(
     if not keys:
         return ActionAliasMap(aliases=(), seed=seed, pack_id=pack_id)
     n = len(keys)
-    digest = hashlib.sha256(
-        f"{seed}:{pack_id}:alias_map".encode("utf-8")
-    ).digest()
+    digest = hashlib.sha256(f"{seed}:{pack_id}:alias_map".encode("utf-8")).digest()
     rng = random.Random(int.from_bytes(digest[:8], byteorder="big", signed=False))
     alias_pool = [f"ACT_{i:04d}" for i in range(n)]
     rng.shuffle(alias_pool)
@@ -365,8 +367,12 @@ class ActionDescriptionCatalog:
                 role_parts.append(f"{prop_name}:{label}")
                 sig_parts.append(f"{prop_name}: {label}")
 
-            signature = f"+{name}({', '.join(sig_parts)})" if sig_parts else f"+{name}()"
-            description = _clean(definition.get("description")) or f"{name} UI component."
+            signature = (
+                f"+{name}({', '.join(sig_parts)})" if sig_parts else f"+{name}()"
+            )
+            description = (
+                _clean(definition.get("description")) or f"{name} UI component."
+            )
             if prop_names:
                 description = f"{description} Args: {', '.join(role_parts)}."
 
@@ -468,9 +474,7 @@ class ActionDescriptionCatalog:
             }
 
         if source == "shuffled":
-            base = {
-                entry.action_key: entry.description for entry in self.entries
-            }
+            base = {entry.action_key: entry.description for entry in self.entries}
             keys = sorted(base)
             values = [base[k] for k in keys]
             rng = random.Random(163)
@@ -509,9 +513,7 @@ class ActionDescriptionCatalog:
 
         if source == "alias_aware_description":
             if alias_map is None:
-                raise ValueError(
-                    f"source={source!r} requires an alias_map"
-                )
+                raise ValueError(f"source={source!r} requires an alias_map")
             return {
                 entry.action_key: alias_map.apply_to_description(
                     entry, "alias_aware_description"
@@ -521,9 +523,7 @@ class ActionDescriptionCatalog:
 
         if source == "alias_aware_signature_only":
             if alias_map is None:
-                raise ValueError(
-                    f"source={source!r} requires an alias_map"
-                )
+                raise ValueError(f"source={source!r} requires an alias_map")
             return {
                 entry.action_key: alias_map.apply_to_description(
                     entry, "alias_aware_signature_only"
@@ -533,9 +533,7 @@ class ActionDescriptionCatalog:
 
         if source == "alias_aware_shuffled":
             if alias_map is None:
-                raise ValueError(
-                    f"source={source!r} requires an alias_map"
-                )
+                raise ValueError(f"source={source!r} requires an alias_map")
             alias_aware = {
                 entry.action_key: alias_map.apply_to_description(
                     entry, "alias_aware_description"
@@ -548,11 +546,28 @@ class ActionDescriptionCatalog:
             rng.shuffle(values)
             shuffled = dict(zip(keys, values))
             return {
-                key: f"{alias_map.by_key[key]} {text}"
-                for key, text in shuffled.items()
+                key: f"{alias_map.by_key[key]} {text}" for key, text in shuffled.items()
             }
 
         raise ValueError(f"unknown description source: {source!r}")
+
+    def fixture_vectors(
+        self,
+        d_model: int,
+        source: str = "schema_description",
+        alias_map: ActionAliasMap | None = None,
+        name_mode: str = "schema",
+    ) -> dict[str, torch.Tensor]:
+        """Return deterministic fixture vectors for every catalog action key.
+
+        ``source`` and ``name_mode`` are passed through to ``descriptions_for``;
+        the resulting text is encoded with ``FixtureDescriptionEncoder``.
+        """
+        encoder = FixtureDescriptionEncoder(d_model)
+        descriptions = self.descriptions_for(
+            source, alias_map=alias_map, name_mode=name_mode
+        )
+        return {key: encoder.encode(text) for key, text in descriptions.items()}
 
     def _stub_for(self, entry: ActionDescription) -> str:
         if entry.provenance == "schema":
@@ -623,7 +638,9 @@ def masked_mean_pool(embeddings: Any, mask: Any) -> Any:
     return out.squeeze(-2)
 
 
-def coverage_report(descriptions: Mapping[str, str], catalog: ActionDescriptionCatalog) -> dict[str, Any]:
+def coverage_report(
+    descriptions: Mapping[str, str], catalog: ActionDescriptionCatalog
+) -> dict[str, Any]:
     """Return coverage fraction and missing keys relative to ``catalog``."""
     keys = set(catalog.keys())
     present = set(descriptions)
@@ -651,7 +668,10 @@ def compute_nearest_neighbor_metrics(vectors: Mapping[str, Any]) -> dict[str, An
     best_scores, best_indices = sims.max(dim=-1)
     mean_score = float(best_scores.mean().item())
     neighbor_map = {
-        keys[i]: {"nearest": keys[int(best_indices[i].item())], "cosine": float(best_scores[i].item())}
+        keys[i]: {
+            "nearest": keys[int(best_indices[i].item())],
+            "cosine": float(best_scores[i].item()),
+        }
         for i in range(n)
     }
     return {"mean_nearest_cosine": mean_score, "nearest_neighbor_map": neighbor_map}
