@@ -3676,7 +3676,7 @@ class TwoTowerModel(nn.Module):
             and next_slots is not None
         ):
             next_context, next_pad = self._encode_context(
-                [slot or "" for slot in next_slots]
+                [slot or "<no-next-slot>" for slot in next_slots]
             )
             next_pooled = self._pool_context(next_context, next_pad)
             present = torch.as_tensor(
