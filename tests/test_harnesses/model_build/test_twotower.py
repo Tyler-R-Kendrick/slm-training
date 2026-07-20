@@ -470,6 +470,31 @@ def test_migrate_checkpoint_rebuilds_v2_vocab(tmp_path: Path) -> None:
     assert loaded.tokenizer.vocab_size == report["new_vocab_size"]
 
 
+def test_twotower_training_loss_runs_for_both_denoiser_archs() -> None:
+    records = [
+        ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),
+        ExampleRecord(id="b", prompt="CTA", openui=CTA, split="train"),
+    ]
+    for arch in ("stacked", "shared_recursive"):
+        model = TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=2,
+                context_layers=1,
+                denoiser_layers=2,
+                denoiser_arch=arch,  # type: ignore[arg-type]
+                recursive_steps=2,
+                recursive_transition_layers=2,
+                grammar_constrained=False,
+                seed=0,
+            ),
+            device="cpu",
+        )
+        loss = model.training_loss(records)
+        assert torch.isfinite(loss)
+
+
 def test_twotower_training_loss_decreases() -> None:
     records = [
         ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),

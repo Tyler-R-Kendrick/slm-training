@@ -21,6 +21,7 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
+from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
 from slm_training.models.context import (
     HFContextEncoder,
     ScratchContextEncoder,
@@ -176,6 +177,15 @@ class TwoTowerConfig:
     # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
     # hf_model_name causal LM as a bidirectional masked denoiser backbone.
     denoiser_backend: str = "scratch"
+    # stacked | shared_recursive — SLM-138 shared recursive denoiser tower.
+    denoiser_arch: str = "stacked"
+    # SLM-138: number of recurrences for the shared recursive denoiser.
+    recursive_steps: int = 1
+    # SLM-138: number of shared TransformerBlocks in the recursive transition.
+    # 0 means inherit from denoiser_layers.
+    recursive_transition_layers: int = 0
+    # SLM-138: per-recursion CE weights for deep supervision (empty = off).
+    recursive_depth_supervision_weights: tuple[float, ...] = ()
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
@@ -500,6 +510,15 @@ def _load_checkpoint_state(
     allowed_missing |= {
         key for key in missing if key.startswith("root_reference_identity_head.")
     }
+    # SLM-138: a shared-recursive denoiser adds z-state parameters that older
+    # stacked checkpoints legitimately omit; warm-start them randomly.
+    if getattr(config, "denoiser_arch", None) == "shared_recursive":
+        allowed_missing |= {
+            key
+            for key in missing
+            if key.startswith("denoiser.")
+            and key.split(".")[1] in {"z_latent", "ctx_proj"}
+        }
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
     # non-factorized path now uses a non-persistent stub, so treat that legacy
@@ -601,16 +620,38 @@ class TwoTowerModel(nn.Module):
                 n_kinds=max(kind_ids) + 1 if kind_ids else 0,
             )
         elif denoiser_backend in {"scratch", "token", "local"}:
-            self.denoiser = DenoiserTower(
-                vocab_size=tokenizer.vocab_size,
-                d_model=self.config.d_model,
-                n_layers=self.config.denoiser_layers,
-                n_heads=self.config.n_heads,
-                max_len=self.config.max_target_len,
-                dropout=self.config.dropout,
-                kind_ids=kind_ids,
-                n_kinds=max(kind_ids) + 1 if kind_ids else 0,
-            )
+            denoiser_arch = str(getattr(self.config, "denoiser_arch", "stacked")).lower()
+            if denoiser_arch == "shared_recursive":
+                transition_layers = int(
+                    getattr(self.config, "recursive_transition_layers", 0) or 0
+                )
+                if transition_layers <= 0:
+                    transition_layers = self.config.denoiser_layers
+                self.denoiser: nn.Module = SharedRecursiveDenoiserTower(
+                    vocab_size=tokenizer.vocab_size,
+                    d_model=self.config.d_model,
+                    n_layers=self.config.denoiser_layers,
+                    n_heads=self.config.n_heads,
+                    max_len=self.config.max_target_len,
+                    dropout=self.config.dropout,
+                    kind_ids=kind_ids,
+                    n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                    recursive_steps=int(
+                        getattr(self.config, "recursive_steps", 1) or 1
+                    ),
+                    recursive_transition_layers=transition_layers,
+                )
+            else:
+                self.denoiser = DenoiserTower(
+                    vocab_size=tokenizer.vocab_size,
+                    d_model=self.config.d_model,
+                    n_layers=self.config.denoiser_layers,
+                    n_heads=self.config.n_heads,
+                    max_len=self.config.max_target_len,
+                    dropout=self.config.dropout,
+                    kind_ids=kind_ids,
+                    n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                )
         else:
             raise ValueError(f"unknown denoiser_backend {denoiser_backend!r}")
 
@@ -1846,14 +1887,29 @@ class TwoTowerModel(nn.Module):
 
         from slm_training.runtime.telemetry import timed
 
+        depth_logits: list[torch.Tensor] | None = None
         with timed("denoiser_forward"):
             self._set_runtime_symbol_features(
                 [self._symbol_tables.get(key) for key in cache_keys]
             )
             try:
-                logits = self.denoiser(
-                    noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                ds_weights = tuple(
+                    getattr(self.config, "recursive_depth_supervision_weights", None)
+                    or ()
                 )
+                has_recursive_outputs = hasattr(self.denoiser, "recursive_outputs")
+                if ds_weights and has_recursive_outputs:
+                    rec_out = self.denoiser.recursive_outputs(
+                        noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                    )
+                    logits = rec_out["logits"]
+                    assert isinstance(logits, torch.Tensor)
+                    depth_logits = rec_out["depth_logits"]
+                    assert isinstance(depth_logits, list)
+                else:
+                    logits = self.denoiser(
+                        noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                    )
             finally:
                 # Request-local features must not outlive their batch: a later
                 # forward with a different batch size (loss suites, eval)
@@ -1898,6 +1954,27 @@ class TwoTowerModel(nn.Module):
                 .cpu()
                 .tolist()
             )
+
+            # SLM-138: deep supervision over per-recursion logits.
+            if depth_logits is not None and ds_weights:
+                depth_losses: list[torch.Tensor] = []
+                usable = min(len(depth_logits), len(ds_weights))
+                total_w = sum(ds_weights[:usable])
+                if total_w > 0.0:
+                    for d, w in enumerate(ds_weights[:usable]):
+                        d_logits = depth_logits[d]
+                        d_flat = d_logits.reshape(-1, d_logits.size(-1))
+                        d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
+                        d_loss = (d_ce * weights)[mask_flat].mean()
+                        depth_losses.append(d_loss)
+                        self.last_training_metrics[
+                            f"recursive_depth_loss_{d}"
+                        ] = float(d_loss.detach().cpu())
+                    normalized = torch.stack(depth_losses).sum() / total_w
+                    mask_loss = mask_loss + normalized
+                    self.last_training_metrics[
+                        "recursive_depth_supervision_loss"
+                    ] = float(normalized.detach().cpu())
         else:
             mask_loss = logits.sum() * 0.0
             self._last_example_token_losses = [0.0] * len(batch)

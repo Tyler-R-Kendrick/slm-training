@@ -200,3 +200,81 @@ def migrate_grammar_diffusion_checkpoint(
         json.dumps(report, indent=2) + "\n", encoding="utf-8"
     )
     return report
+
+
+def migrate_to_shared_recursive_denoiser(
+    old_path: Path | str,
+    new_path: Path | str,
+    config: dict[str, object] | None = None,
+    device: str = "cpu",
+) -> dict:
+    """Warm-start a stacked DenoiserTower checkpoint into a shared-recursive tower.
+
+    Loads the source checkpoint, builds a ``TwoTowerModel`` with
+    ``denoiser_arch="shared_recursive"``, copies all matching ``denoiser.*``
+    keys, leaves the new z-state tensors (``z_latent``, ``ctx_proj``) randomly
+    initialized, and writes the result to ``new_path``.
+    """
+    old_path = Path(old_path)
+    new_path = Path(new_path)
+    payload = torch.load(old_path, map_location=device, weights_only=True)
+    if payload.get("kind") != "twotower":
+        raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
+
+    tokenizer_path = old_path.with_suffix(".tokenizer.json")
+    if not tokenizer_path.exists():
+        raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tokenizer_path}")
+    tokenizer = OpenUITokenizer.load(tokenizer_path, allow_legacy=True)
+
+    raw_cfg = dict(payload.get("config") or {})
+    if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
+        raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
+    valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}
+    cfg_kwargs = {k: v for k, v in raw_cfg.items() if k in valid}
+    cfg_kwargs["denoiser_arch"] = "shared_recursive"
+    user_cfg = config or {}
+    for key in (
+        "recursive_steps",
+        "recursive_transition_layers",
+        "recursive_depth_supervision_weights",
+    ):
+        if key in user_cfg:
+            cfg_kwargs[key] = user_cfg[key]
+    cfg = TwoTowerConfig(**cfg_kwargs)
+
+    new_model = TwoTowerModel(tokenizer=tokenizer, config=cfg, device=device)
+    old_state = payload["state_dict"]
+    new_state = new_model.state_dict()
+    copied_keys: list[str] = []
+    skipped_keys: list[str] = []
+    initialized_keys: list[str] = []
+
+    for key, tensor in new_state.items():
+        if key in old_state and old_state[key].shape == tensor.shape:
+            new_state[key] = old_state[key]
+            copied_keys.append(key)
+        else:
+            initialized_keys.append(key)
+    for key in old_state:
+        if key not in copied_keys:
+            skipped_keys.append(key)
+
+    new_model.load_state_dict(new_state, strict=False)
+    new_path.parent.mkdir(parents=True, exist_ok=True)
+    new_model.save(new_path)
+
+    report = {
+        "source_checkpoint": str(old_path),
+        "output_checkpoint": str(new_path),
+        "denoiser_arch": "shared_recursive",
+        "recursive_steps": cfg.recursive_steps,
+        "recursive_transition_layers": int(
+            cfg.recursive_transition_layers or cfg.denoiser_layers
+        ),
+        "copied_keys": copied_keys,
+        "skipped_old_keys": skipped_keys,
+        "initialized_keys": initialized_keys,
+    }
+    report_path = new_path.with_suffix(".migrate.json")
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
