@@ -87,6 +87,33 @@ def _strict_root_reference_identity_records(records, tokenizer) -> list:
     return strict
 
 
+def _rare_slot_component_owner_records(
+    records, owner_for_source, threshold: int
+) -> tuple[list, dict[str, int], list[str]]:
+    """Find records containing visible slot-owner labels below a corpus ceiling."""
+    from collections import Counter
+
+    counts: Counter[str] = Counter()
+    owners_by_record: list[set[str]] = []
+    for record in records:
+        owners = owner_for_source(record.openui)
+        visible = [
+            owners[slot]
+            for slot in record.placeholders
+            if slot in owners
+        ]
+        counts.update(visible)
+        owners_by_record.append(set(visible))
+    rare = sorted(owner for owner, count in counts.items() if count <= threshold)
+    rare_set = set(rare)
+    selected = [
+        record
+        for record, owners in zip(records, owners_by_record, strict=True)
+        if owners & rare_set
+    ]
+    return selected, dict(sorted(counts.items())), rare
+
+
 def _write_record_nll(run_dir: Path, plugin, records) -> Path:
     """Per-record NLL under the final model — Superfiltering difficulty evidence.
 
@@ -222,6 +249,43 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         )
         if strict_subset_multiplier > 1 and not strict_subset_records:
             raise ValueError("no strict-subset root-reference records found")
+    owner_rare_threshold = int(
+        getattr(config, "slot_component_owner_rare_threshold", 0) or 0
+    )
+    owner_rare_multiplier = int(
+        getattr(config, "slot_component_owner_rare_multiplier", 1) or 1
+    )
+    if owner_rare_threshold < 0:
+        raise ValueError("slot_component_owner_rare_threshold must be nonnegative")
+    if owner_rare_multiplier < 1:
+        raise ValueError("slot_component_owner_rare_multiplier must be at least 1")
+    if owner_rare_multiplier > 1 and owner_rare_threshold < 1:
+        raise ValueError(
+            "slot_component_owner_rare_multiplier requires a positive threshold"
+        )
+    if owner_rare_multiplier > 1 and (
+        replay_fraction
+        or getattr(config, "use_curriculum", False)
+        or getattr(config, "mixture_manifest", None)
+    ):
+        raise ValueError(
+            "slot-owner rare sampling cannot be combined with replay, curriculum, "
+            "or mixture sampling"
+        )
+    owner_rare_records = []
+    owner_counts: dict[str, int] = {}
+    rare_owners: list[str] = []
+    if owner_rare_threshold > 0:
+        owner_for_source = getattr(plugin, "_slot_component_owners", None)
+        if not callable(owner_for_source):
+            raise ValueError("slot-owner rare sampling requires owner extraction")
+        owner_rare_records, owner_counts, rare_owners = (
+            _rare_slot_component_owner_records(
+                records, owner_for_source, owner_rare_threshold
+            )
+        )
+        if owner_rare_multiplier > 1 and not owner_rare_records:
+            raise ValueError("no rare slot-owner records found")
     initialized_from: str | None = None
     initialized_prior_fields: list[str] = []
     rebuilt_prior_fields: list[str] = []
@@ -427,6 +491,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             shuffled.extend(
                 strict_subset_records * (strict_subset_multiplier - 1)
             )
+        if owner_rare_multiplier > 1:
+            shuffled.extend(owner_rare_records * (owner_rare_multiplier - 1))
         rng.shuffle(shuffled)
         return batched(shuffled, config.batch_size)
 
@@ -1112,6 +1178,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "slot_component_class_balance_power": getattr(
                 config, "slot_component_class_balance_power", 0.0
+            ),
+            "slot_component_owner_rare_threshold": owner_rare_threshold,
+            "slot_component_owner_rare_multiplier": owner_rare_multiplier,
+            "slot_component_owner_counts": owner_counts,
+            "slot_component_owner_rare_classes": rare_owners,
+            "slot_component_owner_rare_records": len(owner_rare_records),
+            "slot_component_owner_sampling_records": (
+                len(records)
+                + len(owner_rare_records) * (owner_rare_multiplier - 1)
             ),
             "slot_component_decode_weight": getattr(
                 config, "slot_component_decode_weight", 0.0

@@ -247,6 +247,8 @@ class ModelBuildConfig:
     slot_component_loss_weight: float = 0.0
     slot_component_focal_gamma: float = 0.0
     slot_component_class_balance_power: float = 0.0
+    slot_component_owner_rare_threshold: int = 0
+    slot_component_owner_rare_multiplier: int = 1
     slot_component_decode_weight: float | None = None
     semantic_role_decode_weight: float | None = None
     visible_reference_decode_weight: float | None = None

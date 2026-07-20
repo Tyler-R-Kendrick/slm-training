@@ -94,12 +94,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v15", "date": "2026-07-20", "note": "add deterministic rare slot-owner record oversampling with auditable corpus counts and expanded exposure"},
         {"version": "v14", "date": "2026-07-20", "note": "persist slot next-context and pair-interaction architecture flags in train recipe summaries"},
         {"version": "v13", "date": "2026-07-20", "note": "rebuild deterministic corpus-derived slot priors after weight initialization instead of silently restoring stale parent checkpoint statistics"},
         {"version": "v12", "date": "2026-07-19", "note": "add deterministic strict-subset root-reference identity oversampling with auditable eligible and expanded sampling counts"},
@@ -563,7 +564,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -573,6 +574,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v10", "date": "2026-07-20", "note": "expose bounded rare slot-owner record sampling in the shared TwoTower training recipe"},
         {"version": "v9", "date": "2026-07-20", "note": "use a masked non-empty sentinel for terminal slot-pair context so HF tokenization cannot produce a zero-length sequence"},
         {"version": "v8", "date": "2026-07-19", "note": "smooth slot lexeme-owner priors with class-prior-proportional pseudo-counts so unseen token-class pairs cannot receive spurious positive association"},
         {"version": "v7", "date": "2026-07-19", "note": "expose the bounded strict-subset root-reference identity sampling multiplier in the shared model-build recipe"},

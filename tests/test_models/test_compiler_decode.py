@@ -435,6 +435,45 @@ def test_strict_root_reference_identity_sampler_selects_only_strict_subsets() ->
     assert [record.id for record in selected] == ["strict"]
 
 
+def test_rare_slot_owner_sampler_selects_records_by_label_frequency() -> None:
+    from slm_training.harnesses.model_build.train_loop import (
+        _rare_slot_component_owner_records,
+    )
+
+    records = [
+        ExampleRecord(
+            id="common",
+            prompt="common",
+            openui='root = TextContent(":common")',
+            placeholders=[":common"],
+            split="train",
+            source="fixture",
+        ),
+        ExampleRecord(
+            id="mixed",
+            prompt="mixed",
+            openui=(
+                'root = Stack([title, field])\n'
+                'title = TextContent(":title")\n'
+                'field = Input(":field")'
+            ),
+            placeholders=[":title", ":field"],
+            split="train",
+            source="fixture",
+        ),
+    ]
+
+    selected, counts, rare = _rare_slot_component_owner_records(
+        records,
+        TwoTowerModel._slot_component_owners,
+        threshold=1,
+    )
+
+    assert counts == {"Input": 1, "TextContent": 2}
+    assert rare == ["Input"]
+    assert [record.id for record in selected] == ["mixed"]
+
+
 def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 

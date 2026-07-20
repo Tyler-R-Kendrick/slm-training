@@ -437,6 +437,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Power applied to inverse corpus owner frequency (0 disables).",
     )
     parser.add_argument(
+        "--slot-component-owner-rare-threshold",
+        type=int,
+        default=0,
+        help="Treat slot-owner classes with at most this many labels as rare (0 disables).",
+    )
+    parser.add_argument(
+        "--slot-component-owner-rare-multiplier",
+        type=_positive_int,
+        default=1,
+        help="Sampler copies for records containing a rare visible slot owner.",
+    )
+    parser.add_argument(
         "--slot-component-decode-weight",
         type=float,
         default=0.0,
@@ -943,6 +955,12 @@ def main(argv: list[str] | None = None) -> int:
         slot_component_loss_weight=args.slot_component_loss_weight,
         slot_component_focal_gamma=args.slot_component_focal_gamma,
         slot_component_class_balance_power=(args.slot_component_class_balance_power),
+        slot_component_owner_rare_threshold=(
+            args.slot_component_owner_rare_threshold
+        ),
+        slot_component_owner_rare_multiplier=(
+            args.slot_component_owner_rare_multiplier
+        ),
         slot_component_decode_weight=args.slot_component_decode_weight,
         slot_component_prompt_context=args.slot_component_prompt_context,
         slot_component_next_context=args.slot_component_next_context,
