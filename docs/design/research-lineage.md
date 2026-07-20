@@ -953,6 +953,36 @@ quality until matched adapter-only vs full-update trains complete with
 binding-aware meaningful v2 metrics and merge-parity tests on the target device.
 Fixture/planning evidence is not treated as a result.
 
+## Evidence-First Semantic SLM causal synthesis (EFS4-04 / SLM-140)
+
+**Fidelity label: adapted.** SLM-140 publishes a preregistered campaign manifest,
+a fail-closed result-loader, an evidence DAG, causal diagnosis, and explicit
+architecture dispositions for the Evidence-First Semantic SLM campaign. The
+preregistration / registered-report idea is borrowed from meta-science and
+causal evidence-synthesis practice, but narrowed to a **versioned, machine-
+readable manifest** that is validated against committed `docs/design/iter-*`
+result JSON and never treats plan/fixture evidence as a frontier result.
+
+| | |
+| --- | --- |
+| **Lineage** | Preregistered hypothesis testing; registered reports; evidence synthesis; causal DAGs |
+| **Fidelity** | **Adapted** — versioned Pydantic manifest, deterministic evidence graph, honest `NOT_RUN_BY_GATE`/`MISSING` states, and architecture dispositions that require supporting experiments before `ADOPT`/`PROMOTE_EXPERIMENTAL` |
+| **Code** | `src/slm_training/harnesses/experiments/efs4_04_causal_synthesis.py`, `scripts/synthesize_efs_campaign.py` |
+| **Config** | `docs/design/evidence-first-semantic-slm-campaign-v1.json`, `--docs-design`, `--validate-only`, `--graph-output` |
+
+**What we took:** a preregistered campaign with falsifiers, activation gates,
+allowed terminal decisions, and result-ref globs; a loader that infers terminal
+states from committed result manifests; causal diagnosis that returns
+`insufficient_valid_evidence` when core measurement branches are unresolved;
+and explicit architecture dispositions (`ADOPT_AS_SAFETY_ONLY` for correctness
+infrastructure, `CONDITIONAL_RESEARCH`/`REJECT`/`NOT_RUN_BY_GATE` for everything
+else).
+
+**What we did not take:** any claim that a branch improves semantic quality or
+is ready for production until it clears its activation gate and produces a
+`POSITIVE` result under ship-gates with durable checkpoints. The synthesis
+renderer labels the report as wiring-grade and does not promote a champion.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

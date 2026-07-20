@@ -11,7 +11,7 @@
 
 - **ID:** unset
 - **Provider:** unset
-- **Repository:** 
+- **Repository:**
 - **Model:** unset
 - **Revision:** main
 - **Architecture:** unset

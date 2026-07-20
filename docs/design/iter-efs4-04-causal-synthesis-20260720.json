@@ -1,0 +1,1275 @@
+{
+  "schema_version": "evidence_first_semantic_synthesis/v1",
+  "campaign_id": "evidence-first-semantic-slm-campaign",
+  "manifest_hash": "815b9582843ac61a09afb565a621b1037f0344016bac0d463d8a41454fd4a9fd",
+  "generation_command": "python -m scripts.synthesize_efs_campaign --manifest /tmp/pytest-of-codex/pytest-320/test_validate_only_with_existi0/manifest.json --docs-design /tmp/pytest-of-codex/pytest-320/test_validate_only_with_existi0",
+  "created_at": "2026-07-20T04:04:04.102502Z",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "685a506f42f6d246036f1c939c9cb1f0da89a8c4",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v29",
+      "harness.experiments.efs4_04_causal_synthesis": "v1"
+    },
+    "stamped_at": "2026-07-20T04:04:04.102520+00:00"
+  },
+  "hypotheses": [
+    {
+      "hypothesis_id": "efs0-01-checkpoint-provenance",
+      "linear_issue": "SLM-103",
+      "claim": "Frontier checkpoints are durable, hash-verified, and resolvable from a fresh clone.",
+      "falsifier": "Checkpoints are missing, hashes do not match, or remote references are unresolvable.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs0-02-decode-invariance",
+      "linear_issue": "SLM-104",
+      "claim": "A canonical decoder/path exists and produces invariant semantic outcomes across decoder variations.",
+      "falsifier": "Decoder path changes still change the primary semantic metric or no canonical path can be selected.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs0-03-meaningful-v2",
+      "linear_issue": "SLM-105",
+      "claim": "Binding-aware meaningful v2 separates valid-but-empty/useless programs from genuinely useful outputs.",
+      "falsifier": "The metric can be gamed by minimal-valid, rare-omission, or inventory-free outputs.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs0-04-judge-independence",
+      "linear_issue": "SLM-106",
+      "claim": "Judge/human agreement and cross-family scoring show the semantic judge is independent and stable.",
+      "falsifier": "Judge conflicts or family-specific inflation exceed a tolerable rate.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs0-05-rejected-lever-readjudication",
+      "linear_issue": "SLM-107",
+      "claim": "Prior rejected levers remain negative under five seeds, paired tests, corrected decoder, and independent labels.",
+      "falsifier": "At least one prior rejection changes classification when confounds are removed.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs1-01-external-ceiling",
+      "linear_issue": "SLM-108",
+      "claim": "A 1–7B external model constrained by the same compiler achieves a nontrivial semantic ceiling above the tiny SLM.",
+      "falsifier": "The external constrained model is near zero, indicating a specification/representation/evaluator limit.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs1-02-exposure-ladder",
+      "linear_issue": "SLM-109",
+      "claim": "The frozen E228 recipe shows a clear exposure threshold at ≥100× cumulative token exposure.",
+      "falsifier": "Semantic metrics remain flat through ≥100× exposure while loss improves or saturates.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs1-03-empty-length-bias",
+      "linear_issue": "SLM-110",
+      "claim": "Valid-but-empty/minimal-shell outputs win because of length or mask-mass bias, and a principled correction helps.",
+      "falsifier": "Empty outputs are preferred by the model score, not the decoder, or corrections do not improve semantics.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs2-01-x22-scaling",
+      "linear_issue": "SLM-111",
+      "claim": "X22 valid-state tree-edit quality scales predictably with beam width and/or edit depth before saturating.",
+      "falsifier": "Quality is flat across beam width and depth while search coverage rises.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs2-02-trigger-telemetry",
+      "linear_issue": "SLM-112",
+      "claim": "Observe-only trigger predicates fire predictively before recoverable semantic failures under a non-greedy regime.",
+      "falsifier": "Triggers never fire or fire without predicting failure/recovery benefit.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs2-03-conflict-slice-repair",
+      "linear_issue": "SLM-113",
+      "claim": "Conflict-localized remasking repairs more failures with fewer edits than full remask or suffix rollback.",
+      "falsifier": "Slices are too imprecise, miss dependencies, or provide no cost/quality benefit at equal budgets.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs2-04-verifier-cascade",
+      "linear_issue": "SLM-115",
+      "claim": "A cached cheap-to-expensive verifier cascade preserves ≥95% of flat-stack pruning at ≤30% verifier cost.",
+      "falsifier": "The cascade loses >5% sound pruning, changes outcomes, or cannot reduce cost below 30–50%.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs3-01-solver-state-supervision",
+      "linear_issue": "SLM-118",
+      "claim": "A 50/50 gold/on-policy DAgger-style state mixture outperforms pure sources on held-out self-failure recovery.",
+      "falsifier": "The mixture provides no recovery gain, or rollout labels are too sparse/noisy to beat pure gold.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs3-02-corruption-curriculum",
+      "linear_issue": "SLM-120",
+      "claim": "Including 5–15% near-solved semantic corruptions improves local recovery and fixed-point stability without harming generation.",
+      "falsifier": "Near-solved mass produces no recovery gain, causes copying, or degrades full-generation quality.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs3-03-b3-capacity-v2",
+      "linear_issue": "SLM-124",
+      "claim": "The choice representation reaches a preregistered semantic target at smaller capacity/bytes than the surface representation.",
+      "falsifier": "After correcting the decoder, surface and choice capacity curves are equivalent or surface is better.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs3-04-candidate-selector",
+      "linear_issue": "SLM-127",
+      "claim": "A contract-grounded selector with calibrated abstention closes the pass@K-to-selected-pass@K gap.",
+      "falsifier": "Candidate pools contain useful programs but no selector beats simple baselines at the target risk.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs3-05-canonical-ast-dedup",
+      "linear_issue": "SLM-130",
+      "claim": "Canonical AST deduplication increases within-prompt unique hard-valid modes and semantic pass@K at fixed cost.",
+      "falsifier": "Deduplication changes only bookkeeping, does not increase unique valid modes, or removes semantically distinct candidates.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs3-06-ast-sketch-retrieval",
+      "linear_issue": "SLM-133",
+      "claim": "AST-sketch data balancing and/or choice-native retrieval improve semantic quality at fixed budget without leakage.",
+      "falsifier": "Sketch balancing or choice retrieval is equivalent to controls or harms OOD semantics/copying.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs4-01-trailed-assumptions",
+      "linear_issue": "SLM-135",
+      "claim": "A trailed, dependency-aware solver avoids false prunes that a monotone proposal-contingent state cannot recover from.",
+      "falsifier": "Production architecture never places proposal facts in irreversible state, or both policies recover identically.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs4-02-shared-recursive-denoiser",
+      "linear_issue": "SLM-138",
+      "claim": "A weight-shared recursive denoiser with deep supervision improves semantic/recovery metrics at matched block evaluations.",
+      "falsifier": "Recursive arms are equivalent or worse under matched cost and exposure.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    },
+    {
+      "hypothesis_id": "efs4-03-stochastic-recursive-state",
+      "linear_issue": "SLM-139",
+      "claim": "A learned high-level stochastic recursive state increases valid semantic mode coverage and selected quality at matched cost.",
+      "falsifier": "Samples collapse to one mode, low-level noise matches/exceeds high-level width, or selector cannot convert width safely.",
+      "state": "MISSING",
+      "state_reason": "No committed result manifest matched the expected refs.",
+      "result_refs": [],
+      "checkpoint_refs": [],
+      "notes": []
+    }
+  ],
+  "lineage_summary": {
+    "manifest_id": "evidence-first-semantic-slm-campaign",
+    "hypothesis_count": 21,
+    "terminal_state_counts": {
+      "MISSING": 21
+    },
+    "checkpoint_reference_count": 0
+  },
+  "evidence_graph": {
+    "nodes": [
+      {
+        "node_id": "campaign:efs",
+        "kind": "causal_conclusion",
+        "label": "Evidence-First Semantic SLM Campaign",
+        "payload": {
+          "manifest_hash": "815b9582843ac61a09afb565a621b1037f0344016bac0d463d8a41454fd4a9fd",
+          "hypothesis_count": 21
+        }
+      },
+      {
+        "node_id": "hyp:efs0-01-checkpoint-provenance",
+        "kind": "hypothesis",
+        "label": "SLM-103 efs0-01-checkpoint-provenance",
+        "payload": {
+          "claim": "Frontier checkpoints are durable, hash-verified, and resolvable from a fresh clone.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs0-02-decode-invariance",
+        "kind": "hypothesis",
+        "label": "SLM-104 efs0-02-decode-invariance",
+        "payload": {
+          "claim": "A canonical decoder/path exists and produces invariant semantic outcomes across decoder variations.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs0-03-meaningful-v2",
+        "kind": "hypothesis",
+        "label": "SLM-105 efs0-03-meaningful-v2",
+        "payload": {
+          "claim": "Binding-aware meaningful v2 separates valid-but-empty/useless programs from genuinely useful outputs.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs0-04-judge-independence",
+        "kind": "hypothesis",
+        "label": "SLM-106 efs0-04-judge-independence",
+        "payload": {
+          "claim": "Judge/human agreement and cross-family scoring show the semantic judge is independent and stable.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs0-05-rejected-lever-readjudication",
+        "kind": "hypothesis",
+        "label": "SLM-107 efs0-05-rejected-lever-readjudication",
+        "payload": {
+          "claim": "Prior rejected levers remain negative under five seeds, paired tests, corrected decoder, and independent labels.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs1-01-external-ceiling",
+        "kind": "hypothesis",
+        "label": "SLM-108 efs1-01-external-ceiling",
+        "payload": {
+          "claim": "A 1–7B external model constrained by the same compiler achieves a nontrivial semantic ceiling above the tiny SLM.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs1-02-exposure-ladder",
+        "kind": "hypothesis",
+        "label": "SLM-109 efs1-02-exposure-ladder",
+        "payload": {
+          "claim": "The frozen E228 recipe shows a clear exposure threshold at ≥100× cumulative token exposure.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs1-03-empty-length-bias",
+        "kind": "hypothesis",
+        "label": "SLM-110 efs1-03-empty-length-bias",
+        "payload": {
+          "claim": "Valid-but-empty/minimal-shell outputs win because of length or mask-mass bias, and a principled correction helps.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs2-01-x22-scaling",
+        "kind": "hypothesis",
+        "label": "SLM-111 efs2-01-x22-scaling",
+        "payload": {
+          "claim": "X22 valid-state tree-edit quality scales predictably with beam width and/or edit depth before saturating.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs2-02-trigger-telemetry",
+        "kind": "hypothesis",
+        "label": "SLM-112 efs2-02-trigger-telemetry",
+        "payload": {
+          "claim": "Observe-only trigger predicates fire predictively before recoverable semantic failures under a non-greedy regime.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs2-03-conflict-slice-repair",
+        "kind": "hypothesis",
+        "label": "SLM-113 efs2-03-conflict-slice-repair",
+        "payload": {
+          "claim": "Conflict-localized remasking repairs more failures with fewer edits than full remask or suffix rollback.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs2-04-verifier-cascade",
+        "kind": "hypothesis",
+        "label": "SLM-115 efs2-04-verifier-cascade",
+        "payload": {
+          "claim": "A cached cheap-to-expensive verifier cascade preserves ≥95% of flat-stack pruning at ≤30% verifier cost.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs3-01-solver-state-supervision",
+        "kind": "hypothesis",
+        "label": "SLM-118 efs3-01-solver-state-supervision",
+        "payload": {
+          "claim": "A 50/50 gold/on-policy DAgger-style state mixture outperforms pure sources on held-out self-failure recovery.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs3-02-corruption-curriculum",
+        "kind": "hypothesis",
+        "label": "SLM-120 efs3-02-corruption-curriculum",
+        "payload": {
+          "claim": "Including 5–15% near-solved semantic corruptions improves local recovery and fixed-point stability without harming generation.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs3-03-b3-capacity-v2",
+        "kind": "hypothesis",
+        "label": "SLM-124 efs3-03-b3-capacity-v2",
+        "payload": {
+          "claim": "The choice representation reaches a preregistered semantic target at smaller capacity/bytes than the surface representation.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs3-04-candidate-selector",
+        "kind": "hypothesis",
+        "label": "SLM-127 efs3-04-candidate-selector",
+        "payload": {
+          "claim": "A contract-grounded selector with calibrated abstention closes the pass@K-to-selected-pass@K gap.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs3-05-canonical-ast-dedup",
+        "kind": "hypothesis",
+        "label": "SLM-130 efs3-05-canonical-ast-dedup",
+        "payload": {
+          "claim": "Canonical AST deduplication increases within-prompt unique hard-valid modes and semantic pass@K at fixed cost.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs3-06-ast-sketch-retrieval",
+        "kind": "hypothesis",
+        "label": "SLM-133 efs3-06-ast-sketch-retrieval",
+        "payload": {
+          "claim": "AST-sketch data balancing and/or choice-native retrieval improve semantic quality at fixed budget without leakage.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs4-01-trailed-assumptions",
+        "kind": "hypothesis",
+        "label": "SLM-135 efs4-01-trailed-assumptions",
+        "payload": {
+          "claim": "A trailed, dependency-aware solver avoids false prunes that a monotone proposal-contingent state cannot recover from.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs4-02-shared-recursive-denoiser",
+        "kind": "hypothesis",
+        "label": "SLM-138 efs4-02-shared-recursive-denoiser",
+        "payload": {
+          "claim": "A weight-shared recursive denoiser with deep supervision improves semantic/recovery metrics at matched block evaluations.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "hyp:efs4-03-stochastic-recursive-state",
+        "kind": "hypothesis",
+        "label": "SLM-139 efs4-03-stochastic-recursive-state",
+        "payload": {
+          "claim": "A learned high-level stochastic recursive state increases valid semantic mode coverage and selected quality at matched cost.",
+          "state": "MISSING"
+        }
+      },
+      {
+        "node_id": "diagnosis:primary",
+        "kind": "causal_conclusion",
+        "label": "Primary diagnosis: insufficient_valid_evidence",
+        "payload": {
+          "primary": "insufficient_valid_evidence",
+          "primary_reason": "Core measurement issues (checkpoint provenance, decoder invariance, semantic metric, judge independence, re-adjudication) are not all POSITIVE. Without durable, invariant, independently measured evidence, no causal diagnosis of training, data, search, or architecture can be asserted.",
+          "counterfactual_evidence": "Counterfactual: if SLM-103/104/105/106/107 were all POSITIVE, the remaining NOT_RUN_BY_GATE states could be attributed to training-exposure or architecture limits rather than to measurement uncertainty.",
+          "secondary": [
+            "measurement_limited"
+          ]
+        }
+      },
+      {
+        "node_id": "decision:compiler-owned-grammar-schema-binding-lattice-and-exact-closure",
+        "kind": "architecture_decision",
+        "label": "compiler-owned grammar/schema/binding lattice and exact closure -> ADOPT_AS_SAFETY_ONLY",
+        "payload": {
+          "item": "compiler-owned grammar/schema/binding lattice and exact closure",
+          "disposition": "ADOPT_AS_SAFETY_ONLY",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "cost",
+            "nogood",
+            "solver",
+            "trail",
+            "verifier"
+          ],
+          "next_action": "Keep as correctness infrastructure; do not claim quality improvement."
+        }
+      },
+      {
+        "node_id": "decision:reduced-product-cross-domain-propagation-claims",
+        "kind": "architecture_decision",
+        "label": "reduced-product/cross-domain propagation claims -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "reduced-product/cross-domain propagation claims",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "nogood",
+            "solver",
+            "trail"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:reversible-decisions-local-nogoods-and-certificate-backed-traili",
+        "kind": "architecture_decision",
+        "label": "reversible decisions, local nogoods, and certificate-backed trailing -> ADOPT_AS_SAFETY_ONLY",
+        "payload": {
+          "item": "reversible decisions, local nogoods, and certificate-backed trailing",
+          "disposition": "ADOPT_AS_SAFETY_ONLY",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "nogood",
+            "solver",
+            "trail"
+          ],
+          "next_action": "Keep as correctness infrastructure; do not claim quality improvement."
+        }
+      },
+      {
+        "node_id": "decision:free-form-typed-ast-topology-diffusion",
+        "kind": "architecture_decision",
+        "label": "free-form typed-AST/topology diffusion -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "free-form typed-AST/topology diffusion",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "capacity",
+            "choice_codec",
+            "representation"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:x22-all-valid-tree-edit-diffusion",
+        "kind": "architecture_decision",
+        "label": "X22/all-valid tree-edit diffusion -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "X22/all-valid tree-edit diffusion",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "search",
+            "x22"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:deterministic-shared-recursive-denoiser-deep-supervision",
+        "kind": "architecture_decision",
+        "label": "deterministic shared recursive denoiser/deep supervision -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "deterministic shared recursive denoiser/deep supervision",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "architecture",
+            "deep_supervision",
+            "recursive"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:request-local-recurrent-latent-persistence",
+        "kind": "architecture_decision",
+        "label": "request-local recurrent latent persistence -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "request-local recurrent latent persistence",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "architecture",
+            "deep_supervision",
+            "recursive"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:triggered-ptrm-inference-only-low-level-noise",
+        "kind": "architecture_decision",
+        "label": "triggered PTRM/inference-only low-level noise -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "triggered PTRM/inference-only low-level noise",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "ptrm",
+            "trigger"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:learned-gram-style-high-level-stochastic-state",
+        "kind": "architecture_decision",
+        "label": "learned GRAM-style high-level stochastic state -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "learned GRAM-style high-level stochastic state",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "architecture",
+            "gram",
+            "stochastic"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:candidate-ast-dedup-semantic-mode-tracking",
+        "kind": "architecture_decision",
+        "label": "candidate AST dedup/semantic mode tracking -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "candidate AST dedup/semantic mode tracking",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "dedup",
+            "diversity"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:contract-grounded-selector-and-abstention",
+        "kind": "architecture_decision",
+        "label": "contract-grounded selector and abstention -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "contract-grounded selector and abstention",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "abstention",
+            "selection"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:conflict-slice-remasking",
+        "kind": "architecture_decision",
+        "label": "conflict-slice remasking -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "conflict-slice remasking",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "remask",
+            "repair"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:cheap-to-expensive-verifier-cascade-cache",
+        "kind": "architecture_decision",
+        "label": "cheap-to-expensive verifier cascade/cache -> ADOPT_AS_SAFETY_ONLY",
+        "payload": {
+          "item": "cheap-to-expensive verifier cascade/cache",
+          "disposition": "ADOPT_AS_SAFETY_ONLY",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "cost",
+            "verifier"
+          ],
+          "next_action": "Keep as correctness infrastructure; do not claim quality improvement."
+        }
+      },
+      {
+        "node_id": "decision:choice-representation-capacity-conclusion",
+        "kind": "architecture_decision",
+        "label": "choice representation/capacity conclusion -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "choice representation/capacity conclusion",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "capacity",
+            "choice_codec",
+            "exposure",
+            "representation",
+            "training"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:gold-on-policy-mixed-supervision-and-nearly-solved-curriculum",
+        "kind": "architecture_decision",
+        "label": "gold/on-policy mixed supervision and nearly-solved curriculum -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "gold/on-policy mixed supervision and nearly-solved curriculum",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "corruption",
+            "curriculum",
+            "on_policy",
+            "supervision"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:ast-sketch-data-balancing-and-choice-native-retrieval",
+        "kind": "architecture_decision",
+        "label": "AST-sketch data balancing and choice-native retrieval -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "AST-sketch data balancing and choice-native retrieval",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "data",
+            "retrieval"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      },
+      {
+        "node_id": "decision:content-floor-length-mask-mass-corrections",
+        "kind": "architecture_decision",
+        "label": "content-floor/length/mask-mass corrections -> NOT_RUN_BY_GATE",
+        "payload": {
+          "item": "content-floor/length/mask-mass corrections",
+          "disposition": "NOT_RUN_BY_GATE",
+          "supporting_experiments": [],
+          "falsifying_experiments": [],
+          "effect": "No proven semantic-quality effect under current evidence.",
+          "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+          "semantic_metric": "binding_aware_meaningful_v2",
+          "cost_metric": "wall_seconds / verifier_calls",
+          "safety_constraints": [
+            "Must not weaken compiler-owned legality."
+          ],
+          "activation_conditions": [
+            "content_floor",
+            "decode"
+          ],
+          "next_action": "Run the related EFS branch to a terminal state before disposition."
+        }
+      }
+    ],
+    "edges": []
+  },
+  "causal_diagnosis": {
+    "primary": "insufficient_valid_evidence",
+    "primary_reason": "Core measurement issues (checkpoint provenance, decoder invariance, semantic metric, judge independence, re-adjudication) are not all POSITIVE. Without durable, invariant, independently measured evidence, no causal diagnosis of training, data, search, or architecture can be asserted.",
+    "counterfactual_evidence": "Counterfactual: if SLM-103/104/105/106/107 were all POSITIVE, the remaining NOT_RUN_BY_GATE states could be attributed to training-exposure or architecture limits rather than to measurement uncertainty.",
+    "secondary": [
+      "measurement_limited"
+    ]
+  },
+  "architecture_dispositions": [
+    {
+      "item": "compiler-owned grammar/schema/binding lattice and exact closure",
+      "disposition": "ADOPT_AS_SAFETY_ONLY",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "cost",
+        "nogood",
+        "solver",
+        "trail",
+        "verifier"
+      ],
+      "next_action": "Keep as correctness infrastructure; do not claim quality improvement."
+    },
+    {
+      "item": "reduced-product/cross-domain propagation claims",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "nogood",
+        "solver",
+        "trail"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "reversible decisions, local nogoods, and certificate-backed trailing",
+      "disposition": "ADOPT_AS_SAFETY_ONLY",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "nogood",
+        "solver",
+        "trail"
+      ],
+      "next_action": "Keep as correctness infrastructure; do not claim quality improvement."
+    },
+    {
+      "item": "free-form typed-AST/topology diffusion",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "capacity",
+        "choice_codec",
+        "representation"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "X22/all-valid tree-edit diffusion",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "search",
+        "x22"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "deterministic shared recursive denoiser/deep supervision",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "architecture",
+        "deep_supervision",
+        "recursive"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "request-local recurrent latent persistence",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "architecture",
+        "deep_supervision",
+        "recursive"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "triggered PTRM/inference-only low-level noise",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "ptrm",
+        "trigger"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "learned GRAM-style high-level stochastic state",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "architecture",
+        "gram",
+        "stochastic"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "candidate AST dedup/semantic mode tracking",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "dedup",
+        "diversity"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "contract-grounded selector and abstention",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "abstention",
+        "selection"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "conflict-slice remasking",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "remask",
+        "repair"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "cheap-to-expensive verifier cascade/cache",
+      "disposition": "ADOPT_AS_SAFETY_ONLY",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "cost",
+        "verifier"
+      ],
+      "next_action": "Keep as correctness infrastructure; do not claim quality improvement."
+    },
+    {
+      "item": "choice representation/capacity conclusion",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "capacity",
+        "choice_codec",
+        "exposure",
+        "representation",
+        "training"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "gold/on-policy mixed supervision and nearly-solved curriculum",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "corruption",
+        "curriculum",
+        "on_policy",
+        "supervision"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "AST-sketch data balancing and choice-native retrieval",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "data",
+        "retrieval"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    },
+    {
+      "item": "content-floor/length/mask-mass corrections",
+      "disposition": "NOT_RUN_BY_GATE",
+      "supporting_experiments": [],
+      "falsifying_experiments": [],
+      "effect": "No proven semantic-quality effect under current evidence.",
+      "uncertainty": "Evidence is plan/fixture-grade; frontier runs are pending.",
+      "semantic_metric": "binding_aware_meaningful_v2",
+      "cost_metric": "wall_seconds / verifier_calls",
+      "safety_constraints": [
+        "Must not weaken compiler-owned legality."
+      ],
+      "activation_conditions": [
+        "content_floor",
+        "decode"
+      ],
+      "next_action": "Run the related EFS branch to a terminal state before disposition."
+    }
+  ],
+  "champion_decision": "no_promotion",
+  "next_programs": [
+    {
+      "rank": 1,
+      "objective": "Make frontier checkpoint provenance and persistence fail-closed.",
+      "non_duplicate_rationale": "EFS0-01 is the root dependency of every causal claim; no later branch is interpretable without it.",
+      "expected_information_gain": "Distinguishes measurement-limited from genuinely architecture-limited conclusions.",
+      "smallest_experiment": "Sync one E228-class checkpoint to hf://buckets/TKendrick/OpenUI and verify hash from a fresh clone.",
+      "budget": "<1 GPU-hour + bucket storage",
+      "kill_criterion": "Hash mismatch or unresolvable checkpoint blocks all dependent syntheses.",
+      "dependencies": [
+        "SLM-103"
+      ]
+    },
+    {
+      "rank": 2,
+      "objective": "Run the ≥100× E228 exposure ladder to falsify 'just train longer'.",
+      "non_duplicate_rationale": "EFS1-02 is the only branch designed to separate exposure from representation/objective limits.",
+      "expected_information_gain": "Either reveals an exposure threshold or falsifies the current recipe.",
+      "smallest_experiment": "Continue seed-0 run to 128× T0 and confirm 1×/threshold/128× on seeds 1–2.",
+      "budget": "~8 GPU-hours",
+      "kill_criterion": "Semantic metrics flat with tight CI excluding minimum useful delta.",
+      "dependencies": [
+        "SLM-104",
+        "SLM-105",
+        "SLM-109"
+      ]
+    },
+    {
+      "rank": 3,
+      "objective": "Re-run the B3 surface-vs-choice capacity ladder with the corrected choice-native decoder.",
+      "non_duplicate_rationale": "EFS3-03 isolates representation capacity from the prior decoder confound.",
+      "expected_information_gain": "Determines whether externalized syntax shifts the quality-capacity curve.",
+      "smallest_experiment": "18-row grid (2 representations × 3 widths × 3 seeds) on frozen recipe.",
+      "budget": "~6 GPU-hours",
+      "kill_criterion": "Capacity curves overlap within equivalence margin.",
+      "dependencies": [
+        "SLM-104",
+        "SLM-124"
+      ]
+    }
+  ],
+  "unresolved_risks": [
+    "efs0-01-checkpoint-provenance (MISSING): No committed result manifest matched the expected refs.",
+    "efs0-02-decode-invariance (MISSING): No committed result manifest matched the expected refs.",
+    "efs0-03-meaningful-v2 (MISSING): No committed result manifest matched the expected refs.",
+    "efs0-04-judge-independence (MISSING): No committed result manifest matched the expected refs.",
+    "efs0-05-rejected-lever-readjudication (MISSING): No committed result manifest matched the expected refs.",
+    "efs1-01-external-ceiling (MISSING): No committed result manifest matched the expected refs.",
+    "efs1-02-exposure-ladder (MISSING): No committed result manifest matched the expected refs.",
+    "efs1-03-empty-length-bias (MISSING): No committed result manifest matched the expected refs.",
+    "efs2-01-x22-scaling (MISSING): No committed result manifest matched the expected refs.",
+    "efs2-02-trigger-telemetry (MISSING): No committed result manifest matched the expected refs.",
+    "efs2-03-conflict-slice-repair (MISSING): No committed result manifest matched the expected refs.",
+    "efs2-04-verifier-cascade (MISSING): No committed result manifest matched the expected refs.",
+    "efs3-01-solver-state-supervision (MISSING): No committed result manifest matched the expected refs.",
+    "efs3-02-corruption-curriculum (MISSING): No committed result manifest matched the expected refs.",
+    "efs3-03-b3-capacity-v2 (MISSING): No committed result manifest matched the expected refs.",
+    "efs3-04-candidate-selector (MISSING): No committed result manifest matched the expected refs.",
+    "efs3-05-canonical-ast-dedup (MISSING): No committed result manifest matched the expected refs.",
+    "efs3-06-ast-sketch-retrieval (MISSING): No committed result manifest matched the expected refs.",
+    "efs4-01-trailed-assumptions (MISSING): No committed result manifest matched the expected refs.",
+    "efs4-02-shared-recursive-denoiser (MISSING): No committed result manifest matched the expected refs.",
+    "efs4-03-stochastic-recursive-state (MISSING): No committed result manifest matched the expected refs."
+  ],
+  "invalidated_claims": []
+}

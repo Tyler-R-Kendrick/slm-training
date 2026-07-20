@@ -1,6 +1,6 @@
 # E232 — grammar-role component plan
 
-Date: 2026-07-16  
+Date: 2026-07-16
 Status: completed; checkpoint rejected; not promotable or ship
 
 E232 replaces E231's flat component set with targets read from compiler decision

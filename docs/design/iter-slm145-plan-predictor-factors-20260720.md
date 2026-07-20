@@ -1,8 +1,8 @@
 # SLM-145 / SPV1-02: Plan-predictor factor gate closeout (slm145_gate_closeout)
 
-Matrix set: `slm145-plan-predictor-factors`  
-Version: `slm145-v1`  
-Status: **closeout**  
+Matrix set: `slm145-plan-predictor-factors`
+Version: `slm145-v1`
+Status: **closeout**
 Decision: **blocked_pending_spv0_02_ceiling_evidence**
 
 ## Authorization gate assessment

@@ -1,0 +1,625 @@
+{
+  "schema_version": "efs_campaign_manifest/v1",
+  "campaign_id": "evidence-first-semantic-slm-campaign",
+  "created_at": "2026-07-20T03:51:28.893936Z",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "685a506f42f6d246036f1c939c9cb1f0da89a8c4",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v28"
+    },
+    "stamped_at": "2026-07-20T03:51:28.906505+00:00"
+  },
+  "hypotheses": [
+    {
+      "hypothesis_id": "efs0-01-checkpoint-provenance",
+      "linear_issue": "SLM-103",
+      "milestone": "EFS0 · Reproducibility & independent measurement",
+      "claim": "Frontier checkpoints are durable, hash-verified, and resolvable from a fresh clone.",
+      "falsifier": "Checkpoints are missing, hashes do not match, or remote references are unresolvable.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "POSITIVE",
+        "NEGATIVE",
+        "INCONCLUSIVE"
+      ],
+      "expected_result_refs": [
+        "iter-efs0-01-checkpoint-provenance-*.json"
+      ],
+      "architecture_tags": [
+        "provenance"
+      ]
+    },
+    {
+      "hypothesis_id": "efs0-02-decode-invariance",
+      "linear_issue": "SLM-104",
+      "milestone": "EFS0 · Reproducibility & independent measurement",
+      "claim": "A canonical decoder/path exists and produces invariant semantic outcomes across decoder variations.",
+      "falsifier": "Decoder path changes still change the primary semantic metric or no canonical path can be selected.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs-decode-invariance-*.json"
+      ],
+      "architecture_tags": [
+        "decoder",
+        "measurement"
+      ]
+    },
+    {
+      "hypothesis_id": "efs0-03-meaningful-v2",
+      "linear_issue": "SLM-105",
+      "milestone": "EFS0 · Reproducibility & independent measurement",
+      "claim": "Binding-aware meaningful v2 separates valid-but-empty/useless programs from genuinely useful outputs.",
+      "falsifier": "The metric can be gamed by minimal-valid, rare-omission, or inventory-free outputs.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs0-03-meaningful-v2-frontier-audit-*.json"
+      ],
+      "architecture_tags": [
+        "metric",
+        "measurement"
+      ]
+    },
+    {
+      "hypothesis_id": "efs0-04-judge-independence",
+      "linear_issue": "SLM-106",
+      "milestone": "EFS0 · Reproducibility & independent measurement",
+      "claim": "Judge/human agreement and cross-family scoring show the semantic judge is independent and stable.",
+      "falsifier": "Judge conflicts or family-specific inflation exceed a tolerable rate.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs0-04-judge-independence-*.json"
+      ],
+      "architecture_tags": [
+        "judge",
+        "measurement"
+      ]
+    },
+    {
+      "hypothesis_id": "efs0-05-rejected-lever-readjudication",
+      "linear_issue": "SLM-107",
+      "milestone": "EFS0 · Reproducibility & independent measurement",
+      "claim": "Prior rejected levers remain negative under five seeds, paired tests, corrected decoder, and independent labels.",
+      "falsifier": "At least one prior rejection changes classification when confounds are removed.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs0-05-rejected-lever-readjudication-*.json"
+      ],
+      "architecture_tags": [
+        "measurement",
+        "negative_results"
+      ]
+    },
+    {
+      "hypothesis_id": "efs1-01-external-ceiling",
+      "linear_issue": "SLM-108",
+      "milestone": "EFS1 · Decisive baselines & exposure threshold",
+      "claim": "A 1–7B external model constrained by the same compiler achieves a nontrivial semantic ceiling above the tiny SLM.",
+      "falsifier": "The external constrained model is near zero, indicating a specification/representation/evaluator limit.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs1-01-external-ceiling-*.json"
+      ],
+      "architecture_tags": [
+        "baseline",
+        "capacity"
+      ]
+    },
+    {
+      "hypothesis_id": "efs1-02-exposure-ladder",
+      "linear_issue": "SLM-109",
+      "milestone": "EFS1 · Decisive baselines & exposure threshold",
+      "claim": "The frozen E228 recipe shows a clear exposure threshold at ≥100× cumulative token exposure.",
+      "falsifier": "Semantic metrics remain flat through ≥100× exposure while loss improves or saturates.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs1-02-exposure-ladder-*.json"
+      ],
+      "architecture_tags": [
+        "training",
+        "exposure"
+      ]
+    },
+    {
+      "hypothesis_id": "efs1-03-empty-length-bias",
+      "linear_issue": "SLM-110",
+      "milestone": "EFS1 · Decisive baselines & exposure threshold",
+      "claim": "Valid-but-empty/minimal-shell outputs win because of length or mask-mass bias, and a principled correction helps.",
+      "falsifier": "Empty outputs are preferred by the model score, not the decoder, or corrections do not improve semantics.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs1-03-empty-length-bias-*.json"
+      ],
+      "architecture_tags": [
+        "decode",
+        "content_floor"
+      ]
+    },
+    {
+      "hypothesis_id": "efs2-01-x22-scaling",
+      "linear_issue": "SLM-111",
+      "milestone": "EFS2 · Valid-by-construction search & recovery",
+      "claim": "X22 valid-state tree-edit quality scales predictably with beam width and/or edit depth before saturating.",
+      "falsifier": "Quality is flat across beam width and depth while search coverage rises.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs2-01-tree-edit-scaling-*.json"
+      ],
+      "architecture_tags": [
+        "search",
+        "x22"
+      ]
+    },
+    {
+      "hypothesis_id": "efs2-02-trigger-telemetry",
+      "linear_issue": "SLM-112",
+      "milestone": "EFS2 · Valid-by-construction search & recovery",
+      "claim": "Observe-only trigger predicates fire predictively before recoverable semantic failures under a non-greedy regime.",
+      "falsifier": "Triggers never fire or fire without predicting failure/recovery benefit.",
+      "dependencies": [],
+      "activation_gate": "Phase-B recovery is enabled only after Phase-A shows predictive activation.",
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs2-02-trigger-telemetry-*.json"
+      ],
+      "architecture_tags": [
+        "trigger",
+        "ptrm"
+      ]
+    },
+    {
+      "hypothesis_id": "efs2-03-conflict-slice-repair",
+      "linear_issue": "SLM-113",
+      "milestone": "EFS2 · Valid-by-construction search & recovery",
+      "claim": "Conflict-localized remasking repairs more failures with fewer edits than full remask or suffix rollback.",
+      "falsifier": "Slices are too imprecise, miss dependencies, or provide no cost/quality benefit at equal budgets.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs2-03-conflict-slice-repair-*.json"
+      ],
+      "architecture_tags": [
+        "repair",
+        "remask"
+      ]
+    },
+    {
+      "hypothesis_id": "efs2-04-verifier-cascade",
+      "linear_issue": "SLM-115",
+      "milestone": "EFS2 · Valid-by-construction search & recovery",
+      "claim": "A cached cheap-to-expensive verifier cascade preserves ≥95% of flat-stack pruning at ≤30% verifier cost.",
+      "falsifier": "The cascade loses >5% sound pruning, changes outcomes, or cannot reduce cost below 30–50%.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs2-04-verifier-cascade-*.json"
+      ],
+      "architecture_tags": [
+        "verifier",
+        "cost"
+      ]
+    },
+    {
+      "hypothesis_id": "efs3-01-solver-state-supervision",
+      "linear_issue": "SLM-118",
+      "milestone": "EFS3 · Semantic supervision, selection & diversity",
+      "claim": "A 50/50 gold/on-policy DAgger-style state mixture outperforms pure sources on held-out self-failure recovery.",
+      "falsifier": "The mixture provides no recovery gain, or rollout labels are too sparse/noisy to beat pure gold.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs3-01-solver-state-supervision-*.json"
+      ],
+      "architecture_tags": [
+        "supervision",
+        "on_policy"
+      ]
+    },
+    {
+      "hypothesis_id": "efs3-02-corruption-curriculum",
+      "linear_issue": "SLM-120",
+      "milestone": "EFS3 · Semantic supervision, selection & diversity",
+      "claim": "Including 5–15% near-solved semantic corruptions improves local recovery and fixed-point stability without harming generation.",
+      "falsifier": "Near-solved mass produces no recovery gain, causes copying, or degrades full-generation quality.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs3-02-corruption-curriculum-*.json"
+      ],
+      "architecture_tags": [
+        "curriculum",
+        "corruption"
+      ]
+    },
+    {
+      "hypothesis_id": "efs3-03-b3-capacity-v2",
+      "linear_issue": "SLM-124",
+      "milestone": "EFS3 · Semantic supervision, selection & diversity",
+      "claim": "The choice representation reaches a preregistered semantic target at smaller capacity/bytes than the surface representation.",
+      "falsifier": "After correcting the decoder, surface and choice capacity curves are equivalent or surface is better.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs-b3-capacity-v2-*.json"
+      ],
+      "architecture_tags": [
+        "representation",
+        "capacity",
+        "choice_codec"
+      ]
+    },
+    {
+      "hypothesis_id": "efs3-04-candidate-selector",
+      "linear_issue": "SLM-127",
+      "milestone": "EFS3 · Semantic supervision, selection & diversity",
+      "claim": "A contract-grounded selector with calibrated abstention closes the pass@K-to-selected-pass@K gap.",
+      "falsifier": "Candidate pools contain useful programs but no selector beats simple baselines at the target risk.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs3-04-candidate-selector-*.json"
+      ],
+      "architecture_tags": [
+        "selection",
+        "abstention"
+      ]
+    },
+    {
+      "hypothesis_id": "efs3-05-canonical-ast-dedup",
+      "linear_issue": "SLM-130",
+      "milestone": "EFS3 · Semantic supervision, selection & diversity",
+      "claim": "Canonical AST deduplication increases within-prompt unique hard-valid modes and semantic pass@K at fixed cost.",
+      "falsifier": "Deduplication changes only bookkeeping, does not increase unique valid modes, or removes semantically distinct candidates.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs3-05-canonical-ast-dedup-*.json"
+      ],
+      "architecture_tags": [
+        "diversity",
+        "dedup"
+      ]
+    },
+    {
+      "hypothesis_id": "efs3-06-ast-sketch-retrieval",
+      "linear_issue": "SLM-133",
+      "milestone": "EFS3 · Semantic supervision, selection & diversity",
+      "claim": "AST-sketch data balancing and/or choice-native retrieval improve semantic quality at fixed budget without leakage.",
+      "falsifier": "Sketch balancing or choice retrieval is equivalent to controls or harms OOD semantics/copying.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs3-06-ast-sketch-retrieval-factorial-*.json"
+      ],
+      "architecture_tags": [
+        "data",
+        "retrieval"
+      ]
+    },
+    {
+      "hypothesis_id": "efs4-01-trailed-assumptions",
+      "linear_issue": "SLM-135",
+      "milestone": "EFS4 · Conditional solver architecture & causal synthesis",
+      "claim": "A trailed, dependency-aware solver avoids false prunes that a monotone proposal-contingent state cannot recover from.",
+      "falsifier": "Production architecture never places proposal facts in irreversible state, or both policies recover identically.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-slm135-trailed-assumptions-*.json"
+      ],
+      "architecture_tags": [
+        "solver",
+        "trail",
+        "nogood"
+      ]
+    },
+    {
+      "hypothesis_id": "efs4-02-shared-recursive-denoiser",
+      "linear_issue": "SLM-138",
+      "milestone": "EFS4 · Conditional solver architecture & causal synthesis",
+      "claim": "A weight-shared recursive denoiser with deep supervision improves semantic/recovery metrics at matched block evaluations.",
+      "falsifier": "Recursive arms are equivalent or worse under matched cost and exposure.",
+      "dependencies": [],
+      "activation_gate": null,
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs4-02-shared-recursive-denoiser-*.json"
+      ],
+      "architecture_tags": [
+        "architecture",
+        "recursive",
+        "deep_supervision"
+      ]
+    },
+    {
+      "hypothesis_id": "efs4-03-stochastic-recursive-state",
+      "linear_issue": "SLM-139",
+      "milestone": "EFS4 · Conditional solver architecture & causal synthesis",
+      "claim": "A learned high-level stochastic recursive state increases valid semantic mode coverage and selected quality at matched cost.",
+      "falsifier": "Samples collapse to one mode, low-level noise matches/exceeds high-level width, or selector cannot convert width safely.",
+      "dependencies": [],
+      "activation_gate": "Requires SLM-138 recursive core positive, SLM-130 multimodal regime, and SLM-127 calibrated selector.",
+      "primary_metrics": [
+        "binding_aware_meaningful_v2"
+      ],
+      "minimum_effect": null,
+      "cost_constraints": null,
+      "allowed_decisions": [
+        "INVALIDATED",
+        "INCONCLUSIVE",
+        "EQUIVALENT",
+        "NEGATIVE",
+        "POSITIVE",
+        "NOT_RUN_BY_GATE"
+      ],
+      "expected_result_refs": [
+        "iter-efs4-03-stochastic-recursive-state-*.json"
+      ],
+      "architecture_tags": [
+        "architecture",
+        "stochastic",
+        "gram"
+      ]
+    }
+  ]
+}

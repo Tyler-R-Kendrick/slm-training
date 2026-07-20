@@ -1,14 +1,14 @@
 # CAP3-04: Grammar-conditioned quantization sensitivity and mixed-precision allocation (2026-07-18)
 
-**Linear issue:** SLM-93  
-**Branch:** `agent/slm-93-cap3-04-quant-sensitivity`  
-**Date:** 2026-07-18  
+**Linear issue:** SLM-93
+**Branch:** `agent/slm-93-cap3-04-quant-sensitivity`
+**Date:** 2026-07-18
 **Status:** wiring evidence / fixture dry-run
 
-Evidence: [iter-cap3-04-sensitivity-20260718.json](iter-cap3-04-sensitivity-20260718.json).  
-Harness: [`src/slm_training/harnesses/quantization/sensitivity.py`](../../src/slm_training/harnesses/quantization/sensitivity.py),  
-allocator: [`src/slm_training/harnesses/quantization/allocation.py`](../../src/slm_training/harnesses/quantization/allocation.py).  
-Runners: [`scripts/profile_quant_sensitivity.py`](../../scripts/profile_quant_sensitivity.py),  
+Evidence: [iter-cap3-04-sensitivity-20260718.json](iter-cap3-04-sensitivity-20260718.json).
+Harness: [`src/slm_training/harnesses/quantization/sensitivity.py`](../../src/slm_training/harnesses/quantization/sensitivity.py),
+allocator: [`src/slm_training/harnesses/quantization/allocation.py`](../../src/slm_training/harnesses/quantization/allocation.py).
+Runners: [`scripts/profile_quant_sensitivity.py`](../../scripts/profile_quant_sensitivity.py),
 [`scripts/allocate_mixed_precision.py`](../../scripts/allocate_mixed_precision.py).
 
 ## What changed

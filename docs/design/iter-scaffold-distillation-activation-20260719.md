@@ -1,14 +1,14 @@
 # SDE4-01 (SLM-179) scaffold-distillation activation manifest
 
-**manifest_id:** `scaffold-distillation-activation-20260719`  
-**schema_version:** `scaffold_distillation_activation/v1`  
-**hypothesis_id:** `H13`  
-**activation_status:** `ready`  
-**activation_verdict:** `ready_to_spend`  
-**campaign_verdict:** `unrun`  
-**manifest_hash:** `281dc33bee9b92a9`  
-**primary_metric:** `binding_aware_meaningful_program_rate`  
-**max_attempts_for_teacher:** 1  
+**manifest_id:** `scaffold-distillation-activation-20260719`
+**schema_version:** `scaffold_distillation_activation/v1`
+**hypothesis_id:** `H13`
+**activation_status:** `ready`
+**activation_verdict:** `ready_to_spend`
+**campaign_verdict:** `unrun`
+**manifest_hash:** `281dc33bee9b92a9`
+**primary_metric:** `binding_aware_meaningful_program_rate`
+**max_attempts_for_teacher:** 1
 **seeds:** [0, 1, 2]
 
 ## Activation gates

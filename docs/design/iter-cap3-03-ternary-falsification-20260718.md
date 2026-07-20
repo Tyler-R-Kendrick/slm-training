@@ -1,12 +1,12 @@
 # CAP3-03: Equal-storage ternary falsification matrix (2026-07-18)
 
-**Linear issue:** SLM-92  
-**Branch:** `agent/slm-92-cap3-03-ternary-falsification`  
-**Date:** 2026-07-18  
+**Linear issue:** SLM-92
+**Branch:** `agent/slm-92-cap3-03-ternary-falsification`
+**Date:** 2026-07-18
 **Status:** wiring evidence / fixture dry-run
 
-Evidence: [iter-cap3-03-ternary-falsification-20260718.json](iter-cap3-03-ternary-falsification-20260718.json).  
-Harness: [`src/slm_training/harnesses/experiments/cap3_03_ternary_falsification.py`](../../src/slm_training/harnesses/experiments/cap3_03_ternary_falsification.py),  
+Evidence: [iter-cap3-03-ternary-falsification-20260718.json](iter-cap3-03-ternary-falsification-20260718.json).
+Harness: [`src/slm_training/harnesses/experiments/cap3_03_ternary_falsification.py`](../../src/slm_training/harnesses/experiments/cap3_03_ternary_falsification.py),
 runner: [`scripts/run_cap3_03_ternary_falsification.py`](../../scripts/run_cap3_03_ternary_falsification.py).
 
 ## What changed

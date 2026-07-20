@@ -1,8 +1,8 @@
 # CAP4-02 compiler-floor + runtime-signal adaptive-plane routing — fixture results
 
-**Experiment:** `CAP4-02 adaptive residual-plane routing fixture`  
-**Artifact:** [`iter-cap4-02-adaptive-plane-routing-20260718.json`](iter-cap4-02-adaptive-plane-routing-20260718.json)  
-**Run date:** 2026-07-18  
+**Experiment:** `CAP4-02 adaptive residual-plane routing fixture`
+**Artifact:** [`iter-cap4-02-adaptive-plane-routing-20260718.json`](iter-cap4-02-adaptive-plane-routing-20260718.json)
+**Run date:** 2026-07-18
 **Claim:** Wiring evidence only. No ship gate, no checkpoint promotion.
 
 ## What changed

@@ -1,7 +1,7 @@
 # SDE0-02 metric-gaming stress suite
 
-Date: 2026-07-19  
-Issue: SLM-162  
+Date: 2026-07-19
+Issue: SLM-162
 Branch: `agent/slm-162-sde0-02-metric-gaming-suite`
 
 ## What this is

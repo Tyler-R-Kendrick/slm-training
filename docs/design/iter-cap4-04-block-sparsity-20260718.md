@@ -1,8 +1,8 @@
 # CAP4-04 compiler-routed block sparsity and state-family micro-experts — fixture results
 
-**Experiment:** `CAP4-04 compiler-routed block sparsity and state-family experts fixture`  
-**Artifact:** [`iter-cap4-04-block-sparsity-20260718.json`](iter-cap4-04-block-sparsity-20260718.json)  
-**Run date:** 2026-07-18  
+**Experiment:** `CAP4-04 compiler-routed block sparsity and state-family experts fixture`
+**Artifact:** [`iter-cap4-04-block-sparsity-20260718.json`](iter-cap4-04-block-sparsity-20260718.json)
+**Run date:** 2026-07-18
 **Claim:** Wiring evidence only. No ship gate, no checkpoint promotion, no wall-clock claim.
 
 ## What changed
