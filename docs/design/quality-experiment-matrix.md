@@ -3917,3 +3917,29 @@ Honest caveats:
 - Sibling-family grouping is a coarse semantic proxy.
 - No model was trained; real action-embedding generalization must be validated
   with a trained checkpoint and AgentV evaluation.
+
+## H19 powered cluster-aware confirmation protocol (SLM-183, PQR)
+
+H19 wires the statistical protocol needed to design confirmatory eval rows. It
+provides Wilson and exact binomial intervals, paired and cluster-aware bootstrap
+CIs, one-way ICC, MDE simulation under target + seed variance, and
+Benjamini-Hochberg correction. A CPU-only fixture generates synthetic binary
+outcomes with known variance components, separates target variance from seed
+variance, and produces an MDE curve. ``--mode analyze-existing`` can read an
+existing iter JSON and report per-seed Wilson intervals. This is
+wiring/fixture evidence only; no ship claim is made.
+
+```bash
+python -m scripts.run_flow_power_protocol --mode plan-only
+python -m scripts.run_flow_power_protocol --mode fixture
+python -m scripts.run_flow_power_protocol --mode analyze-existing \
+    --iter-json outputs/runs/some-run/iter.json
+```
+
+Honest caveats:
+
+- MDE simulation uses a normal approximation (no scipy dependency); small-n
+  results are exploratory only.
+- Synthetic mixed-effects outcomes are a caricature of real eval correlation.
+- No model was trained; the protocol must be validated on actual suite results
+  before it can size a confirmatory experiment.
