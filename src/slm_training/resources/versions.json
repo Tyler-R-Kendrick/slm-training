@@ -682,7 +682,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v17",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -692,6 +692,16 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-20",
+          "note": "soft-close repeated predicted component instances after their first visible slot so later instances can bind distinct prompt slots"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-20",
+          "note": "soft-score only still-missing predicted component-family instances so repeated authored requirements can be generated before root closure"
+        },
         {
           "version": "v17",
           "date": "2026-07-20",
@@ -1411,6 +1421,22 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-150 SPV2-02 global semantic energy/value critic baseline wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.distill": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/distill/legal_set_kl.py",
+        "src/slm_training/harnesses/distill/legal_set_teacher_trace.py",
+        "tests/test_harnesses/distill/test_legal_set_kl.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-151 SPV2-03 dense legal-set distillation fixture wiring baseline"
         }
       ]
     }

@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E582",
+  "date_utc": "2026-07-20",
+  "run_id": "e582-e569-distinct-slots4-r1",
+  "run_class": "scratch_matrix",
+  "status": "partial_structural_gain_not_promotable",
+  "hypothesis": "Soft-closing a repeated predicted component after its first visible slot will preserve a distinct later instance for the next authored slot.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_plan_decode_weights": [
+      0.0,
+      4.0
+    ],
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 4.0,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e582-e569-distinct-slots0-r1",
+      "label": "semantic_plan_weight_0_control",
+      "semantic_plan_decode_weight": 0.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.3416666666666667,
+          "placeholder_validity": 0.605,
+          "structural_similarity": 0.125,
+          "component_type_recall": 0.14583333333333331,
+          "reward_score": 0.7095,
+          "ast_node_f1": 0.18333333333333335,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 7959.37,
+          "latency_ms_p95": 12826.51
+        }
+      },
+      "agentv": {
+        "passed": 0,
+        "total": 1,
+        "execution_errors": 0
+      }
+    }
+  ],
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.425,
+      "placeholder_validity": 0.655,
+      "structural_similarity": 0.311875,
+      "component_type_recall": 0.4583333333333333,
+      "reward_score": 0.751,
+      "ast_node_f1": 0.42638888888888893,
+      "ast_edge_f1": 0.16666666666666666,
+      "latency_ms_p50": 7284.1,
+      "latency_ms_p95": 10575.77
+    }
+  },
+  "decode_telemetry": {
+    "semantic_plan_applications": 28,
+    "semantic_plan_choice_changes": 6,
+    "semantic_plan_root_applications": 11,
+    "semantic_plan_root_choice_changes": 3,
+    "hard_candidate_removals": 0,
+    "legal_candidate_set_changed": false
+  },
+  "comparison": {
+    "baseline": "e582-e569-distinct-slots0-r1",
+    "meaningful_program_rate_delta": 0.25,
+    "placeholder_fidelity_delta": 0.08333333333333331,
+    "placeholder_validity_delta": 0.05,
+    "structural_similarity_delta": 0.186875,
+    "component_type_recall_delta": 0.3125,
+    "reward_score_delta": 0.0415,
+    "ast_node_f1_delta": 0.24305555555555558,
+    "ast_edge_f1_delta": 0.16666666666666666,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0,
+    "auth_ast_node_f1": 0.75,
+    "auth_ast_edge_f1": 0.6666666666666666,
+    "auth_ref_graph_exact": 1.0,
+    "auth_prediction": "root = Stack([v0, v3, v1, \":ood.auth.create\"], \"column\", \":ood.auth.create\")\nv0 = Input(\":ood.auth.name\")\nv3 = Button(\":ood.auth.create\", \":ood.auth.create\", \":ood.auth.create\", \":ood.auth.create\", \":ood.auth.create\")\nv1 = TextContent(\":ood.auth.email\", \":ood.auth.create\")",
+    "interpretation": "The close scorer makes the first Input slot-distinct and produces an exact auth reference graph, but the email slot is assigned to TextContent rather than the still-required second Input. Slot-to-family assignment, not instance closure, is now the immediate blocker."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict binding-aware meaning-v2 remains zero, auth has a placeholder semantic-role mismatch, and AgentV fails."
+  },
+  "decision": "Retain the legality-preserving scorer default-off as a partial structural diagnostic. Do not promote or sync a checkpoint. Next isolate visible-slot-to-predicted-family scoring.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "56e6975fa76264b5b781f62baf2c0b98ac556bc7",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v16",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v19"
+    },
+    "stamped_at": "2026-07-20T06:14:03.369500+00:00"
+  }
+}

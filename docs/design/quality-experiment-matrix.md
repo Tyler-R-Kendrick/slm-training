@@ -3424,3 +3424,31 @@ honesty, keep the scorer default-off, and next test count-aware component
 generation. No checkpoint was created or synced. Evidence:
 [narrative](iter-e580-plan-cardinality-20260720.md) and
 [JSON](iter-e580-plan-cardinality-20260720.json).
+
+## E581 count-aware predicted components
+
+E581 scores only still-missing predicted component-family instances before the
+honest cardinality-gated root closure. On a clean matched E569 OOD `n=4`
+component-weight 0/1/2/4 ladder, weight 4 improves meaning-v1 0→0.25,
+fidelity 0.3417→0.4250, validity 0.6050→0.6550, structure 0.1250→0.3231,
+recall 0.1458→0.4583, reward 0.7095→0.7480, AST-node F1 0.1833→0.4532,
+and AST-edge F1 0→0.20. Strict meaning-v2 remains 0 and AgentV fails 0/1.
+Auth's missing serialized `v1` shows that repeated latent Inputs still collapse
+without distinct slot assignments. Retain default-off for structural
+diagnosis; do not promote or sync. Evidence:
+[narrative](iter-e581-count-aware-components-20260720.md) and
+[JSON](iter-e581-count-aware-components-20260720.json).
+
+## E582 distinct repeated-slot instances
+
+E582 softly closes a repeated predicted component after its first visible slot
+so later authored roles can receive distinct instances. On a clean matched E569
+OOD `n=4` weight-0/4 pair, weight 4 improves meaning-v1 0→0.25, fidelity
+0.3417→0.4250, validity 0.6050→0.6550, structure 0.1250→0.3119, recall
+0.1458→0.4583, reward 0.7095→0.7510, AST-node F1 0.1833→0.4264, and AST-edge
+F1 0→0.1667. Auth reaches AST-node F1 0.75, AST-edge F1 0.6667, and an exact
+reference graph, but its email slot is assigned to TextContent rather than the
+still-required second Input. Strict meaning-v2 remains 0 and AgentV fails 0/1.
+Retain default-off for partial structural diagnosis; do not promote or sync.
+Evidence: [narrative](iter-e582-distinct-slot-instances-20260720.md) and
+[JSON](iter-e582-distinct-slot-instances-20260720.json).
