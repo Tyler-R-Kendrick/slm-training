@@ -397,12 +397,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v26",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v27",
+          "date": "2026-07-20",
+          "note": "add SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness"
+        },
         {
           "version": "v26",
           "date": "2026-07-20",
@@ -810,6 +815,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged"
         },
         {
@@ -842,6 +852,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design JSON version stamp after harness.experiments v26 bump; report content unchanged"
         },
         {
@@ -871,12 +886,41 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: refresh design JSON version stamp after harness.experiments v27 bump; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamps after fixture CLI rerun; report content unchanged"
         },
         {
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration of SLM-180 SDE4-02 minimum-controller-capacity fixture wiring harness"
+        }
+      ]
+    },
+    "harness.experiments.slm135_trailed_assumptions_ablation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm135_trailed_assumptions_ablation.py",
+        "scripts/run_slm135_trailed_assumptions_fixture.py",
+        "tests/test_harnesses/experiments/test_slm135_trailed_assumptions_ablation.py",
+        "tests/test_scripts/test_run_slm135_trailed_assumptions_fixture.py",
+        "docs/design/iter-slm135-trailed-assumptions-20260720.json",
+        "docs/design/iter-slm135-trailed-assumptions-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-135 EFS4-01 trailed-assumptions ablation fixture wiring harness"
         }
       ]
     }
