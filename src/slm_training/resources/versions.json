@@ -1011,7 +1011,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v45",
+      "version": "v46",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1025,6 +1025,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v46",
+          "date": "2026-07-20",
+          "note": "record bounded score decomposition for verifier-approved semantic-plan root tokens"
+        },
         {
           "version": "v45",
           "date": "2026-07-20",

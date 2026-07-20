@@ -873,6 +873,58 @@ def test_prompt_semantic_plan_missing_family_trace_records_remaining_counts() ->
     ]
 
 
+def test_prompt_semantic_plan_root_trace_records_verified_target_scores() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+    )
+    tokenizer = model.tokenizer
+    stack_id = tokenizer.token_to_id["+Stack"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    stats = DecodeStats()
+
+    trace = model._record_semantic_plan_root_trace(
+        stats,
+        row=0,
+        position=20,
+        state=SimpleNamespace(
+            section_types=["element:Card", "element:Callout"],
+            frames=[],
+            mode="structural",
+        ),
+        candidate_ids=(stack_id, text_id),
+        scores_before=torch.tensor([1.0, 14.0]),
+        root_bias=torch.tensor([8.0, 0.0]),
+        scores_after=torch.tensor([9.0, 14.0]),
+    )
+    model._finalize_semantic_plan_trace(
+        trace,
+        candidate_ids=(stack_id, text_id),
+        scores=torch.tensor([9.0, 15.0]),
+    )
+
+    assert trace is not None
+    assert trace["phase"] == "semantic_plan_root"
+    assert trace["emitted_families"] == ["Card", "Callout"]
+    assert trace["before_token"] == "+TextContent"
+    assert trace["chosen_token"] == "+TextContent"
+    assert trace["final_token"] == "+TextContent"
+    assert trace["planned_candidates"] == [
+        {
+            "token": "+Stack",
+            "score_before": 1.0,
+            "plan_bias": 8.0,
+            "score_after": 9.0,
+            "post_plan_bias": 0.0,
+            "final_score": 9.0,
+        }
+    ]
+
+
 def test_prompt_semantic_plan_inline_bias_targets_only_missing_families() -> None:
     model = _model(
         output_tokenizer="choice",

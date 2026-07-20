@@ -4411,6 +4411,80 @@ class TwoTowerModel(nn.Module):
                 )
                 candidate["final_score"] = final_score
 
+    def _record_semantic_plan_root_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores_before: torch.Tensor,
+        root_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+    ) -> dict[str, object] | None:
+        """Record bounded score evidence for a verified plan-root token."""
+        if len(stats.constrained_selection_traces) >= 64:
+            return None
+        targeted = [
+            index
+            for index in range(len(candidate_ids))
+            if float(root_bias[index].item()) > 0.0
+        ]
+        if not targeted:
+            return None
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        trace: dict[str, object] = {
+            "phase": "semantic_plan_root",
+            "row": int(row),
+            "position": int(position),
+            "emitted_families": [
+                str(expr_type).removeprefix("element:")
+                for expr_type in getattr(state, "section_types", ())
+            ],
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "choice_changed": before != after,
+            "semantic_plan_root_decode_weight": float(
+                getattr(self.config, "semantic_plan_root_decode_weight", 0.0)
+                or 0.0
+            ),
+            "planned_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(root_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in targeted
+            ],
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(root_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+            **self._choice_phase_evidence(state),
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
+
     def _schema_value_bias(
         self,
         state: Any,
@@ -6494,13 +6568,27 @@ class TwoTowerModel(nn.Module):
                         ids[row, :position].tolist(),
                         candidate_ids,
                     )
+                    semantic_plan_root_trace = None
                     if semantic_plan_root_bias is not None:
+                        scores_before_plan_root = scores.clone()
                         before_plan_root = int(scores.argmax().item())
                         scores = scores + semantic_plan_root_bias
                         if stats is not None:
                             stats.semantic_plan_root_applications += 1
                             stats.semantic_plan_root_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan_root
+                            )
+                            semantic_plan_root_trace = (
+                                self._record_semantic_plan_root_trace(
+                                    stats,
+                                    row=row,
+                                    position=position,
+                                    state=states[row],
+                                    candidate_ids=candidate_ids,
+                                    scores_before=scores_before_plan_root,
+                                    root_bias=semantic_plan_root_bias,
+                                    scores_after=scores,
+                                )
                             )
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
@@ -6640,6 +6728,11 @@ class TwoTowerModel(nn.Module):
                                 )
                     self._finalize_semantic_plan_trace(
                         semantic_plan_trace,
+                        candidate_ids=candidate_ids,
+                        scores=scores,
+                    )
+                    self._finalize_semantic_plan_trace(
+                        semantic_plan_root_trace,
                         candidate_ids=candidate_ids,
                         scores=scores,
                     )
