@@ -14,6 +14,7 @@ from slm_training.models.template_fill import (
     ensure_prompt_semantic_roles,
     inventory_from_prompt,
     normalize_placeholders,
+    prompt_semantic_role_candidates,
 )
 from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
@@ -60,6 +61,24 @@ def test_semantic_roles_use_only_prompt_mentioned_components() -> None:
 def test_semantic_roles_fail_closed_without_visible_components() -> None:
     prompt = "A compact confirmation surface."
     assert ensure_prompt_semantic_roles(prompt, [":modal.title"]) == prompt
+
+
+def test_semantic_role_candidates_use_local_authored_associations() -> None:
+    prompt = (
+        "Sign-up column with name input, email input, and create button.\n"
+        "Placeholders: :ood.auth.name, :ood.auth.email, :ood.auth.create\n"
+        "Components: Button, Input\n"
+        "Semantic roles: ood.auth(create, email, name -> Input)"
+    )
+
+    assert prompt_semantic_role_candidates(
+        prompt,
+        [":ood.auth.name", ":ood.auth.email", ":ood.auth.create"],
+    ) == {
+        ":ood.auth.name": ("Input",),
+        ":ood.auth.email": ("Input",),
+        ":ood.auth.create": ("Button",),
+    }
 
 
 def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:

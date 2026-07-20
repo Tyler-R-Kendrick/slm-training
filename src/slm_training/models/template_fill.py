@@ -113,7 +113,51 @@ def prompt_semantic_role_candidates(
     )
 
     components = sorted(_prompt_component_mentions(prompt))
-    return semantic_role_candidates(slots, components) if components else {}
+    if not components:
+        return {}
+    candidates = {
+        slot: set(names)
+        for slot, names in semantic_role_candidates(slots, components).items()
+    }
+    authored_prompt = "\n".join(
+        line
+        for line in prompt.splitlines()
+        if not line.startswith(("Placeholders:", "Components:", "Semantic roles:"))
+    )
+    clauses = [
+        re.findall(r"[a-z0-9]+", clause)
+        for clause in re.split(
+            r"[,;.!?]|\b(?:and|with)\b", authored_prompt.lower()
+        )
+    ]
+
+    def positions(words: list[str], needle: list[str]) -> list[int]:
+        return [
+            index
+            for index in range(len(words) - len(needle) + 1)
+            if words[index : index + len(needle)] == needle
+        ]
+
+    for slot in slots:
+        role = re.findall(r"[a-z0-9]+", slot.removeprefix(":").split(".")[-1])
+        if not role:
+            continue
+        for component in components:
+            family = re.findall(
+                r"[a-z0-9]+",
+                re.sub(r"(?<!^)(?=[A-Z])", " ", component).lower(),
+            )
+            if any(
+                abs(role_at - family_at) <= 3
+                for clause in clauses
+                for role_at in positions(clause, role)
+                for family_at in positions(clause, family)
+            ):
+                candidates.setdefault(slot, set()).add(component)
+    return {
+        slot: tuple(sorted(candidates.get(slot, ())))
+        for slot in slots
+    }
 
 
 def prompt_semantic_plan(prompt: str):

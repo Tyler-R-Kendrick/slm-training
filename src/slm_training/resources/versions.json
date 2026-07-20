@@ -682,16 +682,22 @@
       ]
     },
     "model.twotower": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/template_fill.py",
         "src/slm_training/models/adapters/",
         "src/slm_training/harnesses/model_build/config.py",
         "src/slm_training/harnesses/model_build/factory.py",
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-20",
+          "note": "derive honest visible slot-to-component candidates from local authored role-family phrases in addition to schema property names"
+        },
         {
           "version": "v19",
           "date": "2026-07-20",
