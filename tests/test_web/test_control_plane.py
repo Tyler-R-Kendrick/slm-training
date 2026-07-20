@@ -1637,6 +1637,7 @@ def test_e597_schema_role_ladder_is_persisted_without_new_checkpoint(
         "e597-e596-role12-r1",
         "e597-e596-schema-roles-r1",
         "e597-e596-schema-roles8-r1",
+        "e597-e596-schema-roles8-r2",
     }
     for run_id in run_ids:
         run = readers.run(run_id)

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "E597",
   "date_utc": "2026-07-20",
-  "run_id": "e597-e596-schema-roles8-r1",
+  "run_id": "e597-e596-schema-roles8-r2",
   "run_class": "scratch_matrix",
   "status": "neutral_not_promotable",
   "hypothesis": "Stronger visible-role scoring or public-schema candidate coverage will bind the inferred Button to confirmation rather than body.",
@@ -55,6 +55,15 @@
       "predictions_changed": true,
       "latency_ms_p50": 4829.01,
       "latency_ms_p95": 16260.02
+    },
+    {
+      "run_id": "e597-e596-schema-roles8-r2",
+      "semantic_role_decode_weight": 8.0,
+      "semantic_role_schema_candidates": true,
+      "predictions_changed": true,
+      "latency_ms_p50": 6218.53,
+      "latency_ms_p95": 17433.55,
+      "canonical_rebased_rerun": true
     }
   ],
   "matched_runs": [
@@ -123,6 +132,28 @@
         }
       },
       "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    },
+    {
+      "run_id": "e597-e596-schema-roles8-r1",
+      "label": "schema_candidates_role_weight_8_pre_rebase",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.46937500000000004,
+          "component_type_recall": 0.625,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5531746031746032,
+          "ast_edge_f1": 0.38749999999999996,
+          "latency_ms_p50": 4829.01,
+          "latency_ms_p95": 16260.02
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
     }
   ],
   "suites": {
@@ -138,8 +169,8 @@
       "reward_score": 0.8115,
       "ast_node_f1": 0.5531746031746032,
       "ast_edge_f1": 0.38749999999999996,
-      "latency_ms_p50": 4829.01,
-      "latency_ms_p95": 16260.02
+      "latency_ms_p50": 6218.53,
+      "latency_ms_p95": 17433.55
     }
   },
   "shared_metrics": {
@@ -172,7 +203,7 @@
   "decision": "Keep the generalized switch default-off and preserve as neutral diagnostic evidence; do not promote or sync.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "b2098653eaefe647a26cdeafb9abc711cd43888a",
+    "code_commit": "53123ca3ae9beb96ce8ae8483dcc2ade2902126e",
     "code_dirty": false,
     "components": {
       "harness.model_build.eval": "v23",
@@ -180,6 +211,6 @@
       "evals.scoring": "v11",
       "model.twotower": "v33"
     },
-    "stamped_at": "2026-07-20T10:15:32.747306+00:00"
+    "stamped_at": "2026-07-20T10:21:04.762169+00:00"
   }
 }
