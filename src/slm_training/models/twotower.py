@@ -255,6 +255,7 @@ class TwoTowerConfig:
     semantic_plan_binding_decode_weight: float = 0.0
     semantic_plan_root_decode_weight: float = 0.0
     semantic_plan_root_margin_decode_weight: float = 0.0
+    semantic_plan_repeated_array_close_margin_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4760,6 +4761,60 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _semantic_plan_repeated_array_close_bias(
+        self,
+        row: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Close nested arrays after one item when a repeated plan family owns them."""
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_repeated_array_close_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if (
+            margin <= 0.0
+            or len(frames) < 2
+            or row >= len(self._semantic_plan_action_counts or ())
+            or frames[-1].kind != "variadic"
+            or int(getattr(frames[-1], "item_count", 0)) < 1
+        ):
+            return None
+        family_token_ids = {
+            str(self.tokenizer.id_to_token.get(token_id, ""))
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        owner_id = None
+        for frame in reversed(frames):
+            if frame.kind != "component":
+                continue
+            candidate_id = family_token_ids.get(
+                str(frame.expr_type).removeprefix("element:")
+            )
+            if self._semantic_plan_action_counts[row].get(candidate_id, 0) > 1:
+                owner_id = candidate_id
+                break
+        if owner_id is None:
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(frames[-1].close))
+        if close_id not in candidate_ids:
+            return None
+        target = candidate_ids.index(close_id)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
+        return bias
+
     @staticmethod
     def _schema_contains_enum(schema: dict[str, Any]) -> bool:
         if schema.get("enum"):
@@ -6546,6 +6601,16 @@ class TwoTowerModel(nn.Module):
                     )
                     if slot_coverage_close_bias is not None:
                         scores = scores + slot_coverage_close_bias
+                    repeated_array_close_bias = (
+                        self._semantic_plan_repeated_array_close_bias(
+                            row,
+                            states[row],
+                            candidate_ids,
+                            scores,
+                        )
+                    )
+                    if repeated_array_close_bias is not None:
+                        scores = scores + repeated_array_close_bias
                     semantic_plan_bias = self._semantic_plan_bias(
                         row,
                         candidate_ids,
