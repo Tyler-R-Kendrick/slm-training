@@ -47,7 +47,7 @@ REGISTRY_PATH = "src/slm_training/resources/versions.json"
 REGISTRY_SCHEMA = "version_registry/v1"
 STAMP_SCHEMA = "version_stamp/v1"
 NO_BUMP_PREFIX = "no-bump:"
-COMPONENT_KINDS = {"harness", "metric", "gate", "matrix", "data_builder"}
+COMPONENT_KINDS = {"harness", "metric", "gate", "matrix", "data_builder", "model"}
 # Top-level keys that structurally mark a docs/design JSON as an experiment
 # result record (mirrors the sniffing style of verify_checkpoint_references —
 # never filename-only).

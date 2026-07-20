@@ -29,7 +29,7 @@ def test_component_entries_are_well_formed() -> None:
     for component_id, entry in load_registry()["components"].items():
         assert _COMPONENT_ID_RE.match(component_id), component_id
         assert _VERSION_RE.match(entry["version"]), component_id
-        assert entry["kind"] in {"harness", "metric", "gate", "matrix", "data_builder"}
+        assert entry["kind"] in {"harness", "metric", "gate", "matrix", "data_builder", "model"}
         history = entry["history"]
         assert history, f"{component_id}: history must be non-empty"
         assert history[0]["version"] == entry["version"], (

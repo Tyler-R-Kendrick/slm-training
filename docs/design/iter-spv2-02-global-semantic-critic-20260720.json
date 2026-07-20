@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "run_id": "slm150_spv2_02_global_semantic_critic_fixture",
+  "run_class": "fixture_demo",
+  "suites": {
+    "fixture_wiring": {
+      "n": 64,
+      "energy_value_sign_ok": true,
+      "factor_head_count": 5,
+      "pairwise_loss_finite": true,
+      "listwise_loss_finite": true,
+      "factor_loss_finite": true,
+      "checkpoint_roundtrip_ok": true,
+      "abstention_unsupported_pack": true,
+      "abstention_all_candidates": true,
+      "deterministic_rerank": true,
+      "lambda_zero_uses_local_scores": true,
+      "gold_keys_ignored": true,
+      "batch_score_equivalence": true,
+      "factor_heads_do_not_change_energy": true
+    }
+  },
+  "recipe": {
+    "d_model": 64,
+    "hidden_dim": 64,
+    "num_factors": 5,
+    "fixture_groups": 16,
+    "candidates_per_group": 4,
+    "backend": "cpu",
+    "scorer_id": "global-semantic-critic-v1"
+  },
+  "disposition": {
+    "honest_verdict": "fixture_wiring",
+    "ship_readiness": false,
+    "notes": "Synthetic fixture corpus only; SPV2-01 hard-valid contrast corpus is absent from the repo."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "902871aba428faa6df71bc20ba52a9b85c88596c",
+    "code_dirty": true,
+    "components": {
+      "model.global_semantic_critic": "v1",
+      "harness.experiments": "v31"
+    },
+    "stamped_at": "2026-07-20T06:03:51.308917+00:00"
+  }
+}
