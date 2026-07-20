@@ -8,6 +8,10 @@ have been covered. It abstains on root structural lists and incomplete
 coverage. Capped CPU OOD `n=4` treatments at weights 2 and 4 completed within
 170 seconds and are prediction-identical.
 
+The preferred weight-2 arm was repeated after rebasing onto the concurrent
+SLM-163 model-harness change; the canonical rerun is prediction- and
+metric-identical.
+
 Against E598 weight 8, both treatments remove the duplicate Modal body child
 and leaked size argument while preserving `Button(confirm)` and
 `TextContent(body)`. Structure improves 0.4694→0.5169, AST-node F1

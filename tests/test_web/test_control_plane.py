@@ -1678,6 +1678,7 @@ def test_e599_slot_coverage_close_ladder_is_persisted_without_new_checkpoint(
     readers.lineage = LineageStore(readers.outputs / "lineage")
     run_ids = {
         "e599-e598-slotclose2-r1",
+        "e599-e598-slotclose2-r2",
         "e599-e598-slotclose4-r1",
     }
     for run_id in run_ids:
