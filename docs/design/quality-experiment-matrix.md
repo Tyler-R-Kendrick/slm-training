@@ -3111,4 +3111,25 @@ and `.md`.
 | --- | --- | --- | --- |
 | E305 | High-level learned stochastic latent | GRAM-style width vs depth | blocked by SLM-138 gate |
 | E306 | Low-level trained stochastic state | Noise-locus ablation | blocked by SLM-138 gate |
+
+## V20 plan-predictor factor heads (SLM-145) — closed
+
+SLM-145 proposed adding learned topology, cardinality, and live-symbol pointer
+heads to the SPV1 plan predictor.  Its authorization gate required SPV0-02
+(SLM-142) to show, through factor-wise oracle substitution on real or fixture
+completions, that each factor carries a material downstream semantic ceiling.
+SLM-142 landed extraction/canonicalization/oracle/seed wiring but did not run
+the factor-wise experiments, so the gate returned
+`blocked_pending_spv0_02_ceiling_evidence`.  No head was implemented.
+
+| ID | Isolated lever | Purpose | Status |
+| --- | --- | --- | --- |
+| E307 | Learned topology head | Predict plan topology factor | blocked by SLM-142 gate |
+| E308 | Learned cardinality head | Predict role-slot cardinality | blocked by SLM-142 gate |
+| E309 | Learned live-symbol pointer head | Predict binding pointers | blocked by SLM-142 gate |
+
+The closeout report is at
+`outputs/runs/slm145-plan-predictor-factors-20260720/` with mirrored design
+artifacts `docs/design/iter-slm145-plan-predictor-factors-20260720.json` and
+`.md`.
 | E307 | Inference-only low-level noise | PTRM-style control lineage | blocked by SLM-138 gate |

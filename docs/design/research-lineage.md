@@ -786,6 +786,20 @@ No plan predictor, X22 change, energy model, or training run is added by SPV0-01
 | Discrete Flow Matching | Adjacent | Plan-conditioned valid-edit trajectories |
 | FS-DFM | Adjacent | Few-step latency-sensitive plan editing |
 
+## SPV1 plan-predictor factor gates (SLM-145) — closed
+
+SLM-145 asked for learned topology, cardinality, and live-symbol pointer heads
+under the SPV1 plan-predictor contract.  Its authorization gate required SPV0-02
+(SLM-142) to demonstrate, via factor-wise oracle substitution, a downstream
+ceiling for each candidate factor.  SLM-142 wired extraction, canonicalization,
+oracle substitution, and seed construction, but never ran the factor-wise
+gold-substitution experiments, so the gate returned
+`blocked_pending_spv0_02_ceiling_evidence`.  No learned head was implemented.
+The closeout report is at
+`outputs/runs/slm145-plan-predictor-factors-20260720/` with mirrored design
+artifacts `docs/design/iter-slm145-plan-predictor-factors-20260720.json` and
+`.md`.
+
 ## Calculated arity, adaptive precision, and quantization (CAP0–CAP4)
 
 **Fidelity label: adapted / adjacent.** The CAP campaign uses coding-theoretic and

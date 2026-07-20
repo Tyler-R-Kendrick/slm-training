@@ -1,0 +1,59 @@
+{
+  "blocked_heads": [
+    "topology_head",
+    "cardinality_head",
+    "live_symbol_pointer_head"
+  ],
+  "claim_class": "wiring",
+  "decision": "blocked_pending_spv0_02_ceiling_evidence",
+  "factors": {
+    "archetype": {
+      "ceiling_observed": false,
+      "note": "covered by SLM-144 SPV1-01; not a new SLM-145 target",
+      "spv0_02_evidence": "SLM-144 fixture defines gold_archetype arm; toy corpus only"
+    },
+    "bindings_pointers": {
+      "ceiling_observed": false,
+      "note": "PlanOracleSubstitutor supports bindings factor, but no downstream ceiling measured",
+      "spv0_02_evidence": "binding extraction exists; no oracle-substitution experiment found"
+    },
+    "cardinality": {
+      "ceiling_observed": false,
+      "note": "schema field exists but extraction and oracle substitution are incomplete",
+      "spv0_02_evidence": "RoleSlot.min/max_cardinality not populated by extractor; no oracle arm"
+    },
+    "role_set": {
+      "ceiling_observed": false,
+      "note": "covered by SLM-144 SPV1-01; not a new SLM-145 target",
+      "spv0_02_evidence": "SLM-144 fixture defines gold_role_set arm; plan_only status"
+    },
+    "topology": {
+      "ceiling_observed": false,
+      "note": "PlanOracleSubstitutor supports topology factor, but no downstream ceiling measured",
+      "spv0_02_evidence": "no oracle-substitution experiment found"
+    }
+  },
+  "justified_factors": [],
+  "matrix_set": "slm145-plan-predictor-factors",
+  "matrix_version": "slm145-v1",
+  "not_justified_factors": [
+    "archetype",
+    "role_set",
+    "topology",
+    "cardinality",
+    "bindings_pointers"
+  ],
+  "reason": "SLM-145 authorization gate not satisfied: SPV0-02/SLM-142 did not run factor-wise gold-substitution experiments measuring downstream semantic ceilings for topology, cardinality, or bindings/pointers. No learned head is justified.",
+  "recommended_next_step": "Run a factor-wise oracle-substitution matrix on a real or fixture completion corpus and re-open SLM-145 only for factors that show a preregistered downstream gain.",
+  "run_id": "slm145_gate_closeout",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "75a9a21ba280fd468e6b2fd42f016f3e53b2f280",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v27"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T02:54:03.610746+00:00"
+  }
+}
