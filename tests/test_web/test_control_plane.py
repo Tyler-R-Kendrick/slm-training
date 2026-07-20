@@ -916,6 +916,22 @@ def test_e560_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     }
 
 
+def test_e561_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e561-e544-owner-threshold7-r1-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == 0.575
+    assert run_id in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

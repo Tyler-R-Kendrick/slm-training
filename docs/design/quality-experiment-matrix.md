@@ -2906,6 +2906,16 @@ as a topology Pareto lever without promotion and test threshold 7. Evidence:
 [narrative](iter-e560-owner-threshold4-20260720.md) and
 [JSON](iter-e560-owner-threshold4-20260720.json).
 
+## E561 midpoint rare slot-owner coverage
+
+At 2× exposure, threshold 7 selects 42/244 records and dominates E555 on every
+non-semantic OOD `n=4` headline: fidelity 0.5750, structure 0.2419, recall
+0.1458, reward 0.5753, AST-node F1 0.3125, and AST-edge F1 0.0385. Meaning
+v1/v2 remain 0 and AgentV remains 0/1. **Decision:** retain threshold 7, close
+the sampling ladder, and use the checkpoint only for semantic decode research.
+Evidence: [narrative](iter-e561-owner-threshold7-20260720.md) and
+[JSON](iter-e561-owner-threshold7-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
