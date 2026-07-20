@@ -1,0 +1,256 @@
+{
+  "claim_class": "wiring",
+  "experiment_id": "slm159-cross-dsl-replication",
+  "manifest": {
+    "arms": [
+      {
+        "arm_id": "G1_graphql",
+        "blocked": false,
+        "blocker": "",
+        "description": "Replicate SemanticPlanV1 extraction and seed building on the SLM-43 GraphQL pack, using the schema as the symbol table.",
+        "family": "graphql",
+        "name": "graphql_replication",
+        "pack_id": "graphql",
+        "promotable": true,
+        "reference": true
+      },
+      {
+        "arm_id": "S1_second_pack",
+        "blocked": true,
+        "blocker": "No SLM-44 or SLM-45 pack is registered; only design documents exist. A syntax-only toy pack cannot satisfy the readiness rubric, so the second-pack replication is blocked pending a real pack implementation.",
+        "description": "Preregistered second-pack candidate from SLM-44 (design-patterns DSL) or SLM-45 (expert-nomenclature/ontology pack).  The issue authorizes recording a concrete readiness blocker if neither pack/oracle contract is available.",
+        "family": "second_pack",
+        "name": "second_pack_readiness",
+        "pack_id": "design-patterns-or-nomenclature",
+        "promotable": false,
+        "reference": true
+      }
+    ],
+    "claim_class": "wiring",
+    "common_config": {
+      "graphql_depth": 1,
+      "max_records_per_root": 8,
+      "metric_versions": {
+        "meaningful": "2.0.0"
+      },
+      "n_graphql_records": 4,
+      "seeds": [
+        0
+      ]
+    },
+    "experiment_id": "slm159-cross-dsl-replication",
+    "falsifier": "Plan factors cannot be defined from GraphQL's schema/selection semantics, the seed builder cannot reproduce schema-valid queries, or the second-pack candidates lack the grammar/parser/oracle/data contract required for a non-toy replication.",
+    "hypothesis": "Pack-neutral SemanticPlanV1 extraction, seed construction, and oracle-backed validation transfer from OpenUI to GraphQL and a structurally different second pack.",
+    "matrix_set": "slm159_cross_dsl_replication",
+    "matrix_version": "spv4-01-v1",
+    "status": "not_run"
+  },
+  "matrix_set": "slm159_cross_dsl_replication",
+  "matrix_version": "spv4-01-v1",
+  "readiness_reports": [
+    {
+      "blocker": "",
+      "canonicalizer_available": true,
+      "checklist": {
+        "bounded_finite_cases": true,
+        "canonical_equivalence_fingerprint": true,
+        "exact_legal_action_or_valid_edit_enumeration": false,
+        "pack_native_semantic_metric_and_audit": false,
+        "placeholder_symbol_binder_policy": true,
+        "positive_corpus_and_disjoint_eval": false,
+        "request_prompt_contract": true,
+        "schema_type_scope_oracle": true,
+        "typed_ast_or_program_spec_generator": true,
+        "versioned_grammar_parser": true
+      },
+      "generator_available": true,
+      "oracle_available": true,
+      "pack_available": true,
+      "pack_id": "graphql",
+      "parser_available": true,
+      "placeholder_policy_available": true,
+      "readiness_pass": true,
+      "symbol_table": {
+        "Author": [
+          "id",
+          "name",
+          "bio",
+          "posts"
+        ],
+        "Comment": [
+          "id",
+          "text",
+          "author"
+        ],
+        "Post": [
+          "id",
+          "title",
+          "body",
+          "published",
+          "author",
+          "comments"
+        ],
+        "Query": [
+          "posts",
+          "post",
+          "authors",
+          "author"
+        ]
+      },
+      "unsupported_features": []
+    },
+    {
+      "blocker": "pack 'design-patterns' is not registered in the DSL pack registry",
+      "canonicalizer_available": false,
+      "checklist": {
+        "bounded_finite_cases": false,
+        "canonical_equivalence_fingerprint": false,
+        "exact_legal_action_or_valid_edit_enumeration": false,
+        "pack_native_semantic_metric_and_audit": false,
+        "placeholder_symbol_binder_policy": false,
+        "positive_corpus_and_disjoint_eval": false,
+        "request_prompt_contract": false,
+        "schema_type_scope_oracle": false,
+        "typed_ast_or_program_spec_generator": false,
+        "versioned_grammar_parser": false
+      },
+      "generator_available": false,
+      "oracle_available": false,
+      "pack_available": false,
+      "pack_id": "design-patterns",
+      "parser_available": false,
+      "placeholder_policy_available": false,
+      "readiness_pass": false,
+      "symbol_table": {},
+      "unsupported_features": [
+        "pack not registered"
+      ]
+    },
+    {
+      "blocker": "pack 'nomenclature' is not registered in the DSL pack registry",
+      "canonicalizer_available": false,
+      "checklist": {
+        "bounded_finite_cases": false,
+        "canonical_equivalence_fingerprint": false,
+        "exact_legal_action_or_valid_edit_enumeration": false,
+        "pack_native_semantic_metric_and_audit": false,
+        "placeholder_symbol_binder_policy": false,
+        "positive_corpus_and_disjoint_eval": false,
+        "request_prompt_contract": false,
+        "schema_type_scope_oracle": false,
+        "typed_ast_or_program_spec_generator": false,
+        "versioned_grammar_parser": false
+      },
+      "generator_available": false,
+      "oracle_available": false,
+      "pack_available": false,
+      "pack_id": "nomenclature",
+      "parser_available": false,
+      "placeholder_policy_available": false,
+      "readiness_pass": false,
+      "symbol_table": {},
+      "unsupported_features": [
+        "pack not registered"
+      ]
+    },
+    {
+      "blocker": "pack 'ontology' is not registered in the DSL pack registry",
+      "canonicalizer_available": false,
+      "checklist": {
+        "bounded_finite_cases": false,
+        "canonical_equivalence_fingerprint": false,
+        "exact_legal_action_or_valid_edit_enumeration": false,
+        "pack_native_semantic_metric_and_audit": false,
+        "placeholder_symbol_binder_policy": false,
+        "positive_corpus_and_disjoint_eval": false,
+        "request_prompt_contract": false,
+        "schema_type_scope_oracle": false,
+        "typed_ast_or_program_spec_generator": false,
+        "versioned_grammar_parser": false
+      },
+      "generator_available": false,
+      "oracle_available": false,
+      "pack_available": false,
+      "pack_id": "ontology",
+      "parser_available": false,
+      "placeholder_policy_available": false,
+      "readiness_pass": false,
+      "symbol_table": {},
+      "unsupported_features": [
+        "pack not registered"
+      ]
+    },
+    {
+      "blocker": "pack 'expert-nomenclature' is not registered in the DSL pack registry",
+      "canonicalizer_available": false,
+      "checklist": {
+        "bounded_finite_cases": false,
+        "canonical_equivalence_fingerprint": false,
+        "exact_legal_action_or_valid_edit_enumeration": false,
+        "pack_native_semantic_metric_and_audit": false,
+        "placeholder_symbol_binder_policy": false,
+        "positive_corpus_and_disjoint_eval": false,
+        "request_prompt_contract": false,
+        "schema_type_scope_oracle": false,
+        "typed_ast_or_program_spec_generator": false,
+        "versioned_grammar_parser": false
+      },
+      "generator_available": false,
+      "oracle_available": false,
+      "pack_available": false,
+      "pack_id": "expert-nomenclature",
+      "parser_available": false,
+      "placeholder_policy_available": false,
+      "readiness_pass": false,
+      "symbol_table": {},
+      "unsupported_features": [
+        "pack not registered"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "arm_id": "G1_graphql",
+      "extraction_coverage": 1.0,
+      "mean_latency_ms": 196.08082999911858,
+      "n_records": 4,
+      "notes": [
+        "fixture GraphQL plan round-trip"
+      ],
+      "pack_id": "graphql",
+      "promotable": true,
+      "round_trip_equal": 1.0,
+      "seed": 0,
+      "seed_validity": 1.0
+    },
+    {
+      "arm_id": "S1_second_pack",
+      "extraction_coverage": 0.0,
+      "mean_latency_ms": 0.0,
+      "n_records": 0,
+      "notes": [
+        "No SLM-44 or SLM-45 pack is registered; only design documents exist. A syntax-only toy pack cannot satisfy the readiness rubric, so the second-pack replication is blocked pending a real pack implementation.",
+        "seed=0"
+      ],
+      "pack_id": "design-patterns-or-nomenclature",
+      "promotable": false,
+      "round_trip_equal": 0.0,
+      "seed": 0,
+      "seed_validity": 0.0
+    }
+  ],
+  "run_id": "slm159_fixture",
+  "schema": "Slm159CrossDslReplicationReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T09:02:58.770504Z",
+  "version_stamp": {
+    "code_commit": "daccf59521e6380b9f223ed85a41ad098b76cd24",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v34",
+      "harness.experiments.slm159_cross_dsl_replication": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T09:02:58.769876+00:00"
+  }
+}
