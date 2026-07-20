@@ -967,6 +967,25 @@
           "note": "initial registration of SLM-136 LDI4-02 SAE decision-state diagnostic harness (schema, SAE, interventions, fixture wiring)"
         }
       ]
+    },
+    "harness_core.lineage.interventions": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harness_core/lineage/interventions.py",
+        "scripts/run_intervention_unification_fixture.py",
+        "tests/test_lineage_interventions.py",
+        "tests/test_scripts/test_run_intervention_unification_fixture.py",
+        "docs/design/iter-ldi4-03-intervention-unification-20260720.json",
+        "docs/design/iter-ldi4-03-intervention-unification-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration of SLM-137 LDI4-03 unified intervention manifest/registry/promotion harness"
+        }
+      ]
     }
   }
 }
