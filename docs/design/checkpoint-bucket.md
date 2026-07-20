@@ -101,6 +101,7 @@ Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
 
 | Date (UTC) | Run | Sync? | Notes |
 | --- | --- | --- | --- |
+| 2026-07-20 | `e561-e544-owner-threshold7-r1-24s` | No (`--no-sync-checkpoints`) | 41.47s under `max_wall_minutes=3`, SHA `35a4fe6dd1b0eb2f59c33cb6d4ae11472c693f43a15fa3e6abc46db323a127f9`; broad non-semantic gains, but meaning and AgentV fail. |
 | 2026-07-20 | `e560-e544-owner-threshold4-r1-24s` | No (`--no-sync-checkpoints`) | 42.26s under `max_wall_minutes=3`, SHA `dae11cee1e8fc1a2178b6397e558db9b0e4a723bbfbaf38f63af94557d7686a3`; topology improves but fidelity and semantic gates fail. |
 | 2026-07-20 | `e559-e544-owner-coverage2-r1-24s` | No (`--no-sync-checkpoints`) | 31.14s under `max_wall_minutes=3`, SHA `1d11926d6784cac62f6d65249030be9b392d0f185e59b1a4212d9f0ff9aac861`; fidelity/recall improve but reward and semantic gates fail. |
 | 2026-07-20 | `e558-e544-owner-coverage-r2-24s` | No (`--no-sync-checkpoints`) | 43.74s under `max_wall_minutes=3`, SHA `a45909dffd103df353bff944aedbafa1e386b2bf657c5dc02f2d956e06381ede`; fidelity improves but structure/reward and semantic gates fail. |
