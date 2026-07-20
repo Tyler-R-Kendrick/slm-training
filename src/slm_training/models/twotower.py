@@ -237,6 +237,7 @@ class TwoTowerConfig:
     slot_component_decode_weight: float = 0.0
     semantic_role_decode_weight: float = 0.0
     semantic_role_schema_candidates: bool = False
+    slot_coverage_close_decode_weight: float = 0.0
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
     schema_opaque_decode_weight: float = 0.0
@@ -4352,6 +4353,42 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _slot_coverage_close_bias(
+        self,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+        slot_contract: list[str] | None,
+    ) -> torch.Tensor | None:
+        """Prefer closing a typed component array after visible-slot coverage."""
+        weight = float(
+            getattr(self.config, "slot_coverage_close_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not frames or not slot_contract:
+            return None
+        frame = frames[-1]
+        if (
+            getattr(frame, "kind", None) != "variadic"
+            or getattr(frame, "expr_type", None) != "array"
+            or not tuple(getattr(frame, "schemas", ()))
+        ):
+            return None
+        try:
+            covered = all(
+                int(self.tokenizer.sym_id(index)) in prefix
+                for index in range(len(slot_contract))
+            )
+        except (AttributeError, KeyError, ValueError):
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+        if not covered or close_id not in candidate_ids:
+            return None
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[candidate_ids.index(close_id)] = weight
+        return bias
+
     @staticmethod
     def _schema_contains_enum(schema: dict[str, Any]) -> bool:
         if schema.get("enum"):
@@ -6104,6 +6141,20 @@ class TwoTowerModel(nn.Module):
                     )
                     if schema_role_slot_bias is not None:
                         scores = scores + schema_role_slot_bias
+                    slot_coverage_close_bias = self._slot_coverage_close_bias(
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                        (
+                            self._slot_contracts[row]
+                            if self._slot_contracts
+                            and row < len(self._slot_contracts)
+                            else None
+                        ),
+                    )
+                    if slot_coverage_close_bias is not None:
+                        scores = scores + slot_coverage_close_bias
                     semantic_plan_bias = self._semantic_plan_bias(
                         row,
                         candidate_ids,

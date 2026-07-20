@@ -374,6 +374,9 @@ def _effective_evaluation_policy(
         "semantic_role_schema_candidates": bool(
             value("semantic_role_schema_candidates")
         ),
+        "slot_coverage_close_decode_weight": float(
+            value("slot_coverage_close_decode_weight") or 0.0
+        ),
         "schema_value_decode_weight": float(
             value("schema_value_decode_weight") or 0.0
         ),
