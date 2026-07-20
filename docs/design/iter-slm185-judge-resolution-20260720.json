@@ -1,0 +1,190 @@
+{
+  "claim_class": "wiring",
+  "endpoints": [
+    {
+      "abstention_rate": 0.0,
+      "brier_score": 0.0,
+      "claim_language_permit_set": [
+        "directional",
+        "resolved",
+        "below_noise_floor"
+      ],
+      "cohen_kappa": 1.0,
+      "ece": 0.0,
+      "endpoint_label": "fixture_binding_aware_v2",
+      "equivalence_invariance_error_rate": 0.0,
+      "equivalence_margin": 0.01,
+      "fleiss_kappa": null,
+      "icc_1_1": {
+        "between": 1.3636363636363635,
+        "icc": 1.0,
+        "n_clusters": 12,
+        "within": 0.0
+      },
+      "krippendorff_alpha": null,
+      "majority_rule": false,
+      "measured_flip_rate": 0.0,
+      "metric_family": "binding_aware_meaningful_v2",
+      "minimum_resolvable_delta": 0.05,
+      "model": "binding_aware_meaningful_v2",
+      "pairwise_ordering_consistency": {
+        "kendall_tau_b": 1.0,
+        "repeats": 5,
+        "spearman": 1.0
+      },
+      "perturbation_detection_rate": 1.0,
+      "provider": "fixture",
+      "required_repeats": 5,
+      "requires_independent_confirmation": true,
+      "revision": "2.1.0"
+    },
+    {
+      "abstention_rate": 0.0,
+      "brier_score": 1.0,
+      "claim_language_permit_set": [
+        "directional",
+        "resolved",
+        "below_noise_floor"
+      ],
+      "cohen_kappa": 1.0,
+      "ece": 1.0,
+      "endpoint_label": "fixture_canonical_equal",
+      "equivalence_invariance_error_rate": 0.0,
+      "equivalence_margin": 0.0,
+      "fleiss_kappa": null,
+      "icc_1_1": {
+        "between": 1.3636363636363635,
+        "icc": 1.0,
+        "n_clusters": 12,
+        "within": 0.0
+      },
+      "krippendorff_alpha": null,
+      "majority_rule": false,
+      "measured_flip_rate": 0.0,
+      "metric_family": "binding_aware_meaningful_v2",
+      "minimum_resolvable_delta": 0.02,
+      "model": "binding_aware_meaningful_v2",
+      "pairwise_ordering_consistency": {
+        "kendall_tau_b": 1.0,
+        "repeats": 5,
+        "spearman": 1.0
+      },
+      "perturbation_detection_rate": 1.0,
+      "provider": "fixture",
+      "required_repeats": 5,
+      "requires_independent_confirmation": true,
+      "revision": "2.1.0"
+    },
+    {
+      "abstention_rate": 0.0,
+      "brier_score": 0.32430932819503133,
+      "claim_language_permit_set": [
+        "directional",
+        "resolved",
+        "below_noise_floor"
+      ],
+      "cohen_kappa": -0.16504854368932037,
+      "ece": 0.2727020075030164,
+      "endpoint_label": "fixture_seeded_hash_scorer",
+      "equivalence_invariance_error_rate": 1.0,
+      "equivalence_margin": 0.1,
+      "fleiss_kappa": null,
+      "icc_1_1": {
+        "between": 0.26642036484906617,
+        "icc": -0.04130949726433767,
+        "n_clusters": 12,
+        "within": 0.3323414967922187
+      },
+      "krippendorff_alpha": null,
+      "majority_rule": false,
+      "measured_flip_rate": 0.7083333333333334,
+      "metric_family": "seeded_hash_scorer",
+      "minimum_resolvable_delta": 0.3,
+      "model": "seeded_hash_scorer",
+      "pairwise_ordering_consistency": {
+        "kendall_tau_b": -0.21212121212121213,
+        "repeats": 5,
+        "spearman": -0.34265734265734266
+      },
+      "perturbation_detection_rate": 1.0,
+      "provider": "fixture",
+      "required_repeats": 5,
+      "requires_independent_confirmation": true,
+      "revision": "1.0.0"
+    }
+  ],
+  "experiment_id": "slm185-judge-resolution",
+  "falsifier": "The reliability metrics collapse (NaN/undefined) or the equivalence invariance error rate is non-zero for canonical-equivalent pairs.",
+  "generated_at": "2026-07-20T20:26:50.229724Z",
+  "global_floor": 0.02,
+  "hypothesis": "Deterministic fixture judges can expose test-retest reliability, canonical-equivalence invariance, and semantic perturbation detection at a per-endpoint resolution floor.",
+  "matrix_set": "slm185_judge_resolution",
+  "matrix_version": "quality-v3",
+  "provenance": {
+    "corpus_path": null,
+    "item_n": 15,
+    "judge_envelopes": [
+      {
+        "independent": true,
+        "model": "binding_aware_meaningful_v2",
+        "parser_version": "openui_canonical_v2",
+        "participated_in_admission": false,
+        "participated_in_creation": false,
+        "participated_in_training": false,
+        "prior_judge_families": [],
+        "prompt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "provider": "fixture",
+        "response_digest": "fixture_deterministic",
+        "retry_policy": {
+          "backoff": "none",
+          "max_attempts": 1
+        },
+        "revision": "2.1.0",
+        "rubric_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seed": 0,
+        "system_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "temperature": 0.0,
+        "top_p": 1.0
+      },
+      {
+        "independent": true,
+        "model": "seeded_hash_scorer",
+        "parser_version": "none",
+        "participated_in_admission": false,
+        "participated_in_creation": false,
+        "participated_in_training": false,
+        "prior_judge_families": [
+          "binding_aware_meaningful_v2"
+        ],
+        "prompt_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "provider": "fixture",
+        "response_digest": "fixture_seeded_hash",
+        "retry_policy": {
+          "backoff": "none",
+          "max_attempts": 1
+        },
+        "revision": "1.0.0",
+        "rubric_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "seed": 185,
+        "system_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "temperature": 0.0,
+        "top_p": 1.0
+      }
+    ]
+  },
+  "run_id": "slm185-judge-resolution-20260720",
+  "schema": "SemanticResolutionManifestV1",
+  "status": "fixture",
+  "timestamp": "2026-07-20T20:26:50.229827Z",
+  "version_stamp": {
+    "code_commit": "dc5c09f33e9c00a4c1b5432f3c255893ec079e1f",
+    "code_dirty": true,
+    "components": {
+      "evals.judge_resolution": "v1",
+      "harness.experiments": "v49",
+      "matrix.quality": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T20:26:50.229704+00:00"
+  }
+}
