@@ -4786,29 +4786,23 @@ class TwoTowerModel(nn.Module):
             or int(getattr(frames[-1], "item_count", 0)) < 1
         ):
             return None
-        owner = next(
-            (
+        family_token_ids = {
+            str(self.tokenizer.id_to_token.get(token_id, ""))
+            .removeprefix("COMP:")
+            .removeprefix("+"): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        owner_id = None
+        for frame in reversed(frames):
+            if frame.kind != "component":
+                continue
+            candidate_id = family_token_ids.get(
                 str(frame.expr_type).removeprefix("element:")
-                for frame in frames
-                if frame.kind == "component"
-            ),
-            "",
-        )
-        owner_id = next(
-            (
-                token_id
-                for token_id in self._component_inventory_token_ids()
-                if str(self.tokenizer.id_to_token.get(token_id, ""))
-                .removeprefix("COMP:")
-                .removeprefix("+")
-                == owner
-            ),
-            None,
-        )
-        if (
-            owner_id is None
-            or self._semantic_plan_action_counts[row].get(owner_id, 0) <= 1
-        ):
+            )
+            if self._semantic_plan_action_counts[row].get(candidate_id, 0) > 1:
+                owner_id = candidate_id
+                break
+        if owner_id is None:
             return None
         close_id = self.tokenizer.token_to_id.get(str(frames[-1].close))
         if close_id not in candidate_ids:

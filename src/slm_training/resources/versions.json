@@ -1120,7 +1120,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v50",
+      "version": "v51",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1135,6 +1135,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v51",
+          "date": "2026-07-20",
+          "note": "select the deepest repeated semantic-plan ancestor for nested array closure"
+        },
         {
           "version": "v50",
           "date": "2026-07-20",

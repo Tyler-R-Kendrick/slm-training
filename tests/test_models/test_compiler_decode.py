@@ -439,6 +439,25 @@ def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None
     assert model._semantic_plan_repeated_array_close_bias(
         0, direct, candidates, torch.tensor([8.0, 1.0])
     ).tolist() == [0.0, 9.0]
+    model._semantic_plan_action_counts = [{card_id: 1, text_id: 2}]
+    repeated_inner = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Card"),
+            SimpleNamespace(kind="variadic", expr_type="array", item_count=0),
+            SimpleNamespace(
+                kind="component", expr_type="element:TextContent"
+            ),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=1,
+                close="]",
+            ),
+        ]
+    )
+    assert model._semantic_plan_repeated_array_close_bias(
+        0, repeated_inner, candidates, torch.tensor([8.0, 1.0])
+    ).tolist() == [0.0, 9.0]
     model._semantic_plan_action_counts = [{card_id: 1}]
     assert (
         model._semantic_plan_repeated_array_close_bias(
