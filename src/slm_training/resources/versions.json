@@ -534,6 +534,11 @@
       "history": [
         {
           "version": "v2",
+          "date": "2026-07-20",
+          "note": "no-bump: add SLM-184 default-off fixture comment/example next to evaluate_suites; runner behavior unchanged"
+        },
+        {
+          "version": "v2",
           "date": "2026-07-19",
           "note": "add SLM-108 external-ceiling matrix set dispatch (--matrix-set external-ceiling)"
         },
@@ -631,12 +636,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v48",
+      "version": "v49",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-07-20",
+          "note": "add SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness"
+        },
         {
           "version": "v48",
           "date": "2026-07-20",
@@ -886,6 +896,25 @@
           "version": "v1",
           "date": "2026-07-18",
           "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"
+        }
+      ]
+    },
+    "harness.experiments.claim_manifest": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/claim_manifest.py",
+        "scripts/audit_experiment_firewall.py",
+        "tests/test_harnesses/experiments/test_claim_manifest.py",
+        "tests/test_scripts/test_audit_experiment_firewall.py",
+        "docs/design/iter-slm184-claim-manifest-20260720.json",
+        "docs/design/iter-slm184-claim-manifest-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness"
         }
       ]
     },

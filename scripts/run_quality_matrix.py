@@ -2359,6 +2359,14 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     ckpt = _maybe_trust_gate(exp, ckpt, args)
     ckpt = _maybe_survival_gate(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
+    # SLM-184 (default-off): to enforce a preregistered single-touch confirmation
+    # firewall, wrap evaluate_suites with with_claim_manifest_guard(...).
+    # See scripts/audit_experiment_firewall.py --mode fixture for an example.
+    # Example (dev touch):
+    #   with with_claim_manifest_guard(
+    #       manifest_path, ledger_path, suite_id, suite_digest, is_confirmation=False
+    #   ):
+    #       board = evaluate_suites(eval_cfg, args.suites, checkpoint=ckpt, write_gates=True)
     with run_trace(exp.run_id, "eval", run_dir=run_dir) as trace:
         board = evaluate_suites(
             eval_cfg,
