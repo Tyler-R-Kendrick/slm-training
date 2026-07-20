@@ -3675,3 +3675,15 @@ reject weight 8, and do not promote or sync. Strict v2 remains 0 and AgentV is
 0/1. Evidence:
 [narrative](iter-e600-modified-component-count-20260720.md) and
 [JSON](iter-e600-modified-component-count-20260720.json).
+
+## E601 first-component semantic-plan seed
+
+E601 restricts an additional prompt-plan score to the first root component.
+The v37 frame-gated weights 8/16/32 exposed a production-state mismatch; v38
+gates on compiler root candidate kinds instead. Corrected weights 8 and 32 are
+still prediction- and metric-identical to E600 on OOD `n=4`. Keep the lever
+default-off and capture first-family score decomposition before adding more
+pressure. Strict v2 remains 0, AgentV is 0/1, and no checkpoint was created or
+synced. Evidence:
+[narrative](iter-e601-first-component-plan-seed-20260720.md) and
+[JSON](iter-e601-first-component-plan-seed-20260720.json).
