@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E580",
+  "run_id": "e580-e569-cardinality-root4-r1",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_honesty_correction_quality_null_not_ship",
+  "hypothesis": "Preserving repeated authored component mentions and requiring their family counts before root closure will prevent incomplete topology from receiving plan support.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "semantic_plan_decode_weight": 1.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weights": [0.0, 4.0],
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.425,
+      "placeholder_validity": 0.655,
+      "structural_similarity": 0.16875,
+      "component_type_recall": 0.2708333333333333,
+      "reward_score": 0.7345,
+      "ast_node_f1": 0.2833333333333333,
+      "ast_edge_f1": 0.0,
+      "latency_ms_p50": 7233.75,
+      "latency_ms_p95": 13600.91
+    }
+  },
+  "decode_telemetry": {
+    "semantic_plan_root_applications": 3,
+    "semantic_plan_root_choice_changes": 0,
+    "hard_candidate_removals": 0,
+    "legal_candidate_set_changed": false
+  },
+  "matched_runs": [
+    {
+      "run_id": "e580-e569-cardinality-root0-r1",
+      "label": "cardinality_root_weight_0_control",
+      "semantic_plan_root_decode_weight": 0.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.425,
+          "placeholder_validity": 0.655,
+          "structural_similarity": 0.16875,
+          "component_type_recall": 0.2708333333333333,
+          "reward_score": 0.7345,
+          "ast_node_f1": 0.2833333333333333,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 7322.48,
+          "latency_ms_p95": 14126.58
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "comparison": {
+    "baseline": "e580-e569-cardinality-root0-r1",
+    "all_quality_deltas": 0.0,
+    "e579_weight4_ast_edge_f1": 0.2,
+    "e580_weight4_ast_edge_f1": 0.0,
+    "auth_required_component_families": ["Button", "Input", "Input"],
+    "auth_prediction": "root = Input(\":ood.auth.name\", \":ood.auth.email\", \":ood.auth.create\")",
+    "interpretation": "E579's structural gain relied on an under-counted auth plan. The honest cardinality gate correctly withholds root closure because only one of two requested Inputs was generated."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Treatment is quality-null, strict meaning-v2 is zero, and AgentV fails."
+  },
+  "decision": "Retain repeated-mention cardinality as an honesty correction. Keep root scoring default-off; do not promote or sync. Next make component scoring count-aware so required duplicate families can be generated before closure.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0b75f9076a2299ab478022c00ca7e422601ba281",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v16",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v17"
+    },
+    "stamped_at": "2026-07-20T05:36:45.499345+00:00"
+  }
+}

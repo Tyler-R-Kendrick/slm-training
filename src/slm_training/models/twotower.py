@@ -883,6 +883,7 @@ class TwoTowerModel(nn.Module):
             list[dict[str, tuple[str, ...]]] | None
         ) = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
+        self._semantic_plan_action_counts: list[dict[int, int]] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -4150,12 +4151,21 @@ class TwoTowerModel(nn.Module):
             for token_id in self._component_inventory_token_ids()
         }
         section_types = tuple(getattr(state, "section_types", ()))
-        covered_ids = {
+        required_counts = (
+            self._semantic_plan_action_counts[row]
+            if self._semantic_plan_action_counts
+            and row < len(self._semantic_plan_action_counts)
+            else {token_id: 1 for token_id in required_ids}
+        )
+        covered_counts = Counter(
             family_token_ids.get(str(expr_type).removeprefix("element:"))
             for expr_type in section_types
             if str(expr_type).startswith("element:")
-        }
-        if not required_ids.issubset(covered_ids):
+        )
+        if any(
+            covered_counts.get(token_id, 0) < required_count
+            for token_id, required_count in required_counts.items()
+        ):
             return None
 
         # Keep the unit seam for callers without a concrete prefix. Production
@@ -4185,14 +4195,16 @@ class TwoTowerModel(nn.Module):
                 planned = tokens
                 target_id = self.tokenizer.eos_id
             else:
-                references = [
-                    f"&{index}"
-                    for index, expr_type in enumerate(section_types)
-                    if family_token_ids.get(
+                remaining = dict(required_counts)
+                references: list[str] = []
+                for index, expr_type in enumerate(section_types):
+                    token_id = family_token_ids.get(
                         str(expr_type).removeprefix("element:")
                     )
-                    in required_ids
-                ]
+                    if token_id is None or remaining.get(token_id, 0) <= 0:
+                        continue
+                    references.append(f"&{index}")
+                    remaining[token_id] -= 1
                 if not references:
                     return None
                 closure = ["+Stack", "[", *references, "]", "^column", "-"]
@@ -6778,6 +6790,7 @@ class TwoTowerModel(nn.Module):
                 action_ids.append(action)
             compiler = OpenUISemanticPlanCompiler(honesty_mode="production")
             self._semantic_plan_action_scores = []
+            self._semantic_plan_action_counts = []
             for prompt in prompts:
                 plan = prompt_semantic_plan(prompt)
                 features = compiler.annotate_actions(None, action_ids, plan)
@@ -6789,8 +6802,21 @@ class TwoTowerModel(nn.Module):
                     if feature.component_family_compatible
                     and not feature.conflict_or_unknown
                 })
+                family_counts = Counter(
+                    slot.component_family
+                    for slot in (plan.role_slots if plan is not None else ())
+                    if slot.component_family
+                )
+                self._semantic_plan_action_counts.append({
+                    token_id: family_counts[action_id]
+                    for token_id, action_id in zip(
+                        component_ids, action_ids, strict=True
+                    )
+                    if family_counts[action_id] > 0
+                })
         else:
             self._semantic_plan_action_scores = None
+            self._semantic_plan_action_counts = None
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )

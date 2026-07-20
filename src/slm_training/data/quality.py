@@ -150,7 +150,11 @@ def semantic_role_contract(
     )
 
 
-def _prompt_component_requirements(prompt: str) -> tuple[str, ...]:
+def _prompt_component_requirements(
+    prompt: str,
+    *,
+    preserve_repeated_mentions: bool = False,
+) -> tuple[str, ...]:
     """Find positive component requirements, retaining explicit multiplicity.
 
     Unlike :func:`_prompt_component_mentions` (which returns a de-duplicated set
@@ -201,7 +205,10 @@ def _prompt_component_requirements(prompt: str) -> tuple[str, ...]:
                     if count_match.group(1).isdigit()
                     else 1,
                 )
-            required[name] = max(required.get(name, 0), count)
+            if preserve_repeated_mentions:
+                required[name] = required.get(name, 0) + count
+            else:
+                required[name] = max(required.get(name, 0), count)
     return tuple(name for name in sorted(required) for _ in range(required[name]))
 
 
