@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E564",
+  "run_id": "e564-e561-semantic-role-decode2-eval-r1",
+  "date_utc": "2026-07-20",
+  "run_class": "scratch_matrix",
+  "status": "completed_no_effect_not_ship",
+  "hypothesis": "Reducing E561 semantic-role decode weight from 4.0 to 2.0 will reduce role over-bias and improve binding-aware meaning.",
+  "checkpoint": {
+    "run_id": "e561-e544-owner-threshold7-r1-24s",
+    "location": "outputs/runs/e561-e544-owner-threshold7-r1-24s/checkpoints/last.pt",
+    "sha256": "35a4fe6dd1b0eb2f59c33cb6d4ae11472c693f43a15fa3e6abc46db323a127f9",
+    "created": false
+  },
+  "eval_recipe": {
+    "eval_run_id": "e564-e561-semantic-role-decode2-eval-r1",
+    "suite": "ood",
+    "n": 4,
+    "component_plan_decode_weight": 0.0,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 2.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.575,
+      "placeholder_validity": 0.745,
+      "structural_similarity": 0.241925,
+      "component_type_recall": 0.14583333333333331,
+      "reward_score": 0.57525,
+      "ast_node_f1": 0.3125,
+      "ast_edge_f1": 0.03846153846153846,
+      "latency_ms_p50": 4544.11,
+      "latency_ms_p95": 11381.04
+    }
+  },
+  "comparison": {
+    "baseline": "E561",
+    "placeholder_fidelity_delta": 0.0,
+    "structural_similarity_delta": 0.0,
+    "component_type_recall_delta": 0.0,
+    "reward_score_delta": 0.0,
+    "ast_node_f1_delta": 0.0,
+    "ast_edge_f1_delta": 0.0,
+    "interpretation": "Halving the role bias changes no matched quality metric or selected output aggregate; weight 0 is required for a decisive on/off ablation."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaning-v1/v2 remain zero and AgentV fails."
+  },
+  "decision": "Record weight 2 as no-effect negative evidence; do not promote and test weight 0 as the decisive on/off ablation.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b7a5ff9d89f3e2d912473debd4ee665b5bdd36da",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10",
+      "model.twotower": "v10"
+    },
+    "stamped_at": "2026-07-20T02:00:35.258332+00:00"
+  }
+}

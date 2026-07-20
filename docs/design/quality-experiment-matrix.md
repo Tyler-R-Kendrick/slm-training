@@ -2936,6 +2936,17 @@ decode-weight ladder. No checkpoint was created. Evidence:
 [narrative](iter-e563-component-plan-decode05-20260720.md) and
 [JSON](iter-e563-component-plan-decode05-20260720.json).
 
+## E564 semantic-role decode weight 2
+
+Halving E561's semantic-role decode weight from 4 to 2 changes no matched OOD
+`n=4` quality aggregate: fidelity remains 0.5750, structure 0.2419, recall
+0.1458, reward 0.5753, AST-node F1 0.3125, and AST-edge F1 0.0385.
+Meaning-v1/v2 remain 0 and AgentV remains 0/1. **Decision:** retain as
+no-effect negative evidence and test weight 0 as the decisive on/off ablation.
+No checkpoint was created. Evidence:
+[narrative](iter-e564-semantic-role-decode2-20260720.md) and
+[JSON](iter-e564-semantic-role-decode2-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
