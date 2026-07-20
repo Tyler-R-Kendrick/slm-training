@@ -3080,6 +3080,22 @@ next. Evidence:
 [narrative](iter-e575-prompt-semantic-plan-soft-20260720.md) and
 [JSON](iter-e575-prompt-semantic-plan-soft-20260720.json).
 
+## E576 prompt-plan binding soft scorer
+
+E576 soft-ranks legal unused terminal-root references whose already-generated
+component family matches the prompt-derived predicted `SemanticPlanV1`. On a
+clean, matched E569 OOD `n=4` 0/1/2 ladder, both treatment weights find five
+compatible binding decisions but cause zero immediate choice changes and zero
+deltas in every quality metric. Meaning-v1 remains 0.25, strict meaning-v2 and
+AST-edge F1 remain zero, reward remains 0.7345, and AgentV remains 0/1.
+
+**Decision:** reject weights 1 and 2 as quality interventions and keep the
+legality-preserving factor default-off for diagnostics only. Do not promote or
+sync. Target plan-aware root construction or explicit topology cardinality,
+not a stronger binding scalar. Evidence:
+[narrative](iter-e576-prompt-plan-binding-soft-20260720.md) and
+[JSON](iter-e576-prompt-plan-binding-soft-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

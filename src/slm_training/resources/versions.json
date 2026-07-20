@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-20",
+          "note": "expose prompt-plan-compatible terminal-root reference soft scoring and its bounded intervention telemetry"
+        },
         {
           "version": "v14",
           "date": "2026-07-20",
@@ -662,7 +667,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -672,6 +677,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v13", "date": "2026-07-20", "note": "soft-rank legal unused terminal-root references whose generated component families match the predicted prompt SemanticPlanV1"},
         {"version": "v12", "date": "2026-07-20", "note": "consume prompt-derived predicted SemanticPlanV1 component features as legality-preserving choice-codec score bias with intervention telemetry"},
         {"version": "v11", "date": "2026-07-20", "note": "add SLM-138 shared recursive denoiser tower wiring, deep-supervision plumbing, and migration helper"},
         {"version": "v10", "date": "2026-07-20", "note": "expose bounded rare slot-owner record sampling in the shared TwoTower training recipe"},

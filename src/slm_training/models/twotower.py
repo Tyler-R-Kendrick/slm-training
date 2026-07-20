@@ -237,6 +237,7 @@ class TwoTowerConfig:
     slot_component_decode_weight: float = 0.0
     semantic_role_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
+    semantic_plan_binding_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4043,6 +4044,70 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _semantic_plan_binding_bias(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        """Prefer legal root references backed by predicted plan families."""
+        weight = float(
+            getattr(self.config, "semantic_plan_binding_decode_weight", 0.0)
+            or 0.0
+        )
+        structural_root_list = bool(
+            getattr(state, "mode", None) == "structural"
+            and len(getattr(state, "frames", ())) == 1
+            and state.frames[-1].kind == "variadic"
+            and state.frames[-1].expr_type == "array"
+        )
+        if (
+            weight <= 0.0
+            or not structural_root_list
+            or not self._semantic_plan_action_scores
+            or row >= len(self._semantic_plan_action_scores)
+        ):
+            return None
+        action_scores = self._semantic_plan_action_scores[row]
+        if not action_scores:
+            return None
+        family_token_ids = {
+            str(self.tokenizer.id_to_token[token_id]).removeprefix("COMP:").removeprefix(
+                "+"
+            ): token_id
+            for token_id in self._component_inventory_token_ids()
+        }
+        used = {
+            int(token[1:])
+            for token_id in prefix
+            if (token := str(self.tokenizer.id_to_token.get(int(token_id), ""))).startswith(
+                "&"
+            )
+            and token[1:].isdigit()
+        }
+        bias = torch.zeros(
+            len(candidate_ids), dtype=torch.float32, device=self.device_name
+        )
+        applied = False
+        section_types = tuple(getattr(state, "section_types", ()))
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            if not token.startswith("&") or not token[1:].isdigit():
+                continue
+            reference = int(token[1:])
+            if reference in used or reference >= len(section_types):
+                continue
+            expr_type = str(section_types[reference])
+            if not expr_type.startswith("element:"):
+                continue
+            component_id = family_token_ids.get(expr_type.removeprefix("element:"))
+            confidence = action_scores.get(component_id, 0.0)
+            if confidence > 0.0:
+                bias[position] = weight * confidence
+                applied = True
+        return bias if applied else None
+
     def _component_edge_bias(
         self,
         ctx: torch.Tensor,
@@ -5558,6 +5623,20 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
+                    semantic_plan_binding_bias = self._semantic_plan_binding_bias(
+                        row,
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                    )
+                    if semantic_plan_binding_bias is not None:
+                        before_plan_binding = int(scores.argmax().item())
+                        scores = scores + semantic_plan_binding_bias
+                        if stats is not None:
+                            stats.semantic_plan_binding_applications += 1
+                            stats.semantic_plan_binding_choice_changes += int(
+                                int(scores.argmax().item()) != before_plan_binding
+                            )
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -6530,13 +6609,17 @@ class TwoTowerModel(nn.Module):
             ]
         else:
             self._semantic_role_candidates = None
-        plan_weight = float(
-            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0
+        plan_weight = max(
+            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0,
+            getattr(
+                self.config, "semantic_plan_binding_decode_weight", 0.0
+            )
+            or 0.0,
         )
         if plan_weight > 0.0:
             if not choice_constrained:
                 raise ValueError(
-                    "semantic_plan_decode_weight currently requires choice-codec "
+                    "semantic plan decode weights currently require choice-codec "
                     "constrained decode"
                 )
             from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler

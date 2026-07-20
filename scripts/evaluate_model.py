@@ -207,6 +207,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Soft-score legal root/bound components from prompt-derived SemanticPlanV1.",
     )
     parser.add_argument(
+        "--semantic-plan-binding-decode-weight",
+        type=float,
+        default=None,
+        help="Soft-score legal root references to prompt-plan-compatible components.",
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -516,6 +522,9 @@ def main(argv: list[str] | None = None) -> int:
         slot_component_decode_weight=args.slot_component_decode_weight,
         semantic_role_decode_weight=args.semantic_role_decode_weight,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
+        semantic_plan_binding_decode_weight=(
+            args.semantic_plan_binding_decode_weight
+        ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
         binder_component_plan_decode_weight=(
