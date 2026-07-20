@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-20",
+          "note": "expose the default-off enum-argument close score and persist it in canonical evaluation policy"
+        },
         {
           "version": "v20",
           "date": "2026-07-20",
@@ -737,7 +742,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -749,6 +754,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-07-20",
+          "note": "add default-off legal closure scoring for optional enum-valued component arguments"
+        },
         {
           "version": "v28",
           "date": "2026-07-20",
