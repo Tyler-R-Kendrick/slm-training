@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v26",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v27",
+          "date": "2026-07-20",
+          "note": "expose and persist the default-off verifier-approved semantic-plan root margin"
+        },
         {
           "version": "v26",
           "date": "2026-07-20",
@@ -1035,7 +1040,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v47",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1050,6 +1055,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v48",
+          "date": "2026-07-20",
+          "note": "optionally floor verifier-approved semantic-plan root and completion tokens above the best legal score"
+        },
         {
           "version": "v47",
           "date": "2026-07-20",

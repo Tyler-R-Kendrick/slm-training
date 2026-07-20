@@ -254,6 +254,7 @@ class TwoTowerConfig:
     semantic_plan_inline_decode_weight: float = 0.0
     semantic_plan_binding_decode_weight: float = 0.0
     semantic_plan_root_decode_weight: float = 0.0
+    semantic_plan_root_margin_decode_weight: float = 0.0
     visible_reference_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
@@ -4466,6 +4467,14 @@ class TwoTowerModel(nn.Module):
                 getattr(self.config, "semantic_plan_root_decode_weight", 0.0)
                 or 0.0
             ),
+            "semantic_plan_root_margin_decode_weight": float(
+                getattr(
+                    self.config,
+                    "semantic_plan_root_margin_decode_weight",
+                    0.0,
+                )
+                or 0.0
+            ),
             "planned_candidates": [
                 {
                     "token": str(
@@ -4841,13 +4850,22 @@ class TwoTowerModel(nn.Module):
         state: Any,
         prefix: list[int] | None,
         candidate_ids: tuple[int, ...],
+        candidate_scores: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Soft-follow a verifier-valid Stack closure after plan role coverage."""
         weight = float(
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
         )
+        margin = float(
+            getattr(
+                self.config,
+                "semantic_plan_root_margin_decode_weight",
+                0.0,
+            )
+            or 0.0
+        )
         if (
-            weight <= 0.0
+            (weight <= 0.0 and margin <= 0.0)
             or getattr(state, "mode", None) != "structural"
             or not self._semantic_plan_action_scores
             or row >= len(self._semantic_plan_action_scores)
@@ -4959,7 +4977,18 @@ class TwoTowerModel(nn.Module):
         bias = torch.zeros(
             len(candidate_ids), dtype=torch.float32, device=self.device_name
         )
-        bias[candidate_ids.index(target_id)] = weight
+        target_position = candidate_ids.index(target_id)
+        bias[target_position] = weight
+        if margin > 0.0 and candidate_scores is not None:
+            margin_bias = (
+                float(candidate_scores.max().item())
+                + margin
+                - float(candidate_scores[target_position].item())
+            )
+            bias[target_position] = max(
+                float(bias[target_position].item()),
+                margin_bias,
+            )
         return bias
 
     def _component_edge_bias(
@@ -6575,6 +6604,7 @@ class TwoTowerModel(nn.Module):
                         states[row],
                         ids[row, :position].tolist(),
                         candidate_ids,
+                        scores,
                     )
                     semantic_plan_root_trace = None
                     if semantic_plan_root_bias is not None:
@@ -7617,6 +7647,12 @@ class TwoTowerModel(nn.Module):
             )
             or 0.0,
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0,
+            getattr(
+                self.config,
+                "semantic_plan_root_margin_decode_weight",
+                0.0,
+            )
+            or 0.0,
         )
         if plan_weight > 0.0:
             if not choice_constrained:
