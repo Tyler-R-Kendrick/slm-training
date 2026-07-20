@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E594",
+  "date_utc": "2026-07-20",
+  "run_id": "e594-e592-inline-plan4-r1",
+  "run_class": "scratch_matrix",
+  "status": "neutral_to_negative_not_promotable",
+  "hypothesis": "Scoring still-missing prompt component families at inline component positions will select Button for Modal confirmation content.",
+  "checkpoint": {
+    "run_id": "e569-e561-matched-cont48-r1-48s",
+    "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+    "sha256": "8254fcf754591022806a1a87435a5be9a4a4d3706d61754ba59b4a19c6535f73",
+    "created": false
+  },
+  "eval_recipe": {
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "honest_slot_contract": true,
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "semantic_role_decode_weight": 4.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_enum_close_decode_weight": 0.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 2.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_inline_decode_weights": [0.0, 2.0, 4.0],
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.5,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.416875,
+      "component_type_recall": 0.5416666666666666,
+      "reward_score": 0.8115,
+      "ast_node_f1": 0.5198412698412698,
+      "ast_edge_f1": 0.34285714285714286,
+      "latency_ms_p50": 5830.48,
+      "latency_ms_p95": 12174.88
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0},
+  "matched_runs": [
+    {
+      "run_id": "e594-e592-inline-plan2-r1",
+      "label": "inline_plan_weight_2",
+      "semantic_plan_inline_decode_weight": 2.0,
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.5,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "placeholder_fidelity": 0.5916666666666667,
+          "placeholder_validity": 0.755,
+          "structural_similarity": 0.416875,
+          "component_type_recall": 0.5416666666666666,
+          "reward_score": 0.8115,
+          "ast_node_f1": 0.5198412698412698,
+          "ast_edge_f1": 0.34285714285714286,
+          "latency_ms_p50": 5980.18,
+          "latency_ms_p95": 17348.07
+        }
+      },
+      "agentv": {"passed": 0, "total": 1, "execution_errors": 0}
+    }
+  ],
+  "comparison": {
+    "baseline": "e592-e591-array-items-r1",
+    "aggregate_metrics_changed": false,
+    "weight_2_prediction_changed": false,
+    "weight_4_modal_family_changed": false,
+    "weight_4_auth_root_placeholder_spam_introduced": true,
+    "interpretation": "Weights 2 and 4 do not overcome the Modal inline-family margin. Weight 4 additionally leaks raw auth placeholders into the root, so the scope is unsafe despite aggregate metric ties."
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict meaning-v2 remains zero, AgentV fails, Modal is unchanged, and weight 4 introduces a new auth defect."
+  },
+  "decision": "Keep the inline-plan lever default-off, retain E592 as baseline, and do not promote or sync a checkpoint.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "75ce9766b4895673d32d02dff3f8344c9482c657",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v22",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v11",
+      "model.twotower": "v30"
+    },
+    "stamped_at": "2026-07-20T09:35:27.348235+00:00"
+  }
+}

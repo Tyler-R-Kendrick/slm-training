@@ -3593,3 +3593,14 @@ baseline; strict v2 remains 0 and AgentV is 0/1. No checkpoint was created or
 synced. Evidence:
 [narrative](iter-e593-enum-close-score-20260720.md) and
 [JSON](iter-e593-enum-close-score-20260720.json).
+
+## E594 inline semantic-plan family score
+
+E594 scores still-missing prompt families only at inline component positions.
+On the matched E592 OOD `n=4` baseline, weights 2 and 4 leave every aggregate
+metric unchanged. Weight 2 is prediction-identical; weight 4 does not fix the
+Modal child family and introduces raw auth placeholders at the root. Keep the
+lever default-off and retain E592 as baseline. Strict v2 remains 0, AgentV is
+0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e594-inline-plan-family-20260720.md) and
+[JSON](iter-e594-inline-plan-family-20260720.json).
