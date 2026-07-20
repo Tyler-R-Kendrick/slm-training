@@ -485,6 +485,26 @@
         }
       ]
     },
+    "evals.power_protocol": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/power_protocol.py",
+        "tests/test_evals/test_power_protocol.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: ruff style fixes (rename ambiguous lambda variables); behavior-neutral"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-183 PQR powered cluster-aware confirmation protocol statistical utilities"
+        }
+      ]
+    },
     "gates.ship": {
       "version": "openui_ship_gates_v1",
       "kind": "gate",
@@ -611,12 +631,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v47",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v48",
+          "date": "2026-07-20",
+          "note": "add SLM-183 PQR powered cluster-aware confirmation protocol wiring/fixture harness"
+        },
         {
           "version": "v47",
           "date": "2026-07-20",
@@ -1193,6 +1218,30 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-176 P14 action-shortlist retrieve-then-rerank fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm183_power_protocol": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
+        "scripts/run_flow_power_protocol.py",
+        "tests/test_harnesses/experiments/test_slm183_power_protocol.py",
+        "tests/test_scripts/test_run_flow_power_protocol_fixture.py",
+        "docs/design/iter-slm183-power-protocol-20260720.json",
+        "docs/design/iter-slm183-power-protocol-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: add seed_contrast field to PowerProtocolReport and ruff style fixes; behavior-neutral"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-183 PQR powered cluster-aware confirmation protocol fixture harness"
         }
       ]
     },

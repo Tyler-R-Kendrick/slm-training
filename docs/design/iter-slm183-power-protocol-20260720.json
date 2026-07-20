@@ -1,0 +1,559 @@
+{
+  "cells": [
+    {
+      "cell_id": "target000_seed0",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 2,
+      "target_id": 0,
+      "wilson": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.34238022750665303,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target000_seed1",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 1,
+      "successes": 1,
+      "target_id": 0,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target001_seed0",
+      "exact": {
+        "estimate": 0.0,
+        "high": 0.841886116991581,
+        "low": 0.0,
+        "n": 2
+      },
+      "mean": 0.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 0,
+      "target_id": 1,
+      "wilson": {
+        "estimate": 0.0,
+        "high": 0.6576197724933469,
+        "low": 0.0,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target001_seed1",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 1,
+      "successes": 1,
+      "target_id": 1,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target002_seed0",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 2,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target002_seed1",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 2,
+      "wilson": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.34238022750665303,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target003_seed0",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 2,
+      "target_id": 3,
+      "wilson": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.34238022750665303,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target003_seed1",
+      "exact": {
+        "estimate": 0.0,
+        "high": 0.841886116991581,
+        "low": 0.0,
+        "n": 2
+      },
+      "mean": 0.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 0,
+      "target_id": 3,
+      "wilson": {
+        "estimate": 0.0,
+        "high": 0.6576197724933469,
+        "low": 0.0,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target004_seed0",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 4,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target004_seed1",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 1,
+      "successes": 1,
+      "target_id": 4,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target005_seed0",
+      "exact": {
+        "estimate": 0.0,
+        "high": 0.841886116991581,
+        "low": 0.0,
+        "n": 2
+      },
+      "mean": 0.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 0,
+      "target_id": 5,
+      "wilson": {
+        "estimate": 0.0,
+        "high": 0.6576197724933469,
+        "low": 0.0,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target005_seed1",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 5,
+      "wilson": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.34238022750665303,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target006_seed0",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 6,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target006_seed1",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 6,
+      "wilson": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.34238022750665303,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target007_seed0",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 7,
+      "wilson": {
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "cell_id": "target007_seed1",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 7,
+      "wilson": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.34238022750665303,
+        "n": 2
+      }
+    }
+  ],
+  "claim_class": "wiring",
+  "conclusions": [
+    {
+      "classification": "decidable",
+      "name": "seed_variance_detected",
+      "value": true
+    },
+    {
+      "classification": "decidable",
+      "name": "mde_achievable_at_08",
+      "value": false
+    },
+    {
+      "classification": "decidable",
+      "name": "cluster_aware_ci_finite",
+      "value": true
+    },
+    {
+      "classification": "decidable",
+      "name": "bh_rejections",
+      "value": 9
+    }
+  ],
+  "dependency_caveats": [
+    "Synthetic outcomes are generated from a mixed-effects logit model; real eval records may have different correlation structures.",
+    "MDE simulation uses a normal approximation (no scipy dependency); small-n results are exploratory only.",
+    "No model is trained; this is wiring evidence for the protocol only.",
+    "Cluster bootstrap and ICC assume a single target_cluster_id level; nested clusters are not modeled here."
+  ],
+  "experiment_id": "slm183-power-protocol",
+  "falsifier": "The protocol collapses seed and target variance into a single pooled estimate and cannot produce a calibrated MDE curve.",
+  "hypothesis": "A powered confirmation protocol can separate seed variance from target variance and estimate the minimum detectable effect size.",
+  "icc": {
+    "between": 0.13839285714285715,
+    "icc": -0.14545454545454545,
+    "n_clusters": 8,
+    "within": 0.28125
+  },
+  "manifest": {
+    "alpha": 0.05,
+    "content_hashes": [
+      "hash_000",
+      "hash_001",
+      "hash_002",
+      "hash_003",
+      "hash_004",
+      "hash_005",
+      "hash_006",
+      "hash_007",
+      "hash_008",
+      "hash_009",
+      "hash_010",
+      "hash_011",
+      "hash_012",
+      "hash_013",
+      "hash_014",
+      "hash_015",
+      "hash_016",
+      "hash_017",
+      "hash_018",
+      "hash_019",
+      "hash_020",
+      "hash_021",
+      "hash_022",
+      "hash_023",
+      "hash_024",
+      "hash_025",
+      "hash_026",
+      "hash_027",
+      "hash_028",
+      "hash_029",
+      "hash_030",
+      "hash_031",
+      "hash_032",
+      "hash_033",
+      "hash_034",
+      "hash_035",
+      "hash_036",
+      "hash_037",
+      "hash_038",
+      "hash_039",
+      "hash_040",
+      "hash_041",
+      "hash_042",
+      "hash_043",
+      "hash_044",
+      "hash_045",
+      "hash_046",
+      "hash_047",
+      "hash_048",
+      "hash_049"
+    ],
+    "example_ids": [
+      "ex_000",
+      "ex_001",
+      "ex_002",
+      "ex_003",
+      "ex_004",
+      "ex_005",
+      "ex_006",
+      "ex_007",
+      "ex_008",
+      "ex_009",
+      "ex_010",
+      "ex_011",
+      "ex_012",
+      "ex_013",
+      "ex_014",
+      "ex_015",
+      "ex_016",
+      "ex_017",
+      "ex_018",
+      "ex_019",
+      "ex_020",
+      "ex_021",
+      "ex_022",
+      "ex_023",
+      "ex_024",
+      "ex_025",
+      "ex_026",
+      "ex_027",
+      "ex_028",
+      "ex_029",
+      "ex_030",
+      "ex_031",
+      "ex_032",
+      "ex_033",
+      "ex_034",
+      "ex_035",
+      "ex_036",
+      "ex_037",
+      "ex_038",
+      "ex_039",
+      "ex_040",
+      "ex_041",
+      "ex_042",
+      "ex_043",
+      "ex_044",
+      "ex_045",
+      "ex_046",
+      "ex_047",
+      "ex_048",
+      "ex_049"
+    ],
+    "generator_version": "slm183-v1",
+    "mde": 0.08,
+    "multiplicity_family": "primary_only",
+    "power": 0.8,
+    "primary_contrast": "seed_variance_vs_target_variance",
+    "primary_endpoint": "binary_success_rate",
+    "seeds": [
+      0,
+      1
+    ],
+    "suite_role": "confirmatory_seed_variance_fixture",
+    "target_cluster_id": "target",
+    "version_pins": {
+      "evals.power_protocol": "v1",
+      "harness.experiments.slm183_power_protocol": "v1"
+    }
+  },
+  "matrix_set": "slm183_power_protocol",
+  "matrix_version": "pqr-v1",
+  "mde_curve": [
+    {
+      "effect_size": 0.0,
+      "power": 0.05
+    },
+    {
+      "effect_size": 0.02,
+      "power": 0.09
+    },
+    {
+      "effect_size": 0.04,
+      "power": 0.1
+    },
+    {
+      "effect_size": 0.06,
+      "power": 0.07
+    },
+    {
+      "effect_size": 0.08,
+      "power": 0.11
+    },
+    {
+      "effect_size": 0.1,
+      "power": 0.14
+    },
+    {
+      "effect_size": 0.12,
+      "power": 0.08
+    },
+    {
+      "effect_size": 0.15,
+      "power": 0.1
+    }
+  ],
+  "run_id": "slm183-power-protocol-20260720",
+  "scenarios": [
+    {
+      "base_rate": 0.7,
+      "n_seeds": 2,
+      "n_targets": 8,
+      "paths_per_target": 2,
+      "scenario_id": "mixed_effects_binary",
+      "sigma_seed": 0.15,
+      "sigma_target": 0.3
+    }
+  ],
+  "schema": "Slm183PowerProtocolReportV1",
+  "seed_contrast": {
+    "alpha": 0.05,
+    "estimate": -0.1875,
+    "high": 0.25,
+    "low": -0.5625,
+    "resamples": 1000
+  },
+  "seed_variance_components": {
+    "pooled_variance": 0.05217633928571429,
+    "seed_variance": 0.017578125,
+    "target_variance": 0.03459821428571429
+  },
+  "status": "fixture",
+  "timestamp": "2026-07-20T16:37:02.069196Z",
+  "version_stamp": {
+    "code_commit": "2fe6a7e73ccb0541e2d0e15c8891d8548d839e64",
+    "code_dirty": true,
+    "components": {
+      "evals.power_protocol": "v1",
+      "harness.experiments": "v48",
+      "harness.experiments.slm183_power_protocol": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-20T16:37:02.068591+00:00"
+  }
+}
