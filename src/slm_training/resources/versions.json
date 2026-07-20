@@ -505,12 +505,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v31",
+      "version": "v32",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v32",
+          "date": "2026-07-20",
+          "note": "add SLM-156 SPV3-03 shared recursive SemanticPlanV1 refinement wiring/fixture harness"
+        },
         {
           "version": "v31",
           "date": "2026-07-20",
@@ -1535,6 +1540,25 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-155 SPV3-02 matched AR vs plan-conditioned X22 factorization comparison wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm156_plan_refinement": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm156_plan_refinement.py",
+        "scripts/run_slm156_plan_refinement_fixture.py",
+        "tests/test_harnesses/experiments/test_slm156_plan_refinement.py",
+        "tests/test_scripts/test_run_slm156_plan_refinement_fixture.py",
+        "docs/design/iter-slm156-plan-refinement-20260720.json",
+        "docs/design/iter-slm156-plan-refinement-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-156 SPV3-03 shared recursive SemanticPlanV1 refinement wiring/fixture harness"
         }
       ]
     }
