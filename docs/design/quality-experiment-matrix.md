@@ -3004,6 +3004,17 @@ or sync. Evidence:
 [narrative](iter-e569-matched-continuation-20260720.md) and
 [JSON](iter-e569-matched-continuation-20260720.json).
 
+## E570 E569 component-plan decode weight 1
+
+Enabling E569's trained component-plan head changes three of 131 choices.
+OOD `n=4` fidelity improves to 0.4917, structure to 0.3350, reward to 0.7695,
+AST-node F1 to 0.3821, and edge F1 to 0.0455. Recall falls to 0.2083 and
+meaningful-v1 to 0; strict meaning-v2 remains 0 and AgentV remains 0/1.
+**Decision:** retain as a topology/reward decode Pareto without promotion and
+test weight 0.5. No checkpoint was created. Evidence:
+[narrative](iter-e570-e569-component-plan1-20260720.md) and
+[JSON](iter-e570-e569-component-plan1-20260720.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
