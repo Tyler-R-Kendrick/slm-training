@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_id": "slm154_legal_action_scorer_fixture",
+  "run_class": "fixture_demo",
+  "suites": {
+    "fixture": {
+      "n_train": 128,
+      "n_test": 32,
+      "steps": 40,
+      "lr": 0.05,
+      "variants": {
+        "global_head": {
+          "param_count": 24976,
+          "initial_loss": 695.10595703125,
+          "final_loss": 168.91937255859375,
+          "accuracy": 0.3125,
+          "forced": 0,
+          "abstained": 0,
+          "n_train": 128,
+          "n_test": 32
+        },
+        "mlp": {
+          "param_count": 29073,
+          "initial_loss": 196.9271240234375,
+          "final_loss": 6.333921432495117,
+          "accuracy": 1.0,
+          "forced": 0,
+          "abstained": 0,
+          "n_train": 128,
+          "n_test": 32
+        },
+        "cross_attention": {
+          "param_count": 40785,
+          "initial_loss": 194.8232421875,
+          "final_loss": 168.8574676513672,
+          "accuracy": 0.84375,
+          "forced": 0,
+          "abstained": 0,
+          "n_train": 128,
+          "n_test": 32
+        }
+      }
+    }
+  },
+  "recipe": {
+    "n_train": 128,
+    "n_test": 32,
+    "fixture_steps": 40,
+    "fixture_lr": 0.05,
+    "backend": "cpu",
+    "scorer_id": "legal-action-scorer-v1",
+    "variants": [
+      "global_head",
+      "mlp",
+      "cross_attention"
+    ]
+  },
+  "claim_class": "wiring",
+  "status": "wiring_only",
+  "disposition": "fixture_wiring",
+  "honest_verdict": "fixture_wiring",
+  "note": "Wiring-only fixture baseline. No ship readiness claim. Real compiler-owned exact state and live legal sets from src/slm_training/dsl/grammar/fastpath/compiler_draft.py are not wired in this baseline.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "049c10e251d4938fefccb18adc224c33479f7a02",
+    "code_dirty": true,
+    "components": {
+      "model.legal_action_scorer": "v1"
+    },
+    "stamped_at": "2026-07-20T07:24:01.005197+00:00"
+  }
+}

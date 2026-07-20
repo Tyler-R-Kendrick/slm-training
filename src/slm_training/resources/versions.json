@@ -1455,6 +1455,24 @@
         }
       ]
     },
+    "model.legal_action_scorer": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/legal_action_scorer.py",
+        "scripts/run_slm154_legal_action_scorer_fixture.py",
+        "tests/test_models/test_legal_action_scorer.py",
+        "docs/design/iter-slm154-legal-action-scorer-20260720.json",
+        "docs/design/iter-slm154-legal-action-scorer-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-154 SPV3-01 capacity-matched autoregressive compiler-legal action scorer baseline wiring/fixture harness"
+        }
+      ]
+    },
     "harness.distill": {
       "version": "v1",
       "kind": "harness",
