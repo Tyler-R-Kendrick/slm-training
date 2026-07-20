@@ -613,6 +613,7 @@
         "docs/design/iter-slm138-recursive-denoiser-20260720.md"
       ],
       "history": [
+        {"version": "v1", "date": "2026-07-20", "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"},
         {"version": "v1", "date": "2026-07-20", "note": "initial registration; SLM-138 shared recursive denoiser tower wiring/fixture harness"}
       ]
     },
@@ -830,6 +831,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown and normalize trailing whitespace in fixture runner markdown string; harness behavior, thresholds, and report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
         },
         {
@@ -872,6 +878,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
         },
         {
@@ -911,6 +922,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
         },
         {
@@ -945,6 +961,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamp after sibling fixture CLI test run; report content unchanged"
         },
         {
@@ -974,6 +995,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: refresh design artifact timestamp after fixture CLI rerun; report content unchanged"
         },
         {
@@ -995,6 +1021,11 @@
         "docs/design/iter-ldi4-03-intervention-unification-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: append run-record rows to design markdown only; harness behavior, thresholds, and report content unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
