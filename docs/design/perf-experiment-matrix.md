@@ -339,3 +339,12 @@ legal sets using the deterministic `FixtureDescriptionEncoder`.
 - Query vectors are derived from the decoded prefix as a wiring placeholder.
 - A promotion rerun must show parse/fidelity within five absolute points of the
   off baseline while reducing forwards or projection cost.
+## E718 local 96-symbol LTR canvas (2026-07-21)
+
+On the E714 symbol-only checkpoint's three-record CPU smoke subset, reducing
+the LTR canvas from 160 to 96 preserves parse at 0.3333 and removes no completed
+evidence while cutting p50 14.06s→5.29s (62.4%) and p95 14.27s→6.80s (52.3%).
+Structure rises slightly, but component recall regresses 0.4167→0.25 and all
+semantic gates remain red. This is a diagnostic runtime Pareto point, not a
+default or ship setting. See
+[E718 evidence](iter-e718-ltr-canvas96-20260721.md).

@@ -5410,3 +5410,14 @@ model v188 as a correctness fix while leaving tree decoding rejected.
 
 Evidence: [narrative](iter-e716-schema-typed-string-candidates-20260721.md) and
 [JSON](iter-e716-schema-typed-string-candidates-20260721.json).
+
+## E718 96-symbol LTR canvas
+
+E718 shortens E714's local smoke canvas from 160 to 96 symbols. Parse remains
+0.3333, fidelity 1.0, structure rises 0.0880→0.0963, and timeouts remain zero,
+while p50 falls 14.06s→5.29s. Component recall regresses 0.4167→0.25 and
+meaningful/strict/reward/AgentV remain zero. Retain only as a local runtime
+Pareto lever; do not treat it as model-quality progress or change the default.
+
+Evidence: [narrative](iter-e718-ltr-canvas96-20260721.md) and
+[JSON](iter-e718-ltr-canvas96-20260721.json).
