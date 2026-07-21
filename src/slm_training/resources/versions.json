@@ -593,12 +593,17 @@
       ]
     },
     "harness.core": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "prefer explicit meaningful-program v1 metrics over the legacy parse-rate fallback when normalizing committed experiment records"
+        },
         {
           "version": "v1",
           "date": "2026-07-19",
