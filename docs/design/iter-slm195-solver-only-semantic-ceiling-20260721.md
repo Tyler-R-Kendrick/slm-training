@@ -8,33 +8,33 @@
 - **Source commit:** aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 - **Random seed:** 0
 - **Disposition:** solver_ceiling_established
-- **Timestamp:** 2026-07-21T10:56:57.454528Z
+- **Timestamp:** 2026-07-21T10:57:24.321486Z
 
 ## Arms
 
 | arm | budget | status | decisions | terminal | wall (s) |
 | --- | --- | --- | --- | --- | --- |
-| canonical_dfs | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.001179 |
-| canonical_dfs | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.000931 |
-| canonical_dfs | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.001018 |
-| random_order | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.001040 |
-| random_order | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.000995 |
-| random_order | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.000946 |
-| oracle_order | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.000936 |
-| oracle_order | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.000950 |
-| oracle_order | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.000963 |
-| bfs_min_edits | 10 | SOLVED_ACCEPTED | 3 | `aa` | 0.000949 |
-| bfs_min_edits | 100 | SOLVED_ACCEPTED | 3 | `aa` | 0.000953 |
-| bfs_min_edits | 1000 | SOLVED_ACCEPTED | 3 | `aa` | 0.001029 |
-| astar_admissible | 10 | SOLVED_ACCEPTED | 3 | `aa` | 0.001542 |
-| astar_admissible | 100 | SOLVED_ACCEPTED | 3 | `aa` | 0.001285 |
-| astar_admissible | 1000 | SOLVED_ACCEPTED | 3 | `aa` | 0.001088 |
-| beam_symbolic | 10 | SOLVED_ACCEPTED | 4 | `aa` | 0.001313 |
-| beam_symbolic | 100 | SOLVED_ACCEPTED | 4 | `aa` | 0.001009 |
-| beam_symbolic | 1000 | SOLVED_ACCEPTED | 4 | `aa` | 0.001171 |
-| search_work_energy | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.001126 |
-| search_work_energy | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.001346 |
-| search_work_energy | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.001040 |
+| canonical_dfs | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.001305 |
+| canonical_dfs | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.001086 |
+| canonical_dfs | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.000953 |
+| random_order | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.001361 |
+| random_order | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.001334 |
+| random_order | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.000970 |
+| oracle_order | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.000961 |
+| oracle_order | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.000973 |
+| oracle_order | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.001027 |
+| bfs_min_edits | 10 | SOLVED_ACCEPTED | 3 | `aa` | 0.000976 |
+| bfs_min_edits | 100 | SOLVED_ACCEPTED | 3 | `aa` | 0.000990 |
+| bfs_min_edits | 1000 | SOLVED_ACCEPTED | 3 | `aa` | 0.001015 |
+| astar_admissible | 10 | SOLVED_ACCEPTED | 3 | `aa` | 0.001075 |
+| astar_admissible | 100 | SOLVED_ACCEPTED | 3 | `aa` | 0.001010 |
+| astar_admissible | 1000 | SOLVED_ACCEPTED | 3 | `aa` | 0.001017 |
+| beam_symbolic | 10 | SOLVED_ACCEPTED | 4 | `aa` | 0.001019 |
+| beam_symbolic | 100 | SOLVED_ACCEPTED | 4 | `aa` | 0.001020 |
+| beam_symbolic | 1000 | SOLVED_ACCEPTED | 4 | `aa` | 0.001006 |
+| search_work_energy | 10 | SOLVED_ACCEPTED | 1 | `aa` | 0.001043 |
+| search_work_energy | 100 | SOLVED_ACCEPTED | 1 | `aa` | 0.001014 |
+| search_work_energy | 1000 | SOLVED_ACCEPTED | 1 | `aa` | 0.001018 |
 
 ## Budget grid
 

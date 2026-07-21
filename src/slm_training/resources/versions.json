@@ -195,6 +195,11 @@
         {
           "version": "v1",
           "date": "2026-07-21",
+          "note": "no-bump: regenerate design artifacts from actual CLI run (same schema/behavior, real source commit)"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
           "note": "initial registration; SLM-195 FFE3-04 solver-only semantic ceiling harness, rankers, and CLI"
         }
       ]
@@ -206,6 +211,11 @@
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-21",
+          "note": "no-bump: design artifact regeneration only"
+        },
         {
           "version": "v61",
           "date": "2026-07-21",
