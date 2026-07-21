@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 
 import pytest
 import torch
@@ -1858,6 +1859,44 @@ def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     assert build_bias.tolist() == [2.0, 0.0, 0.0]
     assert end_bias is not None
     assert end_bias.tolist() == [0.0, 0.0, 2.0]
+
+
+def test_semantic_plan_role_family_counts_marks_inferred_families_root_only() -> None:
+    counts, inferred = TwoTowerModel._semantic_plan_role_family_counts(
+        Counter({"ImageGallery": 1}),
+        {
+            ":gallery.img": ("Image", "ImageGallery"),
+            ":gallery.caption": ("ImageGallery", "TextContent"),
+            ":gallery.hint.title": ("Callout", "TextContent"),
+            ":gallery.hint.body": ("Label", "TextContent"),
+            ":gallery.cta": ("Button", "FormControl"),
+        },
+    )
+
+    assert counts == Counter({"TextContent": 2, "ImageGallery": 1, "Button": 1})
+    assert inferred == {"TextContent", "Button"}
+
+
+def test_semantic_plan_bias_keeps_inferred_family_at_root_boundary() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", semantic_plan_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    button_id = tokenizer.token_to_id["+Button"]
+    model._semantic_plan_action_scores = [{button_id: 1.0}]
+    model._semantic_plan_action_counts = [{button_id: 1}]
+    model._semantic_plan_root_only_ids = [{button_id}]
+    candidates = (button_id, tokenizer.token_to_id["+TextContent"])
+    kinds = ("component_bound", "component_bound")
+    nested = SimpleNamespace(
+        mode="structural",
+        frames=[SimpleNamespace(kind="variadic")],
+        section_types=[],
+    )
+    root = SimpleNamespace(mode="structural", frames=[], section_types=[])
+
+    assert model._semantic_plan_bias(0, candidates, kinds, nested, []) is None
+    assert model._semantic_plan_bias(0, candidates, kinds, root, []) is not None
 
 
 def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
