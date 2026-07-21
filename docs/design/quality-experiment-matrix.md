@@ -4738,3 +4738,16 @@ was 0/1.
 
 Evidence: [narrative](iter-e667-nested-typed-array-owner-20260721.md) and
 [JSON](iter-e667-nested-typed-array-owner-20260721.json).
+
+## E668 typed-array semantic-role wrapper
+
+E668 prefers a schema-allowed component wrapper compatible with the missing
+slot's semantic role at the first item of an empty typed array. The invariant
+passes, but the matched OOD `n=4` run produces byte-for-byte identical outputs
+and metrics to E667; `Carousel.children` still fails. Reject neutral v120 and
+restore retained E666 behavior as v121. The small p95 difference is not an
+attributable performance result. No checkpoint was created or synced; AgentV
+was 0/1.
+
+Evidence: [narrative](iter-e668-typed-array-role-wrapper-20260721.md) and
+[JSON](iter-e668-typed-array-role-wrapper-20260721.json).
