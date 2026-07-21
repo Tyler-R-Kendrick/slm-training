@@ -727,12 +727,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-07-21",
+          "note": "add SLM-223 NCS0-03 SemanticFloorGateV1 wiring/fixture harness over SLM-215 SpectralAtlasV1"
+        },
         {
           "version": "v56",
           "date": "2026-07-21",
@@ -3447,7 +3452,79 @@
         {
           "version": "v1",
           "date": "2026-07-21",
+          "note": "no-bump: added an optional, backward-compatible n_families parameter (default 2, unchanged) to _synthetic_fixture_rows / run_spectral_atlas_fixture so SLM-225's family-count sweep can vary the synthetic generator's family split; no default behavior changed for existing callers"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
           "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins"
+        }
+      ]
+    },
+    "harness.experiments.slm223_semantic_floor_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py",
+        "scripts/build_semantic_floor_gate.py",
+        "tests/test_harnesses/experiments/test_slm223_semantic_floor_gate.py",
+        "tests/test_scripts/test_build_semantic_floor_gate.py",
+        "docs/design/iter-slm223-semantic-floor-gate-20260721.json",
+        "docs/design/iter-slm223-semantic-floor-gate-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: added an optional, backward-compatible n_families parameter (default 2, unchanged) to run_semantic_floor_gate_fixture, forwarded to run_spectral_atlas_fixture, so SLM-225's family-count sweep can vary the synthetic generator's family split; no calibration or disposition logic changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: exposed the existing 0.15 signal margin as public SIGNAL_MARGIN (alias _SIGNAL_MARGIN retained) so SLM-224's power-sweep harness can import it instead of a private name; no calibration or disposition logic changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-223 NCS0-03 SemanticFloorGateV1 wiring/fixture harness: role-weighted alpha_z aggregate over SpectralAtlasV1 rows, calibrated out-of-fold (leave-one-family-out), evaluated against a label-permutation-null baseline"
+        }
+      ]
+    },
+    "harness.experiments.slm224_floor_gate_power_sweep": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm224_floor_gate_power_sweep.py",
+        "scripts/build_floor_gate_power_sweep.py",
+        "tests/test_harnesses/experiments/test_slm224_floor_gate_power_sweep.py",
+        "tests/test_scripts/test_build_floor_gate_power_sweep.py",
+        "docs/design/iter-slm224-floor-gate-power-sweep-20260721.json",
+        "docs/design/iter-slm224-floor-gate-power-sweep-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-224 NCS0-04 SemanticFloorGateV1 statistical-power sweep: reruns the unmodified SLM-223 gate pipeline at increasing synthetic_runs values to test whether SLM-223's no-signal disposition was a fixture-size power artifact"
+        }
+      ]
+    },
+    "harness.experiments.slm225_floor_gate_family_sweep": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm225_floor_gate_family_sweep.py",
+        "scripts/build_floor_gate_family_sweep.py",
+        "tests/test_harnesses/experiments/test_slm225_floor_gate_family_sweep.py",
+        "tests/test_scripts/test_build_floor_gate_family_sweep.py",
+        "docs/design/iter-slm225-floor-gate-family-sweep-20260721.json",
+        "docs/design/iter-slm225-floor-gate-family-sweep-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-225 NCS0-05 SemanticFloorGateV1 family-count sweep: reruns the unmodified SLM-223 gate pipeline at increasing n_families values (runs-per-family held fixed at 4, using the new SLM-215/SLM-223 n_families parameter) to test the family-count axis SLM-224 could not test"
         }
       ]
     },

@@ -1,0 +1,108 @@
+{
+  "claim_class": "wiring",
+  "disposition": "family_count_limited",
+  "disposition_rationale": "Signal recovered at n_families=4 (margin=0.188 >= 0.15); SLM-223/SLM-224's no-signal results are consistent with a family-count-limited artifact, not a genuinely absent relationship.",
+  "experiment_id": "slm225-floor-gate-family-sweep",
+  "falsifier": "The LOFO-vs-permutation-null margin stays below 0.15 across the full swept grid up to n_families=32 (with runs-per-family held fixed at 4), i.e. more families within the swept range never recovers signal -- suggesting the family-count axis is not the explanation for SLM-223/SLM-224's no-signal results either.",
+  "floor_threshold": 0.5,
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no trained model, checkpoint promotion, or GPU run.",
+    "Reuses the unmodified SLM-223 gate pipeline at each grid point; the only new code is the backward-compatible n_families parameter threaded through the existing SLM-215 synthetic generator (default unchanged at n_families=2), and this sweep harness itself. No new calibration or statistical method is added.",
+    "Runs-per-family is held fixed at 4 so synthetic_runs scales with n_families (synthetic_runs = n_families * runs_per_family); this isolates the family-count axis from the runs-per-family axis SLM-224 already swept, but the two axes are not fully orthogonal in one combined sweep -- a full 2D grid over both axes independently is out of scope here.",
+    "The synthetic per-matrix signal (0.1 * alpha_z coefficient vs 0.05 noise sd) is a fixture design choice, not a measurement from a real checkpoint; a positive result here shows the gate mechanism *can* detect a real embedded signal given enough families, not that any actual checkpoint atlas has this signal strength.",
+    "No causal conclusion is drawn and no promotion or ship-gate claim is made; this is a diagnostic follow-up to SLM-224's own honest caveat about the untested family-count axis.",
+    "Each grid point's permutation-null baseline is drawn from only 20 random label permutations, and lower n_families points have very few LOFO folds; margins are expected to be noisy from point to point. A single grid point crossing the 0.15 margin is read as an existence result (the mechanism can clear the margin somewhere in range), not as evidence of a clean monotonic family-count effect -- the full swept trend, including any non-monotonic points, should be read together."
+  ],
+  "hypothesis": "SLM-223's SemanticFloorGateV1 'no_signal' disposition, and SLM-224's 'genuinely_no_signal_in_range' finding along the runs-per-family axis, leave the family-count axis untested: the SLM-215 synthetic generator used to always fix families at exactly 2. Holding runs-per-family constant at 4 and sweeping n_families (via the new backward-compatible n_families parameter) will produce a leave-one-family-out balanced accuracy that clears the permutation-null mean by the required 0.15 margin at some larger family count -- i.e. more distinct LOFO folds, not more runs per fold, recovers signal.",
+  "matrix_set": "slm225_floor_gate_family_sweep",
+  "matrix_version": "ncs0-05-v1",
+  "points": [
+    {
+      "disposition": "no_signal",
+      "gate_hash": "3e18986ae2ddb73e660c04b448aaf2848c7abceb9c9b9d5c6488797be3ee06ac",
+      "margin": 0.125,
+      "n_families": 2,
+      "n_families_requested": 2,
+      "n_runs": 8,
+      "permutation_null_mean": 0.625,
+      "real_balanced_accuracy": 0.75,
+      "runs_per_family": 4,
+      "synthetic_runs": 8
+    },
+    {
+      "disposition": "signal_predictive",
+      "gate_hash": "45241ec450d14d34279c758d640ebb5ec1d8165ed5a2cdd77352605afa3a98ab",
+      "margin": 0.1875,
+      "n_families": 4,
+      "n_families_requested": 4,
+      "n_runs": 16,
+      "permutation_null_mean": 0.4375,
+      "real_balanced_accuracy": 0.625,
+      "runs_per_family": 4,
+      "synthetic_runs": 16
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "4b6c2bdc5b5004ea950e529830d3895d2c924e22b527b7578246e23f63d496c0",
+      "margin": 0.09375,
+      "n_families": 8,
+      "n_families_requested": 8,
+      "n_runs": 32,
+      "permutation_null_mean": 0.5,
+      "real_balanced_accuracy": 0.59375,
+      "runs_per_family": 4,
+      "synthetic_runs": 32
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "016aedc631ef02e7a21847050f82f22b1b6ddea1fdb2044679145bbea33f1adf",
+      "margin": 0.0,
+      "n_families": 16,
+      "n_families_requested": 16,
+      "n_runs": 64,
+      "permutation_null_mean": 0.5,
+      "real_balanced_accuracy": 0.5,
+      "runs_per_family": 4,
+      "synthetic_runs": 64
+    },
+    {
+      "disposition": "signal_predictive",
+      "gate_hash": "4f77c8c00630704edc220fc920933bd04039cb851b546f19ab14f8685a728e88",
+      "margin": 0.22880000000000011,
+      "n_families": 32,
+      "n_families_requested": 32,
+      "n_runs": 128,
+      "permutation_null_mean": 0.5231999999999999,
+      "real_balanced_accuracy": 0.752,
+      "runs_per_family": 4,
+      "synthetic_runs": 128
+    }
+  ],
+  "run_id": "slm225-floor-gate-family-sweep-20260721",
+  "runs_per_family": 4,
+  "schema": "FamilySweepReportV1",
+  "status": "fixture",
+  "sweep_grid": [
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "sweep_hash": "8dd5e84be1364a25a56e3eb65705074a6fa2ff4447adf96f37d13ab6f51511f7",
+  "timestamp": "2026-07-21T04:57:56.052958Z",
+  "version_stamp": {
+    "code_commit": "048bf8ce7085119398aab38bc81fe81f1edc7fdb",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm214_spectral_snapshot": "v2",
+      "harness.experiments.slm215_spectral_atlas": "v1",
+      "harness.experiments.slm223_semantic_floor_gate": "v1",
+      "harness.experiments.slm224_floor_gate_power_sweep": "v1",
+      "harness.experiments.slm225_floor_gate_family_sweep": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T04:57:56.052938+00:00"
+  }
+}

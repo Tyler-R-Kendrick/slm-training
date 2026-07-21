@@ -1,0 +1,107 @@
+{
+  "atlas_hash": "6d8414399256736c50ade29926bcc9be310380a4926db9961b0f00214aa040b4",
+  "claim_class": "wiring",
+  "disposition": "no_signal",
+  "disposition_rationale": "LOFO balanced accuracy 0.500 does not clear the permutation-null mean 0.500 by the required 0.15 margin (margin=0.000).",
+  "experiment_id": "slm223-semantic-floor-gate",
+  "falsifier": "The calibrated gate's leave-one-family-out balanced accuracy does not exceed the label-permutation-null mean by at least 0.15, or there are too few families/runs to calibrate out-of-fold at all.",
+  "floor_threshold": 0.5,
+  "full_role_weights": {
+    "mlp_in": 0.2702780041142428,
+    "mlp_out": -0.5056153386914988,
+    "self_attn_k": 0.45191327268299397,
+    "self_attn_out": -0.1326084868519639,
+    "self_attn_q": 0.21289156241840726,
+    "self_attn_v": -0.06961773329091582
+  },
+  "gate_hash": "d74e00dbdefab284dbb41de0ce1bd4a7501050835747c30181be584171a8cffc",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no trained model, checkpoint promotion, or GPU run.",
+    "Built entirely on SLM-215 SpectralAtlasV1 rows (real or synthetic); no new spectral measurement is taken here.",
+    "This is a diagnostic pre-screen candidate, not a promotion or ship gate. It does not replace full suite evaluation and makes no readiness claim.",
+    "Role weights and thresholds are learned only from training-fold data inside leave-one-family-out; the tiny fixture size (2-4 runs per fold) limits statistical power and the calibration is expected to be noisy.",
+    "The floor threshold on parse_rate is a fixed configuration knob, not fit from data; changing it changes which checkpoints count as floor-risk.",
+    "No causal conclusion is drawn; a positive result only means the alpha_z signal correlates with the floor label in this fixture, not that it causes it."
+  ],
+  "hypothesis": "A role-weighted aggregate of SpectralAtlasV1 alpha_z, calibrated on out-of-fold training families only (direction + median threshold), can flag checkpoints under a parse-rate floor with a leave-one-family-out balanced accuracy that exceeds a label-permuted control.",
+  "matrix_set": "slm223_semantic_floor_gate",
+  "matrix_version": "ncs0-03-v1",
+  "n_families": 2,
+  "n_runs": 4,
+  "permutation_null": {
+    "draws": 20,
+    "mean": 0.5,
+    "status": "evaluated"
+  },
+  "real_balanced_accuracy": 0.5,
+  "rows": [
+    {
+      "correct": true,
+      "family": "family_0",
+      "floor_label": true,
+      "fold": "held_out_family_0",
+      "gate_flag": true,
+      "gate_version": "SemanticFloorGateV1",
+      "mean_alpha_z": 0.15768627081745493,
+      "n_matrices": 6,
+      "parse_rate": 0.41113827844691864,
+      "run_id": "fixture_run_0",
+      "weighted_alpha_z": 0.15768627081745493
+    },
+    {
+      "correct": true,
+      "family": "family_0",
+      "floor_label": true,
+      "fold": "held_out_family_0",
+      "gate_flag": true,
+      "gate_version": "SemanticFloorGateV1",
+      "mean_alpha_z": 0.32583684153296344,
+      "n_matrices": 6,
+      "parse_rate": 0.41931521751739304,
+      "run_id": "fixture_run_2",
+      "weighted_alpha_z": 0.32583684153296344
+    },
+    {
+      "correct": false,
+      "family": "family_1",
+      "floor_label": true,
+      "fold": "held_out_family_1",
+      "gate_flag": false,
+      "gate_version": "SemanticFloorGateV1",
+      "mean_alpha_z": 0.04203693598888189,
+      "n_matrices": 6,
+      "parse_rate": 0.4178767759200759,
+      "run_id": "fixture_run_1",
+      "weighted_alpha_z": 0.04203693598888189
+    },
+    {
+      "correct": false,
+      "family": "family_1",
+      "floor_label": true,
+      "fold": "held_out_family_1",
+      "gate_flag": false,
+      "gate_version": "SemanticFloorGateV1",
+      "mean_alpha_z": 0.13601658655884077,
+      "n_matrices": 6,
+      "parse_rate": 0.41950395089424203,
+      "run_id": "fixture_run_3",
+      "weighted_alpha_z": 0.13601658655884077
+    }
+  ],
+  "run_id": "slm223-semantic-floor-gate-20260721",
+  "schema": "SemanticFloorGateReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T04:40:15.051355Z",
+  "version_stamp": {
+    "code_commit": "09a5792cf0702a1e0694d3191b83c6d81b0f68b5",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm214_spectral_snapshot": "v2",
+      "harness.experiments.slm215_spectral_atlas": "v1",
+      "harness.experiments.slm223_semantic_floor_gate": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T04:40:15.051330+00:00"
+  }
+}

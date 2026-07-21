@@ -1098,6 +1098,68 @@ is ready for production until it clears its activation gate and produces a
 `POSITIVE` result under ship-gates with durable checkpoints. The synthesis
 renderer labels the report as wiring-grade and does not promote a champion.
 
+## Heavy-tailed spectral checkpoint diagnostics (NCS0-01/02/03/04/05 / SLM-214/215/223/224/225)
+
+**Fidelity label: adapted / surrogate.** The NCS0 line borrows the Heavy-Tailed
+Self-Regularization (HTSR) framing — fitting a power-law exponent (`alpha`) to
+each weight matrix's empirical spectral density and comparing it against a
+randomized (shuffled-weight) null — from Martin & Mahoney's WeightWatcher
+research program, but narrows it to a **native-PyTorch, CPU-only, fixture-scale**
+implementation: SpectralSnapshotV1 (SLM-214) computes per-matrix Hill-estimator
+alpha, a z-score against a per-shape randomized-ESD null, and role
+classification; SpectralAtlasV1 (SLM-215) joins those snapshots to training/eval
+outcomes with leave-one-family-out and permutation-null controls; SemanticFloorGateV1
+(SLM-223) is a first wiring pass at the pre-eval gate that SLM-215 named as a
+prerequisite for production-quality atlas claims — a role-weighted `alpha_z`
+aggregate, calibrated strictly out-of-fold, that flags checkpoints likely under a
+parse-rate floor; the SLM-224 power sweep asks a follow-up statistical
+question SLM-223's own honest caveats raised — is its `no_signal` result a
+fixture-size power artifact — by rerunning the unmodified SLM-223 gate pipeline
+across a `synthetic_runs` grid from 4 to 128 (no-go along that axis); and the
+SLM-225 family-count sweep tests the axis SLM-224 explicitly could not — SLM-215's
+synthetic generator gained a backward-compatible `n_families` parameter (default
+2, unchanged for existing callers), and SLM-225 reruns the same unmodified
+SLM-223 gate pipeline while holding runs-per-family fixed at 4 and sweeping
+`n_families` from 2 to 32.
+
+| | |
+| --- | --- |
+| **Lineage** | Heavy-Tailed Self-Regularization / WeightWatcher (Martin, Peng, Mahoney, *Predicting trends in the quality of state-of-the-art neural networks without access to training or testing data*, Nature Communications 2021, [arXiv:2002.06716](https://arxiv.org/abs/2002.06716)); permutation testing for classifier significance; statistical power analysis |
+| **Fidelity** | **Surrogate** — native-PyTorch SVD + Hill alpha stand in for the full WeightWatcher toolchain; SLM-223's gate and the SLM-224/SLM-225 sweeps are fixture-only, calibrated on synthetic or small local rows, and are diagnostic pre-screen artifacts, not a promotion gate |
+| **Code** | `src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py`, `src/slm_training/harnesses/experiments/slm215_spectral_atlas.py`, `src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py`, `src/slm_training/harnesses/experiments/slm224_floor_gate_power_sweep.py`, `src/slm_training/harnesses/experiments/slm225_floor_gate_family_sweep.py` |
+| **Config** | `scripts/inspect_spectral.py`, `scripts/build_spectral_atlas.py`, `scripts/build_semantic_floor_gate.py --floor-threshold`, `scripts/build_floor_gate_power_sweep.py --sweep-grid`, `scripts/build_floor_gate_family_sweep.py --sweep-grid --runs-per-family` |
+
+**What we took:** per-matrix Hill-estimator alpha and a per-shape randomized-ESD
+null (SLM-214); a leaky-safe atlas join with leave-one-family-out correlation
+and permutation-null controls (SLM-215); for SLM-223, the same
+leave-one-family-out + permutation-null discipline applied to a binary
+"floor-risk" gate, with role weights and the flag threshold/direction learned
+only from training-fold data so the reported balanced accuracy is genuinely
+out-of-fold; for SLM-224, a straightforward statistical-power sweep that
+reruns SLM-223's unmodified pipeline at larger fixture sizes and asks whether
+the LOFO-vs-permutation-null margin ever clears the same 0.15 threshold SLM-223
+used; and for SLM-225, a minimal backward-compatible `n_families` parameter on
+the SLM-215 synthetic generator (threaded through SLM-223's fixture builder)
+plus a sweep harness that holds runs-per-family fixed and varies family count,
+isolating the axis SLM-224 flagged as untested.
+
+**What we did not take:** optional WeightWatcher-parity statistics, any claim
+that a real checkpoint is at risk until run against trained-model telemetry,
+and any promotion or ship-gate use of the gate output. SLM-224 did not take a
+family-count sweep (the SLM-215 synthetic generator fixed 2 families regardless
+of `synthetic_runs`), so it could only speak to runs-per-family power, not
+family-count power. SLM-225 closes that gap and finds the margin clears 0.15 at
+`n_families=4` (0.188) and `n_families=32` (0.229) but not at 8 or 16 — a
+non-monotonic, family-count-limited result, not a clean trend; SLM-225 did not
+take a combined 2D sweep over both runs-per-family and family-count
+independently (each axis was swept separately, holding the other fixed), and
+draws no causal or promotion conclusion. Evidence:
+[`iter-slm214-spectral-snapshot-20260721.md`](iter-slm214-spectral-snapshot-20260721.md),
+[`iter-slm215-spectral-atlas-20260721.md`](iter-slm215-spectral-atlas-20260721.md),
+[`iter-slm223-semantic-floor-gate-20260721.md`](iter-slm223-semantic-floor-gate-20260721.md),
+[`iter-slm224-floor-gate-power-sweep-20260721.md`](iter-slm224-floor-gate-power-sweep-20260721.md),
+[`iter-slm225-floor-gate-family-sweep-20260721.md`](iter-slm225-floor-gate-family-sweep-20260721.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

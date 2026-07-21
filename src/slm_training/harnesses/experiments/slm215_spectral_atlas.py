@@ -246,15 +246,23 @@ def _collect_from_reports(reports_dir: Path) -> list[SpectralAtlasV1]:
     return rows
 
 
-def _synthetic_fixture_rows(n_runs: int = 4, matrices_per_run: int = 6) -> list[SpectralAtlasV1]:
-    """Generate deterministic fixture rows with a weak spectral→outcome signal."""
+def _synthetic_fixture_rows(
+    n_runs: int = 4, matrices_per_run: int = 6, n_families: int = 2
+) -> list[SpectralAtlasV1]:
+    """Generate deterministic fixture rows with a weak spectral→outcome signal.
+
+    ``n_families`` controls how many families ``run_idx % n_families`` splits
+    runs into (default 2, matching the original fixed behavior). Added for
+    SLM-225's family-count power sweep; existing callers that omit it are
+    unaffected.
+    """
     import random
 
     rng = random.Random(42)
     roles = ["self_attn_q", "self_attn_k", "self_attn_v", "self_attn_out", "mlp_in", "mlp_out"]
     rows: list[SpectralAtlasV1] = []
     for run_idx in range(n_runs):
-        family = f"family_{run_idx % 2}"
+        family = f"family_{run_idx % n_families}"
         steps = 200 + run_idx * 100
         for mi in range(matrices_per_run):
             role = roles[mi % len(roles)]
@@ -431,9 +439,15 @@ def run_spectral_atlas_fixture(
     reports_dir: Path | None = None,
     *,
     synthetic_runs: int = 4,
+    n_families: int = 2,
     run_id: str | None = None,
 ) -> SpectralAtlasReport:
-    """Build a SpectralAtlasV1 report from existing reports or synthetic fixtures."""
+    """Build a SpectralAtlasV1 report from existing reports or synthetic fixtures.
+
+    ``n_families`` (default 2, backward-compatible) is forwarded to the
+    synthetic generator only; it has no effect when rows are collected from
+    real ``reports_dir`` reports.
+    """
     rows: list[SpectralAtlasV1] = []
     source_reports: list[str] = []
     unresolvable: list[str] = []
@@ -443,7 +457,7 @@ def run_spectral_atlas_fixture(
         source_reports = [str(p) for p in sorted(reports_dir.glob("**/slm214_spectral_report.json"))]
 
     if not rows:
-        rows = _synthetic_fixture_rows(n_runs=synthetic_runs)
+        rows = _synthetic_fixture_rows(n_runs=synthetic_runs, n_families=n_families)
         source_reports = ["<synthetic_fixture>"]
 
     signal = _evaluate_signal(rows)

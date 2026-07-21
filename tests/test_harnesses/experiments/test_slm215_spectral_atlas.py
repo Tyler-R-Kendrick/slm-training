@@ -45,6 +45,20 @@ def test_role_summaries_present() -> None:
         assert summary["n_matrices"] > 0
 
 
+def test_n_families_default_preserves_two_families() -> None:
+    # Backward compatibility: omitting n_families still yields exactly 2
+    # families, matching the original hardcoded behavior.
+    report = run_spectral_atlas_fixture(synthetic_runs=8)
+    assert report.n_families == 2
+
+
+def test_n_families_parameter_controls_family_count() -> None:
+    report = run_spectral_atlas_fixture(synthetic_runs=8, n_families=4)
+    assert report.n_families == 4
+    families = {r.family for r in report.rows}
+    assert families == {"family_0", "family_1", "family_2", "family_3"}
+
+
 def test_collect_from_existing_slm214_report(tmp_path) -> None:
     from slm_training.harnesses.experiments.slm214_spectral_snapshot import (
         run_spectral_snapshot_fixture,
