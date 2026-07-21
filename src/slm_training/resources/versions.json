@@ -1549,7 +1549,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v133",
+      "version": "v134",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1564,6 +1564,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v134",
+          "date": "2026-07-21",
+          "note": "E678 provenance correction: localize E676 joint-role planning inside TwoTower so model-only helpers do not perturb the binding-aware evaluator implementation hash; decode behavior is unchanged"
+        },
         {
           "version": "v133",
           "date": "2026-07-21",

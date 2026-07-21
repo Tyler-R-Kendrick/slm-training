@@ -1451,10 +1451,8 @@ def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
 
 
 def test_joint_role_candidates_require_distinct_schema_properties() -> None:
-    from slm_training.data.quality import semantic_role_joint_candidates
-
     slots = [":gallery.hint.title", ":gallery.hint.body"]
-    candidates = semantic_role_joint_candidates(
+    candidates = TwoTowerModel._semantic_role_joint_candidates(
         slots, ["Callout", "TextCallout", "TextContent"]
     )
 

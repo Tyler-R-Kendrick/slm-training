@@ -183,54 +183,6 @@ def semantic_role_candidates(
     return result
 
 
-def semantic_role_joint_candidates(
-    placeholders: list[str], component_names: list[str]
-) -> dict[tuple[str, ...], tuple[str, ...]]:
-    """Find components with distinct direct string properties for a role group."""
-    from slm_training.dsl.lang_core import library_schema
-
-    groups: dict[str, list[str]] = {}
-    for placeholder in sorted(set(placeholders)):
-        parts = placeholder.removeprefix(":").split(".")
-        if len(parts) > 1:
-            groups.setdefault(".".join(parts[:-1]), []).append(placeholder)
-    definitions = library_schema().get("$defs", {})
-    properties_by_slot = semantic_role_properties(placeholders)
-
-    def covers(slots: tuple[str, ...], properties: dict[str, Any]) -> bool:
-        string_properties = {
-            name
-            for name, schema in properties.items()
-            if isinstance(schema, dict) and schema.get("type") == "string"
-        }
-
-        def match(index: int, used: frozenset[str]) -> bool:
-            if index == len(slots):
-                return True
-            return any(
-                match(index + 1, used | {name})
-                for name in properties_by_slot[slots[index]]
-                if name in string_properties and name not in used
-            )
-
-        return match(0, frozenset())
-
-    result: dict[tuple[str, ...], tuple[str, ...]] = {}
-    for slots_list in groups.values():
-        slots = tuple(slots_list)
-        if len(slots) < 2:
-            continue
-        compatible = tuple(
-            name
-            for name in sorted(set(component_names))
-            if isinstance((definition := definitions.get(name)), dict)
-            and covers(slots, definition.get("properties") or {})
-        )
-        if compatible:
-            result[slots] = compatible
-    return result
-
-
 def semantic_role_reachable_candidates(
     placeholders: list[str], component_names: list[str]
 ) -> dict[str, tuple[str, ...]]:
