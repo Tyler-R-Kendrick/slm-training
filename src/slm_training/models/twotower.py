@@ -5254,6 +5254,13 @@ class TwoTowerModel(nn.Module):
                 )
             )
 
+        def owner_directly_matches(slot: str) -> bool:
+            return bool(
+                owner_component
+                and semantic_role_candidates
+                and owner_component in semantic_role_candidates.get(slot, ())
+            )
+
         if kind == "component" and semantic_role_candidates and not any(
             owner_matches(slot) for _index, slot in missing
         ):
@@ -5292,7 +5299,7 @@ class TwoTowerModel(nn.Module):
             if token_id in missing_slots_by_id:
                 slot = missing_slots_by_id[token_id]
                 if direct_slot_compatible and (
-                    not semantic_role_candidates or owner_matches(slot)
+                    not semantic_role_candidates or owner_directly_matches(slot)
                 ):
                     targets.append(position)
                 continue

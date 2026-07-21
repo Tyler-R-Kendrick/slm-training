@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v106",
+      "version": "v107",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v107",
+          "date": "2026-07-21",
+          "note": "E655: require direct semantic-role ownership before forcing a raw visible slot; transitive owners descend through compatible children"
+        },
         {
           "version": "v106",
           "date": "2026-07-21",
