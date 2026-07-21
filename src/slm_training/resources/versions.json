@@ -2154,6 +2154,11 @@
         },
         {
           "version": "v84",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E640 root-slot-reference evidence to E646 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v84",
           "date": "2026-07-20",
           "note": "E646: track visible slots per completed root section and include supplemental slot-bearing sections in verifier-checked semantic root references; renumbered from the originally launched E640 arm after rebase"
         },

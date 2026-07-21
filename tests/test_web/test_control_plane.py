@@ -2088,11 +2088,11 @@ def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> No
     assert checkpoints.isdisjoint(expected)
 
 
-def test_e640_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+def test_e646_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
     readers = Readers(Path(__file__).parents[2])
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
-    run_id = "e640-root-slot-references-r1"
+    run_id = "e646-root-slot-references-r1"
     run = readers.run(run_id)
     assert run["provenance"] == "committed"
     suite = run["scoreboard"]["suites"]["ood"]
