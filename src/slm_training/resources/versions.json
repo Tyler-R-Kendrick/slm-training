@@ -3624,6 +3624,30 @@
           "note": "initial registration; SLM-190 FFE2-02 exact CTMC enumeration/path/sample/objective/lumpability fixture matrix"
         }
       ]
+    },
+    "harness.experiments.slm229_looped_latent_differentiation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm229_looped_latent_differentiation.py",
+        "scripts/run_slm229_looped_latent_differentiation.py",
+        "tests/test_harnesses/experiments/test_slm229_looped_latent_differentiation.py",
+        "tests/test_scripts/test_run_slm229_looped_latent_differentiation.py",
+        "docs/design/iter-slm229-looped-latent-differentiation-20260721.json",
+        "docs/design/iter-slm229-looped-latent-differentiation-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: regenerate fixture docs after merge-conflict resolution; harness code and matrix version unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-229 RSC0-01 zero-compute looped-latent differentiation and MinimalCompilerLatentContractV1 authorization audit"
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,162 @@
+{
+  "claim_class": "wiring",
+  "manifest": {
+    "activation_gate": "Frontier/natural cases run only when an earlier readout establishes an activated branching/recovery regime. This fixture uses only the closed finite benchmark and injected microcases.",
+    "arms": [
+      {
+        "arm_id": "trail",
+        "policy": "certified_trail"
+      },
+      {
+        "arm_id": "certified_only",
+        "policy": "certified_only_no_branch"
+      },
+      {
+        "arm_id": "monotone",
+        "policy": "monotone_proposal"
+      },
+      {
+        "arm_id": "partial",
+        "policy": "partial_retract"
+      }
+    ],
+    "claim_class": "wiring",
+    "falsifier": "Either the production architecture never places proposal-derived facts in irreversible state, or on activated cases both policies recover identical support sets while trailing adds only measurable cost.",
+    "hypothesis": "When a locally legal proposal is wrong, a monotone proposal-contingent state permanently removes valid alternatives that depended on the failed assumption; a trailed controller retracts those facts and recovers with zero false certified prunes.",
+    "matrix_set": "slm135-trailed-assumptions",
+    "matrix_version": "efs4-01-v1",
+    "seeds": [
+      0
+    ],
+    "status": "plan_only"
+  },
+  "matrix_set": "slm135-trailed-assumptions",
+  "matrix_version": "efs4-01-v1",
+  "rows": [
+    {
+      "arm_id": "trail",
+      "backtrack_count": 0,
+      "decision_count": 0,
+      "false_prune": false,
+      "leaked_deduction_count": 0,
+      "notes": [
+        "plan-only: no search executed"
+      ],
+      "policy": "certified_trail",
+      "result": {
+        "backtracks": 0,
+        "decisions": [],
+        "deductions": [],
+        "false_prune": false,
+        "leaked_deductions": [],
+        "nodes": 0,
+        "nogoods": [],
+        "policy": "certified_trail",
+        "restored_fingerprint": null,
+        "status": "plan_only",
+        "stop_reason": null,
+        "terminal": [],
+        "unknown_violation": false
+      },
+      "seed": 0,
+      "status": "plan_only"
+    },
+    {
+      "arm_id": "certified_only",
+      "backtrack_count": 0,
+      "decision_count": 0,
+      "false_prune": false,
+      "leaked_deduction_count": 0,
+      "notes": [
+        "plan-only: no search executed"
+      ],
+      "policy": "certified_only_no_branch",
+      "result": {
+        "backtracks": 0,
+        "decisions": [],
+        "deductions": [],
+        "false_prune": false,
+        "leaked_deductions": [],
+        "nodes": 0,
+        "nogoods": [],
+        "policy": "certified_only_no_branch",
+        "restored_fingerprint": null,
+        "status": "plan_only",
+        "stop_reason": null,
+        "terminal": [],
+        "unknown_violation": false
+      },
+      "seed": 0,
+      "status": "plan_only"
+    },
+    {
+      "arm_id": "monotone",
+      "backtrack_count": 0,
+      "decision_count": 0,
+      "false_prune": false,
+      "leaked_deduction_count": 0,
+      "notes": [
+        "plan-only: no search executed"
+      ],
+      "policy": "monotone_proposal",
+      "result": {
+        "backtracks": 0,
+        "decisions": [],
+        "deductions": [],
+        "false_prune": false,
+        "leaked_deductions": [],
+        "nodes": 0,
+        "nogoods": [],
+        "policy": "monotone_proposal",
+        "restored_fingerprint": null,
+        "status": "plan_only",
+        "stop_reason": null,
+        "terminal": [],
+        "unknown_violation": false
+      },
+      "seed": 0,
+      "status": "plan_only"
+    },
+    {
+      "arm_id": "partial",
+      "backtrack_count": 0,
+      "decision_count": 0,
+      "false_prune": false,
+      "leaked_deduction_count": 0,
+      "notes": [
+        "plan-only: no search executed"
+      ],
+      "policy": "partial_retract",
+      "result": {
+        "backtracks": 0,
+        "decisions": [],
+        "deductions": [],
+        "false_prune": false,
+        "leaked_deductions": [],
+        "nodes": 0,
+        "nogoods": [],
+        "policy": "partial_retract",
+        "restored_fingerprint": null,
+        "status": "plan_only",
+        "stop_reason": null,
+        "terminal": [],
+        "unknown_violation": false
+      },
+      "seed": 0,
+      "status": "plan_only"
+    }
+  ],
+  "run_id": "slm135_plan",
+  "status": "plan_only",
+  "verdict": "not_run",
+  "version_stamp": {
+    "code_commit": "d5a65d03102f79521ac0d94a0e3c4fcc29c3d186",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v58",
+      "harness.experiments.slm135_trailed_assumptions_ablation": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:48:25.541571+00:00"
+  }
+}
