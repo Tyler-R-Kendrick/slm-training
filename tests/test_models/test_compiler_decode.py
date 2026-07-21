@@ -507,17 +507,56 @@ def test_slot_coverage_close_bias_rejects_wrong_owner_direct_slot() -> None:
         ]
     )
 
-    assert (
-        model._slot_coverage_close_bias(
-            state,
-            [tokenizer.bos_id],
-            (slot_id, close_id),
-            torch.tensor([1.0, 5.0]),
-            [":auth.email"],
-            {":auth.email": ("Input",)},
-        )
-        is None
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (slot_id, close_id),
+        torch.tensor([1.0, 5.0]),
+        [":auth.email"],
+        {":auth.email": ("Input",)},
     )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 4.0]
+
+
+def test_slot_coverage_close_bias_escapes_wrong_owner_before_nested_component(
+) -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    switch_id = tokenizer.token_to_id["+SwitchGroup"]
+    close_id = tokenizer.token_to_id["-"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Button",
+                arg_index=1,
+                schemas=({"type": "string"}, {"type": "object"}),
+                close="-",
+            )
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [],
+        (switch_id, close_id),
+        torch.tensor([10.0, 12.0]),
+        [":auth.name", ":auth.email"],
+        {
+            ":auth.name": ("Input", "SwitchGroup"),
+            ":auth.email": ("Input", "SwitchGroup"),
+        },
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 2.0]
 
 
 def test_slot_coverage_close_trace_records_owner_and_missing_slots() -> None:
@@ -579,6 +618,52 @@ def test_slot_coverage_close_trace_records_owner_and_missing_slots() -> None:
     assert trace["chosen_token"] == "+Button"
     assert trace["final_token"] == "]"
     assert trace["changed_after_plan"] is True
+
+
+def test_slot_coverage_close_trace_labels_owner_escape() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    close_id = tokenizer.token_to_id["-"]
+    input_id = tokenizer.token_to_id["+Input"]
+    stats = DecodeStats()
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Button",
+                close="-",
+                active_property=None,
+                phase="",
+                arg_index=1,
+            )
+        ],
+        mode="structural",
+    )
+
+    trace = model._record_slot_coverage_close_trace(
+        stats,
+        row=0,
+        position=3,
+        state=state,
+        prefix=[tokenizer.bos_id],
+        candidate_ids=(input_id, close_id),
+        scores_before=torch.tensor([10.0, 12.0]),
+        coverage_bias=torch.tensor([0.0, 2.0]),
+        scores_after=torch.tensor([10.0, 14.0]),
+        slot_contract=[":auth.email"],
+    )
+
+    assert trace is not None
+    assert trace["mode"] == "owner_escape"
+    assert trace["missing_slots"] == [":auth.email"]
+    assert trace["chosen_token"] == "-"
 
 
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:

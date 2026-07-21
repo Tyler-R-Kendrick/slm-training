@@ -5009,6 +5009,18 @@ class TwoTowerModel(nn.Module):
                 and owner_component in semantic_role_candidates.get(slot, ())
             )
 
+        if kind == "component" and semantic_role_candidates and not any(
+            owner_matches(slot) for _index, slot in missing
+        ):
+            close_position = candidate_ids.index(close_id)
+            bias[close_position] = max(
+                0.0,
+                float(scores.max().item())
+                + weight
+                - float(scores[close_position].item()),
+            )
+            return bias
+
         active_schema: dict[str, Any] | None = None
         if kind == "component":
             schemas = tuple(getattr(frame, "schemas", ()))
@@ -5130,7 +5142,7 @@ class TwoTowerModel(nn.Module):
             "row": int(row),
             "position": int(position),
             "mode": (
-                "covered_close"
+                ("covered_close" if not missing_slots else "owner_escape")
                 if close_id is not None
                 and close_id in {candidate_ids[index] for index in targeted}
                 else "coverage_continue"

@@ -4284,3 +4284,32 @@ place prompt-owned families as siblings after closing a wrong owner.
 Evidence:
 [iter-e630-prompt-owned-closure-20260720.md](iter-e630-prompt-owned-closure-20260720.md)
 and [JSON](iter-e630-prompt-owned-closure-20260720.json).
+
+## E631 frame-aware incompatible-owner escape
+
+E631 replaces E630's harmful nested-family preference with a structural rule:
+when the active component owner cannot own any missing role, close it and let
+outer inventory planning place required families as siblings. The exact E622
+checkpoint and OOD `n=4` recipe were reused; no training/checkpoint occurred.
+
+| OOD `n=4` | E622 baseline | E631 treatment |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
+| fidelity / validity | 0.5917 / 0.7550 | 0.6750 / 0.8050 |
+| structure / component recall | 0.4029 / 0.5000 | 0.5729 / 0.6250 |
+| reward | 0.8175 | 0.8515 |
+| AST node / edge F1 | 0.4690 / 0.2625 | 0.6357 / 0.5125 |
+| latency p50 / p95 | 3067.47 / 6277.99 ms | 3025.78 / 6394.56 ms |
+| closure applications / changes | 11 / 8 | 25 / 12 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+Auth now has the correct Stack + Button + two Input inventory and reaches 1.0
+on all continuous per-record quality metrics. Strict v2 remains false because
+name/email are duplicated across `Input.name` and `Input.placeholder`, with
+the former rejected as role mismatches. Retain v65 default-off; next resolve
+Input property-role assignment. No ship claim.
+
+Evidence:
+[iter-e631-frame-aware-owner-escape-20260720.md](iter-e631-frame-aware-owner-escape-20260720.md)
+and [JSON](iter-e631-frame-aware-owner-escape-20260720.json).
