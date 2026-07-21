@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v117",
+      "version": "v118",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v118",
+          "date": "2026-07-21",
+          "note": "E667: apply schema-derived typed-array item margins through nested arrays owned by an authored plan component"
+        },
         {
           "version": "v117",
           "date": "2026-07-21",

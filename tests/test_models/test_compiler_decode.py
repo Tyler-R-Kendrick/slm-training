@@ -977,6 +977,52 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
     assert bias.tolist() == [10.0, 0.0, 0.0]
 
 
+def test_typed_array_item_bias_reaches_nested_array_owner() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    carousel_id = tokenizer.token_to_id["+Carousel"]
+    component_id = tokenizer.token_to_id["+TextContent"]
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{carousel_id: 1}]
+    model._slot_contracts = [[":metric"]]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Carousel"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(
+                    {
+                        "type": "object",
+                        "properties": {"text": {"type": "string"}},
+                    },
+                ),
+                close="]",
+            ),
+        ],
+        _minimal_schema_id=lambda _schema: component_id,
+    )
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        [tokenizer.bos_id, carousel_id],
+        (component_id, slot_id, close_id),
+        torch.tensor([1.0, 9.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [10.0, 0.0, 0.0]
+
+
 @pytest.mark.parametrize(
     "weight_name",
     [
