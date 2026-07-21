@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v88",
+      "version": "v89",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v89",
+          "date": "2026-07-20",
+          "note": "E643: bind visible-role-inferred families to compatible required plain-string content arguments while preserving pre-content operational literals"
+        },
         {
           "version": "v88",
           "date": "2026-07-20",

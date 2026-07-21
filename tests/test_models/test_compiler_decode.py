@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 
 import pytest
 import torch
@@ -1168,6 +1169,42 @@ def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
     assert bias.tolist() == [4.0, 4.0, 0.0]
 
 
+def test_schema_role_slot_bias_accepts_required_plain_content_strings() -> None:
+    from slm_training.dsl.production_codec import OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    candidates = (slot_id,)
+
+    for component, slot in (("Button", ":gallery.cta"), ("TextContent", ":gallery.hint.title")):
+        state = ChoiceDecodeState(tokenizer, slot_count=1)
+        assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}{component}"])
+        bias = model._schema_role_slot_bias(
+            state,
+            candidates,
+            torch.zeros(1),
+            [slot],
+            {slot: (component,)},
+        )
+        assert bias is not None
+        assert bias.tolist() == [4.0]
+
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
+    assert (
+        model._schema_role_slot_bias(
+            state,
+            candidates,
+            torch.zeros(1),
+            [":auth.name"],
+            {":auth.name": ("Input",)},
+        )
+        is None
+    )
+
+
 def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
     from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.production_codec import NAME_PREFIX, OPEN_PREFIX
@@ -1821,6 +1858,21 @@ def test_prompt_semantic_plan_binding_bias_reaches_stack_child_list() -> None:
 
     assert bias is not None
     assert bias.tolist() == [3.0, 0.0, 0.0]
+
+
+def test_semantic_plan_role_family_counts_fills_only_uncovered_roles() -> None:
+    counts = TwoTowerModel._semantic_plan_role_family_counts(
+        Counter({"ImageGallery": 1}),
+        {
+            ":gallery.img": ("Image", "ImageGallery"),
+            ":gallery.caption": ("ImageGallery", "TextContent"),
+            ":gallery.hint.title": ("Callout", "TextContent"),
+            ":gallery.hint.body": ("Label", "TextContent"),
+            ":gallery.cta": ("Button", "FormControl"),
+        },
+    )
+
+    assert counts == Counter({"TextContent": 2, "ImageGallery": 1, "Button": 1})
 
 
 def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
