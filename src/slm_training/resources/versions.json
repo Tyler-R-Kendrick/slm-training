@@ -2100,7 +2100,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2115,6 +2115,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-07-21",
+          "note": "E645: _required_slot_margin_position_accepts_slot's schema-position gate (E630/v62) extended to 'variadic' array-item frames, not just 'component'/'object' argument frames. A live trace on the smoke suite's smoke_hero_01 record (E630/E643/E644's own previously-unexplained regression) found _required_slot_margin_bias hijacking a real +TextContent array-item candidate at a variadic frame with no item schema (an untyped/heterogeneous array, e.g. Stack's own children) -- the same 'a bare slot token is grammar-legal at the same position as opening a real component' class E628 already fixed for frame_depth==0, generalized to array-item positions E630 left permissive by design. Variadic frames now gate on the array's own item schema (frame.schemas[0], the tokenizer's own _active_schema convention): an untyped/heterogeneous array (no item schema) or one whose item schema cannot reach a visible slot no longer fires; a genuinely slot-reachable typed-array item schema still fires unchanged. Default weight (0.0) and E617 contract-gating unchanged."
+        },
         {
           "version": "v80",
           "date": "2026-07-21",

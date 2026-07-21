@@ -955,16 +955,95 @@ def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> No
     assert bias is not None
     assert bias.tolist() == [0.0, 10.0, 0.0]
 
-    # A frame kind this bias never previously scoped (e.g. "variadic" array
-    # items) stays permissive -- this fix only targets the newly-traced
-    # component/object argument-position failure mode.
-    variadic_frame = SimpleNamespace(kind="variadic", expr_type="array", arg_index=0)
+    # E645: a variadic array-item frame with no schema info at all (an
+    # untyped/heterogeneous array, e.g. Stack's own children -- exactly the
+    # position the live smoke_hero_01 trace found being hijacked away from a
+    # real +TextContent candidate) gates closed, mirroring the object frame's
+    # out-of-range-index no-fire above -- see
+    # test_required_slot_margin_bias_excludes_variadic_positions below for
+    # the full variadic gate coverage (schema-absent, non-slot-reachable
+    # item schema, and slot-reachable item schema).
+    variadic_frame = SimpleNamespace(
+        kind="variadic", expr_type="array", arg_index=0, schemas=()
+    )
     bias = model._required_slot_margin_bias(
         prefix,
         candidates,
         scores,
         slot_contract,
         state=SimpleNamespace(frames=[variadic_frame]),
+    )
+    assert bias is None
+
+
+def test_required_slot_margin_bias_excludes_variadic_positions() -> None:
+    """E645: gate ``variadic`` array-item positions the same way E630 gated
+
+    ``component``/``object`` argument positions. A live trace on
+    ``smoke_hero_01`` (E630/E643/E644's unexplained regression) found the
+    bias hijacking a real ``+TextContent`` array-item candidate at a
+    ``variadic`` frame with no item schema (an untyped/heterogeneous array,
+    e.g. ``Stack``'s own children) -- the same "legal alternative production
+    at the same position" class E628 already fixed for ``frame_depth == 0``.
+    A typed array whose item schema genuinely can only reach a visible slot
+    must keep firing; one whose item schema cannot must not.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # No item schema at all (untyped/heterogeneous array, e.g. Stack's own
+    # children): no fire -- a real component candidate is legally competing
+    # at this exact position.
+    untyped_frame = SimpleNamespace(kind="variadic", expr_type="array", schemas=())
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[untyped_frame]),
+        )
+        is None
+    )
+
+    # A typed item schema that cannot reach a visible slot (e.g. a plain
+    # boolean array): no fire.
+    boolean_item_frame = SimpleNamespace(
+        kind="variadic", expr_type="array", schemas=({"type": "boolean"},)
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[boolean_item_frame]),
+        )
+        is None
+    )
+
+    # A typed item schema that can reach a visible slot (a genuine typed
+    # array of slot-fillable content): fires exactly as before.
+    reachable_item_frame = SimpleNamespace(
+        kind="variadic",
+        expr_type="array",
+        schemas=({"x-openui-placeholder": True},),
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[reachable_item_frame]),
     )
     assert bias is not None
     assert bias.tolist() == [0.0, 10.0, 0.0]

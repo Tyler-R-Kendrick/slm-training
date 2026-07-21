@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "run_id": "e645-required-slot-margin-variadic-gate-20260721",
+  "experiment_id": "E645",
+  "date_utc": "2026-07-21",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "claim_class": "root_cause_trace_plus_scoped_fix_net_positive_on_one_checkpoint",
+  "quality_claim_made": false,
+  "issue": null,
+  "hypothesis": "E630/E643/E644's shared open item ('smoke_hero_01's regression remains untraced') has never been independently investigated. E630's own gate docstring explicitly left 'variadic' (array-item) frames permissive, reasoning that the traced over-stuffing failure mode 'only ever hit component/object argument positions, not array items' -- an assumption, not itself traced. Given E628's frame_depth==0 precedent (a bare slot token is grammar-legal at the same decode position as opening a real component, so any margin>0 wins once schema-eligible), the same class of vulnerability plausibly exists at variadic array-item positions too, which E630's fix did not cover. This session traces smoke_hero_01's actual decode on a freshly-trained, same-recipe scratch checkpoint (the original E626/E639 checkpoint no longer exists on disk in this environment -- outputs/ is ephemeral across sessions) to test that hypothesis directly.",
+  "environment_note": "The exact checkpoint E630/E643/E644 traced (outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt, sha256 c5b7c807...dd561221) is not present in this session's filesystem (outputs/ is untracked/ephemeral, not committed). A fresh scratch checkpoint was trained using E626/E620's exact documented recipe and seed; its last_loss (4.062225) is close to but not identical to E626/E639's (4.068013), consistent with environment/torch-version nondeterminism across sessions rather than a faithful bit-identical replay. This is disclosed explicitly: results below are on a new, non-identical (but same-recipe) checkpoint, not a verbatim reuse.",
+  "checkpoint": {
+    "run_id": "e645-smoke-hero-trace-scratch800-20260721",
+    "location": "outputs/runs/e645-smoke-hero-trace-scratch800-20260721/checkpoints/last.pt",
+    "sha256": "a4c24987d1cf3dca97f84fd19e64cfc94210de27b75dc27cc4f7eb5f2041b7e7",
+    "recipe": {
+      "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+      "model": "twotower",
+      "context_backend": "scratch",
+      "output_tokenizer": "choice",
+      "seed": 0,
+      "batch_size": 1,
+      "steps": 800,
+      "last_loss": 4.062225341796875,
+      "no_sync_checkpoints": true
+    },
+    "synced": false,
+    "promoted": false
+  },
+  "part_1_baseline_regression_check": {
+    "method": "Before any code change, replayed a margin sweep {0,1,2,3,4,6} on this fresh checkpoint against src/slm_training/resources/data/eval/remediated's smoke suite (n=3) with E630's exact matched flags (honest_slot_contract, slot_contract_constrained_decode, slot_contract_in_context, semantic_role_contract_in_context, the full semantic_plan_* family, schema_*_decode_weight family, grammar_ltr_max_tokens=160).",
+    "result": "smoke_hero_01's meaningful_program_v1 stayed True at every margin in {0,1,2,3,4,6} on this checkpoint -- the exact True->False (empty_root_stack) flip E630/E643/E644 reported on their checkpoint did NOT reproduce here.",
+    "honest_reading": "This is expected once the checkpoint itself differs (different init/optimizer trajectory under a different torch build, per environment_note above) -- greedy decode is path-sensitive and this lineage's own E630/E643 findings already established that several of these 19 records are dominated by which-bias-fires-first fragility on an undertrained 800-step scratch checkpoint. A non-reproduction on a different checkpoint does not itself refute the original report; it means this session cannot lean on 'the record now fails' as its evidence and instead had to inspect the decode mechanism directly."
+  },
+  "part_2_trace_finds_the_mechanism_anyway": {
+    "method": "Read decode_stats.constrained_selection_traces (phase=='required_slot_margin', E627/E640 instrumentation, already surfaced end to end through scripts.evaluate_model's per-suite eval JSON -- no new plumbing needed) for smoke_hero_01 specifically at margin=2.",
+    "finding": "7 required_slot_margin fires on smoke_hero_01; 1 of 7 is hijacked_non_slot_candidate=true at position 14, frame_depth=1, frame_path=[{kind: variadic, expr_type: array, arg_index: 0}] (aggregation_scope: structural_root_list -- literally root's own Stack([...]) children list). The pre-bias argmax was +TextContent (score_before=16.148, a real component-opening candidate that would have been chosen), but the bias's floor (old_max + margin - target_score = 5.661) pushed a slot-fill token (@2, score_after=18.148) above it, replacing a real component with a bare slot reference at the array-item position.",
+    "mechanism": "Identical in kind to E630's traced component/object over-stuffing mechanism and E628's frame_depth==0 root hijack: the grammar legally allows a bare visible-slot token as an array item at the exact same decode position as opening a real component (frame.kind=='variadic', no item schema -- an untyped/heterogeneous array, e.g. Stack's own children), so _required_slot_margin_bias's floor (constructed to always exceed the current max) wins there too, at any margin>0. E630's own schema-position gate explicitly did not cover this: its docstring stated variadic frames are 'left permissive... since this bias's only observed failure mode is stuffing missing slots into optional enum/opaque component/object properties, not array items' -- an untested assumption this trace falsifies directly.",
+    "caveat": "This is a mechanism match, not a proven identity with E630/E643/E644's original smoke_hero_01 failure (that checkpoint is unavailable to re-trace). It is offered as the most concrete, evidence-grounded explanation produced for this open item to date, not a certainty."
+  },
+  "part_3_fix": {
+    "location": "TwoTowerModel._required_slot_margin_position_accepts_slot (src/slm_training/models/twotower.py)",
+    "change": "Extended the E630 schema-position gate to 'variadic' frames: uses the array's own item schema (frame.schemas[0], the tokenizer's own ChoiceDecodeState._active_schema convention for variadic frames) the same way the 'object' frame case already used TwoTowerModel._schema_can_reach_visible_slot. An untyped/heterogeneous array (schemas empty -- meaning any expression, including a real component, is grammar-legal there) or a typed item schema that cannot reach a visible slot now gates the bias closed; a genuinely slot-reachable typed-array item schema still fires unchanged. 'component' and 'object' gating (E630) and 'fixed'-frame permissiveness are unchanged.",
+    "default_and_gating_unchanged": "required_slot_margin_decode_weight stays default 0.0 (off); the E617 slot_contract_constrained_decode contract-gated ValueError guard is untouched.",
+    "version_bumps": {
+      "model.twotower": "v80 -> v81"
+    },
+    "unit_tests": {
+      "updated": "tests/test_models/test_compiler_decode.py::test_required_slot_margin_bias_excludes_non_content_schema_positions (the pre-existing variadic case, which asserted the old permissive behavior with an empty schemas tuple, now asserts the gated no-fire; a comment points at the new dedicated test)",
+      "new": "tests/test_models/test_compiler_decode.py::test_required_slot_margin_bias_excludes_variadic_positions (no item schema -> no fire; item schema that cannot reach a visible slot -> no fire; item schema that can reach a visible slot -> fires unchanged)"
+    },
+    "test_results": "147/147 passed across tests/test_models/test_compiler_decode.py, test_choice_tokenizer.py, test_decode_stats.py (PYTHONPATH=src NODE_OPTIONS=\"--max-old-space-size=8192\" python -m pytest). python -m scripts.verify_version_stamps --check: ok after the versions.json bump."
+  },
+  "part_4_reverification": {
+    "command_template": "python -m scripts.evaluate_model --checkpoint outputs/runs/e645-smoke-hero-trace-scratch800-20260721/checkpoints/last.pt --model twotower --test-dir src/slm_training/resources/data/eval/remediated --suites held_out,rico_held,adversarial,ood,smoke --honest-slot-contract --slot-contract-constrained-decode --slot-contract-in-context --semantic-role-contract-in-context --semantic-role-decode-weight 8 --slot-coverage-close-decode-weight 2 --schema-value-decode-weight 4 --schema-opaque-close-decode-weight 4 --schema-role-slot-decode-weight 8 --semantic-plan-decode-weight 4 --semantic-plan-margin-decode-weight 2 --semantic-plan-binding-decode-weight 1 --semantic-plan-root-decode-weight 8 --semantic-plan-root-margin-decode-weight 2 --semantic-plan-repeated-array-close-margin-decode-weight 2 --semantic-plan-repeated-slot-margin-decode-weight 2 --semantic-plan-typed-array-nonempty-margin-decode-weight 2 --semantic-plan-typed-array-item-margin-decode-weight 2 --grammar-ltr-max-tokens 160 --required-slot-margin-decode-weight <0|1|2> --run-id e645-fix-suite19-margin<X>",
+    "suite": "union of held_out(5)+rico_held(3)+adversarial(4)+ood(4)+smoke(3), n=19 (same union E642/E643/E644 used), still below DEFAULT_MIN_SUITE_N=20 per suite -- exploratory, not a ship scoreboard",
+    "smoke_hero_01_across_margins": {
+      "margin0": true,
+      "margin1": true,
+      "margin2": true,
+      "note": "unchanged True at every margin -- the position-14 +TextContent hijack traced in part_2 is confirmed gone from smoke_hero_01's own required_slot_margin trace at margin=2 (only slot-vs-slot swaps and one slot-vs-bind-reference hijack remain, see below)."
+    },
+    "pooled_meaningful_program_v1_rate": {
+      "margin0": 0.7894736842105263,
+      "margin1": 0.8421052631578947,
+      "margin2": 0.8421052631578947,
+      "note": "15/19 -> 16/19, a net gain, not flat or negative like every prior sweep in this lineage (E629/E630/E631 all found flat-or-negative pooled effects after closing an over-stuffing gap). Exactly one record differs from control at margin>=1: held_out_dual_card_01 (False -> True), unrelated to the traced variadic-frame fix itself -- margin0's own prediction for that record already fails E644's empty_children:Carousel check on a 44-item degenerate Card; margin>=1 produces a clean 5-item Card instead."
+    },
+    "pooled_other_metrics": {
+      "margin0": {"reward_score": 0.7990, "placeholder_fidelity": 0.6232, "structural_similarity": 0.4521, "component_type_recall": 0.6842},
+      "margin1_2": {"reward_score": 0.8107, "placeholder_fidelity": 0.6645, "structural_similarity": 0.5001, "component_type_recall": 0.6579}
+    },
+    "no_regression_on_previously_fixed_records": {
+      "rico_eval_test_25": {"margin0": true, "margin1": true, "margin2": true, "note": "stays fixed (E643), unaffected by this session's change"},
+      "ood_dashboard_01": {"margin0": true, "margin1": true, "margin2": true, "note": "E643's revert of E639/E641's gain is unaffected -- byte-identical across margins, as it already was pre-fix"}
+    },
+    "residual_hijacks_post_fix": {
+      "note": "A different, narrower class of hijacked_non_slot_candidate=true fires still occur post-fix, all at variadic-frame positions whose item schema IS slot-reachable (so the new gate correctly leaves them active) but where the pre-bias argmax happened to be a bind-reference token (kind='bind', e.g. '&2') rather than a component-opening token. Counts across the n=19 union at margin=2: held_out 1/14, rico_held 4/16, smoke 1/7, adversarial 0/6, ood 0/12. This is a materially different (and so far non-catastrophic on this checkpoint) failure class -- redirecting a reference instead of stealing a real component -- not fixed or scoped by this session's change; flagged as the next open item."
+    }
+  },
+  "verdict": "The specific True->False empty_root_stack flip E630/E643/E644 reported for smoke_hero_01 did not reproduce on this session's freshly-trained (same-recipe, non-identical) checkpoint -- so this is not a confirmed root-cause-and-fix of that exact prior observation. What this session does establish with direct trace evidence: E630's schema-position gate left an identical-in-kind vulnerability open at 'variadic' array-item positions (untested, admitted as an assumption in its own docstring), it fires and hijacks a real component candidate on smoke_hero_01 itself on this checkpoint, and closing it (mirroring E630's own component/object gate, extended via the array's item schema) is a net positive on the widened n=19 suite (15/19 -> 16/19, plus consistent gains on reward/fidelity/structural-similarity, no regressions on any previously-fixed record) -- the first net-positive result in this lineage's own repeated re-verification pattern (E629/E630/E631 all found flat-or-negative pooled effects). Single scratch checkpoint (800 steps, seed 0), n=19 below DEFAULT_MIN_SUITE_N=20 per suite; not a ship claim; no checkpoint trained, promoted, or synced; default required_slot_margin_decode_weight (0.0) unchanged.",
+  "next_step": "1) A residual, narrower hijack class (variadic-frame slot-vs-bind-reference, not slot-vs-component) still fires post-fix and was not root-caused here -- worth its own trace if this lever is pursued further. 2) E620's original coverage-aware component/property closure recommendation remains the next lever this lineage has not directly tried. 3) A genuinely powered multi-seed/retrained comparison of required_slot_margin_decode_weight remains open (E626's own deferral, still not picked up). 4) If this environment persists checkpoints across sessions in the future, a direct re-trace of E630/E643/E644's exact original checkpoint would let this finding be confirmed (not just mechanism-matched) against the original report.",
+  "commands_run": [
+    "uv venv --python 3.12 .venv && uv pip install -e \".[dev,torch,grammar]\"",
+    "npm ci (repo root, for AgentV SDK) && npm ci (src/apps/openui_bridge, for the DSL parser bridge used by some tests)",
+    "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --context-backend scratch --output-tokenizer choice --seed 0 --batch-size 1 --steps 800 --run-id e645-smoke-hero-trace-scratch800-20260721 --run-root outputs/runs --no-sync-checkpoints",
+    "python -m scripts.evaluate_model ... --suite smoke --required-slot-margin-decode-weight {0,1,2,3,4,6} (pre-fix baseline check + trace read)",
+    "python -m pytest tests/test_models/test_compiler_decode.py tests/test_models/test_choice_tokenizer.py tests/test_models/test_decode_stats.py -q",
+    "python -m scripts.evaluate_model ... --suites held_out,rico_held,adversarial,ood,smoke --required-slot-margin-decode-weight {0,1,2} (post-fix reverification)",
+    "python -m scripts.verify_version_stamps --check"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ada0081bc85a9c0dce4d80c32b1ec9d98d1d3ebb",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v81"
+    }
+  }
+}

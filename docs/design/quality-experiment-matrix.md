@@ -4999,3 +4999,60 @@ Evidence:
 [iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md)
 and
 [JSON](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.json).
+
+## E645 `smoke_hero_01`'s regression: a mechanism match and a net-positive fix
+
+E645 picks up E630/E643/E644's shared deferral: `smoke_hero_01`'s regression
+"remains untraced." The exact checkpoint that produced it
+(`e626-required-slot-margin-scratch800-20260720`) does not exist in this
+session's filesystem (`outputs/` is ephemeral across sessions), so a fresh
+same-recipe scratch checkpoint was trained instead (`last_loss` 4.062225 vs
+E626/E639's 4.068013 — close but not bit-identical, disclosed honestly as a
+new, non-identical checkpoint, not a verbatim reuse). On this fresh checkpoint
+the exact `True -> False` (`empty_root_stack`) flip did not reproduce at any
+margin in `{0,1,2,3,4,6}` — a non-reproduction on a different checkpoint that
+neither confirms nor refutes the original report.
+
+Reading the existing `constrained_selection_traces` instrumentation
+(E627/E640) for `smoke_hero_01` anyway found a live hijack: at margin=2, a
+real `+TextContent` array-item candidate (the root `Stack([title, rule,
+hero])`'s own children list) is replaced by a slot-fill token, the same class
+of mechanism E628 fixed for `frame_depth==0` and E630 fixed for
+`component`/`object` argument positions — but E630's own gate explicitly left
+`variadic` (array-item) frames permissive, an untested assumption its
+docstring stated and this trace falsifies directly.
+
+**Fix.** `_required_slot_margin_position_accepts_slot` now gates `variadic`
+frames using the array's own item schema (`frame.schemas[0]`), the same
+`_schema_can_reach_visible_slot` check already used for `object` frames: an
+untyped/heterogeneous array or a non-slot-reachable typed item schema no
+longer fires; a genuinely slot-reachable typed array still does. Default
+(`0.0`) and E617 gating unchanged. `model.twotower` v80 → v81. 147/147 tests
+pass.
+
+**Re-verification (n=19, same union as E642-E644) is net positive** — the
+first such result in this lineage's repeated re-verification pattern (E629,
+E630, E631 all found flat-or-negative pooled effects after closing an
+over-stuffing gap): `meaningful_program_v1` pooled rate 0.7895 (15/19) →
+0.8421 (16/19) at margin>=1, plus consistent gains on reward (0.799→0.811),
+placeholder fidelity (0.623→0.665), and structural similarity (0.452→0.500).
+`smoke_hero_01` stays `True` at every margin, its own trace confirming the
+position-14 `+TextContent` hijack is gone. No regression on either
+previously-fixed record (`rico_eval_test_25`, `ood_dashboard_01`). A
+different, narrower residual hijack class (variadic-frame slot-vs-bind-
+reference, not slot-vs-component) still fires post-fix on 6/19 records —
+flagged, not fixed, as the next open item on this lever.
+
+Single scratch checkpoint (800 steps, seed 0); n=19 below
+`DEFAULT_MIN_SUITE_N=20` per suite; not a ship claim; no checkpoint trained,
+promoted, or synced. This is a mechanism match, not a proven identity, with
+E630/E643/E644's original `smoke_hero_01` report — the checkpoint that
+produced it is unavailable to re-trace directly. E620's coverage-aware
+component/property closure recommendation remains the next untried lever; a
+genuinely powered multi-seed/retrained comparison of
+`required_slot_margin_decode_weight` remains open.
+
+Evidence:
+[iter-e645-required-slot-margin-variadic-gate-20260721.md](iter-e645-required-slot-margin-variadic-gate-20260721.md)
+and
+[JSON](iter-e645-required-slot-margin-variadic-gate-20260721.json).

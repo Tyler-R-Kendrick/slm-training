@@ -6104,6 +6104,9 @@ class TwoTowerModel(nn.Module):
         frame) confines the floor to the argument positions it was designed
         for and leaves optional enum/opaque properties to the biases already
         built to police them.
+
+        E645: extends the same schema-position gate to ``variadic`` array-item
+        positions -- see ``_required_slot_margin_position_accepts_slot``.
         """
         margin = float(
             getattr(self.config, "required_slot_margin_decode_weight", 0.0) or 0.0
@@ -6152,19 +6155,41 @@ class TwoTowerModel(nn.Module):
         exactly -- a ``component`` frame's current argument must carry
         ``x-openui-placeholder`` (the content properties: ``label``, ``text``,
         ``title``, ...), and an ``object`` frame's current property schema
-        must be able to reach a visible slot at all. Any other frame kind
-        (``variadic``, ``fixed``, ...) is left permissive (``True``) since
-        this bias's only observed failure mode is stuffing missing slots into
-        optional enum/opaque *component*/*object* properties, not array items.
+        must be able to reach a visible slot at all.
+
+        E645: a live trace on ``smoke_hero_01`` (the record E630/E643/E644
+        found newly regressing to ``empty_root_stack`` post-fix, never
+        independently root-caused) found the *same* guaranteed-win mechanism
+        E630 fixed for ``component``/``object`` frames also fires at a
+        ``variadic`` array-item position -- e.g. ``root = Stack([title, rule,
+        hero])``'s own item slot, an untyped/heterogeneous array where a bare
+        slot token is exactly as grammar-legal as opening a real component
+        (``+TextContent``), the same class of "legal alternative production
+        at the same position" E628 already found and fixed for
+        ``frame_depth == 0``. ``_required_slot_margin_bias``'s floor always
+        exceeds whatever the current max is, so once schema-eligible it wins
+        against a real component candidate here too. Gate ``variadic`` frames
+        the same way as ``object`` frames, using the array's own item schema
+        (``frame.schemas[0]``, the tokenizer's own ``_active_schema``
+        convention for variadic frames) -- an untyped/heterogeneous array
+        (``schemas`` empty, meaning any expression including a real
+        component is legal there) is treated as non-slot-eligible, closing
+        the traced hijack; a typed array whose item schema can genuinely only
+        reach a visible slot still fires unchanged. Any other frame kind
+        (``fixed``, ...) stays permissive (``True``).
         """
         frames = list(getattr(state, "frames", ()))
         if not frames:
             return True
         frame = frames[-1]
         kind = getattr(frame, "kind", None)
-        if kind not in {"component", "object"}:
+        if kind not in {"component", "object", "variadic"}:
             return True
         schemas = tuple(getattr(frame, "schemas", ()))
+        if kind == "variadic":
+            if not schemas:
+                return False
+            return TwoTowerModel._schema_can_reach_visible_slot(dict(schemas[0]))
         index = int(getattr(frame, "arg_index", -1))
         if not (0 <= index < len(schemas)):
             return False
