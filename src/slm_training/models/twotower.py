@@ -5017,16 +5017,13 @@ class TwoTowerModel(nn.Module):
             return None
         bias = scores.new_zeros(len(candidate_ids))
         if not missing:
-            if (
-                kind != "variadic"
-                or getattr(frame, "expr_type", None) != "array"
-                or not tuple(getattr(frame, "schemas", ()))
-            ):
-                return None
             bias[candidate_ids.index(close_id)] = weight
             return bias
 
-        from slm_training.data.quality import semantic_role_properties
+        from slm_training.data.quality import (
+            semantic_role_properties,
+            semantic_role_reachable_candidates,
+        )
         from slm_training.dsl.production_codec import (
             LIST_OPEN,
             NAME_PREFIX,
@@ -5040,6 +5037,13 @@ class TwoTowerModel(nn.Module):
         properties_by_slot = semantic_role_properties(
             [slot for _index, slot in missing]
         )
+        candidate_components = {
+            token[len(OPEN_PREFIX) :]
+            for token_id in candidate_ids
+            if (token := str(self.tokenizer.id_to_token.get(token_id, ""))).startswith(
+                OPEN_PREFIX
+            )
+        }
         owner_component = next(
             (
                 str(getattr(owner, "expr_type", "")).removeprefix("element:")
@@ -5048,12 +5052,21 @@ class TwoTowerModel(nn.Module):
             ),
             "",
         )
+        reachable_candidates = semantic_role_reachable_candidates(
+            [slot for _index, slot in missing],
+            sorted(candidate_components | ({owner_component} if owner_component else set())),
+        )
 
         def owner_matches(slot: str) -> bool:
             return bool(
                 owner_component
-                and semantic_role_candidates
-                and owner_component in semantic_role_candidates.get(slot, ())
+                and (
+                    (
+                        semantic_role_candidates
+                        and owner_component in semantic_role_candidates.get(slot, ())
+                    )
+                    or owner_component in reachable_candidates.get(slot, ())
+                )
             )
 
         if kind == "component" and semantic_role_candidates and not any(
@@ -5100,8 +5113,12 @@ class TwoTowerModel(nn.Module):
                 continue
             if token.startswith(OPEN_PREFIX):
                 component = token[len(OPEN_PREFIX) :]
-                if semantic_role_candidates and any(
-                    component in semantic_role_candidates.get(slot, ())
+                if any(
+                    (
+                        semantic_role_candidates
+                        and component in semantic_role_candidates.get(slot, ())
+                    )
+                    or component in reachable_candidates.get(slot, ())
                     for _index, slot in missing
                 ):
                     targets.append(position)

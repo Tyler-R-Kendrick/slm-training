@@ -732,15 +732,7 @@ class ChoiceDecodeState:
             return True
         elif frame.kind == "variadic" and frame.schemas:
             item_schema = frame.schemas[0] if frame.schemas else {}
-            options = item_schema.get("anyOf", ())
-            if options and all(
-                isinstance(option, dict)
-                and str(option.get("$ref") or "").startswith("#/$defs/")
-                for option in options
-            ):
-                accepted = expr_type.startswith("element:")
-            else:
-                accepted = self._schema_accepts(item_schema, expr_type)
+            accepted = self._schema_accepts(item_schema, expr_type)
             if accepted:
                 frame.item_count += 1
             return accepted
