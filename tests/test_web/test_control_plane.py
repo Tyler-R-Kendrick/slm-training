@@ -3004,6 +3004,29 @@ def test_read_only_blocks_execution(ro_client: TestClient) -> None:
 
 
 # --- pure-compute gate endpoint (works even read-only) ---------------------
+def test_openfeature_levers_and_ofrep_evaluate(ro_client: TestClient) -> None:
+    caps = ro_client.get("/api/capabilities").json()
+    assert caps["features"]["openfeature"] is True
+    assert caps["research_flags"]["enabled"] is True
+    assert caps["research_flags"]["evaluate"] == "/api/flags/ofrep/v1/evaluate"
+
+    levers = ro_client.get("/api/flags/levers").json()
+    keys = {row["key"] for row in levers["levers"]}
+    assert "verified_solver_decode" in keys
+
+    resp = ro_client.post(
+        "/api/flags/ofrep/v1/evaluate",
+        json={
+            "context": {"targetingKey": "run-ofrep", "experiment_id": "E0"},
+            "flags": ["verified_solver_decode"],
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["flags"]["verified_solver_decode"]["value"] is False
+    assert body["flags"]["verified_solver_decode"]["reason"] in {"STATIC", "DEFAULT"}
+
+
 def test_gates_evaluate_matches_pure_function(ro_client: TestClient) -> None:
     thresholds = {"smoke": {"parse_rate": 0.66}}
     resp = ro_client.post(

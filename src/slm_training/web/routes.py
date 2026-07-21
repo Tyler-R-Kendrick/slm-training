@@ -81,6 +81,14 @@ def capabilities(request: Request) -> dict[str, Any]:
         "openfeature": bool(features),
         "provider": features.provider if features else None,
     }
+    flag_client = getattr(request.app.state, "flag_client", None)
+    caps["research_flags"] = {
+        "enabled": True,
+        "provider": getattr(flag_client, "provider_name", "InMemoryProvider"),
+        "evaluate": "/api/flags/ofrep/v1/evaluate",
+        "levers": "/api/flags/levers",
+        "docs": "docs/design/openfeature-research-levers.md",
+    }
     return caps
 
 
@@ -363,6 +371,51 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         eg_time_by_seed=payload.eg_time_by_seed,
         ship_suites=payload.ship_suites,
         criteria=criteria,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# OpenFeature / OFREP-shaped flag evaluation (read-only)
+# --------------------------------------------------------------------------- #
+class OfrepEvaluateRequest(BaseModel):
+    context: dict[str, Any] = Field(default_factory=dict)
+    flags: list[str] | None = None
+
+
+@observability_router.get("/flags/levers")
+def flags_levers() -> dict[str, Any]:
+    from slm_training.flags.levers import LEVER_FLAGS
+
+    return {
+        "provider": "InMemoryProvider",
+        "standard": "openfeature",
+        "docs": "docs/design/openfeature-research-levers.md",
+        "levers": [
+            {
+                "key": spec.key,
+                "type": spec.value_type.value,
+                "default": spec.default,
+                "description": spec.description,
+            }
+            for spec in LEVER_FLAGS
+        ],
+    }
+
+
+@observability_router.post("/flags/ofrep/v1/evaluate")
+def flags_ofrep_evaluate(
+    request: Request, payload: OfrepEvaluateRequest
+) -> dict[str, Any]:
+    from slm_training.flags.ofrep import evaluate_ofrep
+
+    client = getattr(request.app.state, "flag_client", None)
+    if client is None:
+        from slm_training.flags import FlagClient, InMemoryProvider
+        from slm_training.flags.in_memory import ruleset_from_defaults
+
+        client = FlagClient(InMemoryProvider(ruleset_from_defaults()))
+    return evaluate_ofrep(
+        client, context_payload=payload.context, flags=payload.flags
     )
 
 

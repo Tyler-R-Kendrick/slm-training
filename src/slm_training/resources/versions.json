@@ -503,6 +503,11 @@
         {
           "version": "v2",
           "date": "2026-07-21",
+          "note": "no-bump: cross-link research harness levers doc after merge with SLM-342; product registry/providers unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
           "note": "LaunchDarkly OpenFeature provider, experiment lever registry, /api/features/levers, server-side LD browser model"
         },
         {
@@ -608,6 +613,28 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; frozen DSL-agnostic core extracted structurally (versioning, lineage, checkpoint_reference, gate/promotion engines, scaling math, record_schema/eval_cache/score_policy) with behavior pinned by tests/test_harness_core"
+        }
+      ]
+    },
+    "harness.flags": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flags/",
+        "src/slm_training/harnesses/model_build/experiment_flags.py",
+        "docs/design/openfeature-research-levers.md",
+        "tests/test_flags/"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "split research harness OpenFeature doc to openfeature-research-levers.md; product OpenFeature remains openfeature-experiments.md / features.openfeature"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "SLM-342: OpenFeature-compatible experiment lever evaluation (in-memory provider, OFREP evaluate, ModelBuildConfig overlay)"
         }
       ]
     },
@@ -2586,7 +2613,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2597,6 +2624,11 @@
       ],
       "history": [
         {
+          "version": "v39",
+          "date": "2026-07-21",
+          "note": "merge main v38 free-form meaningful_program_v1 failure with retained SLM-342 OpenFeature evaluate_model overlay"
+        },
+        {
           "version": "v38",
           "date": "2026-07-21",
           "note": "Make free-form output strings an explicit meaningful_program_v1 failure"
@@ -2605,6 +2637,11 @@
           "version": "v37",
           "date": "2026-07-21",
           "note": "declare legacy visible slot-suffix semantic roles as typed runtime-symbol authority at the canonical evaluation request boundary"
+        },
+        {
+          "version": "v37",
+          "date": "2026-07-21",
+          "note": "SLM-342: OpenFeature-compatible lever overlay on evaluate_model (--flags-json / OPENUI_FLAGS_*); CLI overrides win; defaults unchanged when unset"
         },
         {
           "version": "v36",

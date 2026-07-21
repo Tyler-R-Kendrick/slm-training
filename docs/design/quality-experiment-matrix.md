@@ -11,7 +11,7 @@
 
 **Goal:** Clear honest `--ship-gates` by attacking fidelity=0 / parse≈0 with every approach from the quality brief.
 
-**Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
+**Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached. Runtime levers that map to progressive-delivery toggles are also evaluable through the research OpenFeature port (`docs/design/openfeature-research-levers.md`); matrices remain offline ablation evidence, not live targeting. Product/dashboard flags live in `docs/design/openfeature-experiments.md`.
 
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
 **Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);

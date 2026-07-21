@@ -163,3 +163,11 @@ registered in the lever table but not yet wired into decode paths — add keys t
 
 Component id: `features.openfeature` in `versions.json`. Bump when flag defaults,
 registry keys, lever table, or provider wiring change.
+
+## Related
+
+Research-harness lever evaluation (ModelBuildConfig overlay, OFREP
+`/api/flags/*`, `OPENUI_FLAGS_*`) lives in
+[`openfeature-research-levers.md`](openfeature-research-levers.md) /
+`slm_training.flags`. Product flags and research harness levers are separate
+registries.
