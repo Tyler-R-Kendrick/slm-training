@@ -695,12 +695,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v51",
+      "version": "v52",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v52",
+          "date": "2026-07-21",
+          "note": "add SLM-188 FFE1-02 edit-algebra reachability, canonical invariance, and transition-certificate wiring/fixture harness"
+        },
         {
           "version": "v51",
           "date": "2026-07-21",
@@ -3240,6 +3245,25 @@
         }
       ]
     },
+    "harness.experiments.slm188_edit_algebra": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm188_edit_algebra.py",
+        "scripts/audit_edit_reachability.py",
+        "tests/test_harnesses/experiments/test_slm188_edit_algebra.py",
+        "tests/test_scripts/test_audit_edit_reachability.py",
+        "docs/design/iter-slm188-edit-algebra-20260721.json",
+        "docs/design/iter-slm188-edit-algebra-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-188 FFE1-02 edit-algebra reachability, canonical invariance, TransitionCertificateV1, and audit CLI"
+        }
+      ]
+    },
     "dsl.solver.topology": {
       "version": "v1",
       "kind": "harness",
@@ -3251,6 +3275,11 @@
         "docs/design/verified-scope-solver.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: referenced by SLM-188 edit-algebra harness; topology edit application unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",

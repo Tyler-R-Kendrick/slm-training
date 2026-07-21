@@ -1,0 +1,378 @@
+{
+  "cases": [
+    {
+      "alpha_invariant_ok": true,
+      "canonical_invariant_ok": true,
+      "case_id": "minimal_stack__hero",
+      "certificates": [
+        {
+          "certificate_digest": "0c65e59b6348842261a964de6d8e144b7280bf9e1d3d42b56ea6ec7dc5584410",
+          "edit": {
+            "action": "BindSlotPointer",
+            "affected_node_ids": [
+              "v0"
+            ],
+            "child_name": null,
+            "cost": {
+              "edits": 1,
+              "nodes_touched": 1,
+              "serialization_delta": 0,
+              "verifier_calls": 1
+            },
+            "coverage_tier": "complete",
+            "dependency_footprint": [],
+            "direction": null,
+            "edit_id": "bind-slot-0",
+            "index": null,
+            "inverse_action": "BindSlotPointer",
+            "preconditions": [],
+            "previous_index": null,
+            "production": null,
+            "slot": "\":hero.title\"",
+            "target_name": "v0"
+          },
+          "schema": "TransitionCertificateV1",
+          "source_fingerprint": "edf05ed8d34e51c2102490e1ac4d9a45687852dcd7609ca0abae2e47a950905b",
+          "source_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":slot\")\nv1 = TextContent(\":slot\")\nv2 = Stack([v0, v1])",
+          "target_fingerprint": "38391428a4fffb84b9ca98e7669996a4fba294f4611aee5235af45d4e0d430da",
+          "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":hero.title\")\nv1 = TextContent(\":slot\")\nv2 = Stack([v0, v1])",
+          "verifier_accepted": true,
+          "verifier_detail": "ok",
+          "verifier_profile": "statement/canonical",
+          "version_pins": {
+            "code_commit": "67e53c01bbf794eed566fd1bf244311f5f80e444",
+            "code_dirty": true,
+            "components": {
+              "dsl.solver.topology": "v1",
+              "harness.experiments": "v52",
+              "harness.experiments.slm188_edit_algebra": "v1"
+            },
+            "stamp_schema": "version_stamp/v1",
+            "stamped_at": "2026-07-21T01:34:37.148595+00:00"
+          }
+        },
+        {
+          "certificate_digest": "c35cf1d73426a8d0b66421799a0f5252a6dae4f3652d7b1428a509b78fcff70f",
+          "edit": {
+            "action": "BindSlotPointer",
+            "affected_node_ids": [
+              "v1"
+            ],
+            "child_name": null,
+            "cost": {
+              "edits": 1,
+              "nodes_touched": 1,
+              "serialization_delta": 0,
+              "verifier_calls": 1
+            },
+            "coverage_tier": "complete",
+            "dependency_footprint": [],
+            "direction": null,
+            "edit_id": "bind-slot-1",
+            "index": null,
+            "inverse_action": "BindSlotPointer",
+            "preconditions": [],
+            "previous_index": null,
+            "production": null,
+            "slot": "\":hero.body\"",
+            "target_name": "v1"
+          },
+          "schema": "TransitionCertificateV1",
+          "source_fingerprint": "38391428a4fffb84b9ca98e7669996a4fba294f4611aee5235af45d4e0d430da",
+          "source_program": null,
+          "target_fingerprint": "859864e2cb5d625db63ea2e82cb659303f3e6d46c4d2dd9ef3024d18b2878eab",
+          "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":hero.title\")\nv1 = TextContent(\":hero.body\")\nv2 = Stack([v0, v1])",
+          "verifier_accepted": true,
+          "verifier_detail": "ok",
+          "verifier_profile": "statement/canonical",
+          "version_pins": {
+            "code_commit": "67e53c01bbf794eed566fd1bf244311f5f80e444",
+            "code_dirty": true,
+            "components": {
+              "dsl.solver.topology": "v1",
+              "harness.experiments": "v52",
+              "harness.experiments.slm188_edit_algebra": "v1"
+            },
+            "stamp_schema": "version_stamp/v1",
+            "stamped_at": "2026-07-21T01:34:37.148595+00:00"
+          }
+        },
+        {
+          "certificate_digest": "529ea08092eb1c286f72cd39c23e1caeaf091fdd6aa485b54ba1f1197551772c",
+          "edit": {
+            "action": "ReplaceProduction",
+            "affected_node_ids": [
+              "v2"
+            ],
+            "child_name": null,
+            "cost": {
+              "edits": 1,
+              "nodes_touched": 1,
+              "serialization_delta": 0,
+              "verifier_calls": 1
+            },
+            "coverage_tier": "complete",
+            "dependency_footprint": [],
+            "direction": null,
+            "edit_id": "replace-2",
+            "index": null,
+            "inverse_action": "ReplaceProduction",
+            "preconditions": [],
+            "previous_index": null,
+            "production": "Card",
+            "slot": null,
+            "target_name": "v2"
+          },
+          "schema": "TransitionCertificateV1",
+          "source_fingerprint": "859864e2cb5d625db63ea2e82cb659303f3e6d46c4d2dd9ef3024d18b2878eab",
+          "source_program": null,
+          "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+          "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":hero.title\")\nv1 = TextContent(\":hero.body\")\nv2 = Card([v0, v1])",
+          "verifier_accepted": true,
+          "verifier_detail": "ok",
+          "verifier_profile": "statement/canonical",
+          "version_pins": {
+            "code_commit": "67e53c01bbf794eed566fd1bf244311f5f80e444",
+            "code_dirty": true,
+            "components": {
+              "dsl.solver.topology": "v1",
+              "harness.experiments": "v52",
+              "harness.experiments.slm188_edit_algebra": "v1"
+            },
+            "stamp_schema": "version_stamp/v1",
+            "stamped_at": "2026-07-21T01:34:37.148595+00:00"
+          }
+        }
+      ],
+      "edits": [
+        {
+          "action": "BindSlotPointer",
+          "affected_node_ids": [
+            "v0"
+          ],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "bind-slot-0",
+          "index": null,
+          "inverse_action": "BindSlotPointer",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": "\":hero.title\"",
+          "target_name": "v0"
+        },
+        {
+          "action": "BindSlotPointer",
+          "affected_node_ids": [
+            "v1"
+          ],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "bind-slot-1",
+          "index": null,
+          "inverse_action": "BindSlotPointer",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": "\":hero.body\"",
+          "target_name": "v1"
+        },
+        {
+          "action": "ReplaceProduction",
+          "affected_node_ids": [
+            "v2"
+          ],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "replace-2",
+          "index": null,
+          "inverse_action": "ReplaceProduction",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Card",
+          "slot": null,
+          "target_name": "v2"
+        }
+      ],
+      "max_frontier": 1,
+      "nodes_expanded": 3,
+      "path_length": 3,
+      "result": "reachable",
+      "slot_invariant_ok": true,
+      "source_seed_id": "minimal_stack",
+      "stop_reason": "planned",
+      "target_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "target_id": "hero",
+      "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":hero.title\")\nv1 = TextContent(\":hero.body\")\nv2 = Card([v0, v1])",
+      "verifier_replay_ok": true
+    },
+    {
+      "alpha_invariant_ok": true,
+      "canonical_invariant_ok": true,
+      "case_id": "minimal_stack__text_only",
+      "certificates": [
+        {
+          "certificate_digest": "5f395a8b1445b5f8902f6f3932f5abaac9a6c3d99470cb20a6d0a30b1c599a04",
+          "edit": {
+            "action": "BindSlotPointer",
+            "affected_node_ids": [
+              "v0"
+            ],
+            "child_name": null,
+            "cost": {
+              "edits": 1,
+              "nodes_touched": 1,
+              "serialization_delta": 0,
+              "verifier_calls": 1
+            },
+            "coverage_tier": "complete",
+            "dependency_footprint": [],
+            "direction": null,
+            "edit_id": "bind-slot-0",
+            "index": null,
+            "inverse_action": "BindSlotPointer",
+            "preconditions": [],
+            "previous_index": null,
+            "production": null,
+            "slot": "\":page.blurb\"",
+            "target_name": "v0"
+          },
+          "schema": "TransitionCertificateV1",
+          "source_fingerprint": "1ee32e0084190d8ecbca2183b8831ea4ca1deba158c20ef1a4bb5adaa0b6ddee",
+          "source_program": "root = Stack([v0], \"column\")\nv0 = TextContent(\":slot\")",
+          "target_fingerprint": "c9df5efc60614c663d75f649f230bb33790c071f77a0f9ed2e3d8e93bb0a6954",
+          "target_program": "root = Stack([v0], \"column\")\nv0 = TextContent(\":page.blurb\")",
+          "verifier_accepted": true,
+          "verifier_detail": "ok",
+          "verifier_profile": "statement/canonical",
+          "version_pins": {
+            "code_commit": "67e53c01bbf794eed566fd1bf244311f5f80e444",
+            "code_dirty": true,
+            "components": {
+              "dsl.solver.topology": "v1",
+              "harness.experiments": "v52",
+              "harness.experiments.slm188_edit_algebra": "v1"
+            },
+            "stamp_schema": "version_stamp/v1",
+            "stamped_at": "2026-07-21T01:34:37.148595+00:00"
+          }
+        }
+      ],
+      "edits": [
+        {
+          "action": "BindSlotPointer",
+          "affected_node_ids": [
+            "v0"
+          ],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "bind-slot-0",
+          "index": null,
+          "inverse_action": "BindSlotPointer",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": "\":page.blurb\"",
+          "target_name": "v0"
+        }
+      ],
+      "max_frontier": 1,
+      "nodes_expanded": 1,
+      "path_length": 1,
+      "result": "reachable",
+      "slot_invariant_ok": true,
+      "source_seed_id": "minimal_stack",
+      "stop_reason": "planned",
+      "target_fingerprint": "c9df5efc60614c663d75f649f230bb33790c071f77a0f9ed2e3d8e93bb0a6954",
+      "target_id": "text_only",
+      "target_program": "root = Stack([v0], \"column\")\nv0 = TextContent(\":page.blurb\")",
+      "verifier_replay_ok": true
+    }
+  ],
+  "claim_class": "wiring",
+  "disposition": "reachability_holds",
+  "disposition_rationale": "Over the bounded fixture domain, supported targets are reachable, replayable, and canonically invariant.",
+  "experiment_id": "slm188-edit-algebra",
+  "falsifier": "A bounded fixture planner/search finds a supported canonical target that is unreachable from a sketch seed under the declared edit budget, or a transition whose certificate does not replay to the same canonical target, or an invariance check (canonical idempotence, alpha, slot permutation, commutativity) that fails.",
+  "honest_caveats": [
+    "Fixture-only wiring evidence: no trained model, checkpoint, or GPU run is involved.",
+    "Reachability uses a deterministic sketch\u2192target planner for ordinary records and bounded exact BFS for tiny closed domains; both emit replay-valid certificates.",
+    "The search budget is intentionally small so the harness stays CPU-only; real bridge coverage needs the standard multi-step solver budget.",
+    "v0.5 state/query/action statements, object literals, member access, and operators are represented in the edit-algebra vocabulary but are not exercised by the current OpenUI statement fixtures; they are reported as 'unsupported_pack_feature' when encountered.",
+    "Statement insertion/deletion is performed through the tree-edit space; the topology-solver edit algebra is reused for local node expansion where possible."
+  ],
+  "hypothesis": "The canonical statement-level edit algebra (InsertStatement, DeleteStatement, ReplaceProduction, SetArity, InsertChild, DeleteSubtree, BindSlotPointer, BindReferencePointer, SetEnum) can reach every supported fixture target from a structural sketch seed within declared node/depth/edit bounds, and canonical invariance (idempotence, alpha-renaming, slot permutation, independent-edit commutativity) holds for every transition in the fixture domain.",
+  "invariance_results": [
+    {
+      "alpha_equivalent": true,
+      "canonical_idempotent": true,
+      "case_id": "minimal_stack__hero",
+      "commutativity_equivalent": true,
+      "details": [],
+      "slot_permutation_equivalent": true
+    },
+    {
+      "alpha_equivalent": true,
+      "canonical_idempotent": true,
+      "case_id": "minimal_stack__text_only",
+      "commutativity_equivalent": true,
+      "details": [],
+      "slot_permutation_equivalent": true
+    }
+  ],
+  "matrix_set": "slm188_edit_algebra",
+  "matrix_version": "ffe1-02-v1",
+  "n_cases": 2,
+  "n_invariance_ok": 2,
+  "n_reachable": 2,
+  "n_unknown_budget": 0,
+  "n_unreachable_complete": 0,
+  "n_unsupported": 0,
+  "run_id": "slm188-edit-algebra-20260721",
+  "schema": "EditReachabilityReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T01:34:37.192953Z",
+  "version_stamp": {
+    "code_commit": "67e53c01bbf794eed566fd1bf244311f5f80e444",
+    "code_dirty": true,
+    "components": {
+      "dsl.solver.topology": "v1",
+      "harness.experiments": "v52",
+      "harness.experiments.slm188_edit_algebra": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T01:34:37.148595+00:00"
+  }
+}
