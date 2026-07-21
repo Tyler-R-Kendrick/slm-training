@@ -4365,3 +4365,19 @@ Evidence:
 [iter-e635-property-compatible-coverage-20260720.md](iter-e635-property-compatible-coverage-20260720.md),
 [authoritative r2 JSON](iter-e635-property-compatible-coverage-20260720.json),
 and [r1 JSON](iter-e635-property-compatible-coverage-r1-20260720.json).
+
+## E636 Modal schema reachability
+
+E636 replaces Modal's illegal direct Button child with the public-schema path
+`Modal.children -> Buttons.buttons -> Button`, closes the optional size tail,
+and corrects schema-declared title-role evaluation. On the exact E635 OOD `n=4`
+recipe, strict v2 rises from 1/4 to 2/4 and reward from 0.8515 to 0.8575 while
+fidelity, validity, and component recall stay flat. Duplicate confirm emission
+lowers structure from 0.5729 to 0.5459 and edge F1 from 0.5125 to 0.4375. Retain
+v74 default-off as positive mixed evidence; AgentV remains 0/1 and this is not a
+promotion or ship result. No checkpoint was created or synced.
+
+Evidence:
+[iter-e636-modal-schema-reach-20260720.md](iter-e636-modal-schema-reach-20260720.md),
+[authoritative r2 JSON](iter-e636-modal-schema-reach-20260720.json), and
+[diagnostic r1 JSON](iter-e636-modal-schema-reach-r1-20260720.json).
