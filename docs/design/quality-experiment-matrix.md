@@ -4381,3 +4381,18 @@ Evidence:
 [iter-e636-modal-schema-reach-20260720.md](iter-e636-modal-schema-reach-20260720.md),
 [authoritative r2 JSON](iter-e636-modal-schema-reach-20260720.json), and
 [diagnostic r1 JSON](iter-e636-modal-schema-reach-r1-20260720.json).
+
+## E637 nested semantic-plan family accounting
+
+E637 counts emitted component families across every choice-prefix nesting depth,
+so the Button inside Modal's required Buttons wrapper satisfies semantic-plan
+coverage and is not emitted again at root. Two byte-identical OOD `n=4` runs
+retain E636's 2/4 strict rate, raise structure from 0.5459 to 0.5817, and raise
+node/edge F1 from 0.6214/0.4375 to 0.6437/0.4554. Reward settles at 0.8545,
+above E635 but below duplicate-bearing E636. Retain v75 default-off; AgentV is
+still 0/1, no checkpoint was created, and this is not a ship result.
+
+Evidence:
+[iter-e637-nested-family-accounting-20260720.md](iter-e637-nested-family-accounting-20260720.md),
+[authoritative r2 JSON](iter-e637-nested-family-accounting-20260720.json), and
+[r1 JSON](iter-e637-nested-family-accounting-r1-20260720.json).
