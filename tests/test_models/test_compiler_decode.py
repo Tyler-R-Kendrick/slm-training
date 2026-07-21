@@ -2267,45 +2267,6 @@ def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> Non
     assert model._semantic_plan_root_bias(0, complete, None, candidates) is not None
 
 
-def test_prompt_semantic_plan_root_bias_references_slot_bearing_siblings() -> None:
-    from types import SimpleNamespace
-
-    model = _model(output_tokenizer="choice", semantic_plan_root_decode_weight=2.0)
-    tokenizer = model.tokenizer
-    text_id = tokenizer.token_to_id["+TextContent"]
-    model._semantic_plan_action_scores = [{text_id: 1.0}]
-    model._semantic_plan_action_counts = [{text_id: 1}]
-    model._slot_contracts = [[":body", ":confirm"]]
-    prefix = [
-        tokenizer.bos_id,
-        text_id,
-        tokenizer.sym_id(0),
-        tokenizer.token_to_id["-"],
-        tokenizer.token_to_id["+Button"],
-        tokenizer.sym_id(1),
-        tokenizer.token_to_id["-"],
-    ]
-    state = SimpleNamespace(
-        mode="structural",
-        frames=[],
-        section_types=["element:TextContent", "element:Button"],
-        section_slot_ids=[
-            frozenset({0}),
-            frozenset({1}),
-        ],
-    )
-
-    bias = model._semantic_plan_root_bias(
-        0,
-        state,
-        prefix,
-        (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [2.0, 0.0]
-
-
 def test_prompt_semantic_plan_root_bias_counts_nested_family_instances() -> None:
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 

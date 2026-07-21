@@ -205,9 +205,6 @@ def test_choice_state_derives_placeholder_fields_from_dsl_policy(
     assert literal_id not in with_contract.allowed_ids(3)
     assert with_contract.advance_id(slot_id)
     assert with_contract.advance_id(tok.token_to_id["-"])
-    assert with_contract.section_slot_ids == [frozenset({0})]
-    assert with_contract.current_section_slot_ids == set()
-    assert with_contract.clone().section_slot_ids == [frozenset({0})]
     assert with_contract.advance_id(tok.eos_id)
 
 

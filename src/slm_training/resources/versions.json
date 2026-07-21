@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v84",
+      "version": "v85",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v85",
+          "date": "2026-07-20",
+          "note": "E646 rejection: restore v83 state and root references after supplemental slot-bearing reference tracking left every policy-matched output and metric unchanged; renumbered from the originally launched E640 arm after rebase"
+        },
         {
           "version": "v84",
           "date": "2026-07-20",
