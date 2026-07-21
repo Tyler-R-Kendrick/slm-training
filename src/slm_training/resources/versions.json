@@ -3766,6 +3766,11 @@
         {
           "version": "v1",
           "date": "2026-07-24",
+          "note": "no-bump: add SLM-248 research-intake contract to shared lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
           "note": "no-bump: cross-link the SLM-236 blocked RSC4 disposition in shared README, model-card, and lineage docs without changing the SLM-228 disposition"
         },
         {

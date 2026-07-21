@@ -1,0 +1,399 @@
+{
+  "architecture_diagram_ref": "docs/design/lotus-openui-fidelity-contract-v1.md#architecture-and-control-flow",
+  "authorization": {
+    "allowed_lot1_work": [
+      "Define the OpenUI target-trace contract: what constitutes an explicit, step-decomposable intermediate trace for a generated OpenUI program, how curriculum stages progressively replace trace-step token spans with K x c latent positions, and how R relates to trace length.",
+      "Specify the K/c/R sweep grid, the unlooped extra-update control, and the replace/no-injection ablation as a preregistered fixture-scale experiment plan (no training).",
+      "Extend causal_trace.py's existing replay_causal_action / counterfactual capture only insofar as needed to define (not run) a causal_latent_use falsification test for the K x c workspace.",
+      "Bounded target-contract probes explicitly permitted by the parent issue (reading/inspecting a handful of existing compiler/decision traces to check step-decomposability; no corpus build)."
+    ],
+    "allowed_lot2_work": [
+      "Implement the K x c latent workspace and loop driver around CausalLMOpenUIPlugin.model, gated on a reviewed LOT1 target-trace contract and an unchanged re-check of this authorization's verdict.",
+      "Wire the explicit-to-latent curriculum against the LOT1-defined trace source, with the continued-explicit-trace control running throughout (never explicit-trace-only at stage 0 and latent-only thereafter without the control arm)."
+    ],
+    "authorization_id": "lotus-openui-transfer-authorization-v1",
+    "blocked_work_and_claims": [
+      "No model or training code for the K x c workspace before a LOT1 target-trace contract exists and is reviewed.",
+      "No GPU training, no corpus generation beyond the bounded LOT1 probes above.",
+      "No change to causal or TwoTower defaults.",
+      "No claim that LOTUS's reported GSM8K/SVAMP numbers, latency multipliers, or CODI comparison transfer to OpenUI; those remain secondary_preregistered evidence nuances until an OpenUI-domain measurement exists.",
+      "No causal_latent_use claim from decodability alone (LM-head projection matching a target token is not evidence of causal use per the decodability-not-causal-use evidence nuance).",
+      "No relabeling of causal_peft_ftpo.py, semantic_plan_predictor.py heads, recursive_denoiser.py, tree_edit_diffusion.py, or causal_trace.py's decode capture as the LOTUS mechanism rows they are explicitly distinguished from above.",
+      "No SVAMP-style (or any) train/test-concatenated evaluation presented as canonical test-only evidence for any OpenUI-domain analogue benchmark."
+    ],
+    "comparator_hashes": [
+      {
+        "path": "src/slm_training/models/recursive_denoiser.py",
+        "sha256": "67ab44c54e772df8042b42cd7beb9b31a673a3e58949ae3f4a83e91173195cd8"
+      },
+      {
+        "path": "src/slm_training/models/twotower.py",
+        "sha256": "85489d2d591a62001ee57a19a20dc20141039677791a874b198ad798a8daa9ee"
+      },
+      {
+        "path": "src/slm_training/models/semantic_plan_predictor.py",
+        "sha256": "6d0e8176f636c80721947e25707ceee73270ebe2d7a7fb44e3720eb5a3d8850e"
+      },
+      {
+        "path": "src/slm_training/data/progspec/semantic_plan.py",
+        "sha256": "274722443338f6043b1d9357a10670554e9a87b57775627fdd369cdd2300e593"
+      },
+      {
+        "path": "src/slm_training/models/causal_lm_openui.py",
+        "sha256": "1a3630e96951f8785eb754e06ddb55c2b8e64760aad6929024b31def90755f05"
+      },
+      {
+        "path": "src/slm_training/models/causal_trace.py",
+        "sha256": "d73ca6e3d73681d5e38cef514d915416e9a6aef7d05f10858191c38c72ef96f0"
+      },
+      {
+        "path": "src/slm_training/harnesses/experiments/causal_peft_ftpo.py",
+        "sha256": "cf2cf49eed165edf1861cb4d6b13880fbda1e34d9c129cee9abf5d1887af8d58"
+      },
+      {
+        "path": "src/slm_training/harnesses/preference/local_decisions.py",
+        "sha256": "457b30c337437614a2bd68c0287232da1ab636fe2c0c33e40e403a86933e4118"
+      },
+      {
+        "path": "src/slm_training/harnesses/preference/local_train.py",
+        "sha256": "6e8dedc4d1cccbe5ed39d34f8a85b13d8df69802c214bcc0f374f49bebd95d2f"
+      },
+      {
+        "path": "src/slm_training/models/tree_edit_diffusion.py",
+        "sha256": "89b212dc46169d240101a4c4ca9eefc33cdd1ba29f56996d252a2ccc2cc40fc8"
+      },
+      {
+        "path": "docs/design/local-decision-interventions.md",
+        "sha256": "ee6493adf09b1864dce817b3dbc7848abdd4a1b1afe6cf1c26ac918d3587612f"
+      },
+      {
+        "path": "docs/design/semantic-planning-valid-state.md",
+        "sha256": "fd5cd811a262f4b0a3281870756bc341d668411f0f0a8e7333b0a220d5e0768f"
+      },
+      {
+        "path": "docs/design/research-lineage.md",
+        "sha256": "f0f5915bad6210f169955b38de27dc99856cf7f4f6de857bf6664a1654a30009"
+      }
+    ],
+    "contract_hash": "801ce267b64f52b88e6e80fa091084c5f1a6628de60658d2d161db82f5117af2",
+    "contract_hash_method": "sha256(json.dumps(<contract object without the top-level 'contract_hash' and 'authorization' keys>, sort_keys=True, separators=(',', ':'))).hexdigest()",
+    "linear_issue": "SLM-248",
+    "schema_version": "lotus_transfer_authorization/v1",
+    "verdict": "needs_target_trace_contract",
+    "verdict_rationale": "Differentiation from every existing repo mechanism (masked recursive denoiser, SemanticPlanV1 predictors/consumers, causal FTPO adapters, explicit compiler traces, valid-state tree-edit/lattice search) is clean and survives line-by-line comparison -- see non_duplication_map, all rows no_duplication. The blocker is narrower: LOTUS's explicit-to-latent curriculum (mechanism row 5) and its causal_latent_use claim class both presuppose a step-decomposable 'explicit trace' analogous to GSM8K CoT steps that this repo does not yet define for OpenUI program synthesis. Defining that target-trace contract honestly -- without assuming math-payload equivalence to GSM8K, and without silently reusing causal_trace.py's visible-token decode capture or SemanticPlanV1's plan IR as if either already were that trace -- is out of scope for this docs/spec-only issue (no corpus generation beyond bounded target-contract probes). Authorizing bounded implementation now would force either an undefined curriculum or a quietly borrowed non-LOTUS trace source; neither is honest. This is not a 'differentiation is weak' close and not a semantic-floor block -- it is a scoped prerequisite."
+  },
+  "canonical_audit_reference": {
+    "kind": "linear_doc",
+    "name": "LOTUS / SLM-138 adversarial audit",
+    "note": "Named as the canonical audit by the issue. Not fetchable from this session (Linear document content tools were not exercised against this specific doc). This contract proceeds without it per the issue's explicit instruction and relies instead on direct reads of the repository comparator code plus the fetched LOTUS paper abstract and reference implementation.",
+    "status": "unresolved_external_reference"
+  },
+  "claim_classes": [
+    "wiring",
+    "faithful_mechanism_fixture",
+    "optimization_diagnostic",
+    "semantic_quality",
+    "causal_latent_use",
+    "latency_frontier",
+    "efficiency_frontier",
+    "adoption"
+  ],
+  "comparator_hashes": [
+    {
+      "path": "src/slm_training/models/recursive_denoiser.py",
+      "sha256": "67ab44c54e772df8042b42cd7beb9b31a673a3e58949ae3f4a83e91173195cd8"
+    },
+    {
+      "path": "src/slm_training/models/twotower.py",
+      "sha256": "85489d2d591a62001ee57a19a20dc20141039677791a874b198ad798a8daa9ee"
+    },
+    {
+      "path": "src/slm_training/models/semantic_plan_predictor.py",
+      "sha256": "6d0e8176f636c80721947e25707ceee73270ebe2d7a7fb44e3720eb5a3d8850e"
+    },
+    {
+      "path": "src/slm_training/data/progspec/semantic_plan.py",
+      "sha256": "274722443338f6043b1d9357a10670554e9a87b57775627fdd369cdd2300e593"
+    },
+    {
+      "path": "src/slm_training/models/causal_lm_openui.py",
+      "sha256": "1a3630e96951f8785eb754e06ddb55c2b8e64760aad6929024b31def90755f05"
+    },
+    {
+      "path": "src/slm_training/models/causal_trace.py",
+      "sha256": "d73ca6e3d73681d5e38cef514d915416e9a6aef7d05f10858191c38c72ef96f0"
+    },
+    {
+      "path": "src/slm_training/harnesses/experiments/causal_peft_ftpo.py",
+      "sha256": "cf2cf49eed165edf1861cb4d6b13880fbda1e34d9c129cee9abf5d1887af8d58"
+    },
+    {
+      "path": "src/slm_training/harnesses/preference/local_decisions.py",
+      "sha256": "457b30c337437614a2bd68c0287232da1ab636fe2c0c33e40e403a86933e4118"
+    },
+    {
+      "path": "src/slm_training/harnesses/preference/local_train.py",
+      "sha256": "6e8dedc4d1cccbe5ed39d34f8a85b13d8df69802c214bcc0f374f49bebd95d2f"
+    },
+    {
+      "path": "src/slm_training/models/tree_edit_diffusion.py",
+      "sha256": "89b212dc46169d240101a4c4ca9eefc33cdd1ba29f56996d252a2ccc2cc40fc8"
+    },
+    {
+      "path": "docs/design/local-decision-interventions.md",
+      "sha256": "ee6493adf09b1864dce817b3dbc7848abdd4a1b1afe6cf1c26ac918d3587612f"
+    },
+    {
+      "path": "docs/design/semantic-planning-valid-state.md",
+      "sha256": "fd5cd811a262f4b0a3281870756bc341d668411f0f0a8e7333b0a220d5e0768f"
+    },
+    {
+      "path": "docs/design/research-lineage.md",
+      "sha256": "f0f5915bad6210f169955b38de27dc99856cf7f4f6de857bf6664a1654a30009"
+    }
+  ],
+  "contract_hash": "801ce267b64f52b88e6e80fa091084c5f1a6628de60658d2d161db82f5117af2",
+  "contract_id": "lotus-openui-fidelity-contract-v1",
+  "created_at": "2026-07-21T05:35:00Z",
+  "evidence_nuances": [
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "3B GSM8K explicit CoT 71.5 vs LOTUS 70.0 +/- 0.9 and LOTUS+CODI 70.6 +/- 0.2.",
+      "id": "gsm8k-3b-accuracy",
+      "note": "Carried verbatim from the issue text; not independently re-derived from a fetched PDF table in this session (see arxiv-2606.31779 access_note)."
+    },
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "thought 338.8ms -> 133.0ms and compact total ~=2.12x, with 963.6/140.8~=6.84 from rounded natural-language values.",
+      "id": "thought-latency-ms",
+      "note": "Consistent in order of magnitude with the fetched abstract's reported 2.5x-6.9x thought-phase latency reduction range, but the specific millisecond values were not independently re-derived from a fetched PDF table in this session."
+    },
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "CODI is faster than LOTUS under the compact protocol.",
+      "id": "codi-faster-than-lotus",
+      "note": "Carried verbatim from the issue text."
+    },
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "direct post-loop supervision beats per-iteration supervision, while auxiliary routing reverses that ordering.",
+      "id": "direct-vs-per-iteration",
+      "note": "Structurally consistent with the fetched code's intermediate_loss_after_loop flag (a real post-loop-vs-per-iteration switch exists in the reference implementation); the reported win/loss direction and the auxiliary-routing reversal were not independently re-derived from a fetched PDF table in this session."
+    },
+    {
+      "evidence_class": "primary_fetched",
+      "fact": "public LOTUS receives substantial additional training after CoT initialization.",
+      "id": "public-lotus-extra-training",
+      "note": "Directly confirmed by the fetched args/gsm8k_lotus_llama3b.yaml: 30 epochs / 1 epoch-per-curriculum-stage of Stage-2 looped training initialized from the yingfanbot/gsm-cot-llama3b Stage-1 checkpoint."
+    },
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "decodability does not prove causal use.",
+      "id": "decodability-not-causal-use",
+      "note": "Carried verbatim from the issue text; matches this repo's own existing distinction between a constraint shadow (legality-only evidence) and a semantic-use claim in models/causal_trace.py, and motivates the causal_latent_use claim class below."
+    },
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "independent token PCL has a residual dependency floor.",
+      "id": "independent-token-pcl-floor",
+      "note": "Carried verbatim from the issue text."
+    },
+    {
+      "evidence_class": "secondary_preregistered",
+      "fact": "public SVAMP evaluation concatenates train/test and must not be presented as canonical test-only evidence.",
+      "id": "svamp-train-test-concat",
+      "note": "Carried verbatim from the issue text; binds this contract's no-hidden-target rule to also reject an SVAMP-style train/test concatenation for any OpenUI-domain analogue benchmark."
+    }
+  ],
+  "linear_issue": "SLM-248",
+  "linear_milestone": "LOT0 · Fidelity contract, target trace & preregistration",
+  "linear_project": "LOTUS-Faithful Causal OpenUI Transfer & Causal Mediation",
+  "mechanism_fidelity_table": [
+    {
+      "fidelity": "Faithful/Adapted",
+      "forbidden_conflation": "masked TwoTower denoiser",
+      "mechanism": "pretrained causal LM backbone",
+      "notes": "CausalLMOpenUIPlugin already wraps an HF AutoModelForCausalLM with optional LoRA (enable_lora) and grammar-constrained decode (_allowed_ids / generate_constrained); backbone reuse is Faithful, the OpenUI grammar-mask layer around it is Adapted. This plugin is the only existing causal-track model owner in the repo; the masked/bidirectional SharedRecursiveDenoiserTower and DenoiserTower (twotower.py) are a structurally different track and must not be substituted in.",
+      "paper_code_evidence": "Paper: Stage-1 explicit-CoT SFT checkpoint as LOTUS init. Code: args/gsm8k_lotus_llama3b.yaml base model meta-llama/Llama-3.2-3B-Instruct, pretrained_cot_checkpoint yingfanbot/gsm-cot-llama3b; scripts/lotus.py wraps this backbone.",
+      "proposed_openui_owner": "CausalLMOpenUIPlugin (src/slm_training/models/causal_lm_openui.py)",
+      "required_control": "continued causal control"
+    },
+    {
+      "fidelity": "Faithful",
+      "forbidden_conflation": "target-length z state",
+      "mechanism": "K reasoning blocks × c positions",
+      "notes": "No K x c latent-prefix mechanism exists anywhere in this repo today (grepped; none found). The nearest structurally-similar object, SharedRecursiveDenoiserTower.z_latent, is explicitly sized by the *target* sequence position (self.z_latent[pos], pos derived from noisy_ids.shape) -- i.e. it scales with output length. A faithful K x c workspace must be a fixed-size latent buffer independent of the emitted program's length; conflating the two would silently reintroduce a length-coupled state under a Faithful label.",
+      "paper_code_evidence": "Paper: parallel latent reasoning blocks. Code: c_thought (25 for Llama), block_start = loop_idx * c_thought indexing K blocks of c latent positions per loop iteration.",
+      "proposed_openui_owner": "new causal K x c latent workspace module (not yet implemented; no existing repo owner)",
+      "required_control": "K/c sweep"
+    },
+    {
+      "fidelity": "Faithful",
+      "forbidden_conflation": "shared two-block denoiser transition",
+      "mechanism": "whole-backbone recurrent passes",
+      "notes": "SharedRecursiveDenoiserTower already implements a *different* weight-shared recursion (F_theta/G_theta split-block transition over coupled y/z state, R = recursive_steps) for the masked denoiser track (SLM-138, research-lineage.md 'Shared recursive denoiser tower'). The causal K x c loop must not import or repurpose that module; it needs its own driver around CausalLMOpenUIPlugin.model, and the unlooped control must show the loop itself (not merely extra compute/updates) produces the effect.",
+      "paper_code_evidence": "Paper: repeated causal forward passes through the same weights. Code: forward(..., n_looped_iters=0, ...) with `for loop_idx in range(n_looped_iters)` reusing one backbone.",
+      "proposed_openui_owner": "same causal backbone (CausalLMOpenUIPlugin.model) reused via a new loop driver (not yet implemented)",
+      "required_control": "unlooped extra-update control"
+    },
+    {
+      "fidelity": "Faithful",
+      "forbidden_conflation": "arbitrary y/z update",
+      "mechanism": "original embedding injection",
+      "notes": "The reference code's own 'replace' mode is itself the honest ablation arm the required control names. A faithful transfer keeps a single injected embedding stream (E + h_{t-1} or replace), not the denoiser's separate y_r/z_r coupled-state update rule.",
+      "paper_code_evidence": "Paper: E + h_{t-1}. Code: latent_injection_mode in {add, replace}; default 'add' computes updated_embeds = original_embeddings + hidden_states.",
+      "proposed_openui_owner": "same recurrence (new loop driver, not yet implemented)",
+      "required_control": "replace/no-injection ablation"
+    },
+    {
+      "fidelity": "Adapted",
+      "forbidden_conflation": "direct latent-only scratch training",
+      "mechanism": "explicit-to-latent curriculum",
+      "notes": "GSM8K's CoT trace is a short, step-decomposable arithmetic scratchpad; this repo has no equivalent 'explicit trace' contract for OpenUI program synthesis. The closest existing artifacts -- causal_trace.py's per-token decode capture (visible, already-emitted tokens, not reasoning steps) and the semantic-plan compiler trace (slm146_semantic_plan_compiler.py) -- are not yet defined as a curriculum source of step-decomposable trace tokens. Direct latent-only training with no explicit-trace stage would be a Coconut-style transfer (already tagged Adjacent in research-lineage.md's 'Latent falsification MoE' row), not a LOTUS-faithful one.",
+      "paper_code_evidence": "Paper: progressively replace explicit CoT-step tokens with latent positions. Code: max_latent_stage / epochs_per_stage curriculum over Stage-2 looped training initialized from a Stage-1 explicit-CoT checkpoint.",
+      "proposed_openui_owner": "compiler-trace curriculum (target trace contract undefined -- see LotusTransferAuthorizationV1)",
+      "required_control": "continued explicit trace"
+    },
+    {
+      "fidelity": "Faithful/Adapted",
+      "forbidden_conflation": "separate classifier claimed as faithful",
+      "mechanism": "post-loop direct shared-head supervision",
+      "notes": "This repo already has a separate-classifier stack -- ArchetypeClassifierHead / RoleSetPredictorHead / SerializedInventoryHead in models/semantic_plan_predictor.py, an externally materialized SemanticPlanV1 predictor (SLM-144) -- that must never be relabeled as the LOTUS post-loop head. A faithful post-loop readout projects through the causal LM's own vocabulary head, exactly as the reference code does.",
+      "paper_code_evidence": "Paper: base LM head reused for supervision; direct post-loop beats per-iteration while auxiliary routing reverses. Code: lm_head = base_model.lm_head (no separate per-block head); intermediate_loss_after_loop switches per-iteration vs post-loop.",
+      "proposed_openui_owner": "causal LM output geometry (CausalLMOpenUIPlugin.model's existing lm_head / tokenizer vocabulary)",
+      "required_control": "per-iteration + auxiliary controls"
+    },
+    {
+      "fidelity": "Adapted",
+      "forbidden_conflation": "assuming math payload equivalence",
+      "mechanism": "final answer loss",
+      "notes": "GSM8K's final answer is a short numeric string; an OpenUI program is a structured, grammar-constrained DSL document. The loss geometry (weight of final vs intermediate terms, sequence length) cannot be assumed to transfer unchanged; this row is Adapted, not Faithful, precisely to block that assumption.",
+      "paper_code_evidence": "Paper/code: short answer suffix cross-entropy; intermediate_loss_weight and codi_loss_weight are separate, smaller-weighted knobs.",
+      "proposed_openui_owner": "full OpenUI program/surface loss (existing SFT cross-entropy over the serialized OpenUI program, e.g. train_sft's SFTTrainer)",
+      "required_control": "semantic-only/surface-only"
+    },
+    {
+      "fidelity": "Faithful",
+      "forbidden_conflation": "adaptive halting in V1",
+      "mechanism": "fixed R",
+      "notes": "No learned/adaptive halting exists in the reference implementation's primary config; V1 of any OpenUI transfer must keep R fixed and defer adaptive halting to a later, separately preregistered issue.",
+      "paper_code_evidence": "Code: n_looped_iters is a fixed config value per run (e.g. --n_looped_iters 6); later ablations vary it.",
+      "proposed_openui_owner": "fixed primary R value in the new causal loop module config, later robustness sweep",
+      "required_control": "R sweep"
+    }
+  ],
+  "non_duplication_map": [
+    {
+      "comparator": "RSC internal slots (masked bidirectional canvas, y/z recurrence, corrupted target, internal root/inventory probes)",
+      "distinction": "SharedRecursiveDenoiserTower recurses F_theta/G_theta cross-attention blocks over a *masked, corrupted* target canvas (noisy_ids) of length tied to the output program, with coupled y (token/pos/kind) and z (learned latent + pooled context) states, R = recursive_steps times. It is bidirectional (self-attention over the whole noisy canvas plus cross-attention to context) and trained as a denoiser against a corrupted target, not autoregressively. LOTUS's K x c workspace is a fixed-size latent prefix on a *causal* autoregressive backbone, independent of output length, with no masking/corruption process and no y/z split. Different math, different module, different owner.",
+      "duplication_verdict": "no_duplication",
+      "owner_code": "src/slm_training/models/recursive_denoiser.py (SharedRecursiveDenoiserTower), routed from src/slm_training/models/twotower.py"
+    },
+    {
+      "comparator": "SemanticPlanV1: externally materialized plan predictions, plan seed/feature consumers, topology/cardinality/pointer heads",
+      "distinction": "SemanticPlanV1 is a discrete, versioned, provenance-tagged IR (archetype / role_slots / topology) that is *externally materialized* and consumed to rank or seed compiler-legal actions -- it never gates legality (docs/design/semantic-planning-valid-state.md's compiler-owned legality != learned semantic plan division of labor). LOTUS's K x c blocks are continuous hidden states that are never materialized as a discrete plan object and never rank or seed compiler actions; their only external interface is the LM-head projection used purely for the curriculum loss. Different representation (continuous vs discrete typed IR), different consumer contract.",
+      "duplication_verdict": "no_duplication",
+      "owner_code": "src/slm_training/data/progspec/semantic_plan.py (SemanticPlanV1 IR), src/slm_training/models/semantic_plan_predictor.py (ArchetypeClassifierHead / RoleSetPredictorHead / SerializedInventoryHead)"
+    },
+    {
+      "comparator": "Causal adapters/FTPO: exact local decision training without a K x c latent prefix",
+      "distinction": "The FTPO stack trains small PEFT adapters (LoRA/DoRA/PiSSA/AdaLoRA) directly on exact per-token DecisionStateV2 events with clipped-margin objectives (unlikelihood / ftpo_single / ftpo_set / legal_set_mass) -- a single forward pass per captured decision, no recurrent loop, no latent prefix. LOTUS's K x c loop reuses the *same full backbone* recurrently and is trained with sequence-level SFT, not per-token local margin objectives. An FTPO run must never be reported as a LOTUS measurement, and the K x c loop's supervision must not be folded into local_train.py's clipped-margin loss.",
+      "duplication_verdict": "no_duplication",
+      "owner_code": "src/slm_training/harnesses/experiments/causal_peft_ftpo.py, src/slm_training/harnesses/preference/local_train.py, src/slm_training/harnesses/preference/causal_local_train.py"
+    },
+    {
+      "comparator": "Explicit compiler traces: visible tokens and direct autoregressive training",
+      "distinction": "causal_trace.py captures per-step *decoded, visible* token ids (raw argmax, legal set, constraint shadow) for standard autoregressive cross-entropy training -- every position is an emitted, decodable token. LOTUS's curriculum explicitly *replaces* a growing prefix of visible trace tokens with non-emitted latent positions supervised only through an LM-head projection, not standard AR CE. The trace capture stays a candidate *source* of stage-0 explicit trace tokens for a future curriculum, but the curriculum/latent-substitution logic itself does not exist anywhere in this repo yet.",
+      "duplication_verdict": "no_duplication",
+      "owner_code": "src/slm_training/models/causal_trace.py, src/slm_training/harnesses/distill/trace_store.py"
+    },
+    {
+      "comparator": "Flow/search: valid-state edits rather than continuous latent recurrence",
+      "distinction": "Tree-edit diffusion and the VSS0/lattice-recursive controller expand or edit a discrete, always-valid partial program via typed tree edits/production expansions or beam/forest search, scored by soft value nets over grammar/AST search state. LOTUS's K x c workspace is a fixed continuous latent hidden-state buffer with no discrete tree-edit action space and no search/beam step. A latent-prefix recurrence must not be described as an X22/VSS search arm, and vice versa.",
+      "duplication_verdict": "no_duplication",
+      "owner_code": "src/slm_training/models/tree_edit_diffusion.py (X22/D3), VSS0/lattice-recursive-search valid-state machinery"
+    }
+  ],
+  "preregistration": {
+    "checkpoint_selection_rules": "best checkpoint selected by eval_loss on a held-out split created before any semantic metric is computed, mirroring CausalLMOpenUIPlugin.train_sft's existing load_best_model_at_end=True / metric_for_best_model=eval_loss convention; the semantic endpoint is never used for checkpoint selection",
+    "early_stop_conditions": [
+      "the target-trace contract (explicit-to-latent curriculum source) cannot be defined without assuming math-payload equivalence to GSM8K CoT steps",
+      "the unlooped extra-update control matches or beats the looped arm at matched updates/tokens/FLOPs",
+      "the K x c workspace cannot be shown causally used (decodability alone, e.g. LM-head projection matching gold trace tokens, is preregistered as insufficient per the decodability-not-causal-use evidence nuance)"
+    ],
+    "frozen_suite": [
+      "smoke",
+      "held_out",
+      "adversarial",
+      "ood",
+      "rico_held"
+    ],
+    "margins": {
+      "agentv_equivalence_margin": "paired equivalence margin of +/-0.03 absolute on the pinned AgentV domain composite vs the same control, TOST at alpha=0.05",
+      "maximum_allowed_regression_by_stratum": "no more than -0.01 absolute regression on any binding/AST stratum (rare-omission, minimal-valid-shell, deep-nesting) reported in the existing binding-aware meaningful v2 breakdown; a stratum regression beyond this blocks promotion regardless of the aggregate result",
+      "minimum_effect_for_superiority": "+0.03 absolute binding_aware_meaningful_v2 over control, same paired test, before any 'improves quality' claim class semantic_quality can be filed",
+      "strict_meaning_v2_non_inferiority_margin": "paired non-inferiority margin of -0.02 absolute on binding_aware_meaningful_v2 vs the frozen causal-track control (CausalLMOpenUIPlugin without the K x c loop), two-sided paired test, alpha=0.05"
+    },
+    "matching_rules": {
+      "cost_matching": "identical wall-clock budget ceiling (this repo's 3-minute hard run cap per command, AGENTS.md) across every screening arm",
+      "flop_matching": "equal training-time FLOPs estimated from (R x forward-pass FLOPs) parity between the looped arm and an R-times-repeated unlooped control",
+      "parameter_matching": "identical frozen base parameter count; any new parameters (loop driver, latent buffer) reported and held constant across ablation arms",
+      "token_matching": "equal total training token exposure (prompt + target) across arms",
+      "update_matching": "equal optimizer update count between the K x c loop arm and the unlooped control"
+    },
+    "minimum_seeds": {
+      "adoption": 5,
+      "screening": 3
+    },
+    "no_hidden_target_contract": "no evaluation split may share compiler traces, prompts, or target programs with any training or curriculum-construction split; any OpenUI-domain analogue of the SVAMP train/test-concatenation error is a preregistration violation and invalidates the result, not just a caveat",
+    "not_formal_equivalence_reminder": "\"near parity\" observed informally cannot be reported as formal equivalence unless the declared paired equivalence/TOST test above was run and cleared; an eyeballed gap is never a substitute for the margin test.",
+    "primary_semantic_endpoint": "binding_aware_meaningful_v2",
+    "project_close_conditions": [
+      "differentiation from an existing repo mechanism (recursive_denoiser, SemanticPlanV1, FTPO, compiler traces, valid-state search) collapses under implementation-level scrutiny",
+      "the target trace cannot be defined honestly without fabricating a step-decomposable OpenUI-domain CoT analogue",
+      "any early-stop condition above is met and not resolved by a re-scoped, separately preregistered follow-up issue"
+    ]
+  },
+  "primary_sources": [
+    {
+      "access": "fetched",
+      "access_note": "Abstract and metadata fetched via WebFetch on 2026-07-21; the abstract confirms a looped/weight-reused causal backbone, K parallel latent reasoning blocks, cross-entropy supervision of latent positions against gold CoT-step tokens via LM-head projection, and a reported 2.5x-6.9x thought-phase latency reduction while closing the gap to explicit CoT at 3B scale. The full PDF (numeric GSM8K/SVAMP tables, per-config latency ms values) was not fetched in this session; those exact figures are carried from the issue's preregistered evidence-nuances list (see evidence_nuances below) and are marked secondary/preregistered, not independently re-derived from the PDF in this session.",
+      "kind": "paper",
+      "source_id": "arxiv-2606.31779",
+      "title": "LOTUS: Looped Transformers with Latent Chain-of-Thought",
+      "uri": "https://arxiv.org/abs/2606.31779"
+    },
+    {
+      "access": "fetched",
+      "access_note": "scripts/lotus.py and args/gsm8k_lotus_llama3b.yaml fetched via WebFetch on 2026-07-21. Confirms: c_thought latent-token count per block (13 GPT-2 / 25 Llama), n_looped_iters as the R loop count, block_start = loop_idx * c_thought indexing K blocks of c positions, latent_injection_mode in {add, replace} implementing updated_embeds = original_embeddings + hidden_states (the paper's E + h_{t-1}), a two-stage recipe (Stage-1 explicit-CoT SFT checkpoint yingfanbot/gsm-cot-llama3b, Stage-2 looped latent training with max_latent_stage curriculum), an intermediate_loss_after_loop flag controlling per-iteration vs post-loop supervision, and reuse of the base model's own lm_head (no separate per-block head).",
+      "kind": "code",
+      "source_id": "github-yingfan-bot-lotus",
+      "title": "yingfan-bot/lotus reference implementation",
+      "uri": "https://github.com/yingfan-bot/lotus"
+    },
+    {
+      "access": "unresolved",
+      "access_note": "Named in the issue as the canonical audit. Linear documents are not fetchable from this session (no Linear MCP document-content tool was exercised against this specific doc id/URL in-session). Recorded here as an unresolved external reference per the issue's explicit instruction to proceed without it and note the gap; this contract does not depend on any claim that only that audit could supply, since the repository comparators were read directly.",
+      "kind": "linear_doc",
+      "source_id": "linear-doc-slm138-lotus-adversarial-audit",
+      "title": "LOTUS / SLM-138 adversarial audit (canonical audit)",
+      "uri": "linear://document/SLM-138-lotus-adversarial-audit"
+    }
+  ],
+  "required_differentiators": [
+    "causal whole-backbone recurrent computation",
+    "fixed latent workspace independent of output length",
+    "explicit trace-to-latent curriculum",
+    "direct shared LM-head readout",
+    "built-in continued explicit control and causal interventions"
+  ],
+  "schema_version": "lotus_openui_fidelity_contract/v1",
+  "source_manifest_ref": "src/slm_training/resources/autoresearch/lotus-openui-sources.json",
+  "version_stamp": {
+    "code_commit": "d5a65d03102f79521ac0d94a0e3c4fcc29c3d186",
+    "code_dirty": true,
+    "components": {},
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:35:00Z"
+  }
+}
