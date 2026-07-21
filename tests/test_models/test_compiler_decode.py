@@ -2162,6 +2162,33 @@ def test_prompt_semantic_plan_preserves_modified_component_count() -> None:
     ]
 
 
+def test_prompt_semantic_plan_preserves_count_across_multiple_modifiers() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Row of three equally important action buttons.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Button",
+        "Button",
+        "Button",
+    ]
+
+
+def test_prompt_semantic_plan_does_not_cross_component_conjunction() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Place three cards and a button in a row.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Button",
+        "Card",
+        "Card",
+        "Card",
+    ]
+
+
 def test_prompt_semantic_plan_infers_button_from_action_semantics() -> None:
     from slm_training.models.template_fill import prompt_semantic_plan
 

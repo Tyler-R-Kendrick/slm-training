@@ -301,6 +301,28 @@ def semantic_role_contract(
     )
 
 
+_COUNT_PHRASE_BOUNDARIES = frozenset(
+    {
+        "after",
+        "and",
+        "around",
+        "before",
+        "between",
+        "contain",
+        "containing",
+        "contains",
+        "for",
+        "inside",
+        "of",
+        "or",
+        "outside",
+        "plus",
+        "then",
+        "with",
+    }
+)
+
+
 def _prompt_component_requirements(
     prompt: str,
     *,
@@ -313,9 +335,10 @@ def _prompt_component_requirements(
     explicit counts. It is consumed by the binding-aware meaningful-program eval.
     """
     normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    component_phrases = _component_phrases()
     occupied: list[tuple[int, int]] = []
     required: dict[str, int] = {}
-    for name, phrase, matcher in _component_phrases():
+    for name, phrase, matcher in component_phrases:
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
@@ -335,30 +358,45 @@ def _prompt_component_requirements(
                 r"(?:\breplace|\bswap|\bchange)\s+(?:a |an |the )?$", before
             ) and re.match(r"\s+(?:with|for|to)\b", after):
                 continue
-            count_match = re.search(
-                r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
-                r"(?:\s+[a-z0-9]+)?\s+$",
-                before,
+            count_match = next(
+                reversed(
+                    tuple(
+                        re.finditer(
+                            r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b",
+                            before,
+                        )
+                    )
+                ),
+                None,
             )
             count = 1
             if count_match:
-                count = {
-                    "one": 1,
-                    "two": 2,
-                    "three": 3,
-                    "four": 4,
-                    "five": 5,
-                    "six": 6,
-                    "seven": 7,
-                    "eight": 8,
-                    "nine": 9,
-                    "ten": 10,
-                }.get(
-                    count_match.group(1),
-                    int(count_match.group(1))
-                    if count_match.group(1).isdigit()
-                    else 1,
+                intervening = before[count_match.end() :].strip()
+                crosses_boundary = bool(
+                    _COUNT_PHRASE_BOUNDARIES.intersection(intervening.split())
+                    or any(
+                        other_name != name and other_matcher.search(intervening)
+                        for other_name, _phrase, other_matcher in component_phrases
+                    )
                 )
+                if not crosses_boundary:
+                    count = {
+                        "one": 1,
+                        "two": 2,
+                        "three": 3,
+                        "four": 4,
+                        "five": 5,
+                        "six": 6,
+                        "seven": 7,
+                        "eight": 8,
+                        "nine": 9,
+                        "ten": 10,
+                    }.get(
+                        count_match.group(1),
+                        int(count_match.group(1))
+                        if count_match.group(1).isdigit()
+                        else 1,
+                    )
             if name.endswith("s") and match.group(0) == phrase:
                 count = 1
             if preserve_repeated_mentions:

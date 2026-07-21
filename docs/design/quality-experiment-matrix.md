@@ -5342,3 +5342,17 @@ length budget still fails. No checkpoint was created or synced.
 
 Evidence: [narrative](iter-e711-planned-role-capacity-20260721.md) and
 [JSON](iter-e711-planned-role-capacity-20260721.json).
+
+## E712 component counts across descriptive phrases
+
+E712 carries the closest explicit count through arbitrary descriptive modifiers
+without crossing conjunction, preposition, or component-family boundaries. On the
+matched five-suite `n=19` replay, adversarial strict rises 0.25→0.50, normalized
+placeholder fidelity 0.8333→1.0, structure 0.76575→0.88325, node F1
+0.8318→0.9152, and edge F1 0.7169→0.8419; the other four suites match E711.
+Retain model v184 and meaningfulness metric 2.10.0 as scratch evidence. AgentV
+remains 0/5 and the Rico length budget still fails. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e712-component-count-phrases-20260721.md) and
+[JSON](iter-e712-component-count-phrases-20260721.json).
