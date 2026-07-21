@@ -727,12 +727,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-07-21",
+          "note": "add SLM-189 FFE2-01 bridge-planner fixture harness lazy re-exports"
+        },
         {
           "version": "v56",
           "date": "2026-07-21",
@@ -3509,6 +3514,53 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; VSS3-03 topology finite-domain adapter/solver seam (referenced by SLM-187 parity fixture; no behavior change in this commit)"
+        }
+      ]
+    },
+    "data.flow.bridge_planner": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/flow/bridge_planner.py",
+        "tests/test_data/flow/test_bridge_planner.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-189 FFE2-01 bridge planner protocols and deterministic engine wiring/fixture"
+        }
+      ]
+    },
+    "harness.experiments.slm189_bridge_planner": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm189_bridge_planner.py",
+        "tests/test_harnesses/experiments/test_slm189_bridge_planner.py",
+        "tests/test_scripts/test_run_bridge_planner_audit.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-189 FFE2-01 bridge planner fixture harness"
+        }
+      ]
+    },
+    "matrix.slm189_bridge_planner": {
+      "version": "ffe2-01-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_bridge_planner_audit.py",
+        "docs/design/iter-slm189-bridge-planner-20260721.json",
+        "docs/design/iter-slm189-bridge-planner-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe2-01-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-189 FFE2-01 bridge planner exact/dependency/random arm fixture matrix"
         }
       ]
     }
