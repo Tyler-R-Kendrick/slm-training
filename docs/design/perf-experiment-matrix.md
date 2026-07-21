@@ -348,3 +348,12 @@ Structure rises slightly, but component recall regresses 0.4167→0.25 and all
 semantic gates remain red. This is a diagnostic runtime Pareto point, not a
 default or ship setting. See
 [E718 evidence](iter-e718-ltr-canvas96-20260721.md).
+
+## E719 local 128-symbol LTR midpoint (2026-07-21)
+
+The single midpoint is dominated by E718: p50 rises 5.29s→8.00s, two records
+time out, fidelity falls 1.0→0.3333, structure 0.0963→0.0359, and recall
+0.25→0.1667. The larger canvas increases per-forward cost enough to erase its
+extra token budget. Reject 128 and close this interpolation; keep 96 as a local
+smoke/performance observation only. See
+[E719 evidence](iter-e719-ltr-canvas128-20260721.md).
