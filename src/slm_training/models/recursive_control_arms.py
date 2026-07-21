@@ -14,7 +14,7 @@ resource accounting for it -- never a quality/efficiency claim (``claim_class
 == "wiring"`` always). See ``docs/design/iter-rsc-a05-*`` for the exact
 formulas, residual matching errors, and an explicit built-vs-deferred split.
 
-Built this iteration (SLM-241):
+Built (SLM-241, A/B/C/D/G; F added in a follow-up SLM-241 iteration):
   - **A** -- stacked baseline (``denoiser_arch="stacked"``).
   - **B** -- shared recursive V1 (``denoiser_arch="shared_recursive"``,
     ``z_state_mode="full"``).
@@ -22,6 +22,17 @@ Built this iteration (SLM-241):
     "shared_recursive_y_only"``, ``z_state_mode="y_only"``).
   - **D** -- recursive no-extra-capacity control (``denoiser_arch=
     "shared_recursive_no_extra_capacity"``, ``z_state_mode="parameter_free"``).
+  - **F** -- unshared depth-matched tower (``denoiser_arch=
+    "stacked_depth_matched"``): a plain, unshared ``DenoiserTower`` -- the
+    exact same class as arm A, no new tower code -- built with
+    ``recursive_steps * recursive_transition_layers`` independent transition
+    blocks instead of ``n_layers``, so its per-forward block-evaluation count
+    matches arm B's exactly. This necessarily costs MORE parameters than B
+    (nothing is shared); :func:`build_arm_f_dual_view` reports both the
+    block-evaluation-matched view (the primary construction
+    ``construct_arm_tower("F", ...)`` returns) and a separate
+    parameter-nearest view, with the honest residual on whichever dimension
+    isn't exact -- never a bare "matched" claim.
   - **G** -- R=1 shared architecture control: arm B's constructor with
     ``recursive_steps=1``. Interface-compatible, not behaviorally equivalent
     to stacked (SLM-240 already established this framing for R=1 -- reused,
@@ -30,8 +41,6 @@ Built this iteration (SLM-241):
 Explicitly deferred (see the dated design note for why):
   - **E** -- stacked + matched state capacity (a learned target-position
     state + context projection injected once, no recurrence).
-  - **F** -- unshared depth-matched tower (an ordinary unshared tower with
-    the same total block-evaluation count as the recursive arm).
   - **H** -- stop-gradient recurrence (same forward recurrence, y/z detached
     between steps).
 """
@@ -56,8 +65,8 @@ RECURSIVE_CONTROL_ARM_REPORT_VERSION = "RecursiveControlArmReportV1"
 
 #: Arm ids from Linear SLM-241 (RSC-A05).
 ALL_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G", "H")
-BUILT_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "G")
-DEFERRED_ARM_IDS: tuple[str, ...] = ("E", "F", "H")
+BUILT_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "F", "G")
+DEFERRED_ARM_IDS: tuple[str, ...] = ("E", "H")
 
 ARM_LABELS: dict[str, str] = {
     "A": "stacked baseline (no z state, unshared blocks)",
@@ -65,7 +74,11 @@ ARM_LABELS: dict[str, str] = {
     "C": "shared y-only recurrence (shared blocks, no distinct z state)",
     "D": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
     "E": "stacked + matched state capacity (deferred)",
-    "F": "unshared depth-matched tower (deferred)",
+    "F": (
+        "unshared depth-matched tower (block-evaluation-matched against B; "
+        "no z state, no weight sharing -- MORE parameters than B, see "
+        "build_arm_f_dual_view for the honest parameter-nearest residual)"
+    ),
     "G": "R=1 shared architecture control (interface-, not behavior-, compatible)",
     "H": "stop-gradient recurrence (deferred)",
 }
@@ -73,16 +86,22 @@ ARM_LABELS: dict[str, str] = {
 #: Canonical ``denoiser_arch`` value each built arm maps onto -- the same
 #: field ``ModelBuildConfig``/``TwoTowerConfig`` already use, never an ad hoc
 #: parallel selector. Arm G reuses B's denoiser_arch; ``recursive_steps=1``
-#: is what distinguishes it.
+#: is what distinguishes it. Arm F reuses arm A's tower *class*
+#: (``DenoiserTower``) but under its own ``denoiser_arch`` string
+#: (``"stacked_depth_matched"``) because its layer count is derived from
+#: ``recursive_steps * recursive_transition_layers`` rather than ``n_layers``
+#: -- a distinct, named, discoverable config choice, not a shadow path.
 ARM_DENOISER_ARCH: dict[str, str] = {
     "A": "stacked",
     "B": "shared_recursive",
     "C": "shared_recursive_y_only",
     "D": "shared_recursive_no_extra_capacity",
+    "F": "stacked_depth_matched",
     "G": "shared_recursive",
 }
 
-#: ``z_state_mode`` each built (non-stacked) arm maps onto.
+#: ``z_state_mode`` each built (non-stacked) arm maps onto. F has no z state
+#: (same as A), so it is deliberately absent from this dict, same as A.
 ARM_Z_STATE_MODE: dict[str, str] = {
     "B": "full",
     "C": "y_only",
@@ -108,6 +127,12 @@ ARM_MATCHING_TARGET: dict[str, str] = {
         "match A's total parameters exactly when recursive_transition_layers "
         "== A's n_layers (z-state made parameter-free instead of removed)"
     ),
+    "F": (
+        "matches arm B's block_evaluations_per_forward exactly (this row's "
+        "construction); does NOT match A's or B's parameter count -- see "
+        "build_arm_f_dual_view for the real measured parameter-nearest "
+        "alternative construction and its block-evaluation residual instead"
+    ),
     "G": (
         "none declared -- architecture-change control at R=1, not a "
         "parameter-matching arm (same parameter profile as B)"
@@ -131,7 +156,7 @@ def construct_arm_tower(
 ) -> nn.Module:
     """Construct one control arm's denoiser tower via the same constructors
     ``TwoTowerModel`` uses for ``denoiser_arch``/``z_state_mode`` -- never a
-    parallel/ad hoc implementation. Fails closed for deferred (E/F/H) or
+    parallel/ad hoc implementation. Fails closed for deferred (E/H) or
     unknown arm ids.
     """
     if arm_id in DEFERRED_ARM_IDS:
@@ -152,6 +177,25 @@ def construct_arm_tower(
             vocab_size=vocab_size,
             d_model=d_model,
             n_layers=n_layers,
+            n_heads=n_heads,
+            max_len=max_len,
+            dropout=dropout,
+            kind_ids=kind_ids,
+            n_kinds=n_kinds,
+        )
+    if arch == "stacked_depth_matched":
+        # Arm F: same DenoiserTower class as arm A, no weight sharing, no z
+        # state -- just recursive_steps * transition_layers independent
+        # blocks instead of n_layers, so block_evaluations_per_forward (a
+        # generic hasattr(tower, "recursive_steps")-gated measurement in
+        # build_arm_report) comes out exactly equal to B's without any
+        # special-casing there. This is the block-evaluation-matched
+        # primary view; see build_arm_f_dual_view for the paired
+        # parameter-nearest view and its (necessarily nonzero) residual.
+        return DenoiserTower(
+            vocab_size=vocab_size,
+            d_model=d_model,
+            n_layers=recursive_steps * transition_layers,
             n_heads=n_heads,
             max_len=max_len,
             dropout=dropout,
@@ -309,6 +353,15 @@ def build_arm_report(
             "R=1 architecture-change control -- interface-compatible with "
             "the stacked baseline, not behaviorally equivalent (SLM-240)."
         )
+    if arm_id == "F":
+        notes.append(
+            "block-evaluation-matched against arm B by construction "
+            f"(block_evaluations_per_forward={block_evals}); no z-state "
+            "parameter bank (same as A); MORE parameters than B because "
+            "nothing is shared -- see build_arm_f_dual_view for the "
+            "measured parameter-nearest alternative and its block-"
+            "evaluation residual."
+        )
 
     z_state_mode = getattr(tower, "z_state_mode", None)
 
@@ -405,3 +458,166 @@ def build_control_arm_table(
             )
         )
     return reports
+
+
+def build_arm_f_dual_view(
+    *,
+    vocab_size: int,
+    d_model: int,
+    n_heads: int,
+    max_len: int,
+    dropout: float = 0.0,
+    kind_ids: list[int] | None = None,
+    n_kinds: int = 0,
+    recursive_steps: int,
+    recursive_transition_layers: int,
+    noisy_ids: torch.Tensor,
+    context: torch.Tensor,
+    pad_id: int,
+) -> dict[str, Any]:
+    """Arm F's two honest matching views against arm B, target + residual.
+
+    ``DenoiserTower`` (arm F's tower -- unshared, no z state) has exactly one
+    free dial, ``n_layers``, so it cannot simultaneously match arm B's
+    block-evaluation count *and* its parameter count at fixture scale (B
+    shares ``recursive_transition_layers`` blocks across ``recursive_steps``
+    passes plus a z-state delta; F pays full unshared params per block). This
+    function builds and measures **both** constructions instead of asserting
+    one is "matched":
+
+    - ``block_evaluation_matched``: ``n_layers = recursive_steps *
+      recursive_transition_layers`` -- the construction
+      ``construct_arm_tower("F", ...)`` returns and the row
+      :func:`build_control_arm_table` reports. Its block-evaluation count is
+      exactly B's; its parameter count is real, measured, and reported as a
+      surplus over B, never hidden.
+    - ``parameter_nearest``: the integer ``n_layers`` whose real measured
+      total parameter count is closest to arm B's real measured total
+      parameter count. The per-layer parameter cost is derived from two real
+      constructed 1-layer/2-layer towers (never a hard-coded constant), so
+      the candidate layer count is a formula, not a guess. This construction
+      is real and measured but is NOT block-evaluation-matched; its residual
+      block-evaluation count vs B is reported honestly.
+
+    Neither view is asserted to be simultaneously matched on both dimensions
+    -- this function's whole purpose is reporting the target + residual for
+    whichever dimension is not exact, per this repo's C/D-established
+    convention.
+    """
+    baseline_tower = construct_arm_tower(
+        "A",
+        vocab_size=vocab_size,
+        d_model=d_model,
+        n_layers=recursive_transition_layers,
+        n_heads=n_heads,
+        max_len=max_len,
+        dropout=dropout,
+        kind_ids=kind_ids,
+        n_kinds=n_kinds,
+    )
+    b_tower = construct_arm_tower(
+        "B",
+        vocab_size=vocab_size,
+        d_model=d_model,
+        n_layers=recursive_transition_layers,
+        n_heads=n_heads,
+        max_len=max_len,
+        dropout=dropout,
+        kind_ids=kind_ids,
+        n_kinds=n_kinds,
+        recursive_steps=recursive_steps,
+        recursive_transition_layers=recursive_transition_layers,
+    )
+    b_total = int(sum(p.numel() for p in b_tower.parameters()))
+    b_block_evals = recursive_steps * recursive_transition_layers
+
+    def _make(n_layers: int) -> DenoiserTower:
+        return DenoiserTower(
+            vocab_size=vocab_size,
+            d_model=d_model,
+            n_layers=max(1, n_layers),
+            n_heads=n_heads,
+            max_len=max_len,
+            dropout=dropout,
+            kind_ids=kind_ids,
+            n_kinds=n_kinds,
+        )
+
+    def _total_params(tower: nn.Module) -> int:
+        return int(sum(p.numel() for p in tower.parameters()))
+
+    one_layer_total = _total_params(_make(1))
+    two_layer_total = _total_params(_make(2))
+    per_layer_params = two_layer_total - one_layer_total
+    if per_layer_params <= 0:
+        raise ValueError(
+            "measured per-layer parameter delta must be positive; got "
+            f"{per_layer_params} (one_layer_total={one_layer_total}, "
+            f"two_layer_total={two_layer_total})"
+        )
+    common_params = one_layer_total - per_layer_params
+
+    block_matched_layers = b_block_evals
+    block_matched_tower = _make(block_matched_layers)
+    block_matched_report = build_arm_report(
+        "F",
+        block_matched_tower,
+        baseline_tower=baseline_tower,
+        noisy_ids=noisy_ids,
+        context=context,
+        pad_id=pad_id,
+    )
+
+    raw_estimate = (b_total - common_params) / per_layer_params
+    candidates = sorted(
+        {max(1, int(raw_estimate)), max(1, int(raw_estimate) + 1)}
+    )
+    nearest_layers = candidates[0]
+    nearest_tower = _make(nearest_layers)
+    nearest_delta = _total_params(nearest_tower) - b_total
+    for cand in candidates[1:]:
+        cand_tower = _make(cand)
+        cand_delta = _total_params(cand_tower) - b_total
+        if abs(cand_delta) < abs(nearest_delta):
+            nearest_layers, nearest_tower, nearest_delta = cand, cand_tower, cand_delta
+    nearest_report = build_arm_report(
+        "F",
+        nearest_tower,
+        baseline_tower=baseline_tower,
+        noisy_ids=noisy_ids,
+        context=context,
+        pad_id=pad_id,
+    )
+
+    return {
+        "target_arm": "B",
+        "target_total_parameters": b_total,
+        "target_block_evaluations_per_forward": b_block_evals,
+        "per_layer_parameter_cost_formula": {
+            "note": (
+                "measured from real constructed 1-layer/2-layer DenoiserTower "
+                "instances, never hard-coded"
+            ),
+            "common_parameters": common_params,
+            "per_layer_parameters": per_layer_params,
+        },
+        "block_evaluation_matched": {
+            "matching_dimension": "block_evaluations_per_forward",
+            "residual_dimension": "parameter_count_total",
+            "n_layers": block_matched_layers,
+            "report": block_matched_report.as_dict(),
+            "parameter_count_delta_vs_target_arm_b": (
+                block_matched_report.parameter_count_total - b_total
+            ),
+        },
+        "parameter_nearest": {
+            "matching_dimension": "parameter_count_total",
+            "residual_dimension": "block_evaluations_per_forward",
+            "n_layers": nearest_layers,
+            "report": nearest_report.as_dict(),
+            "parameter_count_delta_vs_target_arm_b": nearest_delta,
+            "block_evaluations_delta_vs_target_arm_b": (
+                nearest_layers - b_block_evals
+            ),
+        },
+    }

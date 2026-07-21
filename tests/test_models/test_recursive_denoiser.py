@@ -1699,6 +1699,12 @@ def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None
         == by_id["B"].mlp_calls_per_forward
         == by_id["B"].block_evaluations_per_forward
     )
+    # F: block-evaluation-matched against B by construction, but MORE real
+    # measured parameters than B -- never reported as parameter-matched.
+    assert by_id["F"].block_evaluations_per_forward == by_id["B"].block_evaluations_per_forward
+    assert by_id["F"].parameter_count_total > by_id["B"].parameter_count_total
+    assert not by_id["F"].within_matching_tolerance
+    assert by_id["F"].undeclared_zstate_parameter_names == ()
 
 
 def test_recursive_control_arm_report_rejects_bad_contract_version() -> None:
@@ -1867,3 +1873,193 @@ def test_recursive_control_initialization_rejects_mismatched_common_tensors() ->
             arm_towers={"A": tower_a, "B": tower_b},
             arm_denoiser_arch={"A": "stacked", "B": "shared_recursive"},
         )
+
+
+# ---------------------------------------------------------------------------
+# SLM-241 (RSC-A05) follow-up: arm F -- unshared depth-matched tower.
+# ---------------------------------------------------------------------------
+
+
+def test_arm_f_is_unshared_depth_matched_tower_with_no_zstate() -> None:
+    """Arm F is a plain DenoiserTower (no weight sharing, no z state) built
+    with recursive_steps * recursive_transition_layers independent blocks --
+    not the shared-object SharedRecursiveDenoiserTower."""
+    tower = construct_arm_tower(
+        "F", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=3, recursive_transition_layers=2,
+    )
+    assert isinstance(tower, DenoiserTower)
+    assert not hasattr(tower, "recursive_steps")
+    assert not hasattr(tower, "z_latent")
+    assert not hasattr(tower, "ctx_proj")
+    assert len(tower.layers) == 3 * 2
+    # No weight sharing: every block is a distinct parameterized object.
+    block_ids = [id(layer) for layer in tower.layers]
+    assert len(set(block_ids)) == len(block_ids)
+    names = dict(tower.named_parameters())
+    assert not any(name.split(".")[0] in {"z_latent", "ctx_proj"} for name in names)
+
+
+def test_arm_f_block_evaluations_match_arm_b_verified_by_hook_count() -> None:
+    """Requirement #6: concretely instrument/count real forward calls into
+    the transition-block module during one forward pass -- not just a
+    structural len(layers) claim."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    recursive_steps, recursive_transition_layers = 3, 2
+
+    f_tower = construct_arm_tower(
+        "F", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=recursive_steps,
+        recursive_transition_layers=recursive_transition_layers,
+    )
+    b_tower = construct_arm_tower(
+        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=recursive_steps,
+        recursive_transition_layers=recursive_transition_layers,
+    )
+
+    def _count_block_calls(tower: torch.nn.Module) -> int:
+        calls = {"n": 0}
+
+        def _hook(module: torch.nn.Module, inp: object, out: object) -> None:
+            calls["n"] += 1
+
+        handles = [layer.register_forward_hook(_hook) for layer in tower.layers]
+        noisy = torch.randint(1, vocab, (2, 6))
+        ctx = torch.randn(2, 3, d_model)
+        tower(noisy, ctx, pad_id=0)
+        for handle in handles:
+            handle.remove()
+        return calls["n"]
+
+    f_calls = _count_block_calls(f_tower)
+    b_calls = _count_block_calls(b_tower)
+    expected = recursive_steps * recursive_transition_layers
+    assert f_calls == expected
+    assert b_calls == expected
+    assert f_calls == b_calls == len(f_tower.layers)
+
+
+def test_arm_f_parameter_count_exceeds_arm_b_real_measured() -> None:
+    """F's block-evaluation-matched construction has strictly MORE real
+    measured parameters than B -- nothing is shared, so this must never be
+    reported as parameter-matched."""
+    vocab, d_model, n_layers, max_len = 23, 32, 2, 256
+    b_tower = construct_arm_tower(
+        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+    )
+    f_tower = construct_arm_tower(
+        "F", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+    )
+    b_total = sum(p.numel() for p in b_tower.parameters())
+    f_total = sum(p.numel() for p in f_tower.parameters())
+    assert f_total > b_total
+
+
+def test_build_arm_f_dual_view_reports_honest_residuals() -> None:
+    """build_arm_f_dual_view reports both matching views for arm F, each
+    with an explicit, nonzero residual on whichever dimension is not
+    matched -- never a bare 'matched' claim on both dimensions at once."""
+    from slm_training.models.recursive_control_arms import build_arm_f_dual_view
+
+    vocab, d_model, n_layers, max_len = 23, 32, 2, 256
+    recursive_steps = 2
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+
+    dual = build_arm_f_dual_view(
+        vocab_size=vocab, d_model=d_model, n_heads=2, max_len=max_len,
+        recursive_steps=recursive_steps, recursive_transition_layers=n_layers,
+        noisy_ids=noisy, context=ctx, pad_id=0,
+    )
+
+    target_block_evals = recursive_steps * n_layers
+    block_matched = dual["block_evaluation_matched"]
+    nearest = dual["parameter_nearest"]
+
+    # Block-evaluation-matched view: exact block-eval match, nonzero
+    # parameter residual vs B (never hidden).
+    assert block_matched["report"]["block_evaluations_per_forward"] == target_block_evals
+    assert block_matched["parameter_count_delta_vs_target_arm_b"] > 0
+
+    # Parameter-nearest view: real measured total closer to B than the
+    # block-matched view's total, but NOT block-evaluation-matched.
+    assert abs(nearest["parameter_count_delta_vs_target_arm_b"]) < abs(
+        block_matched["parameter_count_delta_vs_target_arm_b"]
+    )
+    assert nearest["block_evaluations_delta_vs_target_arm_b"] != 0
+
+    for view in (block_matched, nearest):
+        assert view["report"]["claim_class"] == "wiring"
+        assert "parity" not in view["report"]
+        assert "winner" not in view["report"]
+
+    # Per-layer cost is measured from real constructed towers, not hard-coded.
+    formula = dual["per_layer_parameter_cost_formula"]
+    assert formula["per_layer_parameters"] > 0
+
+
+def test_arm_f_denoiser_arch_wired_through_twotower_config_and_roundtrips(
+    tmp_path: Path,
+) -> None:
+    """Requirement #1: F constructs through the canonical factory
+    (TwoTowerConfig.denoiser_arch) and round-trips a checkpoint, same as
+    every other built arm."""
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            denoiser_arch="stacked_depth_matched",  # type: ignore[arg-type]
+            recursive_steps=2, recursive_transition_layers=2,
+            grammar_constrained=False, gen_steps=2, seed=0,
+        ),
+        device="cpu",
+    )
+    assert isinstance(model.denoiser, DenoiserTower)
+    assert len(model.denoiser.layers) == 4
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    loss.backward()
+
+    ckpt = tmp_path / "arm_f.pt"
+    model.save(ckpt)
+    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    assert loaded.config.denoiser_arch == "stacked_depth_matched"
+    assert isinstance(loaded.denoiser, DenoiserTower)
+    assert len(loaded.denoiser.layers) == 4
+
+
+def test_recursive_control_initialization_includes_arm_f_with_disjoint_seed() -> None:
+    """The fairness contract covers arm F too: common tensors (tok/pos/the
+    shared-prefix transition blocks) match across A/B/C/D/F, F's extra
+    unshared blocks are its own architecture-specific tensors, and its
+    reserved arch_specific:stacked_depth_matched seed is disjoint from every
+    other arm's."""
+    base_seed = 0
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    arm_ids = ("A", "B", "C", "D", "F")
+    towers = {}
+    for arm_id in arm_ids:
+        torch.manual_seed(derive_seed(base_seed, "model_initialization"))
+        towers[arm_id] = construct_arm_tower(
+            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
+            n_heads=2, max_len=max_len, recursive_steps=2,
+            recursive_transition_layers=n_layers,
+        )
+    report = build_recursive_control_initialization(
+        base_seed=base_seed,
+        arm_towers=towers,
+        arm_denoiser_arch={arm_id: ARM_DENOISER_ARCH[arm_id] for arm_id in arm_ids},
+    )
+    assert report.common_tensor_hashes_match_across_arms is True
+    assert "tok.weight" in report.common_tensor_names
+    # F's extra unshared blocks (layers.2/.3, beyond the shared prefix) are
+    # architecture-specific to F alone.
+    f_specific = report.architecture_specific_tensor_names_and_shapes["F"]
+    assert any(name.startswith("layers.2") or name.startswith("layers.3") for name in f_specific)
+    seeds = report.architecture_specific_seeds
+    assert seeds["F"] not in {v for k, v in seeds.items() if k != "F"}
+    assert len(set(seeds.values())) == len(seeds)

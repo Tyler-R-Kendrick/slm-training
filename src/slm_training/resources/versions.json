@@ -1387,7 +1387,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v66",
+      "version": "v67",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1402,6 +1402,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v67",
+          "date": "2026-07-21",
+          "note": "SLM-241 (RSC-A05) follow-up: added stacked_depth_matched as a canonical denoiser_arch value (control arm F, unshared depth-matched tower) -- routes to a plain DenoiserTower built with recursive_steps * recursive_transition_layers independent transition blocks instead of denoiser_layers, so its block-evaluation count matches the shared-recursive arm's (arm B) exactly. No new tower class; no z-state; no change to existing 'stacked'/'shared_recursive'/'shared_recursive_y_only'/'shared_recursive_no_extra_capacity' behavior. CLI --denoiser-arch (scripts/train_model.py) gains the new choice."
+        },
         {
           "version": "v66",
           "date": "2026-07-21",
@@ -1750,7 +1755,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -1771,6 +1776,11 @@
         "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-21",
+          "note": "SLM-241 (RSC-A05) follow-up: built control arm F (unshared depth-matched tower) -- recursive_control_arms.construct_arm_tower('F', ...) now returns a plain DenoiserTower with recursive_steps * recursive_transition_layers independent blocks (no longer NotImplementedError); added build_arm_f_dual_view (block-evaluation-matched vs parameter-nearest real-measured constructions, honest residual on whichever dimension isn't exact); rng_contract.py gained the arch_specific:stacked_depth_matched reserved namespace (offset 100_000); fixture script gained an arm_f_dual_view report field + markdown section. BUILT_ARM_IDS now (A,B,C,D,F,G); DEFERRED_ARM_IDS now (E,H). No change to A/B/C/D/G construction or reported values."
+        },
         {
           "version": "v7",
           "date": "2026-07-21",

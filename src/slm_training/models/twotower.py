@@ -90,12 +90,17 @@ _REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
 _DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
 
 #: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
-#: control arm this issue builds (A/B/C/D; see
+#: control arm this issue builds (A/B/C/D/F; see
 #: ``slm_training.models.recursive_control_arms`` for the full A-H registry,
-#: including the deferred E/F/H arms and G, which reuses "shared_recursive"
+#: including the still-deferred E/H arms and G, which reuses "shared_recursive"
 #: with ``recursive_steps=1``). "stacked" is arm A; the three
-#: ``SharedRecursiveDenoiserTower`` archs map onto its ``z_state_mode``.
+#: ``SharedRecursiveDenoiserTower`` archs map onto its ``z_state_mode``;
+#: "stacked_depth_matched" (arm F) is a plain, unshared ``DenoiserTower`` built
+#: with ``recursive_steps * recursive_transition_layers`` independent
+#: transition blocks instead of ``denoiser_layers`` -- the same class as arm
+#: A, just deeper, so it needs no new tower code, only this dispatch branch.
 STACKED_DENOISER_ARCH = "stacked"
+STACKED_DEPTH_MATCHED_DENOISER_ARCH = "stacked_depth_matched"
 SHARED_RECURSIVE_ARCH_Z_STATE_MODES: dict[str, str] = {
     "shared_recursive": "full",  # arm B (and, with recursive_steps=1, arm G)
     "shared_recursive_y_only": "y_only",  # arm C
@@ -103,6 +108,7 @@ SHARED_RECURSIVE_ARCH_Z_STATE_MODES: dict[str, str] = {
 }
 KNOWN_DENOISER_ARCHES: tuple[str, ...] = (
     STACKED_DENOISER_ARCH,
+    STACKED_DEPTH_MATCHED_DENOISER_ARCH,
     *SHARED_RECURSIVE_ARCH_Z_STATE_MODES,
 )
 
@@ -202,10 +208,12 @@ class TwoTowerConfig:
     # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
     # hf_model_name causal LM as a bidirectional masked denoiser backbone.
     denoiser_backend: str = "scratch"
-    # stacked | shared_recursive | shared_recursive_y_only |
-    # shared_recursive_no_extra_capacity — SLM-138 shared recursive denoiser
-    # tower (SLM-241/RSC-A05 adds the y_only/no_extra_capacity control arms;
-    # see KNOWN_DENOISER_ARCHES / slm_training.models.recursive_control_arms).
+    # stacked | stacked_depth_matched | shared_recursive |
+    # shared_recursive_y_only | shared_recursive_no_extra_capacity —
+    # SLM-138 shared recursive denoiser tower (SLM-241/RSC-A05 adds the
+    # y_only/no_extra_capacity control arms plus stacked_depth_matched, an
+    # unshared depth-matched tower / arm F; see KNOWN_DENOISER_ARCHES /
+    # slm_training.models.recursive_control_arms).
     denoiser_arch: str = "stacked"
     # SLM-138: number of recurrences for the shared recursive denoiser.
     recursive_steps: int = 1
@@ -1140,6 +1148,33 @@ class TwoTowerModel(nn.Module):
                     vocab_size=tokenizer.vocab_size,
                     d_model=self.config.d_model,
                     n_layers=self.config.denoiser_layers,
+                    n_heads=self.config.n_heads,
+                    max_len=self.config.max_target_len,
+                    dropout=self.config.dropout,
+                    kind_ids=kind_ids,
+                    n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                )
+            elif denoiser_arch == STACKED_DEPTH_MATCHED_DENOISER_ARCH:
+                # SLM-241 (RSC-A05) arm F: an ordinary *unshared* DenoiserTower
+                # (no weight sharing, no z state -- literally the same class
+                # as arm A) built with recursive_steps * transition_layers
+                # independent TransformerBlocks instead of denoiser_layers, so
+                # its per-forward block-evaluation count matches the shared
+                # recursive arm's (arm B) exactly. This necessarily has MORE
+                # parameters than B (nothing is shared) -- see
+                # slm_training.models.recursive_control_arms.build_arm_f_dual_view
+                # for the honest block-evaluation-matched vs
+                # parameter-nearest residual accounting.
+                f_transition_layers = int(
+                    getattr(self.config, "recursive_transition_layers", 0) or 0
+                )
+                if f_transition_layers <= 0:
+                    f_transition_layers = self.config.denoiser_layers
+                f_steps = int(getattr(self.config, "recursive_steps", 1) or 1)
+                self.denoiser = DenoiserTower(
+                    vocab_size=tokenizer.vocab_size,
+                    d_model=self.config.d_model,
+                    n_layers=f_steps * f_transition_layers,
                     n_heads=self.config.n_heads,
                     max_len=self.config.max_target_len,
                     dropout=self.config.dropout,

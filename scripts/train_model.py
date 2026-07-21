@@ -241,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         "--denoiser-arch",
         choices=(
             "stacked",
+            "stacked_depth_matched",
             "shared_recursive",
             "shared_recursive_y_only",
             "shared_recursive_no_extra_capacity",
@@ -249,8 +250,12 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "SLM-138: stacked independent blocks or shared recursive "
             "transition. SLM-241 (RSC-A05) control arms: "
-            "shared_recursive_y_only (arm C, no z state) and "
-            "shared_recursive_no_extra_capacity (arm D, parameter-free z)."
+            "shared_recursive_y_only (arm C, no z state), "
+            "shared_recursive_no_extra_capacity (arm D, parameter-free z), "
+            "and stacked_depth_matched (arm F: unshared depth-matched tower "
+            "-- recursive_steps * recursive_transition_layers independent "
+            "blocks, more parameters than the recursive arms since nothing "
+            "is shared)."
         ),
     )
     parser.add_argument(

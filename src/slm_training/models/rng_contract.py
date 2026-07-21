@@ -85,6 +85,15 @@ NAMESPACE_OFFSETS: dict[str, int] = {
     "arch_specific:shared_recursive": 70_000,
     "arch_specific:shared_recursive_y_only": 80_000,
     "arch_specific:shared_recursive_no_extra_capacity": 90_000,
+    # SLM-241 (RSC-A05) follow-up: arm F ("stacked_depth_matched", an unshared
+    # depth-matched tower -- same DenoiserTower class as "stacked", just built
+    # with recursive_steps * recursive_transition_layers independent
+    # transition blocks). Its extra unshared blocks beyond the first
+    # recursive_transition_layers are architecture-specific tensors (absent
+    # from every other arm's common-tensor set), so they fall under this
+    # reserved namespace exactly like every other arch_specific:* entry --
+    # same "reserved, not literally consumed" honesty note applies.
+    "arch_specific:stacked_depth_matched": 100_000,
 }
 
 DECLARED_NAMESPACES = tuple(sorted(NAMESPACE_OFFSETS))

@@ -14,9 +14,15 @@ training-loss semantics, only the fixture's control of RNG around it.
 
 SLM-241 (RSC-A05): also emits a ``control_arm_table`` -- real, measured
 resource accounting (parameters/block-evaluations/estimated FLOPs) for every
-built matched-control arm (A/B/C/D/G; see
+built matched-control arm (A/B/C/D/F/G; see
 :mod:`slm_training.models.recursive_control_arms`), never a raw loss or a
-winner. E/F/H are explicitly deferred -- see ``docs/design/iter-rsc-a05-*``.
+winner. E/H remain explicitly deferred -- see ``docs/design/iter-rsc-a05-*``.
+Arm F (unshared depth-matched tower) additionally gets an ``arm_f_dual_view``
+field: its block-evaluation-matched construction (the ``control_arm_table``
+row) necessarily has MORE parameters than arm B (nothing is shared), so a
+second, real, measured parameter-nearest construction is reported alongside
+it with its own (necessarily nonzero) block-evaluation residual -- never a
+bare "matched" claim on both dimensions at once.
 
 Example:
   python -m scripts.run_slm138_recursive_denoiser_fixture --mode plan-only
@@ -41,6 +47,7 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.recursive_control_arms import (
     BUILT_ARM_IDS,
     DEFERRED_ARM_IDS,
+    build_arm_f_dual_view,
     build_control_arm_table,
 )
 from slm_training.models.recursive_denoiser import (
@@ -233,6 +240,39 @@ def _control_arm_table(stacked: TwoTowerModel, base_seed: int) -> list[dict[str,
     return [report.as_dict() for report in reports]
 
 
+def _arm_f_dual_view(stacked: TwoTowerModel, base_seed: int) -> dict[str, Any]:
+    """SLM-241 (RSC-A05) follow-up: arm F's two honest matching views against
+    arm B -- block-evaluation-matched (the primary ``control_arm_table`` "F"
+    row) and parameter-nearest (a separate construction, real and measured,
+    reported alongside its own residual). Reuses the same deterministic
+    ``shape_probe_inputs``/``shape_probe_context`` namespaces as the other
+    fixture-level comparisons above.
+    """
+    import torch
+
+    noisy = isolated_draw(
+        base_seed,
+        "shape_probe_inputs",
+        lambda: torch.randint(1, stacked.tokenizer.vocab_size, (2, 6)),
+    )
+    ctx = isolated_draw(
+        base_seed,
+        "shape_probe_context",
+        lambda: torch.randn(2, 3, stacked.config.d_model),
+    )
+    return build_arm_f_dual_view(
+        vocab_size=stacked.tokenizer.vocab_size,
+        d_model=stacked.config.d_model,
+        n_heads=stacked.config.n_heads,
+        max_len=stacked.config.max_target_len,
+        recursive_steps=2,
+        recursive_transition_layers=stacked.config.denoiser_layers,
+        noisy_ids=noisy,
+        context=ctx,
+        pad_id=stacked.tokenizer.pad_id,
+    )
+
+
 def _clean_tree_gate(*, code_dirty: bool | None, allow_dirty: bool) -> dict[str, Any]:
     """Pure clean-tree evidence classification (SLM-239 requirement #3).
 
@@ -324,9 +364,15 @@ def _run_fixture(
     architecture_comparison = _architecture_comparison(stacked, recursive, base_seed)
 
     # SLM-241 (RSC-A05): the built control-arm resource-accounting table
-    # (A/B/C/D/G). Deterministic/RNG-isolated for the same reason as
+    # (A/B/C/D/F/G). Deterministic/RNG-isolated for the same reason as
     # architecture_comparison above.
     control_arm_table = _control_arm_table(stacked, base_seed)
+
+    # SLM-241 (RSC-A05) follow-up: arm F's paired block-evaluation-matched /
+    # parameter-nearest views -- the control_arm_table row above is the
+    # block-evaluation-matched construction only; this adds the honest
+    # parameter-nearest alternative + its residual.
+    arm_f_dual_view = _arm_f_dual_view(stacked, base_seed)
 
     # (3) Deterministic pre-update objective decomposition. Explicit
     # named-namespace seed immediately before each training_loss call --
@@ -435,6 +481,7 @@ def _run_fixture(
         "control_arm_table": control_arm_table,
         "control_arms_built": list(BUILT_ARM_IDS),
         "control_arms_deferred": list(DEFERRED_ARM_IDS),
+        "arm_f_dual_view": arm_f_dual_view,
         "deep_supervision_metrics": deep_metrics,
         "checkpoint_roundtrip_ok": loaded_ok,
         "rng_contract": {
@@ -768,6 +815,52 @@ def _render_markdown(report: dict[str, Any]) -> str:
                 f"{arm['within_matching_tolerance']} |"
             )
         lines.append("")
+
+    dual = report.get("arm_f_dual_view")
+    if dual:
+        bm = dual["block_evaluation_matched"]
+        pn = dual["parameter_nearest"]
+        lines.extend(
+            [
+                "## Arm F dual view (block-evaluation-matched vs parameter-nearest)",
+                "",
+                "Arm F (unshared depth-matched tower) has exactly one free dial "
+                "(`n_layers`), so it cannot match both arm B's block-evaluation "
+                "count and its parameter count simultaneously -- both real, "
+                "measured constructions are reported below with an explicit "
+                "residual on whichever dimension is not matched.",
+                "",
+                f"- Target arm: **{dual['target_arm']}** -- "
+                f"`{dual['target_total_parameters']}` parameters, "
+                f"`{dual['target_block_evaluations_per_forward']}` block "
+                "evaluations per forward.",
+                f"- Per-layer parameter cost (measured from real 1-layer/"
+                "2-layer towers, never hard-coded): "
+                f"`{dual['per_layer_parameter_cost_formula']['per_layer_parameters']}` "
+                "per layer, "
+                f"`{dual['per_layer_parameter_cost_formula']['common_parameters']}` "
+                "common (non-block) parameters.",
+                "",
+                "| view | n_layers | block evals | Δ block evals vs B | params | "
+                "Δ params vs B |",
+                "| --- | --- | --- | --- | --- | --- |",
+                f"| block_evaluation_matched | {bm['n_layers']} | "
+                f"{bm['report']['block_evaluations_per_forward']} | 0 | "
+                f"{bm['report']['parameter_count_total']} | "
+                f"{bm['parameter_count_delta_vs_target_arm_b']:+d} |",
+                f"| parameter_nearest | {pn['n_layers']} | "
+                f"{pn['report']['block_evaluations_per_forward']} | "
+                f"{pn['block_evaluations_delta_vs_target_arm_b']:+d} | "
+                f"{pn['report']['parameter_count_total']} | "
+                f"{pn['parameter_count_delta_vs_target_arm_b']:+d} |",
+                "",
+                "Neither row is a 'matched' claim on both dimensions at once -- "
+                "`block_evaluation_matched` is the `control_arm_table` \"F\" row "
+                "above; `parameter_nearest` is a separate construction reported "
+                "only here.",
+                "",
+            ]
+        )
 
     if "losses" in report:
         lines.extend(
