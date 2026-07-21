@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v143",
+      "version": "v144",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v144",
+          "date": "2026-07-21",
+          "note": "E689 r2 correction: preserve established schema-role binding at positional slots while testing planned parent descendant disambiguation"
+        },
         {
           "version": "v143",
           "date": "2026-07-21",

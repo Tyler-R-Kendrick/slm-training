@@ -7827,6 +7827,12 @@ class TwoTowerModel(nn.Module):
                             else None
                         ),
                         ids[row, :position].tolist(),
+                        (
+                            self._semantic_plan_role_bindings[row]
+                            if self._semantic_plan_role_bindings
+                            and row < len(self._semantic_plan_role_bindings)
+                            else None
+                        ),
                     )
                     if schema_role_slot_bias is not None:
                         scores = scores + schema_role_slot_bias
