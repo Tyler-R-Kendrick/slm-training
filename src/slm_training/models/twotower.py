@@ -5680,19 +5680,39 @@ class TwoTowerModel(nn.Module):
         )
         if owner_position < 0:
             return None
-        visible_slot_ids = {
-            int(self.tokenizer.sym_id(index))
+        visible_slots_by_id = {
+            int(self.tokenizer.sym_id(index)): slot_contract[index]
             for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
         }
+        visible_slot_ids = set(visible_slots_by_id)
         if any(
             token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
         ):
             return None
         used_slot_ids = visible_slot_ids.intersection(prefix[:owner_position])
+        role_candidates = (
+            self._semantic_role_candidates[row]
+            if self._semantic_role_candidates
+            and row < len(self._semantic_role_candidates)
+            else None
+        )
+        active_component = next(
+            (
+                str(frame.expr_type).removeprefix("element:")
+                for frame in reversed(getattr(state, "frames", ()))
+                if frame.kind == "component"
+            ),
+            "",
+        )
         targets = [
             position
             for position, token_id in enumerate(candidate_ids)
             if token_id in visible_slot_ids and token_id not in used_slot_ids
+            and (
+                not role_candidates
+                or active_component
+                in role_candidates.get(visible_slots_by_id[token_id], ())
+            )
         ]
         if not targets:
             return None

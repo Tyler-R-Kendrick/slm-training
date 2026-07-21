@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v108",
+      "version": "v109",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v109",
+          "date": "2026-07-21",
+          "note": "E656: restrict repeated-plan raw-slot margins to roles directly owned by the active component"
+        },
         {
           "version": "v108",
           "date": "2026-07-21",
