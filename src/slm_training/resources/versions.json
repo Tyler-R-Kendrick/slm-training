@@ -2149,6 +2149,11 @@
       "history": [
         {
           "version": "v94",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E646 complete-root-reachability evidence to E652 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v94",
           "date": "2026-07-20",
           "note": "E652 rejection: restore v92 plan-counted root references after all-section reachability closure was prediction- and quality-neutral; renumbered from the originally launched E646 arm after rebase"
         },
