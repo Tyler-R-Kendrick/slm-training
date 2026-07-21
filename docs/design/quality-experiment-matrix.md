@@ -5056,3 +5056,53 @@ Evidence:
 [iter-e645-required-slot-margin-variadic-gate-20260721.md](iter-e645-required-slot-margin-variadic-gate-20260721.md)
 and
 [JSON](iter-e645-required-slot-margin-variadic-gate-20260721.json).
+
+## E646 the residual bind-reference "hijack" is not a bug (negative result)
+
+E646 picks up E645's own next-step: post-fix, `hijacked_non_slot_candidate=
+true` still fires at positions whose item schema is slot-reachable, but where
+the pre-bias argmax was a bind-reference (`&N`) rather than a component-
+opening token (`held_out` 1/14, `rico_held` 4/16, `smoke` 1/7 at margin=2).
+Unlike E645, this session found E645's own checkpoint still present in
+`outputs/` (byte-identical by sha256), so no retraining was needed and all
+numbers are directly comparable, not a new mechanism match.
+
+**E645's own characterization was partly inaccurate.** Its residual note
+claimed all such fires were "at variadic-frame positions ... bind-reference."
+The `held_out` fire is actually a `component`-frame, `struct`-kind (`-`,
+negation operator) displacement, not a variadic-frame bind displacement —
+corrected here. Only the `rico_held` fires (both on `rico_eval_test_25`)
+match E645's description, and even there the *active* frame is the innermost
+`component` frame (already gated by E630), not the `variadic` frame E645's
+own fix targets.
+
+**Trace verdict: not a bug.** Diffing full predictions at
+`required_slot_margin_decode_weight={0,2}` on 4 concrete instances
+(`rico_eval_test_25`, `smoke_callout_01`, `smoke_hero_01`, `held_out_form_01`)
+found the bias's override never lowered `placeholder_fidelity` or
+`structural_similarity`, and twice materially raised it:
+`rico_eval_test_25` 0.625 → 0.875, `smoke_callout_01` 0.333 → 0.667 — in both
+cases margin=0 (bias off) reused already-emitted placeholder text via a
+bind-reference where a distinct, still-missing gold slot was correct instead.
+This is the opposite of E628/E630/E645's traced mechanism (a real component
+candidate displaced). No change was made to `_required_slot_margin_bias` or
+`_required_slot_margin_position_accepts_slot` — per this repo's values, no
+fix is forced where the trace doesn't warrant one.
+
+**One additive, behavior-neutral change.** `_record_required_slot_margin_
+trace` now also emits `hijacked_bind_reference_candidate: bool`, isolating
+the bind-kind sub-case from the broader (and genuinely dangerous)
+`component`/`struct`/`builtin`-kind hijack signal, so a future session can
+filter directly instead of re-deriving this finding. No bias/gate behavior
+changed; `model.twotower` v81 → v82 (instrumentation-only). 148/148 tests
+pass (147 from E645 + 1 new).
+
+4 traced instances on 1 scratch checkpoint (800 steps, seed 0); not a powered
+sample; not a ship claim; no checkpoint trained, promoted, or synced (E645's
+checkpoint reused verbatim). E620's coverage-aware component/property closure
+recommendation remains the next untried lever on this open item.
+
+Evidence:
+[iter-e646-required-slot-margin-bind-reference-residual-20260721.md](iter-e646-required-slot-margin-bind-reference-residual-20260721.md)
+and
+[JSON](iter-e646-required-slot-margin-bind-reference-residual-20260721.json).

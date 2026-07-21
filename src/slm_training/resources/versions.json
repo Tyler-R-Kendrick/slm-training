@@ -2100,7 +2100,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v81",
+      "version": "v82",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2115,6 +2115,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v82",
+          "date": "2026-07-21",
+          "note": "E646: purely additive trace refinement, no decode-behavior change. _record_required_slot_margin_trace now also emits hijacked_bind_reference_candidate (true iff the displaced pre-bias argmax candidate's kind was 'bind', i.e. a &N reference reusing an already-completed statement's value, not a real component-opening/structural candidate). E645's residual_hijacks_post_fix note characterized ALL post-fix hijacked_non_slot_candidate=true fires as this bind-reference sub-case; a direct re-trace on the exact same checkpoint (sha256 a4c24987d1cf...) found that characterization was itself imprecise (held_out's 1/14 fire is a struct-kind '-' NEG_OP swap inside a component frame, not a variadic-frame bind swap) alongside confirming the bind-reference sub-case IS real and, in the concrete instances traced (rico_eval_test_25, smoke_callout_01), the bias's override raised placeholder_fidelity rather than lowering it. See docs/design/iter-e646-required-slot-margin-bind-reference-residual-20260721.md. No change to _required_slot_margin_bias or _required_slot_margin_position_accepts_slot; required_slot_margin_decode_weight default (0.0) and E617 gating unchanged."
+        },
         {
           "version": "v81",
           "date": "2026-07-21",

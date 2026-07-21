@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "run_id": "e646-required-slot-margin-bind-reference-residual-20260721",
+  "experiment_id": "E646",
+  "date_utc": "2026-07-21",
+  "status": "completed",
+  "run_class": "trace_plus_additive_instrumentation",
+  "claim_class": "root_cause_trace_negative_result_no_bias_behavior_change",
+  "quality_claim_made": false,
+  "issue": null,
+  "hypothesis": "E645's own next_step flagged a residual, unfixed hijacked_non_slot_candidate=true class: variadic-frame array-item positions whose item schema IS slot-reachable (so E645's gate correctly leaves them active) but where the pre-bias argmax was a bind-reference token (kind='bind', e.g. '&2') rather than a component-opening token. This is either (a) a real quality problem -- a bind-reference being wrongly redirected to a slot-fill it shouldn't displace -- or (b) benign/desirable -- e.g. the bind-reference pointed at stale/duplicate content and the bias correctly prefers the genuinely still-missing gold slot. This session traces 3+ concrete instances to distinguish (a) from (b) directly, on the exact same checkpoint E645 used (which, unlike E645's own environment, persisted in this session's outputs/ -- verified byte-identical by sha256).",
+  "environment_note": "Unlike E645 (whose target checkpoint did not survive across sessions), this session found outputs/runs/e645-smoke-hero-trace-scratch800-20260721/checkpoints/last.pt already present with sha256 a4c24987d1cf3dca97f84fd19e64cfc94210de27b75dc27cc4f7eb5f2041b7e7, byte-identical to E645's own recorded hash. No retraining was needed; this session reused E645's checkpoint verbatim, so all numbers below are directly comparable to E645's, not a new-checkpoint mechanism match.",
+  "checkpoint": {
+    "run_id": "e645-smoke-hero-trace-scratch800-20260721",
+    "location": "outputs/runs/e645-smoke-hero-trace-scratch800-20260721/checkpoints/last.pt",
+    "sha256": "a4c24987d1cf3dca97f84fd19e64cfc94210de27b75dc27cc4f7eb5f2041b7e7",
+    "recipe": {
+      "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+      "model": "twotower",
+      "context_backend": "scratch",
+      "output_tokenizer": "choice",
+      "seed": 0,
+      "batch_size": 1,
+      "steps": 800,
+      "last_loss": 4.062225341796875,
+      "no_sync_checkpoints": true
+    },
+    "reused_verbatim": true,
+    "synced": false,
+    "promoted": false
+  },
+  "part_1_reproduction_of_e645_residual_counts": {
+    "method": "Re-ran E645's exact post-fix reverification command (all honest_slot_contract/semantic_plan_*/schema_*_decode_weight flags, grammar_ltr_max_tokens=160) at required_slot_margin_decode_weight=2 against held_out (n=5) and rico_held (n=3), reading decode_stats.constrained_selection_traces (phase=='required_slot_margin') directly from the eval JSON.",
+    "result": "Counts reproduced exactly: held_out 1/14 fires flagged hijacked_non_slot_candidate=true, rico_held 4/16 (2 unique fire sites x2, both on rico_eval_test_25 -- the eval pipeline records the same decode twice, once per internal pass). Matches E645's reported held_out=1/14, rico_held=4/16 precisely, confirming this is the same checkpoint/mechanism, not new nondeterminism."
+  },
+  "part_2_e645s_own_characterization_was_partially_inaccurate": {
+    "finding": "E645's residual_hijacks_post_fix note claimed ALL residual hijacks were 'at variadic-frame positions ... where the pre-bias argmax happened to be a bind-reference token'. Reading the held_out fire's actual trace directly falsifies the 'all': its frame_path is [{kind: component, expr_type: element:Input, arg_index: 1}] (a component frame, not variadic) and before_kind is 'struct' (before_token '-', the NEG_OP token), not 'bind'. Only the rico_held fires (2 unique sites, both on rico_eval_test_25) match E645's description: frame_path [Card(component,arg0), variadic(array,arg0), TextContent(component,arg0)] with before_kind='bind' (&2) -> chosen_kind='sym' (@1 / @7). Also corrected here: the active frame at fire time (frames[-1]) is the innermost component frame (TextContent's own content argument, already gated by E630's x-openui-placeholder check), not the variadic frame itself -- E645's variadic-frame gate (frame.schemas[0] reachability) is not what makes these positions eligible; E630's pre-existing component-frame gate is. E645's mechanism narrative for this residual class was directionally right about the bind-vs-sym token swap but wrong about which frame kind and gate governs it.",
+    "honest_note": "This is a correction to E645's own written characterization, not a new bug -- flagged for the record since this lineage's docs are read forward as ground truth by later sessions."
+  },
+  "part_3_trace_reads_of_concrete_instances": {
+    "method": "For each hijack site, ran the same checkpoint at required_slot_margin_decode_weight=0 (bias off, so the pre-bias/pre-hijack decode path is what actually gets emitted) and =2 (bias on), and diffed the two full predictions plus placeholder_fidelity/structural_similarity, rather than inferring from the trace's top_candidates alone.",
+    "instances": [
+      {
+        "id": "rico_eval_test_25 (rico_held)",
+        "site": "Card([Tabs([TabItem(...)])])'s 2nd/3rd positional args (frame_path Card>variadic>TextContent-equivalent slot arg)",
+        "margin0_prediction_tail": "v4 = Card([Tabs([TabItem(\":cardview_1.title\", \":cardview.body\", \":cardview.title\")])])",
+        "margin2_prediction_tail": "v4 = Card([Tabs([TabItem(\":cardview_1.title\", \":card4.body\", \":card4.title\")])])",
+        "reading": "At margin=0 (bias off, the bind-reference candidate wins naturally), the decoder reuses already-emitted placeholder text (':cardview.body', ':cardview.title', duplicated from v1/v2 earlier in the same program) for TabItem's 2nd/3rd args instead of the distinct, still-unused gold slots (':card4.body', ':card4.title'). At margin=2, the bias floors the still-missing required slot above the bind-reference, correctly selecting the distinct gold-matching placeholders instead.",
+        "placeholder_fidelity": {"margin0": 0.625, "margin2": 0.875},
+        "structural_similarity": {"margin0": 0.6546, "margin2": 0.6546},
+        "meaningful_program_v1": {"margin0": true, "margin2": true},
+        "verdict": "Bias override is a genuine quality improvement here, not a hijack of anything correct."
+      },
+      {
+        "id": "smoke_callout_01 (smoke)",
+        "site": "Callout(...)'s 3rd positional arg",
+        "margin0_prediction": "root = Callout(\"itet\", \":smoke.callout.title\", \":smoke.callout.title\")",
+        "margin2_prediction": "root = Callout(\"itet\", \":smoke.callout.title\", \":smoke.callout.heading\")",
+        "reading": "Same pattern: margin=0 duplicates ':smoke.callout.title' via a bind-reference-style reuse into the 3rd arg; margin=2's bias floors the distinct still-missing ':smoke.callout.heading' slot instead, matching gold better.",
+        "placeholder_fidelity": {"margin0": 0.3333333333333333, "margin2": 0.6666666666666666},
+        "meaningful_program_v1": {"margin0": true, "margin2": true},
+        "verdict": "Same as above: improvement, not a hijack of anything correct."
+      },
+      {
+        "id": "smoke_hero_01 (smoke)",
+        "site": "root Stack's own array item, nested TextContent content arg (frame_path variadic>TextContent(component,arg0))",
+        "note": "Exhibits the same bind(&2)->sym(@2) swap mechanism (confirmed via decode_stats trace) but the record's placeholder_fidelity is already 1.0 at both margin=0 and margin=2 -- a true no-op here, neither helped nor hurt.",
+        "placeholder_fidelity": {"margin0": 1.0, "margin2": 1.0},
+        "meaningful_program_v1": {"margin0": true, "margin2": true},
+        "verdict": "Neutral no-op on this record."
+      },
+      {
+        "id": "held_out_form_01 (held_out) -- the struct/'-' fire, not the bind-reference class",
+        "note": "This is the fire part_2 found does NOT match E645's bind-reference description (before_kind='struct', a NEG_OP '-' token, at a component/Input arg_index=1 position). Both margin=0 and margin=2 predictions on this record are already fairly degenerate on this undertrained 800-step checkpoint (margin=0 nests Button-inside-Button-inside-Button; margin=2 produces a long flat array of repeated placeholder-text items) -- messier evidence than the other three instances, but directionally consistent: structural_similarity rose (0.4333 -> 0.6), placeholder_fidelity was unchanged (0.8 -> 0.8), no regression.",
+        "placeholder_fidelity": {"margin0": 0.8, "margin2": 0.8},
+        "structural_similarity": {"margin0": 0.4333, "margin2": 0.6},
+        "meaningful_program_v1": {"margin0": true, "margin2": true},
+        "verdict": "No regression; less clean evidence than the other three but not a counter-example either."
+      }
+    ]
+  },
+  "part_4_verdict_no_bias_behavior_fix": {
+    "reasoning": "Across all 4 traced instances (the largest available in the n=19 union's held_out+rico_held+smoke residual sites), overriding the bind-reference (or, in one case, struct-token) candidate with the still-missing required slot never lowered placeholder_fidelity or structural_similarity, and twice raised placeholder_fidelity materially (0.625->0.875, 0.333->0.667) by replacing stale/duplicate placeholder reuse with the correct distinct gold slot. This is the opposite of E628/E630/E645's traced mechanism, where the displaced candidate was a real component-opening token that the bias had no business displacing. The residual 'hijacked_non_slot_candidate=true' fires are, on the evidence gathered here, either quality-neutral or quality-improving -- not a bug. Per this repo's explicit values (never force a fix that isn't warranted, never weaken a gate to pass a number), no change to _required_slot_margin_bias or _required_slot_margin_position_accepts_slot is made.",
+    "caveat": "4 instances on 1 scratch checkpoint (800 steps, seed 0) is not a powered sample; 'never lowered fidelity' is an observation across this small evidence set, not a proof it can never happen. The held_out struct-token instance is the least clean (a messier, already-degenerate record) and is reported honestly as such rather than smoothed over."
+  },
+  "part_5_additive_instrumentation_change": {
+    "location": "TwoTowerModel._record_required_slot_margin_trace (src/slm_training/models/twotower.py)",
+    "change": "Added a new trace field, hijacked_bind_reference_candidate: bool -- true iff the displaced pre-bias argmax candidate's kind was 'bind' (a &N reference), distinguishing it from the broader hijacked_non_slot_candidate (which also fires for 'component'/'struct'/'builtin'/'lit' displacements -- the genuinely dangerous class E628/E630/E645 fixed). Purely additive: no change to any bias/gate function, no change to decode-time token selection, no change to any existing trace field's value. A future session mining these traces for genuine structural hijacks can now filter hijacked_non_slot_candidate and not hijacked_bind_reference_candidate instead of re-deriving this session's finding from scratch.",
+    "why_this_is_not_scope_creep": "The E645 residual note this session was asked to investigate was itself partly a mischaracterization (part_2) rooted in the instrumentation's own coarse before_kind != 'sym' screen conflating two very different situations. Refining the trace label directly documents and operationalizes this session's finding for the next session, matching this lineage's own established pattern (E627/E640 instrumentation additions) of building better observability rather than leaving a finding only in prose.",
+    "version_bumps": {
+      "model.twotower": "v81 -> v82"
+    },
+    "unit_tests": {
+      "new": "tests/test_models/test_compiler_decode.py::test_required_slot_margin_trace_distinguishes_bind_reference_hijacks (bind-kind displacement -> hijacked_bind_reference_candidate=True; component-kind displacement -> False; non-hijacking slot-vs-slot swap -> False for both fields)"
+    },
+    "test_results": "148/148 passed across tests/test_models/test_compiler_decode.py, test_choice_tokenizer.py, test_decode_stats.py (147 from E645 + 1 new). python -m scripts.verify_version_stamps --check: ok after the versions.json bump."
+  },
+  "verdict": "Negative/neutral result: the residual hijacked_non_slot_candidate=true class E645 flagged (bind-reference displaced by a still-missing required slot at a schema-eligible content position) is not a quality bug on the evidence traced here -- in the concrete instances read directly (rico_eval_test_25, smoke_callout_01, smoke_hero_01, held_out_form_01), the bias's override never lowered placeholder_fidelity/structural_similarity and twice materially raised placeholder_fidelity by replacing stale placeholder-text reuse with the correct distinct gold slot. E645's own written characterization of this residual class (all instances at variadic frames with bind-kind displacement) was itself imprecise -- held_out's 1/14 fire is a component-frame struct-token ('-') displacement, not a variadic-frame bind displacement -- corrected here. No change was made to _required_slot_margin_bias or _required_slot_margin_position_accepts_slot (default weight 0.0 unchanged, E617 gating unchanged); the only code change is a purely additive trace field (hijacked_bind_reference_candidate) that operationalizes this finding for future sessions. model.twotower v81 -> v82 (instrumentation-only, no-op for decode behavior). 4 traced instances on 1 scratch checkpoint (800 steps, seed 0), not a powered sample; not a ship claim; no checkpoint trained, promoted, or synced (checkpoint reused verbatim from E645).",
+  "next_step": "1) E620's original coverage-aware component/property closure recommendation remains the next untried lever this lineage has repeatedly deferred (still open after E645, E644, E643...). 2) A genuinely powered multi-seed/retrained comparison of required_slot_margin_decode_weight remains open (E626's own deferral). 3) If a future session wants to push this lever further, hijacked_bind_reference_candidate (added here) now lets it directly filter for the genuinely-dangerous component/struct/builtin-kind hijacks across a wider suite without re-deriving this session's bind-reference finding. 4) The held_out_form_01 struct-token ('-') displacement (part_2/part_3) was traced only shallowly (messiest of the 4 instances, on an already-degenerate record) -- worth a closer look if this specific position class recurs on a better-trained checkpoint.",
+  "commands_run": [
+    "ls outputs/runs/ (found E645's exact checkpoint already present, byte-identical by sha256 -- no retraining needed)",
+    "python -m scripts.evaluate_model --checkpoint outputs/runs/e645-smoke-hero-trace-scratch800-20260721/checkpoints/last.pt --model twotower --test-dir src/slm_training/resources/data/eval/remediated --suites held_out,rico_held --required-slot-margin-decode-weight 2 --run-id e646-trace-margin2 (plus E645's full matched flag set)",
+    "python -m scripts.evaluate_model ... --suites rico_held --required-slot-margin-decode-weight 0 --run-id e646-trace-margin0",
+    "python -m scripts.evaluate_model ... --suites held_out --required-slot-margin-decode-weight 0 --run-id e646-trace-margin0-heldout",
+    "python -m scripts.evaluate_model ... --suites smoke --required-slot-margin-decode-weight {0,2} --run-id e646-trace-margin{0,2}-smoke",
+    "python -m pytest tests/test_models/test_compiler_decode.py tests/test_models/test_choice_tokenizer.py tests/test_models/test_decode_stats.py -q",
+    "python -m scripts.verify_version_stamps --check"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0ccfb28061f72f1c318966ccba5cfdc58364426a",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v82"
+    }
+  }
+}

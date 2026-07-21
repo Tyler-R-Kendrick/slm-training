@@ -1129,6 +1129,94 @@ def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> Non
     assert inner_trace["hijacked_non_slot_candidate"] is False
 
 
+def test_required_slot_margin_trace_distinguishes_bind_reference_hijacks() -> None:
+    """E646: narrows ``hijacked_non_slot_candidate`` for bind-reference swaps.
+
+    A live trace on ``rico_eval_test_25`` (see
+    ``docs/design/iter-e646-required-slot-margin-bind-reference-residual-
+    20260721.md``) found a distinct sub-case of ``hijacked_non_slot_candidate
+    =true``: the pre-bias argmax was a ``bind`` candidate (``&N``, reusing an
+    already-completed statement's value) rather than a real component-opening
+    or structural candidate, and overriding it with the still-missing
+    required slot raised ``placeholder_fidelity`` rather than lowering it --
+    the opposite of the E628/E630/E645 component-hijack mechanism. This test
+    pins the new, purely additive ``hijacked_bind_reference_candidate`` field
+    that isolates that sub-case: true only when the displaced candidate's
+    kind was ``bind``; false for a component-kind hijack (already covered by
+    the root-level test above) and false for a non-hijacking slot-vs-slot
+    swap.
+    """
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        required_slot_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(1)
+    ref_id = tokenizer.token_to_id["&2"]
+    candidate_ids = (ref_id, slot_id)
+    candidate_kinds = ("bind", "sym")
+    stats = DecodeStats()
+    open_frame = SimpleNamespace(
+        kind="component", expr_type="element:TextContent", phase="args", arg_index=0
+    )
+
+    trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=14,
+        state=SimpleNamespace(frames=[open_frame]),
+        candidate_ids=candidate_ids,
+        candidate_kinds=candidate_kinds,
+        scores_before=torch.tensor([14.99, 12.13]),
+        margin_bias=torch.tensor([0.0, 4.86]),
+        scores_after=torch.tensor([14.99, 16.99]),
+    )
+
+    assert trace is not None
+    assert trace["before_kind"] == "bind"
+    assert trace["chosen_kind"] == "sym"
+    assert trace["choice_changed"] is True
+    assert trace["hijacked_non_slot_candidate"] is True
+    assert trace["hijacked_bind_reference_candidate"] is True
+
+    # A component-kind hijack (the E628/E630/E645 mechanism) is NOT flagged
+    # as a bind-reference hijack.
+    component_trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=1,
+        state=SimpleNamespace(frames=[]),
+        candidate_ids=(tokenizer.token_to_id["+Button"], slot_id),
+        candidate_kinds=("component_root_or_bound", "sym"),
+        scores_before=torch.tensor([11.8, 10.3]),
+        margin_bias=torch.tensor([0.0, 7.5]),
+        scores_after=torch.tensor([11.8, 17.8]),
+    )
+    assert component_trace is not None
+    assert component_trace["hijacked_non_slot_candidate"] is True
+    assert component_trace["hijacked_bind_reference_candidate"] is False
+
+    # A non-hijacking slot-vs-slot swap is flagged as neither.
+    slot_trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=7,
+        state=SimpleNamespace(frames=[open_frame]),
+        candidate_ids=(slot_id, tokenizer.sym_id(4)),
+        candidate_kinds=("sym", "sym"),
+        scores_before=torch.tensor([9.0, 8.0]),
+        margin_bias=torch.tensor([0.0, 2.0]),
+        scores_after=torch.tensor([9.0, 10.0]),
+    )
+    assert slot_trace is not None
+    assert slot_trace["hijacked_non_slot_candidate"] is False
+    assert slot_trace["hijacked_bind_reference_candidate"] is False
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
