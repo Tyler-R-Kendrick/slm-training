@@ -726,13 +726,32 @@
         }
       ]
     },
+    "flow.reference": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flow/reference/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "add SLM-190 FFE2-02 exact finite-state CTMC reference package (adapter, enumeration, generator, sampler, lumpability, trajectory, FlowTargetRowV1) and torch-free adapters"
+        }
+      ]
+    },
     "harness.experiments": {
-      "version": "v57",
+      "version": "v58",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v58",
+          "date": "2026-07-21",
+          "note": "add SLM-190 FFE2-02 exact CTMC reference fixture harness lazy re-exports"
+        },
         {
           "version": "v57",
           "date": "2026-07-21",
@@ -3571,6 +3590,38 @@
           "version": "ffe2-01-v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-189 FFE2-01 bridge planner exact/dependency/random arm fixture matrix"
+        }
+      ]
+    },
+    "harness.experiments.slm190_exact_flow": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm190_exact_flow.py",
+        "tests/test_harnesses/experiments/test_slm190_exact_flow.py",
+        "tests/test_scripts/test_run_exact_flow_fixture.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-190 FFE2-02 exact finite-state CTMC reference fixture harness"
+        }
+      ]
+    },
+    "matrix.slm190_exact_flow": {
+      "version": "ffe2-02-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_exact_flow_fixture.py",
+        "docs/design/iter-slm190-exact-flow-20260721.json",
+        "docs/design/iter-slm190-exact-flow-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe2-02-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-190 FFE2-02 exact CTMC enumeration/path/sample/objective/lumpability fixture matrix"
         }
       ]
     }
