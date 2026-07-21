@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v78",
+      "version": "v79",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v79",
+          "date": "2026-07-20",
+          "note": "E638: require complete visible slot-contract coverage before semantic-plan root closure can activate"
+        },
         {
           "version": "v78",
           "date": "2026-07-21",

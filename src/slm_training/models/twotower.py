@@ -5712,6 +5712,21 @@ class TwoTowerModel(nn.Module):
         }
         if not required_ids:
             return None
+        slot_contract = (
+            self._slot_contracts[row]
+            if self._slot_contracts and row < len(self._slot_contracts)
+            else None
+        )
+        if prefix is not None and slot_contract:
+            try:
+                emitted = set(prefix)
+                if any(
+                    int(self.tokenizer.sym_id(index)) not in emitted
+                    for index in range(len(slot_contract))
+                ):
+                    return None
+            except (AttributeError, KeyError, ValueError):
+                return None
         family_token_ids = {
             str(self.tokenizer.id_to_token[token_id])
             .removeprefix("COMP:")
