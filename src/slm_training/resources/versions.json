@@ -407,12 +407,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.5.0",
+      "version": "2.6.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.6.0",
+          "date": "2026-07-21",
+          "note": "E685: normalize numbered visible roles to their base and align canonical tab triggers plus overview display text with public-schema properties"
+        },
         {
           "version": "2.5.0",
           "date": "2026-07-21",
@@ -604,6 +609,11 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.5.0 to 2.6.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -1569,7 +1579,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v138",
+      "version": "v139",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1584,6 +1594,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v139",
+          "date": "2026-07-21",
+          "note": "E685: plan a non-house-style carrier when it is the sole schema-compatible family for a visible role"
+        },
         {
           "version": "v138",
           "date": "2026-07-21",

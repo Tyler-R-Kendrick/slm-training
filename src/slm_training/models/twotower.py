@@ -4499,7 +4499,7 @@ class TwoTowerModel(nn.Module):
                     for preferred in DEFAULT_HOUSE_STYLE.preferred_components
                     if preferred in candidates
                 ),
-                None,
+                candidates[0] if len(candidates) == 1 else None,
             )
             if family is not None:
                 completed[family] += 1

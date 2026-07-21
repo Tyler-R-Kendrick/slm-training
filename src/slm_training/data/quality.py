@@ -28,6 +28,8 @@ _SEMANTIC_ROLE_PROPERTY_ALIASES = {
     "description": {"details", "text"},
     "heading": {"text"},
     "kicker": {"text"},
+    "overview": {"text"},
+    "tab": {"trigger"},
     "title": {"text"},
     "value": {"text"},
     "img": {"image", "src"},
@@ -140,9 +142,16 @@ def semantic_role_properties(
     """Map visible slots to public-schema property names implied by their role."""
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
-        role = placeholder.removeprefix(":").split(".")[-1]
+        raw_role = placeholder.removeprefix(":").split(".")[-1]
+        role = re.sub(r"\d+$", "", raw_role) or raw_role
         result[placeholder] = tuple(
-            sorted({role, *_SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, ())})
+            sorted(
+                {
+                    raw_role,
+                    role,
+                    *_SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, ()),
+                }
+            )
         )
     return result
 

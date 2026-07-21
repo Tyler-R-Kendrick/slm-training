@@ -199,6 +199,28 @@ def test_v2_recognizes_singular_prose_for_plural_schema_component() -> None:
     assert "prompt_contract_unknown" not in report.reason_codes
 
 
+def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
+    source = (
+        'overview = TextContent(":tabs.overview")\n'
+        'one = TabItem("one", ":tabs.tab1", [overview])\n'
+        'two = TabItem("two", ":tabs.tab2", [overview])\n'
+        'root = Tabs([one, two])'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="numbered-tab-roles",
+            prompt=(
+                "Build a two-tab panel. Placeholders: "
+                ":tabs.overview :tabs.tab1 :tabs.tab2"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
     source = (
         'root = Stack([name, email], "column")\n'

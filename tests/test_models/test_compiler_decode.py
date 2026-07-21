@@ -1503,6 +1503,21 @@ def test_semantic_role_candidates_map_display_heading_and_kicker_to_text() -> No
     }
 
 
+def test_semantic_role_candidates_map_numbered_tabs_to_trigger() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":tabs.overview", ":tabs.tab1", ":tabs.tab2"],
+        ["TabItem", "TextContent"],
+    )
+
+    assert candidates == {
+        ":tabs.overview": ("TextContent",),
+        ":tabs.tab1": ("TabItem",),
+        ":tabs.tab2": ("TabItem",),
+    }
+
+
 def test_joint_role_candidates_require_distinct_schema_properties() -> None:
     slots = [":gallery.hint.title", ":gallery.hint.body"]
     candidates = TwoTowerModel._semantic_role_joint_candidates(
@@ -1561,6 +1576,21 @@ def test_role_obligations_partition_hero_roles_into_schema_carriers() -> None:
     assert bindings == {
         "CardHeader": (":hero.subtitle", ":hero.title"),
         "TextContent": (":hero.body", ":hero.kicker"),
+    }
+
+
+def test_role_obligations_plan_unique_non_house_style_carriers() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Tabs": 1}),
+        {
+            ":tabs.tab1": ("TabItem",),
+            ":tabs.tab2": ("TabItem",),
+        },
+    )
+
+    assert counts == Counter({"TabItem": 2, "Tabs": 1})
+    assert bindings == {
+        "TabItem": (":tabs.tab1", ":tabs.tab2"),
     }
 
 
