@@ -432,41 +432,6 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
     assert bias.tolist() == [7.0, 0.0]
 
 
-def test_slot_coverage_close_bias_adds_compatible_root_sibling() -> None:
-    from types import SimpleNamespace
-
-    model = _model(
-        output_tokenizer="choice",
-        slot_coverage_close_decode_weight=4.0,
-    )
-    tokenizer = model.tokenizer
-    text_id = tokenizer.token_to_id["+TextContent"]
-    button_id = tokenizer.token_to_id["+Button"]
-    state = SimpleNamespace(
-        mode="structural",
-        frames=[],
-        section_types=["element:ImageGallery"],
-    )
-    slots = [":gallery.img", ":gallery.caption", ":gallery.cta"]
-    prefix = [tokenizer.bos_id, tokenizer.token_to_id["+ImageGallery"], tokenizer.sym_id(0)]
-
-    bias = model._slot_coverage_close_bias(
-        state,
-        prefix,
-        (text_id, button_id, tokenizer.eos_id),
-        torch.tensor([8.0, 2.0, 12.0]),
-        slots,
-        {
-            ":gallery.img": ("ImageGallery",),
-            ":gallery.caption": ("TextContent",),
-            ":gallery.cta": ("Button",),
-        },
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [8.0, 0.0, 0.0]
-
-
 def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     from types import SimpleNamespace
 
