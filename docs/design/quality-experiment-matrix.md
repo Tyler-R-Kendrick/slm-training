@@ -4486,3 +4486,18 @@ synced; AgentV remained 0/1.
 Evidence:
 [iter-e643-bound-role-plans-20260720.md](iter-e643-bound-role-plans-20260720.md)
 and [JSON](iter-e643-bound-role-plans-20260720.json).
+
+## E644 concrete role-obligation margin
+
+E644 paired every visible-role-inferred family with a concrete unused slot and
+margin-floored only that assignment. Strict v2 improved from 2/4 to 3/4;
+fidelity, validity, structure, recall, reward, and node F1 also improved.
+Gallery's CTA and hint roles are now distinct and spam-free. Retain the
+treatment stamped v88 as the next scratch baseline. After rebasing onto E643
+restoration v90, the append-only lineage records the retained E644 behavior as
+v91. Do not claim ship: AgentV fails the `n=4` evidence floor, edge F1 slips
+slightly, and p95 latency nearly doubles. No checkpoint was created or synced.
+
+Evidence:
+[iter-e644-role-obligation-margin-20260720.md](iter-e644-role-obligation-margin-20260720.md)
+and [JSON](iter-e644-role-obligation-margin-20260720.json).
