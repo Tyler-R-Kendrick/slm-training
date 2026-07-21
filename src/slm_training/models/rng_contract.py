@@ -102,6 +102,21 @@ NAMESPACE_OFFSETS: dict[str, int] = {
     # common-tensor set, same reserved/not-yet-consumed convention as every
     # other arch_specific:* entry above.
     "arch_specific:stacked_matched_state": 110_000,
+    # SLM-241 (RSC-A05) second follow-up: arm H (stop-gradient recurrence)
+    # deliberately gets NO new namespace here. H reuses arm B's exact
+    # denoiser_arch ("shared_recursive") and z_state_mode ("full") -- its
+    # only difference is detach_between_steps=True, a pure backward-graph
+    # flag that adds/removes no parameter tensor. Since
+    # RecursiveControlInitializationV1's architecture-specific-tensor set is
+    # derived from *named parameters not common across the arms in one
+    # report* (see build_recursive_control_initialization below), and H
+    # declares literally the same parameter names/shapes as B, H has no
+    # architecture-specific *parameters* to reserve a namespace for -- same
+    # reasoning arm G's reuse already established. A fairness report must
+    # still never include both B and H together (their shared
+    # "arch_specific:shared_recursive" seed would violate the pairwise-
+    # disjoint check below), exactly the same restriction already documented
+    # for B+G -- see test_arm_h_is_gradient_flow_only_variant_of_arm_b.
 }
 
 DECLARED_NAMESPACES = tuple(sorted(NAMESPACE_OFFSETS))

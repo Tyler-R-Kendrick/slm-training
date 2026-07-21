@@ -46,8 +46,29 @@ depth without a parallel/ad hoc implementation:
   ``docs/design/iter-rsc-a05-*`` for the measured residual).
 
 See :mod:`slm_training.models.recursive_control_arms` for the named arm
-registry (A-H; A/B/C/D/E/F/G are constructed as of this SLM-241 iteration --
-only H remains deferred) and resource accounting built on top of these modes.
+registry (A-H; all eight arms are constructed as of this SLM-241 iteration --
+none remain deferred) and resource accounting built on top of these modes.
+
+SLM-241 (RSC-A05) second follow-up -- ``detach_between_steps`` (arm **H**,
+stop-gradient recurrence). The constructor now also accepts
+``detach_between_steps: bool = False``. When ``True``, ``recursive_outputs``
+runs the *identical* forward recurrence (same ``y``/``z`` update equations,
+same shared blocks, same shapes -- byte-identical forward values to
+``detach_between_steps=False`` for the same seed/weights/inputs) but calls
+``.detach()`` on the carried-forward ``y`` (and ``z``, when the z-state path
+is active) at the end of every recursion step except the last, before the
+*next* step reads them. ``.detach()`` only cuts the autograd graph -- it never
+changes a tensor's numeric value -- so this flag changes gradient flow only:
+a later step's loss can still backpropagate into the shared block weights
+through *that step's own* application of them, but not through the recurrent
+chain back into an earlier step's application. Arm H
+(``denoiser_arch="shared_recursive"`` -- reused, not a new arch string, same
+as arm G's reuse -- plus ``detach_between_steps=True`` on the tower) is the
+mirror question to every other arm: does any gain from recurrence require
+genuine backprop-through-recurrence ("recurrent credit assignment"), or does
+merely re-applying the same shared weights repeatedly (without BPTT) capture
+it? See ``docs/design/iter-rsc-a05-*`` for the forward-identity and
+gradient-divergence evidence.
 
 SLM-241 (RSC-A05) follow-up -- :class:`StackedMatchedStateDenoiserTower`
 (arm E, ``denoiser_arch="stacked_matched_state"``): the mirror image of arm D.
@@ -140,6 +161,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         recursive_steps: int = 1,
         recursive_transition_layers: int | None = None,
         z_state_mode: str = "full",
+        detach_between_steps: bool = False,
     ) -> None:
         super().__init__()
         if z_state_mode not in Z_STATE_MODES:
@@ -147,6 +169,12 @@ class SharedRecursiveDenoiserTower(nn.Module):
                 f"z_state_mode={z_state_mode!r} is not one of {Z_STATE_MODES!r}"
             )
         self.z_state_mode = z_state_mode
+        # SLM-241 (RSC-A05) arm H: stop-gradient recurrence. Purely a
+        # backward-graph flag -- adds no parameter, changes no forward
+        # computation. See the module docstring above for the exact
+        # semantics and slm_training.models.recursive_control_arms for the
+        # arm registry.
+        self.detach_between_steps = bool(detach_between_steps)
         self.d_model = d_model
         self.max_len = max_len
         self.recursive_steps = max(1, int(recursive_steps))
@@ -269,6 +297,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         *,
         return_hidden: bool = False,
         return_attn: bool = False,
+        return_step_boundaries: bool = False,
     ) -> dict[str, torch.Tensor | list[torch.Tensor]]:
         """
         Run the full recursive recurrence and expose per-depth outputs.
@@ -279,6 +308,16 @@ class SharedRecursiveDenoiserTower(nn.Module):
           - ``depth_hiddens``: list of [B, T, D] for each recursion step
           - ``depth_logits``: list of [B, T, V] for each recursion step
           - ``attn``: last-layer self-attention [B, T, T] (only if ``return_attn=True``)
+          - ``step_boundaries``: (SLM-241/RSC-A05 arm H test support, only if
+            ``return_step_boundaries=True``) a list of ``{"step": r, "y": ...,
+            "z": ...}`` dicts, one per recursion step, holding the *real*
+            graph-connected ``y``/``z`` tensors exactly as computed at the end
+            of that step -- captured **before** any ``detach_between_steps``
+            detach is applied, so a test can register an autograd hook on
+            them to observe whether gradient from a later step's loss
+            actually reaches that point (arm B/G: yes; arm H: no, once the
+            detach has replaced what the *next* step actually consumes).
+            Never used by ``forward``/``encode`` -- opt-in and additive only.
         """
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
@@ -325,6 +364,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         depth_hiddens: list[torch.Tensor] = []
         depth_logits: list[torch.Tensor] = []
         attn: torch.Tensor | None = None
+        step_boundaries: list[dict[str, Any]] = []
 
         for r in range(1, self.recursive_steps + 1):
             if z is None:
@@ -368,6 +408,22 @@ class SharedRecursiveDenoiserTower(nn.Module):
             depth_hiddens.append(h)
             depth_logits.append(self.project(h))
 
+            if return_step_boundaries:
+                # Captured before any detach below -- the real, graph-
+                # connected tensor at this step's exit point, regardless of
+                # detach_between_steps.
+                step_boundaries.append({"step": r, "y": y, "z": z})
+
+            # SLM-241 (RSC-A05) arm H: cut the recurrent backward path here,
+            # never the forward value. Only between steps -- the final
+            # step's y/z must stay attached so the model's actual output
+            # loss can still backpropagate into the last step's block
+            # application normally.
+            if self.detach_between_steps and r < self.recursive_steps:
+                y = y.detach()
+                if z is not None:
+                    z = z.detach()
+
         final_hidden = depth_hiddens[-1]
         final_logits = depth_logits[-1]
 
@@ -380,6 +436,8 @@ class SharedRecursiveDenoiserTower(nn.Module):
             result["hidden"] = final_hidden
         if return_attn and attn is not None:
             result["attn"] = attn
+        if return_step_boundaries:
+            result["step_boundaries"] = step_boundaries
         return result
 
     def encode(

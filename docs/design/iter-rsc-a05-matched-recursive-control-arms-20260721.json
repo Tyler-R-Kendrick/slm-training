@@ -1,6 +1,6 @@
 {
   "run_id": "iter_rsc_a05_matched_recursive_control_arms",
-  "status": "partial_implementation",
+  "status": "complete",
   "claim_class": "wiring",
   "quality_claim_made": false,
   "issue": "SLM-241 (RSC-A05): Build parameter-, state-, block-, and initialization-matched recursive control constructors",
@@ -23,11 +23,10 @@
       "D",
       "E",
       "F",
-      "G"
-    ],
-    "deferred_arm_ids": [
+      "G",
       "H"
     ],
+    "deferred_arm_ids": [],
     "labels": {
       "A": "stacked baseline (no z state, unshared blocks)",
       "B": "shared recursive V1 (shared blocks, explicit z state)",
@@ -36,7 +35,7 @@
       "E": "stacked + matched state capacity (unshared, non-recursive blocks; same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected once before the blocks run -- mirror image of D)",
       "F": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
       "G": "R=1 shared architecture control (interface-, not behavior-, compatible)",
-      "H": "stop-gradient recurrence (deferred)"
+      "H": "stop-gradient recurrence (arm B's exact construction; y/z detached between recursive steps -- identical forward values, no cross-step backprop through the recurrent state)"
     },
     "denoiser_arch_by_arm": {
       "A": "stacked",
@@ -45,7 +44,8 @@
       "D": "shared_recursive_no_extra_capacity",
       "E": "stacked_matched_state",
       "F": "stacked_depth_matched",
-      "G": "shared_recursive"
+      "G": "shared_recursive",
+      "H": "shared_recursive"
     }
   },
   "control_arm_table_schema": "RecursiveControlArmReportV1",
@@ -280,6 +280,41 @@
       "notes": [
         "R=1 architecture-change control -- interface-compatible with the stacked baseline, not behaviorally equivalent (SLM-240)."
       ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "H",
+      "label": "stop-gradient recurrence (arm B's exact construction; y/z detached between recursive steps -- identical forward values, no cross-step backprop through the recurrent state)",
+      "denoiser_arch": "shared_recursive",
+      "z_state_mode": "full",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34553,
+      "checkpoint_bytes": 231866,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "matches arm B's total parameter count and block_evaluations_per_forward EXACTLY at every config -- identical construction to B (same denoiser_arch, same z_state_mode='full'), only detach_between_steps=True differs, which changes no parameter and no block evaluation, only the backward graph",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": [
+        "gradient-flow-only variant of arm B: identical construction (same denoiser_arch, same z_state_mode='full', same parameters, same block-evaluations) with detach_between_steps=True -- y/z are detached between recursive steps so a later step's loss cannot backpropagate through the recurrent state into an earlier step's block application; the shared weights still receive gradient from every step's own (same-step) contribution. See tests/test_models/test_recursive_denoiser.py for the forward-identity (bit-identical to B) and gradient-divergence (hook-based mechanism) evidence."
+      ]
     }
   ],
   "parameter_delta_formula_check": {
@@ -294,7 +329,11 @@
     "measured_F_block_eval_delta_vs_B_parameter_nearest": -1,
     "measured_E_delta_vs_A": 9248,
     "measured_E_delta_vs_A_matches_formula": true,
-    "measured_E_delta_vs_B_total_parameters": 0
+    "measured_E_delta_vs_B_total_parameters": 0,
+    "measured_H_delta_vs_A": 9248,
+    "measured_H_delta_vs_A_matches_formula": true,
+    "measured_H_delta_vs_B_total_parameters": 0,
+    "measured_H_block_evals_delta_vs_B": 0
   },
   "recursive_control_initialization_report_schema": "RecursiveControlInitializationV1",
   "recursive_control_initialization_report_instance": {
@@ -560,13 +599,11 @@
       "optimizer_initial_state_hash is the hash of an empty optimizer state (pre-first-step); AdamW allocates exp_avg/exp_avg_sq lazily."
     ]
   },
-  "deferred_arms_rationale": {
-    "H": "Stop-gradient recurrence requires detaching y/z between recursive steps inside recursive_outputs and a paired forward-equivalence/gradient-divergence test -- not yet built."
-  },
+  "deferred_arms_rationale": {},
   "tests": {
     "file": "tests/test_models/test_recursive_denoiser.py",
-    "new_tests_added": 7,
-    "total_tests_in_file": 100,
+    "new_tests_added": 8,
+    "total_tests_in_file": 108,
     "requirement_coverage": {
       "1_constructs_and_roundtrips": "test_arm_c_d_train_one_step_and_roundtrip_checkpoint (C/D); test_arm_e_denoiser_arch_wired_through_twotower_config_and_roundtrips (E); test_arm_f_denoiser_arch_wired_through_twotower_config_and_roundtrips (F); existing test_twotower_shared_recursive_trains_and_roundtrips covers B; A is exercised throughout the existing suite.",
       "2_parameter_counts_match_formula": "test_arm_c_d_parameter_count_matches_stacked_baseline; test_arm_e_parameter_count_matches_zstate_delta_formula_exactly; test_control_arm_table_reports_every_built_arm_no_parity_or_winner cross-checks B/G/E against recursive_zstate_parameter_delta and F against B.",
@@ -574,7 +611,7 @@
       "4_C_D_no_undeclared_zstate": "test_arm_c_d_have_no_zstate_parameters",
       "5_E_consumes_capacity": "test_arm_e_consumes_matched_state_and_receives_gradients -- ablation (zeroing state/state_ctx_proj changes the forward output) + gradient flow (state.grad and state_ctx_proj.weight.grad are non-None and nonzero after backward).",
       "6_F_block_calls": "test_arm_f_block_evaluations_match_arm_b_verified_by_hook_count; test_arm_e_block_evaluations_match_arm_a_verified_by_hook_count (E's analogous requirement, targeted at arm A's block-eval count instead of B's).",
-      "7_H_forward_equal_grad_diverge": "not applicable -- H deferred",
+      "7_H_forward_equal_grad_diverge": "test_arm_h_forward_values_identical_to_arm_b_before_backward (forward identity: B and H, same seed/weights/inputs, bit-identical logits/depth_logits/depth_hiddens via torch.equal, max abs diff measured 0.0); test_arm_h_blocks_cross_step_gradient_flow_that_arm_b_has (gradient divergence, mechanism-precise: a backward hook on the real step-1 y-boundary tensor, exposed via recursive_outputs(return_step_boundaries=True) captured BEFORE any detach, fires with nonzero gradient for B and never fires at all for H, when the loss is the last recursion step's logits only -- proving the specific detach_between_steps edge is what severs the autograd path, not some other confound); test_arm_h_shared_weights_still_receive_same_step_gradient (rules out an over-aggressive detach: shared block parameters still receive real nonzero gradient from every step's own application in H).",
       "8_common_init_hashes_and_disjoint_seeds": "test_recursive_control_initialization_common_tensors_match_and_seeds_disjoint; test_recursive_control_initialization_rejects_mismatched_common_tensors (fail-closed case)",
       "9_runtime_compat": "test_deep_supervision_works_for_arm_c_and_d (recursive_outputs duck-typing); existing runtime-symbol-feature/attention-return/checkpoint-path tests already cover SharedRecursiveDenoiserTower generically (C/D subclass no new code path there).",
       "10_invalid_combinations_fail_closed": "test_zstate_mode_rejects_unknown_value; test_denoiser_arch_rejects_unknown_value; test_deferred_arms_fail_closed_not_silently_built; test_construct_arm_tower_rejects_unknown_arm_id; test_recursive_control_initialization_rejects_mismatched_common_tensors",
@@ -583,23 +620,27 @@
     },
     "new_tests_added_rsc_a05b": 6,
     "removed_parametrized_cases_rsc_a05b": 1,
-    "net_test_count_change_rsc_a05b": "+5 (6 new arm-F tests minus test_deferred_arms_fail_closed_not_silently_built[F], removed since F is no longer in DEFERRED_ARM_IDS)"
+    "net_test_count_change_rsc_a05b": "+5 (6 new arm-F tests minus test_deferred_arms_fail_closed_not_silently_built[F], removed since F is no longer in DEFERRED_ARM_IDS)",
+    "new_tests_added_rsc_a05c": 9,
+    "removed_tests_rsc_a05c": 1,
+    "net_test_count_change_rsc_a05c": "+8 (9 new arm-H tests minus the stale test_deferred_arm_ids_now_only_contains_h, replaced by test_all_eight_control_arms_now_built since H is no longer deferred)"
   },
   "version_bumps": {
-    "model.recursive_denoiser": "v8 -> v9",
-    "model.twotower": "v67 -> v68"
+    "model.recursive_denoiser": "v9 -> v10",
+    "model.twotower": "v68 -> v69"
   },
-  "note": "Wiring-only evidence. A/B/C/D/E/F/G are fully implemented (construct through the canonical factory, train one step, round-trip checkpoint, real resource accounting). Only H remains explicitly deferred, not fabricated -- construct_arm_tower raises NotImplementedError for it. Arm F is reported with two honest views (block-evaluation-matched vs parameter-nearest, see arm_f_dual_view) -- never a bare 'matched' claim on both dimensions at once. Arm E's parameter delta over A matches recursive_zstate_parameter_delta exactly (the same formula/target B's delta over A matches), verified against real constructed towers, and its added state/state_ctx_proj is verified (not merely asserted) to be consumed by the forward pass and receive real gradients. No quality or efficiency conclusion is drawn from any number in this document.",
-  "recommended_next_iteration": "Only H (stop-gradient recurrence) remains. It needs y/z detached between recursive steps inside SharedRecursiveDenoiserTower.recursive_outputs (likely a detach_between_steps constructor flag, following this module's existing z_state_mode-style single-class-plus-flag convention), plus a careful paired test proving identical forward values but divergent cross-step gradient paths vs the non-detached B. This is a genuine test-design problem, not just a constructor change: having now built E, F, C, D, and G, the constructor-and-wiring half of this issue is a well-worn, low-risk path; H's risk is concentrated in proving a gradient-path negative correctly (a residual connection or tied weight elsewhere could let gradient flow through an ostensibly detached path indirectly), so real effort should go into constructing an unambiguous minimal case. SLM-233 itself remains untouched and out of scope.",
-  "generated_at": "2026-07-21T03:01:20.114835+00:00",
+  "note": "Wiring-only evidence. All eight arms (A-H) are now fully implemented: construct through the canonical factory, train one step, round-trip a checkpoint, real resource accounting. Arm H (stop-gradient recurrence) reuses arm B's exact construction (denoiser_arch='shared_recursive', z_state_mode='full') plus detach_between_steps=True -- same parameters (52,000 at this config), same block-evaluations (4), forward values bit-identical to B (measured max abs diff 0.0 across depth_logits/depth_hiddens/logits); its gradient-divergence evidence is a mechanism-precise hook test (not a magnitude-only comparison): a backward hook on the real step-1 y-boundary tensor (exposed via a new opt-in recursive_outputs(return_step_boundaries=True), captured before any detach) fires with nonzero gradient for B and never fires for H when the loss is restricted to the last recursion step's logits only -- because torch.Tensor.detach() creates a tensor with no grad_fn, so there is no autograd edge back to the pre-detach tensor once the detached copy is what the next step actually consumes. Shared block weights still receive real, nonzero gradient in H from every step's own (same-step) application, so the detach is not over-aggressive. Arm F is reported with two honest views (block-evaluation-matched vs parameter-nearest, see arm_f_dual_view). Arm E's parameter delta over A matches recursive_zstate_parameter_delta exactly. No quality or efficiency conclusion is drawn from any number in this document -- SLM-233's own matched-depth quality campaign remains untouched and out of scope. SLM-241 (RSC-A05) is complete: all 8 control arms addressed, none fabricated, none silently skipped.",
+  "recommended_next_iteration": "SLM-241 (RSC-A05) is complete -- all eight control arms (A-H) are built, resource-accounted, and fairness-init-covered (H documented as deliberately excluded from any single fairness report alongside B, same restriction already established for B+G, since both reuse B's exact denoiser_arch string and would otherwise collide on the same arch_specific:shared_recursive seed). The next work belongs to the parent campaign, SLM-233 (matched recursive-depth quality campaign), which actually trains and compares these arms on real data under matched compute/parameter budgets -- out of scope for this issue and not attempted here (claim_class stays 'wiring' throughout).",
+  "generated_at": "2026-07-21T03:27:27.379122+00:00",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "b871c64f10c36faa569e8a934d1c71e295fc702a",
+    "code_commit": "f536523b69fd7758e311f4b3e5219a3f37bc328a",
     "code_dirty": true,
     "components": {
-      "model.recursive_denoiser": "v9"
+      "model.recursive_denoiser": "v10",
+      "model.twotower": "v69"
     },
-    "stamped_at": "2026-07-21T03:01:20.132392+00:00"
+    "stamped_at": "2026-07-21T03:27:27.379232+00:00"
   },
   "arm_f_dual_view": {
     "target_arm": "B",

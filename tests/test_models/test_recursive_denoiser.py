@@ -1546,8 +1546,7 @@ def test_rsc_a03_determinism_report_verdict_bit_exact_and_namespace_isolated() -
 
 
 # ---------------------------------------------------------------------------
-# SLM-241 (RSC-A05): matched recursive control arms (A/B/C/D/G built;
-# E/F/H explicitly deferred).
+# SLM-241 (RSC-A05): matched recursive control arms. All eight (A-H) built.
 # ---------------------------------------------------------------------------
 
 
@@ -1714,6 +1713,18 @@ def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None
     assert by_id["E"].block_evaluations_per_forward == by_id["A"].block_evaluations_per_forward
     assert by_id["E"].parameter_count_delta_vs_baseline == expected_delta
     assert by_id["E"].undeclared_zstate_parameter_names == ()
+    # H: gradient-flow-only variant of B -- identical construction, so its
+    # resource accounting (parameters, block-evaluations, delta vs baseline)
+    # is exactly B's, never merely close.
+    assert by_id["H"].denoiser_arch == by_id["B"].denoiser_arch == "shared_recursive"
+    assert by_id["H"].z_state_mode == by_id["B"].z_state_mode == "full"
+    assert by_id["H"].parameter_count_total == by_id["B"].parameter_count_total
+    assert by_id["H"].parameter_count_delta_vs_baseline == expected_delta
+    assert (
+        by_id["H"].block_evaluations_per_forward
+        == by_id["B"].block_evaluations_per_forward
+        == 3 * n_layers
+    )
 
 
 def test_recursive_control_arm_report_rejects_bad_contract_version() -> None:
@@ -2276,10 +2287,298 @@ def test_recursive_control_initialization_includes_arm_e_with_disjoint_seed() ->
     assert len(set(seeds.values())) == len(seeds)
 
 
-def test_deferred_arm_ids_now_only_contains_h() -> None:
-    """SLM-241 (RSC-A05) follow-up: E is no longer deferred -- only H
-    remains, so this is the honest fail-closed set construct_arm_tower
-    raises NotImplementedError for."""
-    assert DEFERRED_ARM_IDS == ("H",)
-    assert "E" in BUILT_ARM_IDS
-    assert set(BUILT_ARM_IDS) | set(DEFERRED_ARM_IDS) == set(ALL_ARM_IDS)
+# ---------------------------------------------------------------------------
+# SLM-241 (RSC-A05) second follow-up: arm H -- stop-gradient recurrence.
+# ---------------------------------------------------------------------------
+
+
+def _seeded_bh_towers(
+    *, d_model: int, n_layers: int, max_len: int, recursive_steps: int, seed: int = 0
+) -> tuple[SharedRecursiveDenoiserTower, SharedRecursiveDenoiserTower]:
+    """Construct arm B and arm H with identical weights (same seed
+    immediately before each construction, same discipline
+    RecursiveControlInitializationV1 documents)."""
+    torch.manual_seed(seed)
+    b_tower = construct_arm_tower(
+        "B", vocab_size=23, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=recursive_steps,
+        recursive_transition_layers=n_layers,
+    )
+    torch.manual_seed(seed)
+    h_tower = construct_arm_tower(
+        "H", vocab_size=23, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=recursive_steps,
+        recursive_transition_layers=n_layers,
+    )
+    return b_tower, h_tower
+
+
+def test_arm_h_is_gradient_flow_only_variant_of_arm_b() -> None:
+    """Arm H reuses arm B's exact construction (same denoiser_arch, same
+    z_state_mode) plus detach_between_steps=True -- no new tower class, no
+    new parameter, no shape change."""
+    tower = construct_arm_tower(
+        "H", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2, recursive_transition_layers=2,
+    )
+    assert isinstance(tower, SharedRecursiveDenoiserTower)
+    assert tower.z_state_mode == "full"
+    assert tower.detach_between_steps is True
+    assert hasattr(tower, "z_latent")
+    assert hasattr(tower, "ctx_proj")
+    assert ARM_DENOISER_ARCH["H"] == ARM_DENOISER_ARCH["B"] == "shared_recursive"
+
+
+def test_arm_h_parameter_count_and_block_evaluations_match_arm_b_exactly() -> None:
+    """Requirement: same block-evaluation count and same parameter count as
+    B -- H is a gradient-flow change only, never a resource-dimension
+    change. Block-evaluation count is verified with a real
+    register_forward_hook call-counter, same discipline as arms E/F."""
+    vocab, d_model, max_len = 23, 16, 32
+    recursive_steps, recursive_transition_layers = 3, 2
+    b_tower, h_tower = _seeded_bh_towers(
+        d_model=d_model, n_layers=recursive_transition_layers, max_len=max_len,
+        recursive_steps=recursive_steps,
+    )
+    b_total = sum(p.numel() for p in b_tower.parameters())
+    h_total = sum(p.numel() for p in h_tower.parameters())
+    assert h_total == b_total
+
+    def _count_block_calls(tower: torch.nn.Module) -> int:
+        calls = {"n": 0}
+
+        def _hook(module: torch.nn.Module, inp: object, out: object) -> None:
+            calls["n"] += 1
+
+        handles = [layer.register_forward_hook(_hook) for layer in tower.layers]
+        noisy = torch.randint(1, vocab, (2, 6))
+        ctx = torch.randn(2, 3, d_model)
+        tower(noisy, ctx, pad_id=0)
+        for handle in handles:
+            handle.remove()
+        return calls["n"]
+
+    b_calls = _count_block_calls(b_tower)
+    h_calls = _count_block_calls(h_tower)
+    expected = recursive_steps * recursive_transition_layers
+    assert b_calls == h_calls == expected
+
+
+def test_arm_h_forward_values_identical_to_arm_b_before_backward() -> None:
+    """Required property: .detach() only affects the backward graph, never
+    the forward numeric value. B and H, constructed with identical
+    weights/seed and run on identical inputs, must produce bit-identical
+    logits/depth_logits/depth_hiddens -- proving detach_between_steps changes
+    no forward computation whatsoever."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    b_tower, h_tower = _seeded_bh_towers(
+        d_model=d_model, n_layers=n_layers, max_len=max_len, recursive_steps=3,
+    )
+    b_tower.eval()
+    h_tower.eval()
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+
+    with torch.no_grad():
+        b_out = b_tower.recursive_outputs(noisy, ctx, pad_id=0, return_hidden=True)
+        h_out = h_tower.recursive_outputs(noisy, ctx, pad_id=0, return_hidden=True)
+
+    assert torch.equal(b_out["logits"], h_out["logits"])
+    assert torch.equal(b_out["hidden"], h_out["hidden"])
+    assert len(b_out["depth_logits"]) == len(h_out["depth_logits"]) == 3
+    for b_dl, h_dl in zip(b_out["depth_logits"], h_out["depth_logits"]):
+        assert torch.equal(b_dl, h_dl)
+    for b_dh, h_dh in zip(b_out["depth_hiddens"], h_out["depth_hiddens"]):
+        assert torch.equal(b_dh, h_dh)
+
+
+def test_arm_h_blocks_cross_step_gradient_flow_that_arm_b_has() -> None:
+    """The required gradient-divergence evidence, made mechanism-precise.
+
+    Mechanism under test: SharedRecursiveDenoiserTower.recursive_outputs
+    (return_step_boundaries=True) exposes the *real* y/z tensor exactly as
+    computed at the end of each recursion step, captured BEFORE any
+    detach_between_steps detach is applied -- so the exact same tensor
+    object is available for both B and H. A backward hook registered on
+    that step-1 boundary tensor fires if and only if gradient from the loss
+    actually reaches it via the autograd graph.
+
+    Loss = depth_logits[-1] only (the LAST/second recursion step's logits),
+    deliberately excluding depth 1's own contribution, so the only possible
+    path back to the step-1 boundary tensor is through step 2's consumption
+    of it:
+
+    - Arm B (recursive_steps=2, no detach): step 2's z/y update reads the
+      step-1 boundary tensor directly, so it is a genuine ancestor of the
+      loss -- the hook must fire with a nonzero gradient.
+    - Arm H (detach_between_steps=True): step 2 instead reads a *detached
+      copy* of that tensor. torch.Tensor.detach() creates a new tensor with
+      no grad_fn -- there is no autograd edge from the detached copy back to
+      its source, so the original boundary tensor is not an ancestor of the
+      loss at all. The hook must never fire.
+
+    This directly isolates the detach point (not some other confound): the
+    same tensor, the same forward values (previous test), only whether the
+    autograd graph the loss's backward() traversal actually visits includes
+    it.
+    """
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    b_tower, h_tower = _seeded_bh_towers(
+        d_model=d_model, n_layers=n_layers, max_len=max_len, recursive_steps=2,
+    )
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+
+    def _run(tower: SharedRecursiveDenoiserTower) -> tuple[list, torch.Tensor]:
+        tower.zero_grad(set_to_none=True)
+        out = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, return_step_boundaries=True
+        )
+        boundary = out["step_boundaries"][0]  # end of recursion step 1
+        y1 = boundary["y"]
+        assert y1.requires_grad
+        hook_grads: list[torch.Tensor] = []
+        handle = y1.register_hook(lambda g: hook_grads.append(g.clone()))
+        loss = out["depth_logits"][-1].float().sum()  # step 2 (last) only
+        loss.backward()
+        handle.remove()
+        return hook_grads, y1
+
+    b_hook_grads, _ = _run(b_tower)
+    h_hook_grads, _ = _run(h_tower)
+
+    # Arm B: the step-1 boundary tensor is a genuine ancestor of the
+    # step-2-only loss -- the hook fires with real, nonzero gradient.
+    assert len(b_hook_grads) == 1
+    assert torch.any(b_hook_grads[0] != 0)
+
+    # Arm H: detach_between_steps severs the autograd edge from the
+    # consumed (detached) copy back to this exact tensor -- the hook must
+    # never fire at all (not "fires with zero", genuinely never invoked,
+    # since the tensor is not an ancestor of the loss's backward graph).
+    assert len(h_hook_grads) == 0
+
+
+def test_arm_h_shared_weights_still_receive_same_step_gradient() -> None:
+    """detach_between_steps only removes the CROSS-step path -- the shared
+    transition-block weights must still receive real, nonzero gradient from
+    every step's own (same-step) application, in both B and H. This rules
+    out a broken implementation that accidentally detaches so aggressively
+    the shared weights stop training altogether."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    _, h_tower = _seeded_bh_towers(
+        d_model=d_model, n_layers=n_layers, max_len=max_len, recursive_steps=2,
+    )
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+    h_tower.zero_grad(set_to_none=True)
+    out = h_tower(noisy, ctx, pad_id=0)
+    out.float().sum().backward()
+    block_params = [p for layer in h_tower.layers for p in layer.parameters()]
+    assert block_params
+    assert all(p.grad is not None for p in block_params)
+    assert any(torch.any(p.grad != 0) for p in block_params)
+
+
+def test_arm_h_denoiser_arch_wired_through_twotower_config_and_roundtrips(
+    tmp_path: Path,
+) -> None:
+    """Requirement #1: H constructs through the canonical factory
+    (TwoTowerConfig.denoiser_arch="shared_recursive" +
+    recursive_detach_between_steps=True), trains one step, and round-trips a
+    checkpoint, same as every other built arm."""
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            denoiser_arch="shared_recursive",
+            recursive_steps=2, recursive_transition_layers=2,
+            recursive_detach_between_steps=True,
+            grammar_constrained=False, gen_steps=2, seed=0,
+        ),
+        device="cpu",
+    )
+    assert isinstance(model.denoiser, SharedRecursiveDenoiserTower)
+    assert model.denoiser.detach_between_steps is True
+    opt = torch.optim.AdamW(model.trainable_parameters(), lr=1e-3)
+    opt.zero_grad(set_to_none=True)
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    loss.backward()
+    opt.step()
+
+    ckpt = tmp_path / "arm_h.pt"
+    model.save(ckpt)
+    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    assert loaded.config.denoiser_arch == "shared_recursive"
+    assert loaded.config.recursive_detach_between_steps is True
+    assert isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
+    assert loaded.denoiser.detach_between_steps is True
+
+
+def test_recursive_control_initialization_excludes_arm_h_when_arm_b_present() -> None:
+    """Arm H reuses arm B's exact denoiser_arch ("shared_recursive"), so
+    (per RecursiveControlInitializationV1's documented reasoning, same as
+    arm G's established exclusion) a fairness report spanning both B and H
+    together must fail closed on the pairwise-disjoint architecture-specific
+    seed check -- they would otherwise share the same
+    arch_specific:shared_recursive seed."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    base_seed = 0
+    towers = {}
+    for arm_id in ("B", "H"):
+        torch.manual_seed(derive_seed(base_seed, "model_initialization"))
+        towers[arm_id] = construct_arm_tower(
+            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
+            n_heads=2, max_len=max_len, recursive_steps=2,
+            recursive_transition_layers=n_layers,
+        )
+    with pytest.raises(ValueError, match="pairwise disjoint"):
+        build_recursive_control_initialization(
+            base_seed=base_seed,
+            arm_towers=towers,
+            arm_denoiser_arch={"B": "shared_recursive", "H": "shared_recursive"},
+        )
+
+
+def test_recursive_control_initialization_includes_arm_h_excluding_arm_b() -> None:
+    """The fairness contract does cover arm H, in the same way it covers
+    arm G: excluding arm B (which shares H's denoiser_arch string) from the
+    same report. Common tensors (tok/pos/layers.*) hash-match across
+    A/C/D/H, and H's z_latent/ctx_proj are its own architecture-specific
+    tensors (same shapes as B's, absent from A/C/D) -- real, not merely
+    declared, since this report's arm set has no B to collide with."""
+    base_seed = 0
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    arm_ids = ("A", "C", "D", "H")
+    towers = {}
+    for arm_id in arm_ids:
+        torch.manual_seed(derive_seed(base_seed, "model_initialization"))
+        towers[arm_id] = construct_arm_tower(
+            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
+            n_heads=2, max_len=max_len, recursive_steps=2,
+            recursive_transition_layers=n_layers,
+        )
+    report = build_recursive_control_initialization(
+        base_seed=base_seed,
+        arm_towers=towers,
+        arm_denoiser_arch={arm_id: ARM_DENOISER_ARCH[arm_id] for arm_id in arm_ids},
+    )
+    assert report.common_tensor_hashes_match_across_arms is True
+    assert "tok.weight" in report.common_tensor_names
+    assert any(name.startswith("layers.") for name in report.common_tensor_names)
+    h_specific = report.architecture_specific_tensor_names_and_shapes["H"]
+    assert "z_latent" in h_specific
+    assert "ctx_proj.weight" in h_specific
+    seeds = report.architecture_specific_seeds
+    assert len(set(seeds.values())) == len(seeds)
+
+
+def test_all_eight_control_arms_now_built() -> None:
+    """SLM-241 (RSC-A05) closes: H is no longer deferred -- every arm A-H is
+    built, so DEFERRED_ARM_IDS is genuinely empty and construct_arm_tower
+    never raises NotImplementedError for a real arm id anymore."""
+    assert DEFERRED_ARM_IDS == ()
+    assert BUILT_ARM_IDS == ALL_ARM_IDS
+    assert set(BUILT_ARM_IDS) == set(ALL_ARM_IDS)

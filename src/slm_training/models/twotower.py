@@ -93,10 +93,11 @@ _REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
 _DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
 
 #: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
-#: control arm this issue builds (A/B/C/D/E/F; see
-#: ``slm_training.models.recursive_control_arms`` for the full A-H registry,
-#: including the still-deferred H arm and G, which reuses "shared_recursive"
-#: with ``recursive_steps=1``). "stacked" is arm A; the three
+#: control arm this issue builds (A/B/C/D/E/F/G/H; see
+#: ``slm_training.models.recursive_control_arms`` for the full A-H registry.
+#: G and H both reuse "shared_recursive" -- G varies ``recursive_steps=1``,
+#: H varies ``recursive_detach_between_steps=True`` (below), neither needs a
+#: new arch string). "stacked" is arm A; the three
 #: ``SharedRecursiveDenoiserTower`` archs map onto its ``z_state_mode``;
 #: "stacked_depth_matched" (arm F) is a plain, unshared ``DenoiserTower`` built
 #: with ``recursive_steps * recursive_transition_layers`` independent
@@ -230,6 +231,14 @@ class TwoTowerConfig:
     # SLM-138: number of shared TransformerBlocks in the recursive transition.
     # 0 means inherit from denoiser_layers.
     recursive_transition_layers: int = 0
+    # SLM-241 (RSC-A05) arm H: stop-gradient recurrence. Orthogonal to
+    # denoiser_arch/z_state_mode -- detaches the carried-forward y/z between
+    # recursive steps (never changes forward values, only the backward
+    # graph). Only meaningful when denoiser_arch is one of
+    # SHARED_RECURSIVE_ARCH_Z_STATE_MODES; arm H sets it True with
+    # denoiser_arch="shared_recursive" (arm B's exact arch string, same reuse
+    # convention as arm G's recursive_steps=1).
+    recursive_detach_between_steps: bool = False
     # SLM-138: per-recursion CE weights for deep supervision (empty = off).
     recursive_depth_supervision_weights: tuple[float, ...] = ()
     # SLM-238 (RSC-A02): explicit final-depth double-counting semantics.
@@ -647,6 +656,9 @@ def _load_checkpoint_state(
     # the "full" z_state_mode (denoiser_arch="shared_recursive") declares
     # these tensors at all -- SLM-241 (RSC-A05)'s "y_only"/"no_extra_capacity"
     # arms never have them, so no allowance is needed (or correct) for those.
+    # Arm H (recursive_detach_between_steps=True) reuses this exact
+    # denoiser_arch string and the identical z_latent/ctx_proj parameter
+    # names, so it needs no separate allowance either.
     if getattr(config, "denoiser_arch", None) == "shared_recursive":
         allowed_missing |= {
             key
@@ -1163,6 +1175,9 @@ class TwoTowerModel(nn.Module):
                     ),
                     recursive_transition_layers=transition_layers,
                     z_state_mode=SHARED_RECURSIVE_ARCH_Z_STATE_MODES[denoiser_arch],
+                    detach_between_steps=bool(
+                        getattr(self.config, "recursive_detach_between_steps", False)
+                    ),
                 )
             elif denoiser_arch == STACKED_DENOISER_ARCH:
                 self.denoiser = DenoiserTower(

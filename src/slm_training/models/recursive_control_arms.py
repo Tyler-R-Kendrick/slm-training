@@ -46,10 +46,22 @@ Built (SLM-241, A/B/C/D/G; F and E added in follow-up SLM-241 iterations):
     ``recursive_steps=1``. Interface-compatible, not behaviorally equivalent
     to stacked (SLM-240 already established this framing for R=1 -- reused,
     not re-derived, here).
+  - **H** -- stop-gradient recurrence (SLM-241/RSC-A05 second follow-up):
+    arm B's exact constructor (``denoiser_arch="shared_recursive"`` -- reused,
+    not a new arch string, the same convention arm G already established) with
+    ``SharedRecursiveDenoiserTower(detach_between_steps=True)``. Identical
+    forward recurrence to B (same shared blocks, same ``y``/``z`` update
+    equations, same shapes, byte-identical forward values for identical
+    weights/inputs) -- only the backward graph differs: ``.detach()`` is
+    called on the carried-forward ``y``/``z`` between recursion steps, so a
+    later step's loss cannot backpropagate through the recurrent chain into
+    an earlier step's block application (though it still reaches the shared
+    weights through that later step's own application of them). No new
+    parameter, no new block-evaluation -- same params/block-evals as B
+    exactly. See ``docs/design/iter-rsc-a05-*`` for the forward-identity and
+    gradient-divergence evidence.
 
-Explicitly deferred (see the dated design note for why):
-  - **H** -- stop-gradient recurrence (same forward recurrence, y/z detached
-    between steps).
+All eight arms (A-H) are built as of this iteration -- none remain deferred.
 """
 
 from __future__ import annotations
@@ -74,8 +86,8 @@ RECURSIVE_CONTROL_ARM_REPORT_VERSION = "RecursiveControlArmReportV1"
 
 #: Arm ids from Linear SLM-241 (RSC-A05).
 ALL_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G", "H")
-BUILT_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G")
-DEFERRED_ARM_IDS: tuple[str, ...] = ("H",)
+BUILT_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G", "H")
+DEFERRED_ARM_IDS: tuple[str, ...] = ()
 
 ARM_LABELS: dict[str, str] = {
     "A": "stacked baseline (no z state, unshared blocks)",
@@ -93,7 +105,11 @@ ARM_LABELS: dict[str, str] = {
         "build_arm_f_dual_view for the honest parameter-nearest residual)"
     ),
     "G": "R=1 shared architecture control (interface-, not behavior-, compatible)",
-    "H": "stop-gradient recurrence (deferred)",
+    "H": (
+        "stop-gradient recurrence (arm B's exact construction; y/z detached "
+        "between recursive steps -- identical forward values, no cross-step "
+        "backprop through the recurrent state)"
+    ),
 }
 
 #: Canonical ``denoiser_arch`` value each built arm maps onto -- the same
@@ -105,7 +121,13 @@ ARM_LABELS: dict[str, str] = {
 #: ``recursive_steps * recursive_transition_layers`` rather than ``n_layers``
 #: -- a distinct, named, discoverable config choice, not a shadow path. Arm E
 #: (``"stacked_matched_state"``) is a genuinely new tower class
-#: (``StackedMatchedStateDenoiserTower``), same convention.
+#: (``StackedMatchedStateDenoiserTower``), same convention. Arm H
+#: (stop-gradient recurrence) reuses B's exact ``denoiser_arch`` string too --
+#: same convention as G -- because H is not a different tower architecture,
+#: only a different gradient-flow rule on the identical construction
+#: (``SharedRecursiveDenoiserTower(detach_between_steps=True)``); the
+#: orthogonal ``detach_between_steps`` flag, not a new ``denoiser_arch``
+#: value, is what distinguishes it (see ``construct_arm_tower`` below).
 ARM_DENOISER_ARCH: dict[str, str] = {
     "A": "stacked",
     "B": "shared_recursive",
@@ -114,6 +136,7 @@ ARM_DENOISER_ARCH: dict[str, str] = {
     "E": "stacked_matched_state",
     "F": "stacked_depth_matched",
     "G": "shared_recursive",
+    "H": "shared_recursive",
 }
 
 #: ``z_state_mode`` each built (non-stacked) arm maps onto. E/F have no z
@@ -125,6 +148,7 @@ ARM_Z_STATE_MODE: dict[str, str] = {
     "C": "y_only",
     "D": "parameter_free",
     "G": "full",
+    "H": "full",
 }
 
 #: Declared parameter-matching target + tolerance (parameters) for each built
@@ -162,6 +186,13 @@ ARM_MATCHING_TARGET: dict[str, str] = {
         "none declared -- architecture-change control at R=1, not a "
         "parameter-matching arm (same parameter profile as B)"
     ),
+    "H": (
+        "matches arm B's total parameter count and "
+        "block_evaluations_per_forward EXACTLY at every config -- identical "
+        "construction to B (same denoiser_arch, same z_state_mode='full'), "
+        "only detach_between_steps=True differs, which changes no parameter "
+        "and no block evaluation, only the backward graph"
+    ),
 }
 
 
@@ -181,8 +212,8 @@ def construct_arm_tower(
 ) -> nn.Module:
     """Construct one control arm's denoiser tower via the same constructors
     ``TwoTowerModel`` uses for ``denoiser_arch``/``z_state_mode`` -- never a
-    parallel/ad hoc implementation. Fails closed for deferred (H) or
-    unknown arm ids.
+    parallel/ad hoc implementation. Fails closed for any (currently none)
+    deferred or unknown arm ids.
     """
     if arm_id in DEFERRED_ARM_IDS:
         raise NotImplementedError(
@@ -247,6 +278,11 @@ def construct_arm_tower(
             n_kinds=n_kinds,
         )
     steps = 1 if arm_id == "G" else recursive_steps
+    # Arm H: identical construction to B (same z_state_mode="full"), except
+    # detach_between_steps=True -- a pure backward-graph flag, never a
+    # parameter/shape/block-evaluation change (see recursive_denoiser.py's
+    # module docstring for the exact semantics).
+    detach_between_steps = arm_id == "H"
     return SharedRecursiveDenoiserTower(
         vocab_size=vocab_size,
         d_model=d_model,
@@ -259,6 +295,7 @@ def construct_arm_tower(
         recursive_steps=steps,
         recursive_transition_layers=transition_layers,
         z_state_mode=ARM_Z_STATE_MODE[arm_id],
+        detach_between_steps=detach_between_steps,
     )
 
 
@@ -396,6 +433,19 @@ def build_arm_report(
         notes.append(
             "R=1 architecture-change control -- interface-compatible with "
             "the stacked baseline, not behaviorally equivalent (SLM-240)."
+        )
+    if arm_id == "H":
+        notes.append(
+            "gradient-flow-only variant of arm B: identical construction "
+            "(same denoiser_arch, same z_state_mode='full', same parameters, "
+            "same block-evaluations) with detach_between_steps=True -- y/z "
+            "are detached between recursive steps so a later step's loss "
+            "cannot backpropagate through the recurrent state into an "
+            "earlier step's block application; the shared weights still "
+            "receive gradient from every step's own (same-step) "
+            "contribution. See tests/test_models/test_recursive_denoiser.py "
+            "for the forward-identity (bit-identical to B) and "
+            "gradient-divergence (hook-based mechanism) evidence."
         )
     if arm_id == "F":
         notes.append(

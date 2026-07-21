@@ -316,6 +316,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         denoiser_arch=config.denoiser_arch,
         recursive_steps=config.recursive_steps,
         recursive_transition_layers=config.recursive_transition_layers,
+        recursive_detach_between_steps=getattr(
+            config, "recursive_detach_between_steps", False
+        ),
         recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
         grammar_constrained=config.grammar_constrained,
         grammar_top_k=config.grammar_top_k,

@@ -53,6 +53,11 @@ class ModelBuildConfig:
     # SLM-138: recurrence and transition-depth knobs for shared_recursive.
     recursive_steps: int = 1
     recursive_transition_layers: int = 0
+    # SLM-241 (RSC-A05) arm H: stop-gradient recurrence -- detaches y/z
+    # between recursive steps (forward values unchanged, backward graph
+    # only). Reuses denoiser_arch="shared_recursive" (arm B's/G's arch
+    # string), no new arch value.
+    recursive_detach_between_steps: bool = False
     recursive_depth_supervision_weights: tuple[float, ...] = ()
     grammar_constrained: bool = True
     # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout

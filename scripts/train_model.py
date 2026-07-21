@@ -275,6 +275,15 @@ def main(argv: list[str] | None = None) -> int:
         help="SLM-138: shared transition blocks (0 = use --denoiser-layers).",
     )
     parser.add_argument(
+        "--recursive-detach-between-steps",
+        action="store_true",
+        help=(
+            "SLM-241 (RSC-A05) arm H: detach y/z between recursive steps "
+            "(stop-gradient recurrence) -- identical forward values to "
+            "shared_recursive, only the backward graph differs."
+        ),
+    )
+    parser.add_argument(
         "--recursive-depth-supervision-weights",
         default="",
         help="SLM-138: comma-separated depth CE weights (empty = off).",
@@ -1062,6 +1071,7 @@ def main(argv: list[str] | None = None) -> int:
         denoiser_arch=args.denoiser_arch,
         recursive_steps=args.recursive_steps,
         recursive_transition_layers=args.recursive_transition_layers,
+        recursive_detach_between_steps=bool(args.recursive_detach_between_steps),
         recursive_depth_supervision_weights=tuple(
             float(v.strip())
             for v in args.recursive_depth_supervision_weights.split(",")
