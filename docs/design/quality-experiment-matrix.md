@@ -4546,3 +4546,20 @@ Evidence:
 [iter-e647-root-abstention-trace-20260720.md](iter-e647-root-abstention-trace-20260720.md),
 [authoritative r2 JSON](iter-e647-root-abstention-trace-20260720.json), and
 [r1 JSON](iter-e647-root-abstention-trace-r1-20260720.json).
+
+## E648 dynamic-literal-aware semantic-root probe
+
+E648 verifies planned semantic roots through the tokenizer's dynamic-literal-
+aware decode path. This removes E647's `LIT_STR` abstention and closes Dashboard
+as a valid five-section `Stack`. Meaningful v1 rises to 1.0000, fidelity to
+0.9500, validity to 0.9700, structure to 0.7355, component recall to 0.8750,
+reward to 0.9640, node F1 to 0.7987, and edge F1 to 0.5798; strict v2 holds at
+3/4 and p95 falls to 7705.93 ms. Retain the treatment stamped v93. After
+rebasing onto E647 deduplicated telemetry v95, the append-only lineage records
+the retained E648 behavior as v96. Do not claim ship from an OOD
+`n=4` subset whose AgentV evidence-size gate remains 0/1. No checkpoint was
+created or synced.
+
+Evidence:
+[iter-e648-dynamic-literal-root-probe-20260720.md](iter-e648-dynamic-literal-root-probe-20260720.md)
+and [JSON](iter-e648-dynamic-literal-root-probe-20260720.json).
