@@ -2150,7 +2150,7 @@
         {
           "version": "v94",
           "date": "2026-07-21",
-          "note": "no-bump: renumber deterministic completion evidence from v92 to v94 after merging the independently landed E650 v92/v93 history; no additional behavior change"
+          "note": "make exact LTR, repair, choice, and complete-compiler singleton decisions bypass neural rows; add honest verified template-plus-bindings generation boundary"
         },
         {
           "version": "v93",
@@ -2166,11 +2166,6 @@
           "version": "v92",
           "date": "2026-07-20",
           "note": "E650: pair visible-role-inferred families with concrete unused slots and margin-floor only the assigned role at compatible schema positions; renumbered from the originally launched E644 arm after rebase"
-        },
-        {
-          "version": "v92",
-          "date": "2026-07-21",
-          "note": "make exact LTR, repair, choice, and complete-compiler singleton decisions bypass neural rows; add honest verified template-plus-bindings generation boundary"
         },
         {
           "version": "v91",
