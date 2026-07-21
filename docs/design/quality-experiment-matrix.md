@@ -4837,3 +4837,17 @@ synced.
 
 Evidence: [narrative](iter-e675-schema-open-visibility-20260721.md) and
 [JSON](iter-e675-schema-open-visibility-20260721.json).
+
+## E676 joint semantic-role carrier
+
+E676 groups same-namespace roles into one component only when distinct direct
+public-schema string properties cover every role and the visible candidate
+contract permits that family. Gallery replaces two loose TextContent leaves
+with one `Callout(info, hint.title, hint.body)`; the other three records are
+byte-identical. Structure improves 0.7931→0.8181 and node/edge F1 improve
+0.8556/0.7486→0.8722/0.7665, while reward slips 0.973→0.970. Retain v133 as a
+positive research baseline with the tradeoff recorded, not ship evidence:
+`n=4`, AgentV 0/1, and no checkpoint created or synced.
+
+Evidence: [narrative](iter-e676-joint-role-carrier-20260721.md) and
+[JSON](iter-e676-joint-role-carrier-20260721.json).
