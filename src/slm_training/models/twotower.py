@@ -5504,6 +5504,56 @@ class TwoTowerModel(nn.Module):
             if isinstance(child, dict)
         )
 
+    @staticmethod
+    def _active_component_property(state: Any) -> tuple[str, str | None]:
+        """Return the deepest component and its active positional property."""
+        from slm_training.dsl.production_codec import _prop_order
+
+        for frame in reversed(getattr(state, "frames", ())):
+            if frame.kind != "component":
+                continue
+            component = str(frame.expr_type).removeprefix("element:")
+            properties = tuple(_prop_order().get(component, ()))
+            index = int(getattr(frame, "arg_index", -1))
+            active = properties[index] if 0 <= index < len(properties) else None
+            return component, active
+        return "", None
+
+    def _schema_role_slot_guard(
+        self,
+        row: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+    ) -> tuple[int, ...]:
+        """Reject visible slots incompatible with the active component property."""
+        if (
+            float(getattr(self.config, "schema_role_slot_decode_weight", 0.0) or 0.0)
+            <= 0.0
+            or not self._semantic_role_candidates
+            or row >= len(self._semantic_role_candidates)
+            or not self._slot_contracts
+            or row >= len(self._slot_contracts)
+        ):
+            return ()
+        component, active_property = self._active_component_property(state)
+        if not component or not active_property or active_property == "placeholder":
+            return ()
+        slot_by_id = {
+            int(self.tokenizer.sym_id(index)): slot
+            for index, slot in enumerate(self._slot_contracts[row])
+            if index < int(self.tokenizer.sym_slots)
+        }
+        from slm_training.data.quality import schema_placeholder_role_matches
+
+        return tuple(
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if token_id in slot_by_id
+            and not schema_placeholder_role_matches(
+                slot_by_id[token_id], component, active_property
+            )
+        )
+
     def _semantic_plan_typed_array_nonempty_bias(
         self,
         row: int,
@@ -7797,6 +7847,39 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
+                    role_guard = self._schema_role_slot_guard(
+                        row, states[row], candidate_ids
+                    )
+                    if role_guard:
+                        before_role_guard = int(scores.argmax().item())
+                        for guarded_position in role_guard:
+                            scores[guarded_position] = torch.finfo(scores.dtype).min
+                        if (
+                            stats is not None
+                            and len(stats.constrained_selection_traces) < 64
+                        ):
+                            stats.constrained_selection_traces.append(
+                                {
+                                    "phase": "schema_role_slot_guard",
+                                    "position": position,
+                                    "before_token": str(
+                                        tok.id_to_token.get(
+                                            candidate_ids[before_role_guard], ""
+                                        )
+                                    ),
+                                    "chosen_token": str(
+                                        tok.id_to_token.get(
+                                            candidate_ids[int(scores.argmax().item())],
+                                            "",
+                                        )
+                                    ),
+                                    "guarded_tokens": [
+                                        str(tok.id_to_token.get(candidate_ids[item], ""))
+                                        for item in role_guard
+                                    ],
+                                    **self._choice_phase_evidence(states[row]),
+                                }
+                            )
                     self._finalize_semantic_plan_trace(
                         slot_coverage_close_trace,
                         candidate_ids=candidate_ids,

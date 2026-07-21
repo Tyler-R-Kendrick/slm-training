@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v114",
+      "version": "v115",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v115",
+          "date": "2026-07-21",
+          "note": "E659: final-mask visible slots that violate the active positional property's schema role"
+        },
         {
           "version": "v114",
           "date": "2026-07-21",

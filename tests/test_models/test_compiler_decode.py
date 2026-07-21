@@ -465,6 +465,33 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     assert bias.tolist() == [7.0, 0.0]
 
 
+def test_schema_role_slot_guard_rejects_wrong_positional_property() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=8.0)
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["-"]
+    model._slot_contracts = [[":dashboard.metric.value"]]
+    model._semantic_role_candidates = [{":dashboard.metric.value": ("Slice",)}]
+    slice_state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Slice", arg_index=0)
+        ]
+    )
+
+    assert model._schema_role_slot_guard(
+        0, slice_state, (slot_id, close_id)
+    ) == (0,)
+
+    input_state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Input", arg_index=1)
+        ]
+    )
+    assert model._schema_role_slot_guard(0, input_state, (slot_id, close_id)) == ()
+
+
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
     from types import SimpleNamespace
 
