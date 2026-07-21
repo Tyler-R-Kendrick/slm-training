@@ -5715,6 +5715,85 @@ class TwoTowerModel(nn.Module):
             if isinstance(option, dict)
         )
 
+    @staticmethod
+    def _schema_enum_values(schema: dict[str, Any]) -> tuple[Any, ...]:
+        values: list[Any] = list(schema.get("enum", ()))
+        for key in ("anyOf", "oneOf"):
+            for option in schema.get(key, ()):
+                if isinstance(option, dict):
+                    values.extend(TwoTowerModel._schema_enum_values(dict(option)))
+        unique: list[Any] = []
+        for value in values:
+            if value not in unique:
+                unique.append(value)
+        return tuple(unique)
+
+    def _finalize_schema_enum_choices(
+        self,
+        ids: torch.Tensor,
+        contracts: list[list[str] | None],
+    ) -> torch.Tensor:
+        """Replace completed dynamic enum literals without changing later choices."""
+        from slm_training.dsl.production_codec import LIT_PREFIX
+        from slm_training.models.choice_tokenizer import (
+            LIT_END,
+            LIT_NUM,
+            LIT_STR,
+            ChoiceDecodeState,
+        )
+
+        tok = self.tokenizer
+        finalized = ids.clone()
+        for row_index, (row, contract) in enumerate(
+            zip(ids.tolist(), contracts, strict=True)
+        ):
+            state = ChoiceDecodeState(tok, slot_count=len(contract or ()))
+            output = [int(row[0])]
+            position = 1
+            while position < len(row):
+                token_id = int(row[position])
+                token = str(tok.id_to_token.get(token_id, ""))
+                frames = list(getattr(state, "frames", ()))
+                replacement_id = None
+                if token in {LIT_STR, LIT_NUM} and frames:
+                    frame = frames[-1]
+                    schemas = tuple(getattr(frame, "schemas", ()))
+                    arg_index = int(getattr(frame, "arg_index", -1))
+                    if (
+                        getattr(frame, "kind", None) == "component"
+                        and 0 <= arg_index < len(schemas)
+                    ):
+                        for value in self._schema_enum_values(dict(schemas[arg_index])):
+                            replacement_id = tok.token_to_id.get(
+                                f"{LIT_PREFIX}{json.dumps(value)}"
+                            )
+                            if replacement_id is not None:
+                                break
+                if replacement_id is not None:
+                    end = position + 1
+                    while (
+                        end < len(row)
+                        and str(tok.id_to_token.get(int(row[end]), "")) != LIT_END
+                    ):
+                        end += 1
+                    if end < len(row) and state.advance_id(replacement_id):
+                        output.append(int(replacement_id))
+                        position = end + 1
+                        continue
+                output.append(token_id)
+                if token_id == tok.eos_id:
+                    break
+                if token_id != tok.pad_id and not state.advance_id(token_id):
+                    break
+                position += 1
+            finalized[row_index].fill_(tok.pad_id)
+            finalized[row_index, : len(output)] = torch.tensor(
+                output,
+                dtype=finalized.dtype,
+                device=finalized.device,
+            )
+        return finalized
+
     def _semantic_plan_binding_bias(
         self,
         row: int,
@@ -8871,6 +8950,7 @@ class TwoTowerModel(nn.Module):
                 for i in range(len(prompts))
             ]
             ids = self._choice_ltr_decode_batch(ctx, ctx_pad, length, contracts)
+            ids = self._finalize_schema_enum_choices(ids, contracts)
             self._last_generation_evidence = self._choice_generation_evidence(
                 ids, contracts
             )

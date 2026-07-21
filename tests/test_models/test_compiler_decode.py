@@ -1049,6 +1049,22 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     assert bias.tolist() == [-4.0, 0.0]
 
 
+def test_schema_enum_finalize_preserves_choices_after_dynamic_literal() -> None:
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    source = 'root = Callout("invalid", ":title", ":body")'
+    ids = torch.tensor(
+        [tokenizer.encode(source, placeholders=[":title", ":body"])],
+        dtype=torch.long,
+    )
+
+    finalized = model._finalize_schema_enum_choices(ids, [[":title", ":body"]])
+
+    assert model._decode_openui(
+        finalized[0], placeholders=[":title", ":body"]
+    ) == 'root = Callout("info", ":title", ":body")'
+
+
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
     from slm_training.dsl.production_codec import CLOSE, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
