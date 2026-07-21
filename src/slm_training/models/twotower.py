@@ -5487,11 +5487,26 @@ class TwoTowerModel(nn.Module):
         return None
 
     @staticmethod
-    def _schema_can_reach_visible_slot(schema: dict[str, Any]) -> bool:
+    def _schema_can_reach_visible_slot(
+        schema: dict[str, Any], seen: frozenset[str] = frozenset()
+    ) -> bool:
+        reference = str(schema.get("$ref") or "")
+        if reference.startswith("#/$defs/"):
+            name = reference.rsplit("/", 1)[-1]
+            if name in seen:
+                return False
+            from slm_training.dsl.lang_core import library_schema
+
+            target = library_schema().get("$defs", {}).get(name)
+            return isinstance(
+                target, dict
+            ) and TwoTowerModel._schema_can_reach_visible_slot(
+                target, seen | {name}
+            )
         if schema.get("x-openui-placeholder") or schema.get("type") == "string":
             return True
         return any(
-            TwoTowerModel._schema_can_reach_visible_slot(dict(child))
+            TwoTowerModel._schema_can_reach_visible_slot(dict(child), seen)
             for child in (
                 *schema.get("anyOf", ()),
                 *schema.get("properties", {}).values(),
@@ -5551,44 +5566,77 @@ class TwoTowerModel(nn.Module):
             or not self._schema_can_reach_visible_slot(dict(schemas[0]))
         ):
             return None
-        owner_id = self._semantic_plan_owner_id(row, state)
-        if owner_id is None:
-            return None
-        owner_frame = frames[-2]
-        owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
-            "element:"
-        )
-        if (
-            getattr(owner_frame, "kind", None) != "component"
-            or owner_id
-            not in {
-                self.tokenizer.token_to_id.get(f"+{owner_family}"),
-                self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
-                self.tokenizer.token_to_id.get(owner_family),
-            }
-        ):
-            return None
         visible_slot_ids = {
             int(self.tokenizer.sym_id(index))
             for index in range(
                 min(len(slot_contract), int(self.tokenizer.sym_slots))
             )
         }
-        if not visible_slot_ids.difference(prefix):
+        missing_slot_ids = visible_slot_ids.difference(prefix)
+        if not missing_slot_ids:
             return None
         close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
         if close_id not in candidate_ids:
             return None
         typed_target_id = None
         if typed_margin > 0.0:
-            try:
-                typed_target_id = state._minimal_schema_id(dict(schemas[0]))
-            except (AttributeError, KeyError, TypeError, ValueError):
-                return None
-            if typed_target_id not in candidate_ids:
-                return None
-            targets = [candidate_ids.index(typed_target_id)]
+            allowed_components: set[str] = set()
+            pending = [dict(schemas[0])]
+            while pending:
+                schema = pending.pop()
+                ref = str(schema.get("$ref") or "")
+                if ref.startswith("#/$defs/"):
+                    allowed_components.add(ref.rsplit("/", 1)[-1])
+                pending.extend(
+                    dict(child)
+                    for child in schema.get("anyOf", ())
+                    if isinstance(child, dict)
+                )
+                if isinstance(schema.get("items"), dict):
+                    pending.append(dict(schema["items"]))
+            role_candidates = (
+                self._semantic_role_candidates[row]
+                if self._semantic_role_candidates
+                and row < len(self._semantic_role_candidates)
+                else {}
+            )
+            role_target_ids = {
+                self.tokenizer.token_to_id.get(f"+{component}")
+                for index, slot in enumerate(slot_contract)
+                if int(self.tokenizer.sym_id(index)) in missing_slot_ids
+                for component in role_candidates.get(slot, ())
+                if component in allowed_components
+            }
+            targets = [
+                candidate_ids.index(token_id)
+                for token_id in role_target_ids
+                if token_id in candidate_ids
+            ]
+            if not targets:
+                try:
+                    typed_target_id = state._minimal_schema_id(dict(schemas[0]))
+                except (AttributeError, KeyError, TypeError, ValueError):
+                    return None
+                if typed_target_id not in candidate_ids:
+                    return None
+                targets = [candidate_ids.index(typed_target_id)]
         else:
+            owner_id = self._semantic_plan_owner_id(row, state)
+            owner_frame = frames[-2]
+            owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
+                "element:"
+            )
+            if (
+                owner_id is None
+                or getattr(owner_frame, "kind", None) != "component"
+                or owner_id
+                not in {
+                    self.tokenizer.token_to_id.get(f"+{owner_family}"),
+                    self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
+                    self.tokenizer.token_to_id.get(owner_family),
+                }
+            ):
+                return None
             targets = [
                 position
                 for position, token_id in enumerate(candidate_ids)
