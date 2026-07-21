@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v103",
+      "version": "v104",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v104",
+          "date": "2026-07-21",
+          "note": "E653: keep visible-role leaf obligations nested when an already-planned component can reach the role through its public schema"
+        },
         {
           "version": "v103",
           "date": "2026-07-21",

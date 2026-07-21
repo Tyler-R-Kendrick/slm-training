@@ -4346,6 +4346,7 @@ class TwoTowerModel(nn.Module):
     def _semantic_plan_role_obligations(
         family_counts: Counter[str],
         role_candidates: dict[str, tuple[str, ...]] | None,
+        reachable_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> tuple[Counter[str], dict[str, tuple[str, ...]]]:
         """Pair uncovered visible roles with preferred compatible leaf families."""
         if not role_candidates:
@@ -4367,6 +4368,20 @@ class TwoTowerModel(nn.Module):
             if planned_family is not None:
                 bindings[planned_family].append(slot)
                 continue
+            if planned.intersection(
+                (reachable_role_candidates or {}).get(slot, ())
+            ):
+                family = next(
+                    (
+                        preferred
+                        for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                        if preferred in candidates
+                    ),
+                    None,
+                )
+                if family is not None:
+                    bindings[family].append(slot)
+                    continue
             family = next(
                 (
                     preferred
@@ -8729,6 +8744,7 @@ class TwoTowerModel(nn.Module):
                     "constrained decode"
                 )
             from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
+            from slm_training.data.quality import semantic_role_reachable_candidates
 
             component_ids = self._component_inventory_token_ids()
             action_ids = []
@@ -8759,6 +8775,11 @@ class TwoTowerModel(nn.Module):
                         and row < len(self._semantic_role_candidates)
                         else None
                     ),
+                    semantic_role_reachable_candidates(
+                        self._slot_contracts[row], action_ids
+                    )
+                    if self._slot_contracts and row < len(self._slot_contracts)
+                    else None,
                 )
                 action_scores = {
                     token_id: feature.plan_confidence

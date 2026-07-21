@@ -1910,6 +1910,25 @@ def test_semantic_plan_role_obligations_bind_existing_action_family() -> None:
     }
 
 
+def test_semantic_plan_role_obligations_keep_reachable_roles_nested() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 2}),
+        {
+            ":dashboard.m1.value": ("TextContent",),
+            ":dashboard.m2.value": ("TextContent",),
+        },
+        {
+            ":dashboard.m1.value": ("Card", "TextContent"),
+            ":dashboard.m2.value": ("Card", "TextContent"),
+        },
+    )
+
+    assert counts == Counter({"Card": 2})
+    assert bindings == {
+        "TextContent": (":dashboard.m1.value", ":dashboard.m2.value")
+    }
+
+
 def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     from types import SimpleNamespace
 
