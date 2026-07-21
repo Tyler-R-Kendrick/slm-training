@@ -1549,6 +1549,7 @@ class TwoTowerModel(nn.Module):
         self._semantic_plan_role_bindings: list[
             dict[str, tuple[str, ...]]
         ] | None = None
+        self._semantic_plan_required_root_references: list[dict[int, str]] | None = None
         self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
@@ -7325,6 +7326,40 @@ class TwoTowerModel(nn.Module):
         ):
             return None
 
+        frames = tuple(getattr(state, "frames", ()))
+        if (
+            prefix is not None
+            and not frames
+            and (not section_types or section_types[-1] != "element:Stack")
+        ):
+            carrier_id = self._semantic_plan_missing_slot_carrier(
+                row, prefix, candidate_ids
+            )
+            if carrier_id is not None:
+                if (
+                    self._semantic_plan_required_root_references is not None
+                    and row < len(self._semantic_plan_required_root_references)
+                ):
+                    family = str(
+                        self.tokenizer.id_to_token.get(carrier_id, "")
+                    ).removeprefix("+")
+                    self._semantic_plan_required_root_references[row][
+                        len(section_types)
+                    ] = f"element:{family}"
+                bias = torch.zeros(
+                    len(candidate_ids), dtype=torch.float32, device=self.device_name
+                )
+                target_position = candidate_ids.index(carrier_id)
+                bias[target_position] = weight
+                if margin > 0.0 and candidate_scores is not None:
+                    bias[target_position] = max(
+                        float(bias[target_position].item()),
+                        float(candidate_scores.max().item())
+                        + margin
+                        - float(candidate_scores[target_position].item()),
+                    )
+                return bias
+
         # Keep the unit seam for callers without a concrete prefix. Production
         # decode always supplies one and takes the verifier-gated path.
         if prefix is None:
@@ -7428,6 +7463,137 @@ class TwoTowerModel(nn.Module):
                 float(bias[target_position].item()),
                 margin_bias,
             )
+        return bias
+
+    def _semantic_plan_missing_slot_carrier(
+        self,
+        row: int,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+    ) -> int | None:
+        """Bind one missing visible slot to the simplest legal direct carrier."""
+        if (
+            not self._slot_contracts
+            or row >= len(self._slot_contracts)
+            or not self._semantic_role_candidates
+            or row >= len(self._semantic_role_candidates)
+        ):
+            return None
+        from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
+        from slm_training.data.quality import semantic_role_properties
+        from slm_training.dsl.lang_core import library_schema
+
+        contract = self._slot_contracts[row] or []
+        properties_by_slot = semantic_role_properties(contract)
+        definitions = library_schema().get("$defs", {})
+        preferred = {
+            family: index
+            for index, family in enumerate(DEFAULT_HOUSE_STYLE.preferred_components)
+        }
+        for index, slot in enumerate(contract):
+            if int(self.tokenizer.sym_id(index)) in prefix:
+                continue
+            compatible: list[tuple[int, int, str, int]] = []
+            for family in self._semantic_role_candidates[row].get(slot, ()):
+                token_id = self.tokenizer.token_to_id.get(f"+{family}")
+                definition = definitions.get(family, {})
+                string_properties = {
+                    name
+                    for name, schema in (definition.get("properties") or {}).items()
+                    if isinstance(schema, dict) and schema.get("type") == "string"
+                }
+                if token_id in candidate_ids and string_properties.intersection(
+                    properties_by_slot.get(slot, ())
+                ):
+                    compatible.append(
+                        (
+                            preferred.get(family, len(preferred)),
+                            len(definition.get("properties") or {}),
+                            family,
+                            int(token_id),
+                        )
+                    )
+            if not compatible:
+                continue
+            _rank, _arity, family, token_id = min(compatible)
+            if self._semantic_plan_role_bindings is not None:
+                bindings = self._semantic_plan_role_bindings[row]
+                if slot not in bindings.get(family, ()):
+                    bindings[family] = (*bindings.get(family, ()), slot)
+            return token_id
+        return None
+
+    def _semantic_plan_required_reference_bias(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Keep only root references created to carry a missing visible slot."""
+        frames = tuple(getattr(state, "frames", ()))
+        if (
+            not self._semantic_plan_required_root_references
+            or row >= len(self._semantic_plan_required_root_references)
+            or len(frames) != 2
+            or getattr(frames[-2], "kind", None) != "component"
+            or getattr(frames[-2], "expr_type", None) != "element:Stack"
+            or getattr(frames[-1], "kind", None) != "variadic"
+            or getattr(frames[-1], "expr_type", None) != "array"
+        ):
+            return None
+        required = self._semantic_plan_required_root_references[row]
+        section_types = tuple(getattr(state, "section_types", ()))
+        used = {
+            int(token[1:])
+            for token_id in prefix
+            if (token := str(self.tokenizer.id_to_token.get(token_id, ""))).startswith(
+                "&"
+            )
+            and token[1:].isdigit()
+        }
+        pending = {
+            reference
+            for reference, expr_type in required.items()
+            if reference not in used
+            and reference < len(section_types)
+            and str(section_types[reference]) == expr_type
+        }
+        close_id = self.tokenizer.token_to_id.get(
+            str(getattr(frames[-1], "close", "]"))
+        )
+        if (
+            close_id not in candidate_ids
+            or candidate_ids[int(scores.argmax().item())] != close_id
+        ):
+            return None
+        targets = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if (
+                (token := str(self.tokenizer.id_to_token.get(token_id, ""))).startswith(
+                    "&"
+                )
+                and token[1:].isdigit()
+                and int(token[1:]) in pending
+            )
+        ]
+        if not targets:
+            return None
+        margin = float(
+            getattr(self.config, "semantic_plan_root_margin_decode_weight", 0.0)
+            or 0.0
+        )
+        weight = float(
+            getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
+        )
+        target = min(targets)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            weight,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
         return bias
 
     def _component_edge_bias(
@@ -9300,6 +9466,17 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_binding_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan_binding
                             )
+                    required_reference_bias = (
+                        self._semantic_plan_required_reference_bias(
+                            row,
+                            states[row],
+                            ids[row, :position].tolist(),
+                            candidate_ids,
+                            scores,
+                        )
+                    )
+                    if required_reference_bias is not None:
+                        scores = scores + required_reference_bias
                     reference_bias = self._visible_reference_completeness_bias(
                         states[row],
                         ids[row, :position].tolist(),
@@ -10431,6 +10608,9 @@ class TwoTowerModel(nn.Module):
             self._semantic_plan_action_scores = []
             self._semantic_plan_action_counts = []
             self._semantic_plan_role_bindings = []
+            self._semantic_plan_required_root_references = [
+                {} for _prompt in prompts
+            ]
             for row, prompt in enumerate(prompts):
                 plan = prompt_semantic_plan(prompt)
                 features = compiler.annotate_actions(None, action_ids, plan)
@@ -10485,6 +10665,7 @@ class TwoTowerModel(nn.Module):
             self._semantic_plan_action_scores = None
             self._semantic_plan_action_counts = None
             self._semantic_plan_role_bindings = None
+            self._semantic_plan_required_root_references = None
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )

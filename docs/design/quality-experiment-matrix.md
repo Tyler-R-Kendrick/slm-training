@@ -5282,3 +5282,16 @@ adversarial fidelity falls 0.8333→0.5833, validity 0.90→0.65, component reca
 
 Evidence: [narrative](iter-e707-carrier-root-reference-20260721.md) and
 [JSON](iter-e707-carrier-root-reference-20260721.json).
+
+## E708 carrier-specific root-reference obligation
+
+E708 records the exact missing-slot carrier and forces only that reference when
+the terminal `Stack` is about to close. The final five-suite `n=19` replay is
+quality-identical to E701 outside Rico. Rico fidelity improves 0.9583→1.0,
+validity 0.9750→1.0, structure 0.7611→0.7915, node F1 0.7942→0.8419, and reward
+0.9875→1.0; edge F1 moves 0.7757→0.7727. Retain v180 with schema-value weight 5
+as scratch evidence. Rico strict remains 0.0, AgentV is 0/5, and no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e708-carrier-reference-obligation-20260721.md) and
+[JSON](iter-e708-carrier-reference-obligation-20260721.json).
