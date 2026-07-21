@@ -4955,3 +4955,18 @@ created or synced.
 
 Evidence: [narrative](iter-e684-singular-plural-family-20260721.md) and
 [JSON](iter-e684-singular-plural-family-20260721.json).
+
+## E685 numbered tab role carriers
+
+E685 normalizes numbered tab roles and plans their unique public-schema
+`TabItem.trigger` carriers, advancing binding-aware meaningful to v2.6.0
+without changing thresholds. The valid independently terminal Held-out `n=5`
+replay is prediction- and quality-metric-identical to E684: the tabs record
+still emits only `TextContent(tab2)`, strict remains 2/5, and AgentV is 0/1.
+Reject the quality hypothesis: child-carrier planning does not reach decode
+while the parent Tabs family is absent. The earlier `r1` attempt is explicitly
+invalid because its terminal payload was lost. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e685-numbered-tab-carriers-20260721.md) and
+[JSON](iter-e685-numbered-tab-carriers-20260721.json).

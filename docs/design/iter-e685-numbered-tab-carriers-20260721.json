@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "run_id": "e685-numbered-tab-carriers-r2",
+  "experiment_id": "E685",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_retained_contract_only_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Normalizing numbered tab roles and planning their unique schema-compatible TabItem carriers will force the recognized two-tab Held-out request onto a Tabs path.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e684-singular-plural-family-r1",
+    "excluded_attempt": "e685-numbered-tab-carriers-r1",
+    "excluded_attempt_reason": "The supervisor lost the terminal payload after output truncation; complete artifacts are not accepted without a verified exit status.",
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "meaningful_program_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.4,
+      "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.4,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.7,
+      "placeholder_validity": 0.82,
+      "structural_similarity": 0.51076,
+      "component_type_recall": 0.5733333333333334,
+      "reward_score": 0.8602000000000001,
+      "ast_node_f1": 0.6217521367521368,
+      "ast_edge_f1": 0.5203463203463203,
+      "latency_ms_p50": 3669.79,
+      "latency_ms_p95": 20040.68,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e684": {
+    "quality_metrics_identical": true,
+    "strict_v2": [0.4, 0.4],
+    "coverage": [1.0, 1.0],
+    "placeholder_fidelity": [0.7, 0.7],
+    "structural_similarity": [0.51076, 0.51076],
+    "component_type_recall": [0.5733333333333334, 0.5733333333333334],
+    "reward_score": [0.8602000000000001, 0.8602000000000001],
+    "ast_node_f1": [0.6217521367521368, 0.6217521367521368],
+    "ast_edge_f1": [0.5203463203463203, 0.5203463203463203]
+  },
+  "prediction_evidence": {
+    "held_out_tabs_01": "The prediction remains root = TextContent(:held.tabs.tab2); no Tabs or TabItem carrier is emitted.",
+    "all_predictions_identical_to_e684": true
+  },
+  "metric_provenance": {
+    "metric": "binding_aware_meaningful_v2/2.6.0",
+    "implementation_hash": "c53354c4d191debfbb4f9e19092ec0a7c5e4700969b4380ee7364acdf2255a16",
+    "note": "Trailing numeric role suffixes are normalized for schema-role matching; thresholds remain disabled and unchanged."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain metric v2.6.0 and model v139 only as a truthful role-contract representation change. Reject the quality hypothesis: unique TabItem carrier planning does not reach decode when the parent Tabs family is absent. The next lever must diagnose and repair parent-family reachability rather than add more aliases.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "90bc578cedc5d4a61cf7d721a3254a9c1dcfd784",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.6.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v139"
+    },
+    "stamped_at": "2026-07-21T12:58:42.337814+00:00"
+  }
+}
