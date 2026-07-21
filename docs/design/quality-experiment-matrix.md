@@ -4365,3 +4365,27 @@ Evidence:
 [iter-e635-property-compatible-coverage-20260720.md](iter-e635-property-compatible-coverage-20260720.md),
 [authoritative r2 JSON](iter-e635-property-compatible-coverage-20260720.json),
 and [r1 JSON](iter-e635-property-compatible-coverage-r1-20260720.json).
+
+## E636 checkpoint reproducibility gap (blocked)
+
+E636 set out to continue E635's named next step: fix Modal's optional
+enum-valued `size` argument garbage literal (`"itet"`) with the existing,
+currently-unused `schema_enum_close_decode_weight` lever. E620's frozen
+rejected checkpoint that E630-E635 all "reused" lives only under gitignored
+`outputs/` and is `--no-sync-checkpoints` local-only; it did not exist at the
+start of this session. Two retraining attempts reproduced E620's exact
+documented recipe (same `data_manifest_sha`, 244 records, seed 0, 800 steps)
+and a comparable loss, but neither reproduced the checkpoint bytes nor its
+decode behavior: on the identical E635 OOD `n=4` recipe both fresh checkpoints
+degrade to unresolved-variable soup on all four records and never emit a
+literal `Modal(...)` call, so the targeted `size`-argument mismatch cannot
+occur in their decode paths. No treatment was run against a non-representative
+substitute; that would fabricate evidence rather than test the hypothesis. No
+checkpoint synced or promoted; no ship claim. This blocks continuing the
+E630-E635 checkpoint-reuse thread from a fresh checkout until the checkpoint
+is persisted, the training toolchain is version-pinned, or the lineage moves
+to a promoted checkpoint.
+
+Evidence:
+[iter-e636-checkpoint-reproducibility-gap-20260721.md](iter-e636-checkpoint-reproducibility-gap-20260721.md)
+and [JSON](iter-e636-checkpoint-reproducibility-gap-20260721.json).
