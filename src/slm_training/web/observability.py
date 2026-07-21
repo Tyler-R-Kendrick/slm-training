@@ -167,6 +167,27 @@ def _plain_markdown(value: str | None) -> str:
     return text.replace("`", "").replace("**", "").strip()
 
 
+def _newest_history_row(history: list[dict[str, str]]) -> dict[str, str] | None:
+    """Newest model-card Checkpoint-history row by date column.
+
+    The table has accumulated both prepended and appended rows, so position is
+    unreliable. ISO dates compare lexicographically; ``max`` keeps the first
+    occurrence on ties, matching the newest-first order used within a date.
+    """
+    if not history:
+        return None
+    return max(history, key=lambda row: _plain_markdown(row.get("date (utc)")))
+
+
+_STEM_DATE_RE = re.compile(r"(20\d{2})(\d{2})(\d{2})$")
+
+
+def _stem_date(stem: str) -> str | None:
+    """ISO date from a docs/design filename stem ending in YYYYMMDD."""
+    match = _STEM_DATE_RE.search(stem)
+    return "-".join(match.groups()) if match else None
+
+
 def _format_parameters(value: int | None, *, estimated: bool = False) -> str:
     if not value:
         return "—"
@@ -442,7 +463,9 @@ class Readers:
                     or payload.get("verdict")
                     or payload.get("status")
                     or path.stem,
-                    "date": payload.get("date_utc") or payload.get("date"),
+                    "date": payload.get("date_utc")
+                    or payload.get("date")
+                    or _stem_date(path.stem),
                     "pass": gate_pass,
                     "raw_gate_pass": raw_gate_pass,
                     "claim_class": claim_class,
@@ -597,7 +620,9 @@ class Readers:
                         "id": run_id,
                         "run_id": run_id,
                         "description": f"{description} ({matched.get('label') or run_id})",
-                        "date": payload.get("date_utc") or payload.get("date"),
+                        "date": payload.get("date_utc")
+                        or payload.get("date")
+                        or _stem_date(path.stem),
                         "pass": gate_pass,
                         "suites": normalized_suites,
                         "agentv": matched.get("agentv") or payload.get("agentv"),
@@ -674,6 +699,7 @@ class Readers:
                         "run_id": row.get("run_id") or row.get("id"),
                         "experiment_id": row.get("id"),
                         "matrix": kind,
+                        "date": row.get("date"),
                         "pass": row.get("pass"),
                         "description": row.get("description"),
                         "checkpoint": row.get("checkpoint"),
@@ -707,6 +733,7 @@ class Readers:
                     "run_id": row.get("run_id") or row.get("id"),
                     "experiment_id": row.get("id"),
                     "matrix": RESEARCH_SCOREBOARD_KIND,
+                    "date": row.get("date"),
                     "pass": row.get("pass"),
                     "description": row.get("description"),
                     "checkpoint": row.get("checkpoint"),
@@ -720,6 +747,10 @@ class Readers:
                     ),
                 }
             )
+        # Newest evidence first: the merged list is truncated by the overview,
+        # so board order (stale matrix mirrors before the research catch-all)
+        # must not decide what survives. Undated rows sort last.
+        derived.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
         known = {row.get("run_id") for row in live}
         for row in derived:
             if row.get("run_id") not in known:
@@ -1714,10 +1745,13 @@ class Readers:
                 }
             )
 
-        # The final history row is the newest checkpoint recorded by the canonical
-        # model card. Keep it beside champions even when it has not been promoted.
-        if history:
-            newest = history[-1]
+        # The newest history row is the newest checkpoint recorded by the
+        # canonical model card. Keep it beside champions even when it has not
+        # been promoted. Agents have both prepended and appended to that table,
+        # so select by date (first occurrence wins ties — the table is
+        # newest-first within a date) rather than trusting row position.
+        newest = _newest_history_row(history)
+        if newest is not None:
             run_id = _plain_markdown(newest.get("run id"))
             matched = next(
                 (
@@ -1779,11 +1813,8 @@ class Readers:
                     for row in roster
                 ],
                 "latest_checkpoint_history": (
-                    {
-                        key: _plain_markdown(value)
-                        for key, value in history[-1].items()
-                    }
-                    if history
+                    {key: _plain_markdown(value) for key, value in newest.items()}
+                    if newest is not None
                     else None
                 ),
             }
