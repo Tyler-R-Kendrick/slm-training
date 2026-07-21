@@ -4983,3 +4983,17 @@ created or synced.
 
 Evidence: [narrative](iter-e686-per-row-trace-budget-20260721.md) and
 [JSON](iter-e686-per-row-trace-budget-20260721.json).
+
+## E687 decoder trace record identity
+
+E687 restores the original model-local trace bound and attaches stable record
+IDs at the eval aggregation boundary. Quality remains identical to E685, while
+all 104 Held-out traces become attributable, including 30 tabs traces. Those
+show a `Tabs` owner repeatedly adding `TabItem`: heading/overview/tab labels
+are consumed, but `details.title`/`details.body` remain from positions 18–148
+until the token cap. Retain eval harness v35 as positive observability evidence;
+the next quality lever must route those roles into TabItem content. AgentV is
+0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e687-trace-record-identity-20260721.md) and
+[JSON](iter-e687-trace-record-identity-20260721.json).
