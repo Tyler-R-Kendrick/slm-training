@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v105",
+      "version": "v106",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v106",
+          "date": "2026-07-21",
+          "note": "E654 rejection: restore retained E653 v104 after enum flooring reduced fidelity, validity, structure, and reward"
+        },
         {
           "version": "v105",
           "date": "2026-07-21",
