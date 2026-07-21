@@ -4725,3 +4725,16 @@ or synced.
 
 Evidence: [narrative](iter-e666-schema-enum-finalize-20260721.md) and
 [JSON](iter-e666-schema-enum-finalize-20260721.json).
+
+## E667 nested typed-array component ownership
+
+E667 lets typed-array item bias find the nearest enclosing component across
+nested arrays. The focused invariant passes, but the matched OOD `n=4` run
+produces byte-for-byte identical predictions and quality metrics to E666;
+Dashboard still fails `Carousel.children` ownership. Reject neutral v118 and
+restore retained E666 behavior as v119. The small p95 difference is not an
+attributable performance result. No checkpoint was created or synced; AgentV
+was 0/1.
+
+Evidence: [narrative](iter-e667-nested-typed-array-owner-20260721.md) and
+[JSON](iter-e667-nested-typed-array-owner-20260721.json).

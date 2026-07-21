@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "run_id": "e667-nested-typed-array-owner-r1",
+  "experiment_id": "E667",
+  "date_utc": "2026-07-21",
+  "status": "completed_neutral_scratch_rejected",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Resolving typed-array item bias against the nearest enclosing component will repair nested component arrays such as Carousel.children.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e666-schema-enum-finalize-r1",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "exact_e653_policy": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.75,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.769175,
+      "component_type_recall": 0.875,
+      "reward_score": 0.973,
+      "ast_node_f1": 0.8222222222222222,
+      "ast_edge_f1": 0.7101648351648352,
+      "latency_ms_p50": 2982.71,
+      "latency_ms_p95": 7386.72,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "failure_breakdown": {
+    "placeholder_semantic_role_mismatch": 1,
+    "schema_value_role_mismatch:Carousel.children": 1
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Reject neutral v118 and restore retained E666 behavior as v119. The treatment produced byte-for-byte identical predictions and identical authoritative quality metrics, including the surviving Carousel.children mismatch. The small latency difference is not attributable evidence.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "691ad16d3dcba7507bef8d11dc06be192c714361",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.2.1",
+      "evals.scoring": "v12",
+      "model.twotower": "v118"
+    },
+    "stamped_at": "2026-07-21T09:17:10.057635+00:00"
+  }
+}
