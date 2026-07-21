@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "run_id": "e712-component-count-phrases-r3",
+  "experiment_id": "E712",
+  "date_utc": "2026-07-21",
+  "status": "completed_five_suite_retained_scratch_improvement_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Carrying an explicit component count through arbitrary descriptive modifiers will preserve required sibling multiplicity without borrowing counts across phrase boundaries.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"], "n": 19, "device": "cpu", "steps": 0, "context_backend": "scratch", "full_suites": true, "honest_slot_contract": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160, "max_wall_minutes": 2, "component_count_phrase_boundaries": true},
+  "diagnostic_arms": [
+    {"run_id": "e712-component-count-phrases-r1", "suite": "adversarial", "n": 4, "binding_aware_meaningful_v2_rate_strict": 0.5, "target_prediction": "three distinct Button components with :adv.btns.a, :adv.btns.b, and :adv.btns.c", "decision": "advance_to_full_suite"}
+  ],
+  "suites": {
+    "smoke": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.8308333333333334, "component_type_recall": 0.75, "reward_score": 0.957, "ast_node_f1": 0.903030303030303, "ast_edge_f1": 0.48148148148148145, "latency_ms_p50": 1288.76, "latency_ms_p95": 4815.4, "decode_timeout_count": 0, "fallback_count": 0},
+    "held_out": {"n": 5, "binding_aware_meaningful_v2_rate_strict": 0.8, "contract_recall": 0.96, "placeholder_fidelity": 0.96, "placeholder_validity": 0.976, "structural_similarity": 0.8147, "component_type_recall": 0.8933333333333333, "reward_score": 0.9561999999999999, "ast_node_f1": 0.883095238095238, "ast_edge_f1": 0.7173626373626373, "latency_ms_p50": 2809.61, "latency_ms_p95": 3968.49, "decode_timeout_count": 0, "fallback_count": 0},
+    "adversarial": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.5, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.88325, "component_type_recall": 1.0, "reward_score": 0.97, "ast_node_f1": 0.9151515151515152, "ast_edge_f1": 0.8418803418803419, "latency_ms_p50": 1627.99, "latency_ms_p95": 3845.94, "decode_timeout_count": 0, "fallback_count": 0},
+    "ood": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7823, "component_type_recall": 0.875, "reward_score": 0.973, "ast_node_f1": 0.85, "ast_edge_f1": 0.7486263736263736, "latency_ms_p50": 2727.16, "latency_ms_p95": 3733.58, "decode_timeout_count": 0, "fallback_count": 0},
+    "rico_held": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.6678000000000001, "component_type_recall": 1.0, "reward_score": 0.98, "ast_node_f1": 0.7835249042145594, "ast_edge_f1": 0.7665544332211, "latency_ms_p50": 6189.4, "latency_ms_p95": 9008.3, "decode_timeout_count": 0, "fallback_count": 0}
+  },
+  "comparison_to_e711": {"unchanged_suites": ["smoke", "held_out", "ood", "rico_held"], "adversarial": {"strict": [0.25, 0.5], "placeholder_fidelity": [0.8333333333333334, 1.0], "structure": [0.7657499999999999, 0.88325], "reward": [0.9139999999999999, 0.97], "ast_node_f1": [0.8318181818181818, 0.9151515151515152], "ast_edge_f1": [0.7168803418803419, 0.8418803418803419]}},
+  "failure_analysis": "The count parser allowed only one modifier between a count and component family, so equally important action caused three Buttons to collapse to one. The generalized phrase scan retains the nearest count while refusing to cross semantic boundaries.",
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "mean_score": 0.5},
+  "length_budget": {"ok": false, "effective_budget": 160, "failures": ["rico_held:p95=190 exceeds effective_budget=160"]},
+  "decision": "Retain model v184 and meaningfulness metric 2.10.0 as a scratch semantic-quality improvement. Do not claim ship readiness until AgentV and the Rico length budget clear on production-scale evidence.",
+  "ship_gate_result": "failed",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "705ddee3a91a7b3cbd22758bac3b1b86cccb683f", "code_dirty": true, "components": {"harness.model_build.eval": "v37", "evals.meaningful_program": "2.10.0", "evals.scoring": "v13", "model.twotower": "v184"}, "stamped_at": "2026-07-21T20:43:17.712637+00:00"}
+}
