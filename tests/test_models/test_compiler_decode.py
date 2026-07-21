@@ -1328,6 +1328,24 @@ def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
     assert torch.equal(finalized_compact_valid, compact_valid)
 
 
+def test_schema_enum_finalize_spells_open_vocabulary_enum_with_capacity() -> None:
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    encoded = tokenizer.encode(
+        'root = Slider(":notify", "tet", 1, 1)', placeholders=[":notify"]
+    )
+    ids = torch.tensor(
+        [[*encoded, *([tokenizer.pad_id] * 16)]],
+        dtype=torch.long,
+    )
+
+    finalized = model._finalize_schema_enum_choices(ids, [[":notify"]])
+
+    assert model._decode_openui(
+        finalized[0], placeholders=[":notify"]
+    ) == 'root = Slider(":notify", "continuous", 1, 1)'
+
+
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
     from slm_training.dsl.production_codec import CLOSE, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

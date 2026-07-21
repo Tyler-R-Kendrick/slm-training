@@ -6021,7 +6021,7 @@ class TwoTowerModel(nn.Module):
                 token_id = int(row[position])
                 token = str(tok.id_to_token.get(token_id, ""))
                 frames = list(getattr(state, "frames", ()))
-                replacement_id = None
+                replacement: list[int] | None = None
                 dynamic_literal = token in {LIT_STR, LIT_NUM}
                 fixed_literal = token.startswith((DIR_PREFIX, LIT_PREFIX))
                 if (dynamic_literal or fixed_literal) and frames:
@@ -6045,9 +6045,19 @@ class TwoTowerModel(nn.Module):
                                 if (candidate := tok.token_to_id.get(spelling))
                                 is not None
                             )
-                        if token_id not in enum_ids:
-                            replacement_id = next(iter(enum_ids), None)
-                if replacement_id is not None:
+                            if replacement is None:
+                                fixed_id = tok.token_to_id.get(spellings[0])
+                                replacement = (
+                                    [fixed_id]
+                                    if fixed_id is not None
+                                    else tok._frame(
+                                        LIT_STR if isinstance(value, str) else LIT_NUM,
+                                        str(value),
+                                    )
+                                )
+                        if token_id in enum_ids:
+                            replacement = None
+                if replacement:
                     end = position
                     if dynamic_literal:
                         end += 1
@@ -6056,10 +6066,13 @@ class TwoTowerModel(nn.Module):
                             and str(tok.id_to_token.get(int(row[end]), "")) != LIT_END
                         ):
                             end += 1
-                    if (not dynamic_literal or end < len(row)) and state.advance_id(
-                        replacement_id
+                    probe = state.clone()
+                    if (not dynamic_literal or end < len(row)) and all(
+                        probe.advance_id(replacement_id)
+                        for replacement_id in replacement
                     ):
-                        output.append(int(replacement_id))
+                        state = probe
+                        output.extend(replacement)
                         position = end + 1
                         continue
                 output.append(token_id)
@@ -6068,6 +6081,8 @@ class TwoTowerModel(nn.Module):
                 if token_id != tok.pad_id and not state.advance_id(token_id):
                     break
                 position += 1
+            if len(output) > finalized.shape[1]:
+                continue
             finalized[row_index].fill_(tok.pad_id)
             finalized[row_index, : len(output)] = torch.tensor(
                 output,

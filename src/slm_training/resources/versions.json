@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v149",
+      "version": "v150",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v150",
+          "date": "2026-07-21",
+          "note": "E694: finalize invalid enum literals with a framed open-vocabulary spelling when the generated row has capacity"
+        },
         {
           "version": "v149",
           "date": "2026-07-21",
