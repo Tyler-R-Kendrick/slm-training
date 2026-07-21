@@ -3791,6 +3791,25 @@
         }
       ]
     },
+    "harness.experiments.slm239_checkpoint_migrate_tied_head_corruption": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm239_checkpoint_migrate_tied_head_corruption.py",
+        "scripts/run_slm239_checkpoint_migrate_tied_head_corruption.py",
+        "tests/test_harnesses/experiments/test_slm239_checkpoint_migrate_tied_head_corruption.py",
+        "tests/test_scripts/test_run_slm239_checkpoint_migrate_tied_head_corruption.py",
+        "docs/design/iter-slm239-cpm0-01-checkpoint-migrate-tied-head-corruption-20260721.json",
+        "docs/design/iter-slm239-cpm0-01-checkpoint-migrate-tied-head-corruption-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-239 CPM0-01 checkpoint-migrate output-head vocab-remap corruption probe: exercises the real, unmodified migrate_twotower_checkpoint (models/checkpoint_migrate.py) end to end -- construct a tiny TwoTowerModel, save a checkpoint, migrate it against a permuted train-records set that reproduces the same vocab size with a different first-occurrence token order, reload the on-disk migrated checkpoint -- across 5 seeds x {tie_output_embedding=True, False}, checking whether the output head's per-key remap actually covers denoiser.lm_head.weight the way the docstring promises for denoiser.tok.weight; gap-finding probe over real production migration code, not a metric/gate change and no line of checkpoint_migrate.py is modified"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
