@@ -4915,3 +4915,16 @@ was created or synced.
 
 Evidence: [narrative](iter-e681-maximal-role-subsets-20260721.md) and
 [JSON](iter-e681-maximal-role-subsets-20260721.json).
+
+## E682 property-aware positional role binding
+
+E682 constrains explicitly planned positional slots by their active public
+schema property. The matched full Smoke `n=3` replay clears strict v2.4.0 on
+all records; structure improves 0.8156→0.8308, node F1 0.8778→0.9030, and p95
+falls 5389.64→4786.91 ms. Edge F1 regresses 0.5333→0.4815 and is retained as a
+tradeoff. Retain v137 as positive research evidence, not ship evidence:
+AgentV is 0/1 and no multi-suite gates ran. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e682-positional-role-binding-20260721.md) and
+[JSON](iter-e682-positional-role-binding-20260721.json).
