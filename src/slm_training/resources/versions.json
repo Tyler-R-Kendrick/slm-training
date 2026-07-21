@@ -1472,7 +1472,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v71",
+      "version": "v72",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1487,6 +1487,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v72",
+          "date": "2026-07-20",
+          "note": "E634 rejection: restore v70 early pre-content routing after final-boundary enforcement collapsed Auth to TextContent and regressed every aggregate quality metric"
+        },
         {
           "version": "v71",
           "date": "2026-07-20",

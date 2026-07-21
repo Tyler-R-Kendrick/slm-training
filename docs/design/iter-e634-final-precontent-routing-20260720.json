@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_id": "e634-final-precontent-routing-r1",
+  "experiment_id": "E634",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Applying pre-content literal routing after repeated-slot scoring will resolve both Input.name mismatches while preserving section and root selection.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"baseline_run_id": "e633-input-active-role-routing-r3", "treatment_run_id": "e634-final-precontent-routing-r1", "suite": "ood", "n": 4, "device": "cpu", "honest_slot_contract": true, "schema_opaque_decode_weight": 4.0, "grammar_ltr_max_tokens": 160},
+  "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.5, "binding_aware_meaningful_v2_rate_strict": 0.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 0.5083333333333333, "placeholder_validity": 0.705, "structural_similarity": 0.337925, "component_type_recall": 0.375, "reward_score": 0.785, "ast_node_f1": 0.38571428571428573, "ast_edge_f1": 0.2625, "latency_ms_p50": 2938.12, "latency_ms_p95": 16254.73, "decode_timeout_count": 0, "fallback_count": 0}},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "per_record_treatment": {"ood_dashboard_01": "root = Card([TextContent(\":ood.dash.status.body\")])", "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\", details: \":ood.gallery.caption\"}])", "ood_modal_01": "root = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\"), Button(\":ood.modal.confirm\")], \"itet\")", "ood_auth_01": "root = TextContent(\":ood.auth.email\")"},
+  "decision": "Reject and revert as v72. Final-boundary local routing collapsed Auth and regressed every aggregate quality metric.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "57e05e0b2eb398aa5d4a105ae152d11e97ec71ee", "code_dirty": false, "components": {"harness.model_build.eval": "v32", "evals.meaningful_program": "2.1.0", "evals.scoring": "v12", "model.twotower": "v71"}, "stamped_at": "2026-07-21T00:53:08.406621+00:00"}
+}
