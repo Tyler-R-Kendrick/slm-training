@@ -25,9 +25,11 @@ _SEMANTIC_ROLE_PROPERTY_ALIASES = {
     "caption": {"details", "text"},
     "copy": {"text"},
     "description": {"details", "text"},
+    "title": {"text"},
     "img": {"image", "src"},
     "image": {"src"},
     "confirm": {"action", "label"},
+    "delete": {"action", "label"},
     "create": {"action", "label"},
     "save": {"action", "label"},
     "submit": {"action", "label"},
@@ -176,6 +178,76 @@ def semantic_role_candidates(
             if compatible_properties.intersection(properties_by_component[name])
         )
     return result
+
+
+def semantic_role_reachable_candidates(
+    placeholders: list[str], component_names: list[str]
+) -> dict[str, tuple[str, ...]]:
+    """Map slots to components whose public schema can contain their role."""
+    from slm_training.dsl.lang_core import library_schema
+
+    definitions = library_schema().get("$defs", {})
+    properties_by_slot = semantic_role_properties(placeholders)
+
+    def reaches(
+        schema: dict[str, Any], compatible: set[str], seen: frozenset[str]
+    ) -> bool:
+        reference = str(schema.get("$ref") or "")
+        if reference.startswith("#/$defs/"):
+            name = reference.rsplit("/", 1)[-1]
+            if name in seen:
+                return False
+            target = definitions.get(name)
+            return isinstance(target, dict) and reaches(
+                target, compatible, seen | {name}
+            )
+        properties = schema.get("properties")
+        if isinstance(properties, dict):
+            for name, child in properties.items():
+                if (
+                    name in compatible
+                    and isinstance(child, dict)
+                    and child.get("type") == "string"
+                ):
+                    return True
+                if isinstance(child, dict) and reaches(child, compatible, seen):
+                    return True
+        items = schema.get("items")
+        if isinstance(items, dict) and reaches(items, compatible, seen):
+            return True
+        return any(
+            reaches(dict(option), compatible, seen)
+            for option in schema.get("anyOf", ())
+            if isinstance(option, dict)
+        )
+
+    result: dict[str, tuple[str, ...]] = {}
+    for placeholder in sorted(set(placeholders)):
+        compatible = set(properties_by_slot[placeholder])
+        result[placeholder] = tuple(
+            name
+            for name in sorted(set(component_names))
+            if isinstance(definitions.get(name), dict)
+            and reaches(definitions[name], compatible, frozenset({name}))
+        )
+    return result
+
+
+def schema_placeholder_role_matches(
+    placeholder: str, component: str, property_name: str
+) -> bool:
+    """Return whether a slot occupies its schema-declared semantic property."""
+    from slm_training.dsl.lang_core import library_schema
+
+    definition = library_schema().get("$defs", {}).get(component)
+    if not isinstance(definition, dict):
+        return False
+    spec = (definition.get("properties") or {}).get(property_name)
+    return bool(
+        property_name in semantic_role_properties([placeholder])[placeholder]
+        and isinstance(spec, dict)
+        and spec.get("type") == "string"
+    )
 
 
 def semantic_role_contract(

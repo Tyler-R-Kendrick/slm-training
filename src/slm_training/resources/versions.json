@@ -390,12 +390,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.1.0",
+      "version": "2.2.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.2.0",
+          "date": "2026-07-20",
+          "note": "E636: validate recognized placeholder roles against their public-schema string property instead of hard-coded component families, allowing schema-declared roles such as Modal.title while retaining Input.name rejection"
+        },
         {
           "version": "2.1.0",
           "date": "2026-07-20",
@@ -1472,7 +1477,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v73",
+      "version": "v74",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1487,6 +1492,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v74",
+          "date": "2026-07-20",
+          "note": "E636: enforce exact component variants in typed arrays, follow public-schema wrappers to missing visible roles, and close legal optional tails after complete slot coverage"
+        },
         {
           "version": "v73",
           "date": "2026-07-20",

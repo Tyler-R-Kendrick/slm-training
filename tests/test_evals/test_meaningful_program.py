@@ -111,6 +111,29 @@ def test_v2_rejects_swapped_placeholder_semantic_roles() -> None:
     assert "placeholder_semantic_role_mismatch" in report.reason_codes
 
 
+def test_v2_accepts_schema_declared_modal_title_role() -> None:
+    source = (
+        'body = TextContent(":modal.body")\n'
+        'confirm = Button(":modal.confirm")\n'
+        'actions = Buttons([confirm])\n'
+        'dialog = Modal(":modal.title", true, [body, actions])\n'
+        'root = Stack([dialog], "column")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="modal-title",
+            prompt=(
+                "Build a Modal, TextContent, and Button. "
+                "Placeholders: :modal.title :modal.body :modal.confirm"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
 @pytest.mark.parametrize(
     "source",
     [

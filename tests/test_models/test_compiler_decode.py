@@ -337,7 +337,7 @@ def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> N
     assert bias.tolist() == [4.0, 6.0]
 
 
-def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> None:
+def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     from types import SimpleNamespace
 
     model = _model(slot_coverage_close_decode_weight=4.0)
@@ -381,12 +381,10 @@ def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> N
         )
         is None
     )
-    assert (
-        model._slot_coverage_close_bias(
-            structural, complete, candidates, scores, slots
-        )
-        is None
+    structural_bias = model._slot_coverage_close_bias(
+        structural, complete, candidates, scores, slots
     )
+    assert structural_bias is not None and structural_bias.tolist() == [0.0, 4.0]
 
 
 def test_slot_coverage_close_bias_continues_through_compatible_component() -> None:
@@ -434,6 +432,38 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
     assert bias.tolist() == [7.0, 0.0]
 
 
+def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", slot_coverage_close_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    buttons_id = tokenizer.token_to_id["+Buttons"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Modal"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=({"anyOf": [{"$ref": "#/$defs/Buttons"}]},),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (buttons_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        [":dialog.confirm"],
+        {":dialog.confirm": ("Button",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [7.0, 0.0]
+
+
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
     from types import SimpleNamespace
 
@@ -472,17 +502,15 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
 
     assert bias is not None
     assert bias.tolist() == [8.0, 0.0]
-    assert (
-        model._slot_coverage_close_bias(
-            state,
-            [tokenizer.bos_id],
-            (details_id, close_id),
-            torch.tensor([1.0, 5.0]),
-            [":gallery.caption"],
-            {":gallery.caption": ("TextContent",)},
-        )
-        is None
+    schema_bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (details_id, close_id),
+        torch.tensor([1.0, 5.0]),
+        [":gallery.caption"],
+        {":gallery.caption": ("TextContent",)},
     )
+    assert schema_bias is not None and schema_bias.tolist() == [8.0, 0.0]
 
 
 def test_slot_coverage_close_bias_rejects_wrong_owner_direct_slot() -> None:
@@ -1187,7 +1215,7 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
     assert candidates == {
         ":modal.body": ("TextContent",),
         ":modal.confirm": ("Button",),
-        ":modal.title": ("Modal",),
+        ":modal.title": ("Modal", "TextContent"),
     }
 
 

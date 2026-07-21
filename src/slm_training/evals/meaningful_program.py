@@ -16,6 +16,7 @@ from slm_training.data.quality import (
     _prompt_component_requirements,
     _schema_semantic_reasons,
     _semantic_request,
+    schema_placeholder_role_matches,
 )
 from slm_training.data.contract import GenerationRequest
 from slm_training.data.verify.stack import Gate, GateStatus, evaluate_gate
@@ -25,7 +26,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 METRIC_NAME = "binding_aware_meaningful_v2"
-METRIC_VERSION = "2.1.0"
+METRIC_VERSION = "2.2.0"
 _ASSIGNMENT_RE = re.compile(
     r"(?m)^\s*(\$?[A-Za-z_][A-Za-z0-9_]*)\s*="
 )
@@ -403,13 +404,14 @@ def _inventory_check(
         term = str(row["placeholder"]).rsplit(".", 1)[-1].lstrip(":").lower()
         owner = str(row.get("component") or "")
         prop = str(row.get("property") or "")
+        recognized_role = term in (
+            _ACTION_SLOT_TERMS | _TEXT_SLOT_TERMS | _FORM_SLOT_TERMS
+        )
         if owner == "Input" and prop == "name":
             role_mismatches.append(f"{row['placeholder']}->{owner}.{prop}")
-        elif term in _ACTION_SLOT_TERMS and owner != "Button":
-            role_mismatches.append(f"{row['placeholder']}->{owner or 'unknown'}")
-        elif term in _TEXT_SLOT_TERMS and owner not in _TEXT_COMPONENTS:
-            role_mismatches.append(f"{row['placeholder']}->{owner or 'unknown'}")
-        elif term in _FORM_SLOT_TERMS and owner not in {"Input", "TextArea", "Select"}:
+        elif recognized_role and not schema_placeholder_role_matches(
+            str(row["placeholder"]), owner, prop
+        ):
             role_mismatches.append(f"{row['placeholder']}->{owner or 'unknown'}")
     missing_slots = missing_slots if contract.placeholder_coverage_known else []
     missing_components = (
