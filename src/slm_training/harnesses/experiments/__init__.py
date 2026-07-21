@@ -342,6 +342,21 @@ _LAZY_SLM212_EXPORTS = {
     "validate_slm212_manifest": "validate_manifest",
 }
 
+_LAZY_SLM189_EXPORTS = {
+    "SLM189_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM189_MATRIX_SET": "MATRIX_SET",
+    "SLM189_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM189_ARM_NAMES": "ARM_NAMES",
+    "BridgePlannerCase": "BridgePlannerCase",
+    "BridgePlannerArmSummary": "BridgePlannerArmSummary",
+    "BridgePlannerManifest": "BridgePlannerManifest",
+    "build_slm189_exact_fixture_targets": "build_exact_fixture_targets",
+    "build_slm189_synthetic_scale_targets": "build_synthetic_scale_targets",
+    "run_slm189_fixture": "run_bridge_planner_fixture",
+    "render_slm189_markdown": "render_markdown",
+    "validate_slm189_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -374,6 +389,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm212_debt_routing
 
         value = getattr(slm212_debt_routing, _LAZY_SLM212_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM189_EXPORTS:
+        from slm_training.harnesses.experiments import slm189_bridge_planner
+
+        value = getattr(slm189_bridge_planner, _LAZY_SLM189_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -462,6 +483,18 @@ __all__ = [
     "run_slm212_fixture_matrix",
     "render_slm212_markdown",
     "validate_slm212_manifest",
+    "SLM189_EXPERIMENT_ID",
+    "SLM189_MATRIX_SET",
+    "SLM189_MATRIX_VERSION",
+    "SLM189_ARM_NAMES",
+    "BridgePlannerCase",
+    "BridgePlannerArmSummary",
+    "BridgePlannerManifest",
+    "build_slm189_exact_fixture_targets",
+    "build_slm189_synthetic_scale_targets",
+    "run_slm189_fixture",
+    "render_slm189_markdown",
+    "validate_slm189_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",

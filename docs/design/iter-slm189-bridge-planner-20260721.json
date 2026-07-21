@@ -1,0 +1,265 @@
+{
+  "arms": [
+    {
+      "arm_name": "canonical_greedy",
+      "excess_cost_ratio": 1.0,
+      "mean_nodes_expanded": 3.0,
+      "mean_path_length": 3.0,
+      "mean_wall_seconds": 0.006605043832678348,
+      "n_cases": 6,
+      "n_certificate_failure": 0,
+      "n_reached": 6,
+      "n_unknown_budget": 0,
+      "n_unreachable": 0,
+      "p95_path_length": 4.0,
+      "path_entropy_bits": 1.7924812503605778,
+      "source_bias_index": 0.0
+    }
+  ],
+  "cases": [
+    {
+      "arm": "canonical_greedy",
+      "case_id": "minimal__hero_card__canonical_greedy",
+      "cost_attribution": {
+        "ast_alignment": 1.5,
+        "cache_hits": 0.0,
+        "candidate_enum": 0.8999999999999999,
+        "canonicalization": 1.2000000000000002,
+        "certificate": 1.7999999999999998,
+        "closure_query": 0.2,
+        "memory": 0.30000000000000004,
+        "path_search": 2.4000000000000004,
+        "verifier": 3.0
+      },
+      "max_frontier": 1,
+      "nodes_expanded": 3,
+      "path_length": 3,
+      "plan_fingerprint": "5069870d4cbb7f7311f2528c6767ded65bb3eb31378635bfa61c0963781f93ea",
+      "replay_ok": true,
+      "scaling_features": {
+        "active_holes": 2.0,
+        "avg_legal_arity": 1.5,
+        "binders": 2.0,
+        "dag_width": 3.0,
+        "depth": 1.0,
+        "source_nodes": 4.0,
+        "target_nodes": 4.0
+      },
+      "source_seed_id": "minimal",
+      "status": "reached",
+      "target_id": "hero_card",
+      "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":hero.title\")\nv1 = TextContent(\":hero.body\")\nv2 = Card([v0, v1])",
+      "wall_seconds": 0.006239352005650289
+    },
+    {
+      "arm": "canonical_greedy",
+      "case_id": "minimal__simple_stack__canonical_greedy",
+      "cost_attribution": {
+        "ast_alignment": 0.5,
+        "cache_hits": 0.0,
+        "candidate_enum": 0.3,
+        "canonicalization": 0.4,
+        "certificate": 0.6,
+        "closure_query": 0.2,
+        "memory": 0.1,
+        "path_search": 0.8,
+        "verifier": 1.0
+      },
+      "max_frontier": 1,
+      "nodes_expanded": 1,
+      "path_length": 1,
+      "plan_fingerprint": "c9df5efc60614c663d75f649f230bb33790c071f77a0f9ed2e3d8e93bb0a6954",
+      "replay_ok": true,
+      "scaling_features": {
+        "active_holes": 1.0,
+        "avg_legal_arity": 1.0,
+        "binders": 1.0,
+        "dag_width": 1.0,
+        "depth": 1.0,
+        "source_nodes": 2.0,
+        "target_nodes": 2.0
+      },
+      "source_seed_id": "minimal",
+      "status": "reached",
+      "target_id": "simple_stack",
+      "target_program": "root = Stack([v0], \"column\")\nv0 = TextContent(\":page.blurb\")",
+      "wall_seconds": 0.0024019039992708713
+    },
+    {
+      "arm": "canonical_greedy",
+      "case_id": "minimal__card_with_button__canonical_greedy",
+      "cost_attribution": {
+        "ast_alignment": 2.0,
+        "cache_hits": 0.0,
+        "candidate_enum": 1.2,
+        "canonicalization": 1.6,
+        "certificate": 2.4,
+        "closure_query": 0.2,
+        "memory": 0.4,
+        "path_search": 3.2,
+        "verifier": 4.0
+      },
+      "max_frontier": 1,
+      "nodes_expanded": 4,
+      "path_length": 4,
+      "plan_fingerprint": "000604f21f538cd17afeebeb403fcedc170d43ebb3cdbf6f178ad35a7224faef",
+      "replay_ok": true,
+      "scaling_features": {
+        "active_holes": 2.0,
+        "avg_legal_arity": 1.5,
+        "binders": 2.0,
+        "dag_width": 4.0,
+        "depth": 1.0,
+        "source_nodes": 4.0,
+        "target_nodes": 4.0
+      },
+      "source_seed_id": "minimal",
+      "status": "reached",
+      "target_id": "card_with_button",
+      "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":card.title\")\nv1 = Button(\":card.action\")\nv2 = Card([v0, v1])",
+      "wall_seconds": 0.008598330998211168
+    },
+    {
+      "arm": "canonical_greedy",
+      "case_id": "minimal__button_row__canonical_greedy",
+      "cost_attribution": {
+        "ast_alignment": 2.0,
+        "cache_hits": 0.0,
+        "candidate_enum": 1.2,
+        "canonicalization": 1.6,
+        "certificate": 2.4,
+        "closure_query": 0.2,
+        "memory": 0.4,
+        "path_search": 3.2,
+        "verifier": 4.0
+      },
+      "max_frontier": 1,
+      "nodes_expanded": 4,
+      "path_length": 4,
+      "plan_fingerprint": "8eacaf0001d5e6dc8e1f983bc895f3626c4244fcbbfcd2f2c834aaf920c0ff08",
+      "replay_ok": true,
+      "scaling_features": {
+        "active_holes": 2.0,
+        "avg_legal_arity": 2.0,
+        "binders": 2.0,
+        "dag_width": 4.0,
+        "depth": 1.0,
+        "source_nodes": 3.0,
+        "target_nodes": 3.0
+      },
+      "source_seed_id": "minimal",
+      "status": "reached",
+      "target_id": "button_row",
+      "target_program": "root = Stack([v0, v1], \"row\")\nv0 = Button(\":actions.primary\")\nv1 = Button(\":actions.secondary\")",
+      "wall_seconds": 0.007460769993485883
+    },
+    {
+      "arm": "canonical_greedy",
+      "case_id": "minimal__nested_stack__canonical_greedy",
+      "cost_attribution": {
+        "ast_alignment": 1.0,
+        "cache_hits": 0.0,
+        "candidate_enum": 0.6,
+        "canonicalization": 0.8,
+        "certificate": 1.2,
+        "closure_query": 0.2,
+        "memory": 0.2,
+        "path_search": 1.6,
+        "verifier": 2.0
+      },
+      "max_frontier": 1,
+      "nodes_expanded": 2,
+      "path_length": 2,
+      "plan_fingerprint": "959bfdfb250a2aa7a310ef8417dcab5d6ed0ccb8c313443e27fbca99c8bd40b8",
+      "replay_ok": true,
+      "scaling_features": {
+        "active_holes": 1.0,
+        "avg_legal_arity": 1.0,
+        "binders": 1.0,
+        "dag_width": 2.0,
+        "depth": 1.0,
+        "source_nodes": 4.0,
+        "target_nodes": 4.0
+      },
+      "source_seed_id": "minimal",
+      "status": "reached",
+      "target_id": "nested_stack",
+      "target_program": "root = Stack([v2], \"column\")\nv0 = TextContent(\":nested.text\")\nv1 = Stack([v0], \"row\")\nv2 = Card([v1])",
+      "wall_seconds": 0.00507470199954696
+    },
+    {
+      "arm": "canonical_greedy",
+      "case_id": "minimal__image_card__canonical_greedy",
+      "cost_attribution": {
+        "ast_alignment": 2.0,
+        "cache_hits": 0.0,
+        "candidate_enum": 1.2,
+        "canonicalization": 1.6,
+        "certificate": 2.4,
+        "closure_query": 0.2,
+        "memory": 0.4,
+        "path_search": 3.2,
+        "verifier": 4.0
+      },
+      "max_frontier": 1,
+      "nodes_expanded": 4,
+      "path_length": 4,
+      "plan_fingerprint": "746286cb899cf094a21d6288403c7bf2a0a254bfb8386204e2244102ddf23a37",
+      "replay_ok": true,
+      "scaling_features": {
+        "active_holes": 2.0,
+        "avg_legal_arity": 1.5,
+        "binders": 2.0,
+        "dag_width": 4.0,
+        "depth": 1.0,
+        "source_nodes": 4.0,
+        "target_nodes": 4.0
+      },
+      "source_seed_id": "minimal",
+      "status": "reached",
+      "target_id": "image_card",
+      "target_program": "root = Stack([v2], \"column\")\nv0 = Image(\":image.src\")\nv1 = TextContent(\":image.caption\")\nv2 = Card([v0, v1])",
+      "wall_seconds": 0.009855203999904916
+    }
+  ],
+  "claim_class": "wiring",
+  "disposition": "inconclusive",
+  "disposition_rationale": "exact_shortest mismatched canonical_greedy on 6/6 tiny cases; the exact BFS arm is not fully exercised in this fixture.",
+  "experiment_id": "slm189-bridge-planner",
+  "falsifier": "The canonical greedy arm fails to reach a supported fixture target, or a dependency-respecting permutation of the greedy edits fails to replay to the target, or the exact-shortest arm disagrees with the greedy arm on tiny cases where it should be feasible, or any arm reports certificate failure for a reachable target.",
+  "honest_caveats": [
+    "Fixture-only wiring evidence: no trained model, checkpoint, or GPU run is involved.",
+    "exact_budget is intentionally small (8) so the harness stays CPU-only; production bridge search needs a larger solver budget.",
+    "The production corpus is not exercised; targets are hand-written or deterministically generated small OpenUI programs.",
+    "solver_guided, contract_first, and source_adaptive arms are documented but not implemented in this wiring fixture; they return UNKNOWN_BUDGET.",
+    "Randomization in random_shortest is over topological orders of the dependency DAG only, not over the full edit search space."
+  ],
+  "hypothesis": "A deterministic bridge planner can produce replay-valid canonical edit sequences from structural sketch seeds to fixture OpenUI targets within a small edit budget, and independent-edit permutations that respect the dependency DAG preserve reachability and transition validity.",
+  "matrix_set": "slm189_bridge_planner",
+  "matrix_version": "ffe2-01-v1",
+  "n_cases": 6,
+  "n_reached": 6,
+  "run_id": "slm189-bridge-planner-20260721",
+  "schema": "BridgePlannerManifest",
+  "source_policies": [
+    "minimal"
+  ],
+  "status": "fixture",
+  "timestamp": "2026-07-21T05:05:58.577992Z",
+  "version_stamp": {
+    "code_commit": "09a5792cf0702a1e0694d3191b83c6d81b0f68b5",
+    "code_dirty": true,
+    "components": {
+      "data.flow.bridge_planner": "v1",
+      "harness.experiments": "v57",
+      "harness.experiments.slm189_bridge_planner": "v1",
+      "harness.model_build.eval": "v33",
+      "matrix.slm189_bridge_planner": "ffe2-01-v1"
+    },
+    "lineage": {
+      "wall_seconds": 0.04358134699577931
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:05:58.577943+00:00"
+  }
+}
