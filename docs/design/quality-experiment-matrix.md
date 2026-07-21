@@ -5106,3 +5106,55 @@ Evidence:
 [iter-e646-required-slot-margin-bind-reference-residual-20260721.md](iter-e646-required-slot-margin-bind-reference-residual-20260721.md)
 and
 [JSON](iter-e646-required-slot-margin-bind-reference-residual-20260721.json).
+
+## E647 a genuinely powered multi-seed replay of `required_slot_margin_decode_weight` (and correcting a stale next_step claim)
+
+E639–E646 each closed with boilerplate claiming "E620's coverage-aware
+component/property closure recommendation remains the next untried lever."
+Before touching anything, this session re-read E620's own entry and the full
+E621–E638 history and found that claim false: `slot_coverage_close_decode_
+weight` (`TwoTowerModel._slot_coverage_close_bias`) *is* that recommendation,
+built and iterated across eighteen prior sessions (E621–E638: role-compatible
+coverage, an intervention trace, a rejected prompt-owned filter, a
+frame-aware owner escape, a rejected broad string-slot penalty, Input role
+routing, property-compatible slot coverage, Modal schema reachability, nested
+family accounting, and a rejected root-slot-coverage gate) before the lineage
+deliberately pivoted to `required_slot_margin_decode_weight` (E639), which
+E639 itself calls "a more concrete framing" of the same E620 idea. Filing
+another closure experiment would duplicate E621–E638; instead this session
+picked the other item flagged as open across the same six iterations: E626/
+E639's own deferred "genuinely powered multi-seed/retrained comparison,"
+never picked up through E627–E646.
+
+Reused E645's seed-0 checkpoint verbatim (sha256 `a4c24987…2041b7e7`) and
+trained two fresh same-recipe scratch checkpoints for seeds 1 and 2 (losses
+4.603209 and 3.395596 — genuinely different trajectories), all within the
+3-minute cap. Each of the 3 checkpoints was replayed at `required_slot_
+margin_decode_weight` in `{0, 2}` against the identical n=19 suite union
+E639–E646 used.
+
+| Metric (pooled n=57, 3 seeds x 19) | control | treatment | delta | seed-cluster 95% CI |
+| --- | ---: | ---: | ---: | ---: |
+| meaningful_program_v1 | 0.7544 | 0.7368 | -0.0175 | [-0.0526, 0.0526] ns |
+| reward_score | 0.8102 | 0.7949 | -0.0153 | [-0.0698, 0.0122] ns |
+| placeholder_fidelity | 0.6674 | 0.6636 | -0.0038 | [-0.0807, 0.0412] ns |
+| structural_similarity | 0.4862 | 0.5575 | **+0.0713** | **[0.0480, 0.0920] SIG** |
+| component_type_recall | 0.6936 | 0.6629 | -0.0307 | [-0.0763, 0.0105] ns |
+
+Per-seed net binary delta (margin2 - margin0) out of 19: seed0 **+1**
+(reproducing E645's own reported gain), seed1 **-1**, seed2 **-1**. The
+single-checkpoint "consistent gain" narrative built up across E639/E641/
+E645/E646 does not replicate once independently-trained seeds are used: the
+binary gate and three of four continuous headline metrics show no
+seed-cluster-robust effect (CIs cross zero); only `structural_similarity`
+shows a real, seed-robust positive delta. Not a ship claim; no checkpoint
+trained, promoted, or synced; default `required_slot_margin_decode_weight`
+(`0.0`) unchanged; no source code touched this session, so no version_stamp
+bump applies. Future `next_step` fields should stop repeating the stale
+"E620's closure recommendation is untried" claim — it is factually resolved
+by this entry as already-tried (E621–E638).
+
+Evidence:
+[iter-e647-required-slot-margin-multiseed-sweep-20260721.md](iter-e647-required-slot-margin-multiseed-sweep-20260721.md)
+and
+[JSON](iter-e647-required-slot-margin-multiseed-sweep-20260721.json).
