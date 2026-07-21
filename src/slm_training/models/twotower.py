@@ -5376,7 +5376,54 @@ class TwoTowerModel(nn.Module):
                     else weight
                 )
                 applied = True
-        return bias if applied else None
+        if applied:
+            return bias
+
+        # A planned role may already have been emitted before the model opens a
+        # second compatible string property (for example a nested Button).  Do
+        # not reward a duplicate visible slot merely because it is schema-legal;
+        # prefer the legal empty literal and leave copy generation downstream.
+        active_schema = (
+            dict(schemas[index])
+            if getattr(frame, "kind", None) == "component"
+            and 0 <= index < len(schemas)
+            else None
+        )
+        from slm_training.dsl.production_codec import LIT_PREFIX
+        from slm_training.models.choice_tokenizer import LIT_STR
+
+        empty_literal_id = self.tokenizer.token_to_id.get(f'{LIT_PREFIX}""')
+        framed_literal_id = self.tokenizer.token_to_id.get(LIT_STR)
+        slot_positions = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(SLOT_PREFIX)
+        ]
+        if (
+            active_schema is not None
+            and active_schema.get("type") == "string"
+            and not self._schema_contains_enum(active_schema)
+            and any(
+                literal_id in candidate_ids
+                for literal_id in (framed_literal_id, empty_literal_id)
+            )
+            and slot_positions
+            and int(scores.argmax().item()) in slot_positions
+        ):
+            literal_id = next(
+                literal_id
+                for literal_id in (framed_literal_id, empty_literal_id)
+                if literal_id in candidate_ids
+            )
+            literal_position = candidate_ids.index(literal_id)
+            bias[literal_position] = max(
+                0.0,
+                max(float(scores[position].item()) for position in slot_positions)
+                + weight
+                - float(scores[literal_position].item()),
+            )
+            return bias
+        return None
 
     def _slot_coverage_close_bias(
         self,

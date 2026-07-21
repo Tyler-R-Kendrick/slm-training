@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v152",
+      "version": "v154",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,16 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v154",
+          "date": "2026-07-21",
+          "note": "E696 r2 correction: prefer the live grammar's framed string literal before its unavailable fixed empty spelling"
+        },
+        {
+          "version": "v153",
+          "date": "2026-07-21",
+          "note": "E696: route a repeated or incompatible visible slot to the legal empty literal when no unused role-compatible scalar string slot remains"
+        },
         {
           "version": "v152",
           "date": "2026-07-21",
