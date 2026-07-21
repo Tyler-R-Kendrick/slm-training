@@ -511,6 +511,40 @@ def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     assert structural_bias is not None and structural_bias.tolist() == [0.0, 4.0]
 
 
+def test_slot_coverage_close_bias_floors_covered_terminal_stack_close() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=(),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, slot_id],
+        (slot_id, close_id),
+        torch.tensor([20.0, 1.0]),
+        [":body"],
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 23.0]
+
+
 def test_slot_coverage_close_bias_continues_through_compatible_component() -> None:
     from types import SimpleNamespace
 
@@ -1422,6 +1456,32 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
 
     assert bias is not None
     assert bias.tolist() == [-4.0, 0.0]
+
+
+def test_schema_value_bias_floors_enum_slot_below_best_non_slot() -> None:
+    from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_value_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    for token_id in (
+        tokenizer.token_to_id[f"{OPEN_PREFIX}Button"],
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id[f"{LIT_PREFIX}null"],
+    ):
+        assert state.advance_id(token_id)
+    slot_id = tokenizer.sym_id(1)
+    close_id = tokenizer.token_to_id[CLOSE]
+
+    bias = model._schema_value_bias(
+        state,
+        (slot_id, close_id),
+        torch.tensor([20.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [-23.0, 0.0]
 
 
 def test_schema_enum_finalize_preserves_choices_after_dynamic_literal() -> None:

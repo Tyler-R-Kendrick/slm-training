@@ -212,3 +212,30 @@ def test_e708_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert run_id not in {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
+
+
+def test_e709_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e709-final-schema-value-margin-r5"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    rico = run["scoreboard"]["suites"]["rico_held"]
+    assert rico["binding_aware_meaningful_v2_rate_strict"] == 1.0
+    assert rico["placeholder_fidelity"] == 1.0
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    control_id = "e709-rebased-v181-control-r1"
+    control = readers.run(control_id)
+    assert control["provenance"] == "committed"
+    assert (
+        control["scoreboard"]["suites"]["rico_held"][
+            "binding_aware_meaningful_v2_rate_strict"
+        ]
+        == 0.0
+    )
+    visible_run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    assert {run_id, control_id} <= visible_run_ids

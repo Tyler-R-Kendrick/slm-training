@@ -5301,3 +5301,18 @@ was created or synced.
 
 Evidence: [narrative](iter-e708-carrier-reference-obligation-20260721.md) and
 [JSON](iter-e708-carrier-reference-obligation-20260721.json).
+
+## E709 final schema-value margin
+
+E709 applies enum-slot protection after semantic biases and margin-closes a
+fully covered terminal `Stack`. After the v181 mainline rebase, a matched v181
+control and v182 treatment use the same v37 typed-runtime-symbol eval adapter and
+five-suite `n=19` policy. Every non-Rico quality metric is identical; E709 alone
+raises Rico binding-aware strict meaningfulness 0.0→1.0. Rico recall, fidelity,
+validity, and reward remain 1.0, and all three records have no semantic reason
+codes. Retain v182 with schema-value weight 5 as scratch evidence. AgentV remains
+0/5 and the Rico length budget still fails, so this is not a ship claim. No
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e709-final-schema-value-margin-20260721.md) and
+[JSON](iter-e709-final-schema-value-margin-20260721.json).
