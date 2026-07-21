@@ -22,6 +22,9 @@ from slm_training.data.contract import RuntimeSymbol
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
+from slm_training.models.twotower_schedule_policy import (
+    validate_twotower_numeric_schedule,
+)
 from slm_training.models.context import (
     HFContextEncoder,
     ScratchContextEncoder,
@@ -535,6 +538,14 @@ class TwoTowerConfig:
     speculative_successor: bool = False
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+
+    def __post_init__(self) -> None:
+        # RSC-A06 (SLM-242): fail-closed gate for every numeric weight/schedule
+        # vector this config carries. Runs on every construction, including
+        # ``from_checkpoint`` (raw config dict -> TwoTowerConfig(**kwargs)) and
+        # ``from_records``. ``apply_runtime_overrides`` and ``load`` mutate
+        # fields after construction and re-run this explicitly (see call sites).
+        validate_twotower_numeric_schedule(self)
 
 
 def _pad_batch(
@@ -2090,9 +2101,31 @@ class TwoTowerModel(nn.Module):
             # SLM-138: deep supervision over per-recursion logits.
             if depth_logits is not None and ds_weights:
                 depth_losses: list[torch.Tensor] = []
+                # RSC-A06/SLM-242: unreachable in an invalid state --
+                # TwoTowerConfig.__post_init__ / validate_recursive_depth_supervision_weights
+                # rejects any non-empty ds_weights whose length != recursive_steps
+                # before construction, and recursive_outputs() always returns
+                # exactly recursive_steps depth_logits, so the two lengths always
+                # match here. Kept byte-identical rather than removed (non-goal:
+                # no runtime behavior change beyond the validation gate).
+                # schedule-guard: allow TRUNCATE reason=RSC-A06/SLM-242-guarded-at-config-time test=tests/test_models/test_twotower_schedule_policy.py::test_length_mismatch_rejected_before_reaching_training_loss
                 usable = min(len(depth_logits), len(ds_weights))
+                # RSC-A06/SLM-242: unreachable in an invalid state -- positive_sum_vector
+                # rejects a non-empty, all-zero ds_weights at config-validation time,
+                # so total_w > 0 always holds whenever this branch is entered.
                 total_w = sum(ds_weights[:usable])
+                # schedule-guard: allow UNGUARDED_SUM reason=RSC-A06/SLM-242-guarded-at-config-time test=tests/test_models/test_twotower_schedule_policy.py::test_all_zero_weights_rejected_before_reaching_training_loss
                 if total_w > 0.0:
+                    # RSC-A06/SLM-242 KNOWN BEHAVIOR DEFECT (not fixed by this
+                    # change -- see docs/design/rsc-a06-numeric-schedule-validation-20260721.md
+                    # "Found defects" #1): w is read only via total_w's sum() above
+                    # and is never multiplied into d_loss below, so every
+                    # supervised depth contributes to `normalized` unweighted;
+                    # only the aggregate sum(ds_weights) changes the overall
+                    # term's scale, not the per-depth ratio the config appears to
+                    # configure. A validation gate cannot fix a loss-math bug and
+                    # this issue's non-goals forbid changing it inline.
+                    # schedule-guard: allow UNUSED_LOOP_WEIGHT reason=known-defect-tracked-separately-not-fixed-here test=tests/test_models/test_twotower_schedule_policy.py::test_per_depth_weight_ratio_is_not_applied_known_defect
                     for d, w in enumerate(ds_weights[:usable]):
                         d_logits = depth_logits[d]
                         d_flat = d_logits.reshape(-1, d_logits.size(-1))
@@ -9857,6 +9890,12 @@ class TwoTowerModel(nn.Module):
         return state
 
     def save(self, path: Path | str) -> None:
+        # RSC-A06 (SLM-242): fail closed before a checkpoint config/manifest is
+        # written -- a config mutated after construction (e.g. by
+        # ``apply_runtime_overrides`` or direct attribute assignment) must
+        # still satisfy every numeric weight/schedule rule before it becomes
+        # durable evidence.
+        validate_twotower_numeric_schedule(self.config)
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
@@ -9927,6 +9966,15 @@ class TwoTowerModel(nn.Module):
             )
             restored_prior_fields.append(field_name)
         self.initialized_prior_fields = tuple(restored_prior_fields)
+        # RSC-A06 (SLM-242): a legacy checkpoint's restored config values
+        # (priors above, plus whatever ``self.config`` already carries from
+        # construction) must still satisfy every numeric weight/schedule rule.
+        # A config that predates a field defaults through ``_get`` and passes;
+        # a config whose values are genuinely invalid (e.g. a pre-fix
+        # recursive-depth-weights/denoiser_arch mismatch) must be migrated
+        # explicitly rather than loaded silently -- see
+        # ``slm_training.models.checkpoint_migrate``.
+        validate_twotower_numeric_schedule(self.config)
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
         self.output_contract_version = int(payload.get("output_contract_version", 0))

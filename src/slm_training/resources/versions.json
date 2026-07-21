@@ -1539,7 +1539,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1554,6 +1554,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-07-21",
+          "note": "SLM-242 (RSC-A06): add a fail-closed numeric weight/schedule validation gate (slm_training.models.twotower_schedule_policy, built on the new harness_core.schedule_validation primitives) for TwoTowerConfig/ModelBuildConfig's vector-shaped fields (recursive_depth_supervision_weights, grammar_ltr_stages, diffusion_policies, diffusion_length_buckets, targeted_margin_family_weights, slot_component_class_weights/lexeme_priors/span_priors, mask_min/mask_max). Runs in TwoTowerConfig.__post_init__/ModelBuildConfig.__post_init__ (construction and checkpoint reload), apply_runtime_overrides (post-CLI-override), and TwoTowerModel.save (pre-checkpoint-write). This changes accept/reject behavior: a config that previously silently truncated/zero-erased/capability-ignored/accepted-negative a schedule vector now raises ScheduleValidationError before dispatch. See docs/design/rsc-a06-numeric-schedule-validation-20260721.md for the full field inventory, found defects, and migration notes."
+        },
         {
           "version": "v80",
           "date": "2026-07-20",
@@ -1980,6 +1985,11 @@
         {
           "version": "v2",
           "date": "2026-07-21",
+          "note": "no-bump: SLM-242 (RSC-A06) -- run_slm138_recursive_denoiser_fixture.py only passes recursive_depth_supervision_weights on the shared_recursive build (the new TwoTowerConfig fail-closed gate now rejects that field under denoiser_arch=stacked, where it was already inert). Verified byte-identical: param count, forward shapes, and training_loss are unchanged with vs. without the field for a stacked-arch model (has_recursive_outputs is False either way, so the field was never read on that branch)."
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
           "note": "SLM-211: add tie_output_embedding control to SharedRecursiveDenoiserTower"
         },
         {
@@ -2153,12 +2163,17 @@
       ]
     },
     "harness.core": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "SLM-242 (RSC-A06): add schedule_validation.py -- generic, DSL-agnostic numeric weight/schedule validation primitives (ScheduleValidationError, finite/non_negative/positive scalar, exact_length_vector, non_empty_vector, positive_sum_vector, normalized_probability_vector, strictly_increasing_sequence, paired_equal_length_sequences, unique_enum_sequence, supported_capability_requirement) and export them from the package init; new public contract, no change to any existing harness_core export's behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-19",
