@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v127",
+      "version": "v128",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v128",
+          "date": "2026-07-21",
+          "note": "E672: let active typed-array schemas start a minimal slot-bearing item even when the enclosing component was model-introduced"
+        },
         {
           "version": "v127",
           "date": "2026-07-21",

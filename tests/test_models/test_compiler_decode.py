@@ -977,6 +977,120 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
     assert bias.tolist() == [10.0, 0.0, 0.0]
 
 
+def test_typed_array_item_bias_prefers_schema_allowed_role_wrapper() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    bar_id = tokenizer.token_to_id["+BarChart"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{}]
+    model._slot_contracts = [[":metric"]]
+    model._semantic_role_candidates = [{":metric": ("BarChart",)}]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Carousel"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(
+                    {
+                        "anyOf": [
+                            {"$ref": "#/$defs/TextContent"},
+                            {
+                                "$ref": "#/$defs/BarChart",
+                                "type": "object",
+                                "properties": {
+                                    "value": {"x-openui-placeholder": True}
+                                },
+                            },
+                        ]
+                    },
+                ),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        [tokenizer.bos_id],
+        (bar_id, text_id, slot_id, close_id),
+        torch.tensor([1.0, 6.0, 9.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [10.0, 0.0, 0.0, 0.0]
+
+
+def test_nested_array_frame_preserves_inner_component_schema() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+
+    assert state.advance_id(tokenizer.token_to_id["+Carousel"])
+    assert state.advance_id(tokenizer.token_to_id["["])
+    assert state.advance_id(tokenizer.token_to_id["["])
+    assert not state.advance_id(tokenizer.sym_id(0))
+    assert state.advance_id(tokenizer.token_to_id["+TextContent"])
+
+
+def test_typed_array_item_bias_accepts_model_introduced_schema_owner() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    text_id = tokenizer.token_to_id["+TextContent"]
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{}]
+    model._slot_contracts = [[":metric"]]
+    model._semantic_role_candidates = [{":metric": ()}]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Carousel"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(
+                    {
+                        "type": "object",
+                        "properties": {"text": {"type": "string"}},
+                    },
+                ),
+                close="]",
+            ),
+        ],
+        _minimal_schema_id=lambda _schema: text_id,
+    )
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        [tokenizer.bos_id],
+        (text_id, slot_id, close_id),
+        torch.tensor([1.0, 9.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [10.0, 0.0, 0.0]
+
+
 @pytest.mark.parametrize(
     "weight_name",
     [
