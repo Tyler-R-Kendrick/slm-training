@@ -1,0 +1,271 @@
+{
+  "arms": [
+    {
+      "arm_name": "exact_closure_cold",
+      "bytes_stored": 4364,
+      "hit_rate": 0.0,
+      "n_entries": 6,
+      "speedup": 1.0,
+      "total_ms": 0.611,
+      "work_units": {
+        "bytes_stored": 4364.0,
+        "cache_hits": 0.0,
+        "cache_misses": 6.0,
+        "cache_writes": 6.0,
+        "support_queries": 6.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_warm",
+      "bytes_stored": 4364,
+      "hit_rate": 0.6666666666666666,
+      "n_entries": 6,
+      "speedup": 0.7743979721166032,
+      "total_ms": 0.789,
+      "work_units": {
+        "bytes_stored": 4364.0,
+        "cache_hits": 12.0,
+        "cache_misses": 6.0,
+        "cache_writes": 6.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_cross_request",
+      "bytes_stored": 8728,
+      "hit_rate": 0.5,
+      "n_entries": 12,
+      "speedup": 1.0,
+      "total_ms": 0.756,
+      "work_units": {
+        "bytes_stored": 8728.0,
+        "cache_hits": 12.0,
+        "cache_misses": 12.0,
+        "cache_writes": 12.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "bridge_plan_cold",
+      "bytes_stored": 9031,
+      "hit_rate": 0.0,
+      "n_entries": 1,
+      "speedup": 1.0,
+      "total_ms": 7.454,
+      "work_units": {
+        "bytes_stored": 9031.0,
+        "cache_hits": 0.0,
+        "cache_misses": 0.0,
+        "cache_writes": 1.0,
+        "support_queries": 0.2
+      }
+    },
+    {
+      "arm_name": "bridge_plan_warm",
+      "bytes_stored": 24,
+      "hit_rate": 1.0,
+      "n_entries": 1,
+      "speedup": 1.0,
+      "total_ms": 0.016,
+      "work_units": {
+        "bytes_stored": 24.0,
+        "cache_hits": 1.0,
+        "cache_misses": 0.0,
+        "cache_writes": 1.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "disk_restart",
+      "bytes_stored": 0,
+      "hit_rate": 1.0,
+      "n_entries": 6,
+      "speedup": 1.0,
+      "total_ms": 1.615,
+      "work_units": {
+        "bytes_stored": 0.0,
+        "cache_hits": 12.0,
+        "cache_misses": 0.0,
+        "cache_writes": 0.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "version_invalidation",
+      "bytes_stored": 8728,
+      "hit_rate": 0.0,
+      "n_entries": 12,
+      "speedup": 1.0,
+      "total_ms": 0.555,
+      "work_units": {
+        "bytes_stored": 8728.0,
+        "cache_hits": 0.0,
+        "cache_misses": 12.0,
+        "cache_writes": 12.0,
+        "support_queries": 6.0
+      }
+    }
+  ],
+  "cases": [
+    {
+      "arm_name": "exact_closure_cold",
+      "bytes_stored": 4364,
+      "case_id": "exact_closure_cold",
+      "condition": "fixture",
+      "hit_rate": 0.0,
+      "honest_caveats": [],
+      "n_entries": 6,
+      "wall_seconds": 0.000611,
+      "work_units": {
+        "bytes_stored": 4364.0,
+        "cache_hits": 0.0,
+        "cache_misses": 6.0,
+        "cache_writes": 6.0,
+        "support_queries": 6.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_warm",
+      "bytes_stored": 4364,
+      "case_id": "exact_closure_warm",
+      "condition": "fixture",
+      "hit_rate": 0.6666666666666666,
+      "honest_caveats": [],
+      "n_entries": 6,
+      "wall_seconds": 0.000789,
+      "work_units": {
+        "bytes_stored": 4364.0,
+        "cache_hits": 12.0,
+        "cache_misses": 6.0,
+        "cache_writes": 6.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "exact_closure_cross_request",
+      "bytes_stored": 8728,
+      "case_id": "exact_closure_cross_request",
+      "condition": "fixture",
+      "hit_rate": 0.5,
+      "honest_caveats": [
+        "Cross-request arm deliberately mixes two distinct states."
+      ],
+      "n_entries": 12,
+      "wall_seconds": 0.000756,
+      "work_units": {
+        "bytes_stored": 8728.0,
+        "cache_hits": 12.0,
+        "cache_misses": 12.0,
+        "cache_writes": 12.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "bridge_plan_cold",
+      "bytes_stored": 9031,
+      "case_id": "bridge_plan_cold",
+      "condition": "fixture",
+      "hit_rate": 0.0,
+      "honest_caveats": [],
+      "n_entries": 1,
+      "wall_seconds": 0.007454,
+      "work_units": {
+        "bytes_stored": 9031.0,
+        "cache_hits": 0.0,
+        "cache_misses": 0.0,
+        "cache_writes": 1.0,
+        "support_queries": 0.2
+      }
+    },
+    {
+      "arm_name": "bridge_plan_warm",
+      "bytes_stored": 24,
+      "case_id": "bridge_plan_warm",
+      "condition": "fixture",
+      "hit_rate": 1.0,
+      "honest_caveats": [],
+      "n_entries": 1,
+      "wall_seconds": 1.6e-05,
+      "work_units": {
+        "bytes_stored": 24.0,
+        "cache_hits": 1.0,
+        "cache_misses": 0.0,
+        "cache_writes": 1.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "disk_restart",
+      "bytes_stored": 0,
+      "case_id": "disk_restart",
+      "condition": "fixture",
+      "hit_rate": 1.0,
+      "honest_caveats": [
+        "Disk restart test uses a fresh cache instance over the same directory."
+      ],
+      "n_entries": 6,
+      "wall_seconds": 0.001615,
+      "work_units": {
+        "bytes_stored": 0.0,
+        "cache_hits": 12.0,
+        "cache_misses": 0.0,
+        "cache_writes": 0.0,
+        "support_queries": 0.0
+      }
+    },
+    {
+      "arm_name": "version_invalidation",
+      "bytes_stored": 8728,
+      "case_id": "version_invalidation",
+      "condition": "fixture",
+      "hit_rate": 0.0,
+      "honest_caveats": [
+        "Version invalidation arm changes component_versions so old entries miss."
+      ],
+      "n_entries": 12,
+      "wall_seconds": 0.000555,
+      "work_units": {
+        "bytes_stored": 8728.0,
+        "cache_hits": 0.0,
+        "cache_misses": 12.0,
+        "cache_writes": 12.0,
+        "support_queries": 6.0
+      }
+    }
+  ],
+  "claim_class": "wiring",
+  "disposition": "cache_wired",
+  "disposition_rationale": "Bit-exact content-addressed cache layer wired for exact closure and bridge plans; measured cold/warm/restart/invalidation arms on CPU-only fixtures.",
+  "experiment_id": "slm193-flow-caches",
+  "falsifier": "Cache hit rates stay below 20% on warm repeated requests, or lookup/serialization overhead offsets the saved work on warm p50/p95, or cached results diverge from fresh computation.",
+  "honest_caveats": [
+    "Fixture-only wiring evidence: no trained model, checkpoint, or GPU run is involved.",
+    "The toy support provider is synthetic (payload['ok'] flag); real support queries require a verifier and problem expander.",
+    "Disk cache restart test uses a temporary directory under outputs/; production restart provenance requires a replay-safe certificate contract.",
+    "Only the HERO fixture and one toy finite-domain state are exercised; production hit rates depend on actual state recurrence."
+  ],
+  "hypothesis": "Exact state fingerprints recur across decode attempts and evaluation records, so bit-exact content-addressed caches reduce deterministic solver/bridge wall time by at least 2x while preserving identical outputs and certificates.",
+  "matrix_set": "slm193_flow_caches",
+  "matrix_version": "ffe3-02-v1",
+  "n_arms": 7,
+  "n_cases": 7,
+  "run_id": "slm193-flow-caches-20260721-280641cd",
+  "schema": "FlowCacheManifestV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T09:32:12.898504Z",
+  "version_stamp": {
+    "code_commit": "a4e0c0e71a1827d36ac27579f50a62b201c446b0",
+    "code_dirty": true,
+    "components": {
+      "flow.reference": "v1",
+      "flow.termination": "v1",
+      "harness.core": "v1",
+      "harness.experiments": "v61",
+      "harness.experiments.slm188_edit_algebra": "v1",
+      "harness.experiments.slm189_bridge_planner": "v1",
+      "harness.experiments.slm193_flow_caches": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T09:32:12.898464+00:00"
+  }
+}
