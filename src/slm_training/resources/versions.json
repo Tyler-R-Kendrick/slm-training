@@ -1387,7 +1387,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v64",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1402,6 +1402,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-07-21",
+          "note": "SLM-238 (RSC-A02) follow-up: added the required RecursiveObjectiveContractV2 schema (src/slm_training/models/twotower.py) -- a typed, validated view over the objective-decomposition telemetry (mode, aux_weight, primary/intermediate/final/combined loss terms) whose __post_init__ re-checks both required sum identities at construction time. training_loss now also populates last_training_metrics['recursive_objective_contract'] (a dict) alongside the existing flat scalar fields, which remain the single source of truth. Additive only -- no existing metric value, gate, or default changed."
+        },
         {
           "version": "v64",
           "date": "2026-07-21",
@@ -1740,7 +1745,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -1751,6 +1756,11 @@
         "docs/design/iter-slm138-recursive-denoiser-20260720.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-21",
+          "note": "SLM-238 (RSC-A02) follow-up: added test_recursive_objective_contract_v2_validates_sum_identities and a schema-presence assertion in test_generated_decomposition_sums_reproduce_scalar_loss_exactly (41 total). Re-ran scripts/run_rsc_a02_depth_aux_mode_factorial.py --mode fixture --corpus-limit 6 to regenerate the committed docs/design/iter-rsc-a02-depth-aux-mode-factorial-20260721.{json,md} after an earlier --mode plan-only smoke check had accidentally clobbered them with the plan-only skeleton; real fixture-arm numbers now committed and byte-verified against the narrative doc."
+        },
         {
           "version": "v3",
           "date": "2026-07-21",

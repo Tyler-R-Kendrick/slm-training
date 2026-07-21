@@ -907,6 +907,104 @@ def migrate_recursive_depth_aux_config(raw_cfg: dict) -> dict:
     return migrated
 
 
+#: SLM-238 (RSC-A02): schema tag pinned into every persisted
+#: ``RecursiveObjectiveContractV2`` so a future change to the decomposition
+#: fields is detectable in old telemetry/design-doc JSON rather than silently
+#: reinterpreted.
+RECURSIVE_OBJECTIVE_CONTRACT_VERSION = "RecursiveObjectiveContractV2"
+
+
+@dataclass(frozen=True)
+class RecursiveObjectiveContractV2:
+    """SLM-238 (RSC-A02): the required objective-decomposition schema.
+
+    A validated, typed view over the flat ``last_training_metrics`` scalar
+    fields ``TwoTowerModel.training_loss`` always populates (see
+    ``docs/design/iter-rsc-a02-*``): ``recursive_depth_aux_mode``/
+    ``recursive_depth_aux_weight`` (the resolved, concrete objective
+    semantics) and the five loss terms. The flat metrics dict remains the
+    single source of truth (this schema is built *from* it via
+    :meth:`from_metrics`, never the reverse) so no caller needs two
+    divergent representations of the same numbers.
+
+    ``__post_init__`` re-checks, at construction time, the two identities the
+    decomposition is required to satisfy exactly:
+    ``recursive_intermediate_aux_loss + recursive_final_depth_aux_contribution
+    == recursive_depth_supervision_loss`` and
+    ``primary_final_reconstruction_loss + recursive_depth_supervision_loss ==
+    combined_training_loss`` -- so a future edit that breaks either identity
+    fails fast here, not only in a unit test.
+    """
+
+    contract_version: str
+    mode: str
+    aux_weight: float
+    primary_final_reconstruction_loss: float
+    recursive_intermediate_aux_loss: float
+    recursive_final_depth_aux_contribution: float
+    recursive_depth_supervision_loss: float
+    combined_training_loss: float
+
+    def __post_init__(self) -> None:
+        if self.contract_version != RECURSIVE_OBJECTIVE_CONTRACT_VERSION:
+            raise ValueError(
+                f"contract_version={self.contract_version!r} does not match "
+                f"{RECURSIVE_OBJECTIVE_CONTRACT_VERSION!r}."
+            )
+        aux_sum = (
+            self.recursive_intermediate_aux_loss
+            + self.recursive_final_depth_aux_contribution
+        )
+        if not math.isclose(
+            aux_sum, self.recursive_depth_supervision_loss, rel_tol=1e-4, abs_tol=1e-6
+        ):
+            raise ValueError(
+                "recursive_intermediate_aux_loss + "
+                f"recursive_final_depth_aux_contribution ({aux_sum!r}) != "
+                f"recursive_depth_supervision_loss "
+                f"({self.recursive_depth_supervision_loss!r})."
+            )
+        combined = (
+            self.primary_final_reconstruction_loss
+            + self.recursive_depth_supervision_loss
+        )
+        if not math.isclose(
+            combined, self.combined_training_loss, rel_tol=1e-4, abs_tol=1e-6
+        ):
+            raise ValueError(
+                "primary_final_reconstruction_loss + "
+                f"recursive_depth_supervision_loss ({combined!r}) != "
+                f"combined_training_loss ({self.combined_training_loss!r})."
+            )
+
+    @classmethod
+    def from_metrics(cls, metrics: dict[str, Any]) -> RecursiveObjectiveContractV2:
+        """Build from a ``last_training_metrics`` dict; raises ``KeyError``
+        if any required field is missing (it never should be -- see the
+        module docstring above)."""
+        return cls(
+            contract_version=RECURSIVE_OBJECTIVE_CONTRACT_VERSION,
+            mode=str(metrics["recursive_depth_aux_mode"]),
+            aux_weight=float(metrics["recursive_depth_aux_weight"]),
+            primary_final_reconstruction_loss=float(
+                metrics["primary_final_reconstruction_loss"]
+            ),
+            recursive_intermediate_aux_loss=float(
+                metrics["recursive_intermediate_aux_loss"]
+            ),
+            recursive_final_depth_aux_contribution=float(
+                metrics["recursive_final_depth_aux_contribution"]
+            ),
+            recursive_depth_supervision_loss=float(
+                metrics["recursive_depth_supervision_loss"]
+            ),
+            combined_training_loss=float(metrics["combined_training_loss"]),
+        )
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 class TwoTowerModel(nn.Module):
     """MaskGIT-style discrete diffusion conditioned on a prompt encoder."""
 
@@ -2467,6 +2565,16 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics["recursive_intermediate_aux_loss"] = 0.0
             self.last_training_metrics["recursive_final_depth_aux_contribution"] = 0.0
             self.last_training_metrics["combined_training_loss"] = 0.0
+
+        # SLM-238 (RSC-A02): the required RecursiveObjectiveContractV2 schema,
+        # built from (never a second source of truth alongside) the flat
+        # scalar fields above -- its __post_init__ re-verifies both sum
+        # identities at construction time.
+        self.last_training_metrics["recursive_objective_contract"] = (
+            RecursiveObjectiveContractV2.from_metrics(
+                self.last_training_metrics
+            ).as_dict()
+        )
 
         length_w = float(
             getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0

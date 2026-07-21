@@ -3,66 +3,725 @@
     {
       "arm": "A",
       "aux_weight": 0.0,
+      "bounded_real_corpus_smoke": {
+        "arm": "A",
+        "aux_weight": 0.0,
+        "final_objective_decomposition": {
+          "combined_training_loss": 21.394546508789062,
+          "primary_final_reconstruction_loss": 21.394546508789062,
+          "recursive_depth_aux_weight": 0.0,
+          "recursive_depth_supervision_loss": 0.0,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_intermediate_aux_loss": 0.0
+        },
+        "final_train_loss_scale": 21.394546508789062,
+        "final_update_grad_norm": 19.41274719282319,
+        "first_last_depth_contribution_ratio": "n/a (aux disabled -- no per-depth contributions)",
+        "mode": "off",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "n/a",
+        "steps": [
+          {
+            "combined_training_loss": 26.963924407958984,
+            "grad_norm": 24.238597824400184,
+            "loss": 26.963924407958984,
+            "primary_final_reconstruction_loss": 26.963924407958984,
+            "recursive_depth_supervision_loss": 0.0,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 0.0,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 22.551815032958984,
+            "grad_norm": 20.190613874813483,
+            "loss": 22.551815032958984,
+            "primary_final_reconstruction_loss": 22.551815032958984,
+            "recursive_depth_supervision_loss": 0.0,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 0.0,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 21.394546508789062,
+            "grad_norm": 19.41274719282319,
+            "loss": 21.394546508789062,
+            "primary_final_reconstruction_loss": 21.394546508789062,
+            "recursive_depth_supervision_loss": 0.0,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 0.0,
+            "step": 2
+          }
+        ],
+        "weights": []
+      },
+      "bounded_smoke_safety_diagnostics": {
+        "bridge_healthy": false,
+        "note": "openui grammar bridge unavailable in this environment (e.g. a NODE_OPTIONS incompatibility) -- syntax/structure/semantic smoke skipped/vacuous here, not because of this issue's changes; rerun in a bridge-healthy environment for a real read",
+        "rows": []
+      },
+      "deterministic_fixture": {
+        "arm": "A",
+        "aux_weight": 0.0,
+        "final_objective_decomposition": {
+          "combined_training_loss": 23.041454315185547,
+          "primary_final_reconstruction_loss": 23.041454315185547,
+          "recursive_depth_aux_weight": 0.0,
+          "recursive_depth_supervision_loss": 0.0,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_intermediate_aux_loss": 0.0
+        },
+        "final_train_loss_scale": 23.041454315185547,
+        "final_update_grad_norm": 24.354876168669996,
+        "first_last_depth_contribution_ratio": "n/a (aux disabled -- no per-depth contributions)",
+        "mode": "off",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "n/a",
+        "steps": [
+          {
+            "combined_training_loss": 20.838146209716797,
+            "grad_norm": 22.71378618710859,
+            "loss": 20.838146209716797,
+            "primary_final_reconstruction_loss": 20.838146209716797,
+            "recursive_depth_supervision_loss": 0.0,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 0.0,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 18.992910385131836,
+            "grad_norm": 21.625609799188055,
+            "loss": 18.992910385131836,
+            "primary_final_reconstruction_loss": 18.992910385131836,
+            "recursive_depth_supervision_loss": 0.0,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 0.0,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 23.041454315185547,
+            "grad_norm": 24.354876168669996,
+            "loss": 23.041454315185547,
+            "primary_final_reconstruction_loss": 23.041454315185547,
+            "recursive_depth_supervision_loss": 0.0,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 0.0,
+            "step": 2
+          }
+        ],
+        "weights": []
+      },
       "mode": "off",
-      "schedule": "n/a",
-      "weights": []
+      "per_depth_gradient_diagnostics": {
+        "per_depth": [
+          {
+            "cosine_vs_final_depth": 0.9730260309296391,
+            "depth": 0,
+            "grad_norm": 2.2576305866241455
+          },
+          {
+            "cosine_vs_final_depth": 0.9962372771732091,
+            "depth": 1,
+            "grad_norm": 2.210759162902832
+          },
+          {
+            "cosine_vs_final_depth": 1.000000146663192,
+            "depth": 2,
+            "grad_norm": 2.171907663345337
+          }
+        ],
+        "target_param": "denoiser.tok.weight"
+      },
+      "schedule": "n/a"
     },
     {
       "arm": "B",
       "aux_weight": 1.0,
+      "bounded_real_corpus_smoke": {
+        "arm": "B",
+        "aux_weight": 1.0,
+        "final_objective_decomposition": {
+          "combined_training_loss": 45.96685028076172,
+          "primary_final_reconstruction_loss": 21.401344299316406,
+          "recursive_depth_aux_weight": 1.0,
+          "recursive_depth_supervision_loss": 24.565505981445312,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_intermediate_aux_loss": 24.565505981445312
+        },
+        "final_train_loss_scale": 45.96685028076172,
+        "final_update_grad_norm": 35.56234976202546,
+        "first_last_depth_contribution_ratio": "n/a (final depth structurally excluded -- intermediate_only)",
+        "mode": "intermediate_only",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 56.05030822753906,
+            "grad_norm": 42.662226829743474,
+            "loss": 56.05030822753906,
+            "primary_final_reconstruction_loss": 26.963924407958984,
+            "recursive_depth_supervision_loss": 29.086383819580078,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 29.086383819580078,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 47.50253105163574,
+            "grad_norm": 35.89456966030163,
+            "loss": 47.502532958984375,
+            "primary_final_reconstruction_loss": 22.554899215698242,
+            "recursive_depth_supervision_loss": 24.9476318359375,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 24.9476318359375,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 45.96685028076172,
+            "grad_norm": 35.56234976202546,
+            "loss": 45.96685028076172,
+            "primary_final_reconstruction_loss": 21.401344299316406,
+            "recursive_depth_supervision_loss": 24.565505981445312,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 24.565505981445312,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0
+        ]
+      },
+      "bounded_smoke_safety_diagnostics": {
+        "bridge_healthy": false,
+        "note": "openui grammar bridge unavailable in this environment (e.g. a NODE_OPTIONS incompatibility) -- syntax/structure/semantic smoke skipped/vacuous here, not because of this issue's changes; rerun in a bridge-healthy environment for a real read",
+        "rows": []
+      },
+      "deterministic_fixture": {
+        "arm": "B",
+        "aux_weight": 1.0,
+        "final_objective_decomposition": {
+          "combined_training_loss": 50.04561424255371,
+          "primary_final_reconstruction_loss": 23.048303604125977,
+          "recursive_depth_aux_weight": 1.0,
+          "recursive_depth_supervision_loss": 26.997310638427734,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_intermediate_aux_loss": 26.997310638427734
+        },
+        "final_train_loss_scale": 50.045616149902344,
+        "final_update_grad_norm": 44.72316109215602,
+        "first_last_depth_contribution_ratio": "n/a (final depth structurally excluded -- intermediate_only)",
+        "mode": "intermediate_only",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 43.62422561645508,
+            "grad_norm": 39.28120280896623,
+            "loss": 43.62422561645508,
+            "primary_final_reconstruction_loss": 20.838146209716797,
+            "recursive_depth_supervision_loss": 22.78607940673828,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 22.78607940673828,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 40.53660774230957,
+            "grad_norm": 37.996856135604304,
+            "loss": 40.53660583496094,
+            "primary_final_reconstruction_loss": 18.99534797668457,
+            "recursive_depth_supervision_loss": 21.541259765625,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 21.541259765625,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 50.04561424255371,
+            "grad_norm": 44.72316109215602,
+            "loss": 50.045616149902344,
+            "primary_final_reconstruction_loss": 23.048303604125977,
+            "recursive_depth_supervision_loss": 26.997310638427734,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 26.997310638427734,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0
+        ]
+      },
       "mode": "intermediate_only",
-      "schedule": "uniform_normalized",
-      "weights": [
-        1.0,
-        1.0
-      ]
+      "per_depth_gradient_diagnostics": {
+        "per_depth": [
+          {
+            "cosine_vs_final_depth": 0.9730260309296391,
+            "depth": 0,
+            "grad_norm": 2.2576305866241455
+          },
+          {
+            "cosine_vs_final_depth": 0.9962372771732091,
+            "depth": 1,
+            "grad_norm": 2.210759162902832
+          },
+          {
+            "cosine_vs_final_depth": 1.000000146663192,
+            "depth": 2,
+            "grad_norm": 2.171907663345337
+          }
+        ],
+        "target_param": "denoiser.tok.weight"
+      },
+      "schedule": "uniform_normalized"
     },
     {
       "arm": "C",
       "aux_weight": 1.0,
+      "bounded_real_corpus_smoke": {
+        "arm": "C",
+        "aux_weight": 1.0,
+        "final_objective_decomposition": {
+          "combined_training_loss": 44.90742111206055,
+          "primary_final_reconstruction_loss": 21.397451400756836,
+          "recursive_depth_aux_weight": 1.0,
+          "recursive_depth_supervision_loss": 23.50996971130371,
+          "recursive_final_depth_aux_contribution": 7.132483959197998,
+          "recursive_intermediate_aux_loss": 16.377485275268555
+        },
+        "final_train_loss_scale": 44.90742111206055,
+        "final_update_grad_norm": 36.598844909877556,
+        "first_last_depth_contribution_ratio": 1.2175091655561612,
+        "mode": "all_depths",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 55.34282302856445,
+            "grad_norm": 44.54491979491885,
+            "loss": 55.34282302856445,
+            "primary_final_reconstruction_loss": 26.963924407958984,
+            "recursive_depth_supervision_loss": 28.37889862060547,
+            "recursive_final_depth_aux_contribution": 8.987975120544434,
+            "recursive_intermediate_aux_loss": 19.39092254638672,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 46.70124435424805,
+            "grad_norm": 37.344027348408645,
+            "loss": 46.70124435424805,
+            "primary_final_reconstruction_loss": 22.552249908447266,
+            "recursive_depth_supervision_loss": 24.14899444580078,
+            "recursive_final_depth_aux_contribution": 7.517416954040527,
+            "recursive_intermediate_aux_loss": 16.631576538085938,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 44.90742111206055,
+            "grad_norm": 36.598844909877556,
+            "loss": 44.90742111206055,
+            "primary_final_reconstruction_loss": 21.397451400756836,
+            "recursive_depth_supervision_loss": 23.50996971130371,
+            "recursive_final_depth_aux_contribution": 7.132483959197998,
+            "recursive_intermediate_aux_loss": 16.377485275268555,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "bounded_smoke_safety_diagnostics": {
+        "bridge_healthy": false,
+        "note": "openui grammar bridge unavailable in this environment (e.g. a NODE_OPTIONS incompatibility) -- syntax/structure/semantic smoke skipped/vacuous here, not because of this issue's changes; rerun in a bridge-healthy environment for a real read",
+        "rows": []
+      },
+      "deterministic_fixture": {
+        "arm": "C",
+        "aux_weight": 1.0,
+        "final_objective_decomposition": {
+          "combined_training_loss": 48.72539520263672,
+          "primary_final_reconstruction_loss": 23.044403076171875,
+          "recursive_depth_aux_weight": 1.0,
+          "recursive_depth_supervision_loss": 25.680992126464844,
+          "recursive_final_depth_aux_contribution": 7.6814680099487305,
+          "recursive_intermediate_aux_loss": 17.99952507019043
+        },
+        "final_train_loss_scale": 48.72539520263672,
+        "final_update_grad_norm": 45.99146271185238,
+        "first_last_depth_contribution_ratio": 1.2522495522125672,
+        "mode": "all_depths",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 42.97491455078125,
+            "grad_norm": 41.282849155603266,
+            "loss": 42.97491455078125,
+            "primary_final_reconstruction_loss": 20.838146209716797,
+            "recursive_depth_supervision_loss": 22.136768341064453,
+            "recursive_final_depth_aux_contribution": 6.946048736572266,
+            "recursive_intermediate_aux_loss": 15.190719604492188,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 39.68673133850098,
+            "grad_norm": 39.70057205716416,
+            "loss": 39.686729431152344,
+            "primary_final_reconstruction_loss": 18.993921279907227,
+            "recursive_depth_supervision_loss": 20.69281005859375,
+            "recursive_final_depth_aux_contribution": 6.331307411193848,
+            "recursive_intermediate_aux_loss": 14.361502647399902,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 48.72539520263672,
+            "grad_norm": 45.99146271185238,
+            "loss": 48.72539520263672,
+            "primary_final_reconstruction_loss": 23.044403076171875,
+            "recursive_depth_supervision_loss": 25.680992126464844,
+            "recursive_final_depth_aux_contribution": 7.6814680099487305,
+            "recursive_intermediate_aux_loss": 17.99952507019043,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
       "mode": "all_depths",
-      "schedule": "uniform_normalized",
-      "weights": [
-        1.0,
-        1.0,
-        1.0
-      ]
+      "per_depth_gradient_diagnostics": {
+        "per_depth": [
+          {
+            "cosine_vs_final_depth": 0.9730260309296391,
+            "depth": 0,
+            "grad_norm": 2.2576305866241455
+          },
+          {
+            "cosine_vs_final_depth": 0.9962372771732091,
+            "depth": 1,
+            "grad_norm": 2.210759162902832
+          },
+          {
+            "cosine_vs_final_depth": 1.000000146663192,
+            "depth": 2,
+            "grad_norm": 2.171907663345337
+          }
+        ],
+        "target_param": "denoiser.tok.weight"
+      },
+      "schedule": "uniform_normalized"
     },
     {
       "arm": "D",
       "aux_weight": 0.3,
+      "bounded_real_corpus_smoke": {
+        "arm": "D",
+        "aux_weight": 0.3,
+        "final_objective_decomposition": {
+          "combined_training_loss": 28.76676321029663,
+          "primary_final_reconstruction_loss": 21.396516799926758,
+          "recursive_depth_aux_weight": 0.3,
+          "recursive_depth_supervision_loss": 7.370246410369873,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_intermediate_aux_loss": 7.370246410369873
+        },
+        "final_train_loss_scale": 28.76676368713379,
+        "final_update_grad_norm": 24.2195774481475,
+        "first_last_depth_contribution_ratio": "n/a (final depth structurally excluded -- intermediate_only)",
+        "mode": "intermediate_only",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 35.68984031677246,
+            "grad_norm": 29.726299295126836,
+            "loss": 35.689842224121094,
+            "primary_final_reconstruction_loss": 26.963924407958984,
+            "recursive_depth_supervision_loss": 8.725915908813477,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 8.725915908813477,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 30.03621530532837,
+            "grad_norm": 24.867366369492814,
+            "loss": 30.03621482849121,
+            "primary_final_reconstruction_loss": 22.551822662353516,
+            "recursive_depth_supervision_loss": 7.4843926429748535,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 7.4843926429748535,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 28.76676321029663,
+            "grad_norm": 24.2195774481475,
+            "loss": 28.76676368713379,
+            "primary_final_reconstruction_loss": 21.396516799926758,
+            "recursive_depth_supervision_loss": 7.370246410369873,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 7.370246410369873,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0
+        ]
+      },
+      "bounded_smoke_safety_diagnostics": {
+        "bridge_healthy": false,
+        "note": "openui grammar bridge unavailable in this environment (e.g. a NODE_OPTIONS incompatibility) -- syntax/structure/semantic smoke skipped/vacuous here, not because of this issue's changes; rerun in a bridge-healthy environment for a real read",
+        "rows": []
+      },
+      "deterministic_fixture": {
+        "arm": "D",
+        "aux_weight": 0.3,
+        "final_objective_decomposition": {
+          "combined_training_loss": 31.144107818603516,
+          "primary_final_reconstruction_loss": 23.04363441467285,
+          "recursive_depth_aux_weight": 0.3,
+          "recursive_depth_supervision_loss": 8.100473403930664,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_intermediate_aux_loss": 8.100473403930664
+        },
+        "final_train_loss_scale": 31.144107818603516,
+        "final_update_grad_norm": 30.414565365815736,
+        "first_last_depth_contribution_ratio": "n/a (final depth structurally excluded -- intermediate_only)",
+        "mode": "intermediate_only",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 27.673970222473145,
+            "grad_norm": 27.650754668644485,
+            "loss": 27.673969268798828,
+            "primary_final_reconstruction_loss": 20.838146209716797,
+            "recursive_depth_supervision_loss": 6.835824012756348,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 6.835824012756348,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 25.45693874359131,
+            "grad_norm": 26.499733010732378,
+            "loss": 25.456939697265625,
+            "primary_final_reconstruction_loss": 18.993837356567383,
+            "recursive_depth_supervision_loss": 6.463101387023926,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 6.463101387023926,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 31.144107818603516,
+            "grad_norm": 30.414565365815736,
+            "loss": 31.144107818603516,
+            "primary_final_reconstruction_loss": 23.04363441467285,
+            "recursive_depth_supervision_loss": 8.100473403930664,
+            "recursive_final_depth_aux_contribution": 0.0,
+            "recursive_intermediate_aux_loss": 8.100473403930664,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0
+        ]
+      },
       "mode": "intermediate_only",
-      "schedule": "uniform_normalized",
-      "weights": [
-        1.0,
-        1.0
-      ]
+      "per_depth_gradient_diagnostics": {
+        "per_depth": [
+          {
+            "cosine_vs_final_depth": 0.9730260309296391,
+            "depth": 0,
+            "grad_norm": 2.2576305866241455
+          },
+          {
+            "cosine_vs_final_depth": 0.9962372771732091,
+            "depth": 1,
+            "grad_norm": 2.210759162902832
+          },
+          {
+            "cosine_vs_final_depth": 1.000000146663192,
+            "depth": 2,
+            "grad_norm": 2.171907663345337
+          }
+        ],
+        "target_param": "denoiser.tok.weight"
+      },
+      "schedule": "uniform_normalized"
     },
     {
       "arm": "E",
       "aux_weight": 0.3,
+      "bounded_real_corpus_smoke": {
+        "arm": "E",
+        "aux_weight": 0.3,
+        "final_objective_decomposition": {
+          "combined_training_loss": 28.44905424118042,
+          "primary_final_reconstruction_loss": 21.39586067199707,
+          "recursive_depth_aux_weight": 0.3,
+          "recursive_depth_supervision_loss": 7.05319356918335,
+          "recursive_final_depth_aux_contribution": 2.1395862102508545,
+          "recursive_intermediate_aux_loss": 4.913607597351074
+        },
+        "final_train_loss_scale": 28.449054718017578,
+        "final_update_grad_norm": 24.55161109968922,
+        "first_last_depth_contribution_ratio": 1.2177414259515962,
+        "mode": "all_depths",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 35.47759437561035,
+            "grad_norm": 30.314074470384913,
+            "loss": 35.47759246826172,
+            "primary_final_reconstruction_loss": 26.963924407958984,
+            "recursive_depth_supervision_loss": 8.513669967651367,
+            "recursive_final_depth_aux_contribution": 2.69639253616333,
+            "recursive_intermediate_aux_loss": 5.817276954650879,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 29.796875476837158,
+            "grad_norm": 25.321075535441114,
+            "loss": 29.796875,
+            "primary_final_reconstruction_loss": 22.552005767822266,
+            "recursive_depth_supervision_loss": 7.244869709014893,
+            "recursive_final_depth_aux_contribution": 2.2552006244659424,
+            "recursive_intermediate_aux_loss": 4.989668846130371,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 28.44905424118042,
+            "grad_norm": 24.55161109968922,
+            "loss": 28.449054718017578,
+            "primary_final_reconstruction_loss": 21.39586067199707,
+            "recursive_depth_supervision_loss": 7.05319356918335,
+            "recursive_final_depth_aux_contribution": 2.1395862102508545,
+            "recursive_intermediate_aux_loss": 4.913607597351074,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "bounded_smoke_safety_diagnostics": {
+        "bridge_healthy": false,
+        "note": "openui grammar bridge unavailable in this environment (e.g. a NODE_OPTIONS incompatibility) -- syntax/structure/semantic smoke skipped/vacuous here, not because of this issue's changes; rerun in a bridge-healthy environment for a real read",
+        "rows": []
+      },
+      "deterministic_fixture": {
+        "arm": "E",
+        "aux_weight": 0.3,
+        "final_objective_decomposition": {
+          "combined_training_loss": 30.747929096221924,
+          "primary_final_reconstruction_loss": 23.043045043945312,
+          "recursive_depth_aux_weight": 0.3,
+          "recursive_depth_supervision_loss": 7.704884052276611,
+          "recursive_final_depth_aux_contribution": 2.304304599761963,
+          "recursive_intermediate_aux_loss": 5.400579452514648
+        },
+        "final_train_loss_scale": 30.747928619384766,
+        "final_update_grad_norm": 30.821360029116097,
+        "first_last_depth_contribution_ratio": 1.2525688690321286,
+        "mode": "all_depths",
+        "param_count": 77890,
+        "recursive_steps": 3,
+        "schedule": "uniform_normalized",
+        "steps": [
+          {
+            "combined_training_loss": 27.479176998138428,
+            "grad_norm": 28.27076508898769,
+            "loss": 27.479177474975586,
+            "primary_final_reconstruction_loss": 20.838146209716797,
+            "recursive_depth_supervision_loss": 6.641030788421631,
+            "recursive_final_depth_aux_contribution": 2.0838146209716797,
+            "recursive_intermediate_aux_loss": 4.557216167449951,
+            "step": 0
+          },
+          {
+            "combined_training_loss": 25.20146369934082,
+            "grad_norm": 27.031351701969424,
+            "loss": 25.20146369934082,
+            "primary_final_reconstruction_loss": 18.99335479736328,
+            "recursive_depth_supervision_loss": 6.208108901977539,
+            "recursive_final_depth_aux_contribution": 1.8993356227874756,
+            "recursive_intermediate_aux_loss": 4.308773517608643,
+            "step": 1
+          },
+          {
+            "combined_training_loss": 30.747929096221924,
+            "grad_norm": 30.821360029116097,
+            "loss": 30.747928619384766,
+            "primary_final_reconstruction_loss": 23.043045043945312,
+            "recursive_depth_supervision_loss": 7.704884052276611,
+            "recursive_final_depth_aux_contribution": 2.304304599761963,
+            "recursive_intermediate_aux_loss": 5.400579452514648,
+            "step": 2
+          }
+        ],
+        "weights": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
       "mode": "all_depths",
-      "schedule": "uniform_normalized",
-      "weights": [
-        1.0,
-        1.0,
-        1.0
-      ]
+      "per_depth_gradient_diagnostics": {
+        "per_depth": [
+          {
+            "cosine_vs_final_depth": 0.9730260309296391,
+            "depth": 0,
+            "grad_norm": 2.2576305866241455
+          },
+          {
+            "cosine_vs_final_depth": 0.9962372771732091,
+            "depth": 1,
+            "grad_norm": 2.210759162902832
+          },
+          {
+            "cosine_vs_final_depth": 1.000000146663192,
+            "depth": 2,
+            "grad_norm": 2.171907663345337
+          }
+        ],
+        "target_param": "denoiser.tok.weight"
+      },
+      "schedule": "uniform_normalized"
     }
   ],
   "claim_class": "semantics_calibration",
+  "issue": "SLM-238 (RSC-A02)",
   "matrix_set": "rsc-a02-depth-aux-mode-factorial",
   "matrix_version": "rsc-a02-v1",
-  "note": "plan-only: no models instantiated or trained",
-  "run_id": "rsc_a02_depth_aux_mode_plan",
-  "status": "plan_only",
+  "note": "Bounded calibration/semantics factorial only (deterministic 2-record fixture + a 6-record real-corpus smoke, 3 training steps each). No promotion or broad GPU campaign; no quality or LOTUS-transfer claim is made. See docs/design/iter-rsc-a02-*.md for the recommended semantic mode and the SLM-233 control-matrix recommendation.",
+  "params_and_flops_unchanged_across_arms": true,
+  "preregistered_lambda": 0.3,
+  "preregistered_lambda_justification": "0.3 (< 1) is chosen a priori, not tuned post-hoc: the final recursion depth already receives full weight once via the primary reconstruction term (rec_out['logits'] == rec_out['depth_logits'][-1]), so a partial (0.3x) extra credit in all_depths mode avoids letting the auxiliary term dominate or swamp the primary gradient signal, while remaining large enough to matter. It is also a simple, easy-to-reproduce round number for a first calibration pass.",
+  "quality_claim_made": false,
+  "run_id": "rsc_a02_depth_aux_mode_factorial",
+  "status": "calibration_only",
   "version_stamp": {
-    "code_commit": "20d77a836018f450dd5779134c3ab71e2ee82f8f",
+    "code_commit": "625c3264f83eaa893898646f792af69d0315935f",
     "code_dirty": true,
     "components": {
       "model.recursive_denoiser": "v3"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T01:02:25.369283+00:00"
+    "stamped_at": "2026-07-21T01:06:27.801308+00:00"
   }
 }

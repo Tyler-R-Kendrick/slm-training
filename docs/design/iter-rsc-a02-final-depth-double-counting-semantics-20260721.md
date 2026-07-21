@@ -89,8 +89,8 @@ roundoff only).
 
 ## Tests
 
-`tests/test_models/test_recursive_denoiser.py` — 40 passed (26 pre-existing
-+ 14 new), covering every property SLM-238 requires:
+`tests/test_models/test_recursive_denoiser.py` — 41 passed (26 pre-existing
++ 15 new), covering every property SLM-238 requires:
 
 1. `intermediate_only` never reads or differentiates through the final depth
    (`test_intermediate_only_never_reads_final_depth_aux_path`).
@@ -113,6 +113,9 @@ roundoff only).
    `test_resolve_recursive_depth_aux_mode_backward_compatible`).
 8. Generated decomposition sums reproduce the scalar training loss exactly
    (`test_generated_decomposition_sums_reproduce_scalar_loss_exactly`).
+9. The required `RecursiveObjectiveContractV2` schema builds validly from
+   consistent metrics and rejects an inconsistent one
+   (`test_recursive_objective_contract_v2_validates_sum_identities`).
 
 One existing SLM-237 test
 (`test_empty_tuple_valid_on_every_architecture_no_aux_term`) was updated —
@@ -122,7 +125,7 @@ omitted) is precisely SLM-238's required test #4 telemetry-contract change.
 
 ```
 python -m pytest tests/test_models/test_recursive_denoiser.py -q
-# 40 passed
+# 41 passed
 ```
 
 ## Bounded 5-arm factorial
@@ -234,10 +237,12 @@ re-verdict.
 
 ## Version bumps
 
-- `model.twotower`: v63 -> v64 (owns the new config fields, validator
-  extension, and telemetry).
-- `model.recursive_denoiser`: v2 -> v3 (owns the 14 new tests and the new
-  factorial script).
+- `model.twotower`: v63 -> v65 (v64 added the config fields/validator
+  extension/telemetry; v65 added the required `RecursiveObjectiveContractV2`
+  schema).
+- `model.recursive_denoiser`: v2 -> v4 (v3 added the 14 new tests and the
+  new factorial script; v4 added the schema's own test and regenerated the
+  factorial's committed docs after an accidental plan-only overwrite).
 
 ## Non-goals honored
 

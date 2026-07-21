@@ -3443,9 +3443,10 @@ D=31.144, E=30.748 — `combined_training_loss` reproduced the live
 `recursive_final_depth_aux_contribution` was exactly `0.0` and structurally
 absent from the per-depth telemetry in both `intermediate_only` arms.
 **Calibration/semantics only — no quality or LOTUS-transfer claim, no
-promotion, no GPU campaign.** 40 tests in
-`tests/test_models/test_recursive_denoiser.py` (26 pre-existing + 14 new)
-cover every SLM-238 acceptance property. Full evidence:
+promotion, no GPU campaign.** 41 tests in
+`tests/test_models/test_recursive_denoiser.py` (26 pre-existing + 15 new)
+cover every SLM-238 acceptance property, including the required
+`RecursiveObjectiveContractV2` schema. Full evidence:
 `docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.json`/`.md`
 and `docs/design/iter-rsc-a02-depth-aux-mode-factorial-20260721.json`/`.md`.
 
@@ -3455,8 +3456,8 @@ primary reconstruction term, since that term already *is* the actual
 prediction); `all_depths`/`legacy_all_depths` remain explicit alternative-
 hypothesis controls, since this bounded factorial cannot rule out that the
 double count helps in practice — that adoption decision is SLM-233's job, not
-decided here. Version bumps: `model.twotower` v63 → v64,
-`model.recursive_denoiser` v2 → v3.
+decided here. Version bumps: `model.twotower` v63 → v65,
+`model.recursive_denoiser` v2 → v4.
 
 ## V19 stochastic recursive width (SLM-139) — closed
 

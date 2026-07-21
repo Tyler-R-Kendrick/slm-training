@@ -19,6 +19,8 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
 from slm_training.models.twotower import (
+    RECURSIVE_OBJECTIVE_CONTRACT_VERSION,
+    RecursiveObjectiveContractV2,
     TwoTowerConfig,
     TwoTowerModel,
     migrate_recursive_depth_aux_config,
@@ -833,3 +835,33 @@ def test_generated_decomposition_sums_reproduce_scalar_loss_exactly() -> None:
         + metrics["recursive_final_depth_aux_contribution"],
         rel=1e-6,
     )
+    # Required RecursiveObjectiveContractV2 schema artifact is populated and
+    # agrees with the flat metrics it was built from.
+    contract = metrics["recursive_objective_contract"]
+    assert contract["contract_version"] == RECURSIVE_OBJECTIVE_CONTRACT_VERSION
+    assert contract["combined_training_loss"] == pytest.approx(
+        metrics["combined_training_loss"], rel=1e-6
+    )
+
+
+def test_recursive_objective_contract_v2_validates_sum_identities() -> None:
+    """RecursiveObjectiveContractV2.from_metrics builds a valid contract from
+    a consistent metrics dict, and __post_init__ rejects one whose sum
+    identities don't hold (e.g. a future edit that breaks the decomposition)."""
+    consistent = {
+        "recursive_depth_aux_mode": "all_depths",
+        "recursive_depth_aux_weight": 0.3,
+        "primary_final_reconstruction_loss": 10.0,
+        "recursive_intermediate_aux_loss": 2.0,
+        "recursive_final_depth_aux_contribution": 1.0,
+        "recursive_depth_supervision_loss": 3.0,
+        "combined_training_loss": 13.0,
+    }
+    contract = RecursiveObjectiveContractV2.from_metrics(consistent)
+    assert contract.mode == "all_depths"
+    assert contract.as_dict()["recursive_depth_supervision_loss"] == 3.0
+
+    inconsistent = dict(consistent)
+    inconsistent["combined_training_loss"] = 999.0
+    with pytest.raises(ValueError, match="combined_training_loss"):
+        RecursiveObjectiveContractV2.from_metrics(inconsistent)
