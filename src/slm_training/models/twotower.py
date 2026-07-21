@@ -4819,7 +4819,11 @@ class TwoTowerModel(nn.Module):
         if any(
             trace.get("phase") == "semantic_plan_root_abstention"
             and trace.get("row") == row
-            and trace.get("evidence") == evidence
+            and isinstance(trace.get("evidence"), dict)
+            and all(
+                trace["evidence"].get(key) == evidence.get(key)
+                for key in ("reason", "error_type", "error")
+            )
             for trace in stats.constrained_selection_traces
         ):
             return

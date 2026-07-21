@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v94",
+      "version": "v95",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v95",
+          "date": "2026-07-20",
+          "note": "E647 r2: deduplicate semantic-root abstention traces by stable error signature rather than changing planned-section counts"
+        },
         {
           "version": "v94",
           "date": "2026-07-20",

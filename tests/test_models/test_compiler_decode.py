@@ -1975,14 +1975,14 @@ def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> No
     model._record_semantic_plan_root_abstention(
         stats, row=0, position=35, state=state
     )
+    first_evidence = dict(model._semantic_plan_root_last_abstention)
+    model._semantic_plan_root_last_abstention["section_count"] = 6
     model._record_semantic_plan_root_abstention(
         stats, row=0, position=36, state=state
     )
 
     assert len(stats.constrained_selection_traces) == 1
-    assert stats.constrained_selection_traces[0]["evidence"] == (
-        model._semantic_plan_root_last_abstention
-    )
+    assert stats.constrained_selection_traces[0]["evidence"] == first_evidence
 
 
 def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
