@@ -2397,6 +2397,21 @@ def test_e658_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     }
 
 
+def test_e659_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e659-property-role-guard-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 0.75
+    assert suite["placeholder_fidelity"] == 0.65
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

@@ -4698,3 +4698,15 @@ was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e658-property-role-ownership-20260721.md) and
 [JSON](iter-e658-property-role-ownership-20260721.json).
+
+## E659 final property-role candidate guard
+
+E659 hard-masks schema-role-invalid visible slots after all positive margins.
+It removes the target Carousel slot but collapses Gallery into a placeholder-free
+literal list. Meaningful v1, strict v2, fidelity, validity, structure, recall,
+reward, both AST F1 metrics, and p95 all regress. Reject v115 and restore E653
+behavior as v116. The current role map cannot safely support hard exclusion.
+No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e659-property-role-guard-20260721.md) and
+[JSON](iter-e659-property-role-guard-20260721.json).
