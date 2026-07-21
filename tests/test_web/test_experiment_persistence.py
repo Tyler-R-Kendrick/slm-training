@@ -180,3 +180,19 @@ def test_e706_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert run_id not in {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
+
+
+def test_e707_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e707-carrier-root-reference-margin2-r2"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    rico = run["scoreboard"]["suites"]["rico_held"]
+    assert rico["placeholder_fidelity"] == 1.0
+    assert rico["reward_score"] == 1.0
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
