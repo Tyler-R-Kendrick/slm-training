@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "run_id": "e648-perf-c5-c8-execution-20260721",
+  "experiment_id": "E648",
+  "date_utc": "2026-07-21",
+  "status": "completed",
+  "run_class": "perf_matrix",
+  "claim_class": "wiring_perf_negative",
+  "quality_claim_made": false,
+  "issue": null,
+  "hypothesis": "docs/design/perf-experiment-matrix.md's 'C5-C8 constraint-system definitions (proposed, unrun)' section states 'No C5-C8 latency or quality result exists' -- but the four PerfExperiment rows (grammar_equivalence_cache, grammar_active_symbol_bitsets, grammar_completion_bounds, compact_active_canvas) are already implemented in scripts/run_perf_matrix.py and covered by a wiring-only unit test (test_c5_c8_are_registered_without_running). This session diversifies away from the twotower.py decode-margin lineage (E645-E647) into the bench/perf phase and actually runs C5-C8 for the first time: do the cached-equivalence-class (C5), active-symbol-bitset (C6), completion-bound (C7), and combined (C8) levers measurably reduce forwards/latency over a matched same-recipe baseline on the committed playground-demo checkpoint?",
+  "prior_state_confirmed": {
+    "doc_claim": "C5-C8 constraint-system definitions (proposed, unrun); No C5-C8 latency or quality result exists.",
+    "code_state": "PerfExperiment rows for C5/C6/C7/C8 and their TwoTowerConfig flags (grammar_equivalence_cache, grammar_active_symbol_bitsets, grammar_completion_bounds, compact_active_canvas) were already implemented (scripts/run_perf_matrix.py, src/slm_training/models/twotower.py) and unit-tested for registration only (tests/test_scripts/test_perf_matrix.py::test_c5_c8_are_registered_without_running); no run had ever produced numbers."
+  },
+  "methodology_finding": {
+    "summary": "C5-C8, unlike C1-C4, do not carry the R9 decode-speed overlay flags (grammar_verify_chosen_only, grammar_multitoken_accept, grammar_canvas_lookahead=32) that C0 uses as its control recipe. C1-C4 stay comparable to C0 anyway because compiler_decode_mode (forced/restricted/tree) substitutes for those flags (forwards_count_mean 9.0-14.5, close to C0's 13.5, confirmed by re-reading the already-committed docs/design/perf-matrix-results.json). C5-C8 leave compiler_decode_mode at its default 'off', so they fall back to the full per-token grammar-constrained LTR/MaskGIT path without the R9 speed levers: forwards_count_mean jumps to 103.25-114.0, an 8x-9x increase over C0's 13.5. A raw C5-C8-vs-C0 latency comparison would therefore conflate 'R9 levers absent' with 'the C5-C8 lever itself does something', so this session built two ad hoc matched controls (same base recipe, target lever off) reusing scripts.run_perf_matrix.PerfExperiment/run_one/_load_prompts directly (no new CLI, no shadow harness) to isolate each C5-C8 lever's own effect.",
+    "not_fixed": "Whether scripts/run_perf_matrix.py's C5-C8 definitions *should* carry the R9 overlay (to match C0 as originally intended) is left open -- a semantics decision for improve-openui-harnesses, not made here."
+  },
+  "recipe": {
+    "checkpoint": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+    "checkpoint_note": "committed compositional-tokenizer demo checkpoint (not lexer-native); same checkpoint used by the prior C0-C4 run in perf-matrix-results.json",
+    "suite": "smoke",
+    "prompts_source": "outputs/data/eval/v1/smoke/records.jsonl absent on this host -> canonical _load_prompts fallback to src/slm_training/resources/test_seeds.jsonl",
+    "n": 4,
+    "warmup": 1,
+    "device": "cpu",
+    "env_fix": "NODE_OPTIONS in this session's shell defaults to '--import tsx --max-old-space-size=8192', which the openui_bridge Node subprocess rejects ('--import tsx is not allowed in NODE_OPTIONS'); cleared to '' (or '--max-old-space-size=8192' for pytest) for every command below -- a session/environment quirk, not a code bug"
+  },
+  "official_matrix_run": {
+    "command": "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=$PWD/src/apps/openui_bridge/cli.mjs AGENTV_RUNNER=$PWD/scripts/run_agentv_eval.mjs python -m scripts.run_perf_matrix --only C0,C5,C6,C7,C8 --limit 4 --warmup 1 --out-dir outputs/runs/e648-perf-c5c8-20260721 --docs-out /tmp/.../e648_perf_matrix_results.json",
+    "results": {
+      "C0": {"description": "R9 full-vocabulary control", "latency_ms_mean": 809.65, "latency_ms_p50": 795.52, "latency_ms_p95": 876.87, "forwards_count_mean": 13.5, "parse_rate": 0.0, "raw_syntax_rate": 0.0, "placeholder_fidelity": 0.0},
+      "C5": {"description": "grammar_equivalence_cache", "latency_ms_mean": 1295.78, "latency_ms_p50": 1291.17, "latency_ms_p95": 1329.98, "forwards_count_mean": 114.0, "parse_rate": 0.0, "raw_syntax_rate": 0.0, "placeholder_fidelity": 0.0},
+      "C6": {"description": "C5 + grammar_active_symbol_bitsets", "latency_ms_mean": 1339.61, "latency_ms_p50": 1314.31, "latency_ms_p95": 1388.49, "forwards_count_mean": 114.0, "parse_rate": 0.0, "raw_syntax_rate": 0.0, "placeholder_fidelity": 0.0},
+      "C7": {"description": "grammar_completion_bounds + compact_active_canvas, MaskGIT primary", "latency_ms_mean": 2374.36, "latency_ms_p50": 1670.83, "latency_ms_p95": 3646.70, "forwards_count_mean": 103.25, "parse_rate": 0.25, "raw_syntax_rate": 0.5, "placeholder_fidelity": 0.0},
+      "C8": {"description": "C5+C6+C7 combined, MaskGIT primary", "latency_ms_mean": 2344.58, "latency_ms_p50": 1586.56, "latency_ms_p95": 3766.95, "forwards_count_mean": 103.25, "parse_rate": 0.25, "raw_syntax_rate": 0.5, "placeholder_fidelity": 0.0}
+    },
+    "guardrails": "all five rows fail: C0 itself is 'invalid zero-quality baseline; not promotable' (parse_rate=0.0, same pre-existing compositional-tokenizer limitation already documented for the C1-C4 run), so C5/C6/C7/C8 inherit 'invalid P0 quality anchor; candidate is not promotable' by construction -- not a new problem, and not something this session's scope fixes.",
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "executionErrors": 0}
+  },
+  "matched_control_run": {
+    "purpose": "isolate each C5-C8 lever from the R9-composition gap by comparing against a same-base, lever-off control using the identical smoke prompts (via the canonical _load_prompts helper, corrected after a first attempt mistakenly used a hand-written prompt list that did not match the official run and produced a since-discarded spurious 'C7 regresses parse rate' reading)",
+    "command": "ad hoc script (scratchpad, not committed) importing scripts.run_perf_matrix.PerfExperiment/run_one/_load_prompts unmodified -- reuses the canonical harness, adds no new CLI/mechanism",
+    "results": {
+      "C5CTRL_bare_ltr": {"latency_ms_mean": 1286.85, "latency_ms_p50": 1268.18, "latency_ms_p95": 1332.17, "forwards_count_mean": 114.0, "parse_rate": 0.0, "raw_syntax_rate": 0.0, "placeholder_fidelity": 0.0},
+      "C5_vs_C5CTRL": {"latency_delta_pct": 0.69, "forwards_delta": 0.0, "quality_delta": 0.0, "read": "no measurable effect at n=4; delta is within CPU-timing noise"},
+      "C6_vs_C5": {"latency_delta_pct": 3.38, "forwards_delta": 0.0, "quality_delta": 0.0, "read": "C6 (adding active-symbol bitsets) is marginally slower than C5 alone at n=4, not faster; no forwards/quality change"},
+      "C7CTRL_bare_maskgit": {"latency_ms_mean": 2452.59, "latency_ms_p50": 1912.10, "latency_ms_p95": 3927.22, "forwards_count_mean": 103.25, "parse_rate": 0.25, "raw_syntax_rate": 0.5, "placeholder_fidelity": 0.0},
+      "C7_vs_C7CTRL": {"latency_delta_pct": -3.19, "forwards_delta": 0.0, "quality_delta": 0.0, "read": "no measurable effect on forwards_count_mean or quality; latency delta is within noise (median/p95 both swing the other direction: C7 p50 1670.83 < C7CTRL p50 1912.10, but C7 p95 3646.70 < C7CTRL p95 3927.22, inconsistent with a real forwards-count-driven speedup since forwards_count_mean is identical)"},
+      "C8_vs_C7": {"latency_delta_pct": -1.25, "forwards_delta": 0.0, "quality_delta": 0.0, "read": "combining all four levers (C8) does not measurably improve on C7 alone at n=4"}
+    }
+  },
+  "verdict": "C5-C8 now have real measured numbers for the first time (previously 'proposed, unrun'). Two things established: (1) a real methodology gap -- C5-C8's PerfExperiment definitions do not carry the R9 overlay flags C0 does, so raw C5-C8-vs-C0 latency comparisons conflate 'R9 absent' (8-9x more forwards) with the C5-C8 lever's own effect; flagged, not fixed here, since deciding the intended composition is a harness-design call. (2) once each lever is measured against a matched same-recipe control (identical prompts, identical base flags, only the lever under test toggled), none of C5 (equivalence cache), C6 (+ active-symbol bitsets), or C7 (completion bounds + compact canvas) show a measurable change in forwards_count_mean or quality metrics at n=4; latency deltas are all within a few percent and do not agree in sign across p50/p95, consistent with CPU-timing noise rather than a real effect. C8 (the combined stack) does not measurably improve on C7 alone either. This is a negative but genuine result for the specific claim 'C5-C8 give a measurable speedup at this scale' -- distinct from, and additional to, the pre-existing (already documented for C1-C4) fact that this checkpoint's zero-parse/zero-fidelity C0 anchor makes any guardrail-pass/promotion claim impossible regardless.",
+  "decision": "No promotion, no default change (all four flags stay default-off: grammar_equivalence_cache/grammar_active_symbol_bitsets/grammar_completion_bounds default False; compact_active_canvas stays default True as it already was). No checkpoint trained, promoted, or synced. No source code touched this session (ad hoc measurement scripts stayed in scratchpad, not committed) -- no version_stamp component bump applies.",
+  "incidental_finding_not_fixed": {
+    "summary": "Attempting a combined C0-C8 re-run (to refresh docs/design/perf-matrix-results.json in place per the documenting-experiment-results skill's artifact map) surfaced a real, previously-undocumented crash: with compiler_decode_mode='forced' (C1) and warmup>=1, model.generate() (the batched warmup path, distinct from generate_with_stats() used by the scored main loop) raises AttributeError: 'OpenUITokenizer' object has no attribute 'kind_ids' from compiler_draft.py::_binder_scope -> build_completion_forest -> _compiler_ltr_decode_batch -> _greedy_ltr_decode_batch -> generate_batch -> generate (src/slm_training/models/twotower.py:8623/7638/8055/9178/10666; src/slm_training/dsl/grammar/fastpath/compiler_draft.py:256/281/844). The previously-committed C0-C4 result (perf-matrix-results.json) used --warmup 0 and never exercises this code path, so the bug was silent there. Not investigated or fixed here (out of this session's scope: a runtime-generate-path bug is a separate, larger change from executing the already-implemented C5-C8 rows); docs/design/perf-matrix-results.json was left untouched (the crash occurred before the script's final write, so no corruption happened) to preserve its valid C0-C4 evidence.",
+    "reproduction": "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=... AGENTV_RUNNER=... python -m scripts.run_perf_matrix --only C0,C1 --limit 4 --warmup 1 --out-dir <tmp>"
+  },
+  "next_step": "1) A genuine C5-C8-vs-C0 speedup claim needs either (a) C5-C8 definitions extended with the R9 overlay flags to match C0's recipe (a scripts/run_perf_matrix.py change, route through improve-openui-harnesses), or (b) a new dedicated bare-LTR/bare-MaskGIT control formally registered in the matrix (this session's ad hoc C5CTRL/C7CTRL, informal only). 2) At n=4 none of the four levers show a measurable effect; before investing further, scale to the full smoke suite (n=16, the whole of test_seeds.jsonl) or a real eval suite via outputs/data/eval/v1 to reduce noise before concluding the levers are inert. 3) The checkpoint's zero-parse/zero-fidelity C0/C5/C6 anchor (compositional tokenizer, not lexer-native) remains the pre-existing, already-documented blocker (perf-experiment-matrix.md's own C1-C4 section) for any promotion claim on this family; unrelated to C5-C8 specifically and out of this session's scope.",
+  "commands_run": [
+    "NODE_OPTIONS=\"\" node src/apps/openui_bridge/cli.mjs --help  # confirm bridge works once NODE_OPTIONS's --import tsx is cleared",
+    "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=$PWD/src/apps/openui_bridge/cli.mjs AGENTV_RUNNER=$PWD/scripts/run_agentv_eval.mjs python -m scripts.run_perf_matrix --only C0,C5,C6,C7,C8 --limit 4 --warmup 1 --out-dir outputs/runs/e648-perf-c5c8-20260721 --docs-out <scratchpad>/e648_perf_matrix_results.json",
+    "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=... AGENTV_RUNNER=... python <scratchpad>/e648_bare_control2.py  # matched C5CTRL/C7CTRL controls using the same _load_prompts smoke set",
+    "NODE_OPTIONS=--max-old-space-size=8192 python -m pytest -q tests/test_scripts/test_perf_matrix.py",
+    "python -m scripts.verify_version_stamps --check"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9cc2f51ce35287ddfdabc8c4a40d12a94e6da8de",
+    "code_dirty": false,
+    "components": {}
+  }
+}
