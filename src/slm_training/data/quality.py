@@ -107,7 +107,10 @@ def _component_phrases() -> tuple[tuple[str, str, "re.Pattern[str]"], ...]:
         # as "the Buttons component" are resolved separately by the exact matcher.
         if name.endswith("s") and name[:-1] in names:
             continue
-        rows.append((name, re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()))
+        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
+        if phrase.endswith("s") and not phrase.endswith("series"):
+            phrase = phrase[:-1]
+        rows.append((name, phrase))
     rows.sort(key=lambda item: len(item[1]), reverse=True)
     return tuple(
         (name, phrase, re.compile(rf"\b{re.escape(phrase)}s?\b"))
@@ -121,7 +124,7 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     normalized = re.sub(r"[^a-z0-9]+", " ", prose.lower()).strip()
     occupied: list[tuple[int, int]] = []
     found: set[str] = set()
-    for name, _phrase, matcher in _component_phrases():
+    for name, phrase, matcher in _component_phrases():
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
@@ -291,7 +294,7 @@ def _prompt_component_requirements(
     normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
     occupied: list[tuple[int, int]] = []
     required: dict[str, int] = {}
-    for name, _phrase, matcher in _component_phrases():
+    for name, phrase, matcher in _component_phrases():
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
@@ -333,6 +336,8 @@ def _prompt_component_requirements(
                     if count_match.group(1).isdigit()
                     else 1,
                 )
+            if name.endswith("s") and match.group(0) == phrase:
+                count = 1
             if preserve_repeated_mentions:
                 required[name] = required.get(name, 0) + count
             else:

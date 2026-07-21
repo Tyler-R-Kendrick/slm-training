@@ -407,12 +407,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.4.0",
+      "version": "2.5.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.5.0",
+          "date": "2026-07-21",
+          "note": "E684: recognize schema plural component families through singular prose forms while preserving one container for singular compound mentions"
+        },
         {
           "version": "2.4.0",
           "date": "2026-07-21",
@@ -599,6 +604,11 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.4.0 to 2.5.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -1559,7 +1569,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v137",
+      "version": "v138",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1574,6 +1584,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v138",
+          "date": "2026-07-21",
+          "note": "E684: derive singular prompt matches for plural schema component families without multiplying singular compound containers"
+        },
         {
           "version": "v137",
           "date": "2026-07-21",

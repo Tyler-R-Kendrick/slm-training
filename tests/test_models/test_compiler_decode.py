@@ -1564,6 +1564,17 @@ def test_role_obligations_partition_hero_roles_into_schema_carriers() -> None:
     }
 
 
+def test_prompt_semantic_plan_recognizes_one_plural_family_container() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Two-tab panel with an introductory heading and details content."
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == ["Tabs"]
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

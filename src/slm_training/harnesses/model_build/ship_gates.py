@@ -68,7 +68,7 @@ MEANINGFUL_METRIC_POLICY = {
         "thresholds": "DEFAULT_SHIP_GATES",
     },
     "binding_aware_meaningful_v2": {
-        "version": "2.4.0",
+        "version": "2.5.0",
         "thresholds": None,
         "status": "candidate_pending_calibration",
     },
