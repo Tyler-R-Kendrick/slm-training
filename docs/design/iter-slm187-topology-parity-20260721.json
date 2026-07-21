@@ -1,0 +1,8486 @@
+{
+  "cases": [
+    {
+      "case_id": "doc_root",
+      "description": "active document root",
+      "parity_ok": false,
+      "runtime_domain": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        }
+      ],
+      "runtime_filtered_domain": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        }
+      ],
+      "runtime_only": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        }
+      ],
+      "shared": [],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "96e388395a40867f8bfbb2ea27808258258b7c3dc8116f8f4bb7a5a6dea0674d",
+        "tree": {
+          "active": true,
+          "children": [],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "b2109590d062ea35f9c04f5698d3c5ff6c067fc0ac0713e863f9cd39d113a014"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "doc_statement",
+      "description": "document root -> active statement",
+      "parity_ok": false,
+      "runtime_domain": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 2
+        }
+      ],
+      "runtime_filtered_domain": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 2
+        }
+      ],
+      "runtime_only": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 2
+        }
+      ],
+      "shared": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        }
+      ],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "STOP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 1,
+          "production_id": 5,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "a3538b964f6cc91c25e12e75515d51c5af66b85dd2a7f8ade047aa3f9fb3e3f4",
+        "tree": {
+          "active": true,
+          "children": [
+            {
+              "active": true,
+              "children": [],
+              "depth": 1,
+              "node_id": 1,
+              "node_type": "statement",
+              "parent_id": 0,
+              "production_id": 5,
+              "sibling_index": 0,
+              "slot_id": 0
+            }
+          ],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "db429c95578274b14a94241504df6311b7f3671fb160c29e049df33165fbd2f7"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "stmt_component",
+      "description": "resolved statement -> active component",
+      "parity_ok": true,
+      "runtime_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": -1,
+          "slot_id": 0
+        }
+      ],
+      "runtime_filtered_domain": [],
+      "runtime_only": [],
+      "shared": [],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "27a8fff5f0b910127b4d2d7478bd0e683ed1b42bfc64b3b339ef5080298f0bb1",
+        "tree": {
+          "active": false,
+          "children": [
+            {
+              "active": false,
+              "children": [
+                {
+                  "active": true,
+                  "children": [],
+                  "depth": 2,
+                  "node_id": 2,
+                  "node_type": "expression",
+                  "parent_id": 1,
+                  "production_id": 15,
+                  "sibling_index": 0,
+                  "slot_id": 0
+                }
+              ],
+              "depth": 1,
+              "node_id": 1,
+              "node_type": "statement",
+              "parent_id": 0,
+              "production_id": 5,
+              "sibling_index": 0,
+              "slot_id": 0
+            }
+          ],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "24dc20e5cd5ce2cd04b87631c87d8dc54967de0e3dcd7c595818c080b66b34f9"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "component_list",
+      "description": "component -> active list",
+      "parity_ok": false,
+      "runtime_domain": [
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        }
+      ],
+      "runtime_filtered_domain": [
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        }
+      ],
+      "runtime_only": [
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        }
+      ],
+      "shared": [
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        }
+      ],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "0786531f1b4c3a2a592c1af3a359334d8787942ddad319a5a42ef1fb6b252b24",
+        "tree": {
+          "active": false,
+          "children": [
+            {
+              "active": false,
+              "children": [
+                {
+                  "active": false,
+                  "children": [
+                    {
+                      "active": true,
+                      "children": [],
+                      "depth": 3,
+                      "node_id": 3,
+                      "node_type": "list",
+                      "parent_id": 2,
+                      "production_id": 11,
+                      "sibling_index": 0,
+                      "slot_id": 0
+                    }
+                  ],
+                  "depth": 2,
+                  "node_id": 2,
+                  "node_type": "expression",
+                  "parent_id": 1,
+                  "production_id": 15,
+                  "sibling_index": 0,
+                  "slot_id": 0
+                }
+              ],
+              "depth": 1,
+              "node_id": 1,
+              "node_type": "statement",
+              "parent_id": 0,
+              "production_id": 5,
+              "sibling_index": 0,
+              "slot_id": 0
+            }
+          ],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "4323bd69e850bf9dc9e0678715b60c6094ce65210272ad3272aa4cf1cc15170e"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "leaf_slot",
+      "description": "leaf node with slot binding",
+      "parity_ok": true,
+      "runtime_domain": [
+        {
+          "action": "CONTRACT",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": -2,
+          "slot_id": 0
+        },
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 4,
+          "production_id": -1,
+          "slot_id": 0
+        }
+      ],
+      "runtime_filtered_domain": [],
+      "runtime_only": [],
+      "shared": [],
+      "solver_domain": [],
+      "solver_only": [],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "a52c2846b9b492770ff719ba3740c218a27b60e6f3c4300520261ef5e70df6f8",
+        "tree": {
+          "active": false,
+          "children": [
+            {
+              "active": false,
+              "children": [
+                {
+                  "active": false,
+                  "children": [
+                    {
+                      "active": false,
+                      "children": [
+                        {
+                          "active": true,
+                          "children": [],
+                          "depth": 4,
+                          "node_id": 4,
+                          "node_type": "leaf",
+                          "parent_id": 3,
+                          "production_id": 12,
+                          "sibling_index": 0,
+                          "slot_id": 1
+                        }
+                      ],
+                      "depth": 3,
+                      "node_id": 3,
+                      "node_type": "list",
+                      "parent_id": 2,
+                      "production_id": 11,
+                      "sibling_index": 0,
+                      "slot_id": 0
+                    }
+                  ],
+                  "depth": 2,
+                  "node_id": 2,
+                  "node_type": "expression",
+                  "parent_id": 1,
+                  "production_id": 15,
+                  "sibling_index": 0,
+                  "slot_id": 0
+                }
+              ],
+              "depth": 1,
+              "node_id": 1,
+              "node_type": "statement",
+              "parent_id": 0,
+              "production_id": 5,
+              "sibling_index": 0,
+              "slot_id": 0
+            }
+          ],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "0daf1e3aa77d6370e52c123b8ed3f179bac50adc2f82176b97abd6e2e10adad7"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "fragment_root",
+      "description": "fragment output marker root (document fallback)",
+      "parity_ok": false,
+      "runtime_domain": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        }
+      ],
+      "runtime_filtered_domain": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        }
+      ],
+      "runtime_only": [
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 1,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 2,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 3,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        }
+      ],
+      "shared": [],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 0,
+          "production_id": 1,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "96e388395a40867f8bfbb2ea27808258258b7c3dc8116f8f4bb7a5a6dea0674d",
+        "tree": {
+          "active": true,
+          "children": [],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "b2109590d062ea35f9c04f5698d3c5ff6c067fc0ac0713e863f9cd39d113a014"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "max_depth_leaf",
+      "description": "leaf at topology_max_depth boundary",
+      "parity_ok": false,
+      "runtime_domain": [
+        {
+          "action": "CONTRACT",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": -2,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        }
+      ],
+      "runtime_filtered_domain": [
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        }
+      ],
+      "runtime_only": [
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 1,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 5,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        }
+      ],
+      "shared": [
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        }
+      ],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "6f47b039004438a516b8385bc628c3ca9511ee627cf69f060ae881fa6a01f128",
+        "tree": {
+          "active": false,
+          "children": [
+            {
+              "active": false,
+              "children": [
+                {
+                  "active": false,
+                  "children": [
+                    {
+                      "active": true,
+                      "children": [],
+                      "depth": 3,
+                      "node_id": 3,
+                      "node_type": "leaf",
+                      "parent_id": 2,
+                      "production_id": 12,
+                      "sibling_index": 0,
+                      "slot_id": 0
+                    }
+                  ],
+                  "depth": 2,
+                  "node_id": 2,
+                  "node_type": "expression",
+                  "parent_id": 1,
+                  "production_id": 15,
+                  "sibling_index": 0,
+                  "slot_id": 0
+                }
+              ],
+              "depth": 1,
+              "node_id": 1,
+              "node_type": "statement",
+              "parent_id": 0,
+              "production_id": 5,
+              "sibling_index": 0,
+              "slot_id": 0
+            }
+          ],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "60d994511b75b95321845f0f56f444b4c7429e4a772a1edc17eb7a109125a3b0"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    },
+    {
+      "case_id": "sibling_choices",
+      "description": "two active sibling expressions",
+      "parity_ok": true,
+      "runtime_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": -1,
+          "slot_id": 0
+        },
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": -1,
+          "slot_id": 0
+        }
+      ],
+      "runtime_filtered_domain": [],
+      "runtime_only": [],
+      "shared": [],
+      "solver_domain": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        }
+      ],
+      "solver_only": [
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 2,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "DELETE",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 4,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 6,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 7,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 9,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 11,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 12,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 13,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 1,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 2,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 3,
+          "node_id": 3,
+          "production_id": 15,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 16,
+          "slot_id": 2
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 0
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 1
+        },
+        {
+          "action": "EXPAND",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 17,
+          "slot_id": 2
+        },
+        {
+          "action": "KEEP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        },
+        {
+          "action": "STOP",
+          "arity": 0,
+          "node_id": 3,
+          "production_id": 10,
+          "slot_id": 0
+        }
+      ],
+      "state_v2": {
+        "bounds": {
+          "max_backtracks": 0,
+          "max_depth": 4,
+          "max_nodes": 8,
+          "max_tokens": 512,
+          "max_verifier_calls": 0
+        },
+        "constraint_version": "v2",
+        "output_kind": "document",
+        "pack_id": "openui",
+        "phase": 0,
+        "problem_id": "topology",
+        "schema": "TopologyStateV2",
+        "slot_inventory": [
+          ":hero.title",
+          ":hero.body"
+        ],
+        "state_fingerprint": "c910572504762b7a9bc0219b21c8a4401b8b34894b3c102b2308fd549d401329",
+        "tree": {
+          "active": false,
+          "children": [
+            {
+              "active": false,
+              "children": [
+                {
+                  "active": true,
+                  "children": [],
+                  "depth": 2,
+                  "node_id": 2,
+                  "node_type": "expression",
+                  "parent_id": 1,
+                  "production_id": 15,
+                  "sibling_index": 0,
+                  "slot_id": 0
+                },
+                {
+                  "active": true,
+                  "children": [],
+                  "depth": 2,
+                  "node_id": 3,
+                  "node_type": "expression",
+                  "parent_id": 1,
+                  "production_id": 10,
+                  "sibling_index": 1,
+                  "slot_id": 0
+                }
+              ],
+              "depth": 1,
+              "node_id": 1,
+              "node_type": "statement",
+              "parent_id": 0,
+              "production_id": 5,
+              "sibling_index": 0,
+              "slot_id": 0
+            }
+          ],
+          "depth": 0,
+          "node_id": 0,
+          "node_type": "document",
+          "parent_id": -1,
+          "production_id": 1,
+          "sibling_index": 0,
+          "slot_id": 0
+        },
+        "tree_fingerprint": "44c0fa33c5d39dceab7e444fd9f0d0eff544496930da2c57e490bccc4712134e"
+      },
+      "terminal_error": "tree_not_solved",
+      "terminal_text": null,
+      "terminal_valid": false
+    }
+  ],
+  "claim_class": "wiring",
+  "disposition": "parity_gap",
+  "disposition_rationale": "114 runtime EXPAND/KEEP tuple(s) are missing from the solver domain. The hard state or adapter enumeration needs repair before topology intermediates can be used for Markov/CTMC training.",
+  "experiment_id": "slm187-topology-parity",
+  "falsifier": "An exhaustive fixture over bounded topology states finds a runtime-committable EXPAND or KEEP edit that is missing from the solver domain, or a solver-domain edit whose successor fingerprint differs from the runtime's successor.",
+  "honest_caveats": [
+    "Fixture-only wiring evidence: no trained model, checkpoint, or GPU run is involved.",
+    "Runtime proposal logic is mirrored torch-free for comparison; small discrepancies with the live grammar_diffusion.py path are reported as parity gaps, not fixed silently.",
+    "DELETE and CONTRACT proposals are intentionally outside the finite edit domain in the current runtime (production_id < 0 bypasses solver filtering); the oracle treats them as a separate contract.",
+    "STOP is a solver-domain structural action that the runtime does not currently emit; this asymmetry is surfaced, not suppressed.",
+    "Multi-step terminal traces are validated with the DSL parser; a parse failure is reported honestly rather than treated as parity success."
+  ],
+  "hypothesis": "The topology finite-domain solver state carries enough resolved tree and context information to reconstruct every successor, and the solver's enumerated edit domain contains every edit the runtime can commit for the actions that participate in solver filtering (EXPAND/KEEP).",
+  "matrix_set": "slm187_topology_parity",
+  "matrix_version": "ffe1-01-v1",
+  "n_cases": 8,
+  "n_parity_ok": 3,
+  "n_runtime_only": 114,
+  "n_solver_only": 255,
+  "run_id": "slm187-topology-parity-20260721",
+  "schema": "TopologyParityReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T00:55:30.234894Z",
+  "version_stamp": {
+    "code_commit": "3aceb98e48ae82b951227821d685623b3f9cc545",
+    "code_dirty": true,
+    "components": {
+      "dsl.solver.topology": "v1",
+      "harness.experiments": "v51",
+      "harness.experiments.slm187_topology_parity": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T00:55:30.228617+00:00"
+  }
+}

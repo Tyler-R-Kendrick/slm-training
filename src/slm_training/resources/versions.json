@@ -24,6 +24,21 @@
         {
           "version": "v32",
           "date": "2026-07-20",
+          "note": "no-bump: describe E637's model-side pre-content string routing (briefly labeled E633, renumbered -- see docs/design/quality-experiment-matrix.md numbering note) in existing schema-opaque CLI help without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
+          "note": "no-bump: restore the original schema-opaque CLI description when rejecting E632 without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
+          "note": "no-bump: align schema-opaque CLI help with the expanded model-side non-content string policy without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
           "note": "no-bump: describe the expanded model-side slot coverage closure policy in CLI help without changing evaluation plumbing"
         },
         {
@@ -439,6 +454,11 @@
       "history": [
         {
           "version": "v12",
+          "date": "2026-07-21",
+          "note": "no-bump: SLM-186 adds new Goodhart canary slices to metric_gaming.py; existing slice scoring unchanged"
+        },
+        {
+          "version": "v12",
           "date": "2026-07-20",
           "note": "wire default-off render_equivalence surrogate into task_scoreboard; RENDER_EQUIVALENCE_MODE remains off"
         },
@@ -680,12 +700,22 @@
       ]
     },
     "harness.experiments": {
-      "version": "v50",
+      "version": "v51",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v51",
+          "date": "2026-07-21",
+          "note": "add SLM-187 FFE1-01 topology solver/runtime transition parity wiring/fixture harness"
+        },
+        {
+          "version": "v50",
+          "date": "2026-07-21",
+          "note": "no-bump: add SLM-186 FFE0-04 verified-utility sub-harness; no change to existing experiment harness behavior"
+        },
         {
           "version": "v50",
           "date": "2026-07-20",
@@ -1447,7 +1477,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v68",
+      "version": "v75",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1462,6 +1492,41 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v75",
+          "date": "2026-07-20",
+          "note": "E638 rejection (was main's v72, and briefly labeled E634 before this branch's second post-merge renumbering pass -- collided with this branch's own, different E634 above): restore v73 early pre-content routing after final-boundary enforcement collapsed Auth to TextContent and regressed every aggregate quality metric"
+        },
+        {
+          "version": "v74",
+          "date": "2026-07-20",
+          "note": "E638 (was main's v71, briefly E634): split pre-content literal routing from optional opaque penalties and apply it after repeated-slot margins at the final active-property decision boundary"
+        },
+        {
+          "version": "v73",
+          "date": "2026-07-20",
+          "note": "E637 r2 rejection (was main's v70, briefly E633 r2 rejection -- collided with this branch's own, different E633 above): restore v71 repeated-slot behavior after property-level restriction collapsed Auth to TextContent and regressed every aggregate quality metric"
+        },
+        {
+          "version": "v72",
+          "date": "2026-07-20",
+          "note": "E637 r2 (was main's v69, briefly E633 r2): apply repeated-instance distinct-slot margin only at direct placeholder-annotated component properties so it cannot override pre-content operational string routing"
+        },
+        {
+          "version": "v71",
+          "date": "2026-07-20",
+          "note": "E637 (was main's v68, briefly E633 -- collided with this branch's own, different E633 above; see docs/design/quality-experiment-matrix.md numbering note): when a required operational string is immediately followed by a visible-content property, floor the legal empty literal above visible slots at only that active property boundary"
+        },
+        {
+          "version": "v70",
+          "date": "2026-07-20",
+          "note": "E632 rejection (was main's v67): restore v68 optional-empty-only schema opaque behavior after required non-content string penalties removed Input inventory and regressed every continuous aggregate metric"
+        },
+        {
+          "version": "v69",
+          "date": "2026-07-20",
+          "note": "E632 (was main's v66): extend schema_opaque_decode_weight to penalize visible slots in required or optional non-content string arguments while preserving content-annotated properties"
+        },
         {
           "version": "v68",
           "date": "2026-07-20",
@@ -3119,6 +3184,92 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
+        }
+      ]
+    },
+    "evals.semantic_bits": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/semantic_bits.py",
+        "tests/test_evals/test_semantic_bits.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 compiler_state_conditional_bits and verified-utility efficiency helpers"
+        }
+      ]
+    },
+    "evals.verified_utility": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/verified_utility.py",
+        "tests/test_evals/test_verified_utility.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 VerifiedUtilityV1 schema, scalar/lexicographic ranking, pareto, CVaR, abstention economics, sensitivity, and canonical-equivalence helpers"
+        }
+      ]
+    },
+    "harness.experiments.slm186_verified_utility": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm186_verified_utility.py",
+        "scripts/run_verified_utility_audit.py",
+        "tests/test_harnesses/experiments/test_slm186_verified_utility.py",
+        "tests/test_scripts/test_run_verified_utility_audit.py",
+        "docs/design/iter-slm186-verified-utility-20260721.json",
+        "docs/design/iter-slm186-verified-utility-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 FFE0-04 verified-utility ladder and Goodhart canary audit wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm187_topology_parity": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm187_topology_parity.py",
+        "scripts/run_slm187_topology_parity_fixture.py",
+        "tests/test_harnesses/experiments/test_slm187_topology_parity.py",
+        "tests/test_scripts/test_run_slm187_topology_parity_fixture.py",
+        "docs/design/iter-slm187-topology-parity-20260721.json",
+        "docs/design/iter-slm187-topology-parity-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-187 FFE1-01 topology solver/runtime transition parity oracle, TopologyStateV2 carrier, and fixture harness"
+        }
+      ]
+    },
+    "dsl.solver.topology": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/solver/topology_adapter.py",
+        "src/slm_training/dsl/solver/topology_solver.py",
+        "tests/test_dsl/test_topology_adapter.py",
+        "tests/test_dsl/test_topology_solver.py",
+        "docs/design/verified-scope-solver.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; VSS3-03 topology finite-domain adapter/solver seam (referenced by SLM-187 parity fixture; no behavior change in this commit)"
         }
       ]
     }

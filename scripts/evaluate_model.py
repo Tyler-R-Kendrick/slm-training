@@ -221,7 +221,10 @@ def main(argv: list[str] | None = None) -> int:
         "--schema-opaque-decode-weight",
         type=float,
         default=None,
-        help="Penalize visible placeholders in optional unconstrained arguments.",
+        help=(
+            "Keep visible placeholders out of optional unconstrained arguments "
+            "and required string arguments immediately before a content property."
+        ),
     )
     parser.add_argument(
         "--schema-enum-close-decode-weight",

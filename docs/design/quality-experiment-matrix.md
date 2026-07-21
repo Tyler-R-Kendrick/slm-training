@@ -4604,3 +4604,52 @@ Input property-role assignment. No ship claim.
 Evidence:
 [iter-e631-frame-aware-owner-escape-20260720.md](iter-e631-frame-aware-owner-escape-20260720.md)
 and [JSON](iter-e631-frame-aware-owner-escape-20260720.json).
+
+## E632 broad non-content string slot penalty
+
+E632 generalized the schema-opaque slot penalty to required non-content string
+properties, targeting E631's `Input.name` role mismatch. On the exact E631 OOD
+`n=4` recipe, the policy removed both Auth Inputs and emitted repeated raw slots
+instead. Strict v2 stayed zero; fidelity, validity, structure, component recall,
+reward, and AST F1 all regressed, while p95 increased from 6394.56 to 11959.96
+ms. Reject and revert as model v67; no checkpoint or ship claim.
+
+Evidence:
+[iter-e632-input-role-assignment-20260720.md](iter-e632-input-role-assignment-20260720.md)
+and [JSON](iter-e632-input-role-assignment-20260720.json).
+
+## E637 active Input role routing
+
+Numbering note: this was main's own "E633" before this branch's second
+post-merge renumbering pass — it collided with this branch's own, different
+E633 ("typed-object slot roles", above), which was already itself a renumbered
+entry from the first merge pass. Renumbered to the next free slot (E637) rather
+than overwriting either prior E633; no content changed.
+
+E637 floors a legal literal only when a required operational string directly
+precedes a placeholder-annotated content property. The authoritative r3 exactly
+preserves E631's OOD `n=4` aggregate scoreboard and changes one bad Input-name
+slot to an empty literal, but another Input-name mismatch remains and strict v2
+stays zero. A broader r2 restriction on the later repeated-slot margin collapsed
+Auth to TextContent and was reverted. Retain v70 default-off as partial evidence;
+no checkpoint, promotion, or ship claim.
+
+Evidence:
+[iter-e637-input-active-role-routing-20260720.md](iter-e637-input-active-role-routing-20260720.md)
+and [authoritative JSON](iter-e637-input-active-role-routing-20260720.json).
+
+## E638 final-boundary pre-content routing
+
+Numbering note: this was main's own "E634" before this branch's second
+post-merge renumbering pass — it collided with this branch's own, different
+E634 ("required-slot coverage on an 800-step scratch checkpoint", above).
+Renumbered to the next free slot (E638); no content changed.
+
+E638 moved E637's pre-content literal score after repeated-slot margins. Auth
+collapsed to TextContent, meaningful v1 fell from 0.75 to 0.50, every continuous
+aggregate metric regressed, and p95 rose to 16254.73 ms. Reject v71 and restore
+v70 behavior as v72. No checkpoint or ship claim.
+
+Evidence:
+[iter-e638-final-precontent-routing-20260720.md](iter-e638-final-precontent-routing-20260720.md)
+and [JSON](iter-e638-final-precontent-routing-20260720.json).

@@ -1058,6 +1058,24 @@ def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> 
     assert bias.tolist() == [-4.0, 0.0]
 
 
+def test_schema_opaque_bias_routes_required_precontent_string_to_literal() -> None:
+    from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_opaque_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
+    slot_id = tokenizer.sym_id(0)
+    literal_id = tokenizer.token_to_id[f'{LIT_PREFIX}""']
+    scores = torch.tensor([9.0, 1.0])
+
+    bias = model._schema_opaque_bias(state, (slot_id, literal_id), scores)
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 12.0]
+
+
 def test_schema_enum_close_bias_rewards_only_optional_enum_close() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

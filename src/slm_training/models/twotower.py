@@ -4800,7 +4800,7 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
-        """Discourage visible placeholders in optional unconstrained arguments."""
+        """Keep visible slots out of opaque or pre-content arguments."""
         weight = float(getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
@@ -4808,24 +4808,47 @@ class TwoTowerModel(nn.Module):
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
         index = int(getattr(frame, "arg_index", -1))
-        if (
-            getattr(frame, "kind", None) != "component"
-            or index < int(getattr(frame, "required_args", 0))
-            or index < 0
-            or index >= len(schemas)
-            or schemas[index]
+        if getattr(frame, "kind", None) != "component" or not (
+            0 <= index < len(schemas)
         ):
             return None
-        from slm_training.dsl.production_codec import SLOT_PREFIX
+        from slm_training.dsl.production_codec import LIT_PREFIX, SLOT_PREFIX
 
         bias = scores.new_zeros(len(candidate_ids))
-        applied = False
+        schema = schemas[index]
+        optional_unconstrained = (
+            index >= int(getattr(frame, "required_args", 0)) and not schema
+        )
+        followed_by_content = (
+            schema.get("type") == "string"
+            and not schema.get("x-openui-placeholder")
+            and not self._schema_contains_enum(schema)
+            and index + 1 < len(schemas)
+            and bool(schemas[index + 1].get("x-openui-placeholder"))
+        )
+        if not (optional_unconstrained or followed_by_content):
+            return None
+        slot_positions = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(SLOT_PREFIX)
+        ]
+        if followed_by_content:
+            literal_id = self.tokenizer.token_to_id.get(f"{LIT_PREFIX}\"\"")
+            if literal_id not in candidate_ids or not slot_positions:
+                return None
+            literal_position = candidate_ids.index(literal_id)
+            slot_max = max(float(scores[position].item()) for position in slot_positions)
+            bias[literal_position] = max(
+                0.0,
+                slot_max + weight - float(scores[literal_position].item()),
+            )
+            return bias
         for position, token_id in enumerate(candidate_ids):
             token = str(self.tokenizer.id_to_token.get(token_id, ""))
             if token.startswith(SLOT_PREFIX):
                 bias[position] = -weight
-                applied = True
-        return bias if applied else None
+        return bias if slot_positions else None
 
     def _schema_enum_close_bias(
         self,
