@@ -428,6 +428,7 @@ def run_semantic_floor_gate_fixture(
     synthetic_runs: int = 4,
     n_families: int = 2,
     floor_threshold: float = DEFAULT_FLOOR_THRESHOLD,
+    permutation_seed: int = 11,
     run_id: str | None = None,
 ) -> "SemanticFloorGateReport":
     """Build a SemanticFloorGateV1 fixture report from a SpectralAtlasV1 source.
@@ -435,6 +436,12 @@ def run_semantic_floor_gate_fixture(
     ``n_families`` (default 2, backward-compatible) is forwarded to the
     SLM-215 synthetic generator via ``run_spectral_atlas_fixture``; added for
     SLM-225's family-count power sweep.
+
+    ``permutation_seed`` (default 11, backward-compatible -- matches the prior
+    hardcoded seed) controls only the label-permutation-null baseline's RNG;
+    the underlying synthetic data (seed 42 in SLM-215's generator) and the
+    LOFO gate pipeline are unaffected. Added for SLM-226's permutation-null
+    seed-stability sweep.
     """
     atlas = run_spectral_atlas_fixture(
         reports_dir=reports_dir, synthetic_runs=synthetic_runs, n_families=n_families
@@ -448,7 +455,12 @@ def run_semantic_floor_gate_fixture(
         run_ids, families, matrix_rows_by_run, parse_rate_by_run, floor_threshold
     )
     null_result = _permutation_null(
-        run_ids, families, matrix_rows_by_run, parse_rate_by_run, floor_threshold
+        run_ids,
+        families,
+        matrix_rows_by_run,
+        parse_rate_by_run,
+        floor_threshold,
+        seed=permutation_seed,
     )
     real_balanced_accuracy = _balanced_accuracy(lofo_rows)
     disposition, rationale = _resolve_disposition(lofo_rows, null_result)

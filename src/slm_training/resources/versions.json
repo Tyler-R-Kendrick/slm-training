@@ -3466,6 +3466,11 @@
         {
           "version": "v1",
           "date": "2026-07-21",
+          "note": "no-bump: added an optional, backward-compatible permutation_seed parameter (default 11, unchanged) to run_semantic_floor_gate_fixture, forwarded to the internal permutation-null RNG, so SLM-226's seed-stability sweep can vary only the null baseline while holding synthetic data and the LOFO pipeline fixed; no calibration or disposition logic changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
           "note": "no-bump: added an optional, backward-compatible n_families parameter (default 2, unchanged) to run_semantic_floor_gate_fixture, forwarded to run_spectral_atlas_fixture, so SLM-225's family-count sweep can vary the synthetic generator's family split; no calibration or disposition logic changed"
         },
         {
@@ -3515,6 +3520,25 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-225 NCS0-05 SemanticFloorGateV1 family-count sweep: reruns the unmodified SLM-223 gate pipeline at increasing n_families values (runs-per-family held fixed at 4, using the new SLM-215/SLM-223 n_families parameter) to test the family-count axis SLM-224 could not test"
+        }
+      ]
+    },
+    "harness.experiments.slm226_floor_gate_seed_stability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm226_floor_gate_seed_stability.py",
+        "scripts/build_floor_gate_seed_stability.py",
+        "tests/test_harnesses/experiments/test_slm226_floor_gate_seed_stability.py",
+        "tests/test_scripts/test_build_floor_gate_seed_stability.py",
+        "docs/design/iter-slm226-floor-gate-seed-stability-20260721.json",
+        "docs/design/iter-slm226-floor-gate-seed-stability-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-226 NCS0-06 SemanticFloorGateV1 permutation-null seed-stability sweep: reruns the unmodified SLM-223 gate pipeline at SLM-225's grid points across multiple permutation-null seeds (synthetic data held fixed, using the new SLM-223 permutation_seed parameter) to test whether SLM-225's non-monotonic n_families=8/16 dip is explained by permutation-null sampling noise"
         }
       ]
     },

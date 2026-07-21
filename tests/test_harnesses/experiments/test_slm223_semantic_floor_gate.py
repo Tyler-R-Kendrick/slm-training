@@ -84,6 +84,26 @@ def test_n_families_parameter_controls_family_count() -> None:
     }
 
 
+def test_permutation_seed_default_preserves_prior_hardcoded_seed() -> None:
+    # Backward compatibility: omitting permutation_seed reproduces the exact
+    # permutation-null mean the previously-hardcoded seed=11 produced.
+    default = run_semantic_floor_gate_fixture(synthetic_runs=8, n_families=4)
+    explicit = run_semantic_floor_gate_fixture(synthetic_runs=8, n_families=4, permutation_seed=11)
+    assert default.permutation_null["mean"] == explicit.permutation_null["mean"]
+    assert default.gate_hash == explicit.gate_hash
+
+
+def test_permutation_seed_parameter_changes_null_baseline_only() -> None:
+    seed_a = run_semantic_floor_gate_fixture(synthetic_runs=8, n_families=4, permutation_seed=1)
+    seed_b = run_semantic_floor_gate_fixture(synthetic_runs=8, n_families=4, permutation_seed=2)
+    # The real (non-permuted) LOFO accuracy is unaffected by the permutation seed.
+    assert seed_a.real_balanced_accuracy == seed_b.real_balanced_accuracy
+    # But the permutation-null mean, and therefore the gate hash, may differ.
+    assert seed_a.gate_hash != seed_b.gate_hash or (
+        seed_a.permutation_null["mean"] == seed_b.permutation_null["mean"]
+    )
+
+
 def test_floor_threshold_changes_labels() -> None:
     low = run_semantic_floor_gate_fixture(synthetic_runs=4, floor_threshold=0.0)
     high = run_semantic_floor_gate_fixture(synthetic_runs=4, floor_threshold=2.0)

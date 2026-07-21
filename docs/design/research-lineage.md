@@ -1098,7 +1098,7 @@ is ready for production until it clears its activation gate and produces a
 `POSITIVE` result under ship-gates with durable checkpoints. The synthesis
 renderer labels the report as wiring-grade and does not promote a champion.
 
-## Heavy-tailed spectral checkpoint diagnostics (NCS0-01/02/03/04/05 / SLM-214/215/223/224/225)
+## Heavy-tailed spectral checkpoint diagnostics (NCS0-01/02/03/04/05/06 / SLM-214/215/223/224/225/226)
 
 **Fidelity label: adapted / surrogate.** The NCS0 line borrows the Heavy-Tailed
 Self-Regularization (HTSR) framing — fitting a power-law exponent (`alpha`) to
@@ -1120,14 +1120,24 @@ SLM-225 family-count sweep tests the axis SLM-224 explicitly could not — SLM-2
 synthetic generator gained a backward-compatible `n_families` parameter (default
 2, unchanged for existing callers), and SLM-225 reruns the same unmodified
 SLM-223 gate pipeline while holding runs-per-family fixed at 4 and sweeping
-`n_families` from 2 to 32.
+`n_families` from 2 to 32; and the SLM-226 seed-stability sweep follows up on
+SLM-225's own honest caveat about its non-monotonic result — SLM-225 found the
+margin cleared 0.15 at `n_families=4`/`32` but not at 8/16, and flagged that
+each grid point's permutation-null baseline came from only 20 draws at a
+single fixed seed — SLM-223's `_permutation_null` gained a backward-compatible
+`permutation_seed` parameter (default 11, unchanged), and SLM-226 reruns the
+same unmodified SLM-223 gate pipeline at SLM-225's grid points across 8
+permutation-null seeds (synthetic data held fixed at its existing seed 42),
+finding the dip at `n_families=8`/`16` stable (margin=0.0 std across seeds) —
+ruling out permutation-null sampling noise as the explanation, though
+synthetic-data-seed sensitivity remains untested.
 
 | | |
 | --- | --- |
 | **Lineage** | Heavy-Tailed Self-Regularization / WeightWatcher (Martin, Peng, Mahoney, *Predicting trends in the quality of state-of-the-art neural networks without access to training or testing data*, Nature Communications 2021, [arXiv:2002.06716](https://arxiv.org/abs/2002.06716)); permutation testing for classifier significance; statistical power analysis |
-| **Fidelity** | **Surrogate** — native-PyTorch SVD + Hill alpha stand in for the full WeightWatcher toolchain; SLM-223's gate and the SLM-224/SLM-225 sweeps are fixture-only, calibrated on synthetic or small local rows, and are diagnostic pre-screen artifacts, not a promotion gate |
-| **Code** | `src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py`, `src/slm_training/harnesses/experiments/slm215_spectral_atlas.py`, `src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py`, `src/slm_training/harnesses/experiments/slm224_floor_gate_power_sweep.py`, `src/slm_training/harnesses/experiments/slm225_floor_gate_family_sweep.py` |
-| **Config** | `scripts/inspect_spectral.py`, `scripts/build_spectral_atlas.py`, `scripts/build_semantic_floor_gate.py --floor-threshold`, `scripts/build_floor_gate_power_sweep.py --sweep-grid`, `scripts/build_floor_gate_family_sweep.py --sweep-grid --runs-per-family` |
+| **Fidelity** | **Surrogate** — native-PyTorch SVD + Hill alpha stand in for the full WeightWatcher toolchain; SLM-223's gate and the SLM-224/SLM-225/SLM-226 sweeps are fixture-only, calibrated on synthetic or small local rows, and are diagnostic pre-screen artifacts, not a promotion gate |
+| **Code** | `src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py`, `src/slm_training/harnesses/experiments/slm215_spectral_atlas.py`, `src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py`, `src/slm_training/harnesses/experiments/slm224_floor_gate_power_sweep.py`, `src/slm_training/harnesses/experiments/slm225_floor_gate_family_sweep.py`, `src/slm_training/harnesses/experiments/slm226_floor_gate_seed_stability.py` |
+| **Config** | `scripts/inspect_spectral.py`, `scripts/build_spectral_atlas.py`, `scripts/build_semantic_floor_gate.py --floor-threshold`, `scripts/build_floor_gate_power_sweep.py --sweep-grid`, `scripts/build_floor_gate_family_sweep.py --sweep-grid --runs-per-family`, `scripts/build_floor_gate_seed_stability.py --sweep-grid --seeds` |
 
 **What we took:** per-matrix Hill-estimator alpha and a per-shape randomized-ESD
 null (SLM-214); a leaky-safe atlas join with leave-one-family-out correlation
@@ -1141,7 +1151,11 @@ the LOFO-vs-permutation-null margin ever clears the same 0.15 threshold SLM-223
 used; and for SLM-225, a minimal backward-compatible `n_families` parameter on
 the SLM-215 synthetic generator (threaded through SLM-223's fixture builder)
 plus a sweep harness that holds runs-per-family fixed and varies family count,
-isolating the axis SLM-224 flagged as untested.
+isolating the axis SLM-224 flagged as untested; and for SLM-226, a minimal
+backward-compatible `permutation_seed` parameter on SLM-223's permutation-null
+routine plus a sweep harness that reruns SLM-225's grid across 8 permutation
+seeds per point, isolating null-baseline sampling noise as a candidate
+explanation for SLM-225's non-monotonicity.
 
 **What we did not take:** optional WeightWatcher-parity statistics, any claim
 that a real checkpoint is at risk until run against trained-model telemetry,
@@ -1153,12 +1167,20 @@ family-count power. SLM-225 closes that gap and finds the margin clears 0.15 at
 non-monotonic, family-count-limited result, not a clean trend; SLM-225 did not
 take a combined 2D sweep over both runs-per-family and family-count
 independently (each axis was swept separately, holding the other fixed), and
-draws no causal or promotion conclusion. Evidence:
+draws no causal or promotion conclusion. SLM-226 tests one specific candidate
+explanation for SLM-225's dip — permutation-null sampling noise — and finds it
+does not explain the dip (margin was seed-invariant, std=0.000, at n_families=2,
+8, and 16 in the committed fixture run, and only varied at n_families=32);
+SLM-226 explicitly did not take a synthetic-data-seed sweep (the underlying
+per-run data stays fixed at SLM-215's hardcoded seed 42), so genuine
+non-monotonicity from that axis, or from the fixed data draw itself, remains
+untested and is the natural next follow-up. Evidence:
 [`iter-slm214-spectral-snapshot-20260721.md`](iter-slm214-spectral-snapshot-20260721.md),
 [`iter-slm215-spectral-atlas-20260721.md`](iter-slm215-spectral-atlas-20260721.md),
 [`iter-slm223-semantic-floor-gate-20260721.md`](iter-slm223-semantic-floor-gate-20260721.md),
 [`iter-slm224-floor-gate-power-sweep-20260721.md`](iter-slm224-floor-gate-power-sweep-20260721.md),
-[`iter-slm225-floor-gate-family-sweep-20260721.md`](iter-slm225-floor-gate-family-sweep-20260721.md).
+[`iter-slm225-floor-gate-family-sweep-20260721.md`](iter-slm225-floor-gate-family-sweep-20260721.md),
+[`iter-slm226-floor-gate-seed-stability-20260721.md`](iter-slm226-floor-gate-seed-stability-20260721.md).
 
 ## Honesty rules (for docs & claims)
 
