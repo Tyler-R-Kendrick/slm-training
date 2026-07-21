@@ -5090,3 +5090,18 @@ slightly, and p95 latency nearly doubles. No checkpoint was created or synced.
 Evidence:
 [iter-e650-role-obligation-margin-20260720.md](iter-e650-role-obligation-margin-20260720.md)
 and [JSON](iter-e650-role-obligation-margin-20260720.json).
+
+## E651 semantic root-binding threshold
+
+E651 raised the existing semantic-plan binding weight from E650's 1 to 4 and
+8. Both arms are prediction- and quality-identical to E650 while observed
+latency trends worse. Reject the sweep and retain E650: these runs were stamped
+model.twotower v88, while the rebased retained E650 behavior is v92. The
+remaining Dashboard failure occurs at verified root projection, not
+binding-score selection. No checkpoint was created or synced; AgentV remained
+0/1 in both arms.
+
+Evidence:
+[iter-e651-root-binding-threshold-20260720.md](iter-e651-root-binding-threshold-20260720.md),
+[w4 JSON](iter-e651-root-binding-w4-20260720.json), and
+[w8 JSON](iter-e651-root-binding-w8-20260720.json).
