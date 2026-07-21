@@ -117,9 +117,14 @@ function useMode(featuresReady: boolean): [Mode, (m: Mode) => void] {
 function FreshnessBanner() {
   const [outputsPresent, setOutputsPresent] = useState<boolean | null>(null);
   useEffect(() => {
-    getJSON<{ outputs_present?: boolean }>("/api/system")
-      .then((sys) => setOutputsPresent(sys.outputs_present !== false))
-      .catch(() => setOutputsPresent(null));
+    const refresh = () => {
+      getJSON<{ outputs_present?: boolean }>("/api/system")
+        .then((sys) => setOutputsPresent(sys.outputs_present !== false))
+        .catch(() => setOutputsPresent(null));
+    };
+    refresh();
+    const id = setInterval(refresh, 15000);
+    return () => clearInterval(id);
   }, []);
   if (outputsPresent !== false) return null;
   return (

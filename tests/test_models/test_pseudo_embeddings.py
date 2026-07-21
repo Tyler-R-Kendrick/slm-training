@@ -60,8 +60,6 @@ def test_replace_mode_substitutes_the_learned_pool_row_exactly() -> None:
         delta = features[0, token_id]
         assert torch.any(delta != 0), "replace mode must write a delta"
         effective = weight[token_id] + delta
-        # The effective row is the deterministic byte-compositional vector —
-        # the learned pool row cancels entirely.
         byte_ids = model.tokenizer._encode_bytes(surface)
         composed = weight.index_select(0, torch.tensor(byte_ids)).mean(0)
         assert torch.allclose(effective, composed, atol=1e-6)
@@ -73,8 +71,6 @@ def test_same_surface_means_identical_embedding_across_slots() -> None:
 
     model = _model("replace")
     weight = model.denoiser.tok.weight
-    # The same surface bound to DIFFERENT slots (different examples) yields
-    # the identical effective embedding — referent identity, not slot identity.
     table_a = SymbolTable.from_placeholders(
         [":hero.title", ":hero.body"], max_slots=model.tokenizer.sym_slots
     )
@@ -86,8 +82,48 @@ def test_same_surface_means_identical_embedding_across_slots() -> None:
     assert fa is not None and fb is not None
     eff_a = weight[model.tokenizer.sym_id(0)] + fa[0, model.tokenizer.sym_id(0)]
     eff_b = weight[model.tokenizer.sym_id(1)] + fb[0, model.tokenizer.sym_id(1)]
-    assert torch.allclose(eff_a, eff_b, atol=1e-6)  # both are :hero.title
+    assert torch.allclose(eff_a, eff_b, atol=1e-6)
     model.denoiser.set_runtime_symbol_features(None)
+
+
+def test_slot_component_texts_and_span_priors_ignore_marker_names() -> None:
+    model = _model("none")
+    model._opaque_slot_projection_active = True
+    try:
+        assert model._slot_component_texts([":hero.title", ":cta.label"]) == [
+            "content:0",
+            "content:1",
+        ]
+        assert model._slot_component_texts([":x", ":y"]) == [
+            "content:0",
+            "content:1",
+        ]
+        assert model._slot_role_token(":hero.title") == "content"
+        assert model._slot_role_token(":different.name") == "content"
+    finally:
+        model._opaque_slot_projection_active = False
+
+
+def test_opaque_replace_mode_uses_ordinal_not_marker_spelling() -> None:
+    from slm_training.models.dsl_tokenizer import SymbolTable
+
+    model = _model("replace")
+    original = SymbolTable.from_placeholders(
+        [":hero.title", ":hero.body"], max_slots=model.tokenizer.sym_slots
+    )
+    renamed = SymbolTable.from_placeholders(
+        [":marketing.heading", ":article.summary"],
+        max_slots=model.tokenizer.sym_slots,
+    )
+    model._opaque_slot_projection_active = True
+    try:
+        original_features = model._runtime_feature_tensor([original])
+        renamed_features = model._runtime_feature_tensor([renamed])
+        assert original_features is not None and renamed_features is not None
+        assert torch.equal(original_features, renamed_features)
+    finally:
+        model._opaque_slot_projection_active = False
+        model.denoiser.set_runtime_symbol_features(None)
 
 
 def test_replace_mode_trains_and_decodes() -> None:

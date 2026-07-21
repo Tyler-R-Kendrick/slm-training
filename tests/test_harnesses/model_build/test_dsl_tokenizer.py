@@ -20,7 +20,7 @@ HERO = (
     'root = Stack([hero], "column")\n'
     'hero_title = TextContent(":hero.title")\n'
     'hero_body = TextContent(":hero.body")\n'
-    'hero = Card([hero_title, hero_body])'
+    "hero = Card([hero_title, hero_body])"
 )
 
 CTA = (
@@ -30,7 +30,7 @@ CTA = (
 )
 
 V05_PROGRAM = (
-    'root = Stack([button, count])\n'
+    "root = Stack([button, count])\n"
     '$filter = "all"\n'
     'items = Query("get_items", {filter: $filter}, {rows: []})\n'
     'save = Mutation("save_item", {filter: $filter})\n'
@@ -82,7 +82,9 @@ def test_prefix_decode_preserves_terminal_newline(tok: DSLNativeTokenizer) -> No
     assert tok.decode(ids, preserve_trailing_newline=True).endswith("\n")
 
 
-def test_runtime_symbol_contract_and_v2_table_migration(tok: DSLNativeTokenizer) -> None:
+def test_runtime_symbol_contract_and_v2_table_migration(
+    tok: DSLNativeTokenizer,
+) -> None:
     request = GenerationRequest(
         prompt="Hero",
         slot_contract=(":hero.title",),
@@ -91,6 +93,7 @@ def test_runtime_symbol_contract_and_v2_table_migration(tok: DSLNativeTokenizer)
                 surface=":hero.title",
                 role="external_entity",
                 semantic_type="copy",
+                semantic_role="title",
             ),
             RuntimeSymbol(surface="$filter", role="state"),
         ),
@@ -105,7 +108,17 @@ def test_runtime_symbol_contract_and_v2_table_migration(tok: DSLNativeTokenizer)
     )
     assert table.symbol_for_surface(":hero.title").role == "external_entity"
     assert table.to_dict()["version"] == 3
-    assert table.active_token_ids(tok) >= {tok.sym_id(0), tok.bind_id(0), tok.state_id(0)}
+    assert table.active_token_ids(tok) >= {
+        tok.sym_id(0),
+        tok.bind_id(0),
+        tok.state_id(0),
+    }
+    with pytest.raises(ValueError, match="typed identifier"):
+        RuntimeSymbol(
+            surface=":hero.title",
+            role="external_entity",
+            semantic_role="hero.title",
+        )
 
 
 def test_symbol_permutation_preserves_root_and_surfaces() -> None:
@@ -285,9 +298,7 @@ def test_macro_induction_round_trip_and_persistence(tmp_path) -> None:
         for token in expansion:
             tid = tok.token_to_id[token]
             assert tok.id_to_kind[tid] in MACRO_EXPANDABLE_KINDS
-    assert (
-        first.stats["tokens_after_with_table"] < first.stats["tokens_before"]
-    )
+    assert first.stats["tokens_after_with_table"] < first.stats["tokens_before"]
 
     tok.set_macro_expansions(first.expansions)
     plain = DSLNativeTokenizer.build()
@@ -331,9 +342,7 @@ def test_surface_identifiers_round_trip_and_isolate_the_lever(
         table = SymbolTable()
         ids = tok.encode(program, table=table, symbol_anonymization=False)
         assert not any(tok.is_bind_id(i) for i in ids)
-        assert not any(
-            tok.kind_of(i) == TokenKind.STATE for i in ids
-        )
+        assert not any(tok.kind_of(i) == TokenKind.STATE for i in ids)
         assert tok.decode(ids, table=table) == program
     # Placeholder channel is untouched by the flag.
     table = SymbolTable()
@@ -362,7 +371,12 @@ def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
         text = tok.decode(ids, table=table)
         for ph in placeholders:
             assert f'"{ph}"' in text
-        assert "Stack" in text or "Card" in text or "TextContent" in text or "Button" in text
+        assert (
+            "Stack" in text
+            or "Card" in text
+            or "TextContent" in text
+            or "Button" in text
+        )
 
 
 def test_canonicalize_is_idempotent_per_example(tok: DSLNativeTokenizer) -> None:
@@ -403,7 +417,7 @@ def test_v05_typed_state_and_builtin_roundtrip(tok: DSLNativeTokenizer) -> None:
 
 
 def test_v05_tokenizer_ignores_line_comments(tok: DSLNativeTokenizer) -> None:
-    source = 'root = Stack([]) // trailing comment\n# full-line comment\n'
+    source = "root = Stack([]) // trailing comment\n# full-line comment\n"
     decoded = tok.decode(tok.encode(source))
     assert decoded == "root = Stack([])"
 

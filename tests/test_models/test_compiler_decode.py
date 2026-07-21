@@ -23,7 +23,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -91,6 +91,20 @@ def test_choice_decode_all_singletons_skips_denoiser(monkeypatch) -> None:
             AssertionError("all-singleton choice step must not run the denoiser")
         ),
     )
+    def forbidden_scoring(*_args, **_kwargs):
+        raise AssertionError("exact singleton must commit before semantic scoring")
+
+    for helper in (
+        "_component_inventory_bias",
+        "_component_plan_bias",
+        "_slot_component_bias",
+        "_schema_role_slot_bias",
+        "_slot_coverage_close_bias",
+        "_semantic_plan_bias",
+        "_semantic_plan_inline_bias",
+        "_semantic_plan_root_bias",
+    ):
+        monkeypatch.setattr(model, helper, forbidden_scoring)
     ctx, ctx_pad = model._encode_context(["one", "two"])
     with collect_decode_stats() as stats:
         ids = model._choice_ltr_decode_batch(ctx, ctx_pad, 8, [None, None])
@@ -497,6 +511,40 @@ def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     assert structural_bias is not None and structural_bias.tolist() == [0.0, 4.0]
 
 
+def test_slot_coverage_close_bias_floors_covered_terminal_stack_close() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=(),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, slot_id],
+        (slot_id, close_id),
+        torch.tensor([20.0, 1.0]),
+        [":body"],
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 23.0]
+
+
 def test_slot_coverage_close_bias_continues_through_compatible_component() -> None:
     from types import SimpleNamespace
 
@@ -533,9 +581,12 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
         state,
         [tokenizer.bos_id],
         (button_id, close_id),
-        torch.tensor([0.0, 3.0]),
-        [":dialog.confirm"],
-        {":dialog.confirm": ("Button",)},
+            torch.tensor([0.0, 3.0]),
+            [":dialog.confirm"],
+            {":dialog.confirm": ("Button",)},
+            semantic_role_properties={
+                ":dialog.confirm": ("action", "confirm", "label")
+            },
     )
 
     assert bias is not None
@@ -567,6 +618,9 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
         torch.tensor([0.0, 3.0]),
         [":dialog.confirm"],
         {":dialog.confirm": ("Button",)},
+        semantic_role_properties={
+            ":dialog.confirm": ("action", "confirm", "label")
+        },
     )
 
     assert bias is not None
@@ -657,6 +711,9 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("ImageGallery",)},
+        semantic_role_properties={
+            ":gallery.caption": ("caption", "details", "text")
+        },
     )
 
     assert bias is not None
@@ -668,6 +725,9 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("TextContent",)},
+        semantic_role_properties={
+            ":gallery.caption": ("caption", "details", "text")
+        },
     )
     assert schema_bias is not None and schema_bias.tolist() == [8.0, 0.0]
 
@@ -1346,9 +1406,34 @@ def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
         schema_role_slot_decode_weight=8.0,
         **{enabling_flag: True},
     )
-    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+    request = GenerationRequest(
+        prompt="Gallery block.",
+        slot_contract=[":gallery.image"],
+        runtime_symbols=(
+            RuntimeSymbol(
+                surface=":gallery.image",
+                role="external_entity",
+                semantic_role="image",
+            ),
+        ),
+    )
 
     model.generate_batch_requests([request])  # must not raise ValueError
+
+
+def test_marker_name_cannot_activate_semantic_role_scoring() -> None:
+    model = _model(
+        output_tokenizer="choice",
+        schema_role_slot_decode_weight=8.0,
+        slot_contract_constrained_decode=True,
+    )
+    request = GenerationRequest(
+        prompt="Gallery block.",
+        slot_contract=[":gallery.image"],
+    )
+
+    with pytest.raises(ValueError, match="RuntimeSymbol.semantic_role"):
+        model.generate_batch_requests([request])
 
 
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
@@ -1371,6 +1456,32 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
 
     assert bias is not None
     assert bias.tolist() == [-4.0, 0.0]
+
+
+def test_schema_value_bias_floors_enum_slot_below_best_non_slot() -> None:
+    from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_value_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    for token_id in (
+        tokenizer.token_to_id[f"{OPEN_PREFIX}Button"],
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id[f"{LIT_PREFIX}null"],
+    ):
+        assert state.advance_id(token_id)
+    slot_id = tokenizer.sym_id(1)
+    close_id = tokenizer.token_to_id[CLOSE]
+
+    bias = model._schema_value_bias(
+        state,
+        (slot_id, close_id),
+        torch.tensor([20.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [-23.0, 0.0]
 
 
 def test_schema_enum_finalize_preserves_choices_after_dynamic_literal() -> None:
@@ -1678,6 +1789,11 @@ def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
         torch.zeros(3),
         slots,
         candidates,
+        semantic_role_properties={
+            ":gallery.img": ("img", "src"),
+            ":gallery.alt": ("alt",),
+            ":gallery.caption": ("caption",),
+        },
     )
 
     assert candidates == {
@@ -1882,6 +1998,9 @@ def test_role_obligations_replace_exhausted_joint_carrier() -> None:
 
 
 def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
+    assert isinstance(
+        TwoTowerModel.__dict__["_semantic_plan_role_obligations"], staticmethod
+    )
     counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
         Counter({"Button": 1, "Input": 2}),
         {
@@ -1891,10 +2010,10 @@ def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
         },
     )
 
-    assert counts == Counter({"Button": 1, "Input": 2, "CheckBoxItem": 1})
+    assert counts == Counter({"Button": 1, "Input": 2})
     assert bindings == {
-        "CheckBoxItem": (":auth.create", ":auth.name"),
-        "Input": (":auth.email",),
+        "Button": (":auth.create",),
+        "Input": (":auth.name", ":auth.email"),
     }
 
 
@@ -2828,6 +2947,114 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
         None,
         (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
     ) is None
+
+
+def test_prompt_semantic_plan_root_bias_records_missing_slot_carrier_reference() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["+Input"]
+    button_id = tokenizer.token_to_id["+Button"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    model._semantic_plan_action_scores = [{input_id: 1.0, button_id: 1.0}]
+    model._semantic_plan_action_counts = [{input_id: 1, button_id: 1}]
+    model._slot_contracts = [[":auth.email", ":auth.submit", ":auth.body"]]
+    model._semantic_role_candidates = [
+        {
+            ":auth.email": ("Input",),
+            ":auth.submit": ("Button",),
+            ":auth.body": ("Callout", "TextContent"),
+        }
+    ]
+    model._semantic_plan_role_bindings = [
+        {"Input": (":auth.email",), "Button": (":auth.submit",)}
+    ]
+    model._semantic_plan_required_root_references = [{}]
+    prefix = [
+        tokenizer.bos_id,
+        input_id,
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id["-"],
+        button_id,
+        tokenizer.sym_id(1),
+        tokenizer.token_to_id["-"],
+    ]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button"],
+    )
+    candidates = (stack_id, text_id, tokenizer.eos_id)
+
+    bias = model._semantic_plan_root_bias(
+        0, state, prefix, candidates, torch.tensor([12.0, 1.0, 0.0])
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 13.0, 0.0]
+    assert model._semantic_plan_required_root_references == [
+        {2: "element:TextContent"}
+    ]
+
+
+def test_semantic_plan_required_reference_bias_targets_only_carrier() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    ref1 = tokenizer.token_to_id["&1"]
+    ref2 = tokenizer.token_to_id["&2"]
+    close = tokenizer.token_to_id["]"]
+    model._semantic_plan_required_root_references = [{2: "element:TextContent"}]
+    state = SimpleNamespace(
+        section_types=[
+            "element:Input",
+            "element:Callout",
+            "element:TextContent",
+        ],
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(kind="variadic", expr_type="array", close="]"),
+        ]
+    )
+    candidates = (ref1, ref2, close)
+
+    bias = model._semantic_plan_required_reference_bias(
+        0, state, [tokenizer.bos_id], candidates, torch.tensor([15.0, 1.0, 20.0])
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 21.0, 0.0]
+    assert (
+        model._semantic_plan_required_reference_bias(
+            0,
+            state,
+            [tokenizer.bos_id],
+            candidates,
+            torch.tensor([20.0, 1.0, 15.0]),
+        )
+        is None
+    )
+    assert (
+        model._semantic_plan_required_reference_bias(
+            0,
+            state,
+            [tokenizer.bos_id, ref2],
+            candidates,
+            torch.zeros(3),
+        )
+        is None
+    )
 
 
 def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> None:

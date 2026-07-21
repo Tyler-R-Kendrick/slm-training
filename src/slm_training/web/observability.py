@@ -287,6 +287,61 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
         tmp.unlink(missing_ok=True)
 
 
+_LIVE_MATRIX_GLOBS = (
+    "runs/*/matrix_result.json",
+    "runs/*/*/matrix_result.json",
+    "autoresearch/*/runs/*/matrix_result.json",
+)
+_LIVE_TRAIN_GLOBS = (
+    "runs/*/train_summary.json",
+    "runs/*/*/train_summary.json",
+    "autoresearch/*/runs/*/train_summary.json",
+)
+_LIVE_CHECKPOINT_GLOBS = (
+    "runs/*/checkpoints/last.pt",
+    "runs/*/*/checkpoints/last.pt",
+    "autoresearch/*/runs/*/checkpoints/last.pt",
+)
+
+
+def _infer_matrix_kind(row: dict[str, Any]) -> str | None:
+    """Best-effort matrix routing for live ``outputs/`` evidence."""
+    exp_id = str(row.get("id") or "").upper()
+    run_id = str(row.get("run_id") or "").lower()
+    if any(
+        key in row
+        for key in ("latency_ms_p50", "tokens_per_sec", "wall_sec", "phase_summary")
+    ):
+        return "perf"
+    if exp_id.startswith("P") or run_id.startswith(("px_", "p0", "p1", "p2")):
+        return "perf"
+    if exp_id.startswith("X") or run_id.startswith(("gx_", "x")):
+        return "grammar"
+    if exp_id.startswith("E") or run_id.startswith(("qx_", "e")):
+        return "quality"
+    if exp_id.startswith("A") or "phase" in run_id:
+        return "phase"
+    suites = row.get("suites")
+    if isinstance(suites, dict) and suites:
+        return "quality"
+    return None
+
+
+def _row_identity(row: dict[str, Any]) -> str:
+    return str(row.get("run_id") or row.get("id") or "")
+
+
+def _path_stat_fingerprint(paths: list[Path]) -> tuple[tuple[str, int | None, int | None], ...]:
+    fingerprint: list[tuple[str, int | None, int | None]] = []
+    for path in paths:
+        try:
+            stat = path.stat()
+            fingerprint.append((str(path), stat.st_mtime_ns, stat.st_size))
+        except OSError:
+            fingerprint.append((str(path), None, None))
+    return tuple(fingerprint)
+
+
 def _quality_summary(report: dict[str, Any] | None) -> dict[str, Any] | None:
     """Compact quality_report.json digest for tiles (None when absent)."""
     if not isinstance(report, dict):
@@ -368,6 +423,168 @@ class Readers:
         value = compute()
         self._stat_cache[name] = (fingerprint, value)
         return value
+
+    # ---- live outputs discovery -----------------------------------------------
+
+    def _glob_outputs(self, *patterns: str) -> list[Path]:
+        paths: list[Path] = []
+        for pattern in patterns:
+            paths.extend(self.outputs.glob(pattern))
+        return sorted({path.resolve() for path in paths})
+
+    def _matrix_result_paths(self) -> list[Path]:
+        return self._glob_outputs(*_LIVE_MATRIX_GLOBS)
+
+    def _train_summary_paths(self) -> list[Path]:
+        return self._glob_outputs(*_LIVE_TRAIN_GLOBS)
+
+    def _checkpoint_paths(self) -> list[Path]:
+        return self._glob_outputs(*_LIVE_CHECKPOINT_GLOBS)
+
+    def _live_evidence_paths(self) -> list[Path]:
+        return sorted(
+            {
+                *self._matrix_result_paths(),
+                *self._train_summary_paths(),
+                *self._checkpoint_paths(),
+            }
+        )
+
+    def _decorate_scoreboard_row(
+        self,
+        row: dict[str, Any],
+        *,
+        provenance: str,
+        source: str,
+        run_dir: Path | None = None,
+    ) -> dict[str, Any]:
+        out = {**row}
+        out.setdefault("run_id", out.get("id"))
+        out.setdefault("id", out.get("run_id"))
+        if run_dir is not None:
+            try:
+                out["run_dir"] = run_dir.relative_to(self.root).as_posix()
+            except ValueError:
+                out["run_dir"] = run_dir.as_posix()
+        out["provenance"] = provenance
+        out["source"] = source
+        suites = out.get("suites")
+        if isinstance(suites, dict):
+            out["suites"] = {
+                str(name): (
+                    normalize_suite_metrics(member)
+                    if isinstance(member, dict)
+                    else member
+                )
+                for name, member in suites.items()
+            }
+        return out
+
+    def _load_live_matrix_rows(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for path in self._matrix_result_paths():
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            run_dir = path.parent
+            rows.append(
+                self._decorate_scoreboard_row(
+                    payload,
+                    provenance="live",
+                    source=run_dir.relative_to(self.root).as_posix()
+                    if run_dir.is_relative_to(self.root)
+                    else run_dir.as_posix(),
+                    run_dir=run_dir,
+                )
+            )
+        return rows
+
+    def _load_live_training_rows(self) -> list[dict[str, Any]]:
+        """Runs with train evidence but no matrix row yet (in-flight trains)."""
+        matrix_ids = {_row_identity(row) for row in self._load_live_matrix_rows()}
+        rows: list[dict[str, Any]] = []
+        for path in self._train_summary_paths():
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            run_dir = path.parent
+            run_id = str(payload.get("run_id") or run_dir.name)
+            if not run_id or run_id in matrix_ids:
+                continue
+            rows.append(
+                {
+                    "id": run_id,
+                    "run_id": run_id,
+                    "description": payload.get("recipe")
+                    or payload.get("run_kind")
+                    or "live training run",
+                    "date": payload.get("finished_at") or payload.get("started_at"),
+                    "pass": None,
+                    "suites": {},
+                    "run_dir": run_dir.relative_to(self.root).as_posix()
+                    if run_dir.is_relative_to(self.root)
+                    else run_dir.as_posix(),
+                    "provenance": "live",
+                    "source": path.relative_to(self.root).as_posix()
+                    if path.is_relative_to(self.root)
+                    else path.as_posix(),
+                    "training": payload,
+                }
+            )
+        return rows
+
+    def _merge_scoreboard_rows(
+        self,
+        committed: list[dict[str, Any]],
+        live: list[dict[str, Any]],
+        *,
+        live_overrides: bool = True,
+    ) -> tuple[list[dict[str, Any]], str]:
+        live_by_id = {
+            _row_identity(row): row for row in live if _row_identity(row)
+        }
+        merged: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for row in committed:
+            key = _row_identity(row)
+            if key and key in live_by_id and live_overrides:
+                merged.append({**row, **live_by_id[key], "provenance": "live"})
+                seen.add(key)
+            else:
+                merged.append(row)
+        for key, row in live_by_id.items():
+            if key not in seen:
+                merged.append(row)
+        provenance = (
+            "live"
+            if live_by_id or any(row.get("provenance") == "live" for row in merged)
+            else "committed"
+        )
+        return merged, provenance
+
+    def _append_live_training_rows(
+        self, rows: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        known = {_row_identity(row) for row in rows}
+        out = list(rows)
+        for row in self._load_live_training_rows():
+            key = _row_identity(row)
+            if key and key not in known:
+                out.append(row)
+                known.add(key)
+        return out
+
+    def _scoreboard_watch_paths(self, kind: str) -> list[Path]:
+        if kind == RESEARCH_SCOREBOARD_KIND:
+            watched = sorted(self.docs_design.glob("*.json"))
+        else:
+            filename = SCOREBOARD_FILES.get(kind)
+            watched = (
+                [self.docs_design / filename, self.dashboard_snapshot]
+                if filename
+                else []
+            )
+        return [*watched, *self._live_evidence_paths()]
 
     # ---- scoreboards (experiment / perf matrices) -----------------------------
 
@@ -467,25 +684,34 @@ class Readers:
         return sorted(results, key=order, reverse=True)
 
     def scoreboard(self, kind: str) -> dict[str, Any]:
-        if kind == RESEARCH_SCOREBOARD_KIND:
-            watched = sorted(self.docs_design.glob("iter-*.json"))
-        else:
-            filename = SCOREBOARD_FILES.get(kind)
-            if filename is None:
-                return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
-            watched = [self.docs_design / filename, self.dashboard_snapshot]
+        if kind not in (*SCOREBOARD_FILES, RESEARCH_SCOREBOARD_KIND):
+            return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
         return self._fresh(
-            f"scoreboard:{kind}", watched, lambda: self._scoreboard_uncached(kind)
+            f"scoreboard:{kind}",
+            self._scoreboard_watch_paths(kind),
+            lambda: self._scoreboard_uncached(kind),
         )
+
+    def _live_rows_for_kind(self, kind: str) -> list[dict[str, Any]]:
+        return [
+            row
+            for row in self._load_live_matrix_rows()
+            if _infer_matrix_kind(row) == kind
+        ]
 
     def _scoreboard_uncached(self, kind: str) -> dict[str, Any]:
         if kind == RESEARCH_SCOREBOARD_KIND:
-            results = self._research_results()
+            results, provenance = self._merge_scoreboard_rows(
+                self._research_results(), self._live_rows_for_kind(kind)
+            )
+            results = self._append_live_training_rows(results)
+            if any(row.get("provenance") == "live" for row in results):
+                provenance = "live"
             unparsed = getattr(self, "last_unparsed", [])
             return {
                 "kind": kind,
-                "provenance": "committed",
-                "reference": "docs/design/*.json",
+                "provenance": provenance,
+                "reference": "docs/design/*.json + outputs/",
                 "meta": {"latest": results[0].get("date") if results else None},
                 "metric_columns": scoreboard_metric_columns(),
                 "count": len(results),
@@ -519,14 +745,20 @@ class Readers:
                     )
                     for name, member in suites.items()
                 }
+        results, provenance = self._merge_scoreboard_rows(
+            results, self._live_rows_for_kind(kind)
+        )
         meta = {k: v for k, v in (payload or {}).items() if k != "results"} if isinstance(
             payload, dict
         ) else {}
         passed = sum(1 for r in results if r.get("pass") is True)
+        reference = f"docs/design/{filename}"
+        if provenance == "live":
+            reference = f"{reference} + outputs/"
         return {
             "kind": kind,
-            "provenance": "committed",
-            "reference": f"docs/design/{filename}",
+            "provenance": provenance,
+            "reference": reference,
             "meta": meta,
             "metric_columns": scoreboard_metric_columns(),
             "count": len(results),
@@ -631,6 +863,60 @@ class Readers:
                     }
         return None
 
+    def _live_run_catalog_rows(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for path in self._matrix_result_paths():
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            run_dir = path.parent
+            run_id = str(payload.get("run_id") or run_dir.name)
+            if not run_id or run_id in seen:
+                continue
+            seen.add(run_id)
+            try:
+                updated_at = path.stat().st_mtime
+            except OSError:
+                updated_at = 0.0
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "experiment_id": payload.get("id"),
+                    "matrix": _infer_matrix_kind(payload) or RESEARCH_SCOREBOARD_KIND,
+                    "pass": payload.get("pass"),
+                    "description": payload.get("description"),
+                    "checkpoint": payload.get("checkpoint"),
+                    "lifecycle_state": None,
+                    "provenance": "live",
+                    "updated_at": updated_at,
+                }
+            )
+        for row in self._load_live_training_rows():
+            run_id = _row_identity(row)
+            if not run_id or run_id in seen:
+                continue
+            seen.add(run_id)
+            source = self.root / str(row.get("source") or "")
+            try:
+                updated_at = source.stat().st_mtime if source.is_file() else 0.0
+            except OSError:
+                updated_at = 0.0
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "experiment_id": row.get("id"),
+                    "matrix": RESEARCH_SCOREBOARD_KIND,
+                    "pass": row.get("pass"),
+                    "description": row.get("description"),
+                    "checkpoint": row.get("checkpoint"),
+                    "lifecycle_state": "running",
+                    "provenance": "live",
+                    "updated_at": updated_at,
+                }
+            )
+        return rows
+
     def runs(self) -> dict[str, Any]:
         runs_dir = self.lineage.root / "runs"
         live: list[dict[str, Any]] = []
@@ -659,15 +945,18 @@ class Readers:
                             )
                             or {}
                         ).get("trace_id"),
+                        "provenance": "live",
                     }
                 )
+        for row in self._live_run_catalog_rows():
+            live.append(row)
         # Add committed evidence even when lineage exists: most experiment runs are
         # intentionally not promotable and therefore have no lineage manifest.
         snapshot = _read_json(self.dashboard_snapshot) or {}
         derived: list[dict[str, Any]] = []
         for row in _results_of(snapshot.get("runs")):
             derived.append({**row, "provenance": "committed-snapshot"})
-        for kind in ("quality", "grammar", "perf"):
+        for kind in ("quality", "grammar", "perf", "phase"):
             for row in self.scoreboard(kind)["results"]:
                 derived.append(
                     {
@@ -678,7 +967,8 @@ class Readers:
                         "description": row.get("description"),
                         "checkpoint": row.get("checkpoint"),
                         "lifecycle_state": None,
-                        "provenance": (
+                        "provenance": row.get("provenance")
+                        or (
                             "live"
                             if self._run_dir(
                                 str(row.get("run_id") or row.get("id") or ""), row
@@ -694,7 +984,8 @@ class Readers:
                     "experiment_id": row.get("id"),
                     "matrix": RESEARCH_SCOREBOARD_KIND,
                     "lifecycle_state": None,
-                    "provenance": (
+                    "provenance": row.get("provenance")
+                    or (
                         "live"
                         if self._run_dir(str(row.get("run_id") or ""), row).is_dir()
                         else "committed"
@@ -710,8 +1001,9 @@ class Readers:
                     "pass": row.get("pass"),
                     "description": row.get("description"),
                     "checkpoint": row.get("checkpoint"),
-                    "lifecycle_state": None,
-                    "provenance": (
+                    "lifecycle_state": row.get("lifecycle_state"),
+                    "provenance": row.get("provenance")
+                    or (
                         "live"
                         if self._run_dir(
                             str(row.get("run_id") or row.get("id") or ""), row
@@ -725,6 +1017,14 @@ class Readers:
             if row.get("run_id") not in known:
                 live.append(row)
                 known.add(row.get("run_id"))
+        live.sort(
+            key=lambda row: (
+                1 if row.get("provenance") == "live" else 0,
+                float(row.get("updated_at") or 0.0),
+                str(row.get("created_at") or row.get("date") or ""),
+            ),
+            reverse=True,
+        )
         return {
             "provenance": (
                 "live" if any(row.get("provenance") == "live" for row in live) else "committed"
@@ -739,7 +1039,7 @@ class Readers:
         normalizes essentially every committed record, so it would otherwise
         shadow the richer matrix rows.
         """
-        for kind in ("quality", "grammar", "perf"):
+        for kind in ("quality", "grammar", "perf", "phase"):
             for row in self.scoreboard(kind)["results"]:
                 if run_id in (row.get("run_id"), row.get("id")):
                     return {"matrix": kind, **row}
@@ -1160,6 +1460,25 @@ class Readers:
                         "provenance": "committed",
                     }
                 )
+        roster_ids = {row.get("run_id") for row in roster}
+        for ckpt in self._checkpoint_paths():
+            run_id = ckpt.parent.parent.name
+            if run_id in roster_ids:
+                continue
+            roster.append(
+                {
+                    "role": "Live checkpoint",
+                    "run_id": run_id,
+                    "kind": "outputs checkpoint",
+                    "location": ckpt.relative_to(self.root).as_posix()
+                    if ckpt.is_relative_to(self.root)
+                    else ckpt.as_posix(),
+                    "status": "local artifact",
+                    "source": "outputs",
+                    "provenance": "live",
+                }
+            )
+            roster_ids.add(run_id)
         return {
             "checkpoints": [self._with_resource_metrics(row) for row in roster],
             "deployment": deployment
@@ -1952,7 +2271,16 @@ class Readers:
         # design) — and also when the gate policy changes, since every finding
         # is derived from the policy's metric levers.
         fingerprint = content_sha(
-            {"references": reference_identity, "gate_policy": DEFAULT_SHIP_GATES}
+            {
+                "references": reference_identity,
+                "gate_policy": DEFAULT_SHIP_GATES,
+                "experiments": _path_stat_fingerprint(
+                    [
+                        *sorted(self.docs_design.glob("*.json")),
+                        *self._live_evidence_paths(),
+                    ]
+                ),
+            }
         )
         rows, primary = self._performance_rows(references)
         cache_path = self.outputs / "dashboard" / "overview-insights.json"

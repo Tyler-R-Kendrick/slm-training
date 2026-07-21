@@ -18,7 +18,7 @@
         "checkpoints_roster_full",
         "checkpoints_tiles"
       ],
-      "sha256": "041e9e3393a2f19b313c1af6c857d2e759a0da5a18d3255c9d3a7bc3820d5b1d",
+      "sha256": "6fb4661e7c6a8ee66ea0f1ce525605ec2883aa2e89d90d3fcbe13d6c1842ef8f",
       "status": "ok"
     },
     "data": {
@@ -68,7 +68,7 @@
       "queries": [
         "scoreboard"
       ],
-      "sha256": "d9701e11eefc73a4f286d1f42cdc959a03ad750cc0b5212befcaadb0fd1e99c7",
+      "sha256": "6fbb997dbeba3472ff8d9ac38913f140f0a941ab8e7935316799215ac22ee63c",
       "status": "ok"
     },
     "overview": {
@@ -132,7 +132,7 @@
         "smoke_perf",
         "smoke_quality"
       ],
-      "sha256": "884c95b39a4b2a93f663a2fbf809782e3541f4600ad577515dab5a80151f1e7c",
+      "sha256": "c41a32e6ba4a022e42f8240cfbdc159bbe702a15fe22a1c112081b0301e8294c",
       "status": "ok"
     }
   }

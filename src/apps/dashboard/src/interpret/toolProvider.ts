@@ -341,9 +341,10 @@ export const toolProvider: Record<string, QueryFn> = {
   },
   checkpoints_roster_full: async () => {
     const d: any = await getJSON("/api/checkpoints");
+    const checkpoints = d.checkpoints ?? [];
     return {
-      provenance: "committed",
-      rows: (d.checkpoints ?? []).map((c: any) => ({
+      provenance: checkpoints.some((c: any) => c.provenance === "live") ? "live" : "committed",
+      rows: checkpoints.map((c: any) => ({
         role: c.role,
         run_id: c.run_id || "—",
         architecture: c.architecture,

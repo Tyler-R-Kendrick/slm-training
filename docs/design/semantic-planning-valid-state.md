@@ -203,7 +203,7 @@ This contract consumes the existing exact-state and evidence owners rather than 
 **Code:**
 
 - `src/slm_training/data/semantic_plan/extract.py` — `OpenUISemanticPlanExtractor` derives archetype, role slots, topology, symbols, and bindings from an OpenUI `ProgramSpec` AST. Gold provenance is preserved.
-- `src/slm_training/data/semantic_plan/canonicalize.py` — `canonicalize_plan` normalizes role/symbol IDs so alpha-renamed or sibling-permuted plans share fingerprints; `plan_factor_fingerprints` emits SHA-256 hashes for `exact`, `archetype`, `role_set`, `topology`, and `bindings`.
+- `src/slm_training/data/semantic_plan/canonicalize.py` — `canonicalize_plan` normalizes role/symbol IDs so alpha-renamed or sibling-permuted plans share fingerprints. Symbol ordinals follow declared structural order, never lexical or semantic-role sorting. `plan_factor_fingerprints` emits SHA-256 hashes for `exact`, `archetype`, `role_set`, `topology`, and `bindings`.
 - `src/slm_training/data/semantic_plan/oracle.py` — `PlanOracleSubstitutor` performs fail-closed factor-wise substitution (`archetype`, `roles`, `topology`, `bindings`). Gold/oracle plans are rejected for production manifests unless `honesty_mode="oracle_diagnostic"`; a contamination banner is available for diagnostic artifacts.
 - `src/slm_training/data/semantic_plan/seed.py` — `PlanSeedBuilder` constructs a valid OpenUI seed from a plan using pack-owned constructors. It is fail-closed: multiple roots, missing content-prop mappings, or validation failures return `ok=False` with a reason rather than an illegal seed.
 - `scripts/extract_semantic_plans.py` — CLI to emit `SemanticPlanV1` gold plans and factor fingerprints from a records JSONL file.
@@ -212,7 +212,10 @@ This contract consumes the existing exact-state and evidence owners rather than 
 
 **Honesty caveats:**
 
-- Seed reconstruction currently maps each bound symbol to a placeholder of the form `:{symbol_id}.{semantic_role}`. This preserves validity and placeholder inventory but does not recover the original user-facing scope name; downstream binding-aware metrics may need scope-name remapping.
+- Seed reconstruction maps each bound symbol to an opaque placeholder of the form
+  `:slot_N.{property}` in declared symbol order. The semantic role may select the
+  typed component property, but neither the external symbol spelling nor that role
+  becomes marker identity. Caller-facing names require an explicit late binding map.
 - Factor-wise oracle substitution is implemented only for the four factors listed above; `symbols` and `coverage` are carried implicitly through the baseline plan. A future issue can add explicit symbol/coverage oracle arms if diagnostics require them.
 - Archetype inference is deterministic and pack-derived (root component + optional `direction`); no learned archetype predictor exists yet.
 - Full plan-bearing eval matrix (gold seed, oracle factors, predicted-plan surrogate) remains blocked until frontier checkpoints and GPU compute are available.

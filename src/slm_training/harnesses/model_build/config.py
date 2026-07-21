@@ -374,7 +374,9 @@ class ModelBuildConfig:
     pointer_heads: int = 4
     pointer_temperature: float = 1.0
     pointer_dropout: float = 0.0
-    runtime_symbol_features: str = "none"  # none | surface | role_gated | replace (C2)
+    # Historical default-off name-derived experiment modes; opaque generation
+    # projects independently so old checkpoint semantics remain stable.
+    runtime_symbol_features: str = "none"  # none | surface | role_gated | replace
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
     constraint_graph_mode: str = "off"  # off | grammar | hybrid

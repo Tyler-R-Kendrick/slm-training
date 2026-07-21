@@ -1,12 +1,12 @@
-tiles = Query("checkpoints_tiles", {}, { rows: [] }, 0)
-roster = Query("checkpoints_roster_full", {}, { rows: [] }, 0)
+tiles = Query("checkpoints_tiles", {}, { rows: [] }, 15)
+roster = Query("checkpoints_roster_full", {}, { rows: [] }, 15)
 
 head = PageHead("Checkpoints & Promotion", "Navigate the roster, tune configurable gates live, and promote through the real honest-ship + lineage checks. Gate math runs server-side even read-only.")
 
 tileRow = Grid(@Each(tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)), "200px")
 
 rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "architecture", label: "Architecture" }, { key: "parameters", label: "Parameters", align: "right" }, { key: "model_size", label: "Model size", align: "right" }, { key: "throughput", label: "Throughput", align: "right" }, { key: "status", label: "Status" }]
-rosterPanel = Panel("Roster", [DataTable(rosterCols, roster.rows), Hint("≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.", true)], ProvenanceBadge("committed"))
+rosterPanel = Panel("Roster", [DataTable(rosterCols, roster.rows), Hint("≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.", true)], ProvenanceBadge(roster.provenance))
 
 console = CheckpointConsole()
 

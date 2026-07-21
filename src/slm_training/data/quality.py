@@ -203,10 +203,20 @@ def semantic_role_reachable_candidates(
     placeholders: list[str], component_names: list[str]
 ) -> dict[str, tuple[str, ...]]:
     """Map slots to components whose public schema can contain their role."""
+    return semantic_role_reachable_candidates_from_properties(
+        semantic_role_properties(placeholders),
+        component_names,
+    )
+
+
+def semantic_role_reachable_candidates_from_properties(
+    properties_by_slot: dict[str, tuple[str, ...]],
+    component_names: list[str],
+) -> dict[str, tuple[str, ...]]:
+    """Map declared role properties to components that can contain them."""
     from slm_training.dsl.lang_core import library_schema
 
     definitions = library_schema().get("$defs", {})
-    properties_by_slot = semantic_role_properties(placeholders)
 
     def reaches(
         schema: dict[str, Any], compatible: set[str], seen: frozenset[str]
@@ -241,7 +251,7 @@ def semantic_role_reachable_candidates(
         )
 
     result: dict[str, tuple[str, ...]] = {}
-    for placeholder in sorted(set(placeholders)):
+    for placeholder in sorted(properties_by_slot):
         compatible = set(properties_by_slot[placeholder])
         result[placeholder] = tuple(
             name
