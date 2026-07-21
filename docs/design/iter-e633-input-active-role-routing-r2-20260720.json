@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "run_id": "e633-input-active-role-routing-r2",
+  "experiment_id": "E633-r2",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted",
+  "run_class": "scratch_matrix",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.5, "binding_aware_meaningful_v2_rate_strict": 0.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 0.5083333333333333, "placeholder_validity": 0.705, "structural_similarity": 0.337925, "component_type_recall": 0.375, "reward_score": 0.785, "ast_node_f1": 0.38571428571428573, "ast_edge_f1": 0.2625, "latency_ms_p50": 3424.65, "latency_ms_p95": 15644.59, "decode_timeout_count": 0, "fallback_count": 0}},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "decision": "Reject and revert: restricting the repeated-slot margin collapsed Auth to TextContent and regressed every aggregate quality metric.",
+  "ship_gate_result": "fail",
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "8b273128997f3dc3ce20cf47e1ca1adbd1d39d9c", "code_dirty": false, "components": {"harness.model_build.eval": "v32", "evals.meaningful_program": "2.1.0", "evals.scoring": "v12", "model.twotower": "v69"}, "stamped_at": "2026-07-21T00:40:58.023236+00:00"}
+}
