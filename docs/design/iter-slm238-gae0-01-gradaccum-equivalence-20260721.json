@@ -1,0 +1,210 @@
+{
+  "accum_wins": 3,
+  "all_finite": true,
+  "all_metadata_ok": true,
+  "claim_class": "wiring",
+  "close_relative_tolerance": 0.15,
+  "close_seeds": 5,
+  "comparisons": [
+    {
+      "accum": {
+        "arm": "accum",
+        "batch_size": 4,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 42.323720932006836,
+        "grad_accum": 2,
+        "last_loss": 19.726346015930176,
+        "metadata_ok": true,
+        "seed": 0,
+        "steps_completed": 40
+      },
+      "accum_minus_direct_last_loss": 0.4949064254760742,
+      "close": true,
+      "direct": {
+        "arm": "direct",
+        "batch_size": 8,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 43.021060943603516,
+        "grad_accum": 1,
+        "last_loss": 19.2314395904541,
+        "metadata_ok": true,
+        "seed": 0,
+        "steps_completed": 40
+      },
+      "relative_diff": 0.02573423706261338,
+      "seed": 0,
+      "winner": "direct"
+    },
+    {
+      "accum": {
+        "arm": "accum",
+        "batch_size": 4,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 46.82276153564453,
+        "grad_accum": 2,
+        "last_loss": 18.876784324645996,
+        "metadata_ok": true,
+        "seed": 1,
+        "steps_completed": 40
+      },
+      "accum_minus_direct_last_loss": -0.6395425796508789,
+      "close": true,
+      "direct": {
+        "arm": "direct",
+        "batch_size": 8,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 47.32554626464844,
+        "grad_accum": 1,
+        "last_loss": 19.516326904296875,
+        "metadata_ok": true,
+        "seed": 1,
+        "steps_completed": 40
+      },
+      "relative_diff": 0.03276961811446558,
+      "seed": 1,
+      "winner": "accum"
+    },
+    {
+      "accum": {
+        "arm": "accum",
+        "batch_size": 4,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 50.62050437927246,
+        "grad_accum": 2,
+        "last_loss": 21.637798309326172,
+        "metadata_ok": true,
+        "seed": 2,
+        "steps_completed": 40
+      },
+      "accum_minus_direct_last_loss": -0.35787391662597656,
+      "close": true,
+      "direct": {
+        "arm": "direct",
+        "batch_size": 8,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 51.875526428222656,
+        "grad_accum": 1,
+        "last_loss": 21.99567222595215,
+        "metadata_ok": true,
+        "seed": 2,
+        "steps_completed": 40
+      },
+      "relative_diff": 0.016270196834617768,
+      "seed": 2,
+      "winner": "accum"
+    },
+    {
+      "accum": {
+        "arm": "accum",
+        "batch_size": 4,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 35.066965103149414,
+        "grad_accum": 2,
+        "last_loss": 16.350791931152344,
+        "metadata_ok": true,
+        "seed": 3,
+        "steps_completed": 40
+      },
+      "accum_minus_direct_last_loss": -0.3097343444824219,
+      "close": true,
+      "direct": {
+        "arm": "direct",
+        "batch_size": 8,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 34.670169830322266,
+        "grad_accum": 1,
+        "last_loss": 16.660526275634766,
+        "metadata_ok": true,
+        "seed": 3,
+        "steps_completed": 40
+      },
+      "relative_diff": 0.018590909996366308,
+      "seed": 3,
+      "winner": "accum"
+    },
+    {
+      "accum": {
+        "arm": "accum",
+        "batch_size": 4,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 30.952722549438477,
+        "grad_accum": 2,
+        "last_loss": 13.896868705749512,
+        "metadata_ok": true,
+        "seed": 4,
+        "steps_completed": 40
+      },
+      "accum_minus_direct_last_loss": 0.05744743347167969,
+      "close": true,
+      "direct": {
+        "arm": "direct",
+        "batch_size": 8,
+        "effective_batch_size": 8,
+        "finite_throughout": true,
+        "first_loss": 31.154987335205078,
+        "grad_accum": 1,
+        "last_loss": 13.839421272277832,
+        "metadata_ok": true,
+        "seed": 4,
+        "steps_completed": 40
+      },
+      "relative_diff": 0.004150999694384215,
+      "seed": 4,
+      "winner": "direct"
+    }
+  ],
+  "direct_wins": 2,
+  "disposition": "close_approximation_confirmed",
+  "disposition_rationale": "All 5/5 decided seeds stayed within the pre-registered 15% relative-difference tolerance (mean relative diff 0.0195, mean delta -0.1510). Gradient accumulation behaves as a close, unbiased stand-in for the equivalent physical batch at this fixture scale.",
+  "experiment_id": "slm238-gae0-01-gradaccum-equivalence",
+  "falsifier": "The accum arm's final loss differs from the direct arm's by more than 15% relative in a consistent direction across a majority of seeds (a systematic bias, not stochastic mask-draw noise), or the accel.grad_accum / accel.effective_batch_size telemetry fields do not match the configured values, or either arm produces a non-finite loss.",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: a tiny scratch-context TwoTower model overfitting 8 synthetic records for 40 optimizer steps says nothing about gradient-accumulation behavior on a real training corpus or at production model scale.",
+    "The two arms are not expected to be bit-identical: mask/corruption randomness is drawn per forward call from the global RNG stream, so an 8-record single call and two sequential 4-record calls consume that stream differently even from matched initial state. This experiment measures whether the resulting loss trajectories stay close, not whether they are numerically identical.",
+    "Learning rate, weight decay, and optimizer (AdamW) are matched but not independently retuned per arm; a production comparison would also check gradient-norm distributions and multi-epoch generalization, not just final training loss on a fixture that only ever overfits.",
+    "The CLOSE_RELATIVE_TOLERANCE=15% threshold was chosen before running the sweep and is a fixture-scale judgment call, not a derived statistical bound."
+  ],
+  "hypothesis": "At matched initialization, learning rate, optimizer, and total record set, training the real model_build train loop with grad_accum_steps=2 (micro-batch 4) reaches a final training loss within 15% relative difference of direct training with batch_size=8, grad_accum=1 (same effective batch size), across multiple seeds -- i.e. gradient accumulation is a close, unbiased numerical stand-in for a larger physical batch at fixture scale, not a systematically different training regime, and the grad_accum / effective_batch_size telemetry fields correctly report the accounting.",
+  "matrix_set": "slm238_gradaccum_equivalence",
+  "matrix_version": "gae0-01-v1",
+  "mean_delta": -0.15095939636230468,
+  "mean_relative_diff": 0.01950319234048945,
+  "n_records": 8,
+  "run_id": "slm238-gae0-01-gradaccum-equivalence-20260721",
+  "schema": "GradAccumEquivalenceReportV1",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "status": "fixture",
+  "stdev_delta": 0.3917429505120172,
+  "steps": 40,
+  "ties": 0,
+  "timestamp": "2026-07-21T07:20:18.911482Z",
+  "unstable_seeds": 0,
+  "version_stamp": {
+    "code_commit": "53dba58bc7ea433e868eb6976f88b2b41c2bce05",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm227_muon_convergence": "v1",
+      "harness.experiments.slm238_gradaccum_equivalence": "v1",
+      "harness.model_build.train": "v17",
+      "model.twotower": "v78"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T07:20:18.911451+00:00"
+  }
+}

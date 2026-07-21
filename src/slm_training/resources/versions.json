@@ -3772,6 +3772,25 @@
         }
       ]
     },
+    "harness.experiments.slm238_gradaccum_equivalence": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm238_gradaccum_equivalence.py",
+        "scripts/run_slm238_gradaccum_equivalence.py",
+        "tests/test_harnesses/experiments/test_slm238_gradaccum_equivalence.py",
+        "tests/test_scripts/test_run_slm238_gradaccum_equivalence.py",
+        "docs/design/iter-slm238-gae0-01-gradaccum-equivalence-20260721.json",
+        "docs/design/iter-slm238-gae0-01-gradaccum-equivalence-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-238 GAE0-01 gradient-accumulation equivalence sweep: follows up on the single-run iter-telemetry-gradaccum2-20260715 / iter-telemetry-effective-batch-20260715 probes with a multi-seed, matched-init/LR/data comparison of the real model_build train loop's grad_accum_steps=2 (micro-batch 4) arm against direct batch_size=8 (grad_accum=1) training, checking both final-loss closeness against a pre-registered relative tolerance and the accel.grad_accum / accel.effective_batch_size telemetry accounting; positive mechanism-characterization harness, not a metric/gate-gap probe"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
