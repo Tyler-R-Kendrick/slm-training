@@ -5554,24 +5554,19 @@ class TwoTowerModel(nn.Module):
         owner_id = self._semantic_plan_owner_id(row, state)
         if owner_id is None:
             return None
-        owner_frame = next(
-            (
-                candidate
-                for candidate in reversed(frames[:-1])
-                if getattr(candidate, "kind", None) == "component"
-            ),
-            None,
-        )
-        if owner_frame is None:
-            return None
+        owner_frame = frames[-2]
         owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
             "element:"
         )
-        if owner_id not in {
+        if (
+            getattr(owner_frame, "kind", None) != "component"
+            or owner_id
+            not in {
                 self.tokenizer.token_to_id.get(f"+{owner_family}"),
                 self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
                 self.tokenizer.token_to_id.get(owner_family),
-        }:
+            }
+        ):
             return None
         visible_slot_ids = {
             int(self.tokenizer.sym_id(index))
