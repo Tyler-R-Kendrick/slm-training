@@ -4411,3 +4411,19 @@ AgentV remained 0/1.
 Evidence:
 [iter-e638-root-slot-coverage-20260720.md](iter-e638-root-slot-coverage-20260720.md)
 and [JSON](iter-e638-root-slot-coverage-20260720.json).
+
+## E639 root sibling coverage
+
+E639 positively selected legal role-compatible components at completed root
+section boundaries. The policy-matched r2 changed selection traces but not final
+outputs: the verified semantic root discarded every unplanned sibling, so all
+quality metrics stayed exactly at E637. Reject the treatment stamped v78. After
+rebasing onto E638's production lineage at v80, the append-only lineage records
+E639 as treatment v81 and restoration v82. The next lever belongs in verifier-
+safe root reference selection. No checkpoint was created or synced; AgentV
+remained 0/1.
+
+Evidence:
+[iter-e639-root-sibling-coverage-20260720.md](iter-e639-root-sibling-coverage-20260720.md),
+[authoritative JSON](iter-e639-root-sibling-coverage-20260720.json), and
+[r1 recipe diagnostic](iter-e639-root-sibling-coverage-r1-20260720.json).
