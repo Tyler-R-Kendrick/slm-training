@@ -4823,3 +4823,17 @@ strict delta is metric-version-bound, the suite is only `n=4`, and AgentV is
 
 Evidence: [narrative](iter-e674-semantic-role-alias-contract-20260721.md) and
 [JSON](iter-e674-semantic-role-alias-contract-20260721.json).
+
+## E675 prompt-authored open-property visibility
+
+E675 adds a default-off margin that prefers `true` only at a boolean `open`
+property of the active prompt-authored component. The OOD `n=4` run changes one
+token, repairing the requested Modal from invisible `open=false` to the
+schema- and gold-aligned `open=true`; the other three predictions are
+byte-identical. Existing aggregate metrics do not score this literal and are
+all unchanged. Retain v132 as a narrow render-semantic correction, not a
+quantitative or ship result. AgentV is 0/1 and no checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e675-schema-open-visibility-20260721.md) and
+[JSON](iter-e675-schema-open-visibility-20260721.json).

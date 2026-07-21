@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "run_id": "e675-schema-open-visibility-r1",
+  "experiment_id": "E675",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_semantic_scratch_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "A margin for a prompt-authored component's boolean open property will make requested overlay content visible without perturbing unrelated records.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e674-semantic-role-alias-contract-r1",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "exact_e674_policy": true,
+    "schema_open_decode_weight": 2.0,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.7931250000000001,
+      "component_type_recall": 0.875,
+      "reward_score": 0.973,
+      "ast_node_f1": 0.8555555555555556,
+      "ast_edge_f1": 0.7486263736263736,
+      "latency_ms_p50": 2641.6,
+      "latency_ms_p95": 6061.91,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "prediction_evidence": {
+    "unchanged_records": [
+      "ood_dashboard_01",
+      "ood_gallery_01",
+      "ood_auth_01"
+    ],
+    "changed_record": "ood_modal_01",
+    "before": "Modal(title, false, children)",
+    "after": "Modal(title, true, children)",
+    "public_schema_basis": "Modal description says set open to true to open; committed gold uses true.",
+    "aggregate_metric_change": false
+  },
+  "failure_breakdown": {},
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v132 and the default-off schema-open margin as a narrow semantic correction, not a quantitative or ship improvement. Exactly one prediction token changes, making the requested Modal visible; all aggregate metrics and three control predictions are unchanged.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5099544a921f30c4c633d89111db9b3effeffe94",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.3.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v132"
+    },
+    "stamped_at": "2026-07-21T11:39:26.582840+00:00"
+  }
+}
