@@ -6,7 +6,7 @@ Status: **wiring_only**
 
 ## What this exercises
 
-A drop-in ``SharedRecursiveDenoiserTower`` that preserves the ``DenoiserTower`` public contract. The fixture builds tiny TwoTower models for both ``stacked`` and ``shared_recursive`` denoiser architectures, runs forward passes and training_loss, verifies shapes/gradients, confirms object-identity weight sharing across recursions, and round-trips a recursive checkpoint. SLM-239 (RSC-A03): RNG usage now follows an explicit, disjoint namespace contract -- see the ``rng_contract`` field below.
+A drop-in ``SharedRecursiveDenoiserTower`` that preserves the ``DenoiserTower`` public contract. The fixture builds tiny TwoTower models for both ``stacked`` and ``shared_recursive`` denoiser architectures, runs forward passes and training_loss, verifies shapes/gradients, confirms object-identity weight sharing across recursions, and round-trips a recursive checkpoint. SLM-239 (RSC-A03): RNG usage now follows an explicit, disjoint namespace contract -- see the ``rng_contract`` field below. SLM-240 (RSC-A04): the retracted same-parameter-count/layer-names claim is replaced by a real, measured ``ArchitectureComparisonReportV1`` -- see 'Architecture comparison' below.
 
 ## Architectures
 
@@ -17,7 +17,22 @@ A drop-in ``SharedRecursiveDenoiserTower`` that preserves the ``DenoiserTower`` 
 - stacked: `[2, 6, 32]`
 - recursive: `[2, 6, 32]`
 
+## Architecture comparison (SLM-240 / RSC-A04)
+
+Independently measured comparison dimensions -- never a single collapsed `parity` claim (see `ArchitectureComparisonReportV1`).
+
+- interface-compatible: **true**
+- output-shape-compatible: **true**
+- parameter-matched: **false**
+- parameter delta: `+9248` (+14.23%) -- reproduced from `recursive_zstate_parameter_delta(d_model=32, max_len=256)`, exactly `z_latent` + `ctx_proj`
+- parameter_count_denoiser (transition layers only, architecture-independent): `{'stacked': 33792, 'recursive': 33792}`
+- behavioral parity: **not claimed**
+- claim class: **wiring**
+- block evaluations per forward: `{'stacked': 2, 'recursive': 4}`
+
 ## Losses
+
+**Objective-decomposition warning:** the raw scalar losses below are *not* a quality/parameter-matched comparison -- the two architectures have different parameter counts (see 'Architecture comparison' above) and the recursive arm's loss includes deep-supervision terms whose exact weighting/mode is governed by SLM-238 (RSC-A02)'s `recursive_depth_aux_mode` (see `deep_supervision_metrics` below and `docs/design/iter-rsc-a02-*`); placing these two numbers side by side never implies one architecture is better.
 
 - stacked: `49.943035`
 - recursive: `77.007797`

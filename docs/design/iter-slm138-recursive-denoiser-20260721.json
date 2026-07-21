@@ -1,4 +1,229 @@
 {
+  "architecture_comparison": {
+    "active_parameter_count": {
+      "recursive": 36283,
+      "stacked": 35035
+    },
+    "architecture_specific_parameter_names_and_shapes": {
+      "recursive_only": {
+        "ctx_proj.bias": [
+          32
+        ],
+        "ctx_proj.weight": [
+          32,
+          32
+        ],
+        "z_latent": [
+          256,
+          32
+        ]
+      },
+      "stacked_only": {}
+    },
+    "behaviorally_equivalent_under_declared_degeneracy": false,
+    "block_evaluations_per_forward": {
+      "recursive": 4,
+      "stacked": 2
+    },
+    "checkpoint_bytes": {
+      "recursive": 233018,
+      "stacked": 188419
+    },
+    "claim_class": "wiring",
+    "common_parameter_names_and_shapes": {
+      "layers.0.cross_attn.k_proj.bias": [
+        32
+      ],
+      "layers.0.cross_attn.k_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.cross_attn.out_proj.bias": [
+        32
+      ],
+      "layers.0.cross_attn.out_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.cross_attn.q_proj.bias": [
+        32
+      ],
+      "layers.0.cross_attn.q_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.cross_attn.v_proj.bias": [
+        32
+      ],
+      "layers.0.cross_attn.v_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.mlp.0.bias": [
+        128
+      ],
+      "layers.0.mlp.0.weight": [
+        128,
+        32
+      ],
+      "layers.0.mlp.2.bias": [
+        32
+      ],
+      "layers.0.mlp.2.weight": [
+        32,
+        128
+      ],
+      "layers.0.norm1.weight": [
+        32
+      ],
+      "layers.0.norm2.weight": [
+        32
+      ],
+      "layers.0.norm_cross.weight": [
+        32
+      ],
+      "layers.0.self_attn.k_proj.bias": [
+        32
+      ],
+      "layers.0.self_attn.k_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.self_attn.out_proj.bias": [
+        32
+      ],
+      "layers.0.self_attn.out_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.self_attn.q_proj.bias": [
+        32
+      ],
+      "layers.0.self_attn.q_proj.weight": [
+        32,
+        32
+      ],
+      "layers.0.self_attn.v_proj.bias": [
+        32
+      ],
+      "layers.0.self_attn.v_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.cross_attn.k_proj.bias": [
+        32
+      ],
+      "layers.1.cross_attn.k_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.cross_attn.out_proj.bias": [
+        32
+      ],
+      "layers.1.cross_attn.out_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.cross_attn.q_proj.bias": [
+        32
+      ],
+      "layers.1.cross_attn.q_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.cross_attn.v_proj.bias": [
+        32
+      ],
+      "layers.1.cross_attn.v_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.mlp.0.bias": [
+        128
+      ],
+      "layers.1.mlp.0.weight": [
+        128,
+        32
+      ],
+      "layers.1.mlp.2.bias": [
+        32
+      ],
+      "layers.1.mlp.2.weight": [
+        32,
+        128
+      ],
+      "layers.1.norm1.weight": [
+        32
+      ],
+      "layers.1.norm2.weight": [
+        32
+      ],
+      "layers.1.norm_cross.weight": [
+        32
+      ],
+      "layers.1.self_attn.k_proj.bias": [
+        32
+      ],
+      "layers.1.self_attn.k_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.self_attn.out_proj.bias": [
+        32
+      ],
+      "layers.1.self_attn.out_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.self_attn.q_proj.bias": [
+        32
+      ],
+      "layers.1.self_attn.q_proj.weight": [
+        32,
+        32
+      ],
+      "layers.1.self_attn.v_proj.bias": [
+        32
+      ],
+      "layers.1.self_attn.v_proj.weight": [
+        32,
+        32
+      ],
+      "norm.weight": [
+        32
+      ],
+      "pos.weight": [
+        256,
+        32
+      ],
+      "tok.weight": [
+        32,
+        32
+      ]
+    },
+    "contract_version": "ArchitectureComparisonReportV1",
+    "d_model": 32,
+    "estimated_forward_flops": {
+      "recursive": 608256.0,
+      "stacked": 304128.0
+    },
+    "interface_compatible": true,
+    "max_len": 256,
+    "output_shape_compatible": true,
+    "parameter_count_delta": 9248,
+    "parameter_count_delta_matches_formula": true,
+    "parameter_count_delta_pct": 21.486988847583643,
+    "parameter_count_denoiser": {
+      "recursive": 33792,
+      "stacked": 33792
+    },
+    "parameter_count_total": {
+      "recursive": 52288,
+      "stacked": 43040
+    },
+    "recursive_steps": 2,
+    "recursive_transition_layers": 2
+  },
   "checkpoint_roundtrip_ok": true,
   "claim_class": "wiring",
   "deep_supervision_metrics": {
@@ -81,12 +306,12 @@
   "stacked_params": 64994,
   "status": "wiring_only",
   "version_stamp": {
-    "code_commit": "ae5aef0509ecd5e7d372278cdfab4fa1a8316d91",
+    "code_commit": "36dd8d28e4a235497473e6cc1ba643b9358eee14",
     "code_dirty": false,
     "components": {
-      "model.recursive_denoiser": "v5"
+      "model.recursive_denoiser": "v6"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T01:29:39.603086+00:00"
+    "stamped_at": "2026-07-21T01:54:03.005364+00:00"
   }
 }
