@@ -5371,3 +5371,17 @@ or synced.
 Evidence: [narrative](iter-e713-outer-group-topology-20260721.md),
 [JSON](iter-e713-outer-group-topology-20260721.json), and
 [symbol-only output contract](symbol-only-output-contract.md).
+
+## E714 first symbol-only scratch baseline
+
+E714 trains the first output-contract-v2-compatible checkpoint from scratch on
+the strict 141-record symbol-only snapshot. Local CPU training completed 600
+steps in 48.72 seconds under `max_wall_minutes=2`; no remote compute or bucket
+sync was used. Across five bounded diagnostic suites, every prediction satisfies
+the symbol-only contract, but strict meaningfulness and reward remain 0.0,
+AgentV is 0/5, and learned LTR decoding produces invalid or incomplete schema
+structures with five timeouts. Retain the checkpoint only as the compatible
+baseline for decode treatments; it is not promotable or ship.
+
+Evidence: [narrative](iter-e714-symbol-only-baseline-20260721.md) and
+[JSON](iter-e714-symbol-only-baseline-20260721.json).

@@ -34,14 +34,15 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
 summary and the full card whenever a checkpoint is created or promoted.
 
-**Current compatibility:** output contract v2 is symbol-only. All existing
-checkpoints predate it and are provenance-only; current code refuses to load,
-serve, resume, promote, or evaluate them. A new checkpoint must be trained from
-fully templatized targets. See
+**Current compatibility:** output contract v2 is symbol-only. All pre-E714
+checkpoints are provenance-only; current code refuses to load, serve, resume,
+promote, or evaluate them. E714 is the first compatible scratch baseline, but
+it fails semantic gates and is not promoted. See
 [the contract](docs/design/symbol-only-output-contract.md).
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1/last.pt` | `outputs/runs/…` (local) | First v2-compatible CPU scratch checkpoint; 600 steps / 48.72s, strict meaning 0.0 and AgentV 0/5 — diagnostic only, not ship |
 | Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5; wiring only |
 | Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Local DirectML verify | `local_directml_adreno_20260714/last.pt` | `outputs/runs/…` (local) | Adreno GPU train/checkpoint OK; 5-step wiring run, not evaluated or ship |
