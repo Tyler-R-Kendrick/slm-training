@@ -22,9 +22,9 @@ import {
 
 export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
-  const roster = usePoll<any>("/api/checkpoints", 0);
-  const quality = usePoll<any>("/api/scoreboards/quality", 0);
-  const champions = usePoll<any>("/api/lineage/champions", 0);
+  const roster = usePoll<any>("/api/checkpoints", 15000);
+  const quality = usePoll<any>("/api/scoreboards/quality", 15000);
+  const champions = usePoll<any>("/api/lineage/champions", 15000);
 
   const [policy, setPolicy] = useState<Record<string, Record<string, number>> | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
       .catch(() => setGate(null));
   }, [policy, runId, quality.data]);
 
-  const cmp = usePoll<any>(runId ? `/api/comparisons/metrics?candidate_run_id=${runId}` : null, 0);
+  const cmp = usePoll<any>(runId ? `/api/comparisons/metrics?candidate_run_id=${runId}` : null, 15000);
   const dep = roster.data?.deployment ?? {};
   const twChampion = champions.data?.champions?.twotower;
 
@@ -72,7 +72,7 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
         <StatTile label="A/B comparisons" value={cmp.data?.total ?? 0} sub={cmp.data ? `${pct(cmp.data.win_rate)} win` : ""} />
       </Grid>
 
-      <Card title="Roster" right={<ProvenanceBadge provenance="committed" />}>
+      <Card title="Roster" right={<ProvenanceBadge provenance={roster.data?.checkpoints?.some((c: any) => c.provenance === "live") ? "live" : roster.data?.checkpoints?.length ? "committed" : undefined} />}>
         <DataTable
           columns={[
             { key: "role", label: "Role" },
