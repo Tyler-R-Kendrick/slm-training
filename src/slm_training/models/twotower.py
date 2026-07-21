@@ -5009,6 +5009,33 @@ class TwoTowerModel(nn.Module):
             if str(expr_type).startswith("element:")
         )
 
+    @staticmethod
+    def _semantic_plan_role_family_counts(
+        family_counts: Counter[str],
+        role_candidates: dict[str, tuple[str, ...]] | None,
+    ) -> Counter[str]:
+        """Fill uncovered visible roles with preferred schema-compatible leaves."""
+        if not role_candidates:
+            return family_counts
+        from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
+
+        completed = family_counts.copy()
+        planned = set(family_counts)
+        for candidates in role_candidates.values():
+            if planned.intersection(candidates):
+                continue
+            family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in candidates
+                ),
+                None,
+            )
+            if family is not None:
+                completed[family] += 1
+        return completed
+
     def _semantic_plan_bias(
         self,
         row: int,
@@ -9520,24 +9547,41 @@ class TwoTowerModel(nn.Module):
             compiler = OpenUISemanticPlanCompiler(honesty_mode="production")
             self._semantic_plan_action_scores = []
             self._semantic_plan_action_counts = []
-            for prompt in prompts:
+            for row, prompt in enumerate(prompts):
                 plan = prompt_semantic_plan(prompt)
                 features = compiler.annotate_actions(None, action_ids, plan)
-                self._semantic_plan_action_scores.append(
-                    {
-                        token_id: feature.plan_confidence
-                        for token_id, feature in zip(
-                            component_ids, features, strict=True
-                        )
-                        if feature.component_family_compatible
-                        and not feature.conflict_or_unknown
-                    }
-                )
                 family_counts = Counter(
                     slot.component_family
                     for slot in (plan.role_slots if plan is not None else ())
                     if slot.component_family
                 )
+                family_counts = self._semantic_plan_role_family_counts(
+                    family_counts,
+                    (
+                        self._semantic_role_candidates[row]
+                        if self._semantic_role_candidates
+                        and row < len(self._semantic_role_candidates)
+                        else None
+                    ),
+                )
+                action_scores = {
+                    token_id: feature.plan_confidence
+                    for token_id, feature in zip(
+                        component_ids, features, strict=True
+                    )
+                    if feature.component_family_compatible
+                    and not feature.conflict_or_unknown
+                }
+                action_scores.update(
+                    {
+                        token_id: 1.0
+                        for token_id, action_id in zip(
+                            component_ids, action_ids, strict=True
+                        )
+                        if family_counts[action_id] > 0
+                    }
+                )
+                self._semantic_plan_action_scores.append(action_scores)
                 self._semantic_plan_action_counts.append(
                     {
                         token_id: family_counts[action_id]

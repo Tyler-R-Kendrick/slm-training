@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 
 import pytest
 import torch
@@ -2175,6 +2176,21 @@ def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     assert build_bias.tolist() == [2.0, 0.0, 0.0]
     assert end_bias is not None
     assert end_bias.tolist() == [0.0, 0.0, 2.0]
+
+
+def test_semantic_plan_role_family_counts_fills_only_uncovered_roles() -> None:
+    counts = TwoTowerModel._semantic_plan_role_family_counts(
+        Counter({"ImageGallery": 1}),
+        {
+            ":gallery.img": ("Image", "ImageGallery"),
+            ":gallery.caption": ("ImageGallery", "TextContent"),
+            ":gallery.hint.title": ("Callout", "TextContent"),
+            ":gallery.hint.body": ("Label", "TextContent"),
+            ":gallery.cta": ("Button", "FormControl"),
+        },
+    )
+
+    assert counts == Counter({"TextContent": 2, "ImageGallery": 1, "Button": 1})
 
 
 def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
