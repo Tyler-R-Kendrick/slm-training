@@ -5263,9 +5263,22 @@ class TwoTowerModel(nn.Module):
             component = str(getattr(frame, "expr_type", "")).removeprefix(
                 "element:"
             )
+            property_names = tuple(getattr(frame, "property_names", ()))
+            if (
+                role_bindings
+                and component in role_bindings
+                and 0 <= index < len(property_names)
+            ):
+                active_property = str(property_names[index])
             accepts_slot = (
                 0 <= index < len(schemas)
-                and bool(schemas[index].get("x-openui-placeholder"))
+                and (
+                    bool(schemas[index].get("x-openui-placeholder"))
+                    or (
+                        active_property is not None
+                        and schemas[index].get("type") == "string"
+                    )
+                )
             )
         elif getattr(frame, "kind", None) == "object":
             active_property = getattr(frame, "active_property", None)

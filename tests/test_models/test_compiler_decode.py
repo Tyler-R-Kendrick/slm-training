@@ -1388,6 +1388,45 @@ def test_schema_role_slot_bias_margin_floors_only_bound_unused_role() -> None:
     )
 
 
+def test_schema_role_slot_bias_matches_bound_positional_property() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+    from slm_training.dsl.production_codec import OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=8.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}CardHeader"])
+    slots = [":hero.title", ":hero.subtitle"]
+    candidates = semantic_role_candidates(slots, ["CardHeader"])
+    title_id, subtitle_id = (tokenizer.sym_id(index) for index in range(2))
+
+    title_bias = model._schema_role_slot_bias(
+        state,
+        (title_id, subtitle_id),
+        torch.zeros(2),
+        slots,
+        candidates,
+        prefix=[],
+        role_bindings={"CardHeader": tuple(slots)},
+    )
+    assert title_bias is not None
+    assert title_bias.tolist() == [8.0, 0.0]
+
+    assert state.advance_id(title_id)
+    subtitle_bias = model._schema_role_slot_bias(
+        state,
+        (title_id, subtitle_id),
+        torch.zeros(2),
+        slots,
+        candidates,
+        prefix=[title_id],
+        role_bindings={"CardHeader": tuple(slots)},
+    )
+    assert subtitle_bias is not None
+    assert subtitle_bias.tolist() == [0.0, 8.0]
+
+
 def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
     from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.production_codec import NAME_PREFIX, OPEN_PREFIX

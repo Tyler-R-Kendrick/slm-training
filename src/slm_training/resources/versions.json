@@ -1559,7 +1559,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v136",
+      "version": "v137",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1574,6 +1574,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v137",
+          "date": "2026-07-21",
+          "note": "E682: constrain explicitly planned positional role slots by their active public-schema property name"
+        },
         {
           "version": "v136",
           "date": "2026-07-21",
