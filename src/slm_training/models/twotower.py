@@ -5386,6 +5386,7 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
+        role_bindings: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
         """Prefer coverage-compatible continuations before legal frame closure."""
         weight = float(
@@ -5514,7 +5515,14 @@ class TwoTowerModel(nn.Module):
                         semantic_role_candidates
                         and component in semantic_role_candidates.get(slot, ())
                     )
-                    or component in reachable_candidates.get(slot, ())
+                    or (
+                        component in reachable_candidates.get(slot, ())
+                        and (
+                            not role_bindings
+                            or component not in role_bindings
+                            or slot in role_bindings[component]
+                        )
+                    )
                     for _index, slot in missing
                 ):
                     targets.append(position)
@@ -7850,6 +7858,12 @@ class TwoTowerModel(nn.Module):
                             self._semantic_role_candidates[row]
                             if self._semantic_role_candidates
                             and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
+                        (
+                            self._semantic_plan_role_bindings[row]
+                            if self._semantic_plan_role_bindings
+                            and row < len(self._semantic_plan_role_bindings)
                             else None
                         ),
                     )

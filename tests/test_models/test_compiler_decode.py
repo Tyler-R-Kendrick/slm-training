@@ -464,6 +464,56 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     assert bias.tolist() == [7.0, 0.0]
 
 
+def test_slot_coverage_wrapper_stops_after_bound_roles_are_covered() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", slot_coverage_close_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    tab_item_id = tokenizer.token_to_id["+TabItem"]
+    close_id = tokenizer.token_to_id["]"]
+    tab1_id = tokenizer.sym_id(0)
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Tabs"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=({"$ref": "#/$defs/TabItem"},),
+                close="]",
+            ),
+        ]
+    )
+    slots = [":tabs.tab1", ":tabs.tab2", ":tabs.details.title"]
+    candidates = {
+        ":tabs.tab1": ("AccordionItem", "TabItem"),
+        ":tabs.tab2": ("AccordionItem", "TabItem"),
+        ":tabs.details.title": ("Callout", "CardHeader"),
+    }
+    bindings = {"TabItem": (":tabs.tab1", ":tabs.tab2")}
+
+    second = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, tab1_id],
+        (tab_item_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        slots,
+        candidates,
+        bindings,
+    )
+    complete = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, tab1_id, tokenizer.sym_id(1)],
+        (tab_item_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        slots,
+        candidates,
+        bindings,
+    )
+
+    assert second is not None and second.tolist() == [7.0, 0.0]
+    assert complete is None
+
+
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
     from types import SimpleNamespace
 

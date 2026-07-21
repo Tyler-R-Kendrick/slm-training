@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v144",
+      "version": "v145",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v145",
+          "date": "2026-07-21",
+          "note": "E690: stop schema-reachable wrapper continuation after all of that component's explicit planned role bindings are covered"
+        },
         {
           "version": "v144",
           "date": "2026-07-21",
