@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.lang_core import bridge_available
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
@@ -72,7 +73,17 @@ def test_load_rejects_foreign_sidecar(tmp_path: Path) -> None:
 def test_kind_ids_partition(tok: ChoiceTokenizer) -> None:
     all_ids = set(range(tok.vocab_size))
     covered: set[int] = set()
-    for kind in ("special", "struct", "component", "builtin", "lit", "byte", "sym", "bind", "state"):
+    for kind in (
+        "special",
+        "struct",
+        "component",
+        "builtin",
+        "lit",
+        "byte",
+        "sym",
+        "bind",
+        "state",
+    ):
         ids = tok.kind_ids(kind)
         assert not (ids & covered)
         covered |= ids
@@ -321,9 +332,7 @@ def test_direct_candidates_match_exhaustive_oracle_on_reachable_states(
         assert state.advance_id(tok.token_to_id[token])
         return state
 
-    component = next(
-        token for token in tok.token_to_id if token.startswith("+")
-    )
+    component = next(token for token in tok.token_to_id if token.startswith("+"))
     object_state = advanced("{")
     states = [
         ChoiceDecodeState(tok, slot_count=3),
@@ -415,9 +424,7 @@ def test_minimum_completion_cache_collapses_equivalent_literal_states(
     tok: ChoiceTokenizer,
 ) -> None:
     literals = [
-        token
-        for token in tok.token_to_id
-        if token.startswith(LIT_PREFIX + '"')
+        token for token in tok.token_to_id if token.startswith(LIT_PREFIX + '"')
     ][:2]
     assert len(literals) == 2
     states = []
@@ -438,7 +445,9 @@ def test_minimum_completion_cache_collapses_equivalent_literal_states(
 
 
 @needs_bridge
-def test_twotower_choice_wiring(tmp_path: Path) -> None:
+def test_twotower_choice_wiring(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """from_records builds the choice tokenizer; train/save/load round trip."""
     import torch  # noqa: F401 - environment guard
 
@@ -478,6 +487,44 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     text = model.generate("Hero card", gold=records[0])
     assert text
     assert validate(text).serialized == text
+    projected = HERO.replace(":hero.title", ":slot_0").replace(":hero.body", ":slot_1")
+    projected_ids = model.tokenizer.encode(
+        projected, placeholders=[":slot_0", ":slot_1"]
+    )
+
+    def deterministic_choice_decode(
+        _ctx: object,
+        _ctx_pad: object,
+        length: int,
+        contracts: list[list[str] | None],
+    ) -> object:
+        assert contracts == [[":slot_0", ":slot_1"]]
+        canvas = torch.full((1, length), model.tokenizer.pad_id, dtype=torch.long)
+        canvas[0, : len(projected_ids)] = torch.tensor(projected_ids)
+        return canvas
+
+    monkeypatch.setattr(model, "_choice_ltr_decode_batch", deterministic_choice_decode)
+    choice = model.generate_batch_choice_requests(
+        [
+            GenerationRequest(
+                prompt="Hero card",
+                slot_contract=(":hero.title", ":hero.body"),
+            )
+        ],
+        max_len=64,
+    )[0]
+    assert choice.status == "verified"
+    assert choice.opaque_slot_contract == (":slot_0", ":slot_1")
+    assert choice.slot_projection == (
+        (":hero.title", ":slot_0"),
+        (":hero.body", ":slot_1"),
+    )
+    assert (
+        model.tokenizer.decode(
+            list(choice.choice_ids), placeholders=choice.opaque_slot_contract
+        ).strip()
+        == choice.canonical_source
+    )
 
     ckpt = tmp_path / "choice.pt"
     model.save(ckpt)

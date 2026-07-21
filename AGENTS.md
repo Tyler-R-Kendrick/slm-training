@@ -344,6 +344,16 @@ which revision of the constraints produced it. Contract:
 - Preserve train/test isolation and structural leakage checks.
 - Never reintroduce silent `gold.placeholders` channels under
   `honest_slot_contract=True`.
+- Authoritative deterministic decode proofs always outrank learned, semantic,
+  confidence, or preference scores. Commit an exact legal singleton before any
+  neural ranking and never downgrade certainty into a soft preference.
+- New production generation/decoder paths must project model-facing symbol identity
+  to stable opaque request-local ordinals. External names, template-marker spellings,
+  and alias-derived text, hashes, or embeddings are codec/realization data and must
+  not become scoring or legal authority. Typed role/type metadata may be supplied
+  separately as declared authority; restore caller names only after verified decode.
+  Historical default-off name-aware experiment modes may remain for checkpoint and
+  evidence compatibility, but must not become a production default or new authority.
 - Say fixture-demo vs ship. Do not weaken ship gates to green CI.
 - Match existing style; no unrelated drive-by refactors.
 - Before adding or relocating tracked paths, use `organize-repository`, follow

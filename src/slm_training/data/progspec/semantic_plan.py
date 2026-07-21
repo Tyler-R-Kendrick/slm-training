@@ -112,6 +112,26 @@ class SemanticPlanV1(_StrictModel):
         default_factory=PlanConfidenceCalibration
     )
 
+    @model_validator(mode="after")
+    def check_identity_bijections(self) -> "SemanticPlanV1":
+        symbol_ids = [symbol.symbol_id for symbol in self.symbols]
+        if len(symbol_ids) != len(set(symbol_ids)):
+            raise ValueError("symbol_id values must be unique")
+        role_ids = [slot.role_id for slot in self.role_slots]
+        if len(role_ids) != len(set(role_ids)):
+            raise ValueError("role_id values must be unique")
+        binding_roles = [binding.role_slot_id for binding in self.bindings]
+        if len(binding_roles) != len(set(binding_roles)):
+            raise ValueError("role_slot_id bindings must be unique")
+        known_symbols = set(symbol_ids)
+        for binding in self.bindings:
+            unknown = set(binding.candidate_symbols or ()) - known_symbols
+            if unknown:
+                raise ValueError(
+                    f"binding references unknown symbol ids: {sorted(unknown)}"
+                )
+        return self
+
     @property
     def is_oracle_only(self) -> bool:
         return self.identity.provenance in {"gold", "oracle_override"}

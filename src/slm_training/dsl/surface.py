@@ -521,8 +521,8 @@ def _oracle_failure(verifier_report: Any) -> str | None:
         ok = getattr(verifier_report, "ok", None)
     if failing_gate is not None:
         return getattr(failing_gate, "value", str(failing_gate))
-    if ok is False:
-        return "oracle_rejected"
+    if ok is not True:
+        return "oracle_rejected" if ok is False else "oracle_unverified"
     return None
 
 

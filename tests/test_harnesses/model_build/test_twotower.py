@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,13 @@ torch = pytest.importorskip("torch")
 
 from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
-from slm_training.data.contract import CallerContentBinding, GenerationRequest
+from slm_training.data.contract import (
+    CallerContentBinding,
+    ChoiceGenerationResult,
+    GenerationRequest,
+    RuntimeSymbol,
+    choice_generation_fingerprint,
+)
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
 from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
@@ -142,7 +149,9 @@ def test_ltr_suffix_always_masks_first_content_token() -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(
         records,
-        config=TwoTowerConfig(d_model=32, n_heads=4, context_layers=1, denoiser_layers=1),
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
         device="cpu",
     )
     target = torch.tensor([model._encode_openui(HERO, placeholders=[])])
@@ -158,7 +167,9 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(
         records,
-        config=TwoTowerConfig(d_model=32, n_heads=4, context_layers=1, denoiser_layers=1),
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
     )
     path = tmp_path / "broken.pt"
     model.save(path)
@@ -208,11 +219,11 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_topology_decode_weight=0.2,
             binder_arity_loss_weight=0.7,
             binder_arity_decode_weight=0.1,
-                root_reference_arity_loss_weight=0.6,
-                root_reference_arity_decode_weight=0.05,
-                root_reference_identity_loss_weight=0.55,
-                root_reference_identity_negative_weight=3.0,
-                root_reference_identity_decode_weight=0.04,
+            root_reference_arity_loss_weight=0.6,
+            root_reference_arity_decode_weight=0.05,
+            root_reference_identity_loss_weight=0.55,
+            root_reference_identity_negative_weight=3.0,
+            root_reference_identity_decode_weight=0.04,
         ),
     )
     assert model.component_inventory_head is not None
@@ -422,14 +433,10 @@ def test_auxiliary_loss_does_not_change_base_gradients() -> None:
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:
     damaged = (
-        'root===Stack([cta, card, =])\n'
-        'cta==Button(":cta=a==b")\n'
-        'card==Card([cta, =])'
+        'root===Stack([cta, card, =])\ncta==Button(":cta=a==b")\ncard==Card([cta, =])'
     )
     expected = (
-        'root = Stack([cta, card])\n'
-        'cta = Button(":cta=a==b")\n'
-        'card = Card([cta])'
+        'root = Stack([cta, card])\ncta = Button(":cta=a==b")\ncard = Card([cta])'
     )
     assert TwoTowerModel._repair_surface_syntax(damaged) == expected
 
@@ -444,7 +451,9 @@ def test_migrate_checkpoint_rebuilds_v2_vocab(tmp_path: Path) -> None:
     records_path = tmp_path / "records.jsonl"
     write_jsonl(records_path, records)
 
-    model = TwoTowerModel.from_records(records, config=TwoTowerConfig(d_model=32, n_heads=4))
+    model = TwoTowerModel.from_records(
+        records, config=TwoTowerConfig(d_model=32, n_heads=4)
+    )
     src = tmp_path / "legacy.pt"
     model.save(src)
 
@@ -557,7 +566,9 @@ def test_fragment_records_reach_twotower_training_loss() -> None:
 def test_legacy_twotower_rejects_fragment_request() -> None:
     model = TwoTowerModel.from_records(
         [ExampleRecord(id="doc", prompt="CTA", openui=CTA)],
-        config=TwoTowerConfig(d_model=32, n_heads=4, context_layers=1, denoiser_layers=1),
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
         device="cpu",
     )
     model.output_contract_version = 0
@@ -570,11 +581,13 @@ def test_legacy_twotower_rejects_fragment_request() -> None:
 @pytestmark_bridge
 def test_opt_in_binding_runs_only_after_legacy_generation(
     monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+) -> None:
     template = 'root = TextContent(":slot_0")'
     model = TwoTowerModel.from_records(
         [ExampleRecord(id="doc", prompt="Hero", openui=template)],
-        config=TwoTowerConfig(d_model=32, n_heads=4, context_layers=1, denoiser_layers=1),
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
         device="cpu",
     )
     calls = 0
@@ -582,10 +595,11 @@ def test_opt_in_binding_runs_only_after_legacy_generation(
     def fake_generate(
         self: TwoTowerModel,
         requests: list[GenerationRequest],
-        **_kwargs: object,
+        **kwargs: object,
     ) -> list[str]:
         nonlocal calls
         calls += 1
+        assert kwargs["_opaque_slot_projection"] is True
         assert requests[0].slot_contract == (":slot_0",)
         self._last_generation_evidence = [{"decode": "complete"}]
         return [template for _ in requests]
@@ -609,13 +623,207 @@ def test_opt_in_binding_runs_only_after_legacy_generation(
     assert value not in str(evidence)
 
 
+@pytestmark_bridge
+def test_opt_in_choice_generation_returns_exact_verified_stream(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    template = 'root = TextContent(":slot_0")'
+    model = TwoTowerModel.from_records(
+        [
+            ExampleRecord(
+                id="doc",
+                prompt="Hero",
+                openui=template,
+                placeholders=[":slot_0"],
+            )
+        ],
+        config=TwoTowerConfig(
+            output_tokenizer="choice",
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
+    ids = model.tokenizer.encode(template, placeholders=[":slot_0"])
+    tokens = [model.tokenizer.id_to_token[token_id] for token_id in ids]
+    calls = 0
+
+    def fake_generate(requests: list[GenerationRequest], **kwargs: object) -> list[str]:
+        nonlocal calls
+        calls += 1
+        assert kwargs["_opaque_slot_projection"] is True
+        assert requests[0].slot_contract == (":slot_0",)
+        model._last_generation_evidence = [
+            {
+                "schema": "choice_decision_trace/v2",
+                "choice_ids": ids,
+                "choice_tokens": tokens,
+            }
+        ]
+        return [template]
+
+    monkeypatch.setattr(model, "generate_batch_requests", fake_generate)
+    request = GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))
+    first = model.generate_batch_choice_requests([request])[0]
+    second = model.generate_batch_choice_requests([request])[0]
+
+    assert calls == 2
+    assert first == second
+    assert first.status == "verified"
+    assert first.verification == "pack_verified"
+    assert first.opaque_slot_contract == (":slot_0",)
+    assert first.slot_projection == ((":hero.title", ":slot_0"),)
+    assert first.choice_ids == tuple(ids)
+    assert first.choice_tokens == tuple(tokens)
+    assert first.canonical_source == template
+    assert len(first.source_fingerprint) == len(first.fingerprint) == 64
+    encoded = json.dumps(first.to_dict(), sort_keys=True, ensure_ascii=False)
+    assert ChoiceGenerationResult.from_dict(json.loads(encoded)) == first
+    payload = {
+        key: value
+        for key, value in first.to_dict().items()
+        if key != "fingerprint"
+    }
+    assert choice_generation_fingerprint(payload) == first.fingerprint
+    for key, value in (
+        ("choice_ids", [*first.choice_ids, 999]),
+        ("slot_projection", [[":other", ":slot_0"]]),
+        ("canonical_source", template + "\n"),
+    ):
+        changed = dict(payload)
+        changed[key] = value
+        assert choice_generation_fingerprint(changed) != first.fingerprint
+
+
+def test_choice_generation_rejects_incompatible_or_unprovable_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    surface = TwoTowerModel.from_records(
+        [ExampleRecord(id="surface", prompt="Hero", openui=HERO)],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+        device="cpu",
+    )
+    with pytest.raises(ValueError, match="choice-codec checkpoint"):
+        surface.generate_batch_choice_requests([GenerationRequest(prompt="Hero")])
+
+    template = 'root = TextContent(":slot_0")'
+    choice = TwoTowerModel.from_records(
+        [
+            ExampleRecord(
+                id="choice",
+                prompt="Hero",
+                openui=template,
+                placeholders=[":slot_0"],
+            )
+        ],
+        config=TwoTowerConfig(
+            output_tokenizer="choice",
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
+    with pytest.raises(ValueError, match="document output only"):
+        choice.generate_batch_choice_requests(
+            [GenerationRequest(prompt="Boolean", output_kind="lexical")]
+        )
+    choice.config.best_of_n = 2
+    with pytest.raises(ValueError, match="best_of_n=1"):
+        choice.generate_batch_choice_requests([GenerationRequest(prompt="Hero")])
+    choice.config.best_of_n = 1
+    undeclared = GenerationRequest(
+        prompt="Hero",
+        slot_contract=(":hero.title",),
+        runtime_symbols=(
+            RuntimeSymbol(surface=":other.title", role="external_entity"),
+        ),
+    )
+    with pytest.raises(ValueError, match="must appear in slot_contract"):
+        choice.generate_batch_choice_requests([undeclared])
+    with pytest.raises(ValueError, match="must appear in slot_contract"):
+        surface.generate_batch_bound_requests([undeclared], [tuple()])
+
+    monkeypatch.setattr(choice, "generate_batch_requests", lambda *_a, **_k: [template])
+    choice._last_generation_evidence = []
+    with pytest.raises(ValueError, match="aligned stream evidence"):
+        choice.generate_batch_choice_requests([GenerationRequest(prompt="Hero")])
+
+
+def test_opaque_projection_keeps_marker_names_out_of_scoring() -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="doc", prompt="Hero", openui=HERO)],
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            slot_component_decode_weight=1.0,
+            slot_contract_in_context=True,
+        ),
+        device="cpu",
+    )
+    model._opaque_slot_projection_active = True
+    marker = [":slot_0"]
+    assert model._slot_component_texts(marker) == ["content:0"]
+    assert model._slot_component_texts([":meaningful.title"]) == ["content:0"]
+    assert model._slot_role_token(marker[0]) == "content"
+    context = model._context_prompts(
+        ["Hero"],
+        slot_contracts=[marker],
+        opaque_slot_projection=True,
+    )[0]
+    assert "slot_0" not in context
+    model._opaque_slot_projection_active = False
+
+
+def test_opaque_projection_state_is_scoped_across_calls_and_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="doc", prompt="Hero", openui=HERO)],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+        device="cpu",
+    )
+    observed: list[bool] = []
+
+    def fake_once(*_args: object, **_kwargs: object) -> list[str]:
+        observed.append(model._opaque_slot_projection_active)
+        return [HERO]
+
+    monkeypatch.setattr(model, "_generate_batch_once", fake_once)
+    request = GenerationRequest(prompt="Hero")
+    model.generate_batch_requests([request], _opaque_slot_projection=True)
+    model.generate_batch_requests([request])
+    assert observed == [True, False]
+    assert model._opaque_slot_projection_active is False
+
+    def fail_once(*_args: object, **_kwargs: object) -> list[str]:
+        assert model._opaque_slot_projection_active is True
+        raise RuntimeError("decode failed")
+
+    monkeypatch.setattr(model, "_generate_batch_once", fail_once)
+    with pytest.raises(RuntimeError, match="decode failed"):
+        model.generate_batch_requests([request], _opaque_slot_projection=True)
+    assert model._opaque_slot_projection_active is False
+
+
 def test_twotower_save_load_generate(tmp_path: Path) -> None:
     records = [
         ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),
     ]
     model = TwoTowerModel.from_records(
         records,
-        config=TwoTowerConfig(d_model=64, n_heads=4, context_layers=1, denoiser_layers=2),
+        config=TwoTowerConfig(
+            d_model=64, n_heads=4, context_layers=1, denoiser_layers=2
+        ),
         device="cpu",
     )
     opt = torch.optim.AdamW(model.trainable_parameters(), lr=3e-3)

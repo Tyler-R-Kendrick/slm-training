@@ -15,6 +15,7 @@ from slm_training.dsl.placeholders import extract_placeholders, merge_placeholde
 from slm_training.dsl.schema import OUTPUT_KINDS, ExampleRecord, OutputKind
 
 _BINDER_RE = re.compile(r"(?m)^([a-z_][A-Za-z0-9_]*)\s*=")
+_TYPED_AUTHORITY_RE = re.compile(r"[a-z][a-z0-9_-]{0,63}")
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class RuntimeSymbol:
     role: Literal["alpha_binder", "external_entity", "state", "fresh_binder"]
     namespace: tuple[str, ...] = ()
     semantic_type: str | None = None
+    semantic_role: str | None = None
     scope: str | None = None
     signature: str | None = None
     description: str | None = None
@@ -43,6 +45,12 @@ class RuntimeSymbol:
             raise ValueError("external_entity surfaces must start with ':'")
         if self.role == "state" and not self.surface.startswith("$"):
             raise ValueError("state surfaces must start with '$'")
+        for field_name in ("semantic_type", "semantic_role"):
+            value = getattr(self, field_name)
+            if value is not None and not _TYPED_AUTHORITY_RE.fullmatch(value):
+                raise ValueError(
+                    f"{field_name} must be a declared lowercase typed identifier"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         data = {
@@ -50,7 +58,13 @@ class RuntimeSymbol:
             "role": self.role,
             "namespace": list(self.namespace),
         }
-        for key in ("semantic_type", "scope", "signature", "description"):
+        for key in (
+            "semantic_type",
+            "semantic_role",
+            "scope",
+            "signature",
+            "description",
+        ):
             value = getattr(self, key)
             if value is not None:
                 data[key] = value
@@ -63,6 +77,7 @@ class RuntimeSymbol:
             role=str(data["role"]),  # type: ignore[arg-type]
             namespace=tuple(str(part) for part in data.get("namespace") or ()),
             semantic_type=_optional_str(data.get("semantic_type")),
+            semantic_role=_optional_str(data.get("semantic_role")),
             scope=_optional_str(data.get("scope")),
             signature=_optional_str(data.get("signature")),
             description=_optional_str(data.get("description")),
@@ -92,13 +107,20 @@ class GenerationRequest:
             raise ValueError(f"invalid output kind {self.output_kind!r}")
         for slot in self.slot_contract:
             if not slot.startswith(":"):
-                raise ValueError(f"slot_contract entries must start with ':', got {slot!r}")
+                raise ValueError(
+                    f"slot_contract entries must start with ':', got {slot!r}"
+                )
         seen: set[str] = set()
         for symbol in self.runtime_symbols:
             if symbol.surface in seen:
-                raise ValueError(f"duplicate or conflicting runtime symbol {symbol.surface!r}")
+                raise ValueError(
+                    f"duplicate or conflicting runtime symbol {symbol.surface!r}"
+                )
             seen.add(symbol.surface)
-            if symbol.surface in self.slot_contract and symbol.role != "external_entity":
+            if (
+                symbol.surface in self.slot_contract
+                and symbol.role != "external_entity"
+            ):
                 raise ValueError(
                     f"slot_contract surface {symbol.surface!r} conflicts with role {symbol.role!r}"
                 )
@@ -151,7 +173,9 @@ class GenerationRequest:
         if self.design_md is not None:
             data["design_md"] = self.design_md
         if self.runtime_symbols:
-            data["runtime_symbols"] = [symbol.to_dict() for symbol in self.runtime_symbols]
+            data["runtime_symbols"] = [
+                symbol.to_dict() for symbol in self.runtime_symbols
+            ]
         if self.output_kind != "document":
             data["output_kind"] = self.output_kind
         if self.output_category is not None:
@@ -220,11 +244,7 @@ class ResolvedContentBinding:
 
     def evidence_dict(self) -> dict[str, Any]:
         """Sanitized metadata safe for telemetry and generation evidence."""
-        return {
-            key: value
-            for key, value in self.to_dict().items()
-            if key != "value"
-        }
+        return {key: value for key, value in self.to_dict().items() if key != "value"}
 
 
 @dataclass(frozen=True)
@@ -271,6 +291,63 @@ class BoundGenerationResult:
             "diagnostics": dict(self.diagnostics),
             "error_count": len(self.errors),
         }
+
+
+@dataclass(frozen=True)
+class ChoiceGenerationResult:
+    """Verified source materialized from one exact model choice stream."""
+
+    status: str
+    choice_ids: tuple[int, ...]
+    choice_tokens: tuple[str, ...]
+    opaque_slot_contract: tuple[str, ...]
+    slot_projection: tuple[tuple[str, str], ...]
+    canonical_source: str
+    verification: str
+    source_fingerprint: str
+    fingerprint: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "choice_ids": list(self.choice_ids),
+            "choice_tokens": list(self.choice_tokens),
+            "opaque_slot_contract": list(self.opaque_slot_contract),
+            "slot_projection": [list(pair) for pair in self.slot_projection],
+            "canonical_source": self.canonical_source,
+            "verification": self.verification,
+            "source_fingerprint": self.source_fingerprint,
+            "fingerprint": self.fingerprint,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ChoiceGenerationResult":
+        return cls(
+            status=str(data["status"]),
+            choice_ids=tuple(int(value) for value in data["choice_ids"]),
+            choice_tokens=tuple(str(value) for value in data["choice_tokens"]),
+            opaque_slot_contract=tuple(
+                str(value) for value in data["opaque_slot_contract"]
+            ),
+            slot_projection=tuple(
+                (str(pair[0]), str(pair[1])) for pair in data["slot_projection"]
+            ),
+            canonical_source=str(data["canonical_source"]),
+            verification=str(data["verification"]),
+            source_fingerprint=str(data["source_fingerprint"]),
+            fingerprint=str(data["fingerprint"]),
+        )
+
+
+def choice_generation_fingerprint(payload: dict[str, Any]) -> str:
+    """Fingerprint exact choice evidence and its deterministic materialization."""
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def bound_generation_fingerprint(payload: dict[str, Any]) -> str:
@@ -494,9 +571,11 @@ def load_generation_requests(
 __all__ = [
     "BoundGenerationResult",
     "CallerContentBinding",
+    "ChoiceGenerationResult",
     "GenerationRequest",
     "ResolvedContentBinding",
     "bound_generation_fingerprint",
+    "choice_generation_fingerprint",
     "binders_in_source",
     "canonical_slot_contract",
     "load_generation_requests",

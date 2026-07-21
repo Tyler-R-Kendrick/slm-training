@@ -1607,6 +1607,12 @@ byte-compositional vectors through the V8 delta path (weight tying and
 batching untouched; same surface → identical vector at every slot, by
 construction and by test).
 
+**Contract note (2026-07-21):** this default-off experiment uses external marker
+spelling as its embedding identity and remains unchanged for checkpoint/evidence
+compatibility. It must not be treated as a production identity authority. The new
+bound and exact-choice generation APIs apply a separate opaque ordinal projection;
+E278 is not evidence for that projection without a matched rerun.
+
 | ID | Isolated lever | Baseline | Status |
 | --- | --- | --- | --- |
 | E278 | `runtime_symbol_features="replace"` (C2) | E255 recorded eval | fixture-run |

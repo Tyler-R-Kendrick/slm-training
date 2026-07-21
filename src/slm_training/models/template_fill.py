@@ -76,9 +76,7 @@ def ensure_prompt_inventory(prompt: str, placeholders: list[str] | None) -> str:
     return f"{base}\nPlaceholders: {joined}"
 
 
-def ensure_prompt_semantic_roles(
-    prompt: str, placeholders: list[str] | None
-) -> str:
+def ensure_prompt_semantic_roles(prompt: str, placeholders: list[str] | None) -> str:
     """Normalize prompt-mentioned component types into an honest role contract."""
     if any(line.startswith("Semantic roles:") for line in prompt.splitlines()):
         return prompt
@@ -135,9 +133,7 @@ def prompt_semantic_role_candidates(
     )
     clauses = [
         re.findall(r"[a-z0-9]+", clause)
-        for clause in re.split(
-            r"[,;.!?]|\b(?:and|with)\b", authored_prompt.lower()
-        )
+        for clause in re.split(r"[,;.!?]|\b(?:and|with)\b", authored_prompt.lower())
     ]
 
     def positions(words: list[str], needle: list[str]) -> list[int]:
@@ -163,10 +159,68 @@ def prompt_semantic_role_candidates(
                 for family_at in positions(clause, family)
             ):
                 candidates.setdefault(slot, set()).add(component)
-    return {
-        slot: tuple(sorted(candidates.get(slot, ())))
-        for slot in slots
+    return {slot: tuple(sorted(candidates.get(slot, ()))) for slot in slots}
+
+
+def typed_semantic_role_candidates(
+    prompt: str,
+    placeholders: list[str] | None,
+    runtime_symbols: list[object] | None,
+    *,
+    include_schema_candidates: bool = False,
+) -> dict[str, tuple[str, ...]]:
+    """Map declared roles to components without inspecting marker spellings."""
+    slots = normalize_placeholders(placeholders)
+    symbols = {
+        str(getattr(symbol, "surface", "")): str(
+            getattr(symbol, "semantic_role", "") or ""
+        )
+        for symbol in runtime_symbols or ()
     }
+    from slm_training.data.quality import (
+        _official_component_names,
+        _prompt_component_mentions,
+        semantic_role_candidates,
+    )
+
+    mentioned = sorted(_prompt_component_mentions(prompt))
+    components = (
+        sorted(_official_component_names()) if include_schema_candidates else mentioned
+    )
+    result: dict[str, tuple[str, ...]] = {}
+    for slot in slots:
+        role = symbols.get(slot, "")
+        if not role or not components:
+            result[slot] = ()
+            continue
+        typed_slot = f":typed.{role}"
+        result[slot] = semantic_role_candidates([typed_slot], components)[typed_slot]
+    return result
+
+
+def typed_semantic_role_properties(
+    placeholders: list[str] | None,
+    runtime_symbols: list[object] | None,
+) -> dict[str, tuple[str, ...]]:
+    """Return declared role property aliases without reading marker spellings."""
+    slots = normalize_placeholders(placeholders)
+    symbols = {
+        str(getattr(symbol, "surface", "")): str(
+            getattr(symbol, "semantic_role", "") or ""
+        )
+        for symbol in runtime_symbols or ()
+    }
+    from slm_training.data.quality import semantic_role_properties
+
+    result: dict[str, tuple[str, ...]] = {}
+    for slot in slots:
+        role = symbols.get(slot, "")
+        if not role:
+            result[slot] = ()
+            continue
+        typed_slot = f":typed.{role}"
+        result[slot] = semantic_role_properties([typed_slot])[typed_slot]
+    return result
 
 
 def prompt_semantic_plan(prompt: str):

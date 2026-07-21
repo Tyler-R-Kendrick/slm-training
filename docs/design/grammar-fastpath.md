@@ -30,6 +30,12 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
 `COMPONENT` / `STRING`.
 
+Exact authority is ordered before every learned preference. Once the DFA, choice
+state, complete compiler forest, or another authoritative decoder proves one legal
+continuation, semantic bias, confidence, plan scoring, and model logits may not
+replace or rerank it. Incomplete proofs remain ambiguous and fail closed to the
+ordinary legal model-ranked path.
+
 ## Decode wiring
 
 - **LTR / repair** (`TwoTowerModel._constrained_ltr_repair`, `_greedy_ltr_decode_batch`):
@@ -39,9 +45,12 @@ Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
   compacts the remaining ambiguous rows; repair commits exact decisions without
   fabricating model logits or log-probabilities. Legal whitespace keeps the
   compositional path model-ranked when it can change source bytes.
-- **MaskGIT** (`_generate_maskgit_one`): when `grammar_fastpath_mode` is `mask` or
-  `hybrid`, run `admit_fill` on candidate fills; leave position masked on reject;
-  grammar-on picks never commit DFA-illegal tokens.
+- **MaskGIT** (`_generate_maskgit_one`): when exactly one canvas position remains
+  unknown and no model-dependent remask follows, a strict DFA singleton that also
+  passes the active admit/stream checks commits before the denoiser. All multi-hole,
+  remask-active, incomplete-proof, or rejected cases retain the ordinary neural
+  proposal. In `mask`/`hybrid` mode, candidate fills still run `admit_fill`; leave a
+  position masked on reject. Grammar-on picks never commit DFA-illegal tokens.
 - **Certify** (`_ensure_valid_openui`): LTR repair → minimal valid fallback → raise
   when `grammar_finalize_validate` is set.
 - **Train aux**: `fastpath_aux_weight` (CLI `--fastpath-aux-weight`) adds
@@ -79,6 +88,6 @@ PyTorch remains the train/eval path; export via `cactus.export_checkpoint_bundle
 
 Compiler completion remains opt-in. A compiler singleton is exact only when its
 completion forest reports `coverage="complete"`; a partial singleton still runs
-the neural ranker and is not counted as a certified forced span. MaskGIT still
-performs neural proposal work unless an entire scheduled proposal step can be
-proved deterministic; this change does not add such a broad proof.
+the neural ranker and is not counted as a certified forced span. MaskGIT's narrow
+one-hole terminal step can bypass; every step whose schedule, confidence, attention,
+survival, or remasking could depend on logits remains neural work.
