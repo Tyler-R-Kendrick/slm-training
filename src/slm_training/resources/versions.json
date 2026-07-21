@@ -705,12 +705,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v52",
+      "version": "v53",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v53",
+          "date": "2026-07-21",
+          "note": "add SLM-214 NCS0-01 SpectralSnapshotV1 wiring/fixture harness with per-shape randomized-ESD null calibration"
+        },
         {
           "version": "v52",
           "date": "2026-07-21",
@@ -3276,6 +3281,26 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-188 FFE1-02 edit-algebra reachability, canonical invariance, TransitionCertificateV1, and audit CLI"
+        }
+      ]
+    },
+    "harness.experiments.slm214_spectral_snapshot": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py",
+        "scripts/inspect_spectral.py",
+        "tests/test_harnesses/experiments/test_slm214_spectral_snapshot.py",
+        "tests/test_scripts/test_inspect_spectral.py",
+        "docs/design/iter-slm214-spectral-snapshot-20260721.json",
+        "docs/design/iter-slm214-spectral-snapshot-20260721.md",
+        ".agents/skills/autotrain/references/inspect.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-214 NCS0-01 SpectralSnapshotV1 native-PyTorch spectral backend, role registry, tied-storage detection, and randomized-ESD null calibration"
         }
       ]
     },
