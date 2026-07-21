@@ -1472,7 +1472,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v70",
+      "version": "v71",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1487,6 +1487,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v71",
+          "date": "2026-07-20",
+          "note": "E634: split pre-content literal routing from optional opaque penalties and apply it after repeated-slot margins at the final active-property decision boundary"
+        },
         {
           "version": "v70",
           "date": "2026-07-20",
