@@ -24,6 +24,11 @@
         {
           "version": "v32",
           "date": "2026-07-20",
+          "note": "no-bump: restore the original schema-opaque CLI description when rejecting E632 without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
           "note": "no-bump: align schema-opaque CLI help with the expanded model-side non-content string policy without changing evaluation plumbing"
         },
         {
@@ -1447,7 +1452,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v66",
+      "version": "v67",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1462,6 +1467,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v67",
+          "date": "2026-07-20",
+          "note": "E632 rejection: restore v65 optional-empty-only schema opaque behavior after required non-content string penalties removed Input inventory and regressed every continuous aggregate metric"
+        },
         {
           "version": "v66",
           "date": "2026-07-20",

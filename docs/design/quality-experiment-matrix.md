@@ -4313,3 +4313,16 @@ Input property-role assignment. No ship claim.
 Evidence:
 [iter-e631-frame-aware-owner-escape-20260720.md](iter-e631-frame-aware-owner-escape-20260720.md)
 and [JSON](iter-e631-frame-aware-owner-escape-20260720.json).
+
+## E632 broad non-content string slot penalty
+
+E632 generalized the schema-opaque slot penalty to required non-content string
+properties, targeting E631's `Input.name` role mismatch. On the exact E631 OOD
+`n=4` recipe, the policy removed both Auth Inputs and emitted repeated raw slots
+instead. Strict v2 stayed zero; fidelity, validity, structure, component recall,
+reward, and AST F1 all regressed, while p95 increased from 6394.56 to 11959.96
+ms. Reject and revert as model v67; no checkpoint or ship claim.
+
+Evidence:
+[iter-e632-input-role-assignment-20260720.md](iter-e632-input-role-assignment-20260720.md)
+and [JSON](iter-e632-input-role-assignment-20260720.json).
