@@ -132,3 +132,19 @@ def test_e703_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> Non
     assert run_id not in {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
+
+
+def test_e704_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e704-schema-value-weight8-r1"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    rico = run["scoreboard"]["suites"]["rico_held"]
+    assert rico["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert rico["placeholder_fidelity"] == 0.875
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
