@@ -5254,24 +5254,6 @@ class TwoTowerModel(nn.Module):
                 )
             )
 
-        from slm_training.data.quality import schema_placeholder_role_matches
-
-        _active_component, active_component_property = (
-            self._active_component_property(state)
-        )
-
-        def owner_directly_matches(slot: str) -> bool:
-            return bool(
-                owner_component
-                and active_component_property
-                and (
-                    active_component_property == "placeholder"
-                    or schema_placeholder_role_matches(
-                        slot, owner_component, active_component_property
-                    )
-                )
-            )
-
         if kind == "component" and semantic_role_candidates and not any(
             owner_matches(slot) for _index, slot in missing
         ):
@@ -5310,7 +5292,7 @@ class TwoTowerModel(nn.Module):
             if token_id in missing_slots_by_id:
                 slot = missing_slots_by_id[token_id]
                 if direct_slot_compatible and (
-                    not semantic_role_candidates or owner_directly_matches(slot)
+                    not semantic_role_candidates or owner_matches(slot)
                 ):
                     targets.append(position)
                 continue
@@ -5522,21 +5504,6 @@ class TwoTowerModel(nn.Module):
             if isinstance(child, dict)
         )
 
-    @staticmethod
-    def _active_component_property(state: Any) -> tuple[str, str | None]:
-        """Return the deepest component and its active positional property."""
-        from slm_training.dsl.production_codec import _prop_order
-
-        for frame in reversed(getattr(state, "frames", ())):
-            if frame.kind != "component":
-                continue
-            component = str(frame.expr_type).removeprefix("element:")
-            properties = tuple(_prop_order().get(component, ()))
-            index = int(getattr(frame, "arg_index", -1))
-            active = properties[index] if 0 <= index < len(properties) else None
-            return component, active
-        return "", None
-
     def _semantic_plan_typed_array_nonempty_bias(
         self,
         row: int,
@@ -5713,40 +5680,19 @@ class TwoTowerModel(nn.Module):
         )
         if owner_position < 0:
             return None
-        visible_slots_by_id = {
-            int(self.tokenizer.sym_id(index)): slot_contract[index]
+        visible_slot_ids = {
+            int(self.tokenizer.sym_id(index))
             for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
         }
-        visible_slot_ids = set(visible_slots_by_id)
         if any(
             token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
         ):
             return None
         used_slot_ids = visible_slot_ids.intersection(prefix[:owner_position])
-        role_candidates = (
-            self._semantic_role_candidates[row]
-            if self._semantic_role_candidates
-            and row < len(self._semantic_role_candidates)
-            else None
-        )
-        active_component, active_property = self._active_component_property(state)
-        from slm_training.data.quality import schema_placeholder_role_matches
-
         targets = [
             position
             for position, token_id in enumerate(candidate_ids)
             if token_id in visible_slot_ids and token_id not in used_slot_ids
-            and (
-                not role_candidates
-                or (
-                    active_property is not None
-                    and schema_placeholder_role_matches(
-                        visible_slots_by_id[token_id],
-                        active_component,
-                        active_property,
-                    )
-                )
-            )
         ]
         if not targets:
             return None
