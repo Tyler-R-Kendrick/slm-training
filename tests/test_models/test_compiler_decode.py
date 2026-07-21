@@ -1301,6 +1301,15 @@ def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
         ],
         dtype=torch.long,
     )
+    compact_valid = torch.tensor(
+        [
+            tokenizer.encode(
+                'root = Stack([TextContent(":title")], "column")',
+                placeholders=[":title"],
+            )
+        ],
+        dtype=torch.long,
+    )
 
     finalized_invalid = model._finalize_schema_enum_choices(
         invalid, [[":title", ":body"]]
@@ -1308,11 +1317,15 @@ def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
     finalized_valid = model._finalize_schema_enum_choices(
         valid, [[":title", ":body"]]
     )
+    finalized_compact_valid = model._finalize_schema_enum_choices(
+        compact_valid, [[":title"]]
+    )
 
     assert model._decode_openui(
         finalized_invalid[0], placeholders=[":title", ":body"]
     ) == 'root = Callout("info", ":title", ":body")'
     assert torch.equal(finalized_valid, valid)
+    assert torch.equal(finalized_compact_valid, compact_valid)
 
 
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:

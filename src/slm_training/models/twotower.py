@@ -6032,18 +6032,19 @@ class TwoTowerModel(nn.Module):
                         getattr(frame, "kind", None) == "component"
                         and 0 <= arg_index < len(schemas)
                     ):
-                        enum_ids = tuple(
-                            candidate
-                            for value in self._schema_enum_values(
-                                dict(schemas[arg_index])
+                        enum_ids: list[int] = []
+                        for value in self._schema_enum_values(
+                            dict(schemas[arg_index])
+                        ):
+                            spellings = [f"{LIT_PREFIX}{json.dumps(value)}"]
+                            if isinstance(value, str):
+                                spellings.append(f"{DIR_PREFIX}{value}")
+                            enum_ids.extend(
+                                candidate
+                                for spelling in spellings
+                                if (candidate := tok.token_to_id.get(spelling))
+                                is not None
                             )
-                            if (
-                                candidate := tok.token_to_id.get(
-                                    f"{LIT_PREFIX}{json.dumps(value)}"
-                                )
-                            )
-                            is not None
-                        )
                         if token_id not in enum_ids:
                             replacement_id = next(iter(enum_ids), None)
                 if replacement_id is not None:

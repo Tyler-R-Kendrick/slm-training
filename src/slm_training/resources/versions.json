@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v147",
+      "version": "v148",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v148",
+          "date": "2026-07-21",
+          "note": "E692 r2 correction: treat compact direction tokens as semantically valid enum spellings while repairing invalid fixed literals"
+        },
         {
           "version": "v147",
           "date": "2026-07-21",
