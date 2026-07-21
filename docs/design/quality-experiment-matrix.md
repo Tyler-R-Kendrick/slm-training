@@ -4593,3 +4593,18 @@ checkpoint was created or synced.
 Evidence:
 [iter-e650-planned-family-role-binding-20260720.md](iter-e650-planned-family-role-binding-20260720.md)
 and [JSON](iter-e650-planned-family-role-binding-20260720.json).
+
+## E651 schema enum-literal margin
+
+E651 floors schema-valid enum literals or optional closure above invalid
+dynamic values. It repairs Dashboard's Callout variant and improves structure,
+AST F1, and p95, but changes content allocation: status body is displaced and a
+planned Card becomes empty. Meaningful v1 falls from 4/4 to 3/4 while strict v2
+stays 3/4. Reject the treatment stamped v97. After rebasing onto retained E650
+v99, the append-only lineage records E651 as treatment v100 and restoration
+v101. No checkpoint was
+created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e651-schema-enum-literal-margin-20260720.md](iter-e651-schema-enum-literal-margin-20260720.md)
+and [JSON](iter-e651-schema-enum-literal-margin-20260720.json).
