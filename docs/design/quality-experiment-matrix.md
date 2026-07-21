@@ -5269,3 +5269,16 @@ was created or synced.
 
 Evidence: [narrative](iter-e706-bounded-slot-carrier-20260721.md) and
 [JSON](iter-e706-bounded-slot-carrier-20260721.json).
+
+## E707 carrier root-reference completeness
+
+E707 preserves E706's bounded carrier with margin-floored terminal-root
+reference completeness. Rico fidelity and validity reach 1.0, structure rises
+0.7611→0.7915, and reward reaches 1.0, but strict remains 0.0 on the independent
+`TextContent.size` role mismatch. The full `n=19` replay rejects the arm because
+adversarial fidelity falls 0.8333→0.5833, validity 0.90→0.65, component recall
+1.0→0.75, and reward 0.9035→0.6768. Restore v177 behavior as v179. AgentV is
+0/5; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e707-carrier-root-reference-20260721.md) and
+[JSON](iter-e707-carrier-root-reference-20260721.json).

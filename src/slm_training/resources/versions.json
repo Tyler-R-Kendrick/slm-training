@@ -3493,7 +3493,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v177",
+      "version": "v179",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3512,6 +3512,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v179",
+          "date": "2026-07-21",
+          "note": "E707: restore v177 behavior after terminal-root completeness improved Rico coverage but regressed adversarial fidelity"
+        },
+        {
+          "version": "v178",
+          "date": "2026-07-21",
+          "note": "E707: pair one bounded missing-slot carrier with complete terminal-root reference aggregation"
+        },
         {
           "version": "v177",
           "date": "2026-07-21",
