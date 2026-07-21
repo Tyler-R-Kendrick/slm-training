@@ -1,0 +1,732 @@
+{
+  "abstention_economics": {
+    "abstained": 1,
+    "accepted": 6,
+    "mean_utility_accepted": 0.6683333333333333,
+    "mean_utility_if_forced": 0.6007142857142858,
+    "n": 7,
+    "risk_threshold": 0.3,
+    "value_of_abstention": 0.06761904761904758
+  },
+  "canary_summary": {
+    "n_canary_cases": 18,
+    "overall_canary_strict_rate": 1.0,
+    "slice_counts": {
+      "canary_ast_similar_missing_component": 3,
+      "canary_canonical_equivalent_positive": 3,
+      "canary_overlong_economy_violation": 3,
+      "canary_render_semantics_mismatch": 3,
+      "canary_right_inventory_wrong_hierarchy": 3,
+      "canary_right_role_wrong_binding": 3
+    },
+    "slice_strict_rates": {
+      "canary_ast_similar_missing_component": 1.0,
+      "canary_canonical_equivalent_positive": 1.0,
+      "canary_overlong_economy_violation": 1.0,
+      "canary_render_semantics_mismatch": 1.0,
+      "canary_right_inventory_wrong_hierarchy": 1.0,
+      "canary_right_role_wrong_binding": 1.0
+    }
+  },
+  "candidates": [
+    {
+      "candidate_id": "canary_wrong_binding",
+      "dominated_by": [
+        "dominant"
+      ],
+      "lexicographic_tier": "1.0000|0.6000|0.9000|0.9500|0.8500|0.3000|0.4000|0.2000|-0.2500|-0.2000",
+      "notes": [
+        "canary",
+        "dominated_by=dominant"
+      ],
+      "pareto_optimal": false,
+      "rank_lexicographic": 5,
+      "rank_scalar": 4,
+      "scalar_score": 0.5565000000000001,
+      "scenario": "canary",
+      "utility": {
+        "abstained": false,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "available",
+          "independent_judge_score": "available",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.5,
+        "binding_aware_meaningful_v2": 0.6,
+        "complexity_cost": 0.25,
+        "component_role_recall": 0.9,
+        "contract_coverage": 0.95,
+        "failure_reason_codes": [
+          "placeholder_semantic_role_mismatch"
+        ],
+        "hard_valid": true,
+        "human_pair_preference": 0.2,
+        "independent_judge_score": 0.4,
+        "inference_cost": 0.2,
+        "reference_graph_exactness": 0.3,
+        "render_evidence": 0.5,
+        "support_status": "supported",
+        "topology_edge_f1": 0.8,
+        "topology_node_f1": 0.85
+      }
+    },
+    {
+      "candidate_id": "abstained",
+      "dominated_by": [],
+      "lexicographic_tier": "-inf|0.0000|0.0000|0.0000|0.0000|0.0000|-inf|-inf|-0.0000|-0.0500",
+      "notes": [
+        "abstained",
+        "abstained",
+        "pareto_optimal"
+      ],
+      "pareto_optimal": true,
+      "rank_lexicographic": 7,
+      "rank_scalar": 7,
+      "scalar_score": -0.057647058823529405,
+      "scenario": "abstained",
+      "utility": {
+        "abstained": true,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "available",
+          "independent_judge_score": "available",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.0,
+        "binding_aware_meaningful_v2": 0.0,
+        "complexity_cost": 0.0,
+        "component_role_recall": 0.0,
+        "contract_coverage": 0.0,
+        "failure_reason_codes": [
+          "abstained",
+          "no_nontrivial_content"
+        ],
+        "hard_valid": false,
+        "human_pair_preference": null,
+        "independent_judge_score": null,
+        "inference_cost": 0.05,
+        "reference_graph_exactness": 0.0,
+        "render_evidence": 0.0,
+        "support_status": "unsupported",
+        "topology_edge_f1": 0.0,
+        "topology_node_f1": 0.0
+      }
+    },
+    {
+      "candidate_id": "dominated",
+      "dominated_by": [
+        "dominant",
+        "cheap_near_gold",
+        "no_judge"
+      ],
+      "lexicographic_tier": "1.0000|0.5500|0.5000|0.6000|0.5000|0.5500|0.4500|0.3000|-0.5000|-0.6000",
+      "notes": [
+        "pareto_dominated",
+        "dominated_by=dominant,cheap_near_gold,no_judge"
+      ],
+      "pareto_optimal": false,
+      "rank_lexicographic": 6,
+      "rank_scalar": 6,
+      "scalar_score": 0.452,
+      "scenario": "pareto_dominated",
+      "utility": {
+        "abstained": false,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "available",
+          "independent_judge_score": "available",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.4,
+        "binding_aware_meaningful_v2": 0.55,
+        "complexity_cost": 0.5,
+        "component_role_recall": 0.5,
+        "contract_coverage": 0.6,
+        "failure_reason_codes": [],
+        "hard_valid": true,
+        "human_pair_preference": 0.3,
+        "independent_judge_score": 0.45,
+        "inference_cost": 0.6,
+        "reference_graph_exactness": 0.55,
+        "render_evidence": 0.35,
+        "support_status": "supported",
+        "topology_edge_f1": 0.45,
+        "topology_node_f1": 0.5
+      }
+    },
+    {
+      "candidate_id": "dominant",
+      "dominated_by": [],
+      "lexicographic_tier": "1.0000|0.9500|0.9500|1.0000|0.9500|0.9500|0.9000|0.8000|-0.1000|-0.1000",
+      "notes": [
+        "pareto_dominant",
+        "pareto_optimal"
+      ],
+      "pareto_optimal": true,
+      "rank_lexicographic": 1,
+      "rank_scalar": 1,
+      "scalar_score": 0.8424999999999999,
+      "scenario": "pareto_dominant",
+      "utility": {
+        "abstained": false,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "available",
+          "independent_judge_score": "available",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.9,
+        "binding_aware_meaningful_v2": 0.95,
+        "complexity_cost": 0.1,
+        "component_role_recall": 0.95,
+        "contract_coverage": 1.0,
+        "failure_reason_codes": [],
+        "hard_valid": true,
+        "human_pair_preference": 0.8,
+        "independent_judge_score": 0.9,
+        "inference_cost": 0.1,
+        "reference_graph_exactness": 0.95,
+        "render_evidence": 0.85,
+        "support_status": "supported",
+        "topology_edge_f1": 0.9,
+        "topology_node_f1": 0.95
+      }
+    },
+    {
+      "candidate_id": "cheap_near_gold",
+      "dominated_by": [],
+      "lexicographic_tier": "1.0000|0.8000|0.8000|0.9000|0.8000|0.8000|0.5500|0.4000|-0.0500|-0.0500",
+      "notes": [
+        "economy",
+        "pareto_optimal"
+      ],
+      "pareto_optimal": true,
+      "rank_lexicographic": 3,
+      "rank_scalar": 2,
+      "scalar_score": 0.6550000000000001,
+      "scenario": "economy",
+      "utility": {
+        "abstained": false,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "available",
+          "independent_judge_score": "available",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.6,
+        "binding_aware_meaningful_v2": 0.8,
+        "complexity_cost": 0.05,
+        "component_role_recall": 0.8,
+        "contract_coverage": 0.9,
+        "failure_reason_codes": [],
+        "hard_valid": true,
+        "human_pair_preference": 0.4,
+        "independent_judge_score": 0.55,
+        "inference_cost": 0.05,
+        "reference_graph_exactness": 0.8,
+        "render_evidence": 0.55,
+        "support_status": "supported",
+        "topology_edge_f1": 0.75,
+        "topology_node_f1": 0.8
+      }
+    },
+    {
+      "candidate_id": "canary_missing_component",
+      "dominated_by": [
+        "dominant"
+      ],
+      "lexicographic_tier": "1.0000|0.8500|0.3500|0.7000|0.8000|0.8000|0.3000|0.1000|-0.2000|-0.1500",
+      "notes": [
+        "canary",
+        "dominated_by=dominant"
+      ],
+      "pareto_optimal": false,
+      "rank_lexicographic": 2,
+      "rank_scalar": 5,
+      "scalar_score": 0.509,
+      "scenario": "canary",
+      "utility": {
+        "abstained": false,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "available",
+          "independent_judge_score": "available",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.2,
+        "binding_aware_meaningful_v2": 0.85,
+        "complexity_cost": 0.2,
+        "component_role_recall": 0.35,
+        "contract_coverage": 0.7,
+        "failure_reason_codes": [
+          "prompt_component_missing"
+        ],
+        "hard_valid": true,
+        "human_pair_preference": 0.1,
+        "independent_judge_score": 0.3,
+        "inference_cost": 0.15,
+        "reference_graph_exactness": 0.8,
+        "render_evidence": 0.2,
+        "support_status": "partial",
+        "topology_edge_f1": 0.75,
+        "topology_node_f1": 0.8
+      }
+    },
+    {
+      "candidate_id": "no_judge",
+      "dominated_by": [
+        "dominant"
+      ],
+      "lexicographic_tier": "1.0000|0.7500|0.7000|0.8000|0.7000|0.7000|-inf|-inf|-0.2000|-0.2000",
+      "notes": [
+        "partial_data",
+        "dominated_by=dominant"
+      ],
+      "pareto_optimal": false,
+      "rank_lexicographic": 4,
+      "rank_scalar": 3,
+      "scalar_score": 0.626470588235294,
+      "scenario": "partial_data",
+      "utility": {
+        "abstained": false,
+        "availability": {
+          "behavior_evidence": "available",
+          "binding_aware_meaningful_v2": "available",
+          "complexity_cost": "available",
+          "component_role_recall": "available",
+          "contract_coverage": "available",
+          "hard_valid": "available",
+          "human_pair_preference": "unavailable",
+          "independent_judge_score": "unavailable",
+          "inference_cost": "available",
+          "reference_graph_exactness": "available",
+          "render_evidence": "available",
+          "support_status": "available",
+          "topology_edge_f1": "available",
+          "topology_node_f1": "available"
+        },
+        "behavior_evidence": 0.6,
+        "binding_aware_meaningful_v2": 0.75,
+        "complexity_cost": 0.2,
+        "component_role_recall": 0.7,
+        "contract_coverage": 0.8,
+        "failure_reason_codes": [],
+        "hard_valid": true,
+        "human_pair_preference": null,
+        "independent_judge_score": null,
+        "inference_cost": 0.2,
+        "reference_graph_exactness": 0.7,
+        "render_evidence": 0.6,
+        "support_status": "supported",
+        "topology_edge_f1": 0.65,
+        "topology_node_f1": 0.7
+      }
+    }
+  ],
+  "claim_class": "wiring",
+  "experiment_id": "slm186-verified-utility",
+  "generated_at": "2026-07-21T00:34:22.876792+00:00",
+  "lexicographic_ranking": [
+    "dominant",
+    "canary_missing_component",
+    "cheap_near_gold",
+    "no_judge",
+    "canary_wrong_binding",
+    "dominated",
+    "abstained"
+  ],
+  "manifest": {
+    "claim_class": "wiring",
+    "falsifier": "The scalarized ranking contradicts the lexicographic ranking on obviously dominated or abstained candidates, or small weight perturbations within the permitted ranges produce frequent rank reversals.",
+    "generated_at": "2026-07-21T00:34:20.200328+00:00",
+    "hypothesis": "A multi-factor verified-utility ladder can rank OpenUI candidates while keeping every factor explicit, availability-labeled, and auditable for Goodhart gaming.",
+    "run_id": "slm186-verified-utility-20260721",
+    "schema": "VerifiedUtilityAuditManifestV1",
+    "status": "fixture",
+    "version_stamp": {
+      "code_commit": "4298e3f55757f700bfe899ed5af263e8506305c7",
+      "code_dirty": true,
+      "components": {
+        "evals.meaningful_program": "2.1.0",
+        "evals.scoring": "v12",
+        "evals.verified_utility": "v1",
+        "harness.experiments.slm186_verified_utility": "v1"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-07-21T00:34:20.200300+00:00"
+    }
+  },
+  "matrix_set": "slm186_verified_utility",
+  "matrix_version": "verified-utility-v1",
+  "pareto_front_ids": [
+    "abstained",
+    "dominant",
+    "cheap_near_gold"
+  ],
+  "run_id": "slm186-verified-utility-20260721",
+  "scalar_ranking": [
+    "dominant",
+    "cheap_near_gold",
+    "no_judge",
+    "canary_wrong_binding",
+    "canary_missing_component",
+    "dominated",
+    "abstained"
+  ],
+  "schema": "VerifiedUtilityAuditReportV1",
+  "sensitivity": {
+    "n_candidates": 7,
+    "n_manifests": 2,
+    "perturbations_per_manifest": 20,
+    "reversal_count": 6,
+    "reversal_rate": 0.15,
+    "reversals": [
+      {
+        "base_order": [
+          3,
+          4,
+          6,
+          0,
+          5,
+          2,
+          1
+        ],
+        "manifest_index": 0,
+        "perturbed_order": [
+          3,
+          4,
+          6,
+          0,
+          2,
+          5,
+          1
+        ],
+        "perturbed_weights": {
+          "behavior_evidence": 0.06469257198353226,
+          "binding_aware_meaningful_v2": 0.15455651513373167,
+          "complexity_cost": -0.048031064645765384,
+          "component_role_recall": 0.14256188319668173,
+          "contract_coverage": 0.060150021937416975,
+          "human_pair_preference": 0.05036365052098873,
+          "independent_judge_score": 0.06803179015296879,
+          "inference_cost": -0.04495393794055167,
+          "reference_graph_exactness": 0.07208292713163174,
+          "render_evidence": 0.03502939673965323,
+          "topology_node_f1": 0.07599198897928319
+        }
+      },
+      {
+        "base_order": [
+          3,
+          4,
+          6,
+          0,
+          5,
+          2,
+          1
+        ],
+        "manifest_index": 0,
+        "perturbed_order": [
+          3,
+          4,
+          6,
+          5,
+          0,
+          2,
+          1
+        ],
+        "perturbed_weights": {
+          "behavior_evidence": 0.09184820619953316,
+          "binding_aware_meaningful_v2": 0.3476470297445002,
+          "complexity_cost": -0.04709745280867507,
+          "component_role_recall": 0.1199355790467063,
+          "contract_coverage": 0.08585553013116018,
+          "human_pair_preference": 0.09665489030431833,
+          "independent_judge_score": 0.11726405635730526,
+          "inference_cost": -0.01618991078503109,
+          "reference_graph_exactness": 0.13383265651934162,
+          "render_evidence": 0.01694246060974677,
+          "topology_node_f1": 0.12315983062253606
+        }
+      },
+      {
+        "base_order": [
+          3,
+          4,
+          6,
+          0,
+          5,
+          2,
+          1
+        ],
+        "manifest_index": 1,
+        "perturbed_order": [
+          3,
+          4,
+          6,
+          5,
+          0,
+          2,
+          1
+        ],
+        "perturbed_weights": {
+          "behavior_evidence": 0.03966961773309045,
+          "binding_aware_meaningful_v2": 0.32473076478006846,
+          "complexity_cost": -0.010382923440717388,
+          "component_role_recall": 0.12799827433268726,
+          "contract_coverage": 0.1478515186773398,
+          "human_pair_preference": 0.04529781848179143,
+          "independent_judge_score": 0.07747138434192621,
+          "inference_cost": -0.006932004818138195,
+          "reference_graph_exactness": 0.1353938109597338,
+          "render_evidence": 0.008134541676823415,
+          "topology_node_f1": 0.0600180689063709
+        }
+      },
+      {
+        "base_order": [
+          3,
+          4,
+          6,
+          0,
+          5,
+          2,
+          1
+        ],
+        "manifest_index": 1,
+        "perturbed_order": [
+          3,
+          4,
+          6,
+          0,
+          2,
+          5,
+          1
+        ],
+        "perturbed_weights": {
+          "behavior_evidence": 0.07896231589257827,
+          "binding_aware_meaningful_v2": 0.19156882073816495,
+          "complexity_cost": -0.04793985252468954,
+          "component_role_recall": 0.15871255046951435,
+          "contract_coverage": 0.05088970820490788,
+          "human_pair_preference": 0.06205381083165517,
+          "independent_judge_score": 0.08382559700266787,
+          "inference_cost": -0.041806972716221205,
+          "reference_graph_exactness": 0.08334083880298664,
+          "render_evidence": 0.07184994227715395,
+          "topology_node_f1": 0.06510231738639878
+        }
+      },
+      {
+        "base_order": [
+          3,
+          4,
+          6,
+          0,
+          5,
+          2,
+          1
+        ],
+        "manifest_index": 1,
+        "perturbed_order": [
+          3,
+          4,
+          6,
+          5,
+          0,
+          2,
+          1
+        ],
+        "perturbed_weights": {
+          "behavior_evidence": 0.04485442855965546,
+          "binding_aware_meaningful_v2": 0.2999739143566172,
+          "complexity_cost": -0.028848096324628876,
+          "component_role_recall": 0.10611561565459661,
+          "contract_coverage": 0.05078510053312518,
+          "human_pair_preference": 0.0679302567372125,
+          "independent_judge_score": 0.10848887019932743,
+          "inference_cost": -0.03158342718327871,
+          "reference_graph_exactness": 0.10190037287013293,
+          "render_evidence": 0.04886188044271526,
+          "topology_node_f1": 0.08938079517817095
+        }
+      },
+      {
+        "base_order": [
+          3,
+          4,
+          6,
+          0,
+          5,
+          2,
+          1
+        ],
+        "manifest_index": 1,
+        "perturbed_order": [
+          3,
+          4,
+          6,
+          0,
+          2,
+          5,
+          1
+        ],
+        "perturbed_weights": {
+          "behavior_evidence": 0.0656083661770337,
+          "binding_aware_meaningful_v2": 0.15305702799394535,
+          "complexity_cost": -0.024878570052378625,
+          "component_role_recall": 0.1843954685692408,
+          "contract_coverage": 0.08305943672500803,
+          "human_pair_preference": 0.0901090476884005,
+          "independent_judge_score": 0.10049996926056784,
+          "inference_cost": -0.02130637612542254,
+          "reference_graph_exactness": 0.06488194902889095,
+          "render_evidence": 0.09685982716927072,
+          "topology_node_f1": 0.06606900602627205
+        }
+      }
+    ],
+    "total_perturbations": 40
+  },
+  "status": "fixture",
+  "timestamp": "2026-07-21T00:34:22.877921Z",
+  "version_stamp": {
+    "code_commit": "4298e3f55757f700bfe899ed5af263e8506305c7",
+    "code_dirty": true,
+    "components": {
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "evals.verified_utility": "v1",
+      "harness.experiments.slm186_verified_utility": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T00:34:20.200300+00:00"
+  },
+  "weight_manifest": {
+    "confirmation_hash": "fixture_confirmation_hash_slm186",
+    "dev_fit_hash": "fixture_dev_fit_hash_slm186",
+    "normalization": "unit",
+    "permitted_ranges": {
+      "behavior_evidence": [
+        0.0,
+        0.1
+      ],
+      "binding_aware_meaningful_v2": [
+        0.15,
+        0.35
+      ],
+      "complexity_cost": [
+        -0.05,
+        0.0
+      ],
+      "component_role_recall": [
+        0.1,
+        0.2
+      ],
+      "contract_coverage": [
+        0.05,
+        0.15
+      ],
+      "human_pair_preference": [
+        0.0,
+        0.1
+      ],
+      "independent_judge_score": [
+        0.05,
+        0.15
+      ],
+      "inference_cost": [
+        -0.05,
+        0.0
+      ],
+      "reference_graph_exactness": [
+        0.05,
+        0.15
+      ],
+      "render_evidence": [
+        0.0,
+        0.1
+      ],
+      "topology_node_f1": [
+        0.05,
+        0.15
+      ]
+    },
+    "primary_policy": "scalarized",
+    "version": "verified_utility/v1",
+    "weights": {
+      "behavior_evidence": 0.05,
+      "binding_aware_meaningful_v2": 0.25,
+      "complexity_cost": -0.03,
+      "component_role_recall": 0.15,
+      "contract_coverage": 0.1,
+      "human_pair_preference": 0.05,
+      "independent_judge_score": 0.1,
+      "inference_cost": -0.02,
+      "reference_graph_exactness": 0.1,
+      "render_evidence": 0.05,
+      "topology_node_f1": 0.1
+    }
+  }
+}

@@ -53,6 +53,7 @@ from slm_training.dsl.production_codec import (
     encode_choices,
     encode_openui,
 )
+from slm_training.evals.verified_utility import safe_ratio
 
 # Token first-character → semantic category, for a transparent breakdown.
 # Order matters: STATE_REF_PREFIX ("$@") is checked before SLOT_PREFIX ("@").
@@ -279,3 +280,152 @@ def compare_representations(
             else None
         ),
     }
+
+
+def _token_stream(
+    record: Any, stream: str, cfg: SemanticBitsConfig
+) -> list[str]:
+    if stream == "production":
+        return _production_tokens(record, cfg)
+    if stream == "choice":
+        return _choice_tokens(record, cfg)
+    if stream == "surface":
+        return _surface_tokens(record)
+    raise ValueError(f"unknown stream {stream!r}")
+
+
+def _state_signature(tokens: list[str]) -> str:
+    """Stable structural signature for a token stream.
+
+    Uses the sorted set of production-codec categories.  This is intentionally
+    coarse-grained: it groups records by the kinds of decisions they contain,
+    not by their exact content.
+    """
+    return "|".join(sorted({categorize_choice(t) for t in tokens}))
+
+
+def compiler_state_conditional_bits(
+    records: Iterable[Any],
+    *,
+    config: SemanticBitsConfig | None = None,
+    params: int | None = None,
+) -> dict[str, Any]:
+    """Bits grouped by compiler (target, state_signature, action_kind, externalized).
+
+    For every record we tokenize each of the three streams (production, choice,
+    surface).  Each token is keyed by:
+
+    * target — the OpenUI program text (the compilation target);
+    * state_signature — the sorted set of token categories in that stream;
+    * action_kind — ``production``, ``choice``, or ``surface``;
+    * deterministic_externalized — True for ``production``/``choice`` streams,
+      False for ``surface``.
+
+    The description length of each group is computed independently.  Groups
+    that contain only one distinct token are ``singleton`` decisions (no real
+    choice); groups with more than one distinct token are ``non_singleton``
+    decisions.  This exposes how much of the corpus's information content lives
+    in genuine choice points versus forced deterministic structure.
+    """
+    cfg = config or SemanticBitsConfig()
+    records = list(records)
+
+    group_tokens: dict[tuple[str, str, str, bool], list[str]] = {}
+    for record in records:
+        source, _ = _openui_of(record)
+        target = source.strip()
+        if not target:
+            continue
+        for stream in ("production", "choice", "surface"):
+            tokens = _token_stream(record, stream, cfg)
+            if not tokens:
+                continue
+            state_signature = _state_signature(tokens)
+            deterministic_externalized = stream in {"production", "choice"}
+            key = (target, state_signature, stream, deterministic_externalized)
+            group_tokens.setdefault(key, []).extend(tokens)
+
+    by_group: dict[str, dict[str, Any]] = {}
+    total_bits = 0.0
+    non_singleton_bits = 0.0
+    singleton_bits = 0.0
+    non_singleton_decisions = 0
+    for (target, state_signature, action_kind, externalized), tokens in group_tokens.items():
+        desc = _description_length(tokens)
+        bits = desc["total_bits"]
+        is_singleton = desc["alphabet_size"] <= 1
+        group_id = (
+            f"target_hash={hash(target) & 0xFFFFFFFF:08x}:"
+            f"state={state_signature}:"
+            f"action={action_kind}:"
+            f"externalized={externalized}"
+        )
+        by_group[group_id] = {
+            "target": target,
+            "state_signature": state_signature,
+            "action_kind": action_kind,
+            "deterministic_externalized": externalized,
+            **desc,
+            "singleton": is_singleton,
+        }
+        total_bits += bits
+        if is_singleton:
+            singleton_bits += bits
+        else:
+            non_singleton_bits += bits
+            non_singleton_decisions += desc["n_decisions"]
+
+    result: dict[str, Any] = {
+        "schema": "compiler_state_conditional_bits/v1",
+        "n_programs": len(records),
+        "n_groups": len(by_group),
+        "total_bits": total_bits,
+        "non_singleton_bits": non_singleton_bits,
+        "singleton_bits": singleton_bits,
+        "bits_per_non_singleton_decision": (
+            non_singleton_bits / non_singleton_decisions
+            if non_singleton_decisions > 0
+            else None
+        ),
+        "by_group": dict(sorted(by_group.items())),
+    }
+    if params is not None and total_bits > 0:
+        result["params"] = int(params)
+        result["params_per_bit"] = int(params) / total_bits
+    return result
+
+
+def semantic_bits_per_success(total_bits: float, n_success: int) -> dict[str, Any]:
+    """Bits spent per successful program."""
+    return safe_ratio(total_bits, n_success, "semantic_bits_per_success")
+
+
+def verified_utility_per_neural_evaluation(
+    utility: float, n_neural_evals: int
+) -> dict[str, Any]:
+    """Utility delivered per neural evaluation call."""
+    return safe_ratio(utility, n_neural_evals, "verified_utility_per_neural_evaluation")
+
+
+def verified_utility_per_non_singleton_decision(
+    utility: float, n_non_singleton_decisions: int
+) -> dict[str, Any]:
+    """Utility delivered per genuine non-singleton grammar decision."""
+    return safe_ratio(
+        utility,
+        n_non_singleton_decisions,
+        "verified_utility_per_non_singleton_decision",
+    )
+
+
+__all__ = [
+    "SemanticBitsConfig",
+    "categorize",
+    "categorize_choice",
+    "compare_representations",
+    "compiler_state_conditional_bits",
+    "semantic_bits",
+    "semantic_bits_per_success",
+    "verified_utility_per_neural_evaluation",
+    "verified_utility_per_non_singleton_decision",
+]

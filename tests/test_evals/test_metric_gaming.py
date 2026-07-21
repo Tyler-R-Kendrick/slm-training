@@ -8,6 +8,12 @@ import pytest
 
 from slm_training.evals.metric_gaming import (
     ALL_SLICES,
+    SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
+    SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
+    SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION,
+    SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
+    SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
+    SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
     SLICE_INVENTORY_FREE,
     SLICE_MINIMAL_VALID,
     SLICE_RARE_OMISSION,
@@ -29,7 +35,7 @@ def all_cases() -> list[MetricGamingCase]:
 
 
 def test_build_all_cases_count_and_slices(all_cases: list[MetricGamingCase]) -> None:
-    assert len(all_cases) == 101
+    assert len(all_cases) == 119
     by_slice = {}
     for case in all_cases:
         by_slice.setdefault(case.slice, 0)
@@ -39,6 +45,12 @@ def test_build_all_cases_count_and_slices(all_cases: list[MetricGamingCase]) -> 
     assert by_slice[SLICE_RARE_OMISSION] == 12
     assert by_slice[SLICE_INVENTORY_FREE] == 26
     assert by_slice[SLICE_RETRY_SENSITIVE] == 28
+    assert by_slice[SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING] == 3
+    assert by_slice[SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY] == 3
+    assert by_slice[SLICE_CANARY_RENDER_SEMANTICS_MISMATCH] == 3
+    assert by_slice[SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT] == 3
+    assert by_slice[SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION] == 3
+    assert by_slice[SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE] == 3
 
 
 def test_all_preds_are_parser_schema_valid(all_cases: list[MetricGamingCase]) -> None:
@@ -158,3 +170,39 @@ def test_case_to_dict_round_trip(all_cases: list[MetricGamingCase]) -> None:
         assert d["slice"] == case.slice
         assert "request" in d
         assert d["request"]["prompt"] == case.request.prompt
+
+
+def test_canary_slices_are_present_and_have_expected_reasons(
+    all_cases: list[MetricGamingCase],
+) -> None:
+    report = evaluate_metric_gaming(all_cases)
+    canary_slices = {
+        SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
+        SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
+        SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
+        SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
+        SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION,
+        SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
+    }
+    for slice_name in canary_slices:
+        assert slice_name in report.slices, f"missing slice {slice_name}"
+        slice_report = report.slices[slice_name]
+        assert slice_report.n > 0, f"slice {slice_name} has no cases"
+
+    # Canonical-equivalent positives should all pass.
+    for sc in report.cases:
+        if sc.case.slice == SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE:
+            assert sc.case.expected_verdict is True
+            assert sc.report.verdict is True, sc.case.id
+
+    # Other canary cases should all fail.
+    for sc in report.cases:
+        if sc.case.slice in canary_slices - {SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE}:
+            assert sc.case.expected_verdict is False
+            assert sc.report.verdict is False, sc.case.id
+            assert sc.case.expected_reason_substrings
+            reasons = set(sc.report.reason_codes)
+            missing = [
+                sub for sub in sc.case.expected_reason_substrings if sub not in reasons
+            ]
+            assert not missing, f"{sc.case.id}: missing reason(s) {missing}; got {reasons}"
