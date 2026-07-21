@@ -4763,3 +4763,14 @@ checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e669-nested-array-schema-20260721.md) and
 [JSON](iter-e669-nested-array-schema-20260721.json).
+
+## E670 nested array role-aware wrapper
+
+E670 combines preserved inner-array schemas with schema-allowed semantic-role
+wrapper preference. The matched OOD `n=4` run still selects E669's wrong
+`Form` wrapper, leaving strict v2 at 3/4 and retaining the structure and AST F1
+regressions. Reject v124 and restore retained E666 behavior as v125. No
+checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e670-nested-array-role-20260721.md) and
+[JSON](iter-e670-nested-array-role-20260721.json).

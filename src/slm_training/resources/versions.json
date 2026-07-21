@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v124",
+      "version": "v125",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v125",
+          "date": "2026-07-21",
+          "note": "E670 rejection: restore retained E666 behavior after the combined nested-schema and role-aware wrapper policy reproduced E669's wrong Form wrapper"
+        },
         {
           "version": "v124",
           "date": "2026-07-21",

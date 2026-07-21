@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "run_id": "e670-nested-array-role-r1",
+  "experiment_id": "E670",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_scratch_rejected",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Combining nested item-schema propagation with schema-allowed semantic-role wrapper selection will replace E669's wrong Form wrapper and improve strict meaning.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e669-nested-array-schema-r1",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "exact_e653_policy": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.75,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.72295,
+      "component_type_recall": 0.875,
+      "reward_score": 0.973,
+      "ast_node_f1": 0.7986928104575164,
+      "ast_edge_f1": 0.6845238095238095,
+      "latency_ms_p50": 2778.98,
+      "latency_ms_p95": 9156.36,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "failure_breakdown": {
+    "placeholder_semantic_role_mismatch": 1
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Reject v124 and restore retained E666 behavior as v125. The combined policy emits the same semantically wrong Form wrapper as E669, leaves strict meaning at 3/4, and retains the structure and AST F1 regressions.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "61c257e0fc0163f2c17be3ffbbe861998fd3f0b9",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.2.1",
+      "evals.scoring": "v12",
+      "model.twotower": "v124"
+    },
+    "stamped_at": "2026-07-21T10:00:01.506303+00:00"
+  }
+}
