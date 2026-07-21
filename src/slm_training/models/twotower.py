@@ -987,6 +987,9 @@ class TwoTowerModel(nn.Module):
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._semantic_plan_action_counts: list[dict[int, int]] | None = None
+        self._semantic_plan_role_bindings: list[
+            dict[str, tuple[str, ...]]
+        ] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -4338,6 +4341,37 @@ class TwoTowerModel(nn.Module):
             if str(expr_type).startswith("element:")
         )
 
+    @staticmethod
+    def _semantic_plan_role_obligations(
+        family_counts: Counter[str],
+        role_candidates: dict[str, tuple[str, ...]] | None,
+    ) -> tuple[Counter[str], dict[str, tuple[str, ...]]]:
+        """Pair uncovered visible roles with preferred compatible leaf families."""
+        if not role_candidates:
+            return family_counts, {}
+        from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
+
+        completed = family_counts.copy()
+        planned = set(family_counts)
+        bindings: dict[str, list[str]] = defaultdict(list)
+        for slot, candidates in role_candidates.items():
+            if planned.intersection(candidates):
+                continue
+            family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in candidates
+                ),
+                None,
+            )
+            if family is not None:
+                completed[family] += 1
+                bindings[family].append(slot)
+        return completed, {
+            family: tuple(slots) for family, slots in bindings.items()
+        }
+
     def _semantic_plan_bias(
         self,
         row: int,
@@ -4985,6 +5019,8 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None,
+        prefix: list[int] | None = None,
+        role_bindings: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
         """Prefer visible slots compatible with the active content property owner."""
         weight = float(
@@ -5035,6 +5071,11 @@ class TwoTowerModel(nn.Module):
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
         properties_by_slot = semantic_role_properties(slot_contract)
+        bound_slots = (
+            frozenset(role_bindings.get(component, ()))
+            if role_bindings and component in role_bindings
+            else None
+        )
         bias = scores.new_zeros(len(candidate_ids))
         applied = False
         for position, token_id in enumerate(candidate_ids):
@@ -5048,12 +5089,23 @@ class TwoTowerModel(nn.Module):
                 continue
             if (
                 component in semantic_role_candidates.get(slot, ())
+                and (bound_slots is None or slot in bound_slots)
+                and (prefix is None or token_id not in prefix)
                 and (
                     active_property is None
                     or active_property in properties_by_slot.get(slot, ())
                 )
             ):
-                bias[position] = weight
+                bias[position] = (
+                    max(
+                        0.0,
+                        float(scores.max().item())
+                        + weight
+                        - float(scores[position].item()),
+                    )
+                    if bound_slots is not None
+                    else weight
+                )
                 applied = True
         return bias if applied else None
 
@@ -7354,6 +7406,13 @@ class TwoTowerModel(nn.Module):
                             and row < len(self._semantic_role_candidates)
                             else None
                         ),
+                        ids[row, :position].tolist(),
+                        (
+                            self._semantic_plan_role_bindings[row]
+                            if self._semantic_plan_role_bindings
+                            and row < len(self._semantic_plan_role_bindings)
+                            else None
+                        ),
                     )
                     if schema_role_slot_bias is not None:
                         scores = scores + schema_role_slot_bias
@@ -8614,24 +8673,42 @@ class TwoTowerModel(nn.Module):
             compiler = OpenUISemanticPlanCompiler(honesty_mode="production")
             self._semantic_plan_action_scores = []
             self._semantic_plan_action_counts = []
-            for prompt in prompts:
+            self._semantic_plan_role_bindings = []
+            for row, prompt in enumerate(prompts):
                 plan = prompt_semantic_plan(prompt)
                 features = compiler.annotate_actions(None, action_ids, plan)
-                self._semantic_plan_action_scores.append(
-                    {
-                        token_id: feature.plan_confidence
-                        for token_id, feature in zip(
-                            component_ids, features, strict=True
-                        )
-                        if feature.component_family_compatible
-                        and not feature.conflict_or_unknown
-                    }
-                )
                 family_counts = Counter(
                     slot.component_family
                     for slot in (plan.role_slots if plan is not None else ())
                     if slot.component_family
                 )
+                family_counts, role_bindings = self._semantic_plan_role_obligations(
+                    family_counts,
+                    (
+                        self._semantic_role_candidates[row]
+                        if self._semantic_role_candidates
+                        and row < len(self._semantic_role_candidates)
+                        else None
+                    ),
+                )
+                action_scores = {
+                    token_id: feature.plan_confidence
+                    for token_id, feature in zip(
+                        component_ids, features, strict=True
+                    )
+                    if feature.component_family_compatible
+                    and not feature.conflict_or_unknown
+                }
+                action_scores.update(
+                    {
+                        token_id: 1.0
+                        for token_id, action_id in zip(
+                            component_ids, action_ids, strict=True
+                        )
+                        if family_counts[action_id] > 0
+                    }
+                )
+                self._semantic_plan_action_scores.append(action_scores)
                 self._semantic_plan_action_counts.append(
                     {
                         token_id: family_counts[action_id]
@@ -8641,9 +8718,11 @@ class TwoTowerModel(nn.Module):
                         if family_counts[action_id] > 0
                     }
                 )
+                self._semantic_plan_role_bindings.append(role_bindings)
         else:
             self._semantic_plan_action_scores = None
             self._semantic_plan_action_counts = None
+            self._semantic_plan_role_bindings = None
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
