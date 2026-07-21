@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v95",
+      "version": "v96",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v96",
+          "date": "2026-07-20",
+          "note": "E648: verify semantic-root closures through the dynamic-literal-aware choice tokenizer before official parser validation"
+        },
         {
           "version": "v95",
           "date": "2026-07-20",

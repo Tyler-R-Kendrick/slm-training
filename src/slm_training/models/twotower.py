@@ -5879,14 +5879,22 @@ class TwoTowerModel(nn.Module):
                     target_id = self.tokenizer.token_to_id.get(closure[0])
             try:
                 from slm_training.dsl.parser import validate
-                from slm_training.dsl.production_codec import decode_choices
 
                 slot_contract = (
                     self._slot_contracts[row]
                     if self._slot_contracts and row < len(self._slot_contracts)
                     else ()
                 )
-                validate(decode_choices(planned, slot_contract or ()))
+                planned_ids = [
+                    int(self.tokenizer.token_to_id[token]) for token in planned
+                ]
+                decoded = self.tokenizer.decode(
+                    planned_ids,
+                    placeholders=slot_contract or (),
+                )
+                if not decoded:
+                    raise ValueError("choice tokenizer rejected planned root closure")
+                validate(decoded)
             except Exception as exc:  # noqa: BLE001 - predicted plans fail closed
                 self._semantic_plan_root_last_abstention = {
                     "reason": "verifier_rejected",

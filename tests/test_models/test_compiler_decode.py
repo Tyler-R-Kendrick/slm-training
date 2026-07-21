@@ -1985,6 +1985,46 @@ def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> No
     assert stats.constrained_selection_traces[0]["evidence"] == first_evidence
 
 
+def test_semantic_plan_root_probe_decodes_dynamic_literal_frames() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    callout_id = tokenizer.token_to_id["+Callout"]
+    model._semantic_plan_action_scores = [{callout_id: 1.0}]
+    model._semantic_plan_action_counts = [{callout_id: 1}]
+    model._slot_contracts = [[":status.title", ":status.body"]]
+    prefix = [
+        callout_id,
+        tokenizer.token_to_id["LIT_STR"],
+        tokenizer.token_to_id["LIT_END"],
+        tokenizer.sym_id(0),
+        tokenizer.sym_id(1),
+        tokenizer.token_to_id["-"],
+    ]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Callout"],
+    )
+    candidates = (tokenizer.token_to_id["+Stack"], tokenizer.eos_id)
+
+    bias = model._semantic_plan_root_bias(
+        0,
+        state,
+        prefix,
+        candidates,
+        torch.zeros(2),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [2.0, 0.0]
+    assert model._semantic_plan_root_last_abstention is None
+
+
 def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
     from types import SimpleNamespace
 
