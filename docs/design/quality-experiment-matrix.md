@@ -5112,3 +5112,17 @@ synced.
 
 Evidence: [narrative](iter-e696-role-literal-fallback-20260721.md) and
 [JSON](iter-e696-role-literal-fallback-20260721.json).
+
+## E697 required parent ordering
+
+E697 emits a planned parent before planned families reachable through required
+non-alternative schema paths, while corrected r2 defers opaque aggregators.
+Form now owns the correct submit Button and email Input; structure rises to
+0.6826, component recall to 0.8433, and node F1 to 0.8062. Strict stays 4/5,
+edge F1 and reward slip, and hint-title spam remains. Retain v157 as a positive
+structural tradeoff, not ship evidence. R1 is excluded because premature Stack
+emission dropped meaningful-v1 to 0.8 and reward to 0.7688. AgentV is 0/1; no
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e697-required-parent-order-20260721.md) and
+[JSON](iter-e697-required-parent-order-20260721.json).
