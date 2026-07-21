@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "run_id": "e622-typed-array-item-margin-threshold-20260721",
+  "experiment_id": "E622",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_threshold",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Sweeping semantic_plan_typed_array_item_margin_decode_weight itself (the lever E621's instrumentation showed actually drives target selection), with its sibling semantic_plan_typed_array_nonempty_margin_decode_weight fixed at 0 (the true, unconfounded control -- not E621's own swept arm, which held item_margin fixed nonzero), will show a real dose-response effect on OOD quality metrics.",
+  "falsifier": "All dose levels (0, 1, 2, 4) produce byte-identical predictions across all seeds/records, matching E621's null.",
+  "method": "Reused E621's 3 fresh 800-step scratch twotower checkpoints (seeds 0/1/2; e621-margin-sweep-seed{0,1,2}-scratch800-20260720, unchanged on disk) and replayed the same E619/E620/E621 standard eval recipe (schema_role_slot_decode_weight=8, semantic_role_decode_weight=8, slot_coverage_close_decode_weight=2, schema_value_decode_weight=4, schema_opaque_close_decode_weight=4, semantic_plan_decode_weight=4, semantic_plan_margin_decode_weight=2, semantic_plan_binding_decode_weight=1, semantic_plan_root_decode_weight=8, semantic_plan_root_margin_decode_weight=2, semantic_plan_repeated_array_close_margin_decode_weight=2, semantic_plan_repeated_slot_margin_decode_weight=2, honest_slot_contract/slot_contract_constrained_decode/slot_contract_in_context/semantic_role_contract_in_context/semantic_role_schema_candidates=true, grammar_ltr_max_tokens=160), holding semantic_plan_typed_array_nonempty_margin_decode_weight FIXED AT 0 (the true ablated-sibling control, per E621's own next-step recommendation (b)) and sweeping ONLY semantic_plan_typed_array_item_margin_decode_weight at 0, 1, 2, 4. Ran 8 new real OOD n=4 eval runs (seed1/seed2 @ item=0; seed0/1/2 @ item=1; seed0/1/2 @ item=4) and reused 4 already-committed E621 runs unmodified: seed0 item=0 (=e621-seed0-bothzero-r1, both weights already 0) and seed0/1/2 item=2 (=e621-seed{0,1,2}-margin0-r1, nonempty already 0, item already fixed at the standard 2). 12 seed x dose combinations x n=4 OOD records = 48 real predictions total. A same-config sanity check (fresh seed0 item=0 rerun vs the reused e621-seed0-bothzero-r1 record) reproduced byte-identical placeholder_fidelity/validity/structural_similarity/reward_score/meaningful_program_rate, confirming the reuse is valid.",
+  "checkpoints_reused_unchanged": {
+    "seed0": {
+      "run_id": "e621-margin-sweep-seed0-scratch800-20260720",
+      "location": "outputs/runs/e621-margin-sweep-seed0-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "8ab4f5deeb0e1322064259ca92837e71dfdf662d25b46371172ad8779668a4cd",
+      "last_loss": 4.0680131912231445
+    },
+    "seed1": {
+      "run_id": "e621-margin-sweep-seed1-scratch800-20260720",
+      "location": "outputs/runs/e621-margin-sweep-seed1-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "86573aa519e86b59f6b64a84ef87899da30cda8e90c9b4ca3698837dc2b7b866",
+      "last_loss": 4.599752426147461
+    },
+    "seed2": {
+      "run_id": "e621-margin-sweep-seed2-scratch800-20260720",
+      "location": "outputs/runs/e621-margin-sweep-seed2-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "49a8a64ebca4a549789b8c3df648aeaea11f897425bd73e5ce456d0bf73ebb99",
+      "last_loss": 3.4020028114318848
+    },
+    "note": "No new training this iteration -- pure decode-time re-evaluation of already-committed-evidence checkpoints from E621, same session-branch lineage."
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_schema_candidates": true,
+    "semantic_role_decode_weight": 8.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight_fixed": 0.0,
+    "semantic_plan_typed_array_item_margin_decode_weight_swept": [0.0, 1.0, 2.0, 4.0],
+    "grammar_ltr_max_tokens": 160,
+    "matched_to": "E619/E620/E621's standard evaluation_policy, with semantic_plan_typed_array_nonempty_margin_decode_weight now held at 0 (the unconfounded control E621 identified as missing) and semantic_plan_typed_array_item_margin_decode_weight swept instead"
+  },
+  "new_runs": [
+    "e622-seed1-item0-r1", "e622-seed2-item0-r1",
+    "e622-seed0-item1-r1", "e622-seed1-item1-r1", "e622-seed2-item1-r1",
+    "e622-seed0-item4-r1", "e622-seed1-item4-r1", "e622-seed2-item4-r1"
+  ],
+  "reused_runs": [
+    "e621-seed0-bothzero-r1 (seed0 item=0)",
+    "e621-seed0-margin0-r1 (seed0 item=2)",
+    "e621-seed1-margin0-r1 (seed1 item=2)",
+    "e621-seed2-margin0-r1 (seed2 item=2)"
+  ],
+  "sanity_check_reproduction": {
+    "run_id": "e622-seed0-item0-r1",
+    "config": "semantic_plan_typed_array_nonempty_margin_decode_weight=0, semantic_plan_typed_array_item_margin_decode_weight=0 (identical config to e621-seed0-bothzero-r1)",
+    "result": "byte-identical placeholder_fidelity (0.4667), placeholder_validity (0.58), structural_similarity (0.48855), reward_score (0.62675), meaningful_program_rate (0.5) vs e621-seed0-bothzero-r1 -- confirms determinism and that reusing E621's committed runs as data points is valid.",
+    "note": "This run is kept on disk (outputs/runs/e622-seed0-item0-r1/) but its metrics are not double-counted in the results table below; e621-seed0-bothzero-r1 is used as the seed0/item=0 data point."
+  },
+  "results_by_seed_and_dose": [
+    {"seed": 0, "item_margin": 0.0, "source_run": "e621-seed0-bothzero-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.4666666666666667, "validity": 0.58, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.6267499999999999, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 0, "item_margin": 1.0, "source_run": "e622-seed0-item1-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.55, "validity": 0.73, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 0, "item_margin": 2.0, "source_run": "e621-seed0-margin0-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.55, "validity": 0.73, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 0, "item_margin": 4.0, "source_run": "e622-seed0-item4-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.55, "validity": 0.73, "structure": 0.48855, "recall": 0.47916666666666663, "reward": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "item_margin": 0.0, "source_run": "e622-seed1-item0-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.55, "validity": 0.63, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.6502499999999999, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "item_margin": 1.0, "source_run": "e622-seed1-item1-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.6333333333333333, "validity": 0.78, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.8375, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "item_margin": 2.0, "source_run": "e621-seed1-margin0-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.6333333333333333, "validity": 0.78, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.8375, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 1, "item_margin": 4.0, "source_run": "e622-seed1-item4-r1", "meaningful_v1": 0.5, "strict_v2": 0.0, "fidelity": 0.6333333333333333, "validity": 0.78, "structure": 0.5248, "recall": 0.47916666666666663, "reward": 0.8375, "ast_node_f1": 0.5912698412698413, "ast_edge_f1": 0.35, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "item_margin": 0.0, "source_run": "e622-seed2-item0-r1", "meaningful_v1": 0.25, "strict_v2": 0.0, "fidelity": 0.5, "validity": 0.5, "structure": 0.436825, "recall": 0.5, "reward": 0.2432499999999999, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "item_margin": 1.0, "source_run": "e622-seed2-item1-r1", "meaningful_v1": 0.25, "strict_v2": 0.0, "fidelity": 0.625, "validity": 0.675, "structure": 0.436825, "recall": 0.5, "reward": 0.443, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "item_margin": 2.0, "source_run": "e621-seed2-margin0-r1", "meaningful_v1": 0.25, "strict_v2": 0.0, "fidelity": 0.625, "validity": 0.675, "structure": 0.436825, "recall": 0.5, "reward": 0.443, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0},
+    {"seed": 2, "item_margin": 4.0, "source_run": "e622-seed2-item4-r1", "meaningful_v1": 0.25, "strict_v2": 0.0, "fidelity": 0.625, "validity": 0.675, "structure": 0.436825, "recall": 0.5, "reward": 0.443, "ast_node_f1": 0.5123376623376623, "ast_edge_f1": 0.3625, "decode_timeout_count": 0, "fallback_count": 0}
+  ],
+  "byte_identical_predictions_check": {
+    "n_predictions_compared": 48,
+    "n_seeds": 3,
+    "n_records_per_seed": 4,
+    "n_doses": 4,
+    "method": "prediction_sha256 field emitted per-record by evaluate_model, compared across all 4 doses within each seed/record",
+    "result": "9 of 12 seed x record groups (ood_auth_01, ood_dashboard_01, ood_modal_01 x 3 seeds = 36 of 48 predictions) are byte-identical across ALL FOUR doses (0/1/2/4). The remaining 3 groups (ood_gallery_01 x 3 seeds) show exactly 2 distinct values each: a unique value at item_margin=0, and one shared value across item_margin in {1, 2, 4} (byte-identical among those three). Only 3 of 48 predictions (the item_margin=0 gallery ones) differ from their group's positive-dose value.",
+    "gallery_record_prediction_at_item0": "root = Stack([v0], \"column\")\nv0 = ImageGallery([])",
+    "gallery_record_prediction_at_item_gte_1": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\"}])",
+    "gallery_prediction_sha256_at_item0_all_seeds": "591d4f88... (identical across seed 0/1/2 -- deterministic close-empty completion independent of checkpoint)"
+  },
+  "power_protocol_analysis": {
+    "method_ref": "slm_training.evals.power_protocol (wilson_interval, bootstrap_paired_ci, intraclass_correlation) -- same primitives E621 first applied to real multi-seed eval records",
+    "pooled_meaningful_v1_by_dose": {
+      "item_0": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805},
+      "item_1": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805},
+      "item_2": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805},
+      "item_4": {"successes": 5, "n": 12, "rate": 0.4167, "wilson_low": 0.1933, "wilson_high": 0.6805}
+    },
+    "pooled_meaningful_v1_note": "meaningful_program_v1 (binary pass/fail) does not flip for the gallery record at either state in this checkpoint scale, so the pooled binary rate is unchanged across all doses -- the effect only shows up in continuous metrics (fidelity/validity/reward).",
+    "paired_bootstrap_delta_fidelity_item1_minus_item0": {"estimate": 0.0972, "low": 0.0, "high": 0.1944, "resamples": 1000, "alpha": 0.05, "note": "12 paired seed x record fidelity observations; positive point estimate, CI touches 0 at the lower bound (small n=12), consistent with a real but modest per-record effect concentrated in 3/12 pairs."},
+    "paired_bootstrap_delta_fidelity_item2_minus_item1": {"estimate": 0.0, "low": 0.0, "high": 0.0, "resamples": 1000, "alpha": 0.05, "note": "degenerate [0,0] -- every one of the 12 paired records is byte-identical between item_margin=1 and item_margin=2."},
+    "paired_bootstrap_delta_fidelity_item4_minus_item2": {"estimate": 0.0, "low": 0.0, "high": 0.0, "resamples": 1000, "alpha": 0.05, "note": "degenerate [0,0] -- every one of the 12 paired records is byte-identical between item_margin=2 and item_margin=4."},
+    "icc_meaningful_v1_by_seed_at_item1": {"icc": -0.2222, "between": 0.0833, "within": 0.3056, "n_clusters": 3, "note": "same small-sample estimation artifact E621 documented; not over-interpreted."},
+    "seed_variance_note": "As in E621, seed dominates: reward_score at item_margin=0 ranges 0.2432 (seed2) to 0.6502 (seed1); the item_margin effect (a flat +0.17 to +0.20 reward shift per seed) rides on top of, and is much smaller than, seed-to-seed variance."
+  },
+  "decision": "Genuine, code-confirmed dose-response finding, but a MINIMUM-EFFECTIVE-DOSE threshold, not a monotonic scaling effect: semantic_plan_typed_array_item_margin_decode_weight only needs to be POSITIVE to fully flip the one decode site it controls (ImageGallery's typed-array-open bias) at this checkpoint scale -- item_margin=1 is exactly as effective as item_margin=2 (the current standard-recipe default) or item_margin=4. There is zero marginal benefit from the recipe's current default of 2 over the untested lower value of 1 in this diagnostic; there is a real, measurable difference between 0 (off) and any positive dose (fidelity +0.083 to +0.125, validity +0.15 to +0.175, reward +0.187 to +0.200 across the 3 seeds, concentrated entirely in the one record whose item array this lever governs). Structural_similarity/AST F1/component_type_recall/meaningful_program_v1/strict_v2 are unchanged at every dose, matching E621's ablation. This completes E621's causal chain end-to-end (code read -> instrumented single firing site -> now dose-swept the correct lever with a clean unconfounded control) rather than leaving it as a hypothesis. No checkpoint promoted or synced; no code changed (verify_version_stamps --check: 0 components touched). Not a ship claim.",
+  "honest_caveats": [
+    "n=4-per-arm, 3-seed diagnostic replay against ood only, not a full held-out/rico_held confirmatory suite.",
+    "The effect is driven by exactly one of the four OOD records (ood_gallery_01) at this checkpoint scale; the other three records show zero sensitivity to this lever across the entire 0-4 dose range tested. A checkpoint/prompt mix with more typed-array components could reveal additional firing sites and a different saturation point.",
+    "Only doses {0, 1, 2, 4} were tested; whether a fractional dose between 0 and 1 (e.g. 0.5) would show a partial/graded effect, or whether the threshold is a hard step at any positive value, is not established -- the code path (`if typed_margin > 0.0`) is a hard boolean gate, so a step function at exactly 0 is the code-predicted behavior and this is consistent with, not merely correlated with, that reading.",
+    "binding_aware_meaningful_v2_rate_strict (strict v2) stays 0.0 in every arm across all 3 seeds and all 4 doses -- required-slot coverage remains a fully open problem this iteration does not touch.",
+    "The negative ICC reported here is the same small-sample estimation artifact E621 documented (within-seed variance exceeding between-seed variance at n=3 clusters), not evidence of a real negative seed-cluster correlation."
+  ],
+  "next_step": "E620's still-open findings (ood_dashboard_01's missing components/slots, ood_auth_01's Input.name role swap, ood_modal_01's undertrained structure) remain unaddressed by both E621 and E622 and are the strongest remaining candidate for a root-cause trace, since none of the margin-weight sweeps in this lineage (E621, E622) touch those three records at all -- they were byte-identical across every dose and weight combination tested so far in both iterations. Separately, since item_margin=1 is now shown to be exactly as effective as the standard recipe's default of 2 in this diagnostic, a future iteration could test whether shrinking the standard-recipe default from 2 to 1 has any effect on other suites/records where headroom (not just threshold-crossing) might matter, before treating margin=1 as a safe simplification.",
+  "test_plan": [
+    "8 new real matched OOD n=4 eval runs on already-trained E621 checkpoints (seeds 0/1/2 x doses {0,1,4}, minus the 4 already-committed E621 data points reused for doses {0 seed0, 2 all seeds})",
+    "1 same-config sanity-check rerun (seed0 item=0) confirming byte-identical reproduction of e621-seed0-bothzero-r1",
+    "python -m scripts.verify_version_stamps --check -> ok, 0 components touched (no source changed)",
+    "python -m scripts.repo_policy -> ok"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "02b88a60169fee99691191956fd068f9fe9f288b",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v59"
+    },
+    "stamped_at": "2026-07-21T00:00:00+00:00"
+  }
+}

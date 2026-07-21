@@ -4225,3 +4225,42 @@ control. Strict v2 remains 0.0 in every arm, no code changed
 was promoted or synced. Not a ship claim. Evidence:
 [narrative](iter-e621-typed-array-margin-decoupling-20260720.md) and
 [JSON](iter-e621-typed-array-margin-decoupling-20260720.json).
+
+## E622 the typed-array item margin is a minimum-effective-dose threshold
+
+E622 pursues both of E621's own next steps at once: sweep
+`semantic_plan_typed_array_item_margin_decode_weight` itself — the lever
+E621's instrumentation showed actually drives target selection — while
+holding its sibling `semantic_plan_typed_array_nonempty_margin_decode_weight`
+FIXED AT 0 throughout (the true ablated-sibling control E621 flagged as
+missing, instead of the previously-used 2.0). No new training: reused E621's
+3 already-committed seed 0/1/2 800-step scratch checkpoints unchanged, ran 8
+new real OOD `n=4` evals plus reused 4 already-committed E621 data points (12
+seed×dose combinations, doses 0/1/2/4, 48 real predictions total), and
+verified reuse validity with a byte-identical same-config sanity rerun.
+**Result: a real, code-confirmed threshold effect, not a scaling effect.** 9
+of 12 seed×record groups (`ood_auth_01`/`ood_dashboard_01`/`ood_modal_01` ×
+3 seeds, 36/48 predictions) are byte-identical across every dose 0→4; the
+remaining 3 groups (`ood_gallery_01` × 3 seeds) take exactly one value at
+dose 0 (`ImageGallery([])`, the closes-empty failure) and one shared,
+byte-identical value across doses 1, 2, and 4
+(`ImageGallery([{src: ..., alt: ...}])`). `item_margin=1` is exactly as
+effective as the standard recipe's default of 2 or a 4 stress dose — there is
+zero marginal benefit above 1 in this diagnostic, but a real, measurable jump
+from 0→1: fidelity +0.083 to +0.125, validity +0.15 to +0.175, reward +0.187
+to +0.200 across the 3 seeds, concentrated entirely in the one record this
+lever governs. `structural_similarity`, AST F1, `component_type_recall`, and
+`meaningful_program_v1` are unchanged at every dose, matching E621's
+ablation exactly; pooled `meaningful_v1` stays 5/12 = 0.4167 at every dose.
+Paired-bootstrap `placeholder_fidelity` delta is `+0.0972` `[0.0, 0.1944]`
+for dose 1 vs 0, and a degenerate `[0.0, 0.0]` for dose 2 vs 1 and dose 4 vs
+2 — proof of saturation, not underpowering. This completes E621's causal
+chain end-to-end with real matched evals instead of leaving it as a code-read
+hypothesis. Strict v2 remains 0.0 in every arm, no code changed
+(`verify_version_stamps --check`: 0 components touched), and no checkpoint
+was promoted or synced. Not a ship claim. E620's `ood_dashboard_01`,
+`ood_auth_01`, and `ood_modal_01` findings remain completely untouched by
+both E621's and E622's margin sweeps — the strongest candidate for the next
+iteration's root-cause trace. Evidence:
+[narrative](iter-e622-typed-array-item-margin-threshold-20260721.md) and
+[JSON](iter-e622-typed-array-item-margin-threshold-20260721.json).
