@@ -3677,6 +3677,25 @@
         }
       ]
     },
+    "harness.experiments.slm233_distill_select_eval_leakage_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm233_distill_select_eval_leakage_gate.py",
+        "scripts/run_slm233_distill_select_eval_leakage_gate.py",
+        "tests/test_harnesses/experiments/test_slm233_distill_select_eval_leakage_gate.py",
+        "tests/test_scripts/test_run_slm233_distill_select_eval_leakage_gate.py",
+        "docs/design/iter-slm233-dtl0-01-distill-select-eval-leakage-gate-20260721.json",
+        "docs/design/iter-slm233-dtl0-01-distill-select-eval-leakage-gate-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-233 DTL0-01 distillation P2 trace-selection eval-holdout leakage gate stress test: exercises the real build_test_data / DecodeTraceRecorder.finalize / TraceStore.append / select_traces functions to test whether the P2 self-distillation selection stage enforces the documented 'selection data stays disjoint from frozen evals; never train on held-out benchmark traces' invariant the way test-data enforces train/eval disjointness"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
