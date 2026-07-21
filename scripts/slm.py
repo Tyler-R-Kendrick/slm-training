@@ -56,6 +56,7 @@ GROUP_SUMMARIES: dict[str, str] = {
     "annotations": "Export human annotations for downstream training",
     "bench": "Benchmarks and generation profiling",
     "autoresearch": "Bounded self-improvement campaigns + RL gate (passthrough)",
+    "inspect": "Model/weight spectral inspection diagnostics",
 }
 
 COMMANDS: dict[tuple[str, ...], Command] = {
@@ -175,6 +176,11 @@ COMMANDS: dict[tuple[str, ...], Command] = {
         "scripts.autoresearch",
         "Campaign subcommands (init/research/hypothesize/run/diagnose/validate-rl/...)",
         "autoresearch",
+    ),
+    ("inspect",): Command(
+        "scripts.inspect_spectral",
+        "Spectral diagnostics (spectral, spectral-null, spectral-compare)",
+        "inspect",
     ),
 }
 

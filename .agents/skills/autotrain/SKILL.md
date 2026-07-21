@@ -42,6 +42,7 @@ discovery / Linear, use `autoresearch`.
 | Checkpoint sync, lineage, promotion | `slm checkpoints sync` / `migrate`; `slm cycle <sub>` | [references/checkpoints.md](references/checkpoints.md) |
 | Annotation export → preference inputs | `slm annotations export` | [references/annotations.md](references/annotations.md) |
 | Benchmarks + generation profiling | `slm bench telemetry` / `accel` / `cactus` / `profile` | [references/bench.md](references/bench.md) |
+| Model/weight spectral inspection | `slm inspect <subcommand>` | [references/inspect.md](references/inspect.md) |
 | Autoresearch self-improvement + RL gate | `slm autoresearch <subcommand>` | [references/autoresearch.md](references/autoresearch.md) |
 
 ## Non-negotiable contracts
