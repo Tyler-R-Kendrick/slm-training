@@ -394,6 +394,283 @@ def test_slot_coverage_close_bias_only_closes_typed_arrays_after_coverage() -> N
     )
 
 
+def test_slot_coverage_close_bias_continues_through_compatible_component() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    button_id = tokenizer.token_to_id["+Button"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Stack",
+            ),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=(
+                    {
+                        "anyOf": [
+                            {"$ref": "#/$defs/Button"},
+                            {"$ref": "#/$defs/TextContent"},
+                        ]
+                    },
+                ),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (button_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        [":dialog.confirm"],
+        {":dialog.confirm": ("Button",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [7.0, 0.0]
+
+
+def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    details_id = tokenizer.token_to_id["n:details"]
+    close_id = tokenizer.token_to_id["}"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:ImageGallery",
+            ),
+            SimpleNamespace(
+                kind="object",
+                expr_type="object",
+                phase="key",
+                property_names=("details",),
+                schemas=({"type": "string"},),
+                close="}",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (details_id, close_id),
+        torch.tensor([1.0, 5.0]),
+        [":gallery.caption"],
+        {":gallery.caption": ("ImageGallery",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [8.0, 0.0]
+    assert (
+        model._slot_coverage_close_bias(
+            state,
+            [tokenizer.bos_id],
+            (details_id, close_id),
+            torch.tensor([1.0, 5.0]),
+            [":gallery.caption"],
+            {":gallery.caption": ("TextContent",)},
+        )
+        is None
+    )
+
+
+def test_slot_coverage_close_bias_rejects_wrong_owner_direct_slot() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["-"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Button",
+                arg_index=0,
+                schemas=({"type": "string"},),
+                close="-",
+            )
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id],
+        (slot_id, close_id),
+        torch.tensor([1.0, 5.0]),
+        [":auth.email"],
+        {":auth.email": ("Input",)},
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 4.0]
+
+
+def test_slot_coverage_close_bias_escapes_wrong_owner_before_nested_component(
+) -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    switch_id = tokenizer.token_to_id["+SwitchGroup"]
+    close_id = tokenizer.token_to_id["-"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Button",
+                arg_index=1,
+                schemas=({"type": "string"}, {"type": "object"}),
+                close="-",
+            )
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [],
+        (switch_id, close_id),
+        torch.tensor([10.0, 12.0]),
+        [":auth.name", ":auth.email"],
+        {
+            ":auth.name": ("Input", "SwitchGroup"),
+            ":auth.email": ("Input", "SwitchGroup"),
+        },
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 2.0]
+
+
+def test_slot_coverage_close_trace_records_owner_and_missing_slots() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    button_id = tokenizer.token_to_id["+Button"]
+    close_id = tokenizer.token_to_id["]"]
+    stats = DecodeStats()
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Stack",
+                phase="",
+                arg_index=0,
+            ),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                close="]",
+                active_property=None,
+                phase="",
+                arg_index=0,
+            ),
+        ],
+        mode="structural",
+    )
+
+    trace = model._record_slot_coverage_close_trace(
+        stats,
+        row=0,
+        position=8,
+        state=state,
+        prefix=[tokenizer.bos_id, tokenizer.sym_id(0)],
+        candidate_ids=(button_id, close_id),
+        scores_before=torch.tensor([1.0, 5.0]),
+        coverage_bias=torch.tensor([6.0, 0.0]),
+        scores_after=torch.tensor([7.0, 5.0]),
+        slot_contract=[":dialog.title", ":dialog.confirm"],
+    )
+    model._finalize_semantic_plan_trace(
+        trace,
+        candidate_ids=(button_id, close_id),
+        scores=torch.tensor([7.0, 8.0]),
+    )
+
+    assert trace is not None
+    assert trace["phase"] == "slot_coverage_close"
+    assert trace["mode"] == "coverage_continue"
+    assert trace["missing_slots"] == [":dialog.confirm"]
+    assert trace["owner_component"] == "Stack"
+    assert trace["chosen_token"] == "+Button"
+    assert trace["final_token"] == "]"
+    assert trace["changed_after_plan"] is True
+
+
+def test_slot_coverage_close_trace_labels_owner_escape() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    close_id = tokenizer.token_to_id["-"]
+    input_id = tokenizer.token_to_id["+Input"]
+    stats = DecodeStats()
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Button",
+                close="-",
+                active_property=None,
+                phase="",
+                arg_index=1,
+            )
+        ],
+        mode="structural",
+    )
+
+    trace = model._record_slot_coverage_close_trace(
+        stats,
+        row=0,
+        position=3,
+        state=state,
+        prefix=[tokenizer.bos_id],
+        candidate_ids=(input_id, close_id),
+        scores_before=torch.tensor([10.0, 12.0]),
+        coverage_bias=torch.tensor([0.0, 2.0]),
+        scores_after=torch.tensor([10.0, 14.0]),
+        slot_contract=[":auth.email"],
+    )
+
+    assert trace is not None
+    assert trace["mode"] == "owner_escape"
+    assert trace["missing_slots"] == [":auth.email"]
+    assert trace["chosen_token"] == "-"
+
+
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
@@ -861,9 +1138,14 @@ def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
 
 
 def test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role() -> None:
-    """E615: sibling properties of an active typed-object literal (e.g. an
-    ``ImageGallery`` item's ``src``/``alt``/``details``) must each prefer their
-    own matching visible slot instead of converging on the same one."""
+    """E615 (generalized): sibling properties of an active typed-object
+    literal (e.g. an ``ImageGallery`` item's ``src``/``alt``/``details``)
+    must each prefer their own matching visible slot instead of converging
+    on the same one -- but only once the *owning* component is itself a
+    ``semantic_role_candidates`` match for the slot (the same owner-role
+    compatibility gate E621's ``_slot_coverage_close_bias`` correction
+    validated elsewhere in this file)."""
+    from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.production_codec import (
         LIST_OPEN,
         NAME_PREFIX,
@@ -880,6 +1162,12 @@ def test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role() -
         tokenizer.sym_id(1),
         tokenizer.sym_id(2),
     )
+    candidates = semantic_role_candidates(slot_contract, ["ImageGallery"])
+    assert candidates == {
+        ":ood.gallery.alt": ("ImageGallery",),
+        ":ood.gallery.caption": ("ImageGallery",),
+        ":ood.gallery.img": ("ImageGallery",),
+    }
 
     def _bias_for_property(name: str) -> list[float]:
         state = ChoiceDecodeState(tokenizer, slot_count=3)
@@ -894,7 +1182,7 @@ def test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role() -
             (img_id, alt_id, caption_id),
             torch.zeros(3),
             slot_contract,
-            None,
+            candidates,
         )
         assert bias is not None
         return bias.tolist()
@@ -904,6 +1192,34 @@ def test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role() -
     assert _bias_for_property("src") == [4.0, 0.0, 0.0]
     assert _bias_for_property("alt") == [0.0, 4.0, 0.0]
     assert _bias_for_property("details") == [0.0, 0.0, 4.0]
+
+
+def test_schema_role_slot_bias_abstains_when_owner_is_not_a_role_candidate() -> None:
+    """The owner-role compatibility gate must reject an active property whose
+    enclosing component never matched ``semantic_role_candidates`` for any
+    slot -- an empty candidates map for the owner means no slot can be
+    "stolen" by an unrelated component's same-named property."""
+    from slm_training.dsl.production_codec import LIST_OPEN, NAME_PREFIX, OBJ_OPEN, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    slot_contract = [":ood.gallery.img"]
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}ImageGallery"])
+    assert state.advance_id(tokenizer.token_to_id[LIST_OPEN])
+    assert state.advance_id(tokenizer.token_to_id[OBJ_OPEN])
+    assert state.advance_id(tokenizer.token_to_id[f"{NAME_PREFIX}src"])
+
+    bias = model._schema_role_slot_bias(
+        state,
+        (tokenizer.sym_id(0),),
+        torch.zeros(1),
+        slot_contract,
+        {":ood.gallery.img": ("SomeUnrelatedComponent",)},
+    )
+
+    assert bias is None
 
 
 def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> None:

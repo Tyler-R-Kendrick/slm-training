@@ -20,6 +20,20 @@ _IDENTIFIER_RE = re.compile(r"\b[a-z_][A-Za-z0-9_]*\b")
 _QUOTED_RE = re.compile(r'"(?:\\.|[^"\\])*"')
 _COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
 _CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
+_SEMANTIC_ROLE_PROPERTY_ALIASES = {
+    "body": {"text"},
+    "caption": {"details", "text"},
+    "copy": {"text"},
+    "description": {"details", "text"},
+    "img": {"image", "src"},
+    "image": {"src"},
+    "confirm": {"action", "label"},
+    "create": {"action", "label"},
+    "save": {"action", "label"},
+    "submit": {"action", "label"},
+    "continue": {"action", "label"},
+    "cta": {"action", "label"},
+}
 
 # Preferred structural vocabulary for high-signal layouts.
 PREFERRED_COMPONENTS = frozenset(
@@ -115,19 +129,22 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
 # E615, declared typed-object property/slot compatibility
 # (object_property_matches_slot_role) for object literals filled during
 # grammar-guided decode (e.g. ImageGallery.images[].src/alt/details).
+# "caption"/"description"/"img" were independently generalized (on main) to
+# also accept "text"/"image" respectively, so inline object schemas that
+# spell a property either way still resolve to the same visible slot.
 _SEMANTIC_ROLE_PROPERTY_ALIASES: dict[str, frozenset[str]] = {
     "body": frozenset({"text"}),
     "copy": frozenset({"text"}),
-    "description": frozenset({"text"}),
+    "description": frozenset({"details", "text"}),
     "confirm": frozenset({"label", "action"}),
     "create": frozenset({"label", "action"}),
     "save": frozenset({"label", "action"}),
     "submit": frozenset({"label", "action"}),
     "continue": frozenset({"label", "action"}),
     "cta": frozenset({"label", "action"}),
-    "img": frozenset({"src"}),
+    "img": frozenset({"src", "image"}),
     "image": frozenset({"src"}),
-    "caption": frozenset({"details"}),
+    "caption": frozenset({"details", "text"}),
 }
 
 
@@ -153,6 +170,32 @@ def object_property_matches_slot_role(property_name: str, placeholder: str) -> b
     return str(property_name) in slot_compatible_property_names(placeholder)
 
 
+def _inline_schema_property_names(schema: dict[str, Any]) -> frozenset[str]:
+    """Collect inline record fields without traversing component references.
+
+    ``semantic_role_candidates`` previously only looked at a component
+    definition's direct ``properties`` mapping, so properties nested inside
+    an ``items``/``anyOf`` sub-schema (e.g. object-array item shapes such as
+    ``ImageGallery.images[]``) were invisible to slot/component
+    compatibility. This traverses inline (non-``$ref``) sub-schemas so those
+    fields are found too.
+    """
+    names: set[str] = set()
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        names.update(str(name) for name in properties)
+        for child in properties.values():
+            if isinstance(child, dict) and "$ref" not in child:
+                names.update(_inline_schema_property_names(child))
+    items = schema.get("items")
+    if isinstance(items, dict) and "$ref" not in items:
+        names.update(_inline_schema_property_names(items))
+    for option in schema.get("anyOf", ()):
+        if isinstance(option, dict) and "$ref" not in option:
+            names.update(_inline_schema_property_names(option))
+    return frozenset(names)
+
+
 def semantic_role_candidates(
     placeholders: list[str], component_names: list[str]
 ) -> dict[str, tuple[str, ...]]:
@@ -160,15 +203,17 @@ def semantic_role_candidates(
     from slm_training.dsl.lang_core import library_schema
 
     definitions = library_schema().get("$defs", {})
+    properties_by_component = {
+        name: _inline_schema_property_names(definitions.get(name, {}))
+        for name in sorted(set(component_names))
+    }
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
         compatible_properties = slot_compatible_property_names(placeholder)
         result[placeholder] = tuple(
             name
             for name in sorted(set(component_names))
-            if compatible_properties.intersection(
-                definitions.get(name, {}).get("properties") or {}
-            )
+            if compatible_properties.intersection(properties_by_component[name])
         )
     return result
 

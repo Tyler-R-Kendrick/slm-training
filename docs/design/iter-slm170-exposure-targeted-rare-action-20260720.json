@@ -11,7 +11,7 @@
       "sampled_records": 64.0,
       "unique_roots": 25.0,
       "unique_templates": 25.0,
-      "wall_seconds": 0.06435431000287645
+      "wall_seconds": 0.06439617500442546
     },
     "e396_balanced": {
       "budget_adherence": 0.8125,
@@ -24,7 +24,7 @@
       "sampled_records": 52.0,
       "unique_roots": 27.0,
       "unique_templates": 27.0,
-      "wall_seconds": 0.05361359000776429
+      "wall_seconds": 0.05370614100352396
     },
     "minimum_exposure_floor": {
       "budget_adherence": 0.8125,
@@ -37,7 +37,7 @@
       "sampled_records": 52.0,
       "unique_roots": 27.0,
       "unique_templates": 27.0,
-      "wall_seconds": 0.05357124000543263
+      "wall_seconds": 0.05372445000498556
     },
     "root_template_balanced_control": {
       "budget_adherence": 0.8125,
@@ -50,7 +50,7 @@
       "sampled_records": 52.0,
       "unique_roots": 27.0,
       "unique_templates": 27.0,
-      "wall_seconds": 0.05367276999854949
+      "wall_seconds": 0.05363518400222529
     },
     "sqrt_inverse_frequency": {
       "budget_adherence": 0.8125,
@@ -63,7 +63,7 @@
       "sampled_records": 52.0,
       "unique_roots": 27.0,
       "unique_templates": 27.0,
-      "wall_seconds": 0.05350908999785316
+      "wall_seconds": 0.05349911700282246
     }
   },
   "cells": [
@@ -220,7 +220,7 @@
       "total_decision_budget": 64,
       "unique_roots": 25,
       "unique_templates": 25,
-      "wall_seconds": 0.06435431000287645
+      "wall_seconds": 0.06439617500442546
     },
     {
       "arm_id": "e396_balanced__s0",
@@ -306,7 +306,7 @@
       "total_decision_budget": 64,
       "unique_roots": 27,
       "unique_templates": 27,
-      "wall_seconds": 0.05361359000776429
+      "wall_seconds": 0.05370614100352396
     },
     {
       "arm_id": "sqrt_inverse_frequency__s0",
@@ -392,7 +392,7 @@
       "total_decision_budget": 64,
       "unique_roots": 27,
       "unique_templates": 27,
-      "wall_seconds": 0.05350908999785316
+      "wall_seconds": 0.05349911700282246
     },
     {
       "arm_id": "minimum_exposure_floor__s0",
@@ -478,7 +478,7 @@
       "total_decision_budget": 64,
       "unique_roots": 27,
       "unique_templates": 27,
-      "wall_seconds": 0.05357124000543263
+      "wall_seconds": 0.05372445000498556
     },
     {
       "arm_id": "root_template_balanced_control__s0",
@@ -564,21 +564,21 @@
       "total_decision_budget": 64,
       "unique_roots": 27,
       "unique_templates": 27,
-      "wall_seconds": 0.05367276999854949
+      "wall_seconds": 0.05363518400222529
     }
   ],
   "run_id": "slm170-exposure-targeted-rare-action-20260720",
   "schema": "Slm170ExposureTargetedRareActionReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T13:35:36.247668Z",
+  "timestamp": "2026-07-20T23:46:47.602830Z",
   "version_stamp": {
-    "code_commit": "5c4304643e49d247a7626b8d7e426bec43f1b623",
+    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v44",
+      "harness.experiments": "v50",
       "harness.experiments.slm170_exposure_targeted_rare_action": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T13:35:36.246927+00:00"
+    "stamped_at": "2026-07-20T23:46:47.602007+00:00"
   }
 }

@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "run_id": "e621-coverage-aware-closure-r2",
+  "experiment_id": "E635",
+  "date_utc": "2026-07-20",
+  "status": "completed_mixed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Role-compatible component and object-property continuations should outrank premature closure without allowing a legal but semantically wrong owner to absorb missing slots.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "location": "outputs/runs/e620-required-slot-coverage-scratch800-20260720/checkpoints/last.pt",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e620-slotcoverage-treatment-r1",
+    "intermediate_run_id": "e621-coverage-aware-closure-r1",
+    "treatment_run_id": "e621-coverage-aware-closure-r2",
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160
+  },
+  "baseline": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.5,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.55,
+    "placeholder_validity": 0.73,
+    "structural_similarity": 0.48855,
+    "component_type_recall": 0.47916666666666663,
+    "reward_score": 0.814,
+    "ast_node_f1": 0.5436507936507936,
+    "ast_edge_f1": 0.375,
+    "latency_ms_p50": 3116.67,
+    "latency_ms_p95": 13704.44
+  },
+  "treatment": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.75,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.5916666666666667,
+    "placeholder_validity": 0.755,
+    "structural_similarity": 0.402925,
+    "component_type_recall": 0.5,
+    "reward_score": 0.8175,
+    "ast_node_f1": 0.46904761904761905,
+    "ast_edge_f1": 0.2625,
+    "latency_ms_p50": 3346.44,
+    "latency_ms_p95": 6198.48,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {
+      "passed": 0,
+      "total": 1,
+      "execution_errors": 0,
+      "mean_score": 0.5
+    }
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.5916666666666667,
+      "placeholder_validity": 0.755,
+      "structural_similarity": 0.402925,
+      "component_type_recall": 0.5,
+      "reward_score": 0.8175,
+      "ast_node_f1": 0.46904761904761905,
+      "ast_edge_f1": 0.2625,
+      "latency_ms_p50": 3346.44,
+      "latency_ms_p95": 6198.48,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "delta_vs_baseline": {
+    "meaningful_program_rate": 0.25,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.04166666666666663,
+    "placeholder_validity": 0.025000000000000022,
+    "structural_similarity": -0.085625,
+    "component_type_recall": 0.02083333333333337,
+    "reward_score": 0.0035000000000000586,
+    "ast_node_f1": -0.07460317460317456,
+    "ast_edge_f1": -0.11249999999999999,
+    "latency_ms_p50": 229.77,
+    "latency_ms_p95": -7505.96
+  },
+  "per_record_treatment": {
+    "ood_dashboard_01": "root = Card([TextContent(\":ood.dash.status.body\")])",
+    "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\", details: \":ood.gallery.caption\"}])",
+    "ood_modal_01": "root = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\", \"i\"), Button(\":ood.modal.confirm\")])",
+    "ood_auth_01": "root = Button(\":ood.auth.create\", SwitchGroup(\":ood.auth.name\", [], \"i\"))"
+  },
+  "provenance_replays": [
+    {
+      "code_commit": "4062603dba96e5b79128ee88f061be1a75db0dd9",
+      "reason": "original clean run before concurrent-main rebase",
+      "headline_metrics_identical": true
+    },
+    {
+      "code_commit": "43cb908d915f18d4d2ee1be1b6fc3644bb600ec7",
+      "reason": "clean docs-head replay used only to audit rebase provenance",
+      "headline_metrics_identical": true
+    },
+    {
+      "code_commit": "49765108b5373a9c71ea06b3caca83c137284e98",
+      "reason": "authoritative clean replay at the reachable rebased v61 model commit",
+      "headline_metrics_identical": true
+    }
+  ],
+  "decision": "Retain the generalized closure behavior as a default-off scratch policy because it improves meaningful-v1, placeholder fidelity/validity, component recall, reward, Gallery caption coverage, and Modal confirmation coverage. Do not promote or claim ship readiness: strict-v2 remains zero and structure/AST metrics regress. Next diagnose root-level inventory termination and Auth owner selection rather than increasing the closure weight.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "49765108b5373a9c71ea06b3caca83c137284e98",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v61"
+    },
+    "stamped_at": "2026-07-20T23:27:58.168417+00:00"
+  }
+}

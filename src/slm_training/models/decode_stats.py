@@ -44,6 +44,8 @@ class DecodeStats:
     semantic_plan_root_choice_changes: int = 0
     slot_component_applications: int = 0
     slot_component_choice_changes: int = 0
+    slot_coverage_close_applications: int = 0
+    slot_coverage_close_choice_changes: int = 0
     visible_reference_applications: int = 0
     visible_reference_choice_changes: int = 0
     root_reference_arity_applications: int = 0
@@ -232,6 +234,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "semantic_plan_root_choice_changes",
         "slot_component_applications",
         "slot_component_choice_changes",
+        "slot_coverage_close_applications",
+        "slot_coverage_close_choice_changes",
         "visible_reference_applications",
         "visible_reference_choice_changes",
         "root_reference_arity_applications",

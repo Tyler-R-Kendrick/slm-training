@@ -149,6 +149,40 @@ python -m scripts.train_rl \
 python -m scripts.bench_telemetry --train-steps 8 --gen-prompts 8
 ```
 
+## Single-touch confirmation firewall (SLM-184)
+
+Preregistered claim manifests and an access broker that enforces one
+prediction-materialized confirmation touch per confirmation suite. Development
+touches on `allowed_dev_suite_ids` are logged but never treated as confirmatory
+evidence. The firewall is default-off in `run_quality_matrix`; a commented usage
+example sits next to `evaluate_suites`.
+
+```bash
+# Print schema and broker rules
+python -m scripts.audit_experiment_firewall --mode describe
+
+# Fixture wiring (CPU, no training): first confirmation touch succeeds, second fails closed
+python -m scripts.audit_experiment_firewall --mode fixture
+
+# Check access for a specific manifest + ledger + suite
+python -m scripts.audit_experiment_firewall --mode check \
+  --manifest outputs/runs/slm184-claim-manifest-20260720/claim_manifest.frozen.json \
+  --ledger outputs/runs/slm184-claim-manifest-20260720/claim_manifest_ledger.json \
+  --suite-id rico_held \
+  --suite-digest sha256:<digest>
+
+# Audit historical iter JSONs under docs/design
+python -m scripts.audit_experiment_firewall --mode audit-history \
+  --iter-dir docs/design \
+  --output outputs/runs/slm184_audit_history/audit_history.json \
+  --output-md outputs/runs/slm184_audit_history/audit_history.md
+```
+
+Primary artifact: a frozen `ExperimentClaimManifestV1`, an append-only
+`TouchLedger`, and a `SuiteAccessBroker` that fails closed on digest mismatch,
+wrong suite, unfrozen manifest, or duplicate prediction-materialized touch.
+Fixture runs are wiring-only and cannot claim ship gates.
+
 ## External semantic ceiling (SLM-108 / EFS1-01)
 
 Off-the-shelf 1–7B instruct/code models scored through the same compiler-owned
@@ -3898,6 +3932,32 @@ no checkpoint was synced. Evidence:
 [narrative](iter-e615-object-frame-schema-role-slot-20260720.md) and
 [JSON](iter-e615-object-frame-schema-role-slot-20260720.json).
 
+## E633 typed-object slot roles
+
+*Numbering note: this session originally landed on `main` as "E615"
+(`docs/design/iter-e615-typed-object-slot-role-20260720.{md,json}`), a
+number `claude/great-dirac-nucd4x` had already used for different,
+independently-verified work (the "E615 object-frame schema-role slot bias"
+section above). Merging both into one branch without renumbering would have
+made "E615" ambiguous. Following this repo's established precedent for this
+exact situation (see PR #620's "Numbering note"), the already-landed number
+on the branch performing the merge (`claude/great-dirac-nucd4x`'s own E615)
+was kept, and this incoming session's work was renumbered to the next free
+number, E633 (E632 is reserved by the unmerged `agent/e632-input-role-assignment`
+branch, so numbering resumes at E633). Its own doc files and every reference
+to "E615" inside them were renamed accordingly; no content changed.*
+
+E633 extends public-schema role matching through inline object/array-item
+fields and requires the active property to match before applying slot bias.
+Gallery now binds `src`, `alt`, and `details` to the public `img`, `alt`, and
+`caption` slots. Against E614, aggregate fidelity rises 0.7833→0.8250,
+validity 0.8700→0.8950, and reward 0.9020→0.9145; structure, recall, AST F1,
+and 93 emitted tokens are unchanged, while p95 falls 12.60→10.22 s. Retain
+E633 as the next scratch research baseline. Strict v2 remains 0, AgentV is
+0/1, and no checkpoint was created or synced. Evidence:
+[narrative](iter-e633-typed-object-slot-role-20260720.md) and
+[JSON](iter-e633-typed-object-slot-role-20260720.json).
+
 ## E616 object-frame slot-bias replay on an 80-step scratch checkpoint
 
 E616 replays E615's matched OOD `n=4` control (`schema_role_slot_decode_weight=0`)
@@ -4369,3 +4429,178 @@ Honest caveats:
 - Synthetic mixed-effects outcomes are a caricature of real eval correlation.
 - No model was trained; the protocol must be validated on actual suite results
   before it can size a confirmatory experiment.
+
+*Numbering note: the four sections below (E634-E636, plus the E633 section
+above) landed on `main` as "E620"-"E622" -- numbers `claude/great-dirac-nucd4x`
+had already used for different, independently-verified work (the "E620"/
+"E621"/"E622" sections earlier in this file). Following this repo's
+established precedent for this exact situation (PR #620's "Numbering note"),
+the already-landed numbers on the branch performing the merge were kept and
+this incoming work was renumbered to the next free numbers (E633, E634,
+E635, E636 -- E632 is reserved by the unmerged
+`agent/e632-input-role-assignment` branch). E630 and E631 did not collide
+and keep their original numbers. Only the numbers and cross-references
+changed; no measured result changed.*
+
+## E634 required-slot coverage on an 800-step scratch checkpoint
+
+E634 tests E619's explicit next hypothesis with a real train and matched eval:
+does scaling the same scratch recipe from 80 to 800 steps make fully judged
+required-slot coverage pass?
+
+The clean CPU run completed 800 steps in 80.96 seconds under the three-minute
+cap, lowering loss from E619's checkpoint value of 26.5243 to 4.0680. It wrote
+local-only serving SHA `3ce5c9ef…363ecc5f`; no bucket sync or promotion was
+attempted.
+
+| OOD `n=4` | Control | Treatment (`schema_role_slot_decode_weight=8`) |
+| --- | ---: | ---: |
+| syntax parse | 1.0000 | 1.0000 |
+| meaningful v1 | 0.5000 | 0.5000 |
+| strict meaning v2 | 0.0000 | 0.0000 |
+| v2 coverage | 1.0000 | 1.0000 |
+| placeholder fidelity | 0.5083 | 0.5500 |
+| placeholder validity | 0.7050 | 0.7300 |
+| structural similarity | 0.4569 | 0.4886 |
+| component recall | 0.5417 | 0.4792 |
+| reward | 0.7910 | 0.8140 |
+| AST node / edge F1 | 0.5556 / 0.3750 | 0.5437 / 0.3750 |
+| latency p50 / p95 | 3366.95 / 14562.73 ms | 3116.67 / 13704.44 ms |
+| AgentV | 0/1 | 0/1 |
+
+No run timed out or fell back. Treatment retains E633's matched fidelity,
+validity, structure, reward, and latency benefit, but strict meaning stays 0.0.
+Three records still miss required placeholders; Auth covers all visible slots
+but assigns Input roles incorrectly. Compared with E619's 80-step treatment,
+fidelity falls 0.7833→0.5500 and structure 0.5548→0.4886 despite the much lower
+training loss. Reject duration-only scaling and the checkpoint. Next work should
+target coverage-aware component/property closure, not another longer scratch
+train.
+
+Evidence:
+[iter-e634-required-slot-coverage-scratch800-20260720.md](iter-e634-required-slot-coverage-scratch800-20260720.md)
+and
+[JSON](iter-e634-required-slot-coverage-scratch800-20260720.json).
+
+## E635 role-compatible coverage before frame closure
+
+E635 reuses E634's rejected local checkpoint and exact OOD `n=4` treatment
+recipe. Model v60 generalized `slot_coverage_close_decode_weight` beyond typed
+arrays, but its first real run exposed a wrong-owner bug: any schema-legal
+direct slot could outrank closure, so Button/TextContent absorbed incompatible
+email/name/confirm roles. That clean r1 is retained as rejected evidence.
+Model v61 requires public-schema owner compatibility for direct slots.
+
+| OOD `n=4` | E634 baseline | E635 r1 | E635 r2 |
+| --- | ---: | ---: | ---: |
+| syntax parse | 1.0000 | 1.0000 | 1.0000 |
+| meaningful v1 | 0.5000 | 0.5000 | 0.7500 |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
+| v2 coverage | 1.0000 | 1.0000 | 1.0000 |
+| placeholder fidelity | 0.5500 | 0.6250 | 0.5917 |
+| placeholder validity | 0.7300 | 0.6750 | 0.7550 |
+| structural similarity | 0.4886 | 0.4223 | 0.4029 |
+| component recall | 0.4792 | 0.4375 | 0.5000 |
+| reward | 0.8140 | 0.6668 | 0.8175 |
+| AST node / edge F1 | 0.5437 / 0.3750 | 0.4770 / 0.1667 | 0.4690 / 0.2625 |
+| latency p50 / p95 | 3116.67 / 13704.44 ms | 2609.49 / 13445.24 ms | 3346.44 / 6198.48 ms |
+| AgentV | 0/1 | 0/1 | 0/1 |
+
+Corrected r2 adds Gallery caption and Modal confirmation coverage and improves
+meaningful v1, fidelity, validity, component recall, reward, and p95 latency.
+Strict v2 remains zero and structure/AST regress, so this is a retained
+default-off scratch policy, not a promotion or ship result. No checkpoint was
+created or synced. Next diagnose root-level inventory termination and Auth
+owner selection instead of increasing the closure weight.
+
+Evidence:
+[iter-e635-coverage-aware-closure-20260720.md](iter-e635-coverage-aware-closure-20260720.md),
+[r2 JSON](iter-e635-coverage-aware-closure-20260720.json), and
+[rejected r1 JSON](iter-e635-coverage-aware-closure-r1-20260720.json).
+
+## E636 coverage-closure intervention trace
+
+E636 adds bounded, behavior-neutral traces around E635's closure policy and
+replays the exact E635 r2 OOD `n=4` recipe on the byte-identical rejected E634
+checkpoint. All outputs and semantic metrics reproduce exactly; no training or
+checkpoint creation occurred.
+
+| OOD `n=4` | E635 r2 | E636 trace |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
+| fidelity / validity | 0.5917 / 0.7550 | 0.5917 / 0.7550 |
+| structure / component recall | 0.4029 / 0.5000 | 0.4029 / 0.5000 |
+| reward | 0.8175 | 0.8175 |
+| AST node / edge F1 | 0.4690 / 0.2625 | 0.4690 / 0.2625 |
+| closure applications / immediate changes | — | 11 / 8 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+Two Gallery closure choices were later overridden. The Auth failure was not:
+inside `Button`, broad schema-role matching changed closure to `SwitchGroup`
+for missing name/email even though the prompt explicitly asks for two Inputs.
+Dashboard interventions occurred only after wrong owners were already chosen.
+Next prefer prompt-owned component mentions in coverage continuation ranking;
+handle Dashboard's upstream inventory error separately. No ship claim.
+
+Evidence:
+[iter-e636-coverage-closure-trace-20260720.md](iter-e636-coverage-closure-trace-20260720.md)
+and [JSON](iter-e636-coverage-closure-trace-20260720.json).
+
+## E630 prompt-owned closure filtering
+
+E630 tested E636's Auth diagnosis by preferring prompt-mentioned compatible
+components over broad schema-role matches during closure continuation. It
+reused the exact E636 checkpoint and OOD `n=4` recipe; no training or new
+checkpoint occurred.
+
+| OOD `n=4` | E636 baseline | E630 treatment |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.5000 / 0.0000 |
+| fidelity / validity | 0.5917 / 0.7550 | 0.5083 / 0.7050 |
+| structure / component recall | 0.4029 / 0.5000 | 0.3379 / 0.3750 |
+| reward | 0.8175 | 0.7850 |
+| AST node / edge F1 | 0.4690 / 0.2625 | 0.3857 / 0.2625 |
+| latency p50 / p95 | 3067.47 / 6277.99 ms | 3648.68 / 16022.08 ms |
+| closure applications / changes | 11 / 8 | 14 / 9 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+The intended Auth choice changed from `SwitchGroup` to `Input`, but it nested
+that Input inside the already-wrong Button owner and later collapsed Auth to
+`TextContent(email)`. Every aggregate quality metric regressed or stayed flat.
+Reject and revert; model v64 restores v62. A follow-up must be frame-aware and
+place prompt-owned families as siblings after closing a wrong owner.
+
+Evidence:
+[iter-e630-prompt-owned-closure-20260720.md](iter-e630-prompt-owned-closure-20260720.md)
+and [JSON](iter-e630-prompt-owned-closure-20260720.json).
+
+## E631 frame-aware incompatible-owner escape
+
+E631 replaces E630's harmful nested-family preference with a structural rule:
+when the active component owner cannot own any missing role, close it and let
+outer inventory planning place required families as siblings. The exact E636
+checkpoint and OOD `n=4` recipe were reused; no training/checkpoint occurred.
+
+| OOD `n=4` | E636 baseline | E631 treatment |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
+| fidelity / validity | 0.5917 / 0.7550 | 0.6750 / 0.8050 |
+| structure / component recall | 0.4029 / 0.5000 | 0.5729 / 0.6250 |
+| reward | 0.8175 | 0.8515 |
+| AST node / edge F1 | 0.4690 / 0.2625 | 0.6357 / 0.5125 |
+| latency p50 / p95 | 3067.47 / 6277.99 ms | 3025.78 / 6394.56 ms |
+| closure applications / changes | 11 / 8 | 25 / 12 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+Auth now has the correct Stack + Button + two Input inventory and reaches 1.0
+on all continuous per-record quality metrics. Strict v2 remains false because
+name/email are duplicated across `Input.name` and `Input.placeholder`, with
+the former rejected as role mismatches. Retain v65 default-off; next resolve
+Input property-role assignment. No ship claim.
+
+Evidence:
+[iter-e631-frame-aware-owner-escape-20260720.md](iter-e631-frame-aware-owner-escape-20260720.md)
+and [JSON](iter-e631-frame-aware-owner-escape-20260720.json).

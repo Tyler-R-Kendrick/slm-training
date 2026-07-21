@@ -26,6 +26,12 @@ from slm_training.harnesses.model_build.ship_gates import (
     evaluate_ship_gates,
 )
 
+# SLM-185: optional semantic-resolution annotation (default-off, no gate weakening).
+from slm_training.evals.judge_resolution import (
+    SemanticResolutionManifestV1,
+    apply_resolution_manifest,
+)
+
 
 SUITES = ["smoke", "held_out", "adversarial", "ood", "rico_held"]
 
@@ -2359,6 +2365,14 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     ckpt = _maybe_trust_gate(exp, ckpt, args)
     ckpt = _maybe_survival_gate(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
+    # SLM-184 (default-off): to enforce a preregistered single-touch confirmation
+    # firewall, wrap evaluate_suites with with_claim_manifest_guard(...).
+    # See scripts/audit_experiment_firewall.py --mode fixture for an example.
+    # Example (dev touch):
+    #   with with_claim_manifest_guard(
+    #       manifest_path, ledger_path, suite_id, suite_digest, is_confirmation=False
+    #   ):
+    #       board = evaluate_suites(eval_cfg, args.suites, checkpoint=ckpt, write_gates=True)
     with run_trace(exp.run_id, "eval", run_dir=run_dir) as trace:
         board = evaluate_suites(
             eval_cfg,
@@ -2581,6 +2595,16 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Summary mirror path (defaults to a run-root-specific file under "
             "docs/design for non-default run roots)."
+        ),
+    )
+    parser.add_argument(
+        "--resolution-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional SLM-185 SemanticResolutionManifestV1 JSON. When provided, "
+            "the summary is annotated with semantic_resolution labels per endpoint "
+            "without altering raw metrics or gates."
         ),
     )
     parser.add_argument("--device", default="cpu")
@@ -3152,6 +3176,18 @@ def main(argv: list[str] | None = None) -> int:
             "gates.ship",
         ),
     }
+    # SLM-185: optional semantic-resolution annotation (default-off).
+    if args.resolution_manifest is not None:
+        try:
+            manifest_data = json.loads(args.resolution_manifest.read_text(encoding="utf-8"))
+            manifest = SemanticResolutionManifestV1.from_dict(manifest_data)
+            out = apply_resolution_manifest(out, manifest)
+        except (OSError, ValueError, KeyError) as exc:
+            print(
+                f"warning: could not apply resolution manifest: {exc}",
+                file=sys.stderr,
+            )
+
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     _persist_progress("complete")

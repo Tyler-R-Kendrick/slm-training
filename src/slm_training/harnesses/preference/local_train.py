@@ -8,12 +8,16 @@ import json
 import random
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 import torch
 import torch.nn.functional as F
 
 from slm_training.harnesses.distill.trace_store import checkpoint_sha
+from slm_training.harnesses.preference.constraint_debt import (
+    ConstraintDebtV1,
+    compute_constraint_debt_v1,
+)
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
     DecisionEventV2,
@@ -94,6 +98,56 @@ def _guard_strata_regressions(candidate: dict, baseline: dict) -> list[dict]:
 
 def _indices(values: tuple[int, ...], logits: torch.Tensor) -> torch.Tensor:
     return torch.tensor(values, dtype=torch.long, device=logits.device)
+
+
+def _constraint_debt_mass_bundle(
+    logits: torch.Tensor, event: DecisionEventV1
+) -> dict[str, torch.Tensor | dict[int, int]]:
+    """Detached full-vocab and legal-renormalized probability bundle.
+
+    This is a thin local wrapper around the canonical implementation in
+    ``constraint_debt.py`` so the preference harness can reuse the same
+    numerics when attaching optional telemetry.
+    """
+    from slm_training.harnesses.preference.constraint_debt import (
+        _constraint_debt_mass_bundle as _bundle,
+    )
+
+    return _bundle(logits, event)
+
+
+def _differentiable_mass_bundle(
+    logits: torch.Tensor,
+    event: DecisionEventV1,
+    probability_space: Literal["full_vocab", "legal_tokens"],
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return differentiable ``(probs, good_mass, bad_mass)`` for a guard objective."""
+    good_ids = _indices(event.good_token_ids, logits)
+    bad_ids = _indices(event.bad_token_ids, logits)
+    if probability_space == "full_vocab":
+        probs = F.softmax(logits, dim=-1)
+        good_mass = probs.index_select(0, good_ids).sum()
+        bad_mass = probs.index_select(0, bad_ids).sum()
+    elif probability_space == "legal_tokens":
+        legal_ids = _indices(event.legal_token_ids, logits)
+        legal_probs = F.softmax(logits.index_select(0, legal_ids), dim=-1)
+        legal_index = {
+            token_id: index for index, token_id in enumerate(event.legal_token_ids)
+        }
+        legal_good_ids = _indices(
+            tuple(legal_index[token_id] for token_id in event.good_token_ids),
+            legal_probs,
+        )
+        legal_bad_ids = _indices(
+            tuple(legal_index[token_id] for token_id in event.bad_token_ids),
+            legal_probs,
+        )
+        probs = legal_probs
+        good_mass = legal_probs.index_select(0, legal_good_ids).sum()
+        bad_mass = legal_probs.index_select(0, legal_bad_ids).sum()
+    else:
+        raise ValueError(f"unknown probability space: {probability_space}")
+    return probs, good_mass, bad_mass
 
 
 def local_decision_loss(
@@ -192,30 +246,11 @@ def _guard_objective_tensors(
     loss, _ = local_decision_loss(
         logits, event, objective=objective, epsilon=epsilon, tau=tau
     )
+    _, good_mass, bad_mass = _differentiable_mass_bundle(
+        logits, event, probability_space
+    )
     good_ids = _indices(event.good_token_ids, logits)
     bad_ids = _indices(event.bad_token_ids, logits)
-    if probability_space == "full_vocab":
-        probs = F.softmax(logits, dim=-1)
-        good_mass = probs.index_select(0, good_ids).sum()
-        bad_mass = probs.index_select(0, bad_ids).sum()
-    elif probability_space == "legal_tokens":
-        legal_ids = _indices(event.legal_token_ids, logits)
-        legal_probs = F.softmax(logits.index_select(0, legal_ids), dim=-1)
-        legal_index = {
-            token_id: index for index, token_id in enumerate(event.legal_token_ids)
-        }
-        legal_good_ids = _indices(
-            tuple(legal_index[token_id] for token_id in event.good_token_ids),
-            legal_probs,
-        )
-        legal_bad_ids = _indices(
-            tuple(legal_index[token_id] for token_id in event.bad_token_ids),
-            legal_probs,
-        )
-        good_mass = legal_probs.index_select(0, legal_good_ids).sum()
-        bad_mass = legal_probs.index_select(0, legal_bad_ids).sum()
-    else:
-        raise ValueError(f"unknown probability space: {probability_space}")
     good = logits.index_select(0, good_ids)
     bad = logits.index_select(0, bad_ids)
     return {
@@ -628,6 +663,7 @@ def diagnose_metric_complete_gradient_feasibility(
     held_out_strata: ObjectiveStrata = "decision_kind",
     epsilon: float = 2.0,
     tau: float = 1.0,
+    debt_writer: Callable[[ConstraintDebtV1], None] | None = None,
 ) -> dict:
     """Test common descent across every decision-kind guard objective."""
     trainable = list(model.trainable_parameters())
@@ -660,6 +696,13 @@ def diagnose_metric_complete_gradient_feasibility(
                 tau=tau,
             ).items():
                 values[f"{stratum}:{metric}"].append(value)
+            if debt_writer is not None:
+                for space in ("full_vocab", "legal_tokens"):
+                    debt_writer(
+                        compute_constraint_debt_v1(
+                            logits, event, probability_space=space
+                        )
+                    )
             counts[split][stratum] += 1
         gradients[split] = {}
         keys = sorted(values)
@@ -734,6 +777,7 @@ def diagnose_decision_gradient_alignment_from_paths(
     gradient_scaling: GradientScaling = "raw",
     train_strata: ObjectiveStrata = "decision_kind",
     held_out_strata: ObjectiveStrata = "decision_kind",
+    debt_writer: Callable[[ConstraintDebtV1], None] | None = None,
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -747,6 +791,7 @@ def diagnose_decision_gradient_alignment_from_paths(
             gradient_scaling=gradient_scaling,
             train_strata=train_strata,
             held_out_strata=held_out_strata,
+            debt_writer=debt_writer,
         )
         if metric_complete
         else diagnose_decision_gradient_alignment(model, events, objective=objective)

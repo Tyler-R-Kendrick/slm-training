@@ -24,6 +24,11 @@
         {
           "version": "v32",
           "date": "2026-07-20",
+          "note": "no-bump: describe the expanded model-side slot coverage closure policy in CLI help without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
           "note": "expose and persist the default-off schema-derived typed-array item margin"
         },
         {
@@ -350,6 +355,25 @@
         }
       ]
     },
+    "evals.judge_resolution": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/judge_resolution.py",
+        "scripts/run_judge_resolution_audit.py",
+        "tests/test_evals/test_judge_resolution.py",
+        "tests/test_scripts/test_run_judge_resolution_audit.py",
+        "docs/design/iter-slm185-judge-resolution-20260720.json",
+        "docs/design/iter-slm185-judge-resolution-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-185 FFE0-03 judge test-retest reliability, canonical-equivalence invariance, and semantic resolution floor wiring/fixture harness"
+        }
+      ]
+    },
     "evals.meaningful_program": {
       "version": "2.1.0",
       "kind": "metric",
@@ -521,6 +545,11 @@
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-20",
+          "note": "no-bump: this branch's merge with main found the exact same MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] mirror gap independently fixed on both sides (main's note: \"align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.0.0 to 2.1.0 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation\"); both land on the same '2.1.0' value, so no further change was needed beyond keeping this branch's own entry below"
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-20",
           "note": "no-bump: E616-E624 consolidation pass — correct MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] from a stale '2.0.0' to '2.1.0' to mirror evals.meaningful_program's E618 bump; this field is a provenance/reporting label only (thresholds stay None/candidate_pending_calibration), never read by any gate decision, so no threshold or gate behavior changes. Caught by tests/test_versioning/test_mirrors.py::test_meaningful_program_version_is_mirrored during the consolidation pass's full verification re-run; E618's own commit updated evals.meaningful_program's registry entry but missed this mirrored constant."
         },
         {
@@ -536,12 +565,22 @@
       ]
     },
     "matrix.quality": {
-      "version": "v2",
+      "version": "v3",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-20",
+          "note": "add SLM-185 default-off --resolution-manifest integration; apply_resolution_manifest annotates summary with semantic_resolution labels without altering raw metrics or gates"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "no-bump: add SLM-184 default-off fixture comment/example next to evaluate_suites; runner behavior unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-19",
@@ -641,12 +680,27 @@
       ]
     },
     "harness.experiments": {
-      "version": "v48",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-20",
+          "note": "add SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
+        },
+        {
+          "version": "v49",
+          "date": "2026-07-20",
+          "note": "no-bump: SLM-185 reuses harness.experiments constants (MATRIX_SET/MATRIX_VERSION/EXPERIMENT_ID pattern) only; no harness behavior changed"
+        },
+        {
+          "version": "v49",
+          "date": "2026-07-20",
+          "note": "add SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness"
+        },
         {
           "version": "v48",
           "date": "2026-07-20",
@@ -899,6 +953,25 @@
         }
       ]
     },
+    "harness.experiments.claim_manifest": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/claim_manifest.py",
+        "scripts/audit_experiment_firewall.py",
+        "tests/test_harnesses/experiments/test_claim_manifest.py",
+        "tests/test_scripts/test_audit_experiment_firewall.py",
+        "docs/design/iter-slm184-claim-manifest-20260720.json",
+        "docs/design/iter-slm184-claim-manifest-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness"
+        }
+      ]
+    },
     "harness.experiments.slm157_flow_consistency": {
       "version": "v1",
       "kind": "harness",
@@ -911,6 +984,11 @@
         "docs/design/iter-slm157-flow-consistency-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -953,6 +1031,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -992,6 +1075,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1028,6 +1116,11 @@
         "docs/design/iter-slm165-interaction-factorial-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1075,6 +1168,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1119,6 +1217,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1148,6 +1251,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1172,6 +1280,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-170 SDE2-03 exposure-targeted rare-action sampling wiring/fixture harness"
         }
       ]
@@ -1188,6 +1301,11 @@
         "docs/design/iter-slm172-render-equivalence-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1227,6 +1345,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "initial registration; SLM-176 P14 action-shortlist retrieve-then-rerank fixture harness"
         }
       ]
@@ -1243,6 +1366,11 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -1319,7 +1447,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v61",
+      "version": "v68",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1334,6 +1462,41 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v68",
+          "date": "2026-07-20",
+          "note": "E631: when a component owner cannot own any missing visible role, prefer closing it instead of nesting a different role-compatible component at the wrong structural depth"
+        },
+        {
+          "version": "v67",
+          "date": "2026-07-20",
+          "note": "E630 rejection: restore v65 broad schema-role closure behavior after prompt-owned filtering nested Input inside Button and regressed every aggregate quality metric"
+        },
+        {
+          "version": "v66",
+          "date": "2026-07-20",
+          "note": "E630: prefer explicit prompt-owned component candidates over broad schema-only role matches when preventing premature slot-coverage closure"
+        },
+        {
+          "version": "v65",
+          "date": "2026-07-20",
+          "note": "E636 (was main's E622 before this branch's merge renumbering, since this branch's own E622 is different, independently-verified work; see docs/design/quality-experiment-matrix.md numbering note): emit bounded slot-coverage closure score traces plus application and immediate-choice-change counters without changing decode scores"
+        },
+        {
+          "version": "v64",
+          "date": "2026-07-20",
+          "note": "E635 r2 (was main's E621 r2, since this branch's own E621 is different, independently-verified work): require public-schema owner compatibility before a direct visible-slot continuation can outrank frame closure -- also generalized into _schema_role_slot_bias's object-property branch during this branch's merge so an unrelated component's same-named property cannot steal another component's slot there either"
+        },
+        {
+          "version": "v63",
+          "date": "2026-07-20",
+          "note": "E635 r1 (was main's E621 r1, retained as rejected/superseded evidence): extend slot_coverage_close_decode_weight to floor a compiler-legal role-compatible component or object-property continuation above premature frame closure while abstaining when compatibility cannot be proven; missed owner-role compatibility, corrected by v64"
+        },
+        {
+          "version": "v62",
+          "date": "2026-07-20",
+          "note": "E633 (was main's E615 before this branch's merge renumbering, since this branch's own E615 -- v58 below -- is different, independently-verified work; see docs/design/quality-experiment-matrix.md numbering note): generalize schema_role_slot_decode_weight's owner matching to traverse inline (non-$ref) schema properties (semantic_role_candidates) and require the active typed-object property's owning component to itself be a semantic-role candidate for the slot before applying the object-property bias; combined during this branch's merge with v58's slot_role/slot_compatible_property_names/object_property_matches_slot_role helpers rather than duplicating an equivalent semantic_role_properties() helper"
+        },
         {
           "version": "v61",
           "date": "2026-07-20",
@@ -1737,6 +1900,31 @@
         }
       ]
     },
+    "harness.preference.constraint_debt": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/preference/constraint_debt.py",
+        "src/slm_training/harnesses/preference/local_train.py",
+        "scripts/diagnose_preference_gradient_alignment.py",
+        "tests/test_harnesses/preference/test_constraint_debt.py",
+        "tests/test_harnesses/preference/test_local_train_constraint_debt.py",
+        "docs/design/iter-slm208-constraint-debt-20260720.json",
+        "docs/design/iter-slm208-constraint-debt-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: SLM-209 reuses ConstraintDebtV1 rows and compute_constraint_debt_v1 types only; no behavior changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-208 SDE5-01 constraint-debt V1 telemetry and pre/post-mask grammar-distortion KL wiring"
+        }
+      ]
+    },
     "data.test_build": {
       "version": "v2",
       "kind": "data_builder",
@@ -1888,6 +2076,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -1972,6 +2165,11 @@
         "docs/design/iter-slm144-plan-predictor-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2064,6 +2262,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2143,6 +2346,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2217,6 +2425,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2286,6 +2499,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2352,6 +2570,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2413,6 +2636,11 @@
         "docs/design/iter-slm147-x22-retrieval-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2502,6 +2730,11 @@
         "docs/design/iter-slm148-x22-conflict-campaign-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2615,6 +2848,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2661,6 +2899,11 @@
         "docs/design/iter-slm156-plan-refinement-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2713,6 +2956,11 @@
         {
           "version": "v1",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2759,6 +3007,11 @@
         "docs/design/iter-slm159-cross-dsl-replication-20260720.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2811,6 +3064,11 @@
         {
           "version": "v2",
           "date": "2026-07-20",
+          "note": "no-bump: regenerated design doc after harness.experiments v50 stamp bump; no harness behavior change"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-20",
           "note": "no-bump: design artifact timestamp/version-stamp refreshed after sibling fixture test run; harness behavior and thresholds unchanged"
         },
         {
@@ -2837,6 +3095,30 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-160 SPV4-02 causal architecture disposition docs/spec harness"
+        }
+      ]
+    },
+    "harness.experiments.slm209_debt_targeted_curriculum": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm209_debt_targeted_curriculum.py",
+        "scripts/run_slm209_debt_targeted_curriculum_fixture.py",
+        "tests/test_harnesses/experiments/test_slm209_debt_targeted_curriculum.py",
+        "tests/test_scripts/test_run_slm209_debt_targeted_curriculum_fixture.py",
+        "docs/design/iter-slm209-debt-targeted-curriculum-20260720.json",
+        "docs/design/iter-slm209-debt-targeted-curriculum-20260720.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-20",
+          "note": "SLM-209 make debt digests deterministic (drop timestamp); add --design-json/--design-md overrides"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-20",
+          "note": "initial registration; SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
         }
       ]
     }

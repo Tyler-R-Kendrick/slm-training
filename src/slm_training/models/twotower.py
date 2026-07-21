@@ -4900,57 +4900,72 @@ class TwoTowerModel(nn.Module):
         """Prefer visible slots compatible with the active content property owner.
 
         Two owners are scored, both gated by the same
-        ``schema_role_slot_decode_weight`` knob:
+        ``schema_role_slot_decode_weight`` knob, and both require the *owning*
+        component to itself be a ``semantic_role_candidates`` match for the
+        slot before a direct-slot bias is applied -- the same owner-role
+        compatibility gate E621's ``_slot_coverage_close_bias`` correction
+        validated (an unrelated component's same-named property must not be
+        able to steal another component's slot):
 
-        * a top-level component argument (``frame.kind == "component"``),
-          matched against ``semantic_role_candidates`` (prompt/schema derived
-          component-name compatibility); unchanged since E591.
-        * (E615) a declared property inside an active typed-object literal
-          (``frame.kind == "object"``, ``frame.phase == "value"``), matched by
-          the property's own key/schema role (``frame.active_property``, e.g.
-          ``alt``/``src``/``details``) against each candidate slot's role, so
-          sibling properties of the same object (e.g. an ``ImageGallery`` item)
-          can each prefer their own matching public slot instead of all
-          converging on the highest-scoring one.
+        * a top-level component argument (``frame.kind == "component"``);
+          unchanged since E591.
+        * (E615, generalized) a declared property inside an active
+          typed-object literal (``frame.kind == "object"``,
+          ``frame.phase == "value"``), additionally matched by the property's
+          own key/schema role (``frame.active_property``, e.g.
+          ``alt``/``src``/``details``) against each candidate slot's role via
+          ``slot_compatible_property_names``, so sibling properties of the
+          same object (e.g. an ``ImageGallery`` item) can each prefer their
+          own matching public slot instead of all converging on the
+          highest-scoring one.
         """
         weight = float(
             getattr(self.config, "schema_role_slot_decode_weight", 0.0) or 0.0
         )
         frames = list(getattr(state, "frames", ()))
-        if weight <= 0.0 or not frames or not slot_contract:
+        if (
+            weight <= 0.0
+            or not frames
+            or not slot_contract
+            or not semantic_role_candidates
+        ):
             return None
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
         index = int(getattr(frame, "arg_index", -1))
-        kind = getattr(frame, "kind", None)
-
-        component = ""
-        active_property = ""
-        if kind == "component":
-            if not semantic_role_candidates:
-                return None
-            component = str(getattr(frame, "expr_type", "")).removeprefix("element:")
-            if (
-                index < 0
-                or index >= len(schemas)
-                or not schemas[index].get("x-openui-placeholder")
-                or not component
-            ):
-                return None
-        elif kind == "object":
+        active_property: str | None = None
+        if getattr(frame, "kind", None) == "component":
+            component = str(getattr(frame, "expr_type", "")).removeprefix(
+                "element:"
+            )
+            accepts_slot = (
+                0 <= index < len(schemas)
+                and bool(schemas[index].get("x-openui-placeholder"))
+            )
+        elif getattr(frame, "kind", None) == "object":
             if getattr(frame, "phase", None) != "value":
                 return None
-            active_property = str(getattr(frame, "active_property", "") or "")
-            if (
-                not active_property
-                or index < 0
-                or index >= len(schemas)
-                or schemas[index].get("type") != "string"
-            ):
-                return None
+            active_property = getattr(frame, "active_property", None)
+            component = next(
+                (
+                    str(getattr(owner, "expr_type", "")).removeprefix(
+                        "element:"
+                    )
+                    for owner in reversed(frames[:-1])
+                    if getattr(owner, "kind", None) == "component"
+                ),
+                "",
+            )
+            accepts_slot = (
+                active_property is not None
+                and 0 <= index < len(schemas)
+                and self._schema_can_reach_visible_slot(dict(schemas[index]))
+            )
         else:
             return None
-
+        if not component or not accepts_slot:
+            return None
+        from slm_training.data.quality import slot_compatible_property_names
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
         bias = scores.new_zeros(len(candidate_ids))
@@ -4964,13 +4979,13 @@ class TwoTowerModel(nn.Module):
                 slot = slot_contract[slot_index]
             except (ValueError, IndexError):
                 continue
-            if kind == "component":
-                matches = component in semantic_role_candidates.get(slot, ())
-            else:
-                from slm_training.data.quality import object_property_matches_slot_role
-
-                matches = object_property_matches_slot_role(active_property, slot)
-            if matches:
+            if (
+                component in semantic_role_candidates.get(slot, ())
+                and (
+                    active_property is None
+                    or active_property in slot_compatible_property_names(slot)
+                )
+            ):
                 bias[position] = weight
                 applied = True
         return bias if applied else None
@@ -4982,8 +4997,9 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
         slot_contract: list[str] | None,
+        semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
-        """Prefer closing a typed component array after visible-slot coverage."""
+        """Prefer coverage-compatible continuations before legal frame closure."""
         weight = float(
             getattr(self.config, "slot_coverage_close_decode_weight", 0.0) or 0.0
         )
@@ -4991,25 +5007,241 @@ class TwoTowerModel(nn.Module):
         if weight <= 0.0 or not frames or not slot_contract:
             return None
         frame = frames[-1]
-        if (
-            getattr(frame, "kind", None) != "variadic"
-            or getattr(frame, "expr_type", None) != "array"
-            or not tuple(getattr(frame, "schemas", ()))
-        ):
+        kind = getattr(frame, "kind", None)
+        if kind not in {"component", "variadic", "object"}:
+            return None
+        if kind == "object" and getattr(frame, "phase", None) != "key":
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+        if close_id not in candidate_ids:
             return None
         try:
-            covered = all(
-                int(self.tokenizer.sym_id(index)) in prefix
-                for index in range(len(slot_contract))
+            missing = tuple(
+                (index, slot)
+                for index, slot in enumerate(slot_contract)
+                if int(self.tokenizer.sym_id(index)) not in prefix
             )
         except (AttributeError, KeyError, ValueError):
             return None
-        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
-        if not covered or close_id not in candidate_ids:
-            return None
         bias = scores.new_zeros(len(candidate_ids))
-        bias[candidate_ids.index(close_id)] = weight
+        if not missing:
+            if (
+                kind != "variadic"
+                or getattr(frame, "expr_type", None) != "array"
+                or not tuple(getattr(frame, "schemas", ()))
+            ):
+                return None
+            bias[candidate_ids.index(close_id)] = weight
+            return bias
+
+        from slm_training.data.quality import slot_compatible_property_names
+        from slm_training.dsl.production_codec import (
+            LIST_OPEN,
+            NAME_PREFIX,
+            OBJ_OPEN,
+            OPEN_PREFIX,
+        )
+
+        missing_slots_by_id = {
+            int(self.tokenizer.sym_id(index)): slot for index, slot in missing
+        }
+        properties_by_slot = {
+            slot: slot_compatible_property_names(slot) for _index, slot in missing
+        }
+        owner_component = next(
+            (
+                str(getattr(owner, "expr_type", "")).removeprefix("element:")
+                for owner in reversed(frames)
+                if getattr(owner, "kind", None) == "component"
+            ),
+            "",
+        )
+
+        def owner_matches(slot: str) -> bool:
+            return bool(
+                owner_component
+                and semantic_role_candidates
+                and owner_component in semantic_role_candidates.get(slot, ())
+            )
+
+        if kind == "component" and semantic_role_candidates and not any(
+            owner_matches(slot) for _index, slot in missing
+        ):
+            close_position = candidate_ids.index(close_id)
+            bias[close_position] = max(
+                0.0,
+                float(scores.max().item())
+                + weight
+                - float(scores[close_position].item()),
+            )
+            return bias
+
+        active_schema: dict[str, Any] | None = None
+        if kind == "component":
+            schemas = tuple(getattr(frame, "schemas", ()))
+            index = int(getattr(frame, "arg_index", -1))
+            if 0 <= index < len(schemas):
+                active_schema = dict(schemas[index])
+        elif kind == "variadic":
+            schemas = tuple(getattr(frame, "schemas", ()))
+            if schemas:
+                active_schema = dict(schemas[0])
+
+        targets: list[int] = []
+        for position, token_id in enumerate(candidate_ids):
+            if token_id == close_id:
+                continue
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if token_id in missing_slots_by_id:
+                slot = missing_slots_by_id[token_id]
+                if not semantic_role_candidates or owner_matches(slot):
+                    targets.append(position)
+                continue
+            if token.startswith(OPEN_PREFIX):
+                component = token[len(OPEN_PREFIX) :]
+                if semantic_role_candidates and any(
+                    component in semantic_role_candidates.get(slot, ())
+                    for _index, slot in missing
+                ):
+                    targets.append(position)
+                continue
+            if kind == "object" and token.startswith(NAME_PREFIX):
+                property_name = token[len(NAME_PREFIX) :]
+                property_names = tuple(getattr(frame, "property_names", ()))
+                schemas = tuple(getattr(frame, "schemas", ()))
+                if property_name not in property_names:
+                    continue
+                property_index = property_names.index(property_name)
+                if (
+                    property_index < len(schemas)
+                    and self._schema_can_reach_visible_slot(
+                        dict(schemas[property_index])
+                    )
+                    and any(
+                        property_name in properties_by_slot.get(slot, ())
+                        and owner_matches(slot)
+                        for _index, slot in missing
+                    )
+                ):
+                    targets.append(position)
+                continue
+            if (
+                token in {LIST_OPEN, OBJ_OPEN}
+                and active_schema is not None
+                and self._schema_can_reach_visible_slot(active_schema)
+                and any(owner_matches(slot) for _index, slot in missing)
+            ):
+                targets.append(position)
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + weight - float(scores[target].item()),
+        )
         return bias
+
+    def _record_slot_coverage_close_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores_before: torch.Tensor,
+        coverage_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+        slot_contract: list[str] | None,
+    ) -> dict[str, object] | None:
+        """Record bounded evidence for a visible-slot closure intervention."""
+        if len(stats.constrained_selection_traces) >= 64:
+            return None
+        targeted = [
+            index
+            for index in range(len(candidate_ids))
+            if float(coverage_bias[index].item()) > 0.0
+        ]
+        if not targeted:
+            return None
+        frames = list(getattr(state, "frames", ()))
+        frame = frames[-1] if frames else None
+        close_id = self.tokenizer.token_to_id.get(
+            str(getattr(frame, "close", ""))
+        )
+        try:
+            missing_slots = [
+                slot
+                for index, slot in enumerate(slot_contract or ())
+                if int(self.tokenizer.sym_id(index)) not in prefix
+            ]
+        except (AttributeError, KeyError, ValueError):
+            missing_slots = []
+        owner_component = next(
+            (
+                str(getattr(owner, "expr_type", "")).removeprefix("element:")
+                for owner in reversed(frames)
+                if getattr(owner, "kind", None) == "component"
+            ),
+            "",
+        )
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        trace: dict[str, object] = {
+            "phase": "slot_coverage_close",
+            "row": int(row),
+            "position": int(position),
+            "mode": (
+                ("covered_close" if not missing_slots else "owner_escape")
+                if close_id is not None
+                and close_id in {candidate_ids[index] for index in targeted}
+                else "coverage_continue"
+            ),
+            "missing_slots": missing_slots,
+            "owner_component": owner_component,
+            "active_property": str(getattr(frame, "active_property", "") or ""),
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "choice_changed": before != after,
+            "slot_coverage_close_decode_weight": float(
+                getattr(self.config, "slot_coverage_close_decode_weight", 0.0)
+                or 0.0
+            ),
+            "planned_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(coverage_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in targeted
+            ],
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "plan_bias": round(float(coverage_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+            **self._choice_phase_evidence(state),
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
 
     def _semantic_plan_repeated_owner_id(
         self,
@@ -7044,9 +7276,43 @@ class TwoTowerModel(nn.Module):
                             if self._slot_contracts and row < len(self._slot_contracts)
                             else None
                         ),
+                        (
+                            self._semantic_role_candidates[row]
+                            if self._semantic_role_candidates
+                            and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
                     )
+                    slot_coverage_close_trace = None
                     if slot_coverage_close_bias is not None:
+                        scores_before_coverage_close = scores.clone()
+                        before_coverage_close = int(scores.argmax().item())
                         scores = scores + slot_coverage_close_bias
+                        if stats is not None:
+                            stats.slot_coverage_close_applications += 1
+                            stats.slot_coverage_close_choice_changes += int(
+                                int(scores.argmax().item())
+                                != before_coverage_close
+                            )
+                            slot_coverage_close_trace = (
+                                self._record_slot_coverage_close_trace(
+                                    stats,
+                                    row=row,
+                                    position=position,
+                                    state=states[row],
+                                    prefix=ids[row, :position].tolist(),
+                                    candidate_ids=candidate_ids,
+                                    scores_before=scores_before_coverage_close,
+                                    coverage_bias=slot_coverage_close_bias,
+                                    scores_after=scores,
+                                    slot_contract=(
+                                        self._slot_contracts[row]
+                                        if self._slot_contracts
+                                        and row < len(self._slot_contracts)
+                                        else None
+                                    ),
+                                )
+                            )
                     repeated_array_close_bias = (
                         self._semantic_plan_repeated_array_close_bias(
                             row,
@@ -7292,6 +7558,11 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
+                    self._finalize_semantic_plan_trace(
+                        slot_coverage_close_trace,
+                        candidate_ids=candidate_ids,
+                        scores=scores,
+                    )
                     self._finalize_semantic_plan_trace(
                         semantic_plan_trace,
                         candidate_ids=candidate_ids,

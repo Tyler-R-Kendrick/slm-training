@@ -11,7 +11,7 @@
       "tier1_normalized_render_tree_distance": 1.0,
       "tier1_role_match": 1.0,
       "tier1_topology_match": 1.0,
-      "wall_seconds": 0.002553750000311993
+      "wall_seconds": 0.0024918579981895164
     },
     "binding_corruption": {
       "equivalent": 0.0,
@@ -24,7 +24,7 @@
       "tier1_normalized_render_tree_distance": 1.0,
       "tier1_role_match": 1.0,
       "tier1_topology_match": 1.0,
-      "wall_seconds": 0.02240325000800658
+      "wall_seconds": 0.03248524199787062
     },
     "canonical_exact": {
       "equivalent": 1.0,
@@ -37,7 +37,7 @@
       "tier1_normalized_render_tree_distance": 1.0,
       "tier1_role_match": 1.0,
       "tier1_topology_match": 1.0,
-      "wall_seconds": 0.002821049998397939
+      "wall_seconds": 0.002910024991957471
     },
     "component_substitution": {
       "equivalent": 0.0,
@@ -50,7 +50,7 @@
       "tier1_normalized_render_tree_distance": 0.6666666666666667,
       "tier1_role_match": 0.5,
       "tier1_topology_match": 0.5,
-      "wall_seconds": 0.002414159996784292
+      "wall_seconds": 0.003387451007962227
     },
     "metric_gaming_minimal_valid": {
       "equivalent": 0.0,
@@ -63,7 +63,7 @@
       "tier1_normalized_render_tree_distance": 0.33333333333333337,
       "tier1_role_match": 0.0,
       "tier1_topology_match": 0.0,
-      "wall_seconds": 0.023552310008904898
+      "wall_seconds": 0.027182759000221268
     },
     "style_only_change": {
       "equivalent": 1.0,
@@ -76,7 +76,7 @@
       "tier1_normalized_render_tree_distance": 1.0,
       "tier1_role_match": 1.0,
       "tier1_topology_match": 1.0,
-      "wall_seconds": 0.00263569999858737
+      "wall_seconds": 0.0025703999961260706
     },
     "topology_corruption": {
       "equivalent": 0.0,
@@ -89,7 +89,7 @@
       "tier1_normalized_render_tree_distance": 0.5,
       "tier1_role_match": 1.0,
       "tier1_topology_match": 0.4,
-      "wall_seconds": 0.02345925000170246
+      "wall_seconds": 0.03288661800231785
     }
   },
   "cells": [
@@ -164,7 +164,7 @@
       "tier1_topology_match": 1.0,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.002821049998397939
+      "wall_seconds": 0.002910024991957471
     },
     {
       "arm_id": "alpha_renamed__s0",
@@ -187,7 +187,7 @@
       "tier1_topology_match": 1.0,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.002553750000311993
+      "wall_seconds": 0.0024918579981895164
     },
     {
       "arm_id": "style_only_change__s0",
@@ -210,7 +210,7 @@
       "tier1_topology_match": 1.0,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.00263569999858737
+      "wall_seconds": 0.0025703999961260706
     },
     {
       "arm_id": "topology_corruption__s0",
@@ -238,7 +238,7 @@
       "tier1_topology_match": 0.4,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.02345925000170246
+      "wall_seconds": 0.03288661800231785
     },
     {
       "arm_id": "binding_corruption__s0",
@@ -262,7 +262,7 @@
       "tier1_topology_match": 1.0,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.02240325000800658
+      "wall_seconds": 0.03248524199787062
     },
     {
       "arm_id": "component_substitution__s0",
@@ -291,7 +291,7 @@
       "tier1_topology_match": 0.5,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.002414159996784292
+      "wall_seconds": 0.003387451007962227
     },
     {
       "arm_id": "metric_gaming_minimal_valid__s0",
@@ -322,22 +322,22 @@
       "tier1_topology_match": 0.0,
       "tier2_status": "not_available",
       "tier2_visual_similarity": null,
-      "wall_seconds": 0.023552310008904898
+      "wall_seconds": 0.027182759000221268
     }
   ],
   "run_id": "slm172-render-equivalence-20260720",
   "schema": "Slm172RenderEquivalenceReportV1",
   "status": "fixture",
-  "timestamp": "2026-07-20T14:06:16.535606Z",
+  "timestamp": "2026-07-20T23:46:47.704895Z",
   "version_stamp": {
-    "code_commit": "bde806bf7f180845ca9a5c8a21b5341739d81c13",
+    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
     "code_dirty": true,
     "components": {
       "evals.render_equivalence": "v1",
-      "harness.experiments": "v45",
+      "harness.experiments": "v50",
       "harness.experiments.slm172_render_equivalence": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T14:06:16.535190+00:00"
+    "stamped_at": "2026-07-20T23:46:47.704436+00:00"
   }
 }
