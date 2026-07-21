@@ -690,12 +690,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v50",
+      "version": "v51",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v51",
+          "date": "2026-07-21",
+          "note": "add SLM-187 FFE1-01 topology solver/runtime transition parity wiring/fixture harness"
+        },
         {
           "version": "v50",
           "date": "2026-07-21",
@@ -3178,6 +3183,43 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-186 FFE0-04 verified-utility ladder and Goodhart canary audit wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm187_topology_parity": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm187_topology_parity.py",
+        "scripts/run_slm187_topology_parity_fixture.py",
+        "tests/test_harnesses/experiments/test_slm187_topology_parity.py",
+        "tests/test_scripts/test_run_slm187_topology_parity_fixture.py",
+        "docs/design/iter-slm187-topology-parity-20260721.json",
+        "docs/design/iter-slm187-topology-parity-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-187 FFE1-01 topology solver/runtime transition parity oracle, TopologyStateV2 carrier, and fixture harness"
+        }
+      ]
+    },
+    "dsl.solver.topology": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/solver/topology_adapter.py",
+        "src/slm_training/dsl/solver/topology_solver.py",
+        "tests/test_dsl/test_topology_adapter.py",
+        "tests/test_dsl/test_topology_solver.py",
+        "docs/design/verified-scope-solver.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; VSS3-03 topology finite-domain adapter/solver seam (referenced by SLM-187 parity fixture; no behavior change in this commit)"
         }
       ]
     }
