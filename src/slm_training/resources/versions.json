@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v93",
+      "version": "v94",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v94",
+          "date": "2026-07-20",
+          "note": "E652 rejection: restore v92 plan-counted root references after all-section reachability closure was prediction- and quality-neutral; renumbered from the originally launched E646 arm after rebase"
+        },
         {
           "version": "v93",
           "date": "2026-07-20",

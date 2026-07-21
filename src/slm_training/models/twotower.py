@@ -6601,15 +6601,6 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
-    @staticmethod
-    def _semantic_root_reference_tokens(section_types: tuple[Any, ...]) -> list[str]:
-        """Reference every completed top-level element exactly once."""
-        return [
-            f"&{index}"
-            for index, expr_type in enumerate(section_types)
-            if str(expr_type).startswith("element:")
-        ]
-
     def _semantic_plan_root_bias(
         self,
         row: int,
@@ -6694,7 +6685,16 @@ class TwoTowerModel(nn.Module):
                 planned = tokens
                 target_id = self.tokenizer.eos_id
             else:
-                references = self._semantic_root_reference_tokens(section_types)
+                remaining = dict(required_counts)
+                references: list[str] = []
+                for index, expr_type in enumerate(section_types):
+                    token_id = family_token_ids.get(
+                        str(expr_type).removeprefix("element:")
+                    )
+                    if token_id is None or remaining.get(token_id, 0) <= 0:
+                        continue
+                    references.append(f"&{index}")
+                    remaining[token_id] -= 1
                 if not references:
                     return None
                 closure = ["+Stack", "[", *references, "]", "^column", "-"]
