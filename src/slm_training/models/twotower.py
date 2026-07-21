@@ -4267,6 +4267,29 @@ class TwoTowerModel(nn.Module):
             )
         return bias if applied else None
 
+    def _semantic_plan_covered_counts(
+        self,
+        state: Any,
+        prefix: list[int] | None,
+        family_token_ids: dict[str, int],
+    ) -> Counter[int]:
+        """Count planned families at every emitted nesting depth."""
+        if prefix is not None:
+            return Counter(
+                family_token_ids[family]
+                for token_id in prefix
+                if (token := str(self.tokenizer.id_to_token.get(token_id, ""))).startswith(
+                    ("+", "COMP:")
+                )
+                and (family := token.removeprefix("COMP:").removeprefix("+"))
+                in family_token_ids
+            )
+        return Counter(
+            family_token_ids.get(str(expr_type).removeprefix("element:"))
+            for expr_type in getattr(state, "section_types", ())
+            if str(expr_type).startswith("element:")
+        )
+
     def _semantic_plan_bias(
         self,
         row: int,
@@ -4314,10 +4337,13 @@ class TwoTowerModel(nn.Module):
             for token_id in self._component_inventory_token_ids()
         }
         if remaining_counts is not None:
-            for expr_type in getattr(state, "section_types", ()):
-                token_id = family_token_ids.get(str(expr_type).removeprefix("element:"))
+            for token_id, count in self._semantic_plan_covered_counts(
+                state, prefix, family_token_ids
+            ).items():
                 if token_id in remaining_counts:
-                    remaining_counts[token_id] = max(0, remaining_counts[token_id] - 1)
+                    remaining_counts[token_id] = max(
+                        0, remaining_counts[token_id] - count
+                    )
         bias = torch.zeros(len(candidate_ids), device=next(self.parameters()).device)
         applied = False
         component_kinds = {
@@ -4367,7 +4393,8 @@ class TwoTowerModel(nn.Module):
                 getattr(frame, "kind", None) == "component"
                 and family_token_id is not None
                 and family_score > 0.0
-                and remaining_counts.get(family_token_id, 0) > 1
+                and remaining_counts.get(family_token_id, 0)
+                > (0 if prefix is not None else 1)
                 and close_id in candidate_ids
             ):
                 open_position = max(
@@ -5650,10 +5677,8 @@ class TwoTowerModel(nn.Module):
             and row < len(self._semantic_plan_action_counts)
             else {token_id: 1 for token_id in required_ids}
         )
-        covered_counts = Counter(
-            family_token_ids.get(str(expr_type).removeprefix("element:"))
-            for expr_type in section_types
-            if str(expr_type).startswith("element:")
+        covered_counts = self._semantic_plan_covered_counts(
+            state, prefix, family_token_ids
         )
         if any(
             covered_counts.get(token_id, 0) < required_count

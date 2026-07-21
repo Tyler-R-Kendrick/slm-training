@@ -1356,6 +1356,43 @@ def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> No
     assert complete_bias is None
 
 
+def test_prompt_semantic_plan_bias_counts_nested_family_instances() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", semantic_plan_decode_weight=3.0)
+    tokenizer = model.tokenizer
+    modal_id = tokenizer.token_to_id["+Modal"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    buttons_id = tokenizer.token_to_id["+Buttons"]
+    button_id = tokenizer.token_to_id["+Button"]
+    model._semantic_plan_action_scores = [{
+        modal_id: 1.0,
+        text_id: 1.0,
+        button_id: 1.0,
+    }]
+    model._semantic_plan_action_counts = [{
+        modal_id: 1,
+        text_id: 1,
+        button_id: 1,
+    }]
+    state = SimpleNamespace(section_types=["element:Modal"], frames=[])
+    prefix = [
+        tokenizer.bos_id,
+        modal_id,
+        text_id,
+        buttons_id,
+        button_id,
+    ]
+
+    assert model._semantic_plan_bias(
+        0,
+        (button_id,),
+        ("component_bound",),
+        state,
+        prefix,
+    ) is None
+
+
 def test_prompt_semantic_plan_margin_floors_only_missing_families() -> None:
     from types import SimpleNamespace
 
@@ -1911,6 +1948,58 @@ def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> Non
 
     assert model._semantic_plan_root_bias(0, incomplete, None, candidates) is None
     assert model._semantic_plan_root_bias(0, complete, None, candidates) is not None
+
+
+def test_prompt_semantic_plan_root_bias_counts_nested_family_instances() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", semantic_plan_root_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    modal_id = tokenizer.token_to_id["+Modal"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    button_id = tokenizer.token_to_id["+Button"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    model._semantic_plan_action_scores = [{
+        modal_id: 1.0,
+        text_id: 1.0,
+        button_id: 1.0,
+    }]
+    model._semantic_plan_action_counts = [{
+        modal_id: 1,
+        text_id: 1,
+        button_id: 1,
+    }]
+    model._slot_contracts = [[":modal.title", ":modal.body", ":modal.confirm"]]
+    prefix_tokens = [
+        "<bos>",
+        "+Modal",
+        "@0",
+        "#false",
+        "[",
+        "+TextContent",
+        "@1",
+        "-",
+        "+Buttons",
+        "[",
+        "+Button",
+        "@2",
+        "-",
+        "]",
+        "-",
+        "]",
+        "-",
+    ]
+    prefix = [tokenizer.token_to_id[token] for token in prefix_tokens]
+    state = ChoiceDecodeState(tokenizer, slot_count=3)
+    for token_id in prefix[1:]:
+        assert state.advance_id(token_id)
+
+    bias = model._semantic_plan_root_bias(
+        0, state, prefix, (stack_id, tokenizer.eos_id)
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [2.0, 0.0]
 
 
 def test_prompt_semantic_plan_root_bias_follows_only_verified_closure() -> None:

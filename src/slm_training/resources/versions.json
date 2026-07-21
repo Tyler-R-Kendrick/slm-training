@@ -1512,7 +1512,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v74",
+      "version": "v75",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1527,6 +1527,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v75",
+          "date": "2026-07-20",
+          "note": "E637: count semantic-plan component families from the emitted choice prefix at every nesting depth so legal wrapper descendants satisfy family coverage without duplicate top-level emission"
+        },
         {
           "version": "v74",
           "date": "2026-07-20",
