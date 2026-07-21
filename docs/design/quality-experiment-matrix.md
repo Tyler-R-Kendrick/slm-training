@@ -5232,3 +5232,15 @@ behavior as v175. AgentV is 0/5; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e703-enum-safe-repeated-slots-20260721.md) and
 [JSON](iter-e703-enum-safe-repeated-slots-20260721.json).
+
+## E704 schema-value weight sweep
+
+E704 raises the existing schema-value penalty from 4 to 5–8. All tested weights
+remove Rico enum-role mismatches but drop one required placeholder per record;
+strict stays 0.0 while fidelity falls 0.9583→0.8750 and reward
+0.9875→0.9625. The full weight-8 five-suite replay leaves all non-Rico tracked
+quality metrics unchanged. Reject weights 5–8 and retain 4. AgentV is 0/5; no
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e704-schema-value-weight-sweep-20260721.md) and
+[JSON](iter-e704-schema-value-weight-sweep-20260721.json).
