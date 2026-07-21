@@ -3696,6 +3696,25 @@
         }
       ]
     },
+    "harness.experiments.slm234_merge_interference_recovery": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm234_merge_interference_recovery.py",
+        "scripts/run_slm234_merge_interference_recovery.py",
+        "tests/test_harnesses/experiments/test_slm234_merge_interference_recovery.py",
+        "tests/test_scripts/test_run_slm234_merge_interference_recovery.py",
+        "docs/design/iter-slm234-ckm0-01-merge-interference-recovery-20260721.json",
+        "docs/design/iter-slm234-ckm0-01-merge-interference-recovery-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-234 CKM0-01 TIES-vs-average merge signal recovery under synthetic parameter interference: exercises the real harness_core.lineage.merge.merge_checkpoints (method=average, method=ties) on synthetic parent+sibling checkpoints with a known signal/noise ground truth to test whether TIES-Merging's trim + sign-election + disjoint-merge mechanism recovers a consensus update direction/magnitude at least as well as naive averaging as sibling interference rises"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",

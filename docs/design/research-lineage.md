@@ -179,6 +179,20 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 
 **What we did not take:** the reference implementation's distributed all-gather/bucketing strategy, its specific default hyperparameter schedule, or any claim (from the paper, blog, or elsewhere) that Muon outperforms AdamW for this repo's TwoTower architecture — SLM-227's matched-LR fixture result points the other way at this scale and step budget, and neither result generalizes to a real training run.
 
+### Sibling checkpoint merging (Model Soups / TIES-Merging, CKM0-01, SLM-234)
+
+| | |
+| --- | --- |
+| **Papers** | Wortsman et al., *Model Soups*, ICML 2022. [arXiv:2203.05482](https://arxiv.org/abs/2203.05482); Yadav et al., *TIES-Merging*, NeurIPS 2023. [arXiv:2306.01708](https://arxiv.org/abs/2306.01708) |
+| **Fidelity** | **Adapted** — self-contained arithmetic-averaging and trim/elect-sign/disjoint-merge reimplementation over sibling checkpoint state-dict deltas; no external merge library, no distributed bucketing |
+| **Code** | `merge_checkpoints`, `_ties`, `validate_merge_manifests` in [`harness_core/lineage/merge.py`](../../src/slm_training/harness_core/lineage/merge.py); invoked from `model_cycle merge` (`scripts/model_cycle.py`) |
+| **Config** | `method` ∈ `{average, ties}`, `density` (default `0.2`) |
+| **Fixture (SLM-234)** | `harnesses/experiments/slm234_merge_interference_recovery.py` — builds synthetic parent + 5-sibling checkpoints (5 seeds × 4 sibling-interference levels) with a known ground-truth signal/noise structure and merges them with the real `merge_checkpoints`. Result: **`partial_confirmation_mechanism_specific`**. TIES robustly beat naive averaging (≥90% win rate across the 20 seed×conflict_prob pairs) on noise-coordinate residual suppression (20/20) and signal-coordinate magnitude recovery (19/20) — the trim + disjoint-merge mechanism worked as documented. It did **not** robustly beat averaging on full-vector cosine similarity to the ground-truth direction (10/20) or raw sign-recovery rate (12/20); at conflict_prob=0.30 TIES lost cosine similarity in 5/5 seeds even though its magnitude recovery was higher every time, consistent with TIES's disjoint-merge committing to a larger magnitude at whichever sign wins the per-coordinate election, amplifying both correct and incorrect per-coordinate outcomes. Evidence: [`iter-slm234-ckm0-01-merge-interference-recovery-20260721.md`](iter-slm234-ckm0-01-merge-interference-recovery-20260721.md). |
+
+**What we took:** TIES-Merging's magnitude-based trim (keep only each sibling's top-`density` largest-magnitude deltas per tensor) and sign-election + disjoint mean (elect the majority sign of the trimmed, summed deltas, then average only sign-agreeing elements); Model Soups' plain arithmetic mean of sibling deltas as the `average` method.
+
+**What we did not take:** either paper's evaluation protocol, reported task-arithmetic results, or any claim that TIES-Merging outperforms averaging on this repo's real checkpoints — SLM-234 is a synthetic, hand-constructed ground-truth fixture, not a measurement on trained TwoTower or causal-LM siblings, and its own result is mixed rather than a clean win for TIES on every metric tested.
+
 ### Preference / “DPO”
 
 | | |
