@@ -1259,6 +1259,17 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
     }
 
 
+def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":dashboard.refresh"],
+        ["Button", "TextContent"],
+    )
+
+    assert candidates == {":dashboard.refresh": ("Button",)}
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

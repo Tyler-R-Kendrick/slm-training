@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v96",
+      "version": "v97",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v97",
+          "date": "2026-07-21",
+          "note": "Recognize refresh as an action-label semantic role so prompt-planned controls can bind their visible slot."
+        },
         {
           "version": "v96",
           "date": "2026-07-20",
