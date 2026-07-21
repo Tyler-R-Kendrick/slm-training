@@ -1764,6 +1764,11 @@
         {
           "version": "v5",
           "date": "2026-07-21",
+          "note": "no-bump: regenerated iter-rsc-a03-rng-determinism-contract-20260721.{json,md}'s embedded determinism_report from the clean committed revision (4411710e, code_dirty=false throughout) after the v5 harness/doc bump landed -- content-only refresh of already-committed evidence, no further code/gate/harness change."
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-21",
           "note": "SLM-239 (RSC-A03): added src/slm_training/models/rng_contract.py -- an explicit, disjoint RNG namespace contract (model_initialization/shape_probe_inputs/shape_probe_context/training_corruption/training_batch_order/control_only) plus RngCheckpoint (also covers TwoTowerModel's private self._rng random.Random, a second RNG source _mask_targets reads that a torch-only checkpoint does not capture -- found and fixed during this work). Refactored scripts/run_slm138_recursive_denoiser_fixture.py into the required six-phase execution (construction / deterministic shape probes / deterministic pre-update objective decomposition / one optimizer step / deterministic post-update verification via restored corruption-RNG checkpoint / checkpoint round-trip), added a clean-tree evidence gate (--allow-dirty debug override, non-comparable artifacts never land in docs/design/ without it), and a --mode determinism FixtureDeterminismReportV1 built from real repeated executions + call-order permutations. Added 17 new deterministic regression tests (tests/test_models/test_recursive_denoiser.py, 55 total, all passing) covering the RNG contract, probe-order/extra-probe invariance, restored-checkpoint repeated evaluation (and the torch-only-restore-is-insufficient counter-example), differing-corruption-seed field isolation, fixture exit-state independence from caller entry state, the clean-tree gate, version-stamp match, and checkpoint round-trip digest identity. Measured verdict: bit_exact (real run A/run B/permutation digests match; namespace isolation holds) -- see docs/design/iter-rsc-a03-rng-determinism-contract-20260721.{json,md}."
         },
         {

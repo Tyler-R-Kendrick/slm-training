@@ -111,11 +111,17 @@ only `losses`/`post_update_verification`/`deep_supervision_metrics`/
 This `bit_exact` verdict was measured on CPU only (the repository's fixture
 platform); no GPU determinism claim is made (non-goal, per the issue).
 
-See `docs/design/iter-slm138-recursive-denoiser-20260721.json`'s
+The `determinism_report` embedded in the sibling JSON was regenerated from
+committed commit `4411710e0261a9c779b073ec8853b2b3c12118f8` with a clean
+working tree throughout (`code_dirty=false` before and after the
+`--mode determinism` run, verified via `git status --porcelain` -- not a
+separate `git clone`, but the exact committed revision with zero
+uncommitted changes at generation time). See
+`docs/design/iter-slm138-recursive-denoiser-20260721.json`'s
 `rng_contract`/`evidence_gate`/`post_update_verification` fields for a single
-concrete fixture run, and the sibling
-`iter-rsc-a03-rng-determinism-contract-20260721.json`'s `determinism_report`
-key for the full comparison this section summarizes.
+concrete fixture run (also regenerated clean, `code_dirty=false`), and the
+sibling `iter-rsc-a03-rng-determinism-contract-20260721.json`'s
+`determinism_report` key for the full comparison this section summarizes.
 
 ## Provenance persisted per run
 

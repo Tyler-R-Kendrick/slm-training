@@ -1,5 +1,6 @@
 {
   "claim_class": "infrastructure",
+  "clean_regeneration_note": "This determinism_report was regenerated from committed commit 4411710e0261a9c779b073ec8853b2b3c12118f8 with a clean working tree (code_dirty=false throughout, verified via `git status --porcelain` before and after the --mode determinism run) -- not from a separate `git clone`, but from the exact committed revision with zero uncommitted changes at generation time.",
   "clean_tree_evidence_gate": {
     "cli_flag": "--allow-dirty",
     "description": "_run_fixture always runs (even dirty, for local debugging) and honestly reports evidence_gate.code_dirty/comparable/claim_grade. main()'s --mode fixture path refuses to write docs/design/ from a dirty/unknowable tree unless --allow-dirty is passed explicitly; even then the artifact stays marked comparable=false/claim_grade=false."
@@ -12,8 +13,8 @@
   ],
   "determinism_report": {
     "base_seed": 0,
-    "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
-    "code_dirty": true,
+    "code_commit": "4411710e0261a9c779b073ec8853b2b3c12118f8",
+    "code_dirty": false,
     "config_hash": "8e158c276149e8186913df6df74f2a609ad5fa198043d6acfac2d991ef9583bd",
     "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
     "different_training_corruption_seed_unexpected_changes": {},
@@ -98,8 +99,8 @@
     "namespace_isolation_ok": true,
     "note": "Two isolated in-process fixture executions (run A/B), a call-order permutation (recursive-first shape probes), and an inserted-extra-harmless-probe permutation are compared field by field after excluding version_stamp.stamped_at. A distinct training-corruption-seed run is also compared and is *expected* to differ only in losses/post_update_verification/deep_supervision_metrics/rng_contract -- any other field changing under a different corruption seed would be a real namespace-isolation defect, listed in different_training_corruption_seed_unexpected_changes.",
     "permutation_digests": {
-      "extra_harmless_probe": "7b52f928a40868d2c6eca75da7ae7ca0477a5315c59c50a79cca1730e493de3d",
-      "recursive_first_probe_order": "8a89f4afe1858726f7839a2fcc65690de16e9f0ba736bbcc1a7cc76b1277e922"
+      "extra_harmless_probe": "a296566533f0053e1588fc62bbe56384944b7f4f20c7f33b44a7278ca759d150",
+      "recursive_first_probe_order": "a25159a03ad9aac982bd028a8718dac3cc679dc2224d47f97d9362e8fa7a1cb2"
     },
     "report_schema": "FixtureDeterminismReportV1",
     "rng_contract_version": "FixtureRngContractV1",
@@ -111,18 +112,18 @@
       "training_batch_order": 40000,
       "training_corruption": 30000
     },
-    "run_a_digest": "b555eb17fed46a1a9d89738ab2f0388aac8f1d24ba0c92f3362d451898232427",
-    "run_b_digest": "b555eb17fed46a1a9d89738ab2f0388aac8f1d24ba0c92f3362d451898232427",
+    "run_a_digest": "eef5212ee9b5646741a86f7263e2593b68391978640dbad88c30a2bcbf72f6b6",
+    "run_b_digest": "eef5212ee9b5646741a86f7263e2593b68391978640dbad88c30a2bcbf72f6b6",
     "tokenizer_hash": "df3ef1dd4ec5eeadd4cc89856699dd3d893275b55d807da4f45f6b6bf23256b6",
     "verdict": "bit_exact",
     "version_stamp": {
-      "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
-      "code_dirty": true,
+      "code_commit": "4411710e0261a9c779b073ec8853b2b3c12118f8",
+      "code_dirty": false,
       "components": {
         "model.recursive_denoiser": "v5"
       },
       "stamp_schema": "version_stamp/v1",
-      "stamped_at": "2026-07-21T01:28:39.377546+00:00"
+      "stamped_at": "2026-07-21T01:30:26.823753+00:00"
     }
   },
   "fixture_refactor_phases": [
@@ -133,7 +134,7 @@
     "deterministic_post_update_verification_restored_checkpoint",
     "checkpoint_roundtrip"
   ],
-  "generated_at": "2026-07-21T01:28:39.377583+00:00",
+  "generated_at": "2026-07-21T01:30:26.823915+00:00",
   "issue": "SLM-239 (RSC-A03)",
   "linear_context": "SLM-138 adversarial audit ledger (follow-on to RSC-A01/RSC-A02)",
   "note": "Fixture RNG determinism/reproducibility fix only -- no model-quality interpretation is attached. SLM-237/238's training_loss objective semantics (validate_recursive_depth_supervision, recursive_depth_aux_mode, RecursiveObjectiveContractV2) are unchanged; this is RNG plumbing around the SLM-138 fixture.",
@@ -177,12 +178,12 @@
     "model.recursive_denoiser": "v4 -> v5"
   },
   "version_stamp": {
-    "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
-    "code_dirty": true,
+    "code_commit": "4411710e0261a9c779b073ec8853b2b3c12118f8",
+    "code_dirty": false,
     "components": {
       "model.recursive_denoiser": "v5"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T01:28:39.377588+00:00"
+    "stamped_at": "2026-07-21T01:30:26.823922+00:00"
   }
 }
