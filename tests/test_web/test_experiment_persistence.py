@@ -84,3 +84,19 @@ def test_e650_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> No
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
     assert run_id not in checkpoints
+
+
+def test_e701_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e701-schema-aware-role-capacity-r6"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    held_out = run["scoreboard"]["suites"]["held_out"]
+    assert held_out["binding_aware_meaningful_v2_rate_strict"] == 1.0
+    assert held_out["structural_similarity"] == 0.81042
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }

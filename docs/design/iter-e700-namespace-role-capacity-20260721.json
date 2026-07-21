@@ -68,6 +68,8 @@
     "mean_score": 0.5
   },
   "decision": "Reject v166 and restore v165 role planning as v167. Property capacity changes the plan but not the emitted program; the next lever must make every planned role carrier reachable in the final root aggregation.",
+  "correction": "E701 showed that E700's focused test seeded Callout initially while production introduced it through joint-role planning and bypassed capacity in the reachable-binding branch; E700 r3 was a runtime no-op.",
+  "superseded_by": "e701-schema-aware-role-capacity-r6",
   "ship_gate_result": "fail",
   "ship_gates": false,
   "version_stamp": {
