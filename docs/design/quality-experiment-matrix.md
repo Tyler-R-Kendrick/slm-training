@@ -5158,3 +5158,57 @@ Evidence:
 [iter-e647-required-slot-margin-multiseed-sweep-20260721.md](iter-e647-required-slot-margin-multiseed-sweep-20260721.md)
 and
 [JSON](iter-e647-required-slot-margin-multiseed-sweep-20260721.json).
+
+## E649 fixing the `_binder_scope` `kind_ids` `AttributeError` E648 flagged (infra fix, not a quality lever)
+
+E648 (perf phase) flagged but did not fix a crash:
+`AttributeError: 'OpenUITokenizer' object has no attribute 'kind_ids'` from
+`compiler_draft.py::_binder_scope`, characterized as living in "the batched
+`model.generate()` warmup path... distinct from `generate_with_stats()`."
+This session root-causes it by reproducing directly rather than reading
+code alone, and finds E648's mechanism claim was wrong:
+`generate_with_stats()` is just `self.generate(...)` wrapped in stats
+collection — the same call, not a distinct path. Re-running the *exact*
+command that produced the committed `perf-matrix-results.json` C1-C4 rows
+(`--only C0,C1,C2,C3,C4 --limit 2 --warmup 0`, 2026-07-15) on current code
+**also crashes**, proving this is not warmup-specific: `build_completion_
+forest` calls `_references_resolved` unconditionally every decode step,
+which calls `_binder_scope`, which read `tokenizer.kind_ids("bind")`
+unguarded at its first line — so any `compiler_decode_mode` in `{forced,
+restricted, tree}` crashes on token one, regardless of warmup. The
+committed C1-C4 evidence is therefore stale relative to current
+`compiler_draft.py`, not merely warmup-blind.
+
+Root cause: `OpenUITokenizer` has no `kind_ids()` by design (unlike
+`DSLTokenizer`/`ChoiceTokenizer`); `compiler_draft.py` already has a
+consistent "no gate when `kind_ids` is absent" convention elsewhere in the
+same file (`emitted_component_count`'s guarded `try/except`, the
+`callable(kind_ids)`/`callable(kind_of)` checks near lines 920-968) —
+`_binder_scope` was the one unguarded call in that family, and every
+caller (`_references_resolved`, `_active_declaration_scope`,
+`active_declaration_binder_id`, `active_parent_component_ids`) inherited
+the crash through it. Genuine bug, not an architectural mismatch: fixed by
+wrapping the `kind_ids` read in `try/except AttributeError -> ([], [],
+None)`, matching the file's own established fallback pattern (no
+try/except-pass shadow path, no special-casing at call sites).
+
+Verified: E648's exact repro and the canonical `--warmup 0` command both
+complete without crashing post-fix; `tests/test_models/test_compiler_
+decode.py` + `tests/test_dsl/test_grammar_fastpath.py` +
+`tests/test_models/test_choice_tokenizer.py` +
+`tests/test_harnesses/model_build/test_dsl_tokenizer.py` show
+byte-identical pass/fail sets before/after (68 pre-existing failures,
+unrelated, unchanged); new regression test
+`test_binder_scope_no_gates_without_kind_ids` added and green;
+`verify_version_stamps --check` passes with `model.twotower` bumped v82 ->
+v83 (`compiler_draft.py` newly added to its watched paths). No quality
+claim made (`claim_class: infra_fix`, `quality_claim_made: false`) — this
+restores a decode path, it does not demonstrate a quality/perf gain.
+`docs/design/perf-matrix-results.json` was deliberately **not** refreshed
+here: re-running it produces a diff dominated by unrelated `DecodeStats`
+schema drift accumulated since 2026-07-15, a separate task.
+
+Evidence:
+[iter-e649-binder-scope-kind-ids-crash-fix-20260721.md](iter-e649-binder-scope-kind-ids-crash-fix-20260721.md)
+and
+[JSON](iter-e649-binder-scope-kind-ids-crash-fix-20260721.json).

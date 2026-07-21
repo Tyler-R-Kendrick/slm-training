@@ -21,6 +21,28 @@ def _tok() -> OpenUITokenizer:
     return OpenUITokenizer.build([SAMPLE, 'root = Row(":j")\n', "root = Stack([hero])\n"])
 
 
+def test_binder_scope_no_gates_without_kind_ids() -> None:
+    # E649 regression: plain OpenUITokenizer (unlike DSLTokenizer/
+    # ChoiceTokenizer) has no kind_ids(), so compiler-mode decode
+    # (compiler_decode_mode="forced"/"restricted"/"tree") must degrade to
+    # "no binder scope to check" instead of raising AttributeError from
+    # build_completion_forest -> _references_resolved -> _binder_scope.
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        active_declaration_binder_id,
+        active_parent_component_ids,
+        build_completion_forest,
+    )
+
+    tokenizer = _tok()
+    assert not hasattr(tokenizer, "kind_ids")
+    prefix = [tokenizer.bos_id, *tokenizer.encode(SAMPLE, add_special=False)]
+
+    forest = build_completion_forest(tokenizer, prefix)
+    assert isinstance(forest.paths, tuple)
+    assert active_declaration_binder_id(tokenizer, prefix) is None
+    assert active_parent_component_ids(tokenizer, prefix) == ()
+
+
 def test_engine_force_equal_after_name() -> None:
     eng = OpenUIIncrementalEngine()
     assert eng.set_prefix("root")

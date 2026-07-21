@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "run_id": "e649-binder-scope-kind-ids-crash-fix-20260721",
+  "experiment_id": "E649",
+  "date_utc": "2026-07-21",
+  "status": "completed",
+  "run_class": "bug_fix",
+  "claim_class": "infra_fix",
+  "quality_claim_made": false,
+  "issue": null,
+  "hypothesis": "E648 flagged (did not fix) AttributeError: 'OpenUITokenizer' object has no attribute 'kind_ids' from compiler_draft.py::_binder_scope, characterized as living in the batched model.generate() warmup path with compiler_decode_mode='forced' and warmup>=1. This session root-causes it by reproducing directly (not just reading code) and asks: is it genuinely warmup-path-specific and is it a missing-attribute bug or an architectural mismatch that should not be papered over?",
+  "prior_state_confirmed": {
+    "doc_claim": "docs/design/iter-e648-perf-c5-c8-execution-20260721.md: 'Attempting a combined C0-C8 re-run ... surfaced a real, previously-undocumented crash: with compiler_decode_mode=\"forced\" (C1) and warmup>=1, model.generate() -- the batched warmup path, distinct from generate_with_stats() used by the scored main loop -- raises AttributeError ... Not investigated or fixed.'",
+    "repro_result": "Reproduced verbatim with `python -m scripts.run_perf_matrix --only C0,C1 --limit 4 --warmup 1 --checkpoint src/slm_training/resources/checkpoints/playground_demo/last.pt`; traceback matches E648's description exactly (twotower.py:10666/9178/9678/8623/8055/7638 -> compiler_draft.py:844/281/256)."
+  },
+  "root_cause_finding": {
+    "mechanism_correction": "E648's 'distinct from generate_with_stats()' framing is incorrect as a mechanism claim: generate_with_stats() (twotower.py:10674-10696) is collect_decode_stats() wrapped around self.generate(...) -- literally the same call. There is no separate warmup-only branch.",
+    "warmup0_also_crashes": "Re-running the exact command that produced the committed docs/design/perf-matrix-results.json C1-C4 rows (`--only C0,C1,C2,C3,C4 --limit 2 --warmup 0`, per docs/design/perf-experiment-matrix.md's 2026-07-15 C-series section) on current code and the same checkpoint also crashes with the identical AttributeError. build_completion_forest calls _references_resolved unconditionally every decode step (compiler_draft.py:844), which calls _binder_scope, which read tokenizer.kind_ids('bind') unconditionally at its first line (compiler_draft.py:256, pre-fix) -- so the crash is deterministic on the very first token of any forced/restricted/tree-mode decode with this checkpoint, independent of warmup. This means the committed perf-matrix-results.json C1-C4 evidence is stale relative to current compiler_draft.py (something changed since 2026-07-15 that made/generalized this unguarded call reachable on the scored path too), not merely warmup-blind as E648 assumed.",
+    "actual_root_cause": "OpenUITokenizer (src/slm_training/models/tokenizer.py) is the plain word/char tokenizer and has no kind_ids() by design (unlike DSLTokenizer/ChoiceTokenizer). compiler_draft.py already has a consistent 'no gate when kind_ids is absent' convention elsewhere in the same file: emitted_component_count's try/except Exception (line 311, comment 'tokenizer without kind_ids -> no gate') and the callable(kind_ids)/callable(kind_of) guards at lines 920-922 and 959-968. _binder_scope (line 252) was the one unguarded call in that family, and _references_resolved/_active_declaration_scope/active_declaration_binder_id/active_parent_component_ids all call _binder_scope first, so the crash propagated through every one of them.",
+    "classification": "genuine bug (missing guard, inconsistent with the rest of the module) -- not an architectural mismatch. The module's own established 'no gate' fallback semantics is exactly correct here: a tokenizer with no binder-kind token space has nothing to scope, so decode should proceed unconstrained by binder-scope reasoning rather than crash."
+  },
+  "fix": {
+    "file": "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+    "function": "_binder_scope",
+    "location": "around line 252 (was line 256 for the unguarded call)",
+    "change": "wrap `bind_ids = set(tokenizer.kind_ids(\"bind\"))` in try/except AttributeError, returning ([], [], None) on failure -- same vacuous-scope 'no gate' convention already used by emitted_component_count in this file. No other call site needed a change: _references_resolved/_active_declaration_scope/active_declaration_binder_id/active_parent_component_ids all inherit the fix transitively through _binder_scope's return value.",
+    "no_shadow_path": "No try/except-pass added around the call site or a special-case skip in the caller; the fix is the root function itself gaining the same guard its sibling functions in this module already carry, restoring the file's pre-existing intended contract rather than working around it."
+  },
+  "regression_test": {
+    "file": "tests/test_dsl/test_grammar_fastpath.py",
+    "test": "test_binder_scope_no_gates_without_kind_ids",
+    "asserts": "builds a plain OpenUITokenizer (asserts not hasattr(tokenizer, 'kind_ids')), calls build_completion_forest/active_declaration_binder_id/active_parent_component_ids directly against it, and asserts no exception plus the expected vacuous return values (empty forest.paths tuple type, active_declaration_binder_id is None, active_parent_component_ids is ())."
+  },
+  "verification": {
+    "e648_exact_repro": "python -m scripts.run_perf_matrix --only C0,C1 --limit 4 --warmup 1 --checkpoint src/slm_training/resources/checkpoints/playground_demo/last.pt -- no longer crashes, completes and writes a scoreboard/results JSON",
+    "canonical_warmup0_repro": "python -m scripts.run_perf_matrix --only C0,C1,C2,C3,C4 --limit 2 --warmup 0 -- also completes without crashing post-fix, confirming the committed perf-matrix-results.json's nominal --warmup 0 path is not broken by this change (it was already broken on current code before this fix, independent of warmup -- see root_cause_finding.warmup0_also_crashes)",
+    "test_suites": "tests/test_models/test_compiler_decode.py + tests/test_dsl/test_grammar_fastpath.py + tests/test_models/test_choice_tokenizer.py + tests/test_harnesses/model_build/test_dsl_tokenizer.py: byte-identical sorted FAILED-test lists before (git stash) and after this change -- 68 failed / 120 passed both times, confirmed via diff of the two sorted lists (empty diff). All 68 are pre-existing failures unrelated to _binder_scope. New regression test passes; full test_grammar_fastpath.py is 29/29 green.",
+    "version_stamps": "python -m scripts.verify_version_stamps --check passes: 'ok (vs HEAD; 3 changed file(s), 1 component(s) touched)' with model.twotower bumped v82 -> v83"
+  },
+  "decision": "Fix committed. No checkpoint trained/promoted/synced. No quality claim made (claim_class: infra_fix, quality_claim_made: false) -- this restores a decode path to working order, it does not demonstrate a quality or performance gain. model.twotower component bumped v82 -> v83 (behavioral bug fix, real bump, not no-bump) with compiler_draft.py added to its watched paths (previously unregistered in versions.json).",
+  "not_done": {
+    "summary": "docs/design/perf-matrix-results.json was not refreshed in place. Re-running the canonical command post-fix produces a diff dominated by unrelated DecodeStats/phase-summary schema drift accumulated since the 2026-07-15 baseline (new/renamed counters, a new counters_omitted_zero field, CPU-timing-noise deltas) -- a separate, larger refresh task, not a side effect of this bug fix. The committed file should be treated as stale for its C1-C4 rows until a dedicated refresh session runs it and reconciles the schema drift honestly."
+  },
+  "next_step": "A dedicated session should refresh docs/design/perf-matrix-results.json's C1-C4 rows against current code (now that the crash is fixed) and reconcile/document the DecodeStats schema drift since 2026-07-15 separately from any lever-effect claim, per documenting-experiment-results.",
+  "commands_run": [
+    "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=$PWD/src/apps/openui_bridge/cli.mjs AGENTV_RUNNER=$PWD/scripts/run_agentv_eval.mjs python -m scripts.run_perf_matrix --only C0,C1 --limit 4 --warmup 1 --checkpoint src/slm_training/resources/checkpoints/playground_demo/last.pt --out-dir outputs/runs/e649-repro-20260721",
+    "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=... AGENTV_RUNNER=... python -m scripts.run_perf_matrix --only C1 --limit 2 --warmup 0 --checkpoint src/slm_training/resources/checkpoints/playground_demo/last.pt --out-dir outputs/runs/e649-repro-limit2-w0  # confirmed pre-fix crash even with the canonical --warmup 0 command",
+    "python -m pytest tests/test_models/test_compiler_decode.py tests/test_dsl/test_grammar_fastpath.py tests/test_models/test_choice_tokenizer.py tests/test_harnesses/model_build/test_dsl_tokenizer.py -q  # run twice via git stash/pop to diff failure sets before/after",
+    "NODE_OPTIONS=\"\" OPENUI_BRIDGE_CLI=... AGENTV_RUNNER=... python -m scripts.run_perf_matrix --only C0,C1 --limit 4 --warmup 1 --checkpoint src/slm_training/resources/checkpoints/playground_demo/last.pt --out-dir outputs/runs/e649-postfix-check  # post-fix, no crash",
+    "OPENUI_BRIDGE_CLI=... AGENTV_RUNNER=... NODE_OPTIONS=\"\" python -m scripts.run_perf_matrix --only C0,C1,C2,C3,C4 --limit 2 --warmup 0 --out-dir outputs/runs/e649-canonical-warmup0-check  # post-fix, no crash; docs/design/perf-matrix-results.json write reverted with git checkout (not committed)",
+    "python -m scripts.verify_version_stamps --check"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "637f665fc46e5bf4919f2272ce2f8554facaf085",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v83"
+    }
+  }
+}

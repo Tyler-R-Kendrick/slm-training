@@ -2100,7 +2100,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v82",
+      "version": "v83",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2112,9 +2112,15 @@
         "src/slm_training/models/adapters/",
         "src/slm_training/harnesses/model_build/config.py",
         "src/slm_training/harnesses/model_build/factory.py",
+        "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v83",
+          "date": "2026-07-21",
+          "note": "E649: fix a real crash, not a warmup-path quirk as E648 flagged it -- compiler_decode_mode in {forced, restricted, tree} deterministically raised AttributeError: 'OpenUITokenizer' object has no attribute 'kind_ids' from build_completion_forest -> _references_resolved -> _binder_scope on EVERY call, reproduced with --warmup 0 too (matching the exact command that produced the committed C1-C4 rows in perf-matrix-results.json on 2026-07-15 -- that evidence is now known-stale relative to current compiler_draft.py; the file itself is left untouched here since refreshing it is a separate task). Root cause: _binder_scope() (compiler_draft.py:252) called tokenizer.kind_ids('bind') unconditionally, but the plain OpenUITokenizer (src/slm_training/models/tokenizer.py -- not a versioned component, and by design has no kind-classification API, unlike DSLTokenizer/ChoiceTokenizer) has no kind_ids(). Every other kind_ids call site in this file already degrades gracefully when it's absent (emitted_component_count's 'tokenizer without kind_ids -> no gate' try/except; the callable(kind_ids)/callable(kind_of) guards at compiler_draft.py:920-922 and :959-960) -- _binder_scope was the one unguarded call in that family, and every caller (_references_resolved, _active_declaration_scope, active_declaration_binder_id, active_parent_component_ids) inherits the crash through it. Fix: wrap tokenizer.kind_ids('bind') in _binder_scope with try/except AttributeError -> return ([], [], None), the same 'no gate' vacuous-scope convention already established in this module. Added regression test tests/test_dsl/test_grammar_fastpath.py::test_binder_scope_no_gates_without_kind_ids exercising build_completion_forest with a plain OpenUITokenizer directly. Verified: tests/test_models/test_compiler_decode.py + tests/test_dsl/test_grammar_fastpath.py + tests/test_models/test_choice_tokenizer.py + tests/test_harnesses/model_build/test_dsl_tokenizer.py show byte-identical pass/fail sets before/after this change (68 failed/120 passed both times, all pre-existing and unrelated to this fix); `python -m scripts.run_perf_matrix --only C0,C1 --limit 4 --warmup 1` (E648's exact repro) no longer crashes; `--only C0,C1,C2,C3,C4 --limit 2 --warmup 0` (the command that produced the committed perf-matrix-results.json) also completes without crashing post-fix, confirming the --warmup 0 path this repo currently relies on is not broken by this change."
+        },
         {
           "version": "v82",
           "date": "2026-07-21",
