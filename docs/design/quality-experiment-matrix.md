@@ -4622,3 +4622,20 @@ specific planned Card. No checkpoint was created or synced; AgentV remained
 Evidence:
 [iter-e652-value-text-role-20260720.md](iter-e652-value-text-role-20260720.md)
 and [JSON](iter-e652-value-text-role-20260720.json).
+
+## E653 nested planned-container role ownership
+
+E653 binds a compatible leaf role without adding top-level family cardinality
+when an already-planned component can reach that role through its public
+schema. Matched OOD `n=4` r2 holds meaningful v1 at 4/4, strict v2 at 3/4,
+fidelity/validity at 1.0000, and recall at 0.8750. Structure improves
+0.7355→0.7692, node F1 0.7987→0.8222, edge F1 0.5798→0.7102, and p95
+7879.73→7045.22 ms; reward slips 0.9790→0.9730. Retain v104 as a scratch
+Pareto baseline, not ship evidence. R1 is excluded for a fallback-policy
+mismatch despite zero observed fallbacks. No checkpoint was created or synced;
+AgentV remained 0/1.
+
+Evidence:
+[iter-e653-nested-role-ownership-20260721.md](iter-e653-nested-role-ownership-20260721.md),
+[authoritative r2 JSON](iter-e653-nested-role-ownership-20260721.json), and
+[excluded r1 JSON](iter-e653-nested-role-ownership-r1-20260721.json).
