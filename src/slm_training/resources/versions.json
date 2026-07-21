@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v119",
+      "version": "v120",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v120",
+          "date": "2026-07-21",
+          "note": "E668: prefer schema-allowed semantic-role component wrappers for missing visible slots at empty typed-array items"
+        },
         {
           "version": "v119",
           "date": "2026-07-21",
