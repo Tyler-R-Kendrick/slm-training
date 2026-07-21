@@ -1579,7 +1579,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v139",
+      "version": "v140",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1594,6 +1594,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v140",
+          "date": "2026-07-21",
+          "note": "E686: bound constrained-selection telemetry per batch row so early examples cannot starve later failure traces"
+        },
         {
           "version": "v139",
           "date": "2026-07-21",

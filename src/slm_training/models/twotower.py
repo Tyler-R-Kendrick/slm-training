@@ -4646,6 +4646,20 @@ class TwoTowerModel(nn.Module):
             )
         )
 
+    @staticmethod
+    def _selection_trace_budget_available(
+        stats: DecodeStats,
+        row: int,
+        *,
+        max_total: int = 160,
+        max_per_row: int = 24,
+    ) -> bool:
+        """Keep batch telemetry bounded without starving later rows."""
+        traces = stats.constrained_selection_traces
+        return len(traces) < max_total and sum(
+            trace.get("row") == row for trace in traces
+        ) < max_per_row
+
     def _record_semantic_plan_seed_trace(
         self,
         stats: DecodeStats,
@@ -4665,7 +4679,7 @@ class TwoTowerModel(nn.Module):
         )
         if (
             seed_weight <= 0.0
-            or len(stats.constrained_selection_traces) >= 64
+            or not self._selection_trace_budget_available(stats, row)
             or not self._semantic_plan_seed_active(state, candidate_kinds)
         ):
             return None
@@ -4728,7 +4742,7 @@ class TwoTowerModel(nn.Module):
         }
         if (
             not section_types
-            or len(stats.constrained_selection_traces) >= 64
+            or not self._selection_trace_budget_available(stats, row)
             or not any(
                 kind in component_kinds and float(plan_bias[index].item()) > 0.0
                 for index, kind in enumerate(candidate_kinds)
@@ -4871,7 +4885,7 @@ class TwoTowerModel(nn.Module):
         scores_after: torch.Tensor,
     ) -> dict[str, object] | None:
         """Record bounded score evidence for a verified plan-root token."""
-        if len(stats.constrained_selection_traces) >= 64:
+        if not self._selection_trace_budget_available(stats, row):
             return None
         targeted = [
             index
@@ -4949,7 +4963,7 @@ class TwoTowerModel(nn.Module):
     ) -> None:
         """Record one bounded verifier abstention without changing scores."""
         evidence = self._semantic_plan_root_last_abstention
-        if evidence is None or len(stats.constrained_selection_traces) >= 64:
+        if evidence is None or not self._selection_trace_budget_available(stats, row):
             return
         if any(
             trace.get("phase") == "semantic_plan_root_abstention"
@@ -5535,7 +5549,7 @@ class TwoTowerModel(nn.Module):
         slot_contract: list[str] | None,
     ) -> dict[str, object] | None:
         """Record bounded evidence for a visible-slot closure intervention."""
-        if len(stats.constrained_selection_traces) >= 64:
+        if not self._selection_trace_budget_available(stats, row):
             return None
         targeted = [
             index
