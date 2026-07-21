@@ -4941,3 +4941,17 @@ was created or synced.
 
 Evidence: [narrative](iter-e683-positional-role-heldout-20260721.md) and
 [JSON](iter-e683-positional-role-heldout-20260721.json).
+
+## E684 singular prose for plural schema families
+
+E684 recognizes singular prose forms for plural public-schema families and
+advances binding-aware meaningful to v2.5.0 without changing thresholds. On
+Held-out `n=5`, coverage improves 0.8→1.0 and the tabs failure becomes an
+explicit missing-Tabs contract violation. Strict remains 2/5; structure,
+recall, node F1, and latency improve, while fidelity and reward regress.
+Retain the contract correction but reject the quality hypothesis: the next
+lever must enforce the recognized Tabs plan. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e684-singular-plural-family-20260721.md) and
+[JSON](iter-e684-singular-plural-family-20260721.json).
