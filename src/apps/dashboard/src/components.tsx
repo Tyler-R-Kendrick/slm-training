@@ -116,9 +116,19 @@ export function StatusPill({ value, label }: { value: any; label?: string }) {
 export function ProvenanceBadge({ provenance }: { provenance?: string }) {
   if (!provenance) return null;
   const live = provenance === "live";
+  const bucket = provenance === "bucket";
+  const label = live ? "live" : bucket ? "bucket" : provenance === "mixed" ? "mixed" : "committed";
+  const cls = live || bucket ? "prov-live" : "prov-committed";
+  const title = live
+    ? "read from outputs/ (current)"
+    : bucket
+      ? "listed from the HF checkpoint bucket"
+      : provenance === "mixed"
+        ? "mixed live + committed evidence"
+        : "committed snapshot (docs/ or src/slm_training/resources/)";
   return (
-    <span className={`prov ${live ? "prov-live" : "prov-committed"}`} title={live ? "read from outputs/ (current)" : "committed snapshot (docs/ or src/slm_training/resources/)"}>
-      {live ? "live" : "committed"}
+    <span className={`prov ${cls}`} title={title}>
+      {label}
     </span>
   );
 }
@@ -623,6 +633,8 @@ export function JobsBadgeView({ data }: { data: JobRows }) {
 export interface DispatchRows {
   rows?: { id?: string | number; job?: string; status?: string; url?: string }[];
   remotes?: { run_id?: string; url?: string }[];
+  hf_jobs?: { ok?: boolean; auth?: boolean; count?: number; error?: string | null };
+  bucket?: { ok?: boolean; count?: number; updated_at?: string | null; error?: string | null };
 }
 
 export function DispatchLines({
@@ -635,12 +647,18 @@ export function DispatchLines({
   const jobs = data.rows ?? [];
   const remotes = data.remotes ?? [];
   if (!jobs.length && !remotes.length) {
+    const hint = data.hf_jobs?.error
+      ? ` ${data.hf_jobs.error}.`
+      : data.bucket?.error
+        ? ` Bucket list: ${data.bucket.error}.`
+        : "";
     return (
       <Empty
         ctaLabel={navigate ? "launch one from Experiments →" : undefined}
         onCta={navigate ? () => navigate("/experiments") : undefined}
       >
-        No remote (HF Jobs / pod) trains dispatched{navigate ? "." : " — launch one from Experiments."}
+        No remote (HF Jobs / pod) trains visible.{hint}
+        {navigate ? "" : " Launch one from Experiments."}
       </Empty>
     );
   }

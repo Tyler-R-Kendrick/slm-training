@@ -22,9 +22,9 @@ import {
 
 export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
-  const roster = usePoll<any>("/api/checkpoints", 15000);
-  const quality = usePoll<any>("/api/scoreboards/quality", 15000);
-  const champions = usePoll<any>("/api/lineage/champions", 15000);
+  const roster = usePoll<any>("/api/checkpoints", 30000);
+  const quality = usePoll<any>("/api/scoreboards/quality", 30000);
+  const champions = usePoll<any>("/api/lineage/champions", 30000);
 
   const [policy, setPolicy] = useState<Record<string, Record<string, number>> | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
         <StatTile label="A/B comparisons" value={cmp.data?.total ?? 0} sub={cmp.data ? `${pct(cmp.data.win_rate)} win` : ""} />
       </Grid>
 
-      <Card title="Roster" right={<ProvenanceBadge provenance={roster.data?.checkpoints?.some((c: any) => c.provenance === "live") ? "live" : roster.data?.checkpoints?.length ? "committed" : undefined} />}>
+      <Card title="Roster" right={<ProvenanceBadge provenance={roster.data?.provenance} />}>
         <DataTable
           columns={[
             { key: "role", label: "Role" },
@@ -82,15 +82,22 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
             { key: "model_size", label: "Model size", align: "right" },
             { key: "throughput", label: "Throughput", align: "right" },
             { key: "status", label: "Status" },
+            { key: "source", label: "Source" },
           ]}
           rows={roster.data?.checkpoints ?? []}
           render={{
             run_id: (r) => <span className="mono">{r.run_id || "—"}</span>,
             status: (r) => <StatusPill value={r.status} label={(r.status || "—").slice(0, 26)} />,
+            source: (r) => <span className="hint">{r.source || "—"}</span>,
           }}
         />
         <p className="hint" style={{ marginTop: "0.6rem" }}>
           ≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.
+          {roster.data?.bucket?.ok
+            ? ` HF bucket: ${roster.data.bucket.count ?? 0} remote run(s)${roster.data.bucket.updated_at ? `, updated ${roster.data.bucket.updated_at}` : ""}.`
+            : roster.data?.bucket?.error
+              ? ` Bucket inventory unavailable: ${roster.data.bucket.error}.`
+              : ""}
         </p>
       </Card>
 

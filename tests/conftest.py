@@ -7,6 +7,12 @@ import pytest
 from slm_training.autoresearch.schemas import RLReadinessReport
 
 
+@pytest.fixture(autouse=True)
+def _disable_remote_inventory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep unit tests offline — Hub bucket/jobs inventory is opt-in per test."""
+    monkeypatch.setenv("SLM_DISABLE_REMOTE_INVENTORY", "1")
+
+
 TRAINING_TESTS = {
     "tests/test_harnesses/distill/test_select_sft.py::test_self_distill_sft_smoke",
     "tests/test_harnesses/model_build/test_full_state_resume.py::test_full_state_resume_is_bit_exact",
