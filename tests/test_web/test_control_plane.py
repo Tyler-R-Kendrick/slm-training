@@ -2068,7 +2068,7 @@ def test_e638_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert run_id not in checkpoints
 
 
-def test_e651_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
+def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
     readers = Readers(Path(__file__).parents[2])
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
