@@ -19,13 +19,13 @@ A drop-in ``SharedRecursiveDenoiserTower`` that preserves the ``DenoiserTower`` 
 
 ## Losses
 
-- stacked: `42.182747`
-- recursive: `61.541157`
+- stacked: `49.943035`
+- recursive: `77.007797`
 
 ## Post-update verification (restored corruption-RNG checkpoint)
 
-- stacked: `39.796356`
-- recursive: `59.589344`
+- stacked: `45.294647`
+- recursive: `71.959007`
 
 ## Recursive weight sharing
 
@@ -39,13 +39,13 @@ A drop-in ``SharedRecursiveDenoiserTower`` that preserves the ``DenoiserTower`` 
 - `recursive_depth_aux_mode`: legacy_all_depths
 - `recursive_depth_aux_weight`: 1.0
 - `recursive_depth_supervision_weight_sum`: 1.5
-- `recursive_depth_loss_0`: 26.484281539916992
+- `recursive_depth_loss_0`: 35.52149200439453
 - `recursive_depth_weight_0`: 0.5
-- `recursive_depth_weighted_contribution_0`: 8.828094482421875
-- `recursive_depth_loss_1`: 24.563997268676758
+- `recursive_depth_weighted_contribution_0`: 11.840497970581055
+- `recursive_depth_loss_1`: 32.49333572387695
 - `recursive_depth_weight_1`: 1.0
-- `recursive_depth_weighted_contribution_1`: 16.375999450683594
-- `recursive_depth_supervision_loss`: 25.20409393310547
+- `recursive_depth_weighted_contribution_1`: 21.66222381591797
+- `recursive_depth_supervision_loss`: 33.502723693847656
 
 ## RNG contract
 
@@ -57,9 +57,9 @@ A drop-in ``SharedRecursiveDenoiserTower`` that preserves the ``DenoiserTower`` 
 
 ## Clean-tree evidence gate
 
-- Comparable/claim-grade: **False**
-- code_dirty: `True`
-- diff_hash: `6f30e70d7122de99b01bed1514c1321302b722df714e8abbc9e814013141a347`
+- Comparable/claim-grade: **True**
+- code_dirty: `False`
+- diff_hash: `None`
 
 ## Checkpoint round-trip
 

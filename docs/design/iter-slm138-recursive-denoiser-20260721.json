@@ -4,26 +4,26 @@
   "deep_supervision_metrics": {
     "recursive_depth_aux_mode": "legacy_all_depths",
     "recursive_depth_aux_weight": 1.0,
-    "recursive_depth_loss_0": 26.484281539916992,
-    "recursive_depth_loss_1": 24.563997268676758,
+    "recursive_depth_loss_0": 35.52149200439453,
+    "recursive_depth_loss_1": 32.49333572387695,
     "recursive_depth_supervision_enabled": true,
-    "recursive_depth_supervision_loss": 25.20409393310547,
+    "recursive_depth_supervision_loss": 33.502723693847656,
     "recursive_depth_supervision_weight_sum": 1.5,
     "recursive_depth_weight_0": 0.5,
     "recursive_depth_weight_1": 1.0,
-    "recursive_depth_weighted_contribution_0": 8.828094482421875,
-    "recursive_depth_weighted_contribution_1": 16.375999450683594
+    "recursive_depth_weighted_contribution_0": 11.840497970581055,
+    "recursive_depth_weighted_contribution_1": 21.66222381591797
   },
   "denoiser_architectures": [
     "stacked",
     "shared_recursive"
   ],
   "evidence_gate": {
-    "allow_dirty": true,
-    "claim_grade": false,
-    "code_dirty": true,
-    "comparable": false,
-    "diff_hash": "6f30e70d7122de99b01bed1514c1321302b722df714e8abbc9e814013141a347"
+    "allow_dirty": false,
+    "claim_grade": true,
+    "code_dirty": false,
+    "comparable": true,
+    "diff_hash": null
   },
   "forward_shapes": {
     "recursive": [
@@ -38,16 +38,16 @@
     ]
   },
   "losses": {
-    "recursive": 61.54115676879883,
-    "stacked": 42.18274688720703
+    "recursive": 77.00779724121094,
+    "stacked": 49.94303512573242
   },
   "matrix_set": "slm138-shared-recursive-denoiser",
   "matrix_version": "slm138-v1",
   "note": "Wiring-only evidence. Full matched-block evaluation arms and GPU training are deferred.",
   "post_update_verification": {
     "note": "training_loss re-evaluated after one optimizer step with the training_corruption RNG checkpoint restored to its pre-update state -- the only source of difference from 'losses' above is the parameter update, never a shifted corruption draw.",
-    "recursive_loss": 59.5893440246582,
-    "stacked_loss": 39.796356201171875
+    "recursive_loss": 71.9590072631836,
+    "stacked_loss": 45.294647216796875
   },
   "provenance_hashes": {
     "config_hash": "8e158c276149e8186913df6df74f2a609ad5fa198043d6acfac2d991ef9583bd",
@@ -81,12 +81,12 @@
   "stacked_params": 64994,
   "status": "wiring_only",
   "version_stamp": {
-    "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
-    "code_dirty": true,
+    "code_commit": "ae5aef0509ecd5e7d372278cdfab4fa1a8316d91",
+    "code_dirty": false,
     "components": {
-      "model.recursive_denoiser": "v4"
+      "model.recursive_denoiser": "v5"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T01:20:59.613525+00:00"
+    "stamped_at": "2026-07-21T01:29:39.603086+00:00"
   }
 }
