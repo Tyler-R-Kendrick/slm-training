@@ -1098,6 +1098,61 @@ is ready for production until it clears its activation gate and produces a
 `POSITIVE` result under ship-gates with durable checkpoints. The synthesis
 renderer labels the report as wiring-grade and does not promote a champion.
 
+## LOTUS-faithful causal OpenUI transfer (LOT0)
+
+[`lotus-openui-fidelity-contract-v1.md`](lotus-openui-fidelity-contract-v1.md)
+(LOT0-01, SLM-248) is the spec-only mechanism fidelity contract, non-duplication
+map, and preregistered transfer gate for bringing LOTUS's looped-latent-CoT
+mechanism to the causal OpenUI track. It adds no model code, no corpus, no
+experiment, and no checkpoint; the machine-readable contract, hashes, and
+authorization verdict are committed at
+[`lotus-openui-fidelity-contract-v1.json`](lotus-openui-fidelity-contract-v1.json),
+with sources in
+[`lotus-openui-sources.json`](../../src/slm_training/resources/autoresearch/lotus-openui-sources.json).
+
+| | |
+| --- | --- |
+| **Paper/code** | Yingfan et al., *LOTUS: Looped Transformers with Latent Chain-of-Thought*, arXiv:2606.31779; reference implementation [`yingfan-bot/lotus`](https://github.com/yingfan-bot/lotus) (`scripts/lotus.py`, `args/gsm8k_lotus_llama3b.yaml`) |
+| **Fidelity** | **Faithful** (backbone reuse, K×c latent workspace, whole-backbone recurrence, `E + h_{t-1}` injection, fixed R) / **Adapted** (explicit-to-latent curriculum, post-loop shared-head readout, final-answer→full-program loss) — row-by-row table in the contract doc; nothing is implemented yet |
+| **Code** | None yet. Proposed owner for the recurrent loop and latent workspace is a new module around [`models/causal_lm_openui.py`](../../src/slm_training/models/causal_lm_openui.py) (`CausalLMOpenUIPlugin`), gated on the LOT1 target-trace contract |
+| **Config** | None yet; preregistered claim classes (`wiring`, `faithful_mechanism_fixture`, `optimization_diagnostic`, `semantic_quality`, `causal_latent_use`, `latency_frontier`, `efficiency_frontier`, `adoption`) and margins are in the contract's `preregistration` block |
+
+**What we took:** the mechanism definitions and required controls verified
+against the fetched paper abstract and reference-implementation config knobs
+(`c_thought`, `n_looped_iters`, `block_start = loop_idx * c_thought`,
+`latent_injection_mode`, `intermediate_loss_after_loop`) — a causal,
+whole-backbone recurrent loop over a fixed-size K×c latent workspace,
+original-embedding re-injection, and a shared LM-head readout, each paired
+with its own ablation control (K/c sweep, unlooped extra-update control,
+replace/no-injection ablation, per-iteration/post-loop control, R sweep).
+
+**What we did not take:** any claim that LOTUS's reported GSM8K/SVAMP numbers,
+latency multipliers, or CODI comparison transfer to OpenUI (those stay
+`secondary_preregistered` evidence nuances, not repo results); any
+implementation before a LOT1 target-trace contract exists (see below); the
+masked recursive denoiser's length-coupled `y`/`z` state (SLM-138,
+[`recursive_denoiser.py`](../../src/slm_training/models/recursive_denoiser.py)),
+`SemanticPlanV1`'s externally materialized plan IR and predictor heads
+(SLM-144,
+[`semantic_plan_predictor.py`](../../src/slm_training/models/semantic_plan_predictor.py)),
+the causal FTPO adapters' per-token local margin objective
+([`causal_peft_ftpo.py`](../../src/slm_training/harnesses/experiments/causal_peft_ftpo.py)),
+or the X22/VSS0 discrete valid-state search machinery
+([`tree_edit_diffusion.py`](../../src/slm_training/models/tree_edit_diffusion.py)) —
+each was read directly this session and found structurally distinct (full
+line-by-line comparison in the contract doc's non-duplication map).
+
+**LOT0-01 verdict:** `needs_target_trace_contract`. Differentiation from every
+existing repo mechanism is clean, but LOTUS's explicit-to-latent curriculum
+presupposes a step-decomposable "explicit trace" for OpenUI program synthesis
+that this repo does not yet define, and defining it honestly (without
+assuming math-payload equivalence to GSM8K CoT steps) is out of scope for this
+docs-only issue. LOT1 is authorized to *define* that target-trace contract and
+the K/c/R sweep/control spec; no model or training code is authorized before
+LOT1 lands and is reviewed. The canonical LOTUS / SLM-138 adversarial-audit
+Linear document was not fetchable this session and is recorded as an
+unresolved external reference in the contract.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
