@@ -5071,7 +5071,16 @@ class TwoTowerModel(nn.Module):
             getattr(self.config, "slot_coverage_close_decode_weight", 0.0) or 0.0
         )
         frames = list(getattr(state, "frames", ()))
-        if weight <= 0.0 or not slot_contract:
+        if weight <= 0.0 or not frames or not slot_contract:
+            return None
+        frame = frames[-1]
+        kind = getattr(frame, "kind", None)
+        if kind not in {"component", "variadic", "object"}:
+            return None
+        if kind == "object" and getattr(frame, "phase", None) != "key":
+            return None
+        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+        if close_id not in candidate_ids:
             return None
         try:
             missing = tuple(
@@ -5082,6 +5091,9 @@ class TwoTowerModel(nn.Module):
         except (AttributeError, KeyError, ValueError):
             return None
         bias = scores.new_zeros(len(candidate_ids))
+        if not missing:
+            bias[candidate_ids.index(close_id)] = weight
+            return bias
 
         from slm_training.data.quality import (
             semantic_role_properties,
@@ -5093,65 +5105,6 @@ class TwoTowerModel(nn.Module):
             OBJ_OPEN,
             OPEN_PREFIX,
         )
-
-        if not frames:
-            if not missing:
-                return None
-            if (
-                getattr(state, "mode", None) != "structural"
-                or not tuple(getattr(state, "section_types", ()))
-            ):
-                return None
-            candidate_components = {
-                token[len(OPEN_PREFIX) :]
-                for token_id in candidate_ids
-                if (
-                    token := str(self.tokenizer.id_to_token.get(token_id, ""))
-                ).startswith(OPEN_PREFIX)
-            }
-            reachable_candidates = semantic_role_reachable_candidates(
-                [slot for _index, slot in missing], sorted(candidate_components)
-            )
-            targets = [
-                position
-                for position, token_id in enumerate(candidate_ids)
-                if (
-                    token := str(self.tokenizer.id_to_token.get(token_id, ""))
-                ).startswith(OPEN_PREFIX)
-                and any(
-                    (
-                        semantic_role_candidates
-                        and token[len(OPEN_PREFIX) :]
-                        in semantic_role_candidates.get(slot, ())
-                    )
-                    or token[len(OPEN_PREFIX) :]
-                    in reachable_candidates.get(slot, ())
-                    for _index, slot in missing
-                )
-            ]
-            if not targets:
-                return None
-            target = max(targets, key=lambda position: float(scores[position].item()))
-            bias[target] = max(
-                0.0,
-                float(scores.max().item())
-                + weight
-                - float(scores[target].item()),
-            )
-            return bias
-
-        frame = frames[-1]
-        kind = getattr(frame, "kind", None)
-        if kind not in {"component", "variadic", "object"}:
-            return None
-        if kind == "object" and getattr(frame, "phase", None) != "key":
-            return None
-        close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
-        if close_id not in candidate_ids:
-            return None
-        if not missing:
-            bias[candidate_ids.index(close_id)] = weight
-            return bias
 
         missing_slots_by_id = {
             int(self.tokenizer.sym_id(index)): slot for index, slot in missing
