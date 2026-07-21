@@ -772,6 +772,39 @@ def cmd_materialize_mixture(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_openfeature(args: argparse.Namespace) -> int:
+    """Export a campaign's hypothesis matrix as a flagd flag definition."""
+    from slm_training.autoresearch.openfeature import export_flagd_flags
+
+    store = _store(args)
+    if args.matrix:
+        matrix = HypothesisMatrix.model_validate_json(
+            args.matrix.read_text(encoding="utf-8")
+        )
+    else:
+        matrix = _latest_formed_matrix(store)
+        assert matrix is not None
+    if matrix.campaign_id != store.campaign_id:
+        raise ValueError("hypothesis matrix belongs to a different campaign")
+    document = export_flagd_flags(
+        (item.experiment for item in matrix.hypotheses),
+        flag_set_id=matrix.campaign_id,
+    )
+    artifact = store.write_artifact("openfeature", document)
+    store.append_event(
+        "openfeature_exported",
+        artifact_sha256=artifact.stem,
+        detail={"matrix_id": matrix.matrix_id, "flags": len(document["flags"])},
+    )
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+    print(json.dumps(document, indent=2, sort_keys=True))
+    return 0
+
+
 def cmd_remine(args: argparse.Namespace) -> int:
     """Run the LDI3-04 immutable remine → intervene → regenerate campaign."""
     # Lazy import so importing autoresearch.py does not pull torch-heavy paths.
@@ -967,6 +1000,18 @@ def build_parser() -> argparse.ArgumentParser:
     mixture.add_argument("--mixture-id", required=True)
     mixture.add_argument("--weights-json", required=True)
     mixture.set_defaults(func=cmd_materialize_mixture)
+
+    openfeature = sub.add_parser("export-openfeature")
+    openfeature.add_argument("--campaign-id", required=True)
+    openfeature.add_argument(
+        "--matrix",
+        type=Path,
+        help="Hypothesis matrix JSON (defaults to the latest formed matrix)",
+    )
+    openfeature.add_argument(
+        "--output", type=Path, help="Optional file destination for flags JSON"
+    )
+    openfeature.set_defaults(func=cmd_export_openfeature)
 
     remine = sub.add_parser("remine")
     remine.add_argument("--campaign-id", default="ldi-remine-smoke")

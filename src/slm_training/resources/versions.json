@@ -503,6 +503,11 @@
         {
           "version": "v2",
           "date": "2026-07-21",
+          "note": "no-bump: doc-only cross-link to openfeature-autoresearch-experiments.md and terminology-table row for the autoresearch flagd representation; runtime, keys, defaults, and lever registry unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
           "note": "LaunchDarkly OpenFeature provider, experiment lever registry, /api/features/levers, server-side LD browser model"
         },
         {
@@ -589,6 +594,27 @@
           "version": "openui_ship_gates_v1",
           "date": "2026-07-18",
           "note": "initial registration; mirrors MEANINGFUL_METRIC_POLICY threshold_version"
+        }
+      ]
+    },
+    "harness.autoresearch.openfeature": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/autoresearch/openfeature.py",
+        "tests/test_autoresearch/test_openfeature.py",
+        "docs/design/openfeature-autoresearch-experiments.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: merge with main's product experiment layer (features.openfeature); design doc renamed to openfeature-autoresearch-experiments.md, provider import unguarded now that openfeature-sdk is a core dependency; resolution behavior unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; OpenFeature (CNCF) representation of typed autoresearch experiments: flagd flag-definition export (knob flags, experiment-id variants, JsonLogic targeting) plus fail-closed ExperimentFlagProvider over ExperimentSpec knobs"
         }
       ]
     },
@@ -3003,6 +3029,11 @@
           "version": "v2",
           "date": "2026-07-21",
           "note": "reduce remine and autoresearch campaign wall-budget default and maximum to two minutes"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: scripts/autoresearch.py gains an export-openfeature subcommand (flagd flag-definition export of a hypothesis matrix); remine campaign behavior unchanged"
         },
         {
           "version": "v1",

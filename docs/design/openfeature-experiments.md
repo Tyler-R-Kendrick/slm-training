@@ -17,12 +17,17 @@ evaluation API.
 **LaunchDarkly** and **PostHog** both ship official OpenFeature server providers,
 so the control plane can swap vendors without changing call sites.
 
+Related: [`openfeature-autoresearch-experiments.md`](openfeature-autoresearch-experiments.md)
+covers the research-experiment side — representing typed autoresearch
+`ExperimentSpec` knobs as standard flag artifacts (flagd export + in-process
+provider) for interoperability, with no runtime rollout semantics.
+
 ## Terminology (avoid collisions)
 
 | Term in repo | Meaning | OpenFeature? |
 | --- | --- | --- |
 | `Experiment` in `run_quality_matrix.py` | ML ablation cell | No — keep as-is |
-| `ExperimentSpec` in autoresearch | Hypothesis campaign | No |
+| `ExperimentSpec` in autoresearch | Hypothesis campaign | Represented, not gated — flagd export + read-only provider ([`openfeature-autoresearch-experiments.md`](openfeature-autoresearch-experiments.md)) |
 | Ship / activation / deployment **gates** | Honest eval thresholds | No — never weaken via flags |
 | **Product lever** (`slm_training.features.levers`) | Runtime rollout of a matrix hypothesis | Yes — flag key + metadata |
 | **Product flag** (`slm_training.features`) | OpenFeature evaluation | Yes |
