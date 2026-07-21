@@ -5208,3 +5208,27 @@ was created or synced.
 
 Evidence: [narrative](iter-e701-schema-aware-role-capacity-20260721.md) and
 [JSON](iter-e701-schema-aware-role-capacity-20260721.json).
+
+## E702 joint role cardinality
+
+E702 counts another direct carrier when existing instances cannot cover another
+joint visible-role namespace. The five-suite `n=19` replay improves Rico
+fidelity/validity to 1.0 but leaves Rico strict at 0.0, while Rico structure
+falls 0.7611→0.4678 and component recall 1.0→0.5556; Held-out strict also falls
+1.0→0.8. Extra Callouts became root obligations, displaced authored Cards, and
+produced role-mismatched duplicate spam. Reject v172 and restore v171 behavior
+as v173. AgentV is 0/5; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e702-joint-role-cardinality-20260721.md) and
+[JSON](iter-e702-joint-role-cardinality-20260721.json).
+
+## E703 enum-safe repeated slots
+
+E703 prevents repeated-instance slot flooring at enum-valued component
+properties. The matched five-suite `n=19` replay changes zero prediction hashes
+and zero tracked quality metrics versus E701, proving this margin is not the
+source of Rico's `TextContent.size` role mismatch. Reject v174 and restore v173
+behavior as v175. AgentV is 0/5; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e703-enum-safe-repeated-slots-20260721.md) and
+[JSON](iter-e703-enum-safe-repeated-slots-20260721.json).
