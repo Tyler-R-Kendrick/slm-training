@@ -990,6 +990,7 @@ class TwoTowerModel(nn.Module):
         self._semantic_plan_role_bindings: list[
             dict[str, tuple[str, ...]]
         ] | None = None
+        self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -4803,6 +4804,35 @@ class TwoTowerModel(nn.Module):
         stats.constrained_selection_traces.append(trace)
         return trace
 
+    def _record_semantic_plan_root_abstention(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+    ) -> None:
+        """Record one bounded verifier abstention without changing scores."""
+        evidence = self._semantic_plan_root_last_abstention
+        if evidence is None or len(stats.constrained_selection_traces) >= 64:
+            return
+        if any(
+            trace.get("phase") == "semantic_plan_root_abstention"
+            and trace.get("row") == row
+            and trace.get("evidence") == evidence
+            for trace in stats.constrained_selection_traces
+        ):
+            return
+        stats.constrained_selection_traces.append(
+            {
+                "phase": "semantic_plan_root_abstention",
+                "row": row,
+                "position": position,
+                "evidence": dict(evidence),
+                **self._choice_phase_evidence(state),
+            }
+        )
+
     def _schema_value_bias(
         self,
         state: Any,
@@ -5738,6 +5768,7 @@ class TwoTowerModel(nn.Module):
         candidate_scores: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Soft-follow a verifier-valid Stack closure after plan role coverage."""
+        self._semantic_plan_root_last_abstention = None
         weight = float(
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
         )
@@ -5852,7 +5883,17 @@ class TwoTowerModel(nn.Module):
                     else ()
                 )
                 validate(decode_choices(planned, slot_contract or ()))
-            except Exception:  # noqa: BLE001 - predicted plans fail closed
+            except Exception as exc:  # noqa: BLE001 - predicted plans fail closed
+                self._semantic_plan_root_last_abstention = {
+                    "reason": "verifier_rejected",
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:160],
+                    "planned_token_count": len(planned),
+                    "section_count": len(section_types),
+                    "reference_count": sum(
+                        str(token).startswith("&") for token in planned
+                    ),
+                }
                 return None
         if target_id is None or target_id not in candidate_ids:
             return None
@@ -7564,6 +7605,13 @@ class TwoTowerModel(nn.Module):
                                     scores_after=scores,
                                 )
                             )
+                    elif stats is not None:
+                        self._record_semantic_plan_root_abstention(
+                            stats,
+                            row=row,
+                            position=position,
+                            state=states[row],
+                        )
                     repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
                         row,
                         states[row],

@@ -1955,6 +1955,36 @@ def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
     assert bias.tolist() == [75.0, 0.0, 0.0]
 
 
+def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(output_tokenizer="choice")
+    stats = DecodeStats()
+    state = SimpleNamespace(mode="structural", frames=[], section_types=[])
+    model._semantic_plan_root_last_abstention = {
+        "reason": "verifier_rejected",
+        "error_type": "ValueError",
+        "error": "unreachable section",
+        "planned_token_count": 20,
+        "section_count": 5,
+        "reference_count": 4,
+    }
+
+    model._record_semantic_plan_root_abstention(
+        stats, row=0, position=35, state=state
+    )
+    model._record_semantic_plan_root_abstention(
+        stats, row=0, position=36, state=state
+    )
+
+    assert len(stats.constrained_selection_traces) == 1
+    assert stats.constrained_selection_traces[0]["evidence"] == (
+        model._semantic_plan_root_last_abstention
+    )
+
+
 def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
     from types import SimpleNamespace
 
