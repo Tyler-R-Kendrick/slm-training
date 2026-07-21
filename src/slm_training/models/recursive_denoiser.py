@@ -50,6 +50,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         n_kinds: int = 0,
         recursive_steps: int = 1,
         recursive_transition_layers: int | None = None,
+        tie_output_embedding: bool = True,
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -96,7 +97,11 @@ class SharedRecursiveDenoiserTower(nn.Module):
 
         self.norm = RMSNorm(d_model)
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
-        self.lm_head.weight = self.tok.weight
+        self.tie_output_embedding = bool(tie_output_embedding)
+        if self.tie_output_embedding:
+            self.lm_head.weight = self.tok.weight
+        else:
+            self.lm_head.weight.data.copy_(self.tok.weight.data)
 
         # z-state path: learned latent + projected pooled context + position.
         self.z_latent = nn.Parameter(torch.zeros(max_len, d_model))

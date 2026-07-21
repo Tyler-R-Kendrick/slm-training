@@ -1512,7 +1512,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v75",
+      "version": "v76",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1527,6 +1527,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v76",
+          "date": "2026-07-21",
+          "note": "SLM-211: add tie_output_embedding control, deduplicate tied parameters in trainable_parameters/optimizer_parameter_groups, and explicit checkpoint tie migration"
+        },
         {
           "version": "v75",
           "date": "2026-07-20",
@@ -1915,7 +1920,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -1925,6 +1930,11 @@
         "docs/design/iter-slm138-recursive-denoiser-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "SLM-211: add tie_output_embedding control to SharedRecursiveDenoiserTower"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -3331,7 +3341,7 @@
       ]
     },
     "harness.experiments.slm214_spectral_snapshot": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py",
@@ -3344,9 +3354,34 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "SLM-211: record tie_output_embedding in SpectralSnapshotV1"
+        },
+        {
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-214 NCS0-01 SpectralSnapshotV1 native-PyTorch spectral backend, role registry, tied-storage detection, and randomized-ESD null calibration"
+        }
+      ]
+    },
+    "harness.experiments.slm211_untied_output_head": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm211_untied_output_head.py",
+        "src/slm_training/models/blocks.py",
+        "src/slm_training/models/hf_denoiser.py",
+        "src/slm_training/runtime/cactus/__init__.py",
+        "tests/test_models/test_tie_output_embedding.py",
+        "docs/design/iter-slm211-untied-output-head-20260721.json",
+        "docs/design/iter-slm211-untied-output-head-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-211 SDE5-04 default-on output-head tying control, copy-init untied arm, explicit checkpoint migration, optimizer deduplication, and spectral/Cactus metadata"
         }
       ]
     },

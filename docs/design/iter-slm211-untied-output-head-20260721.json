@@ -1,0 +1,33 @@
+{
+  "claim_class": "wiring",
+  "copy_init_logits_match": true,
+  "experiment_id": "slm211-untied-output-head",
+  "falsifier": "Untied copy-init does not match tied initial logits, or optimizer groups contain duplicate tied storage, or spectral tooling cannot tell the modes apart.",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no trained model, rare-action campaign, or GPU run.",
+    "The H0-H3 matched experiment (capacity/exposure-matched rare-action debt/recall) is a follow-up requiring local E224+ checkpoints and the rare/focal weighting owner."
+  ],
+  "hypothesis": "At matched starting function, an untied output head uses distinct storage and receives unambiguous optimizer updates, while a tied head shares storage exactly as before.",
+  "matrix_set": "slm211_untied_output_head",
+  "matrix_version": "sde5-04-v1",
+  "n_optimizer_group_params": 48642,
+  "n_trainable_parameters": 48642,
+  "optimizer_groups_unique": true,
+  "run_id": "slm211-untied-output-head-20260721",
+  "schema": "UntiedOutputHeadReportV1",
+  "spectral_tie_recorded": true,
+  "status": "fixture",
+  "tie_output_embedding": false,
+  "tied_storage": false,
+  "timestamp": "2026-07-21T03:11:54.334446Z",
+  "version_stamp": {
+    "code_commit": "83d12c301de4d96eef7129340359940637b647af",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v55",
+      "harness.experiments.slm211_untied_output_head": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T03:11:54.334439+00:00"
+  }
+}

@@ -41,6 +41,7 @@ class HFDenoiserTower(nn.Module):
         local_files_only: bool = False,
         kind_ids: list[int] | None = None,
         n_kinds: int = 0,
+        tie_output_embedding: bool = True,
     ) -> None:
         super().__init__()
         try:
@@ -76,7 +77,11 @@ class HFDenoiserTower(nn.Module):
         self.lm_head = nn.Linear(hidden, vocab_size, bias=False)
         self.max_len = max_len
         self._runtime_symbol_features: torch.Tensor | None = None
-        self.lm_head.weight = self.tok.weight
+        self.tie_output_embedding = bool(tie_output_embedding)
+        if self.tie_output_embedding:
+            self.lm_head.weight = self.tok.weight
+        else:
+            self.lm_head.weight.data.copy_(self.tok.weight.data)
 
     @property
     def layers(self) -> nn.ModuleList:

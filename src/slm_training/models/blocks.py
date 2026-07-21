@@ -201,6 +201,7 @@ class DenoiserTower(nn.Module):
         *,
         kind_ids: list[int] | None = None,
         n_kinds: int = 0,
+        tie_output_embedding: bool = True,
     ) -> None:
         super().__init__()
         self.tok = nn.Embedding(vocab_size, d_model)
@@ -232,8 +233,14 @@ class DenoiserTower(nn.Module):
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.max_len = max_len
         self._runtime_symbol_features: torch.Tensor | None = None
-        # Tie embeddings
-        self.lm_head.weight = self.tok.weight
+        self.tie_output_embedding = bool(tie_output_embedding)
+        if self.tie_output_embedding:
+            # Tie embeddings: shared storage and gradients.
+            self.lm_head.weight = self.tok.weight
+        else:
+            # Untied output head: keep the same initial function by copying the
+            # token embedding matrix, but allow independent updates afterwards.
+            self.lm_head.weight.data.copy_(self.tok.weight.data)
 
     def set_runtime_symbol_features(self, features: torch.Tensor | None) -> None:
         """Attach request-local vocabulary-row deltas (not checkpoint state)."""

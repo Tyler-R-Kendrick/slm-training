@@ -63,9 +63,38 @@ def test_hf_denoiser_is_bidirectional_and_interface_complete() -> None:
         torch.testing.assert_close(full.index_select(-1, candidates), gathered)
     # Attributes the TwoTower integration reads.
     assert tower.lm_head.weight is tower.tok.weight
+    assert getattr(tower, "tie_output_embedding", True) is True
     assert tower.max_len == 32
     assert len(tower.layers) > 0
     tower.set_runtime_symbol_features(None)
+
+
+def test_hf_denoiser_untied_output_head() -> None:
+    _require_tiny_llama()
+    import torch
+
+    from slm_training.models.hf_denoiser import HFDenoiserTower
+
+    torch.manual_seed(0)
+    vocab, d_model, tgt, ctx_len = 23, 16, 6, 3
+    tower = HFDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        max_len=32,
+        hf_model_name=TINY_LLAMA,
+        tie_output_embedding=False,
+    )
+    assert tower.tie_output_embedding is False
+    assert tower.lm_head.weight is not tower.tok.weight
+    torch.testing.assert_close(tower.lm_head.weight, tower.tok.weight)
+
+    tower.eval()
+    noisy = torch.randint(1, vocab, (2, tgt))
+    ctx = torch.randn(2, ctx_len, d_model)
+    with torch.no_grad():
+        logits = tower(noisy, ctx, pad_id=0)
+    assert logits.shape == (2, tgt, vocab)
+    assert torch.isfinite(logits).all()
 
 
 def test_twotower_hf_denoiser_trains_and_roundtrips(tmp_path: Path) -> None:

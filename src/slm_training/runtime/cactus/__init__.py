@@ -92,12 +92,25 @@ def export_checkpoint_bundle(
             "reference": "https://brianbell-x.github.io/weight-compression/",
         }
 
+    model_tie_output_embedding = None
+    meta_path = checkpoint.with_suffix(".meta.json")
+    if meta_path.exists():
+        try:
+            model_tie_output_embedding = bool(
+                json.loads(meta_path.read_text(encoding="utf-8"))
+                .get("config", {})
+                .get("tie_output_embedding", True)
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
     manifest = {
         "format": "slm-training-cactus-bundle-v0",
         "checkpoint": str(target.name),
         "tokenizer": "tokenizer.json" if tok.exists() else None,
         "cactus_available": cactus_runtime_available(),
         "kernel_separate": True,
+        "tie_output_embedding": model_tie_output_embedding,
         "weight_compression": compression_meta,
         "meta": meta or {},
         "transpile_hint": (
