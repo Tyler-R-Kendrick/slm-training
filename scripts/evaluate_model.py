@@ -11,6 +11,12 @@ from slm_training.evals.eval_cache import EvalCache, EvalCacheConfig, EvalCacheM
 from slm_training.evals.record_schema import RUN_CLASSES
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.experiment_flags import (
+    apply_levers_from_environ,
+    apply_levers_from_mapping,
+    assignments_payload,
+    cli_lever_overrides,
+)
 from slm_training.harnesses.model_build.eval_policy import (
     EVALUATION_POLICIES,
     STRICT_COMPILER_TREE_POLICY_ID,
@@ -396,6 +402,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="VSS1-03: prune the compiler forest via certified exact closure before ranking",
     )
+    parser.add_argument(
+        "--flags-json",
+        default=None,
+        help=(
+            "OpenFeature research-lever ruleset as a JSON object. Explicit CLI "
+            "lever options take precedence; also honors OPENUI_FLAGS_JSON/PATH."
+        ),
+    )
     parser.add_argument("--solver-max-nodes", type=int, default=512)
     parser.add_argument(
         "--solver-unknown-policy", choices=("keep_and_rank",), default="keep_and_rank"
@@ -777,6 +791,18 @@ def main(argv: list[str] | None = None) -> int:
         constraint_debt_routing_calibrator_path=args.constraint_debt_routing_calibrator_path,
     )
 
+    # Research flags are deliberately separate from product rollout flags. Their
+    # precedence is explicit CLI options > ruleset/provider > config defaults.
+    lever_overrides = cli_lever_overrides(args, argv=argv)
+    if args.flags_json:
+        config, flag_assignments = apply_levers_from_mapping(
+            config, json.loads(args.flags_json), overrides=lever_overrides
+        )
+    else:
+        config, flag_assignments = apply_levers_from_environ(
+            config, overrides=lever_overrides
+        )
+
     if args.check_decode_feasibility and config.test_dir is not None:
         from slm_training.harnesses.model_build.decode_feasibility import (
             evaluate_decode_feasibility,
@@ -813,6 +839,8 @@ def main(argv: list[str] | None = None) -> int:
                 write_gates=args.ship_gates,
                 cache=cache,
             )
+        if flag_assignments:
+            scoreboard["research_flags"] = assignments_payload(flag_assignments)
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.ship_gates:
             gates = scoreboard.get("gates") or write_ship_gates(
@@ -836,6 +864,8 @@ def main(argv: list[str] | None = None) -> int:
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
         metrics = evaluate(config, checkpoint=args.checkpoint, cache=cache)
     summary = {k: v for k, v in metrics.items() if k != "details"}
+    if flag_assignments:
+        summary["research_flags"] = assignments_payload(flag_assignments)
     print(json.dumps(summary, indent=2))
     return _check_fail_unders(metrics, args)
 

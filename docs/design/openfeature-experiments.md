@@ -22,6 +22,11 @@ covers the research-experiment side — representing typed autoresearch
 `ExperimentSpec` knobs as standard flag artifacts (flagd export + in-process
 provider) for interoperability, with no runtime rollout semantics.
 
+The separate [`openfeature-research-levers.md`](openfeature-research-levers.md)
+contract overlays explicitly selected `ModelBuildConfig` evaluation levers. It
+uses the same standard but remains isolated from product rollout flags and
+cannot weaken ship-gate policy.
+
 ## Terminology (avoid collisions)
 
 | Term in repo | Meaning | OpenFeature? |
