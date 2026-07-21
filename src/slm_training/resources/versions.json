@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v32",
+      "version": "v33",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v33",
+          "date": "2026-07-21",
+          "note": "expose and persist the default-off schema-identifier decode weight (penalizes visible placeholders in non-content string identifiers such as Input.name)"
+        },
         {
           "version": "v32",
           "date": "2026-07-20",
@@ -1442,7 +1447,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v65",
+      "version": "v66",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1457,6 +1462,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v66",
+          "date": "2026-07-21",
+          "note": "E632: add a default-off schema_identifier_decode_weight bias that discourages visible placeholders in required, non-enum, non-content string identifiers (e.g. Input.name); rejected as a decode-time treatment on the E632 scratch800 checkpoint (destabilizes the Auth repeated-array closure once active)"
+        },
         {
           "version": "v65",
           "date": "2026-07-20",

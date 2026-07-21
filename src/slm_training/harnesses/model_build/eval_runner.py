@@ -392,6 +392,9 @@ def _effective_evaluation_policy(
         "schema_role_slot_decode_weight": float(
             value("schema_role_slot_decode_weight") or 0.0
         ),
+        "schema_identifier_decode_weight": float(
+            value("schema_identifier_decode_weight") or 0.0
+        ),
         "semantic_plan_decode_weight": float(
             value("semantic_plan_decode_weight") or 0.0
         ),

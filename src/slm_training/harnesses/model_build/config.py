@@ -275,6 +275,7 @@ class ModelBuildConfig:
     schema_opaque_decode_weight: float | None = None
     schema_opaque_close_decode_weight: float | None = None
     schema_role_slot_decode_weight: float | None = None
+    schema_identifier_decode_weight: float | None = None
     semantic_plan_decode_weight: float | None = None
     semantic_plan_margin_decode_weight: float | None = None
     semantic_plan_seed_decode_weight: float | None = None

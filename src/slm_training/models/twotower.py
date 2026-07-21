@@ -255,6 +255,10 @@ class TwoTowerConfig:
     schema_opaque_decode_weight: float = 0.0
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
+    # E632: discourage visible placeholders in required, non-content, non-enum
+    # string args (e.g. Input.name) so control identifiers stay literal and
+    # content slots land only in x-openui-placeholder-tagged properties.
+    schema_identifier_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
     semantic_plan_margin_decode_weight: float = 0.0
     semantic_plan_seed_decode_weight: float = 0.0
@@ -4726,6 +4730,58 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _schema_identifier_bias(
+        self,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Discourage visible placeholders in non-content string identifiers.
+
+        E632: ``schema_value_bias``/``schema_opaque_bias`` cover enum-valued and
+        optional-empty-schema args, but leave a gap at required, non-enum plain
+        string args that are not tagged ``x-openui-placeholder`` (e.g. the
+        control-identifier property ``Input.name``, whose gold value is a
+        literal like ``"text"``/``"email"``, never a visible-role placeholder).
+        Without this, the same visible slot value can land in both the
+        identifier property and the real content property of a sibling
+        component, and the evaluator flags the identifier occurrence as a
+        semantic-role mismatch.
+        """
+        weight = float(
+            getattr(self.config, "schema_identifier_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not frames:
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        if (
+            getattr(frame, "kind", None) != "component"
+            or index < 0
+            or index >= len(schemas)
+        ):
+            return None
+        schema = schemas[index]
+        if (
+            not schema
+            or schema.get("x-openui-placeholder")
+            or str(schema.get("type", "")) != "string"
+            or self._schema_contains_enum(schema)
+        ):
+            return None
+        from slm_training.dsl.production_codec import SLOT_PREFIX
+
+        bias = scores.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if token.startswith(SLOT_PREFIX):
+                bias[position] = -weight
+                applied = True
+        return bias if applied else None
+
     def _semantic_plan_inline_bias(
         self,
         row: int,
@@ -7178,6 +7234,11 @@ class TwoTowerModel(nn.Module):
                     )
                     if schema_value_bias is not None:
                         scores = scores + schema_value_bias
+                    schema_identifier_bias = self._schema_identifier_bias(
+                        states[row], candidate_ids, scores
+                    )
+                    if schema_identifier_bias is not None:
+                        scores = scores + schema_identifier_bias
                     schema_enum_close_bias = self._schema_enum_close_bias(
                         states[row], candidate_ids, scores
                     )

@@ -242,6 +242,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Prefer visible slots compatible with the active content property owner.",
     )
     parser.add_argument(
+        "--schema-identifier-decode-weight",
+        type=float,
+        default=None,
+        help=(
+            "Penalize visible placeholders in required, non-content, non-enum "
+            "string identifiers (e.g. Input.name)."
+        ),
+    )
+    parser.add_argument(
         "--semantic-plan-decode-weight",
         type=float,
         default=None,
@@ -623,6 +632,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
         schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
+        schema_identifier_decode_weight=args.schema_identifier_decode_weight,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         semantic_plan_margin_decode_weight=(
             args.semantic_plan_margin_decode_weight

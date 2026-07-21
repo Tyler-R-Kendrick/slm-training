@@ -1051,6 +1051,29 @@ def test_schema_opaque_close_bias_rewards_only_optional_empty_schema_close() -> 
     assert bias.tolist() == [0.0, 4.0]
 
 
+def test_schema_identifier_bias_penalizes_slots_only_for_non_content_identifiers() -> None:
+    """E632: Input.name (plain string, non-enum, non-content) is penalized;
+
+    Input.placeholder (content-tagged) is not, once the "name" arg closes.
+    """
+    from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_identifier_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
+    slot_id = tokenizer.sym_id(0)
+    scores = torch.zeros(1)
+
+    bias = model._schema_identifier_bias(state, (slot_id,), scores)
+    assert bias is not None
+    assert bias.tolist() == [-4.0]
+
+    assert state.advance_id(tokenizer.token_to_id[f'{LIT_PREFIX}"text"'])
+    assert model._schema_identifier_bias(state, (slot_id,), scores) is None
+
+
 def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
     from slm_training.dsl.production_codec import OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
