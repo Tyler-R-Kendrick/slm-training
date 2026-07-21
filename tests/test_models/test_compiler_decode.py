@@ -1919,18 +1919,6 @@ def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     assert end_bias.tolist() == [0.0, 0.0, 2.0]
 
 
-def test_semantic_root_references_all_completed_top_level_elements() -> None:
-    assert TwoTowerModel._semantic_root_reference_tokens(
-        (
-            "element:TextContent",
-            "element:Button",
-            "element:Callout",
-            "element:Card",
-            "element:Card",
-        )
-    ) == ["&0", "&1", "&2", "&3", "&4"]
-
-
 def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
     from types import SimpleNamespace
 

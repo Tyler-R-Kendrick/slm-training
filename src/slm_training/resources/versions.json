@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v92",
+      "version": "v93",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v93",
+          "date": "2026-07-20",
+          "note": "E646 rejection: restore v88 plan-counted root references after all-section reachability closure was prediction- and quality-neutral"
+        },
         {
           "version": "v92",
           "date": "2026-07-20",
