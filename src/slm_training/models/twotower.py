@@ -4767,7 +4767,40 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
-        """Keep visible slots out of opaque or pre-content arguments."""
+        """Discourage visible placeholders in optional unconstrained arguments."""
+        weight = float(getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0)
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not frames:
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        if (
+            getattr(frame, "kind", None) != "component"
+            or index < int(getattr(frame, "required_args", 0))
+            or index < 0
+            or index >= len(schemas)
+            or schemas[index]
+        ):
+            return None
+        from slm_training.dsl.production_codec import SLOT_PREFIX
+
+        bias = scores.new_zeros(len(candidate_ids))
+        applied = False
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if token.startswith(SLOT_PREFIX):
+                bias[position] = -weight
+                applied = True
+        return bias if applied else None
+
+    def _schema_precontent_literal_bias(
+        self,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Route a pre-content operational string to the legal empty literal."""
         weight = float(getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
@@ -4779,13 +4812,7 @@ class TwoTowerModel(nn.Module):
             0 <= index < len(schemas)
         ):
             return None
-        from slm_training.dsl.production_codec import LIT_PREFIX, SLOT_PREFIX
-
-        bias = scores.new_zeros(len(candidate_ids))
         schema = schemas[index]
-        optional_unconstrained = (
-            index >= int(getattr(frame, "required_args", 0)) and not schema
-        )
         followed_by_content = (
             schema.get("type") == "string"
             and not schema.get("x-openui-placeholder")
@@ -4793,29 +4820,26 @@ class TwoTowerModel(nn.Module):
             and index + 1 < len(schemas)
             and bool(schemas[index + 1].get("x-openui-placeholder"))
         )
-        if not (optional_unconstrained or followed_by_content):
+        if not followed_by_content:
             return None
+        from slm_training.dsl.production_codec import LIT_PREFIX, SLOT_PREFIX
+
         slot_positions = [
             position
             for position, token_id in enumerate(candidate_ids)
             if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(SLOT_PREFIX)
         ]
-        if followed_by_content:
-            literal_id = self.tokenizer.token_to_id.get(f"{LIT_PREFIX}\"\"")
-            if literal_id not in candidate_ids or not slot_positions:
-                return None
-            literal_position = candidate_ids.index(literal_id)
-            slot_max = max(float(scores[position].item()) for position in slot_positions)
-            bias[literal_position] = max(
-                0.0,
-                slot_max + weight - float(scores[literal_position].item()),
-            )
-            return bias
-        for position, token_id in enumerate(candidate_ids):
-            token = str(self.tokenizer.id_to_token.get(token_id, ""))
-            if token.startswith(SLOT_PREFIX):
-                bias[position] = -weight
-        return bias if slot_positions else None
+        literal_id = self.tokenizer.token_to_id.get(f"{LIT_PREFIX}\"\"")
+        if literal_id not in candidate_ids or not slot_positions:
+            return None
+        literal_position = candidate_ids.index(literal_id)
+        slot_max = max(float(scores[position].item()) for position in slot_positions)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[literal_position] = max(
+            0.0,
+            slot_max + weight - float(scores[literal_position].item()),
+        )
+        return bias
 
     def _schema_enum_close_bias(
         self,
@@ -7391,6 +7415,11 @@ class TwoTowerModel(nn.Module):
                     )
                     if repeated_slot_bias is not None:
                         scores = scores + repeated_slot_bias
+                    precontent_literal_bias = self._schema_precontent_literal_bias(
+                        states[row], candidate_ids, scores
+                    )
+                    if precontent_literal_bias is not None:
+                        scores = scores + precontent_literal_bias
                     root_arity_bias = self._root_reference_arity_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
