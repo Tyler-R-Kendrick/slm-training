@@ -32,7 +32,7 @@ an AgentV SDK bundle without execution errors.
 | component recall | 0.5000 | 0.3750 |
 | reward | 0.8175 | 0.7850 |
 | AST node / edge F1 | 0.4690 / 0.2625 | 0.3857 / 0.2625 |
-| latency p50 / p95 | 3067.47 / 6277.99 ms | 3449.90 / 14871.38 ms |
+| latency p50 / p95 | 3067.47 / 6277.99 ms | 3648.68 / 16022.08 ms |
 | closure applications / changes | 11 / 8 | 14 / 9 |
 | AgentV | 0/1 | 0/1 |
 
@@ -43,6 +43,10 @@ policy chose `Input` instead of closure for missing name/email. That nests the
 Input under the already-wrong Button owner, lengthens the intermediate decode,
 and destabilizes later binding/root selection. Selecting the right family at
 the wrong structural depth is worse than abstaining.
+
+Concurrent `main` advancement rewrote the treatment commit before publication.
+The authoritative clean detached replay at reachable v63 commit `b1e40592`
+produced byte-identical predictions and semantic metrics; only timing varied.
 
 ## Decision
 

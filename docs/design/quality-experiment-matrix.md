@@ -4270,7 +4270,7 @@ checkpoint occurred.
 | structure / component recall | 0.4029 / 0.5000 | 0.3379 / 0.3750 |
 | reward | 0.8175 | 0.7850 |
 | AST node / edge F1 | 0.4690 / 0.2625 | 0.3857 / 0.2625 |
-| latency p50 / p95 | 3067.47 / 6277.99 ms | 3449.90 / 14871.38 ms |
+| latency p50 / p95 | 3067.47 / 6277.99 ms | 3648.68 / 16022.08 ms |
 | closure applications / changes | 11 / 8 | 14 / 9 |
 | timeout / fallback | 0 / 0 | 0 / 0 |
 | AgentV | 0/1 | 0/1 |
