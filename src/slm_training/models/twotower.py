@@ -6001,7 +6001,7 @@ class TwoTowerModel(nn.Module):
         contracts: list[list[str] | None],
     ) -> torch.Tensor:
         """Replace completed dynamic enum literals without changing later choices."""
-        from slm_training.dsl.production_codec import LIT_PREFIX
+        from slm_training.dsl.production_codec import DIR_PREFIX, LIT_PREFIX
         from slm_training.models.choice_tokenizer import (
             LIT_END,
             LIT_NUM,
@@ -6022,7 +6022,9 @@ class TwoTowerModel(nn.Module):
                 token = str(tok.id_to_token.get(token_id, ""))
                 frames = list(getattr(state, "frames", ()))
                 replacement_id = None
-                if token in {LIT_STR, LIT_NUM} and frames:
+                dynamic_literal = token in {LIT_STR, LIT_NUM}
+                fixed_literal = token.startswith((DIR_PREFIX, LIT_PREFIX))
+                if (dynamic_literal or fixed_literal) and frames:
                     frame = frames[-1]
                     schemas = tuple(getattr(frame, "schemas", ()))
                     arg_index = int(getattr(frame, "arg_index", -1))
@@ -6030,20 +6032,32 @@ class TwoTowerModel(nn.Module):
                         getattr(frame, "kind", None) == "component"
                         and 0 <= arg_index < len(schemas)
                     ):
-                        for value in self._schema_enum_values(dict(schemas[arg_index])):
-                            replacement_id = tok.token_to_id.get(
-                                f"{LIT_PREFIX}{json.dumps(value)}"
+                        enum_ids = tuple(
+                            candidate
+                            for value in self._schema_enum_values(
+                                dict(schemas[arg_index])
                             )
-                            if replacement_id is not None:
-                                break
+                            if (
+                                candidate := tok.token_to_id.get(
+                                    f"{LIT_PREFIX}{json.dumps(value)}"
+                                )
+                            )
+                            is not None
+                        )
+                        if token_id not in enum_ids:
+                            replacement_id = next(iter(enum_ids), None)
                 if replacement_id is not None:
-                    end = position + 1
-                    while (
-                        end < len(row)
-                        and str(tok.id_to_token.get(int(row[end]), "")) != LIT_END
-                    ):
+                    end = position
+                    if dynamic_literal:
                         end += 1
-                    if end < len(row) and state.advance_id(replacement_id):
+                        while (
+                            end < len(row)
+                            and str(tok.id_to_token.get(int(row[end]), "")) != LIT_END
+                        ):
+                            end += 1
+                    if (not dynamic_literal or end < len(row)) and state.advance_id(
+                        replacement_id
+                    ):
                         output.append(int(replacement_id))
                         position = end + 1
                         continue

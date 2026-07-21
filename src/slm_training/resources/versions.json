@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v146",
+      "version": "v147",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v147",
+          "date": "2026-07-21",
+          "note": "E692: normalize invalid fixed enum literals after decode while preserving already-valid enum choices and later decisions"
+        },
         {
           "version": "v146",
           "date": "2026-07-21",
