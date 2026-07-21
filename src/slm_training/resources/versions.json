@@ -24,6 +24,11 @@
         {
           "version": "v32",
           "date": "2026-07-20",
+          "note": "no-bump: describe E633's model-side pre-content string routing in existing schema-opaque CLI help without changing evaluation plumbing"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-20",
           "note": "no-bump: restore the original schema-opaque CLI description when rejecting E632 without changing evaluation plumbing"
         },
         {
@@ -1462,7 +1467,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v67",
+      "version": "v68",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1477,6 +1482,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v68",
+          "date": "2026-07-20",
+          "note": "E633: when a required operational string is immediately followed by a visible-content property, floor the legal empty literal above visible slots at only that active property boundary"
+        },
         {
           "version": "v67",
           "date": "2026-07-20",
