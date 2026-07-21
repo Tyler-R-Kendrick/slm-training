@@ -5255,3 +5255,17 @@ and retain root margin 2. AgentV is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e705-root-margin-routing-20260721.md) and
 [JSON](iter-e705-root-margin-routing-20260721.json).
+
+## E706 bounded missing-slot carrier
+
+E706 combines schema-value weight 5 with a one-shot legal direct-carrier bind
+before verified root closure. The complete five-suite `n=19` replay changes zero
+tracked quality metrics versus E704 weight 5: Rico remains strict 0.0, fidelity
+0.8750, validity 0.9250, structure 0.7611, and reward 0.9625. The missing symbol
+was already consumed by the wrong enum-valued role, so root-level carrier routing
+never addresses the failure. Reject the change, restore v175 behavior as v177,
+and retain schema-value weight 4 plus root margin 2. AgentV is 0/5; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e706-bounded-slot-carrier-20260721.md) and
+[JSON](iter-e706-bounded-slot-carrier-20260721.json).

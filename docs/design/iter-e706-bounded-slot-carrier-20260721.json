@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "e706-bounded-slot-carrier-r1",
+  "experiment_id": "E706",
+  "date_utc": "2026-07-21",
+  "status": "completed_five_suite_negative_rejected_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "After schema-value weight 5 prevents the Rico enum-role misuse, binding at most one still-missing visible slot to a legal direct carrier before verified root closure will recover slot fidelity without duplicate component growth.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"treatment_run_id": "e706-bounded-slot-carrier-r1", "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"], "n": 19, "device": "cpu", "steps": 0, "context_backend": "scratch", "full_suites": true, "honest_slot_contract": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160, "max_wall_minutes": 3, "schema_value_decode_weight": 5.0, "semantic_plan_root_margin_decode_weight": 2.0, "bounded_missing_slot_carrier": true},
+  "suites": {
+    "smoke": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.8308333333333334, "component_type_recall": 0.75, "reward_score": 0.957, "ast_node_f1": 0.903030303030303, "ast_edge_f1": 0.48148148148148145, "latency_ms_p50": 1565.18, "latency_ms_p95": 5032.22, "decode_timeout_count": 0, "fallback_count": 0},
+    "held_out": {"n": 5, "binding_aware_meaningful_v2_rate_strict": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.81042, "component_type_recall": 0.8933333333333333, "reward_score": 0.9658, "ast_node_f1": 0.883095238095238, "ast_edge_f1": 0.7173626373626373, "latency_ms_p50": 2790.88, "latency_ms_p95": 4455.67, "decode_timeout_count": 0, "fallback_count": 0},
+    "adversarial": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.25, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.9, "structural_similarity": 0.62825, "component_type_recall": 1.0, "reward_score": 0.9035, "ast_node_f1": 0.7484848484848484, "ast_edge_f1": 0.4668803418803419, "latency_ms_p50": 3021.85, "latency_ms_p95": 5118.8, "decode_timeout_count": 0, "fallback_count": 0},
+    "ood": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.75, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7073, "component_type_recall": 0.875, "reward_score": 0.979, "ast_node_f1": 0.8055555555555556, "ast_edge_f1": 0.695054945054945, "latency_ms_p50": 2801.74, "latency_ms_p95": 3714.37, "decode_timeout_count": 0, "fallback_count": 0},
+    "rico_held": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 0.0, "placeholder_fidelity": 0.875, "placeholder_validity": 0.9250000000000002, "structural_similarity": 0.7611333333333334, "component_type_recall": 1.0, "reward_score": 0.9625, "ast_node_f1": 0.7942028985507247, "ast_edge_f1": 0.7757073844030365, "latency_ms_p50": 6665.67, "latency_ms_p95": 7051.42, "decode_timeout_count": 0, "fallback_count": 0}
+  },
+  "comparison_to_e704_weight5": {"quality_metrics_changed": 0, "rico_strict": [0.0, 0.0], "rico_fidelity": [0.875, 0.875], "rico_validity": [0.9250000000000002, 0.9250000000000002], "rico_structure": [0.7611333333333334, 0.7611333333333334], "rico_reward": [0.9625, 0.9625]},
+  "failure_analysis": "The bounded carrier does not activate on the relevant Rico path because the visible symbol has already been emitted into an enum-valued property. The remaining defect is semantic role correctness at value selection, not root-level symbol absence.",
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "mean_score": 0.5},
+  "length_budget": {"ok": false, "effective_budget": 160, "failures": ["rico_held:p95=190 exceeds effective_budget=160"]},
+  "decision": "Reject the bounded carrier change and restore v175 decoder behavior as v177. Retain schema-value weight 4 and semantic-plan root margin 2.",
+  "ship_gate_result": "failed",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "775c7727b62e5b0e78193181a8ea94fc26a1fbd2", "code_dirty": true, "components": {"harness.model_build.eval": "v36", "evals.meaningful_program": "2.9.0", "evals.scoring": "v13", "model.twotower": "v176"}, "stamped_at": "2026-07-21T18:17:40.298731+00:00"}
+}
