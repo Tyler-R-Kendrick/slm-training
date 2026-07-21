@@ -3715,6 +3715,25 @@
         }
       ]
     },
+    "harness.experiments.slm235_annotation_export_pairing_consistency": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm235_annotation_export_pairing_consistency.py",
+        "scripts/run_slm235_annotation_export_pairing_consistency.py",
+        "tests/test_harnesses/experiments/test_slm235_annotation_export_pairing_consistency.py",
+        "tests/test_scripts/test_run_slm235_annotation_export_pairing_consistency.py",
+        "docs/design/iter-slm235-aep0-01-annotation-export-pairing-consistency-20260721.json",
+        "docs/design/iter-slm235-aep0-01-annotation-export-pairing-consistency-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-235 AEP0-01 annotation export pairing-mechanism consistency probe: exercises the real FileAnnotationStore.persist / persist_annotation / maybe_append_preference_pair (live) and export_to_preference_pairs / write_pairs (batch) functions over synthetic multi-flip annotation sessions to test whether running the documented `slm annotations export` CLI against the shared default pairs path silently discards preference pairs the live FastAPI /api/annotate path had already durably persisted there"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
