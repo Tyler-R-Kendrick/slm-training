@@ -1020,7 +1020,9 @@ checkpoint is rejected.
 | 2026-07-19 | `e546-e544-strict-subset5-r2-24s` | `outputs/runs/e546-e544-strict-subset5-r2-24s/` (local) | 24 CPU HF-context steps / 1,318 target tokens in 30.50s from clean commit `4e66e46`; loss 26.4735; SHA `a1a6bfc94108a8bba9aac18e5570d70e317cdec5bb706f126bf47e67e2b4efe2` | Explicit no-sync matched scratch treatment; mixed fidelity/topology gain with severe recall regression, meaning 0.0 and AgentV 0/1; checkpoint not promoted |
 | 2026-07-19 | `e547-e544-strict-subset2-r1-24s` | `outputs/runs/e547-e544-strict-subset2-r1-24s/` (local) | 24 CPU HF-context steps / 1,304 target tokens in 36.48s from clean commit `bad2f230`; loss 12.4980; SHA `37002bfd3c63d1ac58f5fc505bf034805b57eee2415d9e15ec1acbb81620fc57` | Explicit no-sync scratch diagnostic; preferred exposure setting for topology, but fidelity and semantic gates fail; checkpoint not promoted |
 
-Append a row for every new or replaced checkpoint. Do not delete history.
+Add a row for every new or replaced checkpoint **at the top of the table**
+(newest first — the dashboard and readers select the newest row by the
+Date (UTC) column). Do not delete history.
 
 ---
 
