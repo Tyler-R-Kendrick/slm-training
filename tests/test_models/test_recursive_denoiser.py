@@ -779,35 +779,32 @@ def test_validate_nonempty_weights_on_unsupported_architecture_raises() -> None:
 def test_training_loss_fails_closed_on_stacked_denoiser() -> None:
     """Non-empty weights on a stacked (non-recursive) denoiser must raise
     before any loss/backward -- historical failure mode #6 (silently
-    ignored)."""
+    ignored). SLM-242 catches this at ``TwoTowerConfig`` construction time."""
     records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
-    model = TwoTowerModel.from_records(
-        records,
-        config=TwoTowerConfig(
-            d_model=32,
-            n_heads=2,
-            denoiser_layers=2,
-            denoiser_arch="stacked",
-            recursive_depth_supervision_weights=(1.0,),
-            grammar_constrained=False,
-            seed=0,
-        ),
-        device="cpu",
-    )
     with pytest.raises(ValueError, match="recursive_outputs"):
-        model.training_loss(records)
+        TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=2,
+                denoiser_layers=2,
+                denoiser_arch="stacked",
+                recursive_depth_supervision_weights=(1.0,),
+                grammar_constrained=False,
+                seed=0,
+            ),
+            device="cpu",
+        )
 
 
 def test_training_loss_fails_closed_on_all_zero_weights() -> None:
-    model, records = _recursive_model_for_weights((0.0, 0.0))
-    with pytest.raises(ValueError, match="all"):
-        model.training_loss(records)
+    with pytest.raises(ValueError, match="all.zero"):
+        _recursive_model_for_weights((0.0, 0.0))
 
 
 def test_training_loss_fails_closed_on_length_mismatch() -> None:
-    model, records = _recursive_model_for_weights((1.0,), recursive_steps=2)
     with pytest.raises(ValueError, match="length"):
-        model.training_loss(records)
+        _recursive_model_for_weights((1.0,), recursive_steps=2)
 
 
 def test_empty_tuple_valid_on_every_architecture_no_aux_term() -> None:

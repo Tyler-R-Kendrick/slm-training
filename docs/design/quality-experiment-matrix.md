@@ -5006,8 +5006,8 @@ E645 positively selected legal role-compatible components at completed root
 section boundaries. The policy-matched r2 changed selection traces but not final
 outputs: the verified semantic root discarded every unplanned sibling, so all
 quality metrics stayed exactly at E637. Reject the treatment stamped v78. After
-rebasing onto E638's production lineage at v80, the append-only lineage records
-E645 as treatment v81 and restoration v82. The next lever belongs in verifier-
+integrating the SLM-242 numeric-gate lineage at v81, the append-only lineage
+records E645 as treatment v82 and restoration v83. The next lever belongs in verifier-
 safe root reference selection. No checkpoint was created or synced; AgentV
 remained 0/1. The run was originally launched as E639 and renumbered after the
 rebase incorporated the independently landed E639–E644 sequence.

@@ -305,6 +305,21 @@ def main(argv: list[str] | None = None) -> int:
         help="SLM-138: comma-separated depth CE weights (empty = off).",
     )
     parser.add_argument(
+        "--recursive-depth-aux-mode",
+        choices=("off", "intermediate_only", "all_depths", "legacy_all_depths"),
+        default=None,
+        help=(
+            "SLM-238 (RSC-A02): final-depth semantics for recursive depth "
+            "supervision (None = resolve from --recursive-depth-supervision-weights)."
+        ),
+    )
+    parser.add_argument(
+        "--recursive-depth-aux-weight",
+        type=float,
+        default=1.0,
+        help="SLM-238 (RSC-A02): global coefficient scaling recursive-depth auxiliary loss.",
+    )
+    parser.add_argument(
         "--decode-min-content",
         type=int,
         default=0,
@@ -1100,6 +1115,8 @@ def main(argv: list[str] | None = None) -> int:
             for v in args.recursive_depth_supervision_weights.split(",")
             if v.strip()
         ),
+        recursive_depth_aux_mode=args.recursive_depth_aux_mode,
+        recursive_depth_aux_weight=args.recursive_depth_aux_weight,
         decode_min_content=max(-1, args.decode_min_content),
         asap_decode=bool(args.asap_decode),
         runtime_symbol_features=args.runtime_symbol_features,

@@ -43,8 +43,8 @@ discarded those extra sections.
 ## Decision
 
 Reject the treatment stamped model v78 and restore the baseline behavior. After
-rebasing onto the E638 production lineage at v80, the append-only lineage
-records E645 as treatment v81 and restoration v82. Sampling extra sibling
+integrating the SLM-242 numeric-gate lineage at v81, the append-only lineage
+records E645 as treatment v82 and restoration v83. Sampling extra sibling
 sections without adding verifier-safe root references is neutral complexity.
 The next lever should select supplemental, visible-slot-bearing section
 references during verified root construction. No checkpoint was created,

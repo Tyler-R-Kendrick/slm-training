@@ -39,6 +39,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "recursive_steps",
         "recursive_transition_layers",
         "recursive_depth_supervision_weights",
+        "recursive_depth_aux_mode",
+        "recursive_depth_aux_weight",
         "structural_bias",
         "grammar_ltr_repair",
         "grammar_ltr_max_tokens",
@@ -320,6 +322,8 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             config, "recursive_detach_between_steps", False
         ),
         recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
+        recursive_depth_aux_mode=config.recursive_depth_aux_mode,
+        recursive_depth_aux_weight=float(config.recursive_depth_aux_weight),
         tie_output_embedding=bool(config.tie_output_embedding),
         grammar_constrained=config.grammar_constrained,
         grammar_top_k=config.grammar_top_k,
