@@ -1457,7 +1457,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v69",
+      "version": "v70",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1472,6 +1472,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v70",
+          "date": "2026-07-20",
+          "note": "E633 r2 rejection: restore v68 repeated-slot behavior after property-level restriction collapsed Auth to TextContent and regressed every aggregate quality metric"
+        },
         {
           "version": "v69",
           "date": "2026-07-20",
