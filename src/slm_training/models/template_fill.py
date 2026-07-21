@@ -179,6 +179,7 @@ def prompt_semantic_plan(prompt: str):
         SemanticPlanV1,
     )
     from slm_training.data.quality import (
+        _official_component_names,
         _prompt_component_mentions,
         _prompt_component_requirements,
     )
@@ -195,6 +196,18 @@ def prompt_semantic_plan(prompt: str):
         )
     )
     normalized_prompt = re.sub(r"[^a-z0-9]+", " ", authored_prompt.lower())
+    official_components = _official_component_names()
+    for component in sorted(official_components):
+        if not component.endswith("Group"):
+            continue
+        base = component.removesuffix("Group")
+        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", base).lower()
+        if (
+            base not in official_components
+            and component not in components
+            and re.search(rf"\b{re.escape(phrase)}s?\b", normalized_prompt)
+        ):
+            components.append(component)
     if "Button" not in components and any(
         re.search(rf"\b{re.escape(hint)}\b", normalized_prompt)
         for hint in _BUTTON_HINTS

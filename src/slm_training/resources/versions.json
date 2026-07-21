@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v148",
+      "version": "v149",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v149",
+          "date": "2026-07-21",
+          "note": "E693: plan a public Group component from its unique base noun when no standalone base component exists"
+        },
         {
           "version": "v148",
           "date": "2026-07-21",

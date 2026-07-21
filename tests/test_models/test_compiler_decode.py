@@ -1727,6 +1727,18 @@ def test_prompt_semantic_plan_recognizes_one_plural_family_container() -> None:
     assert [slot.component_family for slot in plan.role_slots] == ["Tabs"]
 
 
+def test_prompt_semantic_plan_recognizes_public_group_from_unique_base() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Settings list with a switch and a slider.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Slider",
+        "SwitchGroup",
+    ]
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
