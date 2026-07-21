@@ -1382,7 +1382,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1397,6 +1397,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-07-20",
+          "note": "E630: _required_slot_margin_bias now gates on the active argument position's schema, mirroring _schema_role_slot_bias's own accepts_slot check (x-openui-placeholder-flagged on a component frame, or schema-can-reach-a-visible-slot on an object frame) -- fixes E629's traced rico_eval_test_25 frame_depth>=1 over-stuffing regression (one Button absorbing 5 missing slots across all 5 positional arguments, since the bias's old_max+margin floor always wins against schema_value_bias/schema_opaque_bias/schema_enum_close_bias/schema_opaque_close_bias regardless of margin size); default weight (0.0) and E617 contract-gating unchanged. Also found: this same fix reverts E626/E628's previously-reported ood_dashboard_01 margin=2 gain back to control (byte-identical), since that gain was mechanistically the identical over-stuffing behavior and partly an artifact of _is_meaningful_program's literal \"Card([])\" substring check missing an empty-children Card padded with non-content placeholder args; a widened n=19 resweep with the fix applied also surfaces a third, previously invisible regression (smoke_hero_01) -- net binary-gate effect at margin>=1 is now below control (12/19 vs 13/19), not flat. See docs/design iter-e630."
+        },
         {
           "version": "v61",
           "date": "2026-07-20",

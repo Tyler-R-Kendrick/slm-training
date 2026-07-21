@@ -473,10 +473,16 @@ def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
         is None
     )
 
-    # frame_depth == 1 (inside an open component frame): unchanged behavior,
-    # matching the no-state-passed case exactly.
+    # frame_depth == 1 (inside an open component frame) at a content-flagged
+    # argument position (E630's schema-position gate, see
+    # ``test_required_slot_margin_bias_excludes_non_content_schema_positions``
+    # below): unchanged behavior, matching the no-state-passed case exactly.
     inner_frame = SimpleNamespace(
-        kind="component", expr_type="element:Card", phase="args", arg_index=0
+        kind="component",
+        expr_type="element:Card",
+        phase="args",
+        arg_index=0,
+        schemas=({"x-openui-placeholder": True},),
     )
     inner_state = SimpleNamespace(frames=[inner_frame])
     bias = model._required_slot_margin_bias(
@@ -493,6 +499,130 @@ def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
         )
         is not None
     )
+
+
+def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> None:
+    """E630: root-causing rico_eval_test_25's frame_depth>=1 over-stuffing.
+
+    E629's widened-suite sweep found a second failure mode distinct from
+    E627/E628's frame_depth==0 root hijack: at margin>=1, one ``Button``
+    absorbed 5 still-missing required slots across all 5 of its positional
+    arguments (``label``, ``action``, ``variant``, ``type``, ``size``), not
+    just the content-flagged ``label``. A live trace (E630) confirmed the
+    mechanism directly: ``_required_slot_margin_bias``'s floor
+    (``old_max + margin``) is computed relative to the *current* best legal
+    score -- i.e. after ``_schema_value_bias``/``_schema_opaque_bias`` have
+    already discouraged a placeholder there and ``_schema_enum_close_bias``/
+    ``_schema_opaque_close_bias`` have already preferred closing instead --
+    so the floor wins against all four at *any* margin > 0, not only a large
+    one, because all four run earlier in the same per-position bias stack.
+    Gating the fire to exactly the positions ``_schema_role_slot_bias``
+    already treats as slot-eligible removes this: a ``component`` frame's
+    active argument must be ``x-openui-placeholder``-flagged (a content
+    property), and an ``object`` frame's active property schema must be able
+    to reach a visible slot at all.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # component frame, non-content (enum) argument position: no fire, even
+    # though slot1 is genuinely still missing and legal there -- matches
+    # Button.variant/type/size in the traced rico_eval_test_25 regression.
+    enum_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Button",
+        phase="args",
+        arg_index=1,
+        schemas=(
+            {"x-openui-placeholder": True},
+            {"type": "string", "enum": ["primary", "secondary"]},
+        ),
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[enum_frame]),
+        )
+        is None
+    )
+
+    # component frame, the content (label) argument position: fires exactly
+    # as before -- this lever still floors slots as content-property fills.
+    content_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Button",
+        phase="args",
+        arg_index=0,
+        schemas=(
+            {"x-openui-placeholder": True},
+            {"type": "string", "enum": ["primary", "secondary"]},
+        ),
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[content_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # object frame, a property whose schema cannot reach a visible slot
+    # (e.g. a plain boolean): no fire.
+    boolean_object_frame = SimpleNamespace(
+        kind="object", arg_index=0, schemas=({"type": "boolean"},)
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[boolean_object_frame]),
+        )
+        is None
+    )
+
+    # object frame, a property whose schema can reach a visible slot: fires.
+    reachable_object_frame = SimpleNamespace(
+        kind="object", arg_index=0, schemas=({"x-openui-placeholder": True},)
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[reachable_object_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # A frame kind this bias never previously scoped (e.g. "variadic" array
+    # items) stays permissive -- this fix only targets the newly-traced
+    # component/object argument-position failure mode.
+    variadic_frame = SimpleNamespace(kind="variadic", expr_type="array", arg_index=0)
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[variadic_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
 
 
 def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> None:

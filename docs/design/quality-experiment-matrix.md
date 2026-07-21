@@ -4468,3 +4468,91 @@ Evidence:
 [iter-e629-required-slot-margin-widened-suite-sweep-20260720.md](iter-e629-required-slot-margin-widened-suite-sweep-20260720.md)
 and
 [JSON](iter-e629-required-slot-margin-widened-suite-sweep-20260720.json).
+
+## E630 root-causing rico_eval_test_25's over-stuffing — fixed, but the fix reverts E626/E628's gain too
+
+E630 root-causes E629's deferred `rico_eval_test_25` regression the same
+way E627 root-caused the `frame_depth==0` hijack, reusing the same
+`constrained_selection_traces` instrumentation (already surfaced through
+`scripts.evaluate_model`'s per-suite eval JSON — no new plumbing needed) on
+E626's own checkpoint, verbatim, sha256-verified.
+
+**Mechanism.** At margin=1 on `rico_eval_test_25`, `required_slot_margin_
+applications_sum=9`; 6 are `hijacked_non_slot_candidate=true`, all landing
+on schema-constrained enum/opaque argument positions of an already-open
+component (`frame_depth` in `{1,3}`) — `Button.action/variant/type/size`,
+`TextContent.size`, `Card.variant` — never the root. `Button` absorbs its
+content property (`label`, correctly) *and* all four of its non-content
+properties with four unrelated required slots, exactly matching E629's
+description; the trailing `Card` in the decode ends up `Card([])`
+(genuinely empty — `empty_card` failure), because required_slot_margin's
+global "still missing anywhere" accounting spent every remaining slot on
+those earlier non-content positions. Structurally this is a *different*
+mechanism from E627/E628's: `_required_slot_margin_bias`'s floor
+(`old_max + margin`) is computed **after** `_schema_value_bias`/
+`_schema_opaque_bias`/`_schema_enum_close_bias`/`_schema_opaque_close_bias`
+already ran in the same per-position stack, so it wins against all four at
+**any margin > 0** (not only a large one) by construction — E627/E628 found
+a magnitude race against a *later* bias; this is a guaranteed win against
+*earlier* ones, bounded only by whether a position is schema-eligible at
+all. The grammar's own `_schema_accepts` legally allows a placeholder value
+at any string-typed argument regardless of enum/opaque-ness, so nothing
+upstream can out-argue it once it fires.
+
+**Fix.** `_required_slot_margin_bias` gains a schema-position gate
+(new `_required_slot_margin_position_accepts_slot`), reusing
+`_schema_role_slot_bias`'s own `accepts_slot` convention: a `component`
+frame's active argument must be `x-openui-placeholder`-flagged (content
+properties only); an `object` frame's active property must be able to
+reach a visible slot. Other frame kinds stay permissive. Default (`0.0`)
+and E617 gating unchanged. `model.twotower` v61 → v62. New/updated tests in
+`tests/test_models/test_compiler_decode.py`.
+
+**Re-verification finds a genuine fix — and a genuine cost.**
+`rico_eval_test_25` is fully fixed: byte-identical to control across
+margin `{0,1,2,3,4}`, `meaningful_program_v1_rate=1.0` in every arm (was
+`1.0/0.0/0.0/0.0/0.0`). But re-running E626/E628's own matched `n=4` OOD
+replay shows the *same* fix reverts `ood_dashboard_01`'s previously-reported
+gain **entirely** — margin=2/6 are now byte-identical to control (0.5 in
+all three, was 0.75 at margin 2/6). Why: the pre-fix "win" prediction
+(`Callout(":ood.dash.status.title", ":ood.dash.status.body",
+":ood.dash.m2.value")`, 3 different slots in 3 positional args;
+`Card([], ":ood.dash.m1.value", ":ood.dash.m1.value")`, empty children plus
+2 stuffed non-content args) was the *identical* over-stuffing mechanism,
+just landing somewhere that happened to help. Because decode is greedy,
+removing the bias's fire anywhere on this path collapses the whole
+trajectory back to control's. Separately: that padded-but-still-empty
+`Card([], ...)` never tripped `_is_meaningful_program`'s literal
+`"Card([])"` substring check (which requires an *exactly*-empty call), even
+though its children were just as empty as `rico_eval_test_25`'s rejected
+`Card([])` — part of the original Dashboard "gain" was itself a
+substring-matching artifact, not new content.
+
+A widened n=19 re-sweep (same union E629 used) confirms this is a net loss,
+not a wash: `meaningful_program_v1` pooled rate at margin∈{1,2} is now
+**0.6316 (12/19)**, *below* control's 0.6842 (13/19) — was flat-at-0.6842 in
+E629's pre-fix sweep. Continuous metrics also drop (reward 0.7149 vs 0.7889
+control; pre-fix these had *risen* to 0.9260). Exactly one record differs
+between margin=0 and margin=2 post-fix, and it is neither the fixed
+`rico_eval_test_25` nor the reverted `ood_dashboard_01` — it is
+`smoke_hero_01`, newly regressing (`True -> False`, `empty_root_stack`), a
+third failure mode invisible pre-fix only because the old over-stuffing
+behavior happened to steer its already-near-incoherent greedy decode away
+from an empty result.
+
+**Verdict:** the fix is real, principled, and kept (default stays `0.0`,
+no regression to the shipped model) — but the honest headline is that
+`required_slot_margin_decode_weight`'s apparent net benefit on this single
+small/noisy scratch checkpoint does not survive closing the over-stuffing
+gaming path that produced it. Not a confirmatory result in either
+direction; no checkpoint trained, promoted, or synced. Next: a genuinely
+powered multi-seed/retrained comparison is likely more informative than a
+fourth single-checkpoint trace; E620's coverage-aware component/property
+closure recommendation remains the next untried lever;
+`_is_meaningful_program`'s literal empty-component substring checks are
+flagged (not fixed here) as worth hardening to a structural check.
+
+Evidence:
+[iter-e630-required-slot-margin-schema-position-gate-20260720.md](iter-e630-required-slot-margin-schema-position-gate-20260720.md)
+and
+[JSON](iter-e630-required-slot-margin-schema-position-gate-20260720.json).

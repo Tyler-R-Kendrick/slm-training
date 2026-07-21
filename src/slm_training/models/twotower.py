@@ -5083,6 +5083,29 @@ class TwoTowerModel(nn.Module):
         unit tests that construct scores/candidates without a full decode
         state) so existing call sites that only exercise the missing-slot
         logic are unaffected.
+
+        E630: a widened-suite sweep (E629) found a second, distinct
+        ``frame_depth >= 1`` failure mode on ``rico_eval_test_25``: at any
+        margin > 0, one ``Button`` absorbed 5 still-missing required slots
+        across all 5 of its positional arguments (``label``, ``action``,
+        ``variant``, ``type``, ``size``), and a nested ``TextContent.size`` /
+        ``Card.variant`` showed the same pattern. This bias's floor
+        (``old_max + margin``) is constructed to always exceed whatever score
+        the *current* best legal candidate holds -- so it wins against
+        ``_schema_value_bias``'s enum discouragement, ``_schema_opaque_bias``'s
+        opaque discouragement, and ``_schema_enum_close_bias`` /
+        ``_schema_opaque_close_bias``'s closure preference at *any* margin > 0,
+        not only a large one, because all four run earlier in the same
+        per-position bias stack. The grammar's own ``_schema_accepts`` legally
+        allows a placeholder value at *any* string-typed argument regardless of
+        enum/opaque-ness, so nothing upstream of this bias can out-argue it
+        once it fires. Gating the fire to exactly the positions
+        ``_schema_role_slot_bias`` already treats as slot-eligible (the
+        ``x-openui-placeholder``-flagged content property on a ``component``
+        frame, or a schema that can reach a visible slot on an ``object``
+        frame) confines the floor to the argument positions it was designed
+        for and leaves optional enum/opaque properties to the biases already
+        built to police them.
         """
         margin = float(
             getattr(self.config, "required_slot_margin_decode_weight", 0.0) or 0.0
@@ -5090,6 +5113,10 @@ class TwoTowerModel(nn.Module):
         if margin <= 0.0 or not slot_contract:
             return None
         if state is not None and len(getattr(state, "frames", ())) == 0:
+            return None
+        if state is not None and not self._required_slot_margin_position_accepts_slot(
+            state
+        ):
             return None
         sym_slots = int(getattr(self.tokenizer, "sym_slots", 0) or 0)
         if sym_slots <= 0:
@@ -5118,6 +5145,34 @@ class TwoTowerModel(nn.Module):
             float(scores.max().item()) + margin - float(scores[target].item()),
         )
         return bias
+
+    @staticmethod
+    def _required_slot_margin_position_accepts_slot(state: Any) -> bool:
+        """Whether the active argument position is schema-tagged for a slot.
+
+        E630: mirrors ``_schema_role_slot_bias``'s own ``accepts_slot`` gate
+        exactly -- a ``component`` frame's current argument must carry
+        ``x-openui-placeholder`` (the content properties: ``label``, ``text``,
+        ``title``, ...), and an ``object`` frame's current property schema
+        must be able to reach a visible slot at all. Any other frame kind
+        (``variadic``, ``fixed``, ...) is left permissive (``True``) since
+        this bias's only observed failure mode is stuffing missing slots into
+        optional enum/opaque *component*/*object* properties, not array items.
+        """
+        frames = list(getattr(state, "frames", ()))
+        if not frames:
+            return True
+        frame = frames[-1]
+        kind = getattr(frame, "kind", None)
+        if kind not in {"component", "object"}:
+            return True
+        schemas = tuple(getattr(frame, "schemas", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        if not (0 <= index < len(schemas)):
+            return False
+        if kind == "component":
+            return bool(schemas[index].get("x-openui-placeholder"))
+        return TwoTowerModel._schema_can_reach_visible_slot(dict(schemas[index]))
 
     def _semantic_plan_repeated_owner_id(
         self,
