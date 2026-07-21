@@ -253,7 +253,15 @@ def _binder_scope(
     tokenizer: Any, prefix_ids: list[int]
 ) -> tuple[list[int], list[int], int | None]:
     """Return declarations, references, and the active declaration slot."""
-    bind_ids = set(tokenizer.kind_ids("bind"))
+    try:
+        bind_ids = set(tokenizer.kind_ids("bind"))
+    except AttributeError:
+        # Tokenizers without kind-classification (e.g. the plain
+        # OpenUITokenizer, as opposed to the lexer-native DSLTokenizer /
+        # ChoiceTokenizer) carry no binder-kind token space, so there is
+        # nothing to scope — same "no gate" convention already used by
+        # emitted_component_count() below.
+        return [], [], None
     equal_id = int(tokenizer.token_to_id["="])
     newline_id = tokenizer.token_to_id.get("NL")
     declarations: list[int] = []

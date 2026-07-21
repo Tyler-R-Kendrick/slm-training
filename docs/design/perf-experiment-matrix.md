@@ -386,3 +386,13 @@ session's scope; `perf-matrix-results.json`'s existing C0-C4 evidence
 Full evidence:
 [E648](iter-e648-perf-c5-c8-execution-20260721.md) and
 [JSON](iter-e648-perf-c5-c8-execution-20260721.json).
+
+**Correction (E649):** the crash is not warmup-specific — re-running the
+exact `--warmup 0` C1-C4 command above on current `compiler_draft.py` also
+crashes with the identical `AttributeError`, so the committed C1-C4
+evidence in `perf-matrix-results.json` is in fact **stale relative to
+current code**, not "unaffected." E649
+(`docs/design/quality-experiment-matrix.md`) root-causes and fixes the
+underlying unguarded `tokenizer.kind_ids("bind")` call in `_binder_scope`;
+refreshing `perf-matrix-results.json` itself remains a separate, undone
+task (see [E649](iter-e649-binder-scope-kind-ids-crash-fix-20260721.md)).
