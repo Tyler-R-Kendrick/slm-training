@@ -37,6 +37,17 @@ from slm_training.versioning import component_version
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
+def _annotate_decode_trace_records(
+    stats: object,
+    records: list[ExampleRecord],
+) -> None:
+    """Attach stable eval identities before per-call decode stats are aggregated."""
+    for trace in getattr(stats, "constrained_selection_traces", ()):
+        row = trace.get("row")
+        if isinstance(row, int) and 0 <= row < len(records):
+            trace["record_id"] = records[row].id
+
+
 @lru_cache(maxsize=1024)
 def _placeholders_of(source: str) -> frozenset[str]:
     """Placeholder set for a source; several per-record metrics share it."""
@@ -692,6 +703,7 @@ def evaluate(
                     )
                 except TypeError:
                     predictions = generate_batch_requests(requests)
+            _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             consume = getattr(plugin, "consume_generation_evidence", None)
             evidence = consume() if callable(consume) else []
@@ -703,6 +715,7 @@ def evaluate(
                 )
             except TypeError:
                 text, stats = generate_with_stats(chunk[0].prompt)
+            _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             return [text], []
         prompts = [r.prompt for r in chunk]
@@ -745,6 +758,7 @@ def evaluate(
         except TimeoutError as exc:
             stats = getattr(exc, "decode_stats", None)
             if stats is not None:
+                _annotate_decode_trace_records(stats, chunk)
                 decode_stats_rows.append(stats)
             decode_timeout_count += len(chunk)
             return ["" for _ in chunk], []

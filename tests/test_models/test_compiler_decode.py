@@ -1841,24 +1841,6 @@ def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() ->
     assert later_bias is None
 
 
-def test_selection_trace_budget_does_not_starve_later_batch_rows() -> None:
-    from slm_training.models.decode_stats import DecodeStats
-
-    stats = DecodeStats()
-    stats.constrained_selection_traces.extend({"row": 0} for _ in range(64))
-
-    assert TwoTowerModel._selection_trace_budget_available(stats, 3)
-
-    stats.constrained_selection_traces.extend({"row": 3} for _ in range(24))
-    assert not TwoTowerModel._selection_trace_budget_available(stats, 3)
-    assert TwoTowerModel._selection_trace_budget_available(stats, 4)
-
-    stats.constrained_selection_traces.extend(
-        {"row": 0} for _ in range(160 - len(stats.constrained_selection_traces))
-    )
-    assert not TwoTowerModel._selection_trace_budget_available(stats, 4)
-
-
 def test_prompt_semantic_plan_seed_trace_records_score_decomposition() -> None:
     from types import SimpleNamespace
 

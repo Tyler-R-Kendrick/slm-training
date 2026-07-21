@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -22,6 +22,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-07-21",
+          "note": "E687: attach stable evaluation record IDs to per-call constrained-selection traces before aggregation"
+        },
         {
           "version": "v34",
           "date": "2026-07-21",
@@ -1579,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v140",
+      "version": "v141",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1594,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v141",
+          "date": "2026-07-21",
+          "note": "E686 rejection: restore the original bounded per-call trace budget after model-local rows could not identify independently generated eval records"
+        },
         {
           "version": "v140",
           "date": "2026-07-21",
