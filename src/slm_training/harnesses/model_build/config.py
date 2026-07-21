@@ -423,6 +423,17 @@ class ModelBuildConfig:
     # LDI2-01: optional removable TwoTower low-rank adapter directory.
     adapter_spec: Path | None = None
     adapter_trainable: bool = True
+    # SLM-212 (SDE5-05): default-off constraint-debt routing over decode paths.
+    # All modes are default-off; routing only selects among existing MaskGIT /
+    # constrained LTR / ASAp decode paths and never changes legal membership.
+    constraint_debt_routing_mode: str = "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
+    constraint_debt_routing_signal: str = "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    constraint_debt_routing_threshold_high: float = 2.0
+    constraint_debt_routing_threshold_low: float | None = None
+    constraint_debt_routing_hysteresis: int = 1
+    constraint_debt_routing_fallback_policy: str = "fixed_maskgit"
+    constraint_debt_routing_budget_mode: str = "equal_verifier_budget"
+    constraint_debt_routing_calibrator_path: Path | None = None
 
     @property
     def run_dir(self) -> Path:

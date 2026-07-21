@@ -547,6 +547,54 @@ def main(argv: list[str] | None = None) -> int:
         default=1,
         help="SDE3-01: deterministic suite sharding (currently wiring-only flag).",
     )
+    parser.add_argument(
+        "--constraint-debt-routing-mode",
+        choices=("off", "fixed_maskgit", "fixed_ltr", "fixed_asap", "debt_router"),
+        default="off",
+        help="SLM-212: decode-path routing mode (default: off).",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-signal",
+        choices=("D_legal", "D_good_proxy", "legal_mass_deficit", "pre_post_mask_kl"),
+        default="D_legal",
+        help="SLM-212: online signal used by the debt router (default: D_legal).",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-threshold-high",
+        type=float,
+        default=2.0,
+        help="SLM-212: high-debt threshold that triggers the strict decode path.",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-threshold-low",
+        type=float,
+        default=None,
+        help="SLM-212: low-debt threshold that reverts to the cheap decode path (default: high).",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-hysteresis",
+        type=int,
+        default=1,
+        help="SLM-212: minimum consecutive steps before a route switch (default: 1).",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-fallback-policy",
+        choices=("fixed_maskgit", "fixed_ltr", "fixed_asap"),
+        default="fixed_maskgit",
+        help="SLM-212: fallback route when calibration is missing or mismatched.",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-budget-mode",
+        choices=("equal_verifier_budget", "equal_forward_budget", "equal_wall_budget"),
+        default="equal_verifier_budget",
+        help="SLM-212: budget-accounting mode for matched-matrix reporting.",
+    )
+    parser.add_argument(
+        "--constraint-debt-routing-calibrator-path",
+        type=Path,
+        default=None,
+        help="SLM-212: optional JSON calibrator artifact for threshold/calibration hash replay.",
+    )
 
     args = parser.parse_args(argv)
     from slm_training.data.store import DataStore
@@ -678,6 +726,14 @@ def main(argv: list[str] | None = None) -> int:
         eval_cache_mode=args.eval_cache_mode,
         eval_cache_root=args.eval_cache_root,
         eval_shards=args.eval_shards,
+        constraint_debt_routing_mode=args.constraint_debt_routing_mode,
+        constraint_debt_routing_signal=args.constraint_debt_routing_signal,
+        constraint_debt_routing_threshold_high=args.constraint_debt_routing_threshold_high,
+        constraint_debt_routing_threshold_low=args.constraint_debt_routing_threshold_low,
+        constraint_debt_routing_hysteresis=max(1, args.constraint_debt_routing_hysteresis),
+        constraint_debt_routing_fallback_policy=args.constraint_debt_routing_fallback_policy,
+        constraint_debt_routing_budget_mode=args.constraint_debt_routing_budget_mode,
+        constraint_debt_routing_calibrator_path=args.constraint_debt_routing_calibrator_path,
     )
 
     if args.check_decode_feasibility and config.test_dir is not None:
