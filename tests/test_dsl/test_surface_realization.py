@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
+from slm_training.data.contract import CallerContentBinding, GenerationRequest
 from slm_training.dsl.opaque_regions import (
     OpaqueRegionBinding,
     realize_opaque_regions,
@@ -20,9 +24,11 @@ from slm_training.dsl.surface import (
     canonicalize_input,
     realize_surface_and_verify,
     resolve_surface_slot_extractor,
+    resolve_verified_template_bindings,
 )
 
 HERO = 'root = Stack([title], "column")\ntitle = TextContent(":hero.title")'
+BOUND_HERO = 'root = Stack([title], "column")\ntitle = TextContent(":slot_0")'
 NO_OPAQUE = 'root = Stack([title], "column")\ntitle = Stack([], "row")'
 
 
@@ -227,6 +233,128 @@ def test_content_placeholder_routes_through_opaque_region_path() -> None:
     assert result.diagnostics["opaque_user_value_assignments"] == 1
 
 
+def test_literal_materialization_capability_probe_rejects_real_content() -> None:
+    pack = get_pack("openui")
+    result = realize_surface_and_verify(
+        HERO,
+        pack=pack,
+        opaque_bindings={
+            "openui:content::hero.title": _openui_binding(
+                "openui:content::hero.title", 'Welcome "back"\nToday'
+            )
+        },
+        semantic_ir_fingerprint="fp",
+        prior_status="solved",
+    )
+    assert result.status == "error"
+    assert result.source is None
+
+
+def test_verified_template_binding_envelope_is_safe_and_deterministic() -> None:
+    request = GenerationRequest(
+        prompt="hero",
+        slot_contract=(":hero.title",),
+    )
+    bindings = (CallerContentBinding("hero.title", 'Welcome "back"\\\nToday ☃'),)
+    pack = get_pack("openui")
+    first = resolve_verified_template_bindings(BOUND_HERO, request, bindings, pack=pack)
+    second = resolve_verified_template_bindings(BOUND_HERO, request, bindings, pack=pack)
+
+    assert first == second
+    assert json.dumps(first.to_dict(), sort_keys=True, ensure_ascii=False).encode() == json.dumps(
+        second.to_dict(), sort_keys=True, ensure_ascii=False
+    ).encode()
+    assert first.status == "resolved"
+    assert first.template_verification == "pack_verified"
+    assert first.materialized_source is None
+    assert first.realization_mode == "template_plus_bindings"
+    assert len(first.template_fingerprint or "") == 64
+    assert len(first.fingerprint) == 64
+    assert first.bindings[0].internal_slot == 0
+    assert first.bindings[0].value == bindings[0].value
+    assert first.bindings[0].value_bytes == len(bindings[0].value.encode("utf-8"))
+    assert bindings[0].value not in str(first.evidence_dict())
+
+
+@pytest.mark.parametrize("value", ["", 'quote " slash \\ / newline\nUnicode ☃'])
+def test_verified_template_binding_transports_content_without_source_injection(
+    value: str,
+) -> None:
+    result = resolve_verified_template_bindings(
+        BOUND_HERO,
+        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        (CallerContentBinding("hero.title", value),),
+        pack=get_pack("openui"),
+    )
+    assert result.status == "resolved"
+    assert result.bindings[0].value == value
+    assert result.materialized_source is None
+
+
+@pytest.mark.parametrize(
+    ("bindings", "message"),
+    [
+        ((), "missing required"),
+        ((CallerContentBinding("other.title", "x"),), "unknown binding"),
+        (
+            (
+                CallerContentBinding("hero.title", "a"),
+                CallerContentBinding("hero.title", "b"),
+            ),
+            "duplicate binding",
+        ),
+    ],
+)
+def test_verified_template_binding_validation_fails_closed(
+    bindings: tuple[CallerContentBinding, ...], message: str
+) -> None:
+    result = resolve_verified_template_bindings(
+        BOUND_HERO,
+        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        bindings,
+        pack=get_pack("openui"),
+    )
+    assert result.status == "error"
+    assert any(message in error for error in result.errors)
+
+
+def test_verified_template_binding_rejects_alias_and_invalid_template() -> None:
+    with pytest.raises(ValueError, match="unprefixed"):
+        CallerContentBinding(":hero.title", "x")
+    result = resolve_verified_template_bindings(
+        "root = Broken(",
+        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        (CallerContentBinding("hero.title", "x"),),
+        pack=get_pack("openui"),
+    )
+    assert result.status == "error"
+    assert result.template_verification == "canonicalization_failed"
+    external_name_result = resolve_verified_template_bindings(
+        HERO,
+        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        (CallerContentBinding("hero.title", "x"),),
+        pack=get_pack("openui"),
+    )
+    assert external_name_result.status == "error"
+    assert any("undeclared model slot" in error for error in external_name_result.errors)
+
+
+def test_verified_template_repeated_binding_covers_every_occurrence() -> None:
+    repeated = (
+        'root = Stack([title, subtitle], "column")\n'
+        'title = TextContent(":hero.title")\n'
+        'subtitle = TextContent(":hero.title")'
+    )
+    result = resolve_verified_template_bindings(
+        repeated.replace(":hero.title", ":slot_0"),
+        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        (CallerContentBinding("hero.title", "same value"),),
+        pack=get_pack("openui"),
+    )
+    assert result.status == "resolved"
+    assert result.bindings[0].occurrence_count == 2
+
+
 def test_missing_required_opaque_value_fails_closed() -> None:
     pack = get_pack("openui")
     result = realize_surface_and_verify(
@@ -311,6 +439,34 @@ def test_failed_verifier_returns_no_certified_result() -> None:
     )
     assert result.status in {"error", "rejected"}
     assert result.source is None
+
+
+def test_typed_oracle_failure_is_not_mislabeled_solved() -> None:
+    base_pack = get_pack("openui")
+    rejected_report = SimpleNamespace(failing_gate="policy", ok=False)
+    pack = SimpleNamespace(
+        pack_id="openui",
+        canonicalize=lambda source: source,
+        oracle=lambda _source: rejected_report,
+        opaque_region_extractor=base_pack.opaque_region_extractor,
+    )
+    surface_result = realize_surface_and_verify(
+        NO_OPAQUE,
+        pack=pack,
+        semantic_ir_fingerprint="fp",
+        prior_status="verified",
+    )
+    opaque_result = realize_opaque_regions(
+        HERO,
+        {
+            "openui:content::hero.title": _openui_binding(
+                "openui:content::hero.title", ":user.title"
+            )
+        },
+        pack=pack,
+    )
+    assert surface_result.status == "rejected"
+    assert opaque_result.status == "rejected"
 
 
 # ---------------------------------------------------------------------------

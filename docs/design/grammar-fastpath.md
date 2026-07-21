@@ -33,8 +33,12 @@ Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
 ## Decode wiring
 
 - **LTR / repair** (`TwoTowerModel._constrained_ltr_repair`, `_greedy_ltr_decode_batch`):
-  call `force_emit_token_id` before the denoiser; skip the forward when forced;
-  always route the id through `pick_constrained_token` (DFA + stream probe).
+  call `force_emit_token_id` before the denoiser, then use
+  `exact_forced_token_id` to distinguish a significant-lexeme hint from a full
+  tokenizer-token singleton. Only the latter skips the forward. Batched LTR
+  compacts the remaining ambiguous rows; repair commits exact decisions without
+  fabricating model logits or log-probabilities. Legal whitespace keeps the
+  compositional path model-ranked when it can change source bytes.
 - **MaskGIT** (`_generate_maskgit_one`): when `grammar_fastpath_mode` is `mask` or
   `hybrid`, run `admit_fill` on candidate fills; leave position masked on reject;
   grammar-on picks never commit DFA-illegal tokens.
@@ -72,3 +76,9 @@ PyTorch remains the train/eval path; export via `cactus.export_checkpoint_bundle
 
 `TwoTowerConfig.grammar_fastpath` (default True), `grammar_fastpath_mode`
 (`force` | `mask` | `hybrid`), `fastpath_aux_weight`.
+
+Compiler completion remains opt-in. A compiler singleton is exact only when its
+completion forest reports `coverage="complete"`; a partial singleton still runs
+the neural ranker and is not counted as a certified forced span. MaskGIT still
+performs neural proposal work unless an entire scheduled proposal step can be
+proved deterministic; this change does not add such a broad proof.

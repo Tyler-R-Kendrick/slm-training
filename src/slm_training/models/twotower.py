@@ -18,7 +18,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.data.contract import RuntimeSymbol
+from slm_training.data.contract import (
+    BoundGenerationResult,
+    CallerContentBinding,
+    RuntimeSymbol,
+)
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.twotower_numeric_gates import (
@@ -43,6 +47,7 @@ from slm_training.models.decode_stats import (
 )
 from slm_training.models.grammar import (
     apply_structural_bias,
+    exact_forced_token_id,
     filter_ids_by_stream,
     force_emit_token_id,
     make_grammar_state,
@@ -4116,24 +4121,26 @@ class TwoTowerModel(nn.Module):
         def _record_commit(
             pos: int,
             token_id: int,
-            logits_1d: torch.Tensor,
+            logits_1d: torch.Tensor | None,
             *,
             forced: bool,
+            decision_source: str,
             prefix: list[int] | None = None,
         ) -> None:
             if rec is None and grec is None:
                 return
             if rec is not None:
-                log_probs = F.log_softmax(logits_1d.float(), dim=-1)
-                repair_commits.append(
-                    {
-                        "t": pos,
-                        "id": int(token_id),
-                        "lp": float(log_probs[int(token_id)].item()),
-                        "forced": forced,
-                        "phase": "ltr_repair",
-                    }
-                )
+                commit = {
+                    "t": pos,
+                    "id": int(token_id),
+                    "forced": forced,
+                    "decision_source": decision_source,
+                    "phase": "ltr_repair",
+                }
+                if logits_1d is not None:
+                    log_probs = F.log_softmax(logits_1d.float(), dim=-1)
+                    commit["lp"] = float(log_probs[int(token_id)].item())
+                repair_commits.append(commit)
             if grec is not None and prefix is not None:
                 try:
                     from slm_training.harnesses.distill.grammar_trace import (
@@ -4158,7 +4165,7 @@ class TwoTowerModel(nn.Module):
                             compiler_coverage=coverage,
                             selected_action_id=token_str,
                             logits_or_energies=logits_1d.detach().tolist()
-                            if grec.capture_logits
+                            if grec.capture_logits and logits_1d is not None
                             else None,
                             convention="logit",
                             scope_signature="",
@@ -4195,30 +4202,49 @@ class TwoTowerModel(nn.Module):
             if st is not None:
                 st.sync_ids(tok, prefix)
             forced = force_emit_token_id(tok, prefix, state=st) if use_fast else None
-            # P4: truncate canvas to prefix + lookahead for the forward.
-            if lookahead > 0:
-                end = min(length, t + lookahead)
-                fwd_ids = ids[:, :end]
-            else:
-                end = length
-                fwd_ids = ids
-            logits = self._denoiser_forward(fwd_ids, ctx, ctx_pad)
-            if bias:
-                logits = apply_structural_bias(logits, tok, bias=bias)
-            local_t = min(t, end - 1)
-            row = logits[0, local_t].clone()
-            row[tok.mask_id] = -1e9
-            row[tok.pad_id] = -1e9
-            choice = pick_constrained_token(
-                row,
+            exact = exact_forced_token_id(
                 tok,
                 prefix,
-                top_k=self.config.grammar_top_k,
                 forced_token_id=forced,
                 slot_contract=contract,
                 state=st,
-                **pick_kw,
             )
+            logits: torch.Tensor | None = None
+            row: torch.Tensor | None = None
+            end = length
+            local_t = t
+            decision_source = "dfa_singleton" if exact is not None else "model_ranked"
+            if exact is not None:
+                choice = exact
+                if stats is not None:
+                    stats.forced_row_tokens_without_forward += 1
+                    stats.all_forced_steps_without_forward += 1
+            else:
+                # P4: truncate canvas to prefix + lookahead for the forward.
+                if lookahead > 0:
+                    end = min(length, t + lookahead)
+                    fwd_ids = ids[:, :end]
+                else:
+                    fwd_ids = ids
+                logits = self._denoiser_forward(fwd_ids, ctx, ctx_pad)
+                if stats is not None:
+                    stats.ambiguous_rows_forwarded += 1
+                if bias:
+                    logits = apply_structural_bias(logits, tok, bias=bias)
+                local_t = min(t, end - 1)
+                row = logits[0, local_t].clone()
+                row[tok.mask_id] = -1e9
+                row[tok.pad_id] = -1e9
+                choice = pick_constrained_token(
+                    row,
+                    tok,
+                    prefix,
+                    top_k=self.config.grammar_top_k,
+                    forced_token_id=forced,
+                    slot_contract=contract,
+                    state=st,
+                    **pick_kw,
+                )
             # Commit-boundary invariant: a bare root binding must continue with
             # assignment, never newline. This protects the LTR path from a
             # stale/broad picker admission that would make the next state
@@ -4240,6 +4266,7 @@ class TwoTowerModel(nn.Module):
                         st.prefix_text = current
                         st.prefix_ids = list(prefix)
                         st.clear_position_memo()
+                        assert row is not None
                         choice = pick_constrained_token(
                             row,
                             tok,
@@ -4252,6 +4279,7 @@ class TwoTowerModel(nn.Module):
                     except Exception:  # noqa: BLE001
                         choice = None
             if choice is None:
+                assert row is not None
                 # No legal continuation — pad out and stop rather than emit garbage.
                 if stats is not None:
                     stats.constrained_dead_ends += 1
@@ -4289,22 +4317,21 @@ class TwoTowerModel(nn.Module):
                 break
             if stats is not None and len(stats.constrained_selection_traces) < 64:
                 chosen_token = tok.id_to_token.get(int(choice), "")
-                argmax_id = int(row.argmax().item())
-                stats.constrained_selection_traces.append(
-                    {
-                        "position": int(t),
-                        "prefix_text": self._decode_ids(ids[0, :t].tolist()),
-                        "chosen_token": chosen_token,
-                        "chosen_id": int(choice),
-                        "model_argmax": tok.id_to_token.get(argmax_id, ""),
-                        "model_argmax_id": argmax_id,
-                        "legal_candidates": int(
-                            stats.constrained_last_legal_candidates
-                        ),
-                        "forced": bool(forced is not None),
-                        "phase": "ltr_repair",
-                    }
-                )
+                trace = {
+                    "position": int(t),
+                    "prefix_text": self._decode_ids(ids[0, :t].tolist()),
+                    "chosen_token": chosen_token,
+                    "chosen_id": int(choice),
+                    "legal_candidates": int(stats.constrained_last_legal_candidates),
+                    "forced": bool(exact is not None),
+                    "decision_source": decision_source,
+                    "phase": "ltr_repair",
+                }
+                if row is not None:
+                    argmax_id = int(row.argmax().item())
+                    trace["model_argmax"] = tok.id_to_token.get(argmax_id, "")
+                    trace["model_argmax_id"] = argmax_id
+                stats.constrained_selection_traces.append(trace)
             ids[0, t] = choice
             unknown[0, t] = False
             if stats is not None and tok.id_to_token.get(int(choice), "") == "NL":
@@ -4326,8 +4353,9 @@ class TwoTowerModel(nn.Module):
             _record_commit(
                 t,
                 int(choice),
-                logits[0, local_t],
-                forced=forced is not None,
+                logits[0, local_t] if logits is not None else None,
+                forced=exact is not None,
+                decision_source=decision_source,
                 prefix=prefix,
             )
             if choice == tok.eos_id:
@@ -4339,7 +4367,7 @@ class TwoTowerModel(nn.Module):
             advance = 1
             # P3: greedily accept consecutive unknown positions from the same
             # forward without re-running the denoiser.
-            if multitoken:
+            if multitoken and logits is not None:
                 max_run = min(multitoken_max, end - t - 1)
                 for step in range(1, max_run + 1):
                     pos = t + step
@@ -4371,6 +4399,7 @@ class TwoTowerModel(nn.Module):
                         int(nxt),
                         logits[0, pos],
                         forced=False,
+                        decision_source="model_ranked",
                         prefix=ids[0, :pos].tolist(),
                     )
                     advance = step + 1
@@ -4432,6 +4461,7 @@ class TwoTowerModel(nn.Module):
             )
         if stats is not None:
             stats.forwards_count += 1
+            stats.denoiser_rows_evaluated += int(ids.size(0))
             stats.full_projections += 1
             stats.canvas_tokens += int(ids.size(1))
         rec = getattr(self, "trace_recorder", None)
@@ -4453,6 +4483,7 @@ class TwoTowerModel(nn.Module):
             )
         if stats is not None:
             stats.forwards_count += 1
+            stats.denoiser_rows_evaluated += int(ids.size(0))
             stats.canvas_tokens += int(ids.size(1))
         rec = getattr(self, "trace_recorder", None)
         if rec is not None:
@@ -7079,9 +7110,10 @@ class TwoTowerModel(nn.Module):
         *,
         tree: bool,
         slot_contract: list[str] | None = None,
+        coverage: str = "complete",
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
-        if len(paths) == 1:
+        if len(paths) == 1 and coverage == "complete":
             return tuple(paths[0].token_ids)
         stats = get_active_stats()
         recorder = getattr(self, "trace_recorder", None)
@@ -7784,6 +7816,7 @@ class TwoTowerModel(nn.Module):
                     length,
                     tree=mode == "tree",
                     slot_contract=slot_contract,
+                    coverage=forest.coverage,
                 )
             if search_mode != "greedy":
                 hard_signature = rank_forest(forest).signature
@@ -7985,7 +8018,9 @@ class TwoTowerModel(nn.Module):
             selected = selected[:room]
             if not selected:
                 break
-            forced_span = len(forest.paths) == 1 or len(selected) > 1
+            forced_span = forest.coverage == "complete" and (
+                len(forest.paths) == 1 or len(selected) > 1
+            )
             if forced_span and stats is not None:
                 stats.forced_spans += 1
                 stats.forced_tokens += len(selected)
@@ -8113,7 +8148,22 @@ class TwoTowerModel(nn.Module):
                     tok.completion_cache_misses - completion_cache_misses
                 )
             need_model = [row for row in rows if len(allowed[row]) > 1]
-            logits = self._denoiser_forward(ids, ctx, ctx_pad) if need_model else None
+            compact_row = {row: index for index, row in enumerate(need_model)}
+            if need_model:
+                row_ids = torch.as_tensor(
+                    need_model, dtype=torch.long, device=self.device_name
+                )
+                logits = self._denoiser_forward(
+                    ids.index_select(0, row_ids),
+                    ctx.index_select(0, row_ids),
+                    ctx_pad.index_select(0, row_ids),
+                )
+                if stats is not None:
+                    stats.ambiguous_rows_forwarded += len(need_model)
+            else:
+                logits = None
+                if stats is not None and all(len(allowed[row]) == 1 for row in rows):
+                    stats.all_forced_steps_without_forward += 1
             for row in rows:
                 legal = allowed[row]
                 if not legal:
@@ -8123,13 +8173,16 @@ class TwoTowerModel(nn.Module):
                     choice = next(iter(legal))
                     if stats is not None:
                         stats.forced_tokens += 1
+                        stats.forced_row_tokens_without_forward += 1
                 else:
                     assert logits is not None
                     candidate_ids = tuple(sorted(legal))
                     legal_ids = torch.tensor(
                         candidate_ids, dtype=torch.long, device=logits.device
                     )
-                    scores = logits[row, position].index_select(0, legal_ids)
+                    scores = logits[compact_row[row], position].index_select(
+                        0, legal_ids
+                    )
                     inventory_bias = self._component_inventory_bias(
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
@@ -8659,18 +8712,50 @@ class TwoTowerModel(nn.Module):
                     break
                 active_idx = active.nonzero(as_tuple=False).flatten()
                 forced_map: dict[int, int] = {}
+                exact_map: dict[int, int] = {}
                 if use_fast:
                     for bi in active_idx.tolist():
                         st = states[bi] if states is not None else None
+                        contract = (
+                            self._slot_contracts[bi]
+                            if self._slot_contracts and bi < len(self._slot_contracts)
+                            else None
+                        )
+                        if not getattr(
+                            self.config, "slot_contract_constrained_decode", False
+                        ):
+                            contract = None
                         forced = force_emit_token_id(
                             tok, ids[bi, :t].tolist(), state=st
                         )
                         if forced is not None:
                             forced_map[bi] = forced
-                need_model = active_idx.tolist()
+                            exact = exact_forced_token_id(
+                                tok,
+                                ids[bi, :t].tolist(),
+                                forced_token_id=forced,
+                                slot_contract=contract,
+                                state=st,
+                            )
+                            if exact is not None:
+                                exact_map[bi] = exact
+                need_model = [bi for bi in active_idx.tolist() if bi not in exact_map]
+                forwarded_rows = set(need_model)
                 pred = ids[:, t].clone()
+                for bi, choice in exact_map.items():
+                    pred[bi] = choice
+                    st = states[bi] if states is not None else None
+                    if st is not None:
+                        st.advance_token(tok, int(choice))
+                if stats is not None:
+                    stats.forced_row_tokens_without_forward += len(exact_map)
+                    stats.ambiguous_rows_forwarded += len(need_model)
+                    stats.tokens_emitted += len(exact_map)
+                    if exact_map and not need_model:
+                        stats.all_forced_steps_without_forward += 1
                 # Optional P3: stash full-row logits for multi-token accept.
                 row_logits_full: torch.Tensor | None = None
+                row: torch.Tensor | None = None
 
                 if need_model:
                     need_t = torch.tensor(need_model, device=device, dtype=torch.long)
@@ -8782,6 +8867,8 @@ class TwoTowerModel(nn.Module):
                         step_pred = ids[:, pos].clone()
                         any_accept = False
                         for bi in active.nonzero(as_tuple=False).flatten().tolist():
+                            if bi not in forwarded_rows:
+                                continue
                             logits_pos = row_logits_full[bi, pos].clone()
                             logits_pos[tok.mask_id] = -1e9
                             logits_pos[tok.pad_id] = -1e9
@@ -8843,7 +8930,7 @@ class TwoTowerModel(nn.Module):
                         except Exception:  # noqa: BLE001
                             hard = True
                         ent_spike = False
-                        if need_model:
+                        if bi in forwarded_rows and row is not None:
                             try:
                                 probs_t = F.softmax(row[bi], dim=-1)
                                 ent = float(
@@ -8900,15 +8987,6 @@ class TwoTowerModel(nn.Module):
                                 if use_fast
                                 else None
                             )
-                            logits_r = self._denoiser_forward(
-                                ids[bi : bi + 1],
-                                ctx[bi : bi + 1],
-                                ctx_pad[bi : bi + 1],
-                            )
-                            if bias:
-                                logits_r = apply_structural_bias(
-                                    logits_r, tok, bias=bias
-                                )
                             contract = (
                                 self._slot_contracts[bi]
                                 if self._slot_contracts
@@ -8919,16 +8997,40 @@ class TwoTowerModel(nn.Module):
                                 self.config, "slot_contract_constrained_decode", False
                             ):
                                 contract = None
-                            choice = pick_constrained_token(
-                                logits_r[0, rt],
+                            exact = exact_forced_token_id(
                                 tok,
                                 ids[bi, :rt].tolist(),
-                                top_k=self.config.grammar_top_k,
                                 forced_token_id=forced,
                                 slot_contract=contract,
                                 state=st,
-                                **pick_kw,
                             )
+                            if exact is not None:
+                                choice = exact
+                                if stats is not None:
+                                    stats.forced_row_tokens_without_forward += 1
+                                    stats.all_forced_steps_without_forward += 1
+                            else:
+                                logits_r = self._denoiser_forward(
+                                    ids[bi : bi + 1],
+                                    ctx[bi : bi + 1],
+                                    ctx_pad[bi : bi + 1],
+                                )
+                                if stats is not None:
+                                    stats.ambiguous_rows_forwarded += 1
+                                if bias:
+                                    logits_r = apply_structural_bias(
+                                        logits_r, tok, bias=bias
+                                    )
+                                choice = pick_constrained_token(
+                                    logits_r[0, rt],
+                                    tok,
+                                    ids[bi, :rt].tolist(),
+                                    top_k=self.config.grammar_top_k,
+                                    forced_token_id=forced,
+                                    slot_contract=contract,
+                                    state=st,
+                                    **pick_kw,
+                                )
                             if choice is None:
                                 ids[bi, rt] = tok.eos_id
                                 if rt + 1 < canvas:
@@ -9259,6 +9361,82 @@ class TwoTowerModel(nn.Module):
             output_kinds=output_kinds,
             output_categories=output_categories,
         )
+
+    def generate_batch_bound_requests(
+        self,
+        requests: list[GenerationRequest],
+        caller_bindings: list[tuple[CallerContentBinding, ...]],
+        *,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+    ) -> list[BoundGenerationResult]:
+        """Generate verified templates, then attach caller values out of band."""
+        if len(requests) != len(caller_bindings):
+            raise ValueError("requests and caller_bindings must have equal length")
+        model_requests: list[GenerationRequest] = []
+        for request in requests:
+            if len(set(request.slot_contract)) != len(request.slot_contract):
+                raise ValueError("slot_contract contains duplicate external keys")
+            projection = {
+                external: f":slot_{index}"
+                for index, external in enumerate(request.slot_contract)
+            }
+            projected_symbols = tuple(
+                RuntimeSymbol(
+                    surface=projection.get(symbol.surface, symbol.surface),
+                    role=symbol.role,
+                    namespace=symbol.namespace,
+                    semantic_type=symbol.semantic_type,
+                    scope=symbol.scope,
+                    signature=symbol.signature,
+                    description=symbol.description,
+                )
+                for symbol in request.runtime_symbols
+            )
+            model_requests.append(
+                GenerationRequest(
+                    prompt=request.prompt,
+                    slot_contract=tuple(projection.values()),
+                    schema=request.schema,
+                    design_md=request.design_md,
+                    runtime_symbols=projected_symbols,
+                    output_kind=request.output_kind,
+                    output_category=request.output_category,
+                )
+            )
+        templates = self.generate_batch_requests(
+            model_requests,
+            max_len=max_len,
+            grammar_constrained=grammar_constrained,
+        )
+        from slm_training.dsl.pack import get_pack
+        from slm_training.dsl.surface import resolve_verified_template_bindings
+
+        pack = get_pack("openui")
+        results = [
+            resolve_verified_template_bindings(
+                template,
+                request,
+                bindings,
+                pack=pack,
+            )
+            for template, request, bindings in zip(
+                templates, requests, caller_bindings, strict=True
+            )
+        ]
+        prior_evidence = self._last_generation_evidence
+        self._last_generation_evidence = [
+            {
+                **(
+                    prior_evidence[index]
+                    if index < len(prior_evidence)
+                    else {}
+                ),
+                "terminal_binding": result.evidence_dict(),
+            }
+            for index, result in enumerate(results)
+        ]
+        return results
 
     def consume_generation_evidence(self) -> list[dict[str, object]]:
         """Return and clear evidence aligned with the last generated batch."""

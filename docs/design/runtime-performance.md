@@ -270,6 +270,27 @@ are the only path that skips neural inference entirely. See the C-series in
 opt-in because the current committed checkpoint cannot provide a valid quality
 anchor.
 
+### Exact forced-row compaction
+
+The active LTR, repair, and choice paths now keep exact decisions outside neural
+batches. Main LTR and repair bypass only a full tokenizer-token singleton after
+the authoritative DFA, contract, special-token, and complete-coverage compiler
+checks. A significant structural force with a competing legal whitespace token
+is still model-ranked. Choice decoding uses its exhaustive production-state
+legal set and compacts mixed batches to ambiguous rows. Partial compiler forests
+do not certify a singleton, and MaskGIT remains residual neural work.
+
+`forwards_count` counts neural calls, while `denoiser_rows_evaluated` records the
+actual row volume. `ambiguous_rows_forwarded`,
+`forced_row_tokens_without_forward`, and `all_forced_steps_without_forward`
+separate neural branches from exact commits. These counters are instrumentation,
+not benchmark or ship evidence.
+
+Deterministic transition or binding dispatch is constant time once its proof or
+lookup is cached. End-to-end terminal work is honestly
+`O(plan size + binding count + emitted bytes)`; serializing `N` bytes remains
+`Omega(N)`.
+
 ### Hot-path waste removal (2026-07-18)
 
 A repo-wide audit removed redundant per-call work without changing any

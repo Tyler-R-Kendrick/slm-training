@@ -104,6 +104,23 @@ artifact required.
 
 ## Decode-stats solver work metrics (VSS1-04 / SLM-64)
 
+## Decode-stats deterministic-row metrics
+
+These counters share the existing `DecodeStats` envelope and aggregate under
+`metrics["decode_stats"]`:
+
+| Field | Unit and meaning |
+| --- | --- |
+| `denoiser_rows_evaluated` | Rows actually evaluated by denoiser/backbone calls. |
+| `ambiguous_rows_forwarded` | Active rows whose current decision required model ranking. |
+| `forced_row_tokens_without_forward` | Exact row-token decisions committed without neural evaluation. |
+| `all_forced_steps_without_forward` | Decode steps where every live row was exact and no neural call ran. |
+
+`forced_tokens` / `forced_spans` retain their compiler/choice meanings. P3 tokens
+accepted from already-computed logits remain `accepted_run_tokens`; they are not
+reported as no-forward proof decisions. Binding evidence contains keys, slot ids,
+digests, and byte counts but never raw caller content.
+
 The verified solver's per-decode work is measured on the existing
 [`DecodeStats`](../../src/slm_training/models/decode_stats.py) envelope (not a new
 owner). All fields default to zero on every historical/default path (solver

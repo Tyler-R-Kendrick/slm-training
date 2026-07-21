@@ -10,7 +10,12 @@ from slm_training.dsl.grammar.fastpath import (
     engine_for_dsl,
     force_next_token_id,
 )
-from slm_training.models.grammar import force_emit_token_id, pick_constrained_token
+from slm_training.models.grammar import (
+    exact_forced_token_id,
+    force_emit_token_id,
+    make_grammar_state,
+    pick_constrained_token,
+)
 from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
@@ -50,6 +55,28 @@ def test_force_emit_token_id_via_grammar_helper() -> None:
     forced = force_emit_token_id(tok, ids)
     assert forced is not None
     assert tok.id_to_token[forced] == "="
+
+
+def test_exact_force_requires_full_token_singleton() -> None:
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    native = DSLNativeTokenizer.build()
+    prefix = native.encode("root", add_special=False)
+    state = make_grammar_state()
+    forced = force_emit_token_id(native, prefix, state=state)
+    assert exact_forced_token_id(
+        native, prefix, forced_token_id=forced, state=state
+    ) == native.token_to_id["="]
+
+    # The compositional tokenizer can still emit insignificant whitespace, so
+    # its significant-lexeme force is not an exact tokenizer-token decision.
+    compositional = _tok()
+    prefix = compositional.encode("root", add_special=False)
+    state = make_grammar_state()
+    forced = force_emit_token_id(compositional, prefix, state=state)
+    assert exact_forced_token_id(
+        compositional, prefix, forced_token_id=forced, state=state
+    ) is None
 
 
 def test_pick_constrained_honors_forced_id() -> None:

@@ -8,6 +8,7 @@ import pytest
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    CompletionForest,
     CompletionPath,
     ConstraintEvidence,
     ConstraintStage,
@@ -67,6 +68,114 @@ def test_gathered_projection_matches_full_lm_head() -> None:
     gathered = denoiser.project(hidden, candidates)
     full = denoiser.project(hidden)
     assert torch.allclose(gathered, full.index_select(-1, candidates))
+
+
+def test_choice_decode_all_singletons_skips_denoiser(monkeypatch) -> None:
+    from slm_training.models import choice_tokenizer
+
+    model = _model(output_tokenizer="choice")
+
+    class SingletonState:
+        def __init__(self, tokenizer, *, slot_count=0):
+            self.tokenizer = tokenizer
+
+        def allowed_ids(self, _remaining):
+            return {self.tokenizer.eos_id}
+
+    monkeypatch.setattr(choice_tokenizer, "ChoiceDecodeState", SingletonState)
+    monkeypatch.setattr(
+        model,
+        "_denoiser_forward",
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("all-singleton choice step must not run the denoiser")
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["one", "two"])
+    with collect_decode_stats() as stats:
+        ids = model._choice_ltr_decode_batch(ctx, ctx_pad, 8, [None, None])
+
+    assert ids[:, 1].tolist() == [model.tokenizer.eos_id] * 2
+    assert stats.forced_row_tokens_without_forward == 2
+    assert stats.all_forced_steps_without_forward == 1
+    assert stats.ambiguous_rows_forwarded == 0
+
+
+def test_choice_decode_mixed_step_forwards_only_ambiguous_rows(monkeypatch) -> None:
+    from slm_training.models import choice_tokenizer
+
+    model = _model(output_tokenizer="choice")
+    other_id = model.tokenizer.token_to_id["+Card"]
+
+    class MixedState:
+        def __init__(self, tokenizer, *, slot_count=0):
+            self.tokenizer = tokenizer
+            self.slot_count = slot_count
+            self.current_marker = None
+            self.mode = None
+            self.frames = []
+
+        def allowed_ids(self, _remaining):
+            if self.slot_count:
+                return {self.tokenizer.eos_id, other_id}
+            return {self.tokenizer.eos_id}
+
+    forwarded_rows = []
+
+    def forward(ids, _ctx, _ctx_pad):
+        forwarded_rows.append(int(ids.size(0)))
+        logits = torch.zeros(
+            (ids.size(0), ids.size(1), model.tokenizer.vocab_size)
+        )
+        logits[..., model.tokenizer.eos_id] = 100.0
+        return logits
+
+    monkeypatch.setattr(choice_tokenizer, "ChoiceDecodeState", MixedState)
+    monkeypatch.setattr(model, "_denoiser_forward", forward)
+    ctx, ctx_pad = model._encode_context(["forced", "ambiguous"])
+    with collect_decode_stats() as stats:
+        ids = model._choice_ltr_decode_batch(
+            ctx, ctx_pad, 8, [None, [":hero.title"]]
+        )
+
+    assert forwarded_rows == [1]
+    assert ids[:, 1].tolist() == [model.tokenizer.eos_id] * 2
+    assert stats.forced_row_tokens_without_forward == 1
+    assert stats.all_forced_steps_without_forward == 0
+    assert stats.ambiguous_rows_forwarded == 1
+
+
+@pytest.mark.parametrize(
+    ("coverage", "expected_forwards", "expected_forced"),
+    [("complete", 0, 1), ("partial", 1, 0)],
+)
+def test_compiler_singleton_bypass_requires_complete_coverage(
+    monkeypatch, coverage, expected_forwards, expected_forced
+) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    model = _model()
+    forest = CompletionForest(
+        (CompletionPath((model.tokenizer.eos_id,), "eos"),), coverage
+    )
+    monkeypatch.setattr(compiler_draft, "build_completion_forest", lambda *_a, **_k: forest)
+    original_hidden = model._denoiser_hidden
+    forwards = 0
+
+    def hidden(*args, **kwargs):
+        nonlocal forwards
+        forwards += 1
+        return original_hidden(*args, **kwargs)
+
+    monkeypatch.setattr(model, "_denoiser_hidden", hidden)
+    ctx, ctx_pad = model._encode_context(["card"])
+    with collect_decode_stats() as stats:
+        result = model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 8, mode="restricted", slot_contract=None
+        )
+
+    assert int(result[1]) == model.tokenizer.eos_id
+    assert forwards == expected_forwards
+    assert stats.forced_tokens == expected_forced
 
 
 def test_choice_gold_decisions_classify_component_roles() -> None:

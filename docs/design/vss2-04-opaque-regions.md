@@ -59,3 +59,7 @@ Regression tests in `tests/test_dsl/test_opaque_regions.py`:
 
 - Only `CONTENT_VALUE` splicing is implemented end-to-end; the other `OpaqueRegionKind`s require pack-specific `fragment_parser` / `region_splicer` hooks that are not yet provided.
 - No model, checkpoint, or ship gate is claimed; this is fixture wiring for the VSS2 solver stack.
+- OpenUI placeholder-to-placeholder rebinding is verified, but arbitrary literal
+  content is rejected by the current placeholder policy. Production generation
+  therefore transports caller content in a verified template-plus-bindings
+  envelope rather than presenting literal-expanded source as pack verified.
