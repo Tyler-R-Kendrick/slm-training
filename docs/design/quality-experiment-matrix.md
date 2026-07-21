@@ -4872,3 +4872,17 @@ quality or ship evidence. AgentV is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e678-joint-role-provenance-20260721.md) and
 [JSON](iter-e678-joint-role-provenance-20260721.json).
+
+## E679 independent joint-role Smoke confirmation
+
+E679 replaces invalid combined E677 evidence with an independently terminal
+full Smoke `n=3` replay of retained v134. Syntax and meaningful v1 are 1.0,
+but strict v2.3.0 is only 1/3: the hero omits `kicker` and misplaces
+`subtitle`, while the callout omits `heading`. Retain v134 as the OOD research
+baseline, but reject the hypothesis that whole-namespace joint grouping
+generalizes to Smoke. The next lever must partition larger namespaces into
+jointly coverable subsets and carry residual visible text roles. AgentV is
+0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e679-joint-role-smoke-20260721.md) and
+[JSON](iter-e679-joint-role-smoke-20260721.json).
