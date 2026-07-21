@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v115",
+      "version": "v116",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v116",
+          "date": "2026-07-21",
+          "note": "E659 rejection: restore retained E653 behavior after hard property-role masking collapsed meaningfulness, fidelity, structure, reward, and latency"
+        },
         {
           "version": "v115",
           "date": "2026-07-21",
