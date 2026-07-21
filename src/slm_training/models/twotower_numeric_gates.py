@@ -12,6 +12,8 @@ import math
 from dataclasses import dataclass, fields as _fields
 from typing import Any, Iterable, Sequence
 
+from slm_training.levers import MAX_RUN_MINUTES
+
 
 class NumericValidationError(ValueError):
     """Raised when a numeric config field violates its documented contract."""
@@ -409,9 +411,11 @@ def validate_numeric_config(cfg: Any, *, context: str = "config") -> NumericSche
             try:
                 if value is not None:
                     finite_scalar(name, value)
-                    if not (0.0 <= value <= 3.0):
+                    if not (0.0 <= value <= MAX_RUN_MINUTES):
                         raise NumericValidationError(
-                            name, value, "must be at most 3 minutes"
+                            name,
+                            value,
+                            f"must be at most {MAX_RUN_MINUTES} minutes",
                         )
                 report.record(name, True)
             except NumericValidationError as exc:

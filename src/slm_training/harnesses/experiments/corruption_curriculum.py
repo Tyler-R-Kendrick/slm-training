@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.data.corrupt.trace import SeverityLevel
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
@@ -84,7 +85,7 @@ class CorruptionCurriculumManifest:
             "allow_unconstrained_fallback": False,
             "mixture_sampling_policy": "quota_capacity_aware",
             "checkpoint_sync": False,
-            "max_wall_minutes": 3.0,
+            "max_wall_minutes": float(MAX_RUN_MINUTES),
         }
     )
     near_solved_shares: tuple[float, ...] = NEAR_SOLVED_SHARES

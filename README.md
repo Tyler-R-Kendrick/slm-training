@@ -227,6 +227,24 @@ python -m scripts.evaluate_model \
   --ship-gates
 ```
 
+### Canonical lever registry
+
+`ModelBuildConfig` is the single source for user-facing model, data, training,
+decode, and evaluation lever defaults. Discover the complete machine-readable
+set without searching scripts:
+
+```bash
+python -m slm_training.levers
+python -m slm_training.levers --category decode
+```
+
+The catalog identifies intentional checkpoint-vs-harness default differences.
+The repository-wide run cap is the sole policy lever owned directly by
+`src/slm_training/levers.py`; changing `MAX_RUN_MINUTES` updates every Python
+consumer. Local compute is the default experiment path. Remote CI and managed
+jobs are optional last-resort execution surfaces and are not part of this local
+lever registry.
+
 Evaluation uses the [AgentEvals](https://agentevals.io/) JSONL/YAML contract
 and the pinned AgentV SDK. Run `npm ci` before Python eval commands; shared
 model, loss, task, and diagnostic eval paths automatically write AgentV bundles

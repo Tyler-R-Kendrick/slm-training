@@ -31,8 +31,9 @@ from slm_training.harnesses.eval.ablate_decode_scaffolding import (
     run_stage_a,
     stage_a_needs_stage_b,
 )
+from slm_training.levers import INTERRUPT_AFTER_SECONDS
 
-MAX_RUN_SECONDS = 170
+MAX_RUN_SECONDS = INTERRUPT_AFTER_SECONDS
 
 
 def _markdown_report(report: AblateReport) -> str:

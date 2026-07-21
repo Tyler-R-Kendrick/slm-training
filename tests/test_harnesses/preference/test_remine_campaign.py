@@ -24,6 +24,7 @@ from slm_training.harnesses.preference.remine_campaign import (
     run_campaign,
 )
 from slm_training.harnesses.preference.remine_campaign import CampaignState
+from slm_training.levers import MAX_RUN_MINUTES
 
 
 def _config(**overrides) -> RemineCampaignConfig:
@@ -56,9 +57,11 @@ def test_config_validation_and_fingerprint_deterministic():
         _config(max_iterations=9)  # a fourth+ iteration needs explicit justification
     with pytest.raises(RemineConfigError):
         _config(prompt_group_ids=[])  # frozen prompt set must be non-empty
-    with pytest.raises(RemineConfigError, match=r"\(0, 3\]"):
-        _config(max_wall_minutes=3.01)
-    assert _config().max_wall_minutes == 3.0
+    with pytest.raises(
+        RemineConfigError, match=rf"\(0, {MAX_RUN_MINUTES}\]"
+    ):
+        _config(max_wall_minutes=MAX_RUN_MINUTES + 0.01)
+    assert _config().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert _config().fingerprint() == _config().fingerprint()
     assert _config(decode_config_hash="a").fingerprint() != _config(decode_config_hash="b").fingerprint()
 

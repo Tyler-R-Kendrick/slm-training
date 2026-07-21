@@ -21,6 +21,7 @@ from slm_training.harnesses.preference.decision_diagnostics import (
     tier2_subspace_gradients,
     write_diagnostic_report,
 )
+from slm_training.levers import MAX_RUN_MINUTES
 
 
 def _view(good: tuple[int, ...], bad: tuple[int, ...]) -> SimpleNamespace:
@@ -41,10 +42,10 @@ class _FakeClock:
         return self._last
 
 
-def test_budget_capped_at_three_minutes() -> None:
-    assert DiagnosticBudget().max_wall_minutes == 3.0
-    with pytest.raises(ValueError, match=r"\(0, 3\]"):
-        DiagnosticBudget(max_wall_minutes=3.1)
+def test_budget_capped_at_two_minutes() -> None:
+    assert DiagnosticBudget().max_wall_minutes == float(MAX_RUN_MINUTES)
+    with pytest.raises(ValueError, match=rf"\(0, {MAX_RUN_MINUTES}\]"):
+        DiagnosticBudget(max_wall_minutes=MAX_RUN_MINUTES + 0.1)
     with pytest.raises(ValueError):
         DiagnosticBudget(max_wall_minutes=0.0)
 
@@ -58,7 +59,7 @@ def test_completed_run_reports_all_stages(monkeypatch) -> None:
 
 
 def test_deadline_expiry_produces_no_result(monkeypatch) -> None:
-    # start=0 -> deadline=180s; the next monotonic read is 500 -> expired before any stage.
+    # The next monotonic read exceeds the canonical deadline before any stage.
     monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0, 500.0]))
     ran: list[str] = []
     report = run_bounded_stages(
@@ -103,7 +104,7 @@ def test_tier1_objective_geometry_agrees_when_views_match(monkeypatch) -> None:
 
 
 def test_tier1_objective_geometry_respects_deadline(monkeypatch) -> None:
-    # start=0 -> deadline=180s; the next read is 500 -> expired before the stage runs.
+    # The next monotonic read exceeds the canonical deadline before the stage runs.
     monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0, 500.0]))
     report = tier1_objective_geometry([[_view((4,), (9,))]])
     assert report["status"] == "expired"
