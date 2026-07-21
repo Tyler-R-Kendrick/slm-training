@@ -1442,7 +1442,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v64",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1457,6 +1457,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-07-20",
+          "note": "E631: when a component owner cannot own any missing visible role, prefer closing it instead of nesting a different role-compatible component at the wrong structural depth"
+        },
         {
           "version": "v64",
           "date": "2026-07-20",
