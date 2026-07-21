@@ -876,6 +876,30 @@ those closures said was missing, for a human maintainer to weigh. See
 and
 [`iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md`](iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md).
 
+**SLM-231 (SPV0-05) follow-up.** SLM-230's own honest caveats flagged that
+`RoleSlot.min_cardinality`/`max_cardinality` are never populated by
+`OpenUISemanticPlanExtractor` -- confirming SLM-145's cardinality-extraction
+gap is still open on the producer side, but leaving the consumer side
+unchecked: does anything downstream even read those fields once non-None?
+SLM-231 (`harnesses/experiments/slm231_role_cardinality_dead_field.py`)
+answers that directly: a harness-local candidate cardinality derivation
+(observed same-`component_family` sibling count per parent; never wired into
+the real extractor) is injected into the gold plan's `role_slots`, then run
+through the real, unmodified `PlanOracleSubstitutor` / `PlanSeedBuilder` /
+`OpenUISemanticPlanCompiler` on the same `roles`+`topology` oracle arm
+SLM-230's C4 used, and diffed record-by-record against the same arm with
+cardinality left at `None`. Result (`cardinality_confirmed_unconsumed`): all
+19 records of the SLM-144 fixture corpus produced byte-identical seed text,
+`ok` flag, and `reason` in both arms (both reach 1.00 seed-valid rate / 1.00
+mean component coverage, 0 mismatches) — confirming `RoleSlot` cardinality is
+not merely unpopulated but fully unconsumed by the current `PlanSeedBuilder`
+mechanism, which has no repetition/expansion code path that could act on a
+cardinality bound even if one were supplied. This is wiring/fixture evidence
+only; it does not reopen SLM-145, and a negative result here does not make
+cardinality worthless — it means populating the field alone (without new
+`PlanSeedBuilder` logic) would not move any measured proxy. See
+[`iter-slm231-spv0-05-role-cardinality-dead-field-20260721.md`](iter-slm231-spv0-05-role-cardinality-dead-field-20260721.md).
+
 ## SPV4-02 causal architecture disposition (SLM-160)
 
 **Fidelity label: disposition audit / no new experiment.** SLM-160 closes the

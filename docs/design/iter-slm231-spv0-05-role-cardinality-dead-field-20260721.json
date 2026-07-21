@@ -1,0 +1,56 @@
+{
+  "claim_class": "wiring",
+  "corpus_seed": 0,
+  "corpus_size": 19,
+  "derivation_populated_cardinality": true,
+  "disposition": "cardinality_confirmed_unconsumed",
+  "disposition_rationale": "Every fixture-corpus record produced byte-identical seed text, ok flag, and reason whether or not RoleSlot.min_cardinality/max_cardinality were populated on the roles+topology oracle arm. Combined with SLM-230's producer-side finding (extractor never populates these fields), the cardinality fields are confirmed to have neither a producer nor a consumer in the current pipeline: a fully dead field, not merely an unpopulated one.",
+  "experiment_id": "slm231-spv0-05-role-cardinality-dead-field",
+  "falsifier": "Any fixture-corpus record produces a different seed text, `ok` flag, or `reason` between the cardinality-populated arm and the cardinality-None arm, holding every other factor identical -- showing something in the current PlanSeedBuilder/OpenUISemanticPlanCompiler mechanism already reads RoleSlot cardinality.",
+  "gate_hash": "76e1c590ea5712f9954a6718ae41631f5a0b4536e140a1714d5b5a44b2b241a6",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: the deterministic SLM-144 fixture corpus (`build_fixture_plan_corpus`), not a real or held-out completion corpus. No checkpoint, learned predictor, GPU run, or ship-gate claim is made or implied.",
+    "The cardinality values injected here are a harness-local *candidate* derivation (`_derive_sibling_cardinality`), not a proposal for `OpenUISemanticPlanExtractor`'s real extraction policy. It exists only to get non-None values through the real pipeline for this consumption probe; no accuracy, calibration, or policy claim is made about it.",
+    "This harness does not modify `OpenUISemanticPlanExtractor`, `PlanOracleSubstitutor`, `PlanSeedBuilder`, or `OpenUISemanticPlanCompiler` -- it only exercises them, matching the SLM-230 (SPV0-04) convention.",
+    "A negative (unconsumed) result here does not mean cardinality is worthless -- it means the *current* PlanSeedBuilder mechanism (which renders one child per topology edge with no repetition/expansion logic) has no code path that would act on a cardinality bound even if one were supplied. A future PlanSeedBuilder that synthesizes repeated children from a cardinality count would need new code, not just populated data.",
+    "Both arms here use `honesty_mode=oracle_diagnostic` and `plan_source=gold`; neither arm is promotable per the SemanticPlanV1 contract, matching SLM-230."
+  ],
+  "hypothesis": "Populating RoleSlot.min_cardinality/max_cardinality with a deterministic harness-local candidate derivation (observed same-component_family sibling count per parent), then oracle-substituting the `roles`+`topology` factors as in SLM-230's C4 arm, produces byte-identical PlanSeedBuilder/OpenUISemanticPlanCompiler output (seed text, ok flag, reason) to the same arm with cardinality left at None (today's production extractor output), on every record of the SLM-144 fixture corpus -- showing the cardinality fields are not just unpopulated (SLM-230) but also fully unconsumed by the current PlanSeedBuilder mechanism: a field with neither a producer nor a consumer.",
+  "matrix_set": "slm231_role_cardinality_dead_field",
+  "matrix_version": "spv0-05-v1",
+  "mismatches": [],
+  "rows": [
+    {
+      "arm_id": "F0_no_cardinality",
+      "cardinality_populated": false,
+      "mean_component_coverage": 1.0,
+      "n_records": 19,
+      "seed_ok_count": 19,
+      "seed_valid_count": 19,
+      "seed_valid_rate": 1.0
+    },
+    {
+      "arm_id": "F1_with_cardinality",
+      "cardinality_populated": true,
+      "mean_component_coverage": 1.0,
+      "n_records": 19,
+      "seed_ok_count": 19,
+      "seed_valid_count": 19,
+      "seed_valid_rate": 1.0
+    }
+  ],
+  "run_id": "slm231-spv0-05-role-cardinality-dead-field-20260721",
+  "schema": "Slm231RoleCardinalityDeadFieldReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T06:01:57.121936Z",
+  "version_stamp": {
+    "code_commit": "1cfe33e25225edc59b8a66a057d605f34151e507",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm231_role_cardinality_dead_field": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T06:01:57.121896+00:00"
+  }
+}

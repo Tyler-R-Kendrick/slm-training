@@ -3639,6 +3639,25 @@
         }
       ]
     },
+    "harness.experiments.slm231_role_cardinality_dead_field": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm231_role_cardinality_dead_field.py",
+        "scripts/run_slm231_role_cardinality_dead_field.py",
+        "tests/test_harnesses/experiments/test_slm231_role_cardinality_dead_field.py",
+        "tests/test_scripts/test_run_slm231_role_cardinality_dead_field.py",
+        "docs/design/iter-slm231-spv0-05-role-cardinality-dead-field-20260721.json",
+        "docs/design/iter-slm231-spv0-05-role-cardinality-dead-field-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-231 SPV0-05 RoleSlot cardinality dead-field consumption probe: exercises the real PlanOracleSubstitutor / PlanSeedBuilder / OpenUISemanticPlanCompiler with a harness-local candidate cardinality derivation on the roles+topology oracle arm, diffing per-record seed output with/without cardinality populated to test the SLM-145/SLM-230 cardinality gap's consumer side (extractor producer-side gap already confirmed by SLM-230)"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
