@@ -574,6 +574,11 @@
       "history": [
         {
           "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.1.0 to 2.2.1 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation"
+        },
+        {
+          "version": "openui_ship_gates_v1",
           "date": "2026-07-20",
           "note": "no-bump: align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.0.0 to 2.1.0 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation"
         },
@@ -705,12 +710,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v53",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-07-21",
+          "note": "add SLM-215 NCS0-02 SpectralAtlasV1 wiring/fixture harness for null-calibrated checkpoint atlas and outcome joins"
+        },
         {
           "version": "v53",
           "date": "2026-07-21",
@@ -3301,6 +3311,25 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-214 NCS0-01 SpectralSnapshotV1 native-PyTorch spectral backend, role registry, tied-storage detection, and randomized-ESD null calibration"
+        }
+      ]
+    },
+    "harness.experiments.slm215_spectral_atlas": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm215_spectral_atlas.py",
+        "scripts/build_spectral_atlas.py",
+        "tests/test_harnesses/experiments/test_slm215_spectral_atlas.py",
+        "tests/test_scripts/test_build_spectral_atlas.py",
+        "docs/design/iter-slm215-spectral-atlas-20260721.json",
+        "docs/design/iter-slm215-spectral-atlas-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins"
         }
       ]
     },
