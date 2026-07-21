@@ -4997,3 +4997,16 @@ the next quality lever must route those roles into TabItem content. AgentV is
 
 Evidence: [narrative](iter-e687-trace-record-identity-20260721.md) and
 [JSON](iter-e687-trace-record-identity-20260721.json).
+
+## E688 bound wrapper roles
+
+E688 constrains transitive wrapper continuation to explicit role bindings, but
+the full Held-out replay is prediction-, metric-, and trace-identical to E687.
+The realistic schema inventory maps each numbered tab role to both
+`AccordionItem` and `TabItem`, so no TabItem binding exists and the guard never
+activates. Reject and revert v142. The next lever must disambiguate child roles
+through the already planned parent schema. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e688-bound-wrapper-roles-20260721.md) and
+[JSON](iter-e688-bound-wrapper-roles-20260721.json).
