@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v90",
+      "version": "v91",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v91",
+          "date": "2026-07-20",
+          "note": "E649 rejection: restore v89 prompt-only semantic plans after direct required-string role binding reproduced E647 strict, structure, and latency regressions; renumbered from the originally launched E643 arm after rebase"
+        },
         {
           "version": "v90",
           "date": "2026-07-20",
