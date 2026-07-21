@@ -1,0 +1,369 @@
+{
+  "run_id": "iter_rsc_a05_matched_recursive_control_arms",
+  "status": "partial_implementation",
+  "claim_class": "wiring",
+  "quality_claim_made": false,
+  "issue": "SLM-241 (RSC-A05): Build parameter-, state-, block-, and initialization-matched recursive control constructors",
+  "linear_context": "Parent campaign SLM-233 (matched recursive-depth quality campaign) is out of scope; this issue only builds reusable control constructors + fairness/accounting substrate.",
+  "arms": {
+    "all_arm_ids": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+    ],
+    "built_arm_ids": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "G"
+    ],
+    "deferred_arm_ids": [
+      "E",
+      "F",
+      "H"
+    ],
+    "labels": {
+      "A": "stacked baseline (no z state, unshared blocks)",
+      "B": "shared recursive V1 (shared blocks, explicit z state)",
+      "C": "shared y-only recurrence (shared blocks, no distinct z state)",
+      "D": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
+      "E": "stacked + matched state capacity (deferred)",
+      "F": "unshared depth-matched tower (deferred)",
+      "G": "R=1 shared architecture control (interface-, not behavior-, compatible)",
+      "H": "stop-gradient recurrence (deferred)"
+    },
+    "denoiser_arch_by_arm": {
+      "A": "stacked",
+      "B": "shared_recursive",
+      "C": "shared_recursive_y_only",
+      "D": "shared_recursive_no_extra_capacity",
+      "G": "shared_recursive"
+    }
+  },
+  "control_arm_table_schema": "RecursiveControlArmReportV1",
+  "control_arm_table_config": {
+    "vocab_size": 23,
+    "d_model": 32,
+    "n_layers": 2,
+    "n_heads": 2,
+    "max_len": 256,
+    "recursive_steps": 2,
+    "recursive_transition_layers": 2,
+    "note": "Same denoiser-only config as the SLM-138 fixture (d_model=32, max_len=256); tower-level, not whole-TwoTowerModel (context tower is identical across arms and cancels out of any delta, same convention as RSC-A04)."
+  },
+  "control_arm_table": [
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "A",
+      "label": "stacked baseline (no z state, unshared blocks)",
+      "denoiser_arch": "stacked",
+      "z_state_mode": null,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 42752,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34742,
+      "checkpoint_bytes": 187267,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 2,
+      "self_attn_calls_per_forward": 2,
+      "cross_attn_calls_per_forward": 2,
+      "mlp_calls_per_forward": 2,
+      "estimated_forward_flops": 304128.0,
+      "matching_target": "baseline (self); no matching target",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 0,
+      "parameter_count_delta_vs_baseline_pct": 0.0,
+      "residual_matching_error_params": 0,
+      "within_matching_tolerance": true,
+      "notes": []
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "B",
+      "label": "shared recursive V1 (shared blocks, explicit z state)",
+      "denoiser_arch": "shared_recursive",
+      "z_state_mode": "full",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 35998,
+      "checkpoint_bytes": 231866,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "none declared -- V1 always adds z_latent+ctx_proj on top of the shared transition blocks (see recursive_zstate_parameter_delta); this arm is not intended to parameter-match A",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": []
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "C",
+      "label": "shared y-only recurrence (shared blocks, no distinct z state)",
+      "denoiser_arch": "shared_recursive_y_only",
+      "z_state_mode": "y_only",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 42752,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34750,
+      "checkpoint_bytes": 193987,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "match A's total parameters exactly when recursive_transition_layers == A's n_layers (no z-state parameter bank of any kind)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 0,
+      "parameter_count_delta_vs_baseline_pct": 0.0,
+      "residual_matching_error_params": 0,
+      "within_matching_tolerance": true,
+      "notes": [
+        "no z-state parameter bank declared"
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "D",
+      "label": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
+      "denoiser_arch": "shared_recursive_no_extra_capacity",
+      "z_state_mode": "parameter_free",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 42752,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34747,
+      "checkpoint_bytes": 193987,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "match A's total parameters exactly when recursive_transition_layers == A's n_layers (z-state made parameter-free instead of removed)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 0,
+      "parameter_count_delta_vs_baseline_pct": 0.0,
+      "residual_matching_error_params": 0,
+      "within_matching_tolerance": true,
+      "notes": [
+        "no z-state parameter bank declared"
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "G",
+      "label": "R=1 shared architecture control (interface-, not behavior-, compatible)",
+      "denoiser_arch": "shared_recursive",
+      "z_state_mode": "full",
+      "recursive_steps": 1,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 35987,
+      "checkpoint_bytes": 231866,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "block_evaluations_per_forward": 2,
+      "self_attn_calls_per_forward": 2,
+      "cross_attn_calls_per_forward": 2,
+      "mlp_calls_per_forward": 2,
+      "estimated_forward_flops": 304128.0,
+      "matching_target": "none declared -- architecture-change control at R=1, not a parameter-matching arm (same parameter profile as B)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": [
+        "R=1 architecture-change control -- interface-compatible with the stacked baseline, not behaviorally equivalent (SLM-240)."
+      ]
+    }
+  ],
+  "parameter_delta_formula_check": {
+    "recursive_zstate_parameter_delta_d32_maxlen256": 9248,
+    "measured_B_delta_vs_A": 9248,
+    "measured_C_delta_vs_A": 0,
+    "measured_D_delta_vs_A": 0,
+    "measured_G_delta_vs_A": 9248
+  },
+  "recursive_control_initialization_report_schema": "RecursiveControlInitializationV1",
+  "recursive_control_initialization_report_instance": {
+    "contract_version": "RecursiveControlInitializationV1",
+    "base_seed": 0,
+    "num_common_tensors": 49,
+    "common_tensor_names": [
+      "layers.0.cross_attn.k_proj.bias",
+      "layers.0.cross_attn.k_proj.weight",
+      "layers.0.cross_attn.out_proj.bias",
+      "layers.0.cross_attn.out_proj.weight",
+      "layers.0.cross_attn.q_proj.bias",
+      "layers.0.cross_attn.q_proj.weight",
+      "layers.0.cross_attn.v_proj.bias",
+      "layers.0.cross_attn.v_proj.weight",
+      "layers.0.mlp.0.bias",
+      "layers.0.mlp.0.weight",
+      "layers.0.mlp.2.bias",
+      "layers.0.mlp.2.weight",
+      "layers.0.norm1.weight",
+      "layers.0.norm2.weight",
+      "layers.0.norm_cross.weight",
+      "layers.0.self_attn.k_proj.bias",
+      "layers.0.self_attn.k_proj.weight",
+      "layers.0.self_attn.out_proj.bias",
+      "layers.0.self_attn.out_proj.weight",
+      "layers.0.self_attn.q_proj.bias",
+      "layers.0.self_attn.q_proj.weight",
+      "layers.0.self_attn.v_proj.bias",
+      "layers.0.self_attn.v_proj.weight",
+      "layers.1.cross_attn.k_proj.bias",
+      "layers.1.cross_attn.k_proj.weight",
+      "layers.1.cross_attn.out_proj.bias",
+      "layers.1.cross_attn.out_proj.weight",
+      "layers.1.cross_attn.q_proj.bias",
+      "layers.1.cross_attn.q_proj.weight",
+      "layers.1.cross_attn.v_proj.bias",
+      "layers.1.cross_attn.v_proj.weight",
+      "layers.1.mlp.0.bias",
+      "layers.1.mlp.0.weight",
+      "layers.1.mlp.2.bias",
+      "layers.1.mlp.2.weight",
+      "layers.1.norm1.weight",
+      "layers.1.norm2.weight",
+      "layers.1.norm_cross.weight",
+      "layers.1.self_attn.k_proj.bias",
+      "layers.1.self_attn.k_proj.weight",
+      "layers.1.self_attn.out_proj.bias",
+      "layers.1.self_attn.out_proj.weight",
+      "layers.1.self_attn.q_proj.bias",
+      "layers.1.self_attn.q_proj.weight",
+      "layers.1.self_attn.v_proj.bias",
+      "layers.1.self_attn.v_proj.weight",
+      "norm.weight",
+      "pos.weight",
+      "tok.weight"
+    ],
+    "common_tensor_hashes_match_across_arms": true,
+    "architecture_specific_seeds": {
+      "A": 60000,
+      "B": 70000,
+      "C": 80000,
+      "D": 90000
+    },
+    "architecture_specific_tensor_names_and_shapes": {
+      "A": {},
+      "B": {
+        "z_latent": [
+          256,
+          32
+        ],
+        "ctx_proj.weight": [
+          32,
+          32
+        ],
+        "ctx_proj.bias": [
+          32
+        ]
+      },
+      "C": {},
+      "D": {}
+    },
+    "optimizer_group_membership_keys": {
+      "A": [
+        "base"
+      ],
+      "B": [
+        "base"
+      ],
+      "C": [
+        "base"
+      ],
+      "D": [
+        "base"
+      ]
+    },
+    "optimizer_initial_state_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "notes": [
+      "common_tensor_hashes cover only names present with identical shape in every provided arm (tok/pos/kind/layers.*/norm/lm_head when recursive_transition_layers matches the stacked baseline's n_layers); architecture-specific tensors (e.g. z_latent/ctx_proj for the 'full' z_state_mode) are listed under architecture_specific_tensor_names_and_shapes instead.",
+      "architecture_specific_seeds are declared/reserved, not literally consumed mid-construction by the current single-pass tower constructors -- see the class docstring.",
+      "optimizer_initial_state_hash is the hash of an empty optimizer state (pre-first-step); AdamW allocates exp_avg/exp_avg_sq lazily."
+    ]
+  },
+  "deferred_arms_rationale": {
+    "E": "Stacked + matched state capacity requires a new (learned target-position state + context projection injected once, no recurrence) constructor sharing D's parameter-free-vs-learned distinction in the opposite direction -- not yet built; construct_arm_tower('E', ...) raises NotImplementedError.",
+    "F": "Unshared depth-matched tower requires a new tower with recursive_steps * recursive_transition_layers independent (non-shared-object) TransformerBlocks plus both a block-evaluation/FLOP view and a nearest parameter/checkpoint-byte view -- not yet built.",
+    "H": "Stop-gradient recurrence requires detaching y/z between recursive steps inside recursive_outputs and a paired forward-equivalence/gradient-divergence test -- not yet built."
+  },
+  "tests": {
+    "file": "tests/test_models/test_recursive_denoiser.py",
+    "new_tests_added": 19,
+    "total_tests_in_file": 89,
+    "requirement_coverage": {
+      "1_constructs_and_roundtrips": "test_arm_c_d_train_one_step_and_roundtrip_checkpoint (C/D); existing test_twotower_shared_recursive_trains_and_roundtrips covers B; A is exercised throughout the existing suite.",
+      "2_parameter_counts_match_formula": "test_arm_c_d_parameter_count_matches_stacked_baseline; test_control_arm_table_reports_every_built_arm_no_parity_or_winner cross-checks B/G against recursive_zstate_parameter_delta.",
+      "3_B_independent_of_R": "Reused/confirmed via existing test_recursive_parameter_count_independent_of_recursive_steps (SLM-237/238) -- not re-implemented.",
+      "4_C_D_no_undeclared_zstate": "test_arm_c_d_have_no_zstate_parameters",
+      "5_E_consumes_capacity": "not applicable -- E deferred",
+      "6_F_block_calls": "not applicable -- F deferred",
+      "7_H_forward_equal_grad_diverge": "not applicable -- H deferred",
+      "8_common_init_hashes_and_disjoint_seeds": "test_recursive_control_initialization_common_tensors_match_and_seeds_disjoint; test_recursive_control_initialization_rejects_mismatched_common_tensors (fail-closed case)",
+      "9_runtime_compat": "test_deep_supervision_works_for_arm_c_and_d (recursive_outputs duck-typing); existing runtime-symbol-feature/attention-return/checkpoint-path tests already cover SharedRecursiveDenoiserTower generically (C/D subclass no new code path there).",
+      "10_invalid_combinations_fail_closed": "test_zstate_mode_rejects_unknown_value; test_denoiser_arch_rejects_unknown_value; test_deferred_arms_fail_closed_not_silently_built; test_construct_arm_tower_rejects_unknown_arm_id; test_recursive_control_initialization_rejects_mismatched_common_tensors",
+      "11_fixture_emits_complete_table": "test_control_arm_table_reports_every_built_arm_no_parity_or_winner; scripts/run_slm138_recursive_denoiser_fixture.py's control_arm_table field/markdown section"
+    }
+  },
+  "version_bumps": {
+    "model.recursive_denoiser": "v6 -> v7",
+    "model.twotower": "v65 -> v66"
+  },
+  "note": "Wiring-only evidence. A/B/C/D/G are fully implemented (construct through the canonical factory, train one step, round-trip checkpoint, real resource accounting). E/F/H are explicitly deferred, not fabricated -- construct_arm_tower raises NotImplementedError for them. No quality or efficiency conclusion is drawn from any number in this document.",
+  "recommended_next_iteration": "Build F (unshared depth-matched tower) next: it needs no new z-state machinery (reuses DenoiserTower's existing per-layer-independent structure, just with recursive_steps * recursive_transition_layers distinct blocks instead of n_layers), giving SLM-233 a real 'same total compute, no weight sharing' control before tackling E (new learned-state-without-recurrence constructor) or H (stop-gradient recurrence, which needs a careful forward-equivalence/gradient-divergence test pair).",
+  "generated_at": "2026-07-21T02:13:46.412150+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "991474511f3ec36b80ebfc2bba4ce91577efcb29",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v7"
+    },
+    "stamped_at": "2026-07-21T02:13:46.428459+00:00"
+  }
+}

@@ -23,7 +23,19 @@ from slm_training.models.recursive_denoiser import (
     compare_denoiser_architectures,
     recursive_zstate_parameter_delta,
 )
+from slm_training.models.recursive_control_arms import (
+    ARM_DENOISER_ARCH,
+    BUILT_ARM_IDS,
+    DEFERRED_ARM_IDS,
+    build_control_arm_table,
+    construct_arm_tower,
+)
+from slm_training.models.rng_contract import (
+    build_recursive_control_initialization,
+    derive_seed,
+)
 from slm_training.models.twotower import (
+    KNOWN_DENOISER_ARCHES,
     RECURSIVE_OBJECTIVE_CONTRACT_VERSION,
     RecursiveObjectiveContractV2,
     TwoTowerConfig,
@@ -1222,7 +1234,6 @@ def test_recursive_objective_contract_v2_validates_sum_identities() -> None:
 from slm_training.models.rng_contract import (
     NAMESPACE_OFFSETS,
     RngCheckpoint,
-    derive_seed,
     isolated_draw,
     seed_training_corruption,
 )
@@ -1530,3 +1541,329 @@ def test_rsc_a03_determinism_report_verdict_bit_exact_and_namespace_isolated() -
     assert report["verdict"] == "bit_exact"
     assert report["namespace_isolation_ok"] is True
     assert report["different_training_corruption_seed_unexpected_changes"] == {}
+
+
+# ---------------------------------------------------------------------------
+# SLM-241 (RSC-A05): matched recursive control arms (A/B/C/D/G built;
+# E/F/H explicitly deferred).
+# ---------------------------------------------------------------------------
+
+
+def test_zstate_mode_rejects_unknown_value() -> None:
+    """Fail closed on a typo'd z_state_mode -- never silently fall back."""
+    with pytest.raises(ValueError, match="z_state_mode"):
+        SharedRecursiveDenoiserTower(
+            vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+            z_state_mode="bogus",  # type: ignore[arg-type]
+        )
+
+
+def test_denoiser_arch_rejects_unknown_value() -> None:
+    """TwoTowerModel construction fails closed on an unrecognized
+    denoiser_arch instead of silently falling back to 'stacked'."""
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    with pytest.raises(ValueError, match="denoiser_arch"):
+        TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=16, n_heads=2, denoiser_layers=1,
+                denoiser_arch="bogus_arch",  # type: ignore[arg-type]
+                grammar_constrained=False, seed=0,
+            ),
+            device="cpu",
+        )
+
+
+@pytest.mark.parametrize("arm_id", ["C", "D"])
+def test_arm_c_d_have_no_zstate_parameters(arm_id: str) -> None:
+    """Requirement #4: C/D must contain no undeclared z-state parameters --
+    no ``z_latent``/``ctx_proj`` name at all, not merely a zeroed tensor."""
+    tower = construct_arm_tower(
+        arm_id, vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2, recursive_transition_layers=2,
+    )
+    names = dict(tower.named_parameters())
+    assert not any(name.split(".")[0] in {"z_latent", "ctx_proj"} for name in names)
+    assert not hasattr(tower, "z_latent")
+    assert not hasattr(tower, "ctx_proj")
+
+
+@pytest.mark.parametrize("arm_id", ["C", "D"])
+def test_arm_c_d_parameter_count_matches_stacked_baseline(arm_id: str) -> None:
+    """Requirement #2: analytical parameter-count formula. When
+    recursive_transition_layers == the stacked baseline's n_layers, C/D add
+    exactly zero parameters over A (no z-state bank of any kind) -- verified
+    against real constructed towers, not assumed."""
+    stacked = construct_arm_tower(
+        "A", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+    )
+    arm = construct_arm_tower(
+        arm_id, vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=3, recursive_transition_layers=2,
+    )
+    stacked_total = sum(p.numel() for p in stacked.parameters())
+    arm_total = sum(p.numel() for p in arm.parameters())
+    assert arm_total == stacked_total
+
+
+def test_arm_g_is_r1_shared_recursive_and_not_behaviorally_equivalent() -> None:
+    """Arm G: R=1 shared architecture control -- same denoiser_arch as B,
+    recursive_steps forced to 1 regardless of the requested value, and (per
+    SLM-240's already-established framing) not behaviorally equivalent to A."""
+    g_tower = construct_arm_tower(
+        "G", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=5, recursive_transition_layers=2,
+    )
+    assert isinstance(g_tower, SharedRecursiveDenoiserTower)
+    assert g_tower.recursive_steps == 1
+    assert g_tower.z_state_mode == "full"
+
+    torch.manual_seed(0)
+    stacked = construct_arm_tower(
+        "A", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+    )
+    torch.manual_seed(0)
+    g_again = construct_arm_tower(
+        "G", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=2,
+    )
+    noisy = torch.randint(1, 23, (2, 6))
+    ctx = torch.randn(2, 3, 16)
+    stacked.eval()
+    g_again.eval()
+    with torch.no_grad():
+        s_logits = stacked(noisy, ctx, pad_id=0)
+        g_logits = g_again(noisy, ctx, pad_id=0)
+    assert s_logits.shape == g_logits.shape
+    assert not torch.allclose(s_logits, g_logits)
+
+
+@pytest.mark.parametrize("arm_id", DEFERRED_ARM_IDS)
+def test_deferred_arms_fail_closed_not_silently_built(arm_id: str) -> None:
+    """E/F/H must never silently construct something -- they raise
+    NotImplementedError until a future iteration actually builds them."""
+    with pytest.raises(NotImplementedError, match=arm_id):
+        construct_arm_tower(
+            arm_id, vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        )
+
+
+def test_construct_arm_tower_rejects_unknown_arm_id() -> None:
+    with pytest.raises(ValueError, match="unknown control arm"):
+        construct_arm_tower(
+            "Z", vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+        )
+
+
+def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None:
+    """Requirement #11: the fixture emits a complete comparison table for
+    every built arm, with no raw-loss winner language -- these reports never
+    even compute a loss."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+    reports = build_control_arm_table(
+        BUILT_ARM_IDS,
+        vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=3, recursive_transition_layers=n_layers,
+        noisy_ids=noisy, context=ctx, pad_id=0,
+    )
+    assert {r.arm_id for r in reports} == set(BUILT_ARM_IDS)
+    by_id = {r.arm_id: r for r in reports}
+
+    for report in reports:
+        assert report.claim_class == "wiring"
+        assert "parity" not in report.as_dict()
+        assert "winner" not in report.as_dict()
+
+    # A is the declared reference: zero delta against itself.
+    assert by_id["A"].parameter_count_delta_vs_baseline == 0
+    # C/D match A's parameter count exactly at this (n_layers ==
+    # recursive_transition_layers) configuration.
+    assert by_id["C"].parameter_count_delta_vs_baseline == 0
+    assert by_id["D"].parameter_count_delta_vs_baseline == 0
+    assert by_id["C"].within_matching_tolerance
+    assert by_id["D"].within_matching_tolerance
+    # B/G add the z_latent/ctx_proj delta (same formula as SLM-240).
+    expected_delta = recursive_zstate_parameter_delta(d_model=d_model, max_len=max_len)
+    assert by_id["B"].parameter_count_delta_vs_baseline == expected_delta
+    assert by_id["G"].parameter_count_delta_vs_baseline == expected_delta
+    # Block-evaluation accounting: stacked does n_layers evals; B does
+    # recursive_steps * recursive_transition_layers; G forces steps=1.
+    assert by_id["A"].block_evaluations_per_forward == n_layers
+    assert by_id["B"].block_evaluations_per_forward == 3 * n_layers
+    assert by_id["G"].block_evaluations_per_forward == 1 * n_layers
+    assert (
+        by_id["B"].self_attn_calls_per_forward
+        == by_id["B"].cross_attn_calls_per_forward
+        == by_id["B"].mlp_calls_per_forward
+        == by_id["B"].block_evaluations_per_forward
+    )
+
+
+def test_recursive_control_arm_report_rejects_bad_contract_version() -> None:
+    from slm_training.models.recursive_control_arms import RecursiveControlArmReportV1
+
+    kwargs = dict(
+        contract_version="bogus",
+        claim_class="wiring",
+        arm_id="A",
+        label="x",
+        denoiser_arch="stacked",
+        z_state_mode=None,
+        recursive_steps=0,
+        recursive_transition_layers=2,
+        d_model=16,
+        max_len=32,
+        parameter_count_total=100,
+        parameter_count_denoiser=50,
+        active_parameter_count=80,
+        checkpoint_bytes=400,
+        undeclared_zstate_parameter_names=(),
+        block_evaluations_per_forward=2,
+        self_attn_calls_per_forward=2,
+        cross_attn_calls_per_forward=2,
+        mlp_calls_per_forward=2,
+        estimated_forward_flops=1.0,
+        matching_target="baseline",
+        matching_tolerance_params=0,
+        parameter_count_delta_vs_baseline=0,
+        parameter_count_delta_vs_baseline_pct=0.0,
+        residual_matching_error_params=0,
+        within_matching_tolerance=True,
+        notes=(),
+    )
+    with pytest.raises(ValueError, match="contract_version"):
+        RecursiveControlArmReportV1(**kwargs)
+
+
+def test_deep_supervision_works_for_arm_c_and_d() -> None:
+    """C/D also expose recursive_outputs (duck-typed by
+    TwoTowerModel.training_loss), so deep supervision is not special-cased
+    to arm B only."""
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    for arch, weights in (
+        ("shared_recursive_y_only", (0.5, 1.0)),
+        ("shared_recursive_no_extra_capacity", (0.5, 1.0)),
+    ):
+        model = TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+                denoiser_arch=arch,  # type: ignore[arg-type]
+                recursive_steps=2, recursive_transition_layers=2,
+                recursive_depth_supervision_weights=weights,
+                grammar_constrained=False, seed=0,
+            ),
+            device="cpu",
+        )
+        loss = model.training_loss(records)
+        assert torch.isfinite(loss)
+        assert "recursive_depth_supervision_loss" in model.last_training_metrics
+
+
+@pytest.mark.parametrize(
+    "arch", ["shared_recursive_y_only", "shared_recursive_no_extra_capacity"]
+)
+def test_arm_c_d_train_one_step_and_roundtrip_checkpoint(
+    arch: str, tmp_path: Path
+) -> None:
+    """Requirement #1: every implemented arm constructs through the
+    canonical factory, trains one step, and round-trips its checkpoint."""
+    records = [
+        ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train"),
+        ExampleRecord(id="b", prompt="CTA layout", openui=CTA, split="train"),
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            denoiser_arch=arch,  # type: ignore[arg-type]
+            recursive_steps=2, recursive_transition_layers=2,
+            grammar_constrained=False, gen_steps=2, seed=0,
+        ),
+        device="cpu",
+    )
+    assert isinstance(model.denoiser, SharedRecursiveDenoiserTower)
+    assert not hasattr(model.denoiser, "z_latent")
+    opt = torch.optim.AdamW(model.trainable_parameters(), lr=1e-3)
+    opt.zero_grad(set_to_none=True)
+    loss = model.training_loss(records)
+    loss.backward()
+    opt.step()
+
+    ckpt = tmp_path / f"{arch}.pt"
+    model.save(ckpt)
+    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    assert loaded.config.denoiser_arch == arch
+    assert isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
+    assert not hasattr(loaded.denoiser, "z_latent")
+
+
+def test_known_denoiser_arches_matches_control_arm_registry() -> None:
+    """KNOWN_DENOISER_ARCHES (twotower.py's fail-closed allowlist) and
+    ARM_DENOISER_ARCH (the control-arm registry) must name the same set of
+    real denoiser_arch strings -- no shadow arch string in either direction."""
+    assert set(KNOWN_DENOISER_ARCHES) == set(ARM_DENOISER_ARCH.values())
+
+
+def test_recursive_control_initialization_common_tensors_match_and_seeds_disjoint() -> (
+    None
+):
+    """RecursiveControlInitializationV1: reseeding to the same
+    model_initialization seed immediately before each arm's construction (the
+    same discipline TwoTowerModel.__init__ already applies) produces
+    bit-identical common tensors across A/B/C/D, and the declared
+    architecture-specific seeds are pairwise disjoint."""
+    base_seed = 0
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    arm_ids = ("A", "B", "C", "D")
+    towers = {}
+    for arm_id in arm_ids:
+        torch.manual_seed(derive_seed(base_seed, "model_initialization"))
+        towers[arm_id] = construct_arm_tower(
+            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
+            n_heads=2, max_len=max_len, recursive_steps=2,
+            recursive_transition_layers=n_layers,
+        )
+    report = build_recursive_control_initialization(
+        base_seed=base_seed,
+        arm_towers=towers,
+        arm_denoiser_arch={arm_id: ARM_DENOISER_ARCH[arm_id] for arm_id in arm_ids},
+    )
+    assert report.common_tensor_hashes_match_across_arms is True
+    # Shared token/position embeddings and transition-block weights are
+    # common across every arm at this (recursive_transition_layers ==
+    # n_layers) configuration.
+    assert "tok.weight" in report.common_tensor_names
+    assert "pos.weight" in report.common_tensor_names
+    assert any(name.startswith("layers.") for name in report.common_tensor_names)
+    # B's z_latent/ctx_proj are architecture-specific, never common.
+    assert "z_latent" in report.architecture_specific_tensor_names_and_shapes["B"]
+    assert "z_latent" not in report.architecture_specific_tensor_names_and_shapes["C"]
+    assert "z_latent" not in report.architecture_specific_tensor_names_and_shapes["D"]
+    seeds = list(report.architecture_specific_seeds.values())
+    assert len(seeds) == len(set(seeds))
+
+
+def test_recursive_control_initialization_rejects_mismatched_common_tensors() -> None:
+    """Fail closed: if common tensors were NOT actually initialized
+    identically (e.g. the caller forgot to reseed between arms), the
+    contract must refuse to report success."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    torch.manual_seed(0)
+    tower_a = construct_arm_tower(
+        "A", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len,
+    )
+    torch.manual_seed(1)  # deliberately different seed -- no reseed discipline
+    tower_b = construct_arm_tower(
+        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+    )
+    with pytest.raises(ValueError, match="common_tensor_hashes_match_across_arms"):
+        build_recursive_control_initialization(
+            base_seed=0,
+            arm_towers={"A": tower_a, "B": tower_b},
+            arm_denoiser_arch={"A": "stacked", "B": "shared_recursive"},
+        )

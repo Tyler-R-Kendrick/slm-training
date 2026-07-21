@@ -12,6 +12,12 @@ implicit global-RNG consumption order -- see that module's docstring and
 ``docs/design/iter-rsc-a03-*.md``. This does **not** change SLM-237/238's
 training-loss semantics, only the fixture's control of RNG around it.
 
+SLM-241 (RSC-A05): also emits a ``control_arm_table`` -- real, measured
+resource accounting (parameters/block-evaluations/estimated FLOPs) for every
+built matched-control arm (A/B/C/D/G; see
+:mod:`slm_training.models.recursive_control_arms`), never a raw loss or a
+winner. E/F/H are explicitly deferred -- see ``docs/design/iter-rsc-a05-*``.
+
 Example:
   python -m scripts.run_slm138_recursive_denoiser_fixture --mode plan-only
   python -m scripts.run_slm138_recursive_denoiser_fixture --mode fixture
@@ -32,6 +38,11 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.models.recursive_control_arms import (
+    BUILT_ARM_IDS,
+    DEFERRED_ARM_IDS,
+    build_control_arm_table,
+)
 from slm_training.models.recursive_denoiser import (
     ArchitectureComparisonReportV1,
     SharedRecursiveDenoiserTower,
@@ -187,6 +198,41 @@ def _architecture_comparison(
     )
 
 
+def _control_arm_table(stacked: TwoTowerModel, base_seed: int) -> list[dict[str, Any]]:
+    """SLM-241 (RSC-A05): real, measured resource-accounting table for every
+    built control arm (A/B/C/D/G) -- requirement #11's "complete comparison
+    table for every arm you built, without raw-loss winner language". Reuses
+    the same deterministic ``shape_probe_inputs``/``shape_probe_context``
+    namespaces as ``_architecture_comparison`` above.
+    """
+    import torch
+
+    noisy = isolated_draw(
+        base_seed,
+        "shape_probe_inputs",
+        lambda: torch.randint(1, stacked.tokenizer.vocab_size, (2, 6)),
+    )
+    ctx = isolated_draw(
+        base_seed,
+        "shape_probe_context",
+        lambda: torch.randn(2, 3, stacked.config.d_model),
+    )
+    reports = build_control_arm_table(
+        BUILT_ARM_IDS,
+        vocab_size=stacked.tokenizer.vocab_size,
+        d_model=stacked.config.d_model,
+        n_layers=stacked.config.denoiser_layers,
+        n_heads=stacked.config.n_heads,
+        max_len=stacked.config.max_target_len,
+        recursive_steps=2,
+        recursive_transition_layers=stacked.config.denoiser_layers,
+        noisy_ids=noisy,
+        context=ctx,
+        pad_id=stacked.tokenizer.pad_id,
+    )
+    return [report.as_dict() for report in reports]
+
+
 def _clean_tree_gate(*, code_dirty: bool | None, allow_dirty: bool) -> dict[str, Any]:
     """Pure clean-tree evidence classification (SLM-239 requirement #3).
 
@@ -276,6 +322,11 @@ def _run_fixture(
     # so its placement here (between the shape probes and the pre-update
     # objective decomposition) does not perturb SLM-239's guarantees.
     architecture_comparison = _architecture_comparison(stacked, recursive, base_seed)
+
+    # SLM-241 (RSC-A05): the built control-arm resource-accounting table
+    # (A/B/C/D/G). Deterministic/RNG-isolated for the same reason as
+    # architecture_comparison above.
+    control_arm_table = _control_arm_table(stacked, base_seed)
 
     # (3) Deterministic pre-update objective decomposition. Explicit
     # named-namespace seed immediately before each training_loss call --
@@ -381,6 +432,9 @@ def _run_fixture(
             "total_shared_layers": len(rec_tower.layers),
         },
         "architecture_comparison": architecture_comparison.as_dict(),
+        "control_arm_table": control_arm_table,
+        "control_arms_built": list(BUILT_ARM_IDS),
+        "control_arms_deferred": list(DEFERRED_ARM_IDS),
         "deep_supervision_metrics": deep_metrics,
         "checkpoint_roundtrip_ok": loaded_ok,
         "rng_contract": {
@@ -687,6 +741,33 @@ def _render_markdown(report: dict[str, Any]) -> str:
                 "",
             ]
         )
+
+    control_arms = report.get("control_arm_table")
+    if control_arms:
+        lines.extend(
+            [
+                "## SLM-241 (RSC-A05) control arm table",
+                "",
+                "Real, measured resource accounting per built control arm -- "
+                "never a raw loss or a winner (see `docs/design/iter-rsc-a05-*`"
+                " for the full formulas/residuals). Built arms: "
+                f"{', '.join(report.get('control_arms_built', []))}. Deferred: "
+                f"{', '.join(report.get('control_arms_deferred', []))}.",
+                "",
+                "| arm | denoiser_arch | z_state_mode | params (Δ vs A) | "
+                "block evals | matched? |",
+                "| --- | --- | --- | --- | --- | --- |",
+            ]
+        )
+        for arm in control_arms:
+            lines.append(
+                f"| {arm['arm_id']} | `{arm['denoiser_arch']}` | "
+                f"`{arm['z_state_mode']}` | {arm['parameter_count_total']} "
+                f"({arm['parameter_count_delta_vs_baseline']:+d}) | "
+                f"{arm['block_evaluations_per_forward']} | "
+                f"{arm['within_matching_tolerance']} |"
+            )
+        lines.append("")
 
     if "losses" in report:
         lines.extend(

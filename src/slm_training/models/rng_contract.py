@@ -74,6 +74,17 @@ NAMESPACE_OFFSETS: dict[str, int] = {
     "training_corruption": 30_000,
     "training_batch_order": 40_000,
     "control_only": 50_000,
+    # SLM-241 (RSC-A05): declared, disjoint per-architecture seeds for the
+    # matched recursive control arms (see
+    # slm_training.models.recursive_control_arms /
+    # RecursiveControlInitializationV1 below). These are *reserved contract
+    # surface*, not literally consumed mid-construction by the current
+    # single-pass tower constructors -- see RecursiveControlInitializationV1's
+    # docstring for exactly what these seeds do and do not guarantee today.
+    "arch_specific:stacked": 60_000,
+    "arch_specific:shared_recursive": 70_000,
+    "arch_specific:shared_recursive_y_only": 80_000,
+    "arch_specific:shared_recursive_no_extra_capacity": 90_000,
 }
 
 DECLARED_NAMESPACES = tuple(sorted(NAMESPACE_OFFSETS))
@@ -179,3 +190,194 @@ def rng_namespace_report(base_seed: int) -> dict[str, int]:
     persisted verbatim into fixture/determinism-report JSON so the contract
     version + concrete seeds are part of the evidence, not just the code."""
     return {ns: derive_seed(base_seed, ns) for ns in DECLARED_NAMESPACES}
+
+
+# ---------------------------------------------------------------------------
+# SLM-241 (RSC-A05): RecursiveControlInitializationV1 -- the fair-init
+# contract a matched recursive-control campaign needs. Extends this module's
+# namespace machinery rather than forking a parallel one (see the
+# ``arch_specific:*`` namespaces above).
+# ---------------------------------------------------------------------------
+
+RECURSIVE_CONTROL_INIT_VERSION = "RecursiveControlInitializationV1"
+
+
+@dataclass(frozen=True)
+class RecursiveControlInitializationV1:
+    """Fairness/init evidence for a set of constructed control-arm towers.
+
+    Built only by :func:`build_recursive_control_initialization` from real
+    constructed modules -- nothing here is hand-assembled.
+
+    ``common_tensor_hashes_match_across_arms`` is *measured*, not assumed: all
+    the towers this module builds from a shared ``base_seed`` reach every
+    common tensor (``tok``/``pos``/``kind``/``layers.*``/``norm``/``lm_head``)
+    through an identical construction order and shape before any
+    architecture-specific tensor is registered (verified empirically by
+    ``tests/test_models/test_recursive_denoiser.py``), so re-seeding the
+    global RNG to the same ``model_initialization`` seed immediately before
+    each tower's construction -- exactly what ``TwoTowerModel.__init__``
+    already does per instance -- produces bit-identical common tensors.
+
+    ``architecture_specific_seeds`` are declared, pairwise-disjoint seeds
+    from :data:`NAMESPACE_OFFSETS`'s ``arch_specific:*`` entries -- **not**
+    literally consumed inside ``SharedRecursiveDenoiserTower.__init__`` today.
+    The current constructors are single-pass: architecture-specific tensors
+    (``z_latent``/``ctx_proj`` for ``z_state_mode="full"``; none at all for
+    ``"y_only"``/``"parameter_free"``) are registered by ordinary Python
+    attribute assignment *after* every common tensor in the same
+    ``model_initialization``-seeded call, and (per the measurement above)
+    that placement already does not perturb the common tensors' draws. These
+    seeds are reserved contract surface: real, deterministic, and disjoint,
+    for any future two-phase constructor or standalone telemetry that draws
+    architecture-specific tensors independently of the common-prefix draw
+    count -- reported here honestly as declared rather than claimed as
+    actually-consumed.
+    """
+
+    contract_version: str
+    base_seed: int
+    common_tensor_names: tuple[str, ...]
+    common_tensor_hashes: dict[str, str]
+    common_tensor_hashes_match_across_arms: bool
+    architecture_specific_seeds: dict[str, int]
+    architecture_specific_tensor_names_and_shapes: dict[str, dict[str, list[int]]]
+    optimizer_group_membership: dict[str, dict[str, list[str]]]
+    optimizer_initial_state_hash: str
+    notes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if self.contract_version != RECURSIVE_CONTROL_INIT_VERSION:
+            raise ValueError(
+                f"contract_version={self.contract_version!r} does not match "
+                f"{RECURSIVE_CONTROL_INIT_VERSION!r}."
+            )
+        seeds = list(self.architecture_specific_seeds.values())
+        if len(set(seeds)) != len(seeds):
+            raise ValueError(
+                "architecture_specific_seeds must be pairwise disjoint, got "
+                f"{self.architecture_specific_seeds!r}."
+            )
+        if not self.common_tensor_hashes_match_across_arms:
+            raise ValueError(
+                "common_tensor_hashes_match_across_arms is False -- a "
+                "matched-control fairness report must never be built from "
+                "towers whose common tensors were not actually identically "
+                "initialized. Reseed to the same model_initialization seed "
+                "immediately before constructing each arm."
+            )
+
+
+def build_recursive_control_initialization(
+    *,
+    base_seed: int,
+    arm_towers: dict[str, Any],
+    arm_denoiser_arch: dict[str, str],
+    arm_optimizer_group_membership: dict[str, dict[str, list[str]]] | None = None,
+) -> RecursiveControlInitializationV1:
+    """Build a real :class:`RecursiveControlInitializationV1` from constructed
+    control-arm towers.
+
+    ``arm_towers`` maps an arm id (e.g. ``"A"``/``"B"``/``"C"``/``"D"``) to an
+    already-constructed ``nn.Module`` -- the caller is responsible for
+    reseeding the global RNG to ``derive_seed(base_seed,
+    "model_initialization")`` immediately before constructing each one (the
+    same discipline ``TwoTowerModel.__init__`` already applies per instance),
+    so common tensors are actually bit-identical; this function *measures*
+    that outcome rather than assuming it.
+
+    ``arm_denoiser_arch`` maps the same arm ids to their canonical
+    ``denoiser_arch`` string (see
+    ``slm_training.models.twotower.KNOWN_DENOISER_ARCHES`` /
+    ``slm_training.models.recursive_control_arms.ARM_DENOISER_ARCH``), used
+    only to select each arm's declared ``arch_specific:<denoiser_arch>``
+    seed.
+    """
+    if not arm_towers:
+        raise ValueError("arm_towers must be non-empty")
+
+    named_by_arm = {arm: dict(tower.named_parameters()) for arm, tower in arm_towers.items()}
+    arm_ids = sorted(named_by_arm)
+    common_names = set.intersection(*(set(d) for d in named_by_arm.values()))
+    common_names = {
+        name
+        for name in common_names
+        if len({tuple(named_by_arm[arm][name].shape) for arm in arm_ids}) == 1
+    }
+
+    common_hashes: dict[str, str] = {}
+    mismatched: list[str] = []
+    for name in sorted(common_names):
+        per_arm_hashes = {
+            arm: state_digest(named_by_arm[arm][name].detach()) for arm in arm_ids
+        }
+        digests = set(per_arm_hashes.values())
+        if len(digests) != 1:
+            mismatched.append(name)
+            continue
+        common_hashes[name] = next(iter(digests))
+    hashes_match = not mismatched
+
+    architecture_specific_seeds: dict[str, int] = {}
+    architecture_specific_tensors: dict[str, dict[str, list[int]]] = {}
+    for arm in arm_ids:
+        arch = arm_denoiser_arch.get(arm)
+        if arch is not None:
+            architecture_specific_seeds[arm] = derive_seed(
+                base_seed, f"arch_specific:{arch}"
+            )
+        architecture_specific_tensors[arm] = {
+            name: list(tensor.shape)
+            for name, tensor in named_by_arm[arm].items()
+            if name not in common_names
+        }
+
+    optimizer_groups = arm_optimizer_group_membership or {
+        arm: {
+            "base": [
+                name
+                for name, tensor in named_by_arm[arm].items()
+                if tensor.requires_grad
+            ]
+        }
+        for arm in arm_ids
+    }
+    # AdamW (and every other torch optimizer) lazily allocates per-parameter
+    # state on the first .step() call -- state_dict()["state"] is genuinely
+    # empty before that. The hash below pins that fact deterministically
+    # rather than fabricating a nonexistent initial moment/variance value.
+    optimizer_initial_state_hash = _stable_dict_hash({})
+
+    notes = (
+        "common_tensor_hashes cover only names present with identical shape "
+        "in every provided arm (tok/pos/kind/layers.*/norm/lm_head when "
+        "recursive_transition_layers matches the stacked baseline's "
+        "n_layers); architecture-specific tensors (e.g. z_latent/ctx_proj "
+        "for the 'full' z_state_mode) are listed under "
+        "architecture_specific_tensor_names_and_shapes instead.",
+        "architecture_specific_seeds are declared/reserved, not literally "
+        "consumed mid-construction by the current single-pass tower "
+        "constructors -- see the class docstring.",
+        "optimizer_initial_state_hash is the hash of an empty optimizer "
+        "state (pre-first-step); AdamW allocates exp_avg/exp_avg_sq lazily.",
+    )
+
+    return RecursiveControlInitializationV1(
+        contract_version=RECURSIVE_CONTROL_INIT_VERSION,
+        base_seed=base_seed,
+        common_tensor_names=tuple(sorted(common_hashes)),
+        common_tensor_hashes=common_hashes,
+        common_tensor_hashes_match_across_arms=hashes_match,
+        architecture_specific_seeds=architecture_specific_seeds,
+        architecture_specific_tensor_names_and_shapes=architecture_specific_tensors,
+        optimizer_group_membership=optimizer_groups,
+        optimizer_initial_state_hash=optimizer_initial_state_hash,
+        notes=notes,
+    )
+
+
+def _stable_dict_hash(obj: dict[str, Any]) -> str:
+    import json
+
+    blob = json.dumps(obj, sort_keys=True, default=str).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()

@@ -89,6 +89,23 @@ _QUOTED_SPAN_RE = re.compile(r'("(?:\\.|[^"\\])*")')
 _REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
 _DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
 
+#: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
+#: control arm this issue builds (A/B/C/D; see
+#: ``slm_training.models.recursive_control_arms`` for the full A-H registry,
+#: including the deferred E/F/H arms and G, which reuses "shared_recursive"
+#: with ``recursive_steps=1``). "stacked" is arm A; the three
+#: ``SharedRecursiveDenoiserTower`` archs map onto its ``z_state_mode``.
+STACKED_DENOISER_ARCH = "stacked"
+SHARED_RECURSIVE_ARCH_Z_STATE_MODES: dict[str, str] = {
+    "shared_recursive": "full",  # arm B (and, with recursive_steps=1, arm G)
+    "shared_recursive_y_only": "y_only",  # arm C
+    "shared_recursive_no_extra_capacity": "parameter_free",  # arm D
+}
+KNOWN_DENOISER_ARCHES: tuple[str, ...] = (
+    STACKED_DENOISER_ARCH,
+    *SHARED_RECURSIVE_ARCH_Z_STATE_MODES,
+)
+
 
 def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
     if config is None:
@@ -185,7 +202,10 @@ class TwoTowerConfig:
     # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
     # hf_model_name causal LM as a bidirectional masked denoiser backbone.
     denoiser_backend: str = "scratch"
-    # stacked | shared_recursive — SLM-138 shared recursive denoiser tower.
+    # stacked | shared_recursive | shared_recursive_y_only |
+    # shared_recursive_no_extra_capacity — SLM-138 shared recursive denoiser
+    # tower (SLM-241/RSC-A05 adds the y_only/no_extra_capacity control arms;
+    # see KNOWN_DENOISER_ARCHES / slm_training.models.recursive_control_arms).
     denoiser_arch: str = "stacked"
     # SLM-138: number of recurrences for the shared recursive denoiser.
     recursive_steps: int = 1
@@ -605,7 +625,10 @@ def _load_checkpoint_state(
         key for key in missing if key.startswith("root_reference_identity_head.")
     }
     # SLM-138: a shared-recursive denoiser adds z-state parameters that older
-    # stacked checkpoints legitimately omit; warm-start them randomly.
+    # stacked checkpoints legitimately omit; warm-start them randomly. Only
+    # the "full" z_state_mode (denoiser_arch="shared_recursive") declares
+    # these tensors at all -- SLM-241 (RSC-A05)'s "y_only"/"no_extra_capacity"
+    # arms never have them, so no allowance is needed (or correct) for those.
     if getattr(config, "denoiser_arch", None) == "shared_recursive":
         allowed_missing |= {
             key
@@ -1091,7 +1114,7 @@ class TwoTowerModel(nn.Module):
             denoiser_arch = str(
                 getattr(self.config, "denoiser_arch", "stacked")
             ).lower()
-            if denoiser_arch == "shared_recursive":
+            if denoiser_arch in SHARED_RECURSIVE_ARCH_Z_STATE_MODES:
                 transition_layers = int(
                     getattr(self.config, "recursive_transition_layers", 0) or 0
                 )
@@ -1110,8 +1133,9 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "recursive_steps", 1) or 1
                     ),
                     recursive_transition_layers=transition_layers,
+                    z_state_mode=SHARED_RECURSIVE_ARCH_Z_STATE_MODES[denoiser_arch],
                 )
-            else:
+            elif denoiser_arch == STACKED_DENOISER_ARCH:
                 self.denoiser = DenoiserTower(
                     vocab_size=tokenizer.vocab_size,
                     d_model=self.config.d_model,
@@ -1121,6 +1145,15 @@ class TwoTowerModel(nn.Module):
                     dropout=self.config.dropout,
                     kind_ids=kind_ids,
                     n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                )
+            else:
+                # SLM-241 (RSC-A05): fail closed on an unrecognized
+                # denoiser_arch rather than silently falling back to
+                # "stacked" -- a typo (e.g. a not-yet-built control arm id)
+                # would otherwise silently construct the wrong architecture.
+                raise ValueError(
+                    f"unknown denoiser_arch {denoiser_arch!r}; expected one "
+                    f"of {KNOWN_DENOISER_ARCHES!r}"
                 )
         else:
             raise ValueError(f"unknown denoiser_backend {denoiser_backend!r}")

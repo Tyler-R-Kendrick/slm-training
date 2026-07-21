@@ -1387,7 +1387,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v65",
+      "version": "v66",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1402,6 +1402,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v66",
+          "date": "2026-07-21",
+          "note": "SLM-241 (RSC-A05): denoiser construction now fails closed on an unrecognized denoiser_arch (KNOWN_DENOISER_ARCHES) instead of silently falling back to 'stacked' -- added shared_recursive_y_only and shared_recursive_no_extra_capacity as canonical denoiser_arch values (control arms C/D), routed through SharedRecursiveDenoiserTower's new z_state_mode via SHARED_RECURSIVE_ARCH_Z_STATE_MODES. CLI --denoiser-arch (scripts/train_model.py) gains the two new choices. No change to existing 'stacked'/'shared_recursive' behavior."
+        },
         {
           "version": "v65",
           "date": "2026-07-21",
@@ -1745,7 +1750,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -1760,9 +1765,22 @@
         "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.json",
         "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.md",
         "docs/design/iter-rsc-a04-parity-claim-correction-20260721.json",
-        "docs/design/iter-rsc-a04-parity-claim-correction-20260721.md"
+        "docs/design/iter-rsc-a04-parity-claim-correction-20260721.md",
+        "src/slm_training/models/recursive_control_arms.py",
+        "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.json",
+        "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-21",
+          "note": "SLM-241 (RSC-A05): added z_state_mode ('full'|'y_only'|'parameter_free') to SharedRecursiveDenoiserTower -- 'y_only' (control arm C) removes the distinct z state entirely (both F/G updates fold through y, no z_latent/ctx_proj tensor); 'parameter_free' (arm D) keeps the y/z split but replaces the learned z_latent/ctx_proj with a deterministic pooled-context broadcast, so D's total parameter count matches a stacked baseline with the same recursive_transition_layers/n_layers exactly. Added src/slm_training/models/recursive_control_arms.py -- the A-H control-arm registry (A/B/C/D/G built; E/F/H explicitly deferred, raise NotImplementedError), RecursiveControlArmReportV1 resource accounting (never a parity/winner field), and build_control_arm_table. Extended rng_contract.py with arch_specific:<denoiser_arch> namespaces and RecursiveControlInitializationV1 (fail-closed if common tensors were not actually identically initialized across arms) -- additive to the existing disjoint-namespace contract, not a fork. 19 new tests in tests/test_models/test_recursive_denoiser.py."
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-21",
+          "note": "no-bump: regenerated iter-slm138-recursive-denoiser-20260721.{json,md} on the clean committed v7 revision to embed the new control_arm_table section (SLM-241/RSC-A05) -- content-only refresh of already-committed evidence (verdict/losses/deep-supervision metrics unchanged)."
+        },
         {
           "version": "v6",
           "date": "2026-07-21",
