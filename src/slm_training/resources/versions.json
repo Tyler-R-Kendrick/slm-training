@@ -180,13 +180,37 @@
         }
       ]
     },
+    "harness.experiments.slm195_solver_only_semantic_ceiling": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm195_solver_semantic_ceiling.py",
+        "scripts/run_slm195_solver_semantic_ceiling.py",
+        "tests/test_harnesses/experiments/test_slm195_solver_semantic_ceiling.py",
+        "tests/test_scripts/test_run_slm195_solver_semantic_ceiling.py",
+        "docs/design/iter-slm195-solver-only-semantic-ceiling-20260721.json",
+        "docs/design/iter-slm195-solver-only-semantic-ceiling-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-195 FFE3-04 solver-only semantic ceiling harness, rankers, and CLI"
+        }
+      ]
+    },
     "harness.experiments": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-21",
+          "note": "add SLM-195 FFE3-04 solver-only semantic ceiling harness lazy re-exports"
+        },
         {
           "version": "v60",
           "date": "2026-07-21",
