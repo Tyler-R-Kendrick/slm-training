@@ -439,6 +439,11 @@
       "history": [
         {
           "version": "v12",
+          "date": "2026-07-21",
+          "note": "no-bump: SLM-186 adds new Goodhart canary slices to metric_gaming.py; existing slice scoring unchanged"
+        },
+        {
+          "version": "v12",
           "date": "2026-07-20",
           "note": "wire default-off render_equivalence surrogate into task_scoreboard; RENDER_EQUIVALENCE_MODE remains off"
         },
@@ -681,6 +686,11 @@
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-21",
+          "note": "no-bump: add SLM-186 FFE0-04 verified-utility sub-harness; no change to existing experiment harness behavior"
+        },
         {
           "version": "v50",
           "date": "2026-07-20",
@@ -3084,6 +3094,55 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
+        }
+      ]
+    },
+    "evals.semantic_bits": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/semantic_bits.py",
+        "tests/test_evals/test_semantic_bits.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 compiler_state_conditional_bits and verified-utility efficiency helpers"
+        }
+      ]
+    },
+    "evals.verified_utility": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/verified_utility.py",
+        "tests/test_evals/test_verified_utility.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 VerifiedUtilityV1 schema, scalar/lexicographic ranking, pareto, CVaR, abstention economics, sensitivity, and canonical-equivalence helpers"
+        }
+      ]
+    },
+    "harness.experiments.slm186_verified_utility": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm186_verified_utility.py",
+        "scripts/run_verified_utility_audit.py",
+        "tests/test_harnesses/experiments/test_slm186_verified_utility.py",
+        "tests/test_scripts/test_run_verified_utility_audit.py",
+        "docs/design/iter-slm186-verified-utility-20260721.json",
+        "docs/design/iter-slm186-verified-utility-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-186 FFE0-04 verified-utility ladder and Goodhart canary audit wiring/fixture harness"
         }
       ]
     }

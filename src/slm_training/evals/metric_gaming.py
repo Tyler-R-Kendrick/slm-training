@@ -35,11 +35,26 @@ SLICE_RARE_OMISSION = "rare_omission"
 SLICE_INVENTORY_FREE = "inventory_free"
 SLICE_RETRY_SENSITIVE = "retry_sensitive"
 
+# SLM-186 Goodhart canary extension: slices that expose metric-gaming channels
+# beyond the original SDE0-02 suite.
+SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING = "canary_right_role_wrong_binding"
+SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY = "canary_right_inventory_wrong_hierarchy"
+SLICE_CANARY_RENDER_SEMANTICS_MISMATCH = "canary_render_semantics_mismatch"
+SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT = "canary_ast_similar_missing_component"
+SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION = "canary_overlong_economy_violation"
+SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE = "canary_canonical_equivalent_positive"
+
 ALL_SLICES = (
     SLICE_MINIMAL_VALID,
     SLICE_RARE_OMISSION,
     SLICE_INVENTORY_FREE,
     SLICE_RETRY_SENSITIVE,
+    SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
+    SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
+    SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
+    SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
+    SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION,
+    SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
 )
 
 # Historically weak / low-recall components identified in the issue.
@@ -686,6 +701,530 @@ def build_retry_sensitive_cases(seed: int = 0) -> list[MetricGamingCase]:
     return cases
 
 
+def build_canary_right_role_wrong_binding_cases(seed: int = 0) -> list[MetricGamingCase]:
+    """Components have the right semantic roles but bind out-of-inventory slots."""
+    del seed
+    cases: list[MetricGamingCase] = []
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_card_role_wrong_binding",
+            slice=SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
+            prompt=(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body"
+            ),
+            pred_openui=(
+                'root = Card([header, body])\n'
+                'header = CardHeader(":other.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            request=_request(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body",
+                (":card.title", ":card.body"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("unexpected_placeholder_identity",),
+            gold_openui=(
+                'root = Card([header, body])\n'
+                'header = CardHeader(":card.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            transform="bind_title_to_out_of_inventory_slot",
+            notes="CardHeader binds an out-of-inventory slot instead of :card.title.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_switch_role_wrong_binding",
+            slice=SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
+            prompt=(
+                "Build a switch item for notifications with caption :settings.caption "
+                "and description :settings.desc. Placeholders: :settings.caption :settings.desc"
+            ),
+            pred_openui=(
+                'root = Stack([s])\n'
+                's = SwitchItem(":settings.caption", ":other.desc", "notifications")\n'
+            ),
+            request=_request(
+                "Build a switch item for notifications with caption :settings.caption "
+                "and description :settings.desc. Placeholders: :settings.caption :settings.desc",
+                (":settings.caption", ":settings.desc"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("unexpected_placeholder_identity",),
+            gold_openui=(
+                'root = Stack([s])\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+            ),
+            transform="bind_description_to_out_of_inventory_slot",
+            notes="SwitchItem description binds an out-of-inventory slot.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_image_role_wrong_binding",
+            slice=SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING,
+            prompt=(
+                "Build an image block with source :img.src and alt :img.alt. "
+                "Placeholders: :img.src :img.alt"
+            ),
+            pred_openui='root = ImageBlock(":img.src", ":other.alt")\n',
+            request=_request(
+                "Build an image block with source :img.src and alt :img.alt. "
+                "Placeholders: :img.src :img.alt",
+                (":img.src", ":img.alt"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("unexpected_placeholder_identity",),
+            gold_openui='root = ImageBlock(":img.src", ":img.alt")\n',
+            transform="bind_alt_to_out_of_inventory_slot",
+            notes="ImageBlock alt binds an out-of-inventory slot.",
+        )
+    )
+
+    return cases
+
+
+def build_canary_right_inventory_wrong_hierarchy_cases(seed: int = 0) -> list[MetricGamingCase]:
+    """All inventory slots appear, but in the wrong structural hierarchy."""
+    del seed
+    cases: list[MetricGamingCase] = []
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_card_header_as_sibling",
+            slice=SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
+            prompt=(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body"
+            ),
+            pred_openui=(
+                'root = Stack([header, body])\n'
+                'header = CardHeader(":card.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            request=_request(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body",
+                (":card.title", ":card.body"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("prompt_component_missing",),
+            gold_openui=(
+                'root = Card([header, body])\n'
+                'header = CardHeader(":card.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            transform="card_children_as_stack_siblings",
+            notes="CardHeader and TextContent are siblings in a Stack instead of inside a Card.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_tabs_content_as_sibling",
+            slice=SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
+            prompt=(
+                "Build tabs with a tab item whose trigger is :tab.trigger "
+                "and content is :tab.content. Placeholders: :tab.trigger :tab.content"
+            ),
+            pred_openui=(
+                'root = Tabs([tab1, content])\n'
+                'tab1 = TabItem("tab1", ":tab.trigger", [])\n'
+                'content = TextContent(":tab.content")\n'
+            ),
+            request=_request(
+                "Build tabs with a tab item whose trigger is :tab.trigger "
+                "and content is :tab.content. Placeholders: :tab.trigger :tab.content",
+                (":tab.trigger", ":tab.content"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("schema_value_role_mismatch:Tabs.items",),
+            gold_openui=(
+                'root = Tabs([tab1])\n'
+                'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content")])\n'
+            ),
+            transform="tab_content_as_sibling",
+            notes="Tab content is a sibling of the TabItem instead of nested inside it.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_form_input_outside_controls",
+            slice=SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY,
+            prompt=(
+                "Build a form with email input and submit button. "
+                "Placeholders: :form.email :form.submit_text :form.email_label"
+            ),
+            pred_openui=(
+                'root = Form("contact", buttons, [email])\n'
+                'buttons = Buttons([submit])\n'
+                'submit = Button(":form.submit_text")\n'
+                'email = Input(":form.email")\n'
+            ),
+            request=_request(
+                "Build a form with email input and submit button. "
+                "Placeholders: :form.email :form.submit_text :form.email_label",
+                (":form.email", ":form.submit_text", ":form.email_label"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("schema_value_role_mismatch:Form.fields",),
+            gold_openui=(
+                'root = Form("contact", buttons, [email])\n'
+                'buttons = Buttons([submit])\n'
+                'submit = Button(":form.submit_text")\n'
+                'email = FormControl(":form.email_label", input)\n'
+                'input = Input(":form.email")\n'
+            ),
+            transform="input_outside_form_control",
+            notes="Input is directly under Form instead of wrapped in FormControl.",
+        )
+    )
+
+    return cases
+
+
+def build_canary_render_semantics_mismatch_cases(seed: int = 0) -> list[MetricGamingCase]:
+    """Parser-valid programs whose rendered/component semantics differ from the prompt."""
+    del seed
+    cases: list[MetricGamingCase] = []
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_callout_replaced_by_card",
+            slice=SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
+            prompt=(
+                "Build an info Callout with title :callout.title and description "
+                ":callout.desc. Placeholders: :callout.title :callout.desc"
+            ),
+            pred_openui=(
+                'root = Card([title, desc])\n'
+                'title = TextContent(":callout.title")\n'
+                'desc = TextContent(":callout.desc")\n'
+            ),
+            request=_request(
+                "Build an info Callout with title :callout.title and description "
+                ":callout.desc. Placeholders: :callout.title :callout.desc",
+                (":callout.title", ":callout.desc"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("prompt_component_missing",),
+            gold_openui='root = Callout("info", ":callout.title", ":callout.desc")\n',
+            transform="callout_replaced_by_card",
+            notes="Card with title/description text replaces the requested Callout component.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_button_as_text",
+            slice=SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
+            prompt=(
+                "Build a Button with action :btn.action. Placeholders: :btn.action"
+            ),
+            pred_openui='root = TextContent(":btn.action")\n',
+            request=_request(
+                "Build a Button with action :btn.action. Placeholders: :btn.action",
+                (":btn.action",),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("prompt_component_missing",),
+            gold_openui='root = Button(":btn.action")\n',
+            transform="button_replaced_by_text_content",
+            notes="TextContent displays the action string but is not an interactive Button.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_slider_replaced_by_button",
+            slice=SLICE_CANARY_RENDER_SEMANTICS_MISMATCH,
+            prompt=(
+                "Build a continuous Slider for volume with caption :settings.caption. "
+                "Placeholders: :settings.caption"
+            ),
+            pred_openui='root = Stack([s])\ns = Button(":settings.caption")\n',
+            request=_request(
+                "Build a continuous Slider for volume with caption :settings.caption. "
+                "Placeholders: :settings.caption",
+                (":settings.caption",),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("prompt_component_missing",),
+            gold_openui='root = Stack([s])\ns = Slider(":settings.caption", "continuous", 0, 100)\n',
+            transform="slider_replaced_by_button",
+            notes="Button replaces the requested Slider component.",
+        )
+    )
+
+    return cases
+
+
+def build_canary_ast_similar_missing_component_cases(seed: int = 0) -> list[MetricGamingCase]:
+    """ASTs that look similar to positives but omit a requested component."""
+    del seed
+    cases: list[MetricGamingCase] = []
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_card_missing_header",
+            slice=SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
+            prompt=(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body"
+            ),
+            pred_openui=(
+                'root = Card([body])\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            request=_request(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body",
+                (":card.title", ":card.body"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("required_placeholder_missing",),
+            gold_openui=(
+                'root = Card([header, body])\n'
+                'header = CardHeader(":card.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            transform="omit_card_header_keep_body",
+            notes="Card body remains but CardHeader (title) is removed.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_callout_missing_description",
+            slice=SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
+            prompt=(
+                "Build a Callout with title :callout.title and description "
+                ":callout.desc. Placeholders: :callout.title :callout.desc"
+            ),
+            pred_openui=(
+                'root = Callout("info", ":callout.title", ":callout.title")\n'
+            ),
+            request=_request(
+                "Build a Callout with title :callout.title and description "
+                ":callout.desc. Placeholders: :callout.title :callout.desc",
+                (":callout.title", ":callout.desc"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("required_placeholder_missing",),
+            gold_openui=(
+                'root = Callout("info", ":callout.title", ":callout.desc")\n'
+            ),
+            transform="omit_callout_description",
+            notes="Callout reuses title for description; the requested desc slot is missing.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_form_missing_submit",
+            slice=SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT,
+            prompt=(
+                "Build a form with email input and submit button. "
+                "Placeholders: :form.email :form.submit_text :form.email_label"
+            ),
+            pred_openui=(
+                'root = Form("contact", buttons, [email])\n'
+                'buttons = Buttons([])\n'
+                'email = FormControl(":form.email_label", input)\n'
+                'input = Input(":form.email")\n'
+            ),
+            request=_request(
+                "Build a form with email input and submit button. "
+                "Placeholders: :form.email :form.submit_text :form.email_label",
+                (":form.email", ":form.submit_text", ":form.email_label"),
+            ),
+            expected_verdict=False,
+            expected_reason_substrings=("required_placeholder_missing",),
+            gold_openui=(
+                'root = Form("contact", buttons, [email])\n'
+                'buttons = Buttons([submit])\n'
+                'submit = Button(":form.submit_text")\n'
+                'email = FormControl(":form.email_label", input)\n'
+                'input = Input(":form.email")\n'
+            ),
+            transform="omit_submit_button",
+            notes="Form keeps email input but the submit Buttons list is empty.",
+        )
+    )
+
+    return cases
+
+
+def build_canary_overlong_economy_violation_cases(seed: int = 0) -> list[MetricGamingCase]:
+    """Valid programs that are unnecessarily long and miss requested content."""
+    del seed
+    cases: list[MetricGamingCase] = []
+
+    prompt = "Build a Button with action :btn.action. Placeholders: :btn.action"
+    slots = (":btn.action",)
+    positive = 'root = Button(":btn.action")\n'
+
+    # Overlong: many nested Stacks but no Button.
+    pred = (
+        'root = Stack([s1])\n'
+        's1 = Stack([s2])\n'
+        's2 = Stack([s3])\n'
+        's3 = Stack([s4])\n'
+        's4 = Stack([s5])\n'
+        's5 = Stack([t])\n'
+        't = TextContent(":btn.action")\n'
+    )
+    cases.append(
+        MetricGamingCase(
+            id="canary_button_deep_stack_no_button",
+            slice=SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION,
+            prompt=prompt,
+            pred_openui=pred,
+            request=_request(prompt, slots),
+            expected_verdict=False,
+            expected_reason_substrings=("prompt_component_missing",),
+            gold_openui=positive,
+            transform="deep_stack_with_text_no_button",
+            notes="Deep nested Stacks contain only TextContent; no Button is produced.",
+        )
+    )
+
+    # Overlong: repeat TextContent many times, no Button.
+    repeated = "\n".join(
+        f't{i} = TextContent(":btn.action")'
+        for i in range(8)
+    )
+    pred = f'root = Stack([{", ".join(f"t{i}" for i in range(8))}])\n{repeated}\n'
+    cases.append(
+        MetricGamingCase(
+            id="canary_button_replaced_by_repeated_text",
+            slice=SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION,
+            prompt=prompt,
+            pred_openui=pred,
+            request=_request(prompt, slots),
+            expected_verdict=False,
+            expected_reason_substrings=("placeholder_spam",),
+            gold_openui=positive,
+            transform="repeated_text_no_button",
+            notes="Many TextContent statements inflate length without producing a Button.",
+        )
+    )
+
+    # Overlong: many duplicate placeholders but no requested component.
+    pred = (
+        'root = Stack([t1, t2, t3])\n'
+        't1 = TextContent(":btn.action")\n'
+        't2 = TextContent(":btn.action")\n'
+        't3 = TextContent(":btn.action")\n'
+    )
+    cases.append(
+        MetricGamingCase(
+            id="canary_button_triple_text",
+            slice=SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION,
+            prompt=prompt,
+            pred_openui=pred,
+            request=_request(prompt, slots),
+            expected_verdict=False,
+            expected_reason_substrings=("duplicate_subtree_spam",),
+            gold_openui=positive,
+            transform="triple_text_no_button",
+            notes="Duplicate TextContent statements inflate the program without adding a Button.",
+        )
+    )
+
+    return cases
+
+
+def build_canary_canonical_equivalent_positive_cases(seed: int = 0) -> list[MetricGamingCase]:
+    """Surface-different programs that should receive the same positive verdict."""
+    del seed
+    cases: list[MetricGamingCase] = []
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_button_wrapped_positive",
+            slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
+            prompt="Build a Button with action :btn.action. Placeholders: :btn.action",
+            pred_openui='root = Stack([Button(":btn.action")])\n',
+            request=_request(
+                "Build a Button with action :btn.action. Placeholders: :btn.action",
+                (":btn.action",),
+            ),
+            expected_verdict=True,
+            expected_reason_substrings=(),
+            gold_openui='root = Button(":btn.action")\n',
+            transform="trivial_stack_wrapper",
+            notes="Button wrapped in a single Stack is semantically equivalent for this prompt.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_switch_wrapped_positive",
+            slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
+            prompt=(
+                "Build a switch item for notifications with caption :settings.caption "
+                "and description :settings.desc. Placeholders: :settings.caption :settings.desc"
+            ),
+            pred_openui=(
+                'root = Stack([s])\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+            ),
+            request=_request(
+                "Build a switch item for notifications with caption :settings.caption "
+                "and description :settings.desc. Placeholders: :settings.caption :settings.desc",
+                (":settings.caption", ":settings.desc"),
+            ),
+            expected_verdict=True,
+            expected_reason_substrings=(),
+            gold_openui=(
+                'root = Stack([s])\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+            ),
+            transform="stack_wrapped_switch",
+            notes="SwitchItem wrapped in a Stack remains a valid switch item.",
+        )
+    )
+
+    cases.append(
+        MetricGamingCase(
+            id="canary_card_reordered_children_positive",
+            slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
+            prompt=(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body"
+            ),
+            pred_openui=(
+                'root = Card([body, header])\n'
+                'header = CardHeader(":card.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            request=_request(
+                "Build a card with title :card.title and body :card.body. "
+                "Placeholders: :card.title :card.body",
+                (":card.title", ":card.body"),
+            ),
+            expected_verdict=True,
+            expected_reason_substrings=(),
+            gold_openui=(
+                'root = Card([header, body])\n'
+                'header = CardHeader(":card.title")\n'
+                'body = TextContent(":card.body")\n'
+            ),
+            transform="reorder_card_children",
+            notes="Card children are reordered; both forms contain the same title and body.",
+        )
+    )
+
+    return cases
+
+
 def build_all_cases(seed: int = 0) -> list[MetricGamingCase]:
     """Return the full fixture-grade metric-gaming suite."""
     return (
@@ -693,6 +1232,12 @@ def build_all_cases(seed: int = 0) -> list[MetricGamingCase]:
         + build_rare_component_omission_cases(seed)
         + build_inventory_free_binding_cases(seed)
         + build_retry_sensitive_cases(seed)
+        + build_canary_right_role_wrong_binding_cases(seed)
+        + build_canary_right_inventory_wrong_hierarchy_cases(seed)
+        + build_canary_render_semantics_mismatch_cases(seed)
+        + build_canary_ast_similar_missing_component_cases(seed)
+        + build_canary_overlong_economy_violation_cases(seed)
+        + build_canary_canonical_equivalent_positive_cases(seed)
     )
 
 
@@ -873,6 +1418,12 @@ __all__ = [
     "MetricGamingReport",
     "MetricGamingSliceReport",
     "ScoredCase",
+    "SLICE_CANARY_AST_SIMILAR_MISSING_COMPONENT",
+    "SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE",
+    "SLICE_CANARY_OVERLONG_ECONOMY_VIOLATION",
+    "SLICE_CANARY_RENDER_SEMANTICS_MISMATCH",
+    "SLICE_CANARY_RIGHT_INVENTORY_WRONG_HIERARCHY",
+    "SLICE_CANARY_RIGHT_ROLE_WRONG_BINDING",
     "SLICE_INVENTORY_FREE",
     "SLICE_MINIMAL_VALID",
     "SLICE_RARE_OMISSION",
@@ -880,6 +1431,12 @@ __all__ = [
     "RARE_COMPONENTS",
     "SCHEMA_VERSION",
     "build_all_cases",
+    "build_canary_ast_similar_missing_component_cases",
+    "build_canary_canonical_equivalent_positive_cases",
+    "build_canary_overlong_economy_violation_cases",
+    "build_canary_render_semantics_mismatch_cases",
+    "build_canary_right_inventory_wrong_hierarchy_cases",
+    "build_canary_right_role_wrong_binding_cases",
     "build_inventory_free_binding_cases",
     "build_minimal_valid_trap_cases",
     "build_rare_component_omission_cases",
