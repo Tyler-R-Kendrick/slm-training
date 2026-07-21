@@ -1457,7 +1457,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v68",
+      "version": "v69",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1472,6 +1472,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v69",
+          "date": "2026-07-20",
+          "note": "E633 r2: apply repeated-instance distinct-slot margin only at direct placeholder-annotated component properties so it cannot override pre-content operational string routing"
+        },
         {
           "version": "v68",
           "date": "2026-07-20",

@@ -1018,6 +1018,44 @@ def test_schema_opaque_bias_routes_required_precontent_string_to_literal() -> No
     assert bias.tolist() == [0.0, 12.0]
 
 
+def test_repeated_slot_bias_waits_for_input_content_property() -> None:
+    from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_repeated_slot_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id[f"{OPEN_PREFIX}Input"]
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    model._semantic_plan_action_counts = [{input_id: 2}]
+    model._slot_contracts = [[":auth.name", ":auth.email"]]
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(input_id)
+    prefix = [tokenizer.bos_id, input_id]
+
+    assert (
+        model._semantic_plan_repeated_slot_bias(
+            0, state, prefix, (slot0, slot1), torch.zeros(2)
+        )
+        is None
+    )
+    literal_id = tokenizer.token_to_id[f'{LIT_PREFIX}""']
+    assert state.advance_id(literal_id)
+    bias = model._semantic_plan_repeated_slot_bias(
+        0,
+        state,
+        [*prefix, literal_id],
+        (slot0, slot1),
+        torch.tensor([1.0, 3.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 2.0]
+
+
 def test_schema_enum_close_bias_rewards_only_optional_enum_close() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState

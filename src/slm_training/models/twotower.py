@@ -5435,6 +5435,15 @@ class TwoTowerModel(nn.Module):
         owner_id = self._semantic_plan_repeated_owner_id(row, state)
         if margin <= 0.0 or not slot_contract or owner_id is None:
             return None
+        frames = list(getattr(state, "frames", ()))
+        if frames and frames[-1].kind == "component":
+            schemas = tuple(getattr(frames[-1], "schemas", ()))
+            index = int(getattr(frames[-1], "arg_index", -1))
+            if not (
+                0 <= index < len(schemas)
+                and schemas[index].get("x-openui-placeholder")
+            ):
+                return None
         owner_position = max(
             (
                 position
