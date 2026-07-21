@@ -3493,7 +3493,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v175",
+      "version": "v177",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3512,6 +3512,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v177",
+          "date": "2026-07-21",
+          "note": "E706: restore v175 behavior after bounded missing-slot carrier routing was neutral across the five-suite replay"
+        },
+        {
+          "version": "v176",
+          "date": "2026-07-21",
+          "note": "E706: bind one still-missing visible slot to a legal direct carrier before verified semantic-plan root closure"
+        },
         {
           "version": "v175",
           "date": "2026-07-21",
