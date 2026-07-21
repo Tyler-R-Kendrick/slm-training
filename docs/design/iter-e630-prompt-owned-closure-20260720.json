@@ -74,8 +74,8 @@
     "reward_score": 0.785,
     "ast_node_f1": 0.38571428571428573,
     "ast_edge_f1": 0.2625,
-    "latency_ms_p50": 3449.9,
-    "latency_ms_p95": 14871.38,
+    "latency_ms_p50": 3648.68,
+    "latency_ms_p95": 16022.08,
     "decode_timeout_count": 0,
     "fallback_count": 0,
     "slot_coverage_close_applications": 14,
@@ -101,8 +101,8 @@
       "reward_score": 0.785,
       "ast_node_f1": 0.38571428571428573,
       "ast_edge_f1": 0.2625,
-      "latency_ms_p50": 3449.9,
-      "latency_ms_p95": 14871.38,
+      "latency_ms_p50": 3648.68,
+      "latency_ms_p95": 16022.08,
       "decode_timeout_count": 0,
       "fallback_count": 0
     }
@@ -123,8 +123,8 @@
     "reward_score": -0.03249999999999997,
     "ast_node_f1": -0.08333333333333331,
     "ast_edge_f1": 0.0,
-    "latency_ms_p50": 382.43,
-    "latency_ms_p95": 8593.39
+    "latency_ms_p50": 581.21,
+    "latency_ms_p95": 9744.09
   },
   "per_record_treatment": {
     "ood_dashboard_01": "root = Card([TextContent(\":ood.dash.status.body\")])",
@@ -137,12 +137,24 @@
     "structural_error": "The correct family was nested under an already-wrong owner instead of being placed as a root-level sibling, destabilizing later binding and root selection.",
     "restoration": "Model v64 restores the v62 implementation; v63 is retained only as versioned negative evidence."
   },
+  "provenance_replays": [
+    {
+      "code_commit": "b24ea8ea93579f0adb472400eda0aa1bc9eea0f9",
+      "reason": "original clean run before concurrent-main rebase",
+      "headline_metrics_identical": true
+    },
+    {
+      "code_commit": "b1e40592bc6bbc45bed563196bec20384aa55608",
+      "reason": "authoritative clean replay at the reachable rebased v63 treatment commit",
+      "headline_metrics_identical": true
+    }
+  ],
   "decision": "Reject and revert prompt-owned filtering. Any follow-up must be frame-aware and close a wrong scalar/component owner before root-level inventory places the prompt-owned family as a sibling.",
   "ship_gate_result": "fail",
   "ship_gates": false,
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "b24ea8ea93579f0adb472400eda0aa1bc9eea0f9",
+    "code_commit": "b1e40592bc6bbc45bed563196bec20384aa55608",
     "code_dirty": false,
     "components": {
       "harness.model_build.eval": "v32",
@@ -150,6 +162,6 @@
       "evals.scoring": "v12",
       "model.twotower": "v63"
     },
-    "stamped_at": "2026-07-20T23:55:41.809042+00:00"
+    "stamped_at": "2026-07-21T00:01:11.922762+00:00"
   }
 }
