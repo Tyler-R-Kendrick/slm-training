@@ -4396,3 +4396,18 @@ Evidence:
 [iter-e637-nested-family-accounting-20260720.md](iter-e637-nested-family-accounting-20260720.md),
 [authoritative r2 JSON](iter-e637-nested-family-accounting-20260720.json), and
 [r1 JSON](iter-e637-nested-family-accounting-r1-20260720.json).
+
+## E638 root slot-coverage gate
+
+E638 required all visible slots before semantic-plan root closure. Gallery
+collapsed from a three-slot ImageGallery to `TextContent(hint.title)`: fidelity,
+validity, structure, reward, and latency all regressed while strict v2 stayed
+2/4. Reject the treatment stamped v76. After rebasing over upstream v77-v78,
+the append-only lineage records E638 as treatment v79 and restoration v80.
+Future work must positively select missing role-compatible sibling families
+rather than only suppress root closure. No checkpoint was created or synced;
+AgentV remained 0/1.
+
+Evidence:
+[iter-e638-root-slot-coverage-20260720.md](iter-e638-root-slot-coverage-20260720.md)
+and [JSON](iter-e638-root-slot-coverage-20260720.json).
