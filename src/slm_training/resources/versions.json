@@ -3734,6 +3734,25 @@
         }
       ]
     },
+    "harness.experiments.slm236_structural_similarity_literal_content_robustness": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm236_structural_similarity_literal_content_robustness.py",
+        "scripts/run_slm236_structural_similarity_literal_content_robustness.py",
+        "tests/test_harnesses/experiments/test_slm236_structural_similarity_literal_content_robustness.py",
+        "tests/test_scripts/test_run_slm236_structural_similarity_literal_content_robustness.py",
+        "docs/design/iter-slm236-ssr0-01-structural-similarity-literal-content-robustness-20260721.json",
+        "docs/design/iter-slm236-ssr0-01-structural-similarity-literal-content-robustness-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-236 SSR0-01 structural-similarity literal-content robustness probe: exercises the real structural_similarity / _component_multiset functions (harnesses/model_build/eval_runner.py) and the real score_openui RL-reward contract (integrations/openui_rl.py) over synthetic grammar-valid OpenUI document pairs that share identical DSL structure but differ only in one leaf literal's text, to test whether ordinary literal-text punctuation or a component-shaped substring silently lowers a nominally style-agnostic structural similarity score and its downstream RL composite reward term"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",

@@ -1,0 +1,324 @@
+{
+  "claim_class": "wiring",
+  "disposition": "gap_confirmed",
+  "disposition_rationale": "Across all 3 structural shapes, every content-only wording edit (3/3 rows) left structural_similarity at exactly 1.0, while every literal edit that added ordinary punctuation or a component-shaped substring (15/15 rows) lowered the score below 1.0 despite identical DSL structure -- confirming structural_similarity is not literal-content-invariant, and that this propagates into score_openui's composite RL reward term with parse validity and placeholder fidelity held constant.",
+  "experiment_id": "slm236-structural-similarity-literal-content-robustness",
+  "falsifier": "For every same-shape, content-only-edited pair (identical DSL structure, one leaf literal changed), structural_similarity returns 1.0 regardless of the literal text's punctuation or wording; or the component regex/depth proxies are shown not to read literal-string content in the real implementation.",
+  "gate_hash": "c0686b131952f9876b47c650cc9c88b05181d02c1d7f7473d870120e8a0cdbe6",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no checkpoint, GPU run, RL training step, or ship-gate claim is made or implied.",
+    "All documents are synthetic but real, grammar-valid OpenUI (each is round-tripped through the real slm_training.dsl.parser.validate before being scored) -- this is not a reimplementation of structural_similarity, _component_multiset, or score_openui, only real calls to them.",
+    "The variant set (7 literal-content edits x 3 structural shapes) is small and hand-authored; it demonstrates the mechanism exists and is reproducible, not its exact prevalence across a real corpus of generated predictions.",
+    "The downstream reward probe uses an empty slot_inventory so the placeholder_fidelity term of score_openui stays constant across variants -- this isolates the structural_similarity term's contribution to composite reward, it does not characterize a full RL training run.",
+    "This harness does not change structural_similarity, _component_multiset, score_openui, or any eval/RL default. It documents a concrete scoring-mechanics gap as a candidate for a future, separately reviewed hardening change (e.g. scoring only parsed AST component/call nodes instead of raw text) -- never implemented here."
+  ],
+  "hypothesis": "structural_similarity (eval_runner.py) computes its component-multiset and bracket/paren \"depth\" proxies over the raw source string, including the contents of ordinary text-content string literals (only strip_style_literals is applied first, which strips style-prop literals, not text-content literals). Because of this, two OpenUI documents with byte-identical DSL structure that differ only in the literal text of one leaf string argument can receive different structural_similarity scores: ordinary punctuation (parentheses, square brackets) in the literal text perturbs the depth proxy, and a literal substring shaped like \"Word(\" is misread by the component regex as an extra component occurrence, both independent of any real structural difference. This propagates into the RL reward contract (score_openui's composite term) without a corresponding change in parse validity or placeholder fidelity.",
+  "matrix_set": "slm236_structural_similarity_literal_content_robustness",
+  "matrix_version": "ssr0-01-v1",
+  "reward_probe_rows": [
+    {
+      "category": "baseline",
+      "composite": 0.85,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 1.0,
+      "variant": "neutral"
+    },
+    {
+      "category": "content_only",
+      "composite": 0.85,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 1.0,
+      "variant": "plain_alt_wording"
+    },
+    {
+      "category": "benign_punctuation",
+      "composite": 0.8375,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 0.95,
+      "variant": "parens_benign"
+    },
+    {
+      "category": "benign_punctuation",
+      "composite": 0.8375,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 0.95,
+      "variant": "brackets_benign"
+    },
+    {
+      "category": "adversarial_regex",
+      "composite": 0.8025,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 0.81,
+      "variant": "fake_component_single"
+    },
+    {
+      "category": "adversarial_regex",
+      "composite": 0.7667,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 0.6667,
+      "variant": "fake_component_multi"
+    },
+    {
+      "category": "adversarial_mixed",
+      "composite": 0.7775,
+      "parse": 1.0,
+      "placeholder_fidelity": 0.5,
+      "structural_similarity": 0.71,
+      "variant": "mixed_adversarial"
+    }
+  ],
+  "reward_probe_shape": "single_leaf_card",
+  "rows": [
+    {
+      "category": "baseline",
+      "divergent": false,
+      "is_baseline": true,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 1.0,
+      "variant": "neutral",
+      "variant_text": "Contact our team today"
+    },
+    {
+      "category": "content_only",
+      "divergent": false,
+      "is_baseline": false,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 1.0,
+      "variant": "plain_alt_wording",
+      "variant_text": "Reach out to support now"
+    },
+    {
+      "category": "benign_punctuation",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 0.95,
+      "variant": "parens_benign",
+      "variant_text": "Available now (limited time only)"
+    },
+    {
+      "category": "benign_punctuation",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 0.95,
+      "variant": "brackets_benign",
+      "variant_text": "See the [Support] section for help"
+    },
+    {
+      "category": "adversarial_regex",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [
+        "Details"
+      ],
+      "structural_similarity": 0.81,
+      "variant": "fake_component_single",
+      "variant_text": "See Details(more info) for help"
+    },
+    {
+      "category": "adversarial_regex",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [
+        "Email",
+        "Support"
+      ],
+      "structural_similarity": 0.6667,
+      "variant": "fake_component_multi",
+      "variant_text": "Ping Support(now) or Email(us) anytime"
+    },
+    {
+      "category": "adversarial_mixed",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "single_leaf_card",
+      "spurious_component_keys": [
+        "Policy"
+      ],
+      "structural_similarity": 0.71,
+      "variant": "mixed_adversarial",
+      "variant_text": "Read Policy(v2) [ref 12] before (continuing)"
+    },
+    {
+      "category": "baseline",
+      "divergent": false,
+      "is_baseline": true,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 1.0,
+      "variant": "neutral",
+      "variant_text": "Contact our team today"
+    },
+    {
+      "category": "content_only",
+      "divergent": false,
+      "is_baseline": false,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 1.0,
+      "variant": "plain_alt_wording",
+      "variant_text": "Reach out to support now"
+    },
+    {
+      "category": "benign_punctuation",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 0.95,
+      "variant": "parens_benign",
+      "variant_text": "Available now (limited time only)"
+    },
+    {
+      "category": "benign_punctuation",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [],
+      "structural_similarity": 0.95,
+      "variant": "brackets_benign",
+      "variant_text": "See the [Support] section for help"
+    },
+    {
+      "category": "adversarial_regex",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [
+        "Details"
+      ],
+      "structural_similarity": 0.81,
+      "variant": "fake_component_single",
+      "variant_text": "See Details(more info) for help"
+    },
+    {
+      "category": "adversarial_regex",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [
+        "Email",
+        "Support"
+      ],
+      "structural_similarity": 0.6667,
+      "variant": "fake_component_multi",
+      "variant_text": "Ping Support(now) or Email(us) anytime"
+    },
+    {
+      "category": "adversarial_mixed",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "nested_two_leaf_card",
+      "spurious_component_keys": [
+        "Policy"
+      ],
+      "structural_similarity": 0.71,
+      "variant": "mixed_adversarial",
+      "variant_text": "Read Policy(v2) [ref 12] before (continuing)"
+    },
+    {
+      "category": "baseline",
+      "divergent": false,
+      "is_baseline": true,
+      "shape": "button_row",
+      "spurious_component_keys": [],
+      "structural_similarity": 1.0,
+      "variant": "neutral",
+      "variant_text": "Contact our team today"
+    },
+    {
+      "category": "content_only",
+      "divergent": false,
+      "is_baseline": false,
+      "shape": "button_row",
+      "spurious_component_keys": [],
+      "structural_similarity": 1.0,
+      "variant": "plain_alt_wording",
+      "variant_text": "Reach out to support now"
+    },
+    {
+      "category": "benign_punctuation",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "button_row",
+      "spurious_component_keys": [],
+      "structural_similarity": 0.9,
+      "variant": "parens_benign",
+      "variant_text": "Available now (limited time only)"
+    },
+    {
+      "category": "benign_punctuation",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "button_row",
+      "spurious_component_keys": [],
+      "structural_similarity": 0.9,
+      "variant": "brackets_benign",
+      "variant_text": "See the [Support] section for help"
+    },
+    {
+      "category": "adversarial_regex",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "button_row",
+      "spurious_component_keys": [
+        "Details"
+      ],
+      "structural_similarity": 0.6667,
+      "variant": "fake_component_single",
+      "variant_text": "See Details(more info) for help"
+    },
+    {
+      "category": "adversarial_regex",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "button_row",
+      "spurious_component_keys": [
+        "Email",
+        "Support"
+      ],
+      "structural_similarity": 0.45,
+      "variant": "fake_component_multi",
+      "variant_text": "Ping Support(now) or Email(us) anytime"
+    },
+    {
+      "category": "adversarial_mixed",
+      "divergent": true,
+      "is_baseline": false,
+      "shape": "button_row",
+      "spurious_component_keys": [
+        "Policy"
+      ],
+      "structural_similarity": 0.4667,
+      "variant": "mixed_adversarial",
+      "variant_text": "Read Policy(v2) [ref 12] before (continuing)"
+    }
+  ],
+  "run_id": "slm236-structural-similarity-literal-content-robustness-20260721",
+  "schema": "StructuralSimilarityRobustnessReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T06:57:01.767968Z",
+  "version_stamp": {
+    "code_commit": "08a03a52283eae4ad99c5f82605cb1845bce1861",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm236_structural_similarity_literal_content_robustness": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T06:57:01.767927+00:00"
+  }
+}
