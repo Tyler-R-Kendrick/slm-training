@@ -613,12 +613,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v12",
+      "version": "v13",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-21",
+          "note": "add OracleScoringReplayV1 harness and audit_gold_scoring CLI; existing scoring helpers unchanged"
+        },
         {
           "version": "v12",
           "date": "2026-07-21",
@@ -698,6 +703,24 @@
           "version": "v1",
           "date": "2026-07-18",
           "note": "initial registration (catch-all for eval scoring helpers not claimed by a narrower component)"
+        }
+      ]
+    },
+    "harness.oracle_scoring_replay": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/oracle_scoring_replay.py",
+        "scripts/audit_gold_scoring.py",
+        "tests/test_evals/test_oracle_scoring_replay.py",
+        "docs/design/oracle-scoring-replay.md",
+        "docs/design/iter-slm260-oracle-scoring-replay-20260721.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-260 VSD0-01 oracle scoring replay harness and audit CLI"
         }
       ]
     },
