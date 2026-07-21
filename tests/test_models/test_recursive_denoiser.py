@@ -865,3 +865,323 @@ def test_recursive_objective_contract_v2_validates_sum_identities() -> None:
     inconsistent["combined_training_loss"] = 999.0
     with pytest.raises(ValueError, match="combined_training_loss"):
         RecursiveObjectiveContractV2.from_metrics(inconsistent)
+
+
+# ---------------------------------------------------------------------------
+# SLM-239 (RSC-A03): bit-reproducible RNG contract for the SLM-138 fixture --
+# explicit disjoint RNG namespaces, deterministic call-order-independent
+# shape probes, restored-checkpoint repeated evaluation, a clean-tree
+# evidence gate, and FixtureDeterminismReportV1.
+# ---------------------------------------------------------------------------
+
+from slm_training.models.rng_contract import (
+    NAMESPACE_OFFSETS,
+    RngCheckpoint,
+    derive_seed,
+    isolated_draw,
+    seed_training_corruption,
+)
+from scripts.run_slm138_recursive_denoiser_fixture import (
+    _canonical_json,
+    _clean_tree_gate,
+    _compare_reports,
+    _run_fixture,
+)
+
+
+def test_rsc_a03_derive_seed_disjoint_and_fails_closed_on_unknown_namespace() -> None:
+    seeds = {ns: derive_seed(7, ns) for ns in NAMESPACE_OFFSETS}
+    assert len(set(seeds.values())) == len(seeds)  # pairwise disjoint
+    assert derive_seed(7, "model_initialization") == 7  # offset 0, unchanged
+    with pytest.raises(ValueError, match="unknown RNG namespace"):
+        derive_seed(7, "bogus_namespace")
+
+
+def test_rsc_a03_isolated_draw_leaves_outer_rng_state_untouched() -> None:
+    """isolated_draw's fork_rng contract: the outer global stream is
+    byte-identical whether or not (or how many times) a probe runs."""
+    torch.manual_seed(123)
+    before = RngCheckpoint.capture().digest()
+    isolated_draw(0, "shape_probe_inputs", lambda: torch.randn(3, 3))
+    isolated_draw(0, "shape_probe_context", lambda: torch.randn(5, 5))
+    after = RngCheckpoint.capture().digest()
+    assert before == after
+    # A subsequent global draw is identical to what an untouched stream would
+    # have produced -- proof the probes never advanced it.
+    torch.manual_seed(123)
+    expected = torch.randn(2, 2)
+    torch.manual_seed(123)
+    isolated_draw(0, "shape_probe_inputs", lambda: torch.randn(3, 3))
+    actual = torch.randn(2, 2)
+    torch.testing.assert_close(actual, expected)
+
+
+# Test 1: two isolated fixture executions produce byte-identical JSON.
+def test_rsc_a03_two_fixture_runs_byte_identical_json() -> None:
+    run_a = _run_fixture(allow_dirty=True)
+    run_b = _run_fixture(allow_dirty=True)
+    assert _canonical_json(run_a) == _canonical_json(run_b)
+
+
+# Test 2: inserting/reordering shape-probe random calls does not change
+# training-loss or deep-supervision values.
+def test_rsc_a03_probe_order_permutation_does_not_change_training_values() -> None:
+    stacked_first = _run_fixture(probe_order="stacked_first", allow_dirty=True)
+    recursive_first = _run_fixture(probe_order="recursive_first", allow_dirty=True)
+    assert stacked_first["losses"] == recursive_first["losses"]
+    assert (
+        stacked_first["post_update_verification"]
+        == recursive_first["post_update_verification"]
+    )
+    assert (
+        stacked_first["deep_supervision_metrics"]
+        == recursive_first["deep_supervision_metrics"]
+    )
+    assert stacked_first["forward_shapes"] == recursive_first["forward_shapes"]
+
+
+def test_rsc_a03_extra_harmless_probe_does_not_change_training_values() -> None:
+    without_extra = _run_fixture(insert_extra_probe=False, allow_dirty=True)
+    with_extra = _run_fixture(insert_extra_probe=True, allow_dirty=True)
+    assert without_extra["losses"] == with_extra["losses"]
+    assert (
+        without_extra["deep_supervision_metrics"]
+        == with_extra["deep_supervision_metrics"]
+    )
+    assert (
+        without_extra["post_update_verification"] == with_extra["post_update_verification"]
+    )
+
+
+# Test 3: repeated objective evaluation with a restored generator state is
+# identical.
+def test_rsc_a03_restored_generator_state_repeated_evaluation_identical() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=2,
+            denoiser_layers=2,
+            denoiser_arch="shared_recursive",
+            recursive_steps=2,
+            recursive_transition_layers=2,
+            recursive_depth_supervision_weights=(0.5, 1.0),
+            grammar_constrained=False,
+            seed=0,
+        ),
+        device="cpu",
+    )
+    checkpoint = seed_training_corruption(0, model)
+    loss_1 = model.training_loss(records)
+    metrics_1 = dict(model.last_training_metrics)
+
+    checkpoint.restore(model)
+    loss_2 = model.training_loss(records)
+    metrics_2 = dict(model.last_training_metrics)
+
+    torch.testing.assert_close(loss_1, loss_2)
+    assert metrics_1["recursive_depth_loss_0"] == metrics_2["recursive_depth_loss_0"]
+    assert metrics_1["recursive_depth_loss_1"] == metrics_2["recursive_depth_loss_1"]
+    assert (
+        metrics_1["recursive_depth_supervision_loss"]
+        == metrics_2["recursive_depth_supervision_loss"]
+    )
+
+
+def test_rsc_a03_restoring_only_torch_rng_is_insufficient_without_model() -> None:
+    """Documents the real second RNG source this module accounts for:
+    ``TwoTowerModel`` keeps a persistent per-instance ``self._rng``
+    (``random.Random(config.seed)``) that ``_mask_targets`` also reads (the
+    "ensure at least one predictable token per row" fallback / mixed-pattern
+    span selection). Restoring *only* the global torch RNG state (by not
+    passing ``model`` to ``seed_training_corruption``/``RngCheckpoint``)
+    reproduces a *different* loss on the second call -- proving both RNG
+    sources must be captured/restored together, which is exactly what
+    passing ``model`` does in the sibling
+    ``test_rsc_a03_restored_generator_state_repeated_evaluation_identical``."""
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=2,
+            denoiser_layers=2,
+            denoiser_arch="shared_recursive",
+            recursive_steps=2,
+            recursive_transition_layers=2,
+            recursive_depth_supervision_weights=(0.5, 1.0),
+            grammar_constrained=False,
+            seed=0,
+        ),
+        device="cpu",
+    )
+    torch_only_checkpoint = seed_training_corruption(0)  # no model -> torch only
+    loss_1 = model.training_loss(records)
+    torch_only_checkpoint.restore()  # torch RNG restored; model._rng is not
+    loss_2 = model.training_loss(records)
+    assert not torch.allclose(loss_1, loss_2)
+
+
+# Test 4: different declared training-corruption seeds change the intended
+# corruption-dependent fields and no others.
+def test_rsc_a03_different_training_corruption_seed_changes_only_corruption_fields() -> None:
+    default_seed = _run_fixture(allow_dirty=True)
+    other_seed = _run_fixture(training_corruption_seed=999_999, allow_dirty=True)
+
+    assert default_seed["losses"] != other_seed["losses"]
+
+    classification = _compare_reports(default_seed, other_seed)
+    corruption_only_fields = {
+        "losses",
+        "post_update_verification",
+        "deep_supervision_metrics",
+    }
+    unexpected = {
+        k: v
+        for k, v in classification.items()
+        if v != "exact" and k not in corruption_only_fields
+    }
+    assert unexpected == {}
+    assert default_seed["stacked_params"] == other_seed["stacked_params"]
+    assert default_seed["forward_shapes"] == other_seed["forward_shapes"]
+    assert (
+        default_seed["recursive_weight_sharing"] == other_seed["recursive_weight_sharing"]
+    )
+    assert (
+        default_seed["checkpoint_roundtrip_ok"] == other_seed["checkpoint_roundtrip_ok"]
+    )
+    assert (
+        default_seed["provenance_hashes"] == other_seed["provenance_hashes"]
+    )
+
+
+# Test 5: global RNG state before/after the fixture changes only according to
+# an explicit, tested contract -- here, the fixture's exit state is a
+# deterministic function of its own base_seed, independent of the caller's
+# prior global RNG state (every RNG-consuming step inside it reseeds from
+# base_seed-derived namespaces before it draws).
+def test_rsc_a03_fixture_exit_rng_state_independent_of_caller_entry_state() -> None:
+    torch.manual_seed(1)
+    _run_fixture(allow_dirty=True)
+    exit_state_a = RngCheckpoint.capture().digest()
+
+    torch.manual_seed(999_999)
+    _run_fixture(allow_dirty=True)
+    exit_state_b = RngCheckpoint.capture().digest()
+
+    assert exit_state_a == exit_state_b
+
+
+# Test 6: dirty-tree debug artifacts are marked non-comparable and cannot
+# satisfy the clean-tree evidence gate.
+def test_rsc_a03_clean_tree_gate_marks_dirty_non_comparable() -> None:
+    assert _clean_tree_gate(code_dirty=False, allow_dirty=False) == {
+        "comparable": True,
+        "claim_grade": True,
+    }
+    assert _clean_tree_gate(code_dirty=True, allow_dirty=False) == {
+        "comparable": False,
+        "claim_grade": False,
+    }
+    # --allow-dirty permits the artifact to be written but never launders it
+    # into "comparable" -- it stays non-comparable regardless.
+    assert _clean_tree_gate(code_dirty=True, allow_dirty=True) == {
+        "comparable": False,
+        "claim_grade": False,
+    }
+    # Unknowable git state fails closed the same as dirty.
+    assert _clean_tree_gate(code_dirty=None, allow_dirty=True) == {
+        "comparable": False,
+        "claim_grade": False,
+    }
+
+
+def test_rsc_a03_fixture_evidence_gate_reflects_dirty_tree(monkeypatch) -> None:
+    """End-to-end: when the embedded version_stamp reports a dirty tree, the
+    fixture's own evidence_gate honestly marks itself non-comparable --
+    exercised via a forced-dirty stamp rather than depending on this
+    session's actual git status."""
+    import scripts.run_slm138_recursive_denoiser_fixture as fixture_mod
+
+    def _fake_stamp(*_component_ids: str) -> dict:
+        return {
+            "stamp_schema": "version_stamp/v1",
+            "code_commit": "deadbeef",
+            "code_dirty": True,
+            "components": {},
+            "stamped_at": "2026-01-01T00:00:00+00:00",
+        }
+
+    monkeypatch.setattr(fixture_mod, "build_version_stamp", _fake_stamp)
+    report = fixture_mod._run_fixture(allow_dirty=True)
+    assert report["evidence_gate"]["comparable"] is False
+    assert report["evidence_gate"]["code_dirty"] is True
+
+
+# Test 7: clean-tree artifact passes version-stamp verification -- the
+# fixture's embedded version_stamp component version matches the current
+# registry entry for model.recursive_denoiser.
+def test_rsc_a03_fixture_version_stamp_matches_registry() -> None:
+    from slm_training.versioning import STAMP_SCHEMA, component_version
+
+    report = _run_fixture(allow_dirty=True)
+    stamp = report["version_stamp"]
+    assert stamp["stamp_schema"] == STAMP_SCHEMA
+    assert (
+        stamp["components"]["model.recursive_denoiser"]
+        == component_version("model.recursive_denoiser")
+    )
+
+
+# Test 8: checkpoint save/load output digest is identical before/after
+# round-trip.
+def test_rsc_a03_checkpoint_roundtrip_state_dict_digest_identical(
+    tmp_path: Path,
+) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=2,
+            denoiser_layers=2,
+            denoiser_arch="shared_recursive",
+            recursive_steps=2,
+            recursive_transition_layers=2,
+            grammar_constrained=False,
+            seed=0,
+        ),
+        device="cpu",
+    )
+
+    def _state_digest(m: TwoTowerModel) -> str:
+        import hashlib
+
+        hasher = hashlib.sha256()
+        for key in sorted(m.state_dict()):
+            tensor = m.state_dict()[key]
+            hasher.update(key.encode("utf-8"))
+            hasher.update(tensor.detach().cpu().contiguous().numpy().tobytes())
+        return hasher.hexdigest()
+
+    before = _state_digest(model)
+    ckpt = tmp_path / "roundtrip.pt"
+    model.save(ckpt)
+    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    after = _state_digest(loaded)
+    assert before == after
+
+
+def test_rsc_a03_determinism_report_verdict_bit_exact_and_namespace_isolated() -> None:
+    """The FixtureDeterminismReportV1 built from real repeated executions +
+    call-order permutations is bit_exact, and the different-training-
+    corruption-seed comparison changes only the declared corruption-dependent
+    fields (namespace isolation holds)."""
+    from scripts.run_slm138_recursive_denoiser_fixture import _determinism_report
+
+    report = _determinism_report(base_seed=0)
+    assert report["run_a_digest"] == report["run_b_digest"]
+    assert report["verdict"] == "bit_exact"
+    assert report["namespace_isolation_ok"] is True
+    assert report["different_training_corruption_seed_unexpected_changes"] == {}

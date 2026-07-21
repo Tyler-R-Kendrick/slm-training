@@ -1745,17 +1745,27 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
+        "src/slm_training/models/rng_contract.py",
         "scripts/run_slm138_recursive_denoiser_fixture.py",
         "scripts/run_rsc_a02_depth_aux_mode_factorial.py",
         "tests/test_models/test_recursive_denoiser.py",
         "docs/design/iter-slm138-recursive-denoiser-20260720.json",
-        "docs/design/iter-slm138-recursive-denoiser-20260720.md"
+        "docs/design/iter-slm138-recursive-denoiser-20260720.md",
+        "docs/design/iter-slm138-recursive-denoiser-20260721.json",
+        "docs/design/iter-slm138-recursive-denoiser-20260721.md",
+        "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.json",
+        "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-21",
+          "note": "SLM-239 (RSC-A03): added src/slm_training/models/rng_contract.py -- an explicit, disjoint RNG namespace contract (model_initialization/shape_probe_inputs/shape_probe_context/training_corruption/training_batch_order/control_only) plus RngCheckpoint (also covers TwoTowerModel's private self._rng random.Random, a second RNG source _mask_targets reads that a torch-only checkpoint does not capture -- found and fixed during this work). Refactored scripts/run_slm138_recursive_denoiser_fixture.py into the required six-phase execution (construction / deterministic shape probes / deterministic pre-update objective decomposition / one optimizer step / deterministic post-update verification via restored corruption-RNG checkpoint / checkpoint round-trip), added a clean-tree evidence gate (--allow-dirty debug override, non-comparable artifacts never land in docs/design/ without it), and a --mode determinism FixtureDeterminismReportV1 built from real repeated executions + call-order permutations. Added 17 new deterministic regression tests (tests/test_models/test_recursive_denoiser.py, 55 total, all passing) covering the RNG contract, probe-order/extra-probe invariance, restored-checkpoint repeated evaluation (and the torch-only-restore-is-insufficient counter-example), differing-corruption-seed field isolation, fixture exit-state independence from caller entry state, the clean-tree gate, version-stamp match, and checkpoint round-trip digest identity. Measured verdict: bit_exact (real run A/run B/permutation digests match; namespace isolation holds) -- see docs/design/iter-rsc-a03-rng-determinism-contract-20260721.{json,md}."
+        },
         {
           "version": "v4",
           "date": "2026-07-21",

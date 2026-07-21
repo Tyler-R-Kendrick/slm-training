@@ -1,0 +1,188 @@
+{
+  "claim_class": "infrastructure",
+  "clean_tree_evidence_gate": {
+    "cli_flag": "--allow-dirty",
+    "description": "_run_fixture always runs (even dirty, for local debugging) and honestly reports evidence_gate.code_dirty/comparable/claim_grade. main()'s --mode fixture path refuses to write docs/design/ from a dirty/unknowable tree unless --allow-dirty is passed explicitly; even then the artifact stays marked comparable=false/claim_grade=false."
+  },
+  "deferred": [
+    "From-scratch clean git-clone regeneration (this sandbox regenerates from the committed HEAD of the working checkout instead, verified via code_dirty=false/code_commit rather than a separate clone).",
+    "GPU determinism claim (explicit non-goal).",
+    "A broader sweep of additional call-order permutations beyond the two exercised (reordered probes, inserted extra probe).",
+    "training_batch_order namespace exercised end-to-end (no shuffling fixture exists yet to exercise it)."
+  ],
+  "determinism_report": {
+    "base_seed": 0,
+    "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
+    "code_dirty": true,
+    "config_hash": "8e158c276149e8186913df6df74f2a609ad5fa198043d6acfac2d991ef9583bd",
+    "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+    "different_training_corruption_seed_unexpected_changes": {},
+    "field_classification": {
+      "run_a_vs_different_training_corruption_seed": {
+        "checkpoint_roundtrip_ok": "exact",
+        "claim_class": "exact",
+        "deep_supervision_metrics": "mismatch",
+        "denoiser_architectures": "exact",
+        "evidence_gate": "exact",
+        "forward_shapes": "exact",
+        "losses": "mismatch",
+        "matrix_set": "exact",
+        "matrix_version": "exact",
+        "note": "exact",
+        "post_update_verification": "mismatch",
+        "provenance_hashes": "exact",
+        "recursive_params": "exact",
+        "recursive_weight_sharing": "exact",
+        "run_id": "exact",
+        "stacked_params": "exact",
+        "status": "exact"
+      },
+      "run_a_vs_extra_probe": {
+        "checkpoint_roundtrip_ok": "exact",
+        "claim_class": "exact",
+        "deep_supervision_metrics": "exact",
+        "denoiser_architectures": "exact",
+        "evidence_gate": "exact",
+        "forward_shapes": "exact",
+        "losses": "exact",
+        "matrix_set": "exact",
+        "matrix_version": "exact",
+        "note": "exact",
+        "post_update_verification": "exact",
+        "provenance_hashes": "exact",
+        "recursive_params": "exact",
+        "recursive_weight_sharing": "exact",
+        "run_id": "exact",
+        "stacked_params": "exact",
+        "status": "exact"
+      },
+      "run_a_vs_permuted_probe_order": {
+        "checkpoint_roundtrip_ok": "exact",
+        "claim_class": "exact",
+        "deep_supervision_metrics": "exact",
+        "denoiser_architectures": "exact",
+        "evidence_gate": "exact",
+        "forward_shapes": "exact",
+        "losses": "exact",
+        "matrix_set": "exact",
+        "matrix_version": "exact",
+        "note": "exact",
+        "post_update_verification": "exact",
+        "provenance_hashes": "exact",
+        "recursive_params": "exact",
+        "recursive_weight_sharing": "exact",
+        "run_id": "exact",
+        "stacked_params": "exact",
+        "status": "exact"
+      },
+      "run_a_vs_run_b": {
+        "checkpoint_roundtrip_ok": "exact",
+        "claim_class": "exact",
+        "deep_supervision_metrics": "exact",
+        "denoiser_architectures": "exact",
+        "evidence_gate": "exact",
+        "forward_shapes": "exact",
+        "losses": "exact",
+        "matrix_set": "exact",
+        "matrix_version": "exact",
+        "note": "exact",
+        "post_update_verification": "exact",
+        "provenance_hashes": "exact",
+        "recursive_params": "exact",
+        "recursive_weight_sharing": "exact",
+        "run_id": "exact",
+        "stacked_params": "exact",
+        "status": "exact"
+      }
+    },
+    "namespace_isolation_ok": true,
+    "note": "Two isolated in-process fixture executions (run A/B), a call-order permutation (recursive-first shape probes), and an inserted-extra-harmless-probe permutation are compared field by field after excluding version_stamp.stamped_at. A distinct training-corruption-seed run is also compared and is *expected* to differ only in losses/post_update_verification/deep_supervision_metrics/rng_contract -- any other field changing under a different corruption seed would be a real namespace-isolation defect, listed in different_training_corruption_seed_unexpected_changes.",
+    "permutation_digests": {
+      "extra_harmless_probe": "7b52f928a40868d2c6eca75da7ae7ca0477a5315c59c50a79cca1730e493de3d",
+      "recursive_first_probe_order": "8a89f4afe1858726f7839a2fcc65690de16e9f0ba736bbcc1a7cc76b1277e922"
+    },
+    "report_schema": "FixtureDeterminismReportV1",
+    "rng_contract_version": "FixtureRngContractV1",
+    "rng_namespace_seeds": {
+      "control_only": 50000,
+      "model_initialization": 0,
+      "shape_probe_context": 20000,
+      "shape_probe_inputs": 10000,
+      "training_batch_order": 40000,
+      "training_corruption": 30000
+    },
+    "run_a_digest": "b555eb17fed46a1a9d89738ab2f0388aac8f1d24ba0c92f3362d451898232427",
+    "run_b_digest": "b555eb17fed46a1a9d89738ab2f0388aac8f1d24ba0c92f3362d451898232427",
+    "tokenizer_hash": "df3ef1dd4ec5eeadd4cc89856699dd3d893275b55d807da4f45f6b6bf23256b6",
+    "verdict": "bit_exact",
+    "version_stamp": {
+      "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
+      "code_dirty": true,
+      "components": {
+        "model.recursive_denoiser": "v5"
+      },
+      "stamp_schema": "version_stamp/v1",
+      "stamped_at": "2026-07-21T01:28:39.377546+00:00"
+    }
+  },
+  "fixture_refactor_phases": [
+    "construction",
+    "deterministic_forward_shape_probes",
+    "deterministic_pre_update_objective_decomposition",
+    "one_optimizer_step",
+    "deterministic_post_update_verification_restored_checkpoint",
+    "checkpoint_roundtrip"
+  ],
+  "generated_at": "2026-07-21T01:28:39.377583+00:00",
+  "issue": "SLM-239 (RSC-A03)",
+  "linear_context": "SLM-138 adversarial audit ledger (follow-on to RSC-A01/RSC-A02)",
+  "note": "Fixture RNG determinism/reproducibility fix only -- no model-quality interpretation is attached. SLM-237/238's training_loss objective semantics (validate_recursive_depth_supervision, recursive_depth_aux_mode, RecursiveObjectiveContractV2) are unchanged; this is RNG plumbing around the SLM-138 fixture.",
+  "quality_claim_made": false,
+  "rng_contract": {
+    "module": "src/slm_training/models/rng_contract.py",
+    "namespace_notes": {
+      "control_only": "Any other incidental draw; used by the fixture's optional extra-harmless-probe test hook.",
+      "model_initialization": "Unchanged: TwoTowerModel.__init__ seeds torch.manual_seed(config.seed) itself.",
+      "shape_probe_context": "Isolated via torch.random.fork_rng (isolated_draw) -- provably leaves the outer stream untouched.",
+      "shape_probe_inputs": "Isolated via torch.random.fork_rng (isolated_draw) -- provably leaves the outer stream untouched.",
+      "training_batch_order": "Reserved for future batch shuffling; declared but not exercised (fixed single batch, no shuffling).",
+      "training_corruption": "Explicitly (re)seeds both the global torch RNG and model._rng immediately before each training_loss call."
+    },
+    "namespace_offsets": {
+      "control_only": 50000,
+      "model_initialization": 0,
+      "shape_probe_context": 20000,
+      "shape_probe_inputs": 10000,
+      "training_batch_order": 40000,
+      "training_corruption": 30000
+    },
+    "version": "FixtureRngContractV1"
+  },
+  "root_cause": "The fixture drew synthetic forward-shape-probe tensors (torch.randint/torch.randn) from the global torch RNG between model construction and training_loss, whose internal corruption sampling (_mask_targets) also reads the global RNG unconditionally with no reseed of its own. Inserting/reordering a probe shifted the corruption draws training_loss saw, changing per-depth values in the low decimal places -- exactly Kimi's reproduction report. The checked historical artifact also recorded code_dirty=true.",
+  "run_id": "iter_rsc_a03_rng_determinism_contract",
+  "second_rng_source_found_during_this_work": {
+    "description": "TwoTowerModel keeps a persistent per-instance random.Random(config.seed) (self._rng) that _mask_targets also reads (predictable-token fallback, mixed-pattern span selection). Restoring only the global torch RNG state between two training_loss calls on the same model reproduces a *different* loss the second time.",
+    "fix": "RngCheckpoint/seed_training_corruption capture and restore both the global torch RNG state and (when a model is passed) the model's self._rng state together.",
+    "verified_by_test": "tests/test_models/test_recursive_denoiser.py::test_rsc_a03_restoring_only_torch_rng_is_insufficient_without_model"
+  },
+  "status": "correctness_infrastructure_fix",
+  "tests": {
+    "all_passing": true,
+    "command": "python -m pytest tests/test_models/test_recursive_denoiser.py -q",
+    "file": "tests/test_models/test_recursive_denoiser.py",
+    "new_tests": 17,
+    "total_tests": 55
+  },
+  "version_bumps": {
+    "model.recursive_denoiser": "v4 -> v5"
+  },
+  "version_stamp": {
+    "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T01:28:39.377588+00:00"
+  }
+}

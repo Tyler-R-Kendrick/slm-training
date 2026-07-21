@@ -1,0 +1,92 @@
+{
+  "checkpoint_roundtrip_ok": true,
+  "claim_class": "wiring",
+  "deep_supervision_metrics": {
+    "recursive_depth_aux_mode": "legacy_all_depths",
+    "recursive_depth_aux_weight": 1.0,
+    "recursive_depth_loss_0": 26.484281539916992,
+    "recursive_depth_loss_1": 24.563997268676758,
+    "recursive_depth_supervision_enabled": true,
+    "recursive_depth_supervision_loss": 25.20409393310547,
+    "recursive_depth_supervision_weight_sum": 1.5,
+    "recursive_depth_weight_0": 0.5,
+    "recursive_depth_weight_1": 1.0,
+    "recursive_depth_weighted_contribution_0": 8.828094482421875,
+    "recursive_depth_weighted_contribution_1": 16.375999450683594
+  },
+  "denoiser_architectures": [
+    "stacked",
+    "shared_recursive"
+  ],
+  "evidence_gate": {
+    "allow_dirty": true,
+    "claim_grade": false,
+    "code_dirty": true,
+    "comparable": false,
+    "diff_hash": "6f30e70d7122de99b01bed1514c1321302b722df714e8abbc9e814013141a347"
+  },
+  "forward_shapes": {
+    "recursive": [
+      2,
+      6,
+      32
+    ],
+    "stacked": [
+      2,
+      6,
+      32
+    ]
+  },
+  "losses": {
+    "recursive": 61.54115676879883,
+    "stacked": 42.18274688720703
+  },
+  "matrix_set": "slm138-shared-recursive-denoiser",
+  "matrix_version": "slm138-v1",
+  "note": "Wiring-only evidence. Full matched-block evaluation arms and GPU training are deferred.",
+  "post_update_verification": {
+    "note": "training_loss re-evaluated after one optimizer step with the training_corruption RNG checkpoint restored to its pre-update state -- the only source of difference from 'losses' above is the parameter update, never a shifted corruption draw.",
+    "recursive_loss": 59.5893440246582,
+    "stacked_loss": 39.796356201171875
+  },
+  "provenance_hashes": {
+    "config_hash": "8e158c276149e8186913df6df74f2a609ad5fa198043d6acfac2d991ef9583bd",
+    "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+    "recursive_config_hash": "c9d87abdc85050bfcbbc08d0a3c065376000b02263dd2724ce63df9549de8f4f",
+    "tokenizer_hash": "df3ef1dd4ec5eeadd4cc89856699dd3d893275b55d807da4f45f6b6bf23256b6"
+  },
+  "recursive_params": 74242,
+  "recursive_weight_sharing": {
+    "f_layer_object_count": 1,
+    "g_layer_object_count": 1,
+    "total_shared_layers": 2
+  },
+  "rng_contract": {
+    "base_seed": 0,
+    "insert_extra_probe": false,
+    "namespace_seeds": {
+      "control_only": 50000,
+      "model_initialization": 0,
+      "shape_probe_context": 20000,
+      "shape_probe_inputs": 10000,
+      "training_batch_order": 40000,
+      "training_corruption": 30000
+    },
+    "namespace_seeds_note": "model_initialization uses config.seed directly via TwoTowerModel.__init__ (unchanged SLM-237/238 behavior); shape_probe_* namespaces are isolated via fork_rng and provably do not perturb training_corruption; training_batch_order/control_only are declared for the contract but training_batch_order is not exercised by this single-fixed-batch fixture.",
+    "probe_order": "stacked_first",
+    "training_corruption_seed": 30000,
+    "version": "FixtureRngContractV1"
+  },
+  "run_id": "slm138_recursive_denoiser_fixture",
+  "stacked_params": 64994,
+  "status": "wiring_only",
+  "version_stamp": {
+    "code_commit": "55a2bebb4c73591b8cff67f066591a4efbff2201",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v4"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T01:20:59.613525+00:00"
+  }
+}
