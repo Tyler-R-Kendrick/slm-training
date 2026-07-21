@@ -162,12 +162,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-21",
+          "note": "add SLM-193 FFE3-02 bit-exact flow-cache fixture harness lazy re-exports"
+        },
         {
           "version": "v60",
           "date": "2026-07-21",
@@ -3958,6 +3963,40 @@
           "version": "ffe3-01-v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-192 FFE3-01 flow-pipeline cost-profile fixture matrix CLI"
+        }
+      ]
+    },
+    "harness.experiments.slm193_flow_caches": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm193_flow_caches.py",
+        "src/slm_training/harness_core/flow_cache.py",
+        "tests/test_harnesses/experiments/test_slm193_flow_caches.py",
+        "tests/test_harness_core/test_flow_cache.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-193 FFE3-02 bit-exact state, candidate, closure, and bridge cache fixture harness"
+        }
+      ]
+    },
+    "matrix.slm193_flow_caches": {
+      "version": "ffe3-02-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/bench_flow_caches.py",
+        "tests/test_scripts/test_bench_flow_caches.py",
+        "docs/design/iter-slm193-flow-caches-20260721.json",
+        "docs/design/iter-slm193-flow-caches-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-02-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-193 FFE3-02 bit-exact flow-cache fixture matrix CLI"
         }
       ]
     }
