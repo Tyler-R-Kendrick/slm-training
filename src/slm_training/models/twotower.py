@@ -6634,17 +6634,40 @@ class TwoTowerModel(nn.Module):
                 target_id = self.tokenizer.eos_id
             else:
                 remaining = dict(required_counts)
-                references: list[str] = []
+                reference_indices: set[int] = set()
                 for index, expr_type in enumerate(section_types):
                     token_id = family_token_ids.get(
                         str(expr_type).removeprefix("element:")
                     )
                     if token_id is None or remaining.get(token_id, 0) <= 0:
                         continue
-                    references.append(f"&{index}")
+                    reference_indices.add(index)
                     remaining[token_id] -= 1
-                if not references:
+                if not reference_indices:
                     return None
+                section_slot_ids = tuple(
+                    getattr(state, "section_slot_ids", ())
+                )
+                if section_slot_ids:
+                    referenced_slots = set().union(
+                        *(
+                            section_slot_ids[index]
+                            for index in reference_indices
+                            if index < len(section_slot_ids)
+                        )
+                    )
+                    try:
+                        missing_slot_ids = set(
+                            range(len(self._slot_contracts[row] or ()))
+                        ).difference(referenced_slots)
+                    except IndexError:
+                        missing_slot_ids = set()
+                    for index, slot_ids in enumerate(section_slot_ids):
+                        newly_covered = set(slot_ids).intersection(missing_slot_ids)
+                        if newly_covered:
+                            reference_indices.add(index)
+                            missing_slot_ids.difference_update(newly_covered)
+                references = [f"&{index}" for index in sorted(reference_indices)]
                 closure = ["+Stack", "[", *references, "]", "^column", "-"]
                 if frames:
                     try:
