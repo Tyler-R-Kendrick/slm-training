@@ -32,7 +32,7 @@ Independently measured comparison dimensions -- never a single collapsed `parity
 
 ## SLM-241 (RSC-A05) control arm table
 
-Real, measured resource accounting per built control arm -- never a raw loss or a winner (see `docs/design/iter-rsc-a05-*` for the full formulas/residuals). Built arms: A, B, C, D, E, F, G. Deferred: H.
+Real, measured resource accounting per built control arm -- never a raw loss or a winner (see `docs/design/iter-rsc-a05-*` for the full formulas/residuals). Built arms: A, B, C, D, E, F, G, H. Deferred: .
 
 | arm | denoiser_arch | z_state_mode | params (Δ vs A) | block evals | matched? |
 | --- | --- | --- | --- | --- | --- |
@@ -43,6 +43,7 @@ Real, measured resource accounting per built control arm -- never a raw loss or 
 | E | `stacked_matched_state` | `None` | 52288 (+9248) | 2 | False |
 | F | `stacked_depth_matched` | `None` | 76832 (+33792) | 4 | False |
 | G | `shared_recursive` | `full` | 52288 (+9248) | 2 | False |
+| H | `shared_recursive` | `full` | 52288 (+9248) | 4 | False |
 
 ## Arm F dual view (block-evaluation-matched vs parameter-nearest)
 

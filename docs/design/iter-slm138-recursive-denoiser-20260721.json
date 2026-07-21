@@ -230,7 +230,7 @@
       "n_layers": 4,
       "parameter_count_delta_vs_target_arm_b": 24544,
       "report": {
-        "active_parameter_count": 68812,
+        "active_parameter_count": 68818,
         "arm_id": "F",
         "block_evaluations_per_forward": 4,
         "checkpoint_bytes": 339065,
@@ -268,7 +268,7 @@
       "n_layers": 3,
       "parameter_count_delta_vs_target_arm_b": 7648,
       "report": {
-        "active_parameter_count": 51922,
+        "active_parameter_count": 51928,
         "arm_id": "F",
         "block_evaluations_per_forward": 3,
         "checkpoint_bytes": 263742,
@@ -532,6 +532,41 @@
       ],
       "within_matching_tolerance": false,
       "z_state_mode": "full"
+    },
+    {
+      "active_parameter_count": 34839,
+      "arm_id": "H",
+      "block_evaluations_per_forward": 4,
+      "checkpoint_bytes": 233018,
+      "claim_class": "wiring",
+      "contract_version": "RecursiveControlArmReportV1",
+      "cross_attn_calls_per_forward": 4,
+      "d_model": 32,
+      "denoiser_arch": "shared_recursive",
+      "estimated_forward_flops": 608256.0,
+      "label": "stop-gradient recurrence (arm B's exact construction; y/z detached between recursive steps -- identical forward values, no cross-step backprop through the recurrent state)",
+      "matching_target": "matches arm B's total parameter count and block_evaluations_per_forward EXACTLY at every config -- identical construction to B (same denoiser_arch, same z_state_mode='full'), only detach_between_steps=True differs, which changes no parameter and no block evaluation, only the backward graph",
+      "matching_tolerance_params": 0,
+      "max_len": 256,
+      "mlp_calls_per_forward": 4,
+      "notes": [
+        "gradient-flow-only variant of arm B: identical construction (same denoiser_arch, same z_state_mode='full', same parameters, same block-evaluations) with detach_between_steps=True -- y/z are detached between recursive steps so a later step's loss cannot backpropagate through the recurrent state into an earlier step's block application; the shared weights still receive gradient from every step's own (same-step) contribution. See tests/test_models/test_recursive_denoiser.py for the forward-identity (bit-identical to B) and gradient-divergence (hook-based mechanism) evidence."
+      ],
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.486988847583643,
+      "parameter_count_denoiser": 33792,
+      "parameter_count_total": 52288,
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "residual_matching_error_params": 9248,
+      "self_attn_calls_per_forward": 4,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "within_matching_tolerance": false,
+      "z_state_mode": "full"
     }
   ],
   "control_arms_built": [
@@ -541,11 +576,10 @@
     "D",
     "E",
     "F",
-    "G"
-  ],
-  "control_arms_deferred": [
+    "G",
     "H"
   ],
+  "control_arms_deferred": [],
   "deep_supervision_metrics": {
     "recursive_depth_aux_mode": "legacy_all_depths",
     "recursive_depth_aux_weight": 1.0,
@@ -595,9 +629,9 @@
     "stacked_loss": 45.294647216796875
   },
   "provenance_hashes": {
-    "config_hash": "8e158c276149e8186913df6df74f2a609ad5fa198043d6acfac2d991ef9583bd",
+    "config_hash": "2daf51618680b532f06eced5649475efa3ba214927d63a059fa5c051181c34d2",
     "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
-    "recursive_config_hash": "c9d87abdc85050bfcbbc08d0a3c065376000b02263dd2724ce63df9549de8f4f",
+    "recursive_config_hash": "e392ec679ec96782b1c373d2074254a037dbd49a7b74d351b4d3ef5140f736f3",
     "tokenizer_hash": "df3ef1dd4ec5eeadd4cc89856699dd3d893275b55d807da4f45f6b6bf23256b6"
   },
   "recursive_params": 74242,
@@ -632,12 +666,12 @@
   "stacked_params": 64994,
   "status": "wiring_only",
   "version_stamp": {
-    "code_commit": "d6cf67c8adb7a969d7fb4f0cbf37ef4d9fe297f9",
+    "code_commit": "d6ff9ceb1aa6bc7a8f31c507e639182f3b52730d",
     "code_dirty": false,
     "components": {
-      "model.recursive_denoiser": "v9"
+      "model.recursive_denoiser": "v10"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T03:02:53.482607+00:00"
+    "stamped_at": "2026-07-21T03:32:51.130091+00:00"
   }
 }
