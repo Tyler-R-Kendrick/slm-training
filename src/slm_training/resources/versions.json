@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v154",
+      "version": "v155",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v155",
+          "date": "2026-07-21",
+          "note": "E696 rejection: restore v152 behavior after scalar literal fallback left Form placeholder spam unchanged and generated arbitrary operational names"
+        },
         {
           "version": "v154",
           "date": "2026-07-21",

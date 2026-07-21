@@ -5099,3 +5099,16 @@ created or synced.
 
 Evidence: [narrative](iter-e695-role-property-capacity-20260721.md) and
 [JSON](iter-e695-role-property-capacity-20260721.json).
+
+## E696 scalar role literal fallback
+
+E696 routes a scalar string away from repeated visible roles when no unused
+role-compatible slot remains. R1 is an excluded no-op because its fixed literal
+was absent from live candidate sets. Corrected r2 leaves Form spam unchanged
+and turns two stable operational names into arbitrary `itet` literals; strict
+stays 4/5 and every aggregate quality metric is identical. Reject v153/v154 and
+restore v152 behavior as v155. AgentV is 0/1; no checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e696-role-literal-fallback-20260721.md) and
+[JSON](iter-e696-role-literal-fallback-20260721.json).
