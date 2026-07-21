@@ -4886,3 +4886,18 @@ jointly coverable subsets and carry residual visible text roles. AgentV is
 
 Evidence: [narrative](iter-e679-joint-role-smoke-20260721.md) and
 [JSON](iter-e679-joint-role-smoke-20260721.json).
+
+## E680 display-role aliases
+
+E680 maps general `kicker` and `heading` display roles to
+`TextContent.text`, advancing binding-aware meaningful to v2.4.0 without
+changing ship thresholds. On the matched full Smoke `n=3` replay, strict v2
+improves 1/3→2/3, fidelity reaches 1.0, structure improves 0.6878→0.7276,
+recall 0.5833→0.6667, reward 0.8907→0.9530, and the callout becomes exact.
+The hero still misroutes `subtitle` through `TabItem.content`, exposing the
+need to partition larger namespaces into jointly coverable role subsets.
+Retain v135 as positive research evidence, not ship evidence. AgentV is 0/1;
+no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e680-display-role-aliases-20260721.md) and
+[JSON](iter-e680-display-role-aliases-20260721.json).

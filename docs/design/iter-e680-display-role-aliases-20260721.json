@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "run_id": "e680-display-role-aliases-r1",
+  "experiment_id": "E680",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Mapping visible kicker and heading roles to schema-valid display text will recover residual Smoke placeholders without weakening role correctness.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e679-joint-role-smoke-r1",
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.6666666666666666,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.7276000000000001,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.953,
+      "ast_node_f1": 0.805128205128205,
+      "ast_edge_f1": 0.45454545454545453,
+      "latency_ms_p50": 1734.9,
+      "latency_ms_p95": 6313.97,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e679": {
+    "strict_v2": [
+      0.3333333333333333,
+      0.6666666666666666
+    ],
+    "placeholder_fidelity": [
+      0.8055555555555555,
+      1.0
+    ],
+    "structural_similarity": [
+      0.6878000000000001,
+      0.7276000000000001
+    ],
+    "component_type_recall": [
+      0.5833333333333334,
+      0.6666666666666666
+    ],
+    "reward_score": [
+      0.8906666666666666,
+      0.953
+    ],
+    "ast_node_f1": [
+      0.8111111111111112,
+      0.805128205128205
+    ],
+    "ast_edge_f1": [
+      0.35555555555555557,
+      0.45454545454545453
+    ]
+  },
+  "failure_breakdown": {
+    "placeholder_semantic_role_mismatch": 1,
+    "schema_value_role_mismatch:TabItem.content": 1
+  },
+  "prediction_evidence": {
+    "smoke_callout_01": "Now matches the canonical TextContent heading plus Callout title/body structure and clears strict v2.4.0.",
+    "smoke_hero_01": "Covers every placeholder but routes subtitle through TabItem.content and duplicates title; it remains the only strict failure."
+  },
+  "metric_provenance": {
+    "metric": "binding_aware_meaningful_v2/2.4.0",
+    "implementation_hash": "1fb7a079e2900ec64bb144c2fcf2de5c2a3247f4728380614c2b0ad562056626",
+    "note": "The strict delta is metric-version-bound; non-strict prediction metrics provide independent positive evidence."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v135 and metric v2.4.0. The general display aliases recover all visible placeholders and improve most non-strict metrics, while the remaining hero failure motivates a separate maximal-subset role grouping lever.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "89b5006788540712742172a12308343784f08596",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.4.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v135"
+    },
+    "stamped_at": "2026-07-21T12:26:26.491958+00:00"
+  }
+}
