@@ -12,9 +12,12 @@ import subprocess
 import time
 from pathlib import Path
 
-INTERRUPT_AFTER_SECONDS = 170
-KILL_AFTER_SECONDS = 10
-MAX_RUN_SECONDS = INTERRUPT_AFTER_SECONDS + KILL_AFTER_SECONDS
+from slm_training.levers import (
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS as KILL_AFTER_SECONDS,
+    MAX_RUN_MINUTES,
+    MAX_RUN_SECONDS,
+)
 
 
 def _ssh_base(
@@ -97,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
 set -euo pipefail
 {token_export}
 export SLM_FAST_TRAIN=1
+export SLM_MAX_WALL_MINUTES={MAX_RUN_MINUTES}
 export PYTORCH_CUDA_ALLOC_CONF="${{PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}}"
 mkdir -p {remote_dir}
 cd {remote_dir}

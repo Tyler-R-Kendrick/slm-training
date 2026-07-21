@@ -17,6 +17,8 @@ from slm_training.dsl.grammar.fastpath.survival_train import (
     mine_survival_batch,
     train_survival_gate,
 )
+from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
+from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.parallel_decode import (
     StabilityTracker,
     select_remask_stability_indices,
@@ -35,6 +37,7 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
 CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+EXACT_SOURCE = 'root = Card([title])\ntitle = TextContent(":hero.title")\n'
 
 
 # ---------------------------------------------------------------------------
@@ -144,9 +147,7 @@ def test_order_clusters_prefers_survival_and_centrality() -> None:
     attn = _synthetic_attn(4, [(0, 2, 0.4)])
     conf = torch.tensor([0.9, 0.3, 0.8, 0.5])
     survival = torch.tensor([0.95, 0.2, 0.9, 0.5])
-    ordered = order_clusters(
-        [[0], [1], [2]], conf=conf, attn=attn, survival=survival
-    )
+    ordered = order_clusters([[0], [1], [2]], conf=conf, attn=attn, survival=survival)
     # Low-survival cluster [1] must come last.
     assert ordered[-1].positions == [1]
     assert ordered[0].anchor_score >= ordered[-1].anchor_score
@@ -295,6 +296,25 @@ def _tiny_model(**overrides) -> TwoTowerModel:
     return TwoTowerModel.from_records(records, config=cfg, device="cpu")
 
 
+def _exact_seed(
+    model: TwoTowerModel, *, masked_equals: int = 1
+) -> tuple[list[int], int]:
+    tokenizer = model.tokenizer
+    seed = [
+        tokenizer.bos_id,
+        *tokenizer.encode(EXACT_SOURCE, add_special=False),
+        tokenizer.eos_id,
+    ]
+    equals_positions = [
+        index
+        for index, token_id in enumerate(seed)
+        if token_id == tokenizer.token_to_id["="]
+    ]
+    for position in equals_positions[:masked_equals]:
+        seed[position] = tokenizer.mask_id
+    return seed, equals_positions[0]
+
+
 def test_denoiser_return_attn_matches_sdpa_logits() -> None:
     model = _tiny_model()
     model.eval()
@@ -363,9 +383,7 @@ def test_train_survival_gate_updates_head_and_flags() -> None:
     before = [p.detach().clone() for p in model.survival_head.parameters()]
     summary = train_survival_gate(model, records, steps=4, batch_size=2)
     after = list(model.survival_head.parameters())
-    assert any(
-        not torch.allclose(b, a.detach()) for b, a in zip(before, after)
-    )
+    assert any(not torch.allclose(b, a.detach()) for b, a in zip(before, after))
     assert model.config.survival_gate is True
     assert model.config.survival_gate_train is True
     assert summary["steps"] == 4
@@ -398,6 +416,199 @@ def test_generate_with_v7_flags_produces_output_and_stats() -> None:
     # Speculation ran (or was legitimately skipped when no clusters formed).
     assert stats["speculative_batches"] >= 0
     assert stats["successor_hits"] + stats["successor_misses"] >= 0
+
+
+@pytest.mark.parametrize(
+    ("unmask_mode", "fastpath_mode"),
+    [("positions", "ltr"), ("cluster", "ltr"), ("positions", "hybrid")],
+)
+def test_maskgit_one_hole_exact_final_step_skips_denoiser(
+    monkeypatch, unmask_mode, fastpath_mode
+) -> None:
+    model = _tiny_model(
+        output_tokenizer="lexer",
+        gen_steps=1,
+        unmask_mode=unmask_mode,
+        cluster_verify=unmask_mode == "cluster",
+        grammar_fastpath_mode=fastpath_mode,
+        structural_bias=1_000.0,
+        allow_unconstrained_fallback=False,
+    )
+    tokenizer = model.tokenizer
+    seed, position = _exact_seed(model)
+    if fastpath_mode == "hybrid":
+        from slm_training.dsl.grammar import fastpath
+
+        monkeypatch.setattr(fastpath, "admit_fill", lambda *_args, **_kwargs: True)
+    ctx, ctx_pad = model._encode_context(["Hero"])
+    recorder = DecodeTraceRecorder(record_support=True)
+    model.trace_recorder = recorder
+    model.speculative_stats.reset()
+    monkeypatch.setattr(
+        model.denoiser,
+        "forward",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("exact final MaskGIT step must not run the denoiser")
+        ),
+    )
+
+    with collect_decode_stats() as stats:
+        result = model._generate_maskgit_one(
+            ctx,
+            ctx_pad,
+            len(seed),
+            use_grammar=True,
+            slot_contract=[":hero.title"],
+            seed_ids=seed,
+        )
+
+    assert result.startswith("root = Card(")
+    assert model.speculative_stats.denoiser_forwards == 0
+    assert model.speculative_stats.clusters_proposed == int(unmask_mode == "cluster")
+    assert model.speculative_stats.clusters_accepted == int(unmask_mode == "cluster")
+    assert recorder.nfe == 0
+    assert stats.forced_row_tokens_without_forward == 1
+    assert stats.all_forced_steps_without_forward == 1
+    commit = recorder.steps[0]["commits"][0]
+    assert commit["t"] == position
+    assert commit["id"] == tokenizer.token_to_id["="]
+    assert commit["decision_source"] == "dfa_singleton"
+    assert not {"lp", "raw_id", "raw_logit", "selected_logit"} & commit.keys()
+
+
+@pytest.mark.parametrize("rejection", ["admit", "stream"])
+def test_maskgit_exact_step_preserves_verifier_rejection(
+    monkeypatch, rejection
+) -> None:
+    fastpath_mode = "hybrid" if rejection == "admit" else "ltr"
+    model = _tiny_model(
+        output_tokenizer="lexer",
+        gen_steps=1,
+        grammar_fastpath_mode=fastpath_mode,
+        allow_unconstrained_fallback=False,
+    )
+    seed, position = _exact_seed(model)
+    if rejection == "admit":
+        from slm_training.dsl.grammar import fastpath
+
+        monkeypatch.setattr(fastpath, "admit_fill", lambda *_args, **_kwargs: False)
+    else:
+        from slm_training.models import twotower
+
+        monkeypatch.setattr(
+            twotower,
+            "filter_ids_by_stream",
+            lambda *_args, **_kwargs: [position],
+        )
+    calls = 0
+    original_forward = model.denoiser.forward
+
+    def counted_forward(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original_forward(*args, **kwargs)
+
+    monkeypatch.setattr(model.denoiser, "forward", counted_forward)
+    ctx, ctx_pad = model._encode_context(["Hero"])
+    model._generate_maskgit_one(
+        ctx,
+        ctx_pad,
+        len(seed),
+        use_grammar=True,
+        slot_contract=[":hero.title"],
+        seed_ids=seed,
+    )
+
+    assert calls >= 1
+
+
+def test_maskgit_exact_bypass_matches_model_ranked_output(monkeypatch) -> None:
+    exact_model = _tiny_model(
+        output_tokenizer="lexer",
+        gen_steps=1,
+        grammar_fastpath_mode="ltr",
+        allow_unconstrained_fallback=False,
+    )
+    ranked_model = _tiny_model(
+        output_tokenizer="lexer",
+        gen_steps=1,
+        grammar_fastpath=False,
+        allow_unconstrained_fallback=False,
+    )
+    seed, _position = _exact_seed(exact_model)
+    ranked_seed, _ = _exact_seed(ranked_model)
+    exact_ctx, exact_pad = exact_model._encode_context(["Hero"])
+    ranked_ctx, ranked_pad = ranked_model._encode_context(["Hero"])
+    calls = 0
+
+    def ranked_forward(ids, *_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        logits = torch.full(
+            (*ids.shape, ranked_model.tokenizer.vocab_size),
+            -100.0,
+            device=ids.device,
+        )
+        logits[..., ranked_model.tokenizer.token_to_id["="]] = 100.0
+        return logits
+
+    monkeypatch.setattr(ranked_model.denoiser, "forward", ranked_forward)
+    exact = exact_model._generate_maskgit_one(
+        exact_ctx,
+        exact_pad,
+        len(seed),
+        use_grammar=True,
+        slot_contract=[":hero.title"],
+        seed_ids=seed,
+    )
+    ranked = ranked_model._generate_maskgit_one(
+        ranked_ctx,
+        ranked_pad,
+        len(ranked_seed),
+        use_grammar=True,
+        slot_contract=[":hero.title"],
+        seed_ids=ranked_seed,
+    )
+
+    assert calls == 1
+    assert exact == ranked
+
+
+@pytest.mark.parametrize(
+    ("gen_steps", "remask_ratio", "masked_equals"),
+    [(2, 0.25, 1), (1, 0.0, 2)],
+)
+def test_maskgit_model_dependent_step_still_forwards(
+    monkeypatch, gen_steps, remask_ratio, masked_equals
+) -> None:
+    model = _tiny_model(
+        output_tokenizer="lexer",
+        gen_steps=gen_steps,
+        grammar_fastpath_mode="ltr",
+        remask_ratio=remask_ratio,
+        allow_unconstrained_fallback=False,
+    )
+    seed, _ = _exact_seed(model, masked_equals=masked_equals)
+    ctx, ctx_pad = model._encode_context(["Hero"])
+    calls = 0
+    original_forward = model.denoiser.forward
+
+    def counted_forward(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original_forward(*args, **kwargs)
+
+    monkeypatch.setattr(model.denoiser, "forward", counted_forward)
+    model._generate_maskgit_one(
+        ctx,
+        ctx_pad,
+        len(seed),
+        use_grammar=True,
+        slot_contract=[":hero.title"],
+        seed_ids=seed,
+    )
+
+    assert calls >= 1
 
 
 def test_speculation_abstains_when_remask_needs_forwards() -> None:

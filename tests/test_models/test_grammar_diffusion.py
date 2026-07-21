@@ -255,6 +255,23 @@ def test_save_load_and_generate_batch_requests(tmp_path: Path) -> None:
     assert out or evidence[0]["candidate_productions"]
 
 
+def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
+    model = GrammarDiffusionModel.from_records(
+        [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
+        config=GrammarDiffusionConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+        device="cpu",
+    )
+    path = tmp_path / "legacy.pt"
+    model.save(path)
+    payload = torch.load(path, map_location="cpu", weights_only=True)
+    payload["output_contract_version"] = 1
+    torch.save(payload, path)
+    with pytest.raises(ValueError, match="retrain from symbol-only targets"):
+        GrammarDiffusionModel.from_checkpoint(path, device="cpu")
+
+
 def test_factory_builds_grammar_diffusion() -> None:
     records = [
         ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),

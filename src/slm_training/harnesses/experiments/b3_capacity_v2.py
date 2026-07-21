@@ -20,6 +20,7 @@ from slm_training.harnesses.experiments.ladder import (
     capacity_ladder_arms,
     ladder_run_id,
 )
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
@@ -114,7 +115,7 @@ class B3CapacityV2Manifest:
             "eval_version": "remediated",
             "eval_suites": "smoke,held_out,adversarial,ood,rico_held",
             "base_token_budget": 50000,
-            "max_wall_minutes": 3.0,
+            "max_wall_minutes": float(MAX_RUN_MINUTES),
             "checkpoint_sync": False,
         }
     )

@@ -34,8 +34,15 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
 summary and the full card whenever a checkpoint is created or promoted.
 
+**Current compatibility:** output contract v2 is symbol-only. All pre-E714
+checkpoints are provenance-only; current code refuses to load, serve, resume,
+promote, or evaluate them. E714 is the first compatible scratch baseline, but
+it fails semantic gates and is not promoted. See
+[the contract](docs/design/symbol-only-output-contract.md).
+
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1/last.pt` | `outputs/runs/…` (local) | First v2-compatible CPU scratch checkpoint; 600 steps / 48.72s, strict meaning 0.0 and AgentV 0/5 — diagnostic only, not ship |
 | Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5; wiring only |
 | Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Local DirectML verify | `local_directml_adreno_20260714/last.pt` | `outputs/runs/…` (local) | Adreno GPU train/checkpoint OK; 5-step wiring run, not evaluated or ship |
@@ -220,6 +227,24 @@ python -m scripts.evaluate_model \
   --run-id twotower_v1 \
   --ship-gates
 ```
+
+### Canonical lever registry
+
+`ModelBuildConfig` is the single source for user-facing model, data, training,
+decode, and evaluation lever defaults. Discover the complete machine-readable
+set without searching scripts:
+
+```bash
+python -m slm_training.levers
+python -m slm_training.levers --category decode
+```
+
+The catalog identifies intentional checkpoint-vs-harness default differences.
+The repository-wide run cap is the sole policy lever owned directly by
+`src/slm_training/levers.py`; changing `MAX_RUN_MINUTES` updates every Python
+consumer. Local compute is the default experiment path. Remote CI and managed
+jobs are optional last-resort execution surfaces and are not part of this local
+lever registry.
 
 Evaluation uses the [AgentEvals](https://agentevals.io/) JSONL/YAML contract
 and the pinned AgentV SDK. Run `npm ci` before Python eval commands; shared

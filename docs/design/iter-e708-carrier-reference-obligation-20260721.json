@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "run_id": "e708-carrier-reference-obligation-r4",
+  "experiment_id": "E708",
+  "date_utc": "2026-07-21",
+  "status": "completed_five_suite_retained_scratch_improvement_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Recording the exact missing-slot carrier and appending only its reference when terminal root closure is imminent will preserve E707's Rico coverage gain without forcing unrelated adversarial orphans.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"treatment_run_id": "e708-carrier-reference-obligation-r4", "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"], "n": 19, "device": "cpu", "steps": 0, "context_backend": "scratch", "full_suites": true, "honest_slot_contract": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160, "max_wall_minutes": 3, "schema_value_decode_weight": 5.0, "semantic_plan_root_decode_weight": 8.0, "semantic_plan_root_margin_decode_weight": 2.0, "carrier_specific_root_reference": true},
+  "diagnostic_arms": [
+    {"run_id": "e708-carrier-reference-obligation-r1", "suite": "rico_held", "close_boundary_gate": false, "placeholder_fidelity": 0.4166666666666667, "placeholder_validity": 0.65, "structural_similarity": 0.32553333333333334, "reward_score": 0.786, "decision": "reject_early_reference_hijack"},
+    {"run_id": "e708-carrier-reference-obligation-r2", "suite": "rico_held", "close_boundary_gate": true, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7915333333333333, "reward_score": 1.0, "decision": "advance_to_full_suite"},
+    {"run_id": "e708-carrier-reference-obligation-r3", "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"], "n": 19, "decision": "retain_pending_stale_obligation_guard"}
+  ],
+  "suites": {
+    "smoke": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.8308333333333334, "component_type_recall": 0.75, "reward_score": 0.957, "ast_node_f1": 0.903030303030303, "ast_edge_f1": 0.48148148148148145, "latency_ms_p50": 1695.09, "latency_ms_p95": 5183.38, "decode_timeout_count": 0, "fallback_count": 0},
+    "held_out": {"n": 5, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.81042, "component_type_recall": 0.8933333333333333, "reward_score": 0.9658, "ast_node_f1": 0.883095238095238, "ast_edge_f1": 0.7173626373626373, "latency_ms_p50": 2931.74, "latency_ms_p95": 4196.34, "decode_timeout_count": 0, "fallback_count": 0},
+    "adversarial": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.25, "contract_recall": 0.8333333333333334, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.9, "structural_similarity": 0.62825, "component_type_recall": 1.0, "reward_score": 0.9035, "ast_node_f1": 0.7484848484848484, "ast_edge_f1": 0.4668803418803419, "latency_ms_p50": 3029.88, "latency_ms_p95": 4914.02, "decode_timeout_count": 0, "fallback_count": 0},
+    "ood": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.75, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7073, "component_type_recall": 0.875, "reward_score": 0.979, "ast_node_f1": 0.8055555555555556, "ast_edge_f1": 0.695054945054945, "latency_ms_p50": 2726.66, "latency_ms_p95": 3949.25, "decode_timeout_count": 0, "fallback_count": 0},
+    "rico_held": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 0.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7915333333333333, "component_type_recall": 1.0, "reward_score": 1.0, "ast_node_f1": 0.8418803418803419, "ast_edge_f1": 0.7727272727272728, "latency_ms_p50": 6737.58, "latency_ms_p95": 7292.21, "decode_timeout_count": 0, "fallback_count": 0}
+  },
+  "comparison_to_e701": {"non_rico_quality_metrics_changed": 0, "rico": {"strict": [0.0, 0.0], "contract_recall": [0.9583333333333334, 1.0], "fidelity": [0.9583333333333334, 1.0], "validity": [0.975, 1.0], "structure": [0.7611333333333334, 0.7915333333333333], "reward": [0.9874999999999999, 1.0], "ast_node_f1": [0.7942028985507247, 0.8418803418803419], "ast_edge_f1": [0.7757073844030365, 0.7727272727272728]}},
+  "reproducibility": {"r3_r4_tracked_non_latency_metrics_sha256": "09206569521a7f19347773b16dde8a2e2f87cddaef7f0572536c7515c7d58fab", "exact_match": true},
+  "failure_analysis": "The carrier-specific close-boundary obligation fixes missing-slot pruning without E707's global orphan inclusion. Rico strict remains blocked by a separate duplicate placeholder in the enum-valued TextContent.size property.",
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "mean_score": 0.5},
+  "length_budget": {"ok": false, "effective_budget": 160, "failures": ["rico_held:p95=190 exceeds effective_budget=160"]},
+  "decision": "Retain v180 as a scratch decoder improvement and use schema-value weight 5 with this carrier-specific obligation. Do not claim ship readiness; target enum-valued semantic-role misuse next.",
+  "ship_gate_result": "failed",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "1ab6ab878e760d10059c3026e78029c7619960d7", "code_dirty": true, "components": {"harness.model_build.eval": "v36", "evals.meaningful_program": "2.9.0", "evals.scoring": "v13", "model.twotower": "v180"}, "stamped_at": "2026-07-21T18:51:18.955808+00:00"}
+}

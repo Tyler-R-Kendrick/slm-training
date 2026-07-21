@@ -79,6 +79,47 @@ def test_insights_persist_until_model_card_reference_changes(tmp_path) -> None:
     assert changed["references"][-1]["run_id"] == "checkpoint-2"
 
 
+def test_latest_checkpoint_selects_newest_history_row_by_date(tmp_path) -> None:
+    """The history table mixes prepended and appended rows; the reference must
+    follow the Date (UTC) column, not the last row's position."""
+    _write_evidence(tmp_path, "checkpoint-old")
+    model_card = tmp_path / "docs" / "MODEL_CARD.md"
+    old_row = "| 2026-07-14 | `checkpoint-old` | `outputs/runs/checkpoint-old/` | pending | not evaluated |"
+    new_row = "| 2026-07-20 | `checkpoint-new` | `outputs/runs/checkpoint-new/` | pending | not evaluated |"
+    # Newest row first, stale row appended last — the real table's shape.
+    model_card.write_text(
+        model_card.read_text(encoding="utf-8").replace(old_row, f"{new_row}\n{old_row}"),
+        encoding="utf-8",
+    )
+    references = Readers(tmp_path).performance_insights()["references"]
+    latest = next(row for row in references if row["role"] == "Latest checkpoint")
+    assert latest["run_id"] == "checkpoint-new"
+    assert latest["created_at"] == "2026-07-20"
+
+
+def test_runs_surface_newest_committed_evidence_first(tmp_path) -> None:
+    """runs() is truncated by the overview, so recency — not board order —
+    must decide what survives; undated stems fall back to the filename date."""
+    _write_evidence(tmp_path, "checkpoint-1")
+    design = tmp_path / "docs" / "design"
+    (design / "iter-new-experiment-20260721.json").write_text(
+        json.dumps(
+            {
+                "run_id": "new-experiment-r1",
+                "suites": {
+                    "smoke": {"n": 2, "placeholder_fidelity": 1.0, "reward_score": 0.9}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    runs = Readers(tmp_path).runs()["runs"]
+    assert runs[0]["run_id"] == "new-experiment-r1"
+    assert runs[0]["date"] == "2026-07-21"
+    # The stale (undated) quality-matrix row still appears — after fresh evidence.
+    assert any(row.get("run_id") == "experiment-1" for row in runs[1:])
+
+
 def test_live_champion_becomes_comparison_baseline(tmp_path) -> None:
     _write_evidence(tmp_path, "checkpoint-1")
     readers = Readers(tmp_path)

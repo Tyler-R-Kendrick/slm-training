@@ -84,7 +84,9 @@ def canonicalize_plan(plan: SemanticPlanV1) -> SemanticPlanV1:
         for edge in topology.parent_relation_candidates:
             edges.append(
                 {
-                    "parent_role_id": rename_role(str(edge.get("parent_role_id") or "")),
+                    "parent_role_id": rename_role(
+                        str(edge.get("parent_role_id") or "")
+                    ),
                     "child_role_id": rename_role(str(edge.get("child_role_id") or "")),
                     "relation": str(edge.get("relation") or "contains"),
                 }
@@ -138,12 +140,13 @@ def plan_factor_fingerprints(plan: SemanticPlanV1) -> dict[str, str]:
 
 
 def _symbol_renames(plan: SemanticPlanV1) -> dict[str, str]:
-    """Map each symbol to a canonical index ordered by semantic content."""
-    symbols = sorted(
-        plan.symbols,
-        key=lambda sym: (sym.semantic_role or "", sym.symbol_id),
-    )
-    return {sym.symbol_id: f"sym_{index:04d}" for index, sym in enumerate(symbols)}
+    """Map declared symbols to opaque canonical indices.
+
+    Declaration order is structural authority.  Names and semantic roles must not
+    decide model-facing identity, since doing so makes a rename or role label a
+    hidden scoring preference.
+    """
+    return {sym.symbol_id: f"sym_{index:04d}" for index, sym in enumerate(plan.symbols)}
 
 
 def _role_renames(plan: SemanticPlanV1) -> dict[str, str]:

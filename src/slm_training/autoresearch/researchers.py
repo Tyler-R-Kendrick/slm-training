@@ -23,6 +23,7 @@ from slm_training.autoresearch.schemas import (
     utc_now,
 )
 from slm_training.lineage.records import canonical_json
+from slm_training.levers import MAX_RUN_SECONDS
 
 OPEN_DEEP_RESEARCH_REVISION = "b764481fca7f0dbf00b2c70239bd97cea59d1059"
 OPEN_RESEARCHER_REVISION = "785fd6ba5fcbc068daa4a2f07bbe0964f2983c86"
@@ -73,7 +74,7 @@ class IsolatedResearcher:
         python: Path | str,
         worker: Path | str,
         config: dict[str, Any] | None = None,
-        timeout_seconds: float = 180,
+        timeout_seconds: float = float(MAX_RUN_SECONDS),
     ) -> None:
         self.spec = spec
         self.checkout = Path(checkout).resolve()
@@ -82,8 +83,8 @@ class IsolatedResearcher:
         self.config = spec.config_model.model_validate(config or {}).model_dump(
             mode="json"
         )
-        if not 0 < timeout_seconds <= 180:
-            raise ValueError("researcher timeout must be in (0, 180]")
+        if not 0 < timeout_seconds <= MAX_RUN_SECONDS:
+            raise ValueError(f"researcher timeout must be in (0, {MAX_RUN_SECONDS}]")
         self.timeout_seconds = timeout_seconds
 
     def run(
@@ -286,7 +287,7 @@ def get_researcher(
     python: Path | str,
     worker: Path | str,
     config: dict[str, Any] | None = None,
-    timeout_seconds: float = 180,
+    timeout_seconds: float = float(MAX_RUN_SECONDS),
 ) -> IsolatedResearcher:
     try:
         spec = RESEARCHERS[researcher_id]

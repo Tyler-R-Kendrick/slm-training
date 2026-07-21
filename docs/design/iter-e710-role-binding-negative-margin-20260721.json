@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "run_id": "e710-role-binding-negative-margin-r2",
+  "experiment_id": "E710",
+  "date_utc": "2026-07-21",
+  "status": "rejected_full_suite_regression_code_reverted",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Final typed role-binding margins will prevent wrong-owner and reused slots from stealing content assigned to another component without changing structural quality.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"], "n": 19, "device": "cpu", "steps": 0, "context_backend": "scratch", "full_suites": true, "honest_slot_contract": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160, "max_wall_minutes": 3, "schema_role_slot_decode_weight": 8.0, "final_role_binding_negative_margin": true},
+  "diagnostic_arms": [
+    {"run_id": "e710-role-binding-negative-margin-r1", "suites": ["ood"], "n": 4, "ood_strict": 0.75, "decision": "advance_to_full_suite"},
+    {"run_id": "e710-role-binding-negative-margin-r3", "suites": ["held_out", "ood"], "n": 9, "held_out_strict": 0.8, "ood_strict": 0.5, "reason_codes": ["placeholder_spam", "required_placeholder_missing", "placeholder_semantic_role_mismatch"], "decision": "reject_narrowing_and_revert"}
+  ],
+  "matched_runs": [
+    {"run_id": "e710-role-binding-negative-margin-r1", "label": "OOD diagnostic", "suites": {"ood": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.75, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7073, "reward_score": 0.979}}, "agentv": {"passed": 0, "total": 1}},
+    {"run_id": "e710-role-binding-negative-margin-r3", "label": "component-only narrowing diagnostic", "suites": {"held_out": {"n": 5, "binding_aware_meaningful_v2_rate_strict": 0.8, "contract_recall": 0.96, "placeholder_fidelity": 0.96, "placeholder_validity": 0.976, "structural_similarity": 0.84444, "reward_score": 0.9538}, "ood": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.5, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.6531250000000001, "reward_score": 0.979}}, "agentv": {"passed": 0, "total": 2}}
+  ],
+  "suites": {
+    "smoke": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.8308333333333334, "component_type_recall": 0.75, "reward_score": 0.957, "ast_node_f1": 0.903030303030303, "ast_edge_f1": 0.48148148148148145, "decode_timeout_count": 0, "fallback_count": 0},
+    "held_out": {"n": 5, "binding_aware_meaningful_v2_rate_strict": 0.8, "contract_recall": 0.96, "placeholder_fidelity": 0.96, "placeholder_validity": 0.976, "structural_similarity": 0.81042, "component_type_recall": 0.8933333333333333, "reward_score": 0.9538, "ast_node_f1": 0.883095238095238, "ast_edge_f1": 0.7173626373626373, "decode_timeout_count": 0, "fallback_count": 0},
+    "adversarial": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.25, "contract_recall": 0.8333333333333334, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.9, "structural_similarity": 0.7657499999999999, "component_type_recall": 1.0, "reward_score": 0.9139999999999999, "ast_node_f1": 0.8318181818181818, "ast_edge_f1": 0.7168803418803419, "decode_timeout_count": 0, "fallback_count": 0},
+    "ood": {"n": 4, "binding_aware_meaningful_v2_rate_strict": 0.75, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7073, "component_type_recall": 0.875, "reward_score": 0.979, "ast_node_f1": 0.8055555555555556, "ast_edge_f1": 0.695054945054945, "decode_timeout_count": 0, "fallback_count": 0},
+    "rico_held": {"n": 3, "binding_aware_meaningful_v2_rate_strict": 1.0, "contract_recall": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7915333333333333, "component_type_recall": 1.0, "reward_score": 1.0, "ast_node_f1": 0.8418803418803419, "ast_edge_f1": 0.7727272727272728, "decode_timeout_count": 0, "fallback_count": 0}
+  },
+  "comparison_to_e709": {"held_out": {"strict": [1.0, 0.8], "fidelity": [1.0, 0.96], "validity": [1.0, 0.976], "reward": [0.9658, 0.9538]}, "ood": {"strict": [0.5, 0.75]}, "other_suite_quality_metrics_changed": 0},
+  "failure_analysis": "Downstream negative scoring repaired gallery but suppressed a legitimate Input email fallback and was unstable under a component-only narrowing. The root issue is upstream: semantic planning may add a component whose required string properties exceed its assigned role capacity.",
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "mean_score": 0.5},
+  "length_budget": {"ok": false, "effective_budget": 160, "failures": ["rico_held:p95=190 exceeds effective_budget=160"]},
+  "decision": "Reject v183 and fully revert the code lever; preserve the negative evidence and move the next experiment to semantic-plan required-property capacity.",
+  "ship_gate_result": "failed",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "3dadd2701d93bd2cb5b94a8a0af711f63516b4ce", "code_dirty": true, "components": {"harness.model_build.eval": "v37", "evals.meaningful_program": "2.9.0", "evals.scoring": "v13", "model.twotower": "v183"}, "stamped_at": "2026-07-21T19:39:34.278986+00:00"}
+}

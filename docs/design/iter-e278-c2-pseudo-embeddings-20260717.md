@@ -6,6 +6,12 @@ Representation lever + fixture-grade matched row, not a train/ship run. Code:
 [`evals/binding_consistency.py`](../../src/slm_training/evals/binding_consistency.py).
 Linear SLM-26.
 
+> Historical representation contract: this 2026-07-17 run predates
+> model-component v95. It intentionally measured name-derived surface vectors.
+> Current code uses opaque request-local ordinals plus declared typed metadata and
+> is invariant to external marker renaming. The results below remain unchanged as
+> experiment evidence and do not validate the replacement identity contract.
+
 ## What and why
 
 The lexer-native tokenizer's `<SYM_i>`/`<BIND_j>` rows are a fixed learned

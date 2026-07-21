@@ -75,6 +75,14 @@ def normalize_suite_metrics(metrics: Mapping[str, Any]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in metrics.items():
         out.setdefault(SHORT_KEY_ALIASES.get(key, key), value)
+    explicit_v1 = out.get("meaningful_program_v1_rate")
+    if explicit_v1 is None:
+        explicit_v1 = out.get("meaningful_v1")
+    if (
+        out.get("meaningful_program_rate") is None
+        and isinstance(explicit_v1, (int, float))
+    ):
+        out["meaningful_program_rate"] = explicit_v1
     if (
         out.get("meaningful_program_rate") is None
         and out.get("syntax_parse_rate") is None

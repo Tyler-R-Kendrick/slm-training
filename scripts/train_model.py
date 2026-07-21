@@ -334,6 +334,10 @@ def main(argv: list[str] | None = None) -> int:
         "--runtime-symbol-features",
         choices=("none", "surface", "role_gated", "replace"),
         default="none",
+        help=(
+            "Historical default-off name-derived symbol feature experiment; "
+            "production bound/choice APIs apply their own opaque projection."
+        ),
     )
     parser.add_argument(
         "--symbol-slot-augmentation",

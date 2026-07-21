@@ -23,6 +23,28 @@ def admit_fill(
     (holes can rewrite the suffix).
     """
     mask_id = tokenizer.mask_id if mask_id is None else mask_id
+    # Lexer-native token spellings are typed vocabulary labels (`<SYM_0>`,
+    # `BYTE:72`, ...), not source fragments. Decode the authoritative left span
+    # before asking the source grammar; the compositional tokenizer retains its
+    # cheap direct concatenation below.
+    from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+    if is_dsl_native_tokenizer(tokenizer):
+        try:
+            hole = token_ids.index(mask_id)
+        except ValueError:
+            hole = len(token_ids)
+        left_ids = token_ids[:hole]
+        left = tokenizer.decode(
+            left_ids,
+            preserve_trailing_newline=True,
+        )
+        if hole < len(token_ids):
+            return True if not left else bool(engine.set_prefix(left))
+        if engine.set_prefix(left):
+            return True
+        return engine.can_complete_with_holes(left)
+
     pieces: list[str] = []
     for tid in token_ids:
         if tid == mask_id:

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "run_id": "e714-symbol-only-scratch600-r1",
+  "experiment_id": "E714",
+  "date_utc": "2026-07-21",
+  "status": "completed_scratch_diagnostic_not_promotable",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "path": "outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt",
+    "sha256": "71ef1d25efb5186b885e8ee9e1370002f419bf42ea53985111734c49cfd2b49e",
+    "created": true,
+    "synced": false,
+    "sync_reason": "explicit --no-sync-checkpoints local scratch diagnostic",
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "path": "outputs/data/train/symbol-only-integrated-smoke-20260721",
+    "records": 141,
+    "targets": 207,
+    "output_contract_violations": 0,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45",
+    "quarantine": {
+      "awwwards_zero_yield": true,
+      "awwwards_design_contrastive_zero_yield": true,
+      "human_curated_reserved_structure": 2,
+      "design_contrastive_reserved_structure": 1
+    }
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "steps": 600,
+    "batch_size": 4,
+    "elapsed_seconds": 48.719985,
+    "max_wall_minutes": 2.0,
+    "trainable_parameters": 1620226,
+    "target_tokens": 63841,
+    "prompt_tokens": 307003,
+    "last_loss": 3.128608942,
+    "first_20_example_loss_proxy": 49.45379,
+    "last_20_example_loss_proxy": 2.91007,
+    "honest_slot_contract": true,
+    "constrained_slot_decode": true,
+    "grammar_ltr_primary": true
+  },
+  "evaluation_policy": {
+    "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"],
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse": 0.3333333333333333, "meaningful_v1": 0.0, "strict_v2": 0.0, "placeholder_fidelity": 1.0, "structure": 0.0880333, "component_recall": 0.416667, "reward": 0.0, "ast_node_f1": 0.266667, "ast_edge_f1": 0.153846, "timeouts": 0, "p50_ms": 14055.4, "p95_ms": 14272.41},
+    "held_out": {"n": 4, "parse": 0.5, "meaningful_v1": 0.0, "strict_v2": 0.0, "placeholder_fidelity": 0.5, "structure": 0.1638, "component_recall": 0.0833333, "reward": 0.0, "ast_node_f1": 0.384848, "ast_edge_f1": 0.1, "timeouts": 2, "p50_ms": 6669.45, "p95_ms": 8000.78},
+    "adversarial": {"n": 4, "parse": 0.5, "meaningful_v1": 0.0, "strict_v2": 0.0, "placeholder_fidelity": 1.0, "structure": 0.1221, "component_recall": 0.458333, "reward": 0.0, "ast_node_f1": 0.284722, "ast_edge_f1": 0.0, "timeouts": 0, "p50_ms": 5845.09, "p95_ms": 15023.28},
+    "ood": {"n": 4, "parse": 0.5, "meaningful_v1": 0.0, "strict_v2": 0.0, "placeholder_fidelity": 0.5, "structure": 0.048325, "component_recall": 0.145833, "reward": 0.0, "ast_node_f1": 0.242647, "ast_edge_f1": 0.066667, "timeouts": 2, "p50_ms": 5572.1, "p95_ms": 8001.15},
+    "rico_held": {"n": 3, "parse": 0.0, "meaningful_v1": 0.0, "strict_v2": 0.0, "placeholder_fidelity": 0.5, "structure": 0.224833, "component_recall": 0.277778, "reward": 0.0, "ast_node_f1": null, "ast_edge_f1": null, "timeouts": 1, "p50_ms": 14303.42, "p95_ms": 23357.04}
+  },
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Retain as the first output-contract-v2 local baseline; do not sync, promote, or ship.",
+  "invalid_attempts": ["e714-symbol-only-scratch600-eval-r2 produced only a partial smoke artifact and is excluded"],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b0ff4b70a99f20fb09453b47f12d5dcc21e88bbc",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v18",
+      "harness.model_build.eval": "v38",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v187"
+    },
+    "stamped_at": "2026-07-21T22:11:22.003500+00:00"
+  }
+}

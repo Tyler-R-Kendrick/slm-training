@@ -196,3 +196,118 @@ def test_e707_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert run_id not in {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
+
+
+def test_e708_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e708-carrier-reference-obligation-r4"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    rico = run["scoreboard"]["suites"]["rico_held"]
+    assert rico["placeholder_fidelity"] == 1.0
+    assert rico["structural_similarity"] == 0.7915333333333333
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e709_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e709-final-schema-value-margin-r5"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    rico = run["scoreboard"]["suites"]["rico_held"]
+    assert rico["binding_aware_meaningful_v2_rate_strict"] == 1.0
+    assert rico["placeholder_fidelity"] == 1.0
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    control_id = "e709-rebased-v181-control-r1"
+    control = readers.run(control_id)
+    assert control["provenance"] == "committed"
+    assert (
+        control["scoreboard"]["suites"]["rico_held"][
+            "binding_aware_meaningful_v2_rate_strict"
+        ]
+        == 0.0
+    )
+    visible_run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    assert {run_id, control_id} <= visible_run_ids
+
+
+def test_e710_rejected_runs_persist_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e710-role-binding-negative-margin-r1",
+        "e710-role-binding-negative-margin-r2",
+        "e710-role-binding-negative-margin-r3",
+    }
+
+    visible_run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    assert run_ids <= visible_run_ids
+    assert readers.run("e710-role-binding-negative-margin-r2")["provenance"] == (
+        "committed"
+    )
+    assert readers.run("e710-role-binding-negative-margin-r2")["scoreboard"][
+        "suites"
+    ]["held_out"]["placeholder_fidelity"] == 0.96
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids.isdisjoint(checkpoint_ids)
+
+
+def test_e711_retained_runs_persist_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e711-required-role-capacity-r1",
+        "e711-required-role-capacity-r3",
+        "e711-required-role-capacity-r4",
+    }
+
+    visible_run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    assert run_ids <= visible_run_ids
+    retained = readers.run("e711-required-role-capacity-r4")
+    assert retained["provenance"] == "committed"
+    assert (
+        retained["scoreboard"]["suites"]["ood"][
+            "binding_aware_meaningful_v2_rate_strict"
+        ]
+        == 1.0
+    )
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids.isdisjoint(checkpoint_ids)
+
+
+def test_e712_retained_runs_persist_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {"e712-component-count-phrases-r3"}
+
+    visible_run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    assert run_ids <= visible_run_ids
+    retained = readers.run("e712-component-count-phrases-r3")
+    assert retained["provenance"] == "committed"
+    assert (
+        retained["scoreboard"]["suites"]["adversarial"][
+            "binding_aware_meaningful_v2_rate_strict"
+        ]
+        == 0.5
+    )
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids.isdisjoint(checkpoint_ids)

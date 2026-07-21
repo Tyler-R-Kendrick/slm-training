@@ -1,130 +1,173 @@
-# OpenFeature ↔ experiment levers
+# OpenFeature product experiments
 
-Status: **active contract (v1).** Owner: `src/slm_training/flags/`.
-Linear: [SLM-342](https://linear.app/quickdeploy-ai/issue/SLM-342/openfeature-integration-for-experiment-levers).
-Component: `harness.flags` in `src/slm_training/resources/versions.json`.
+**Status:** implemented (v2 — multi-provider + experiment lever registry).
 
-## Why
+## Problem
 
-Research matrices (E*/X*/P*) are offline ablations with matched controls — they
-stay as scoreboard evidence. What they *share* with industry progressive-delivery
-systems is the **lever**: a typed, named toggle that changes runtime behavior
-(`verified_solver_decode`, `honest_slot_contract`, …).
+This repository already has a mature **research experiment** stack (quality matrices,
+autoresearch campaigns, ship gates, blinded checkpoint comparisons). Those are batch
+ML ablations — not industry-standard **product experiments** (traffic-split feature
+flags with exposure tracking).
 
-Those levers were only dataclass/CLI fields. OpenFeature is the CNCF standard
-evaluation API for that concern. Speaking it lets us:
+Docs already anticipate runtime gates (`verified-scope-solver.md` decode flags;
+`research-lineage.md` VSS behind a feature flag), but nothing wired a provider-neutral
+evaluation API.
 
-1. Evaluate levers with a vendor-agnostic client surface.
-2. Attach assignment metadata (`variant`, `reason`, `flag_metadata.experiment_id`).
-3. Expose OFREP-shaped evaluation for dashboard / external tools.
-4. Swap in flagd / LaunchDarkly / PostHog later without rewriting call sites.
+[OpenFeature](https://openfeature.dev) is the CNCF standard for feature flags.
+**LaunchDarkly** and **PostHog** both ship official OpenFeature server providers,
+so the control plane can swap vendors without changing call sites.
 
-OpenFeature's experimentation grouping is still evolving
-([spec#370](https://github.com/open-feature/spec/issues/370)); v1 uses flag
-metadata (`experiment_id`, `matrix`, `lever`) rather than inventing a parallel
-experiment SDK.
+## Terminology (avoid collisions)
 
-## Concepts
+| Term in repo | Meaning | OpenFeature? |
+| --- | --- | --- |
+| `Experiment` in `run_quality_matrix.py` | ML ablation cell | No — keep as-is |
+| `ExperimentSpec` in autoresearch | Hypothesis campaign | No |
+| Ship / activation / deployment **gates** | Honest eval thresholds | No — never weaken via flags |
+| **Product lever** (`slm_training.features.levers`) | Runtime rollout of a matrix hypothesis | Yes — flag key + metadata |
+| **Product flag** (`slm_training.features`) | OpenFeature evaluation | Yes |
 
-| Concept | In this repo |
-| --- | --- |
-| Flag key | Curated lever name == `ModelBuildConfig` field (e.g. `verified_solver_decode`) |
-| Evaluation context | `targeting_key=run_id`; attributes: `experiment_id`, `matrix`, `model_name`, `context_backend` |
-| Variant | String form of the resolved value (`"on"`/`"off"`, or the string/number value) |
-| Ruleset | In-process map of flag key → typed default used by `InMemoryProvider` |
-| Matrix row | Offline ablation evidence; may *seed* a ruleset for a run, but is not a targeting system |
-| Scoreboard | Historical JSON under `docs/design/` — unchanged; not live flag state |
+Ship gates and promotion criteria remain **fail-closed policy math**. Product flags may
+only gate presentation or optional decode paths — never honest eval thresholds.
 
-## Precedence
+## Experiment lever design
+
+Quality-matrix rows (E1 constrained decode, E4 schema conditioning, …) are **training
+levers**: they change what the model learns. Product levers are the **rollout surface**
+for the same hypothesis once it is ready for gradual exposure.
 
 ```text
-CLI / explicit overrides  >  OpenFeature evaluation (ruleset / provider)  >  ModelBuildConfig defaults
+Matrix row (E1)  →  train/eval harness knob  →  ship gates pass  →  product lever  →  OpenFeature flag
 ```
 
-Unset flags keep dataclass defaults. Default for every registered boolean lever
-is **off** / safe, so decode stays byte-identical until a ruleset or override
-enables it.
+`slm_training.features.levers.PRODUCT_EXPERIMENT_LEVERS` is the canonical registry:
 
-## Scope
+| Lever id | Flag key | Kind | Matrix ref |
+| --- | --- | --- | --- |
+| `dashboard-renderer` | `dashboard.default-renderer` | ui | — |
+| `vss-decode` | `vss.decode-enabled` | decode | `verified-scope-solver.md` |
+| `playground-grammar-default` | `playground.grammar-constrained-default` | ui | — |
+| `E1-constrained-decode` | `decode.grammar-ltr-repair` | decode | quality matrix E1 |
+| `E4-schema-conditioning` | `decode.schema-in-context` | decode | quality matrix E4 |
 
-**In v1**
+`GET /api/features/levers` exposes this registry for dashboards and tooling.
 
-- Zero-dependency OpenFeature-compatible client + in-memory provider.
-- Lever registry mapped onto `ModelBuildConfig`.
-- `apply_experiment_flags` overlay used by config builders / evaluate path.
-- Assignment details recorded on the returned overlay (for train summaries).
-- `POST /api/flags/ofrep/v1/evaluate` (OFREP-shaped, read-only).
-- Design + tests + version stamp.
+**Provider affinity** (`launchdarkly`, `posthog`, `any`) is documentation-only in v2 —
+all providers evaluate the same flag keys. Prefer LaunchDarkly for enterprise rollout
+and staged percentage experiments; PostHog when experiment analytics should stay in the
+same project as product telemetry.
 
-**Out of v1**
+## Architecture
 
-- Rewriting matrix scoreboards as live targeting.
-- Remote providers (flagd / LaunchDarkly / PostHog) — optional later via
-  `openfeature-sdk` extra behind the same port.
-- Changing ship-gate thresholds or default decode behavior.
+```mermaid
+flowchart LR
+  subgraph server["FastAPI control plane"]
+    RT[FeatureRuntime]
+    RT --> OFP[OpenFeature Python SDK]
+    OFP --> IM[InMemoryProvider]
+    OFP --> PH[PostHogProvider]
+    OFP --> LD[LaunchDarklyProvider]
+    API["/api/features/bootstrap"]
+    LEV["/api/features/levers"]
+    RT --> API
+    LEV --> REG[levers.py registry]
+  end
+
+  subgraph browser["Dashboard SPA"]
+    BR[features/runtime.ts]
+    BR --> OFW[OpenFeature Web SDK]
+    OFW --> TIM[TypedInMemoryProvider]
+    OFW --> PHW[PostHogWebProvider optional]
+    BR --> API
+  end
+
+  LD -.-> LDCloud[(LaunchDarkly)]
+  PH -.-> PostHog[(PostHog flags)]
+  PHW -.-> PostHog
+```
+
+### Provider selection (server)
+
+| `SLM_OPENFEATURE_PROVIDER` | Env keys | Provider |
+| --- | --- | --- |
+| `in_memory` | * | `InMemoryProvider` (defaults + `SLM_FEATURE_OVERRIDES`) |
+| `launchdarkly` | `LAUNCHDARKLY_SDK_KEY` required | `launchdarkly-openfeature-server` |
+| `posthog` | `POSTHOG_API_KEY` required | `openfeature-provider-posthog` |
+| `auto` (default) | LD key → LD; else PH key → PH; else in-memory | first match |
+
+Install extras:
+
+```bash
+pip install -e '.[web]'                        # in-memory (openfeature-sdk in web extra)
+pip install -e '.[web,features-posthog]'       # PostHog
+pip install -e '.[web,features-launchdarkly]'  # LaunchDarkly
+```
+
+### Bootstrap contract
+
+`GET /api/features/bootstrap?targeting_key=<id>` returns:
+
+- `provider` — `in_memory` \| `posthog` \| `launchdarkly`
+- `posthog` — `{ project_api_key, host }` when browser should use PostHog client SDK
+- `launchdarkly` — `true` when server evaluated via LD (browser uses evaluated snapshot only; SDK key stays server-side)
+- `defaults` — static fail-closed defaults
+- `evaluated` — server-side evaluation for the targeting key
+- `levers` — experiment lever registry snapshot
+- `targeting_key` — echo
+
+**LaunchDarkly browser model:** server-side evaluation only. The LD SDK key is secret
+and never sent to the browser. The dashboard hydrates `TypedInMemoryProvider` from
+`evaluated` (same fallback path as PostHog provider errors).
+
+PostHog browser model: optional client SDK via `@posthog/openfeature-web-provider` when
+`posthog` config is present; falls back to evaluated snapshot on error.
+
+User overrides (compiled vs interpreted toggle) persist in `localStorage`; the flag
+only sets the **default** when no preference is stored.
 
 ## Flag registry (v1)
 
-Boolean levers (default `false`):
+| Key | Type | Default | Surface |
+| --- | --- | --- | --- |
+| `dashboard.default-renderer` | string | `interpreted` | Dashboard ◈/◇ default |
+| `vss.decode-enabled` | boolean | `false` | Future VSS decode path |
+| `playground.grammar-constrained-default` | boolean | `true` | Playground generation default |
 
-- `verified_solver_decode`
-- `topology_verified_solver`
-- `topology_capsule_solver`
-- `honest_slot_contract`
-- `asap_decode`
-- `grammar_constrained` (when present on config)
-- `compiler_search_local_nogoods`
+Decode rollout flags (`decode.grammar-ltr-repair`, `decode.schema-in-context`) are
+registered in the lever table but not yet wired into decode paths — add keys to
+`keys.py` / `defaults.py` when implementation lands.
 
-String levers:
+## Environment
 
-- `compiler_decode_mode` (default `"off"`)
-- `solver_unknown_policy` (default `"keep_and_rank"`)
-- `solver_certificate_mode` (default `"summary"`)
+| Variable | Purpose |
+| --- | --- |
+| `SLM_OPENFEATURE_PROVIDER` | `auto` \| `in_memory` \| `posthog` \| `launchdarkly` |
+| `LAUNCHDARKLY_SDK_KEY` / `LD_SDK_KEY` | LaunchDarkly server SDK key |
+| `POSTHOG_API_KEY` / `POSTHOG_PROJECT_API_KEY` | PostHog project key (`phc_…`) |
+| `POSTHOG_HOST` | API host (default `https://us.i.posthog.com`) |
+| `SLM_FEATURE_OVERRIDES` | JSON map for local in-memory overrides |
 
-Number levers:
+## Tracking / experiments
 
-- `solver_max_nodes` (default `512`)
-- `decode_min_content` (default `0`)
+- **PostHog:** `client.track()` from dashboard; server emits `$feature_flag_called` by default.
+- **LaunchDarkly:** use `LaunchDarklyProvider.track()` server-side or LD custom events via the native client exposed through the provider when needed.
 
-Registry lives in `src/slm_training/flags/levers.py`. Adding a lever requires
-a registry entry + a field on `ModelBuildConfig` (or an explicit skip note).
+## Out of scope (v2)
 
-## API
+- Weakening ship gates or matrix experiment definitions via flags
+- Replacing blinded checkpoint A/B (human review) with product flags
+- Remote flag authoring UI (use LaunchDarkly or PostHog consoles)
+- Wiring `decode.*` flags into the generation path (registry only)
 
-```python
-from slm_training.flags import (
-    EvaluationContext,
-    InMemoryProvider,
-    FlagClient,
-    apply_experiment_flags,
-    experiment_context,
-    ruleset_from_mapping,
-)
+## Versioning
 
-ctx = experiment_context(run_id="e53-…", experiment_id="E53", matrix="quality")
-client = FlagClient(InMemoryProvider(ruleset_from_mapping({
-    "verified_solver_decode": True,
-})))
-config, assignments = apply_experiment_flags(config, client=client, context=ctx)
-```
+Component id: `features.openfeature` in `versions.json`. Bump when flag defaults,
+registry keys, lever table, or provider wiring change.
 
-OFREP-shaped HTTP:
+## Related
 
-```http
-POST /api/flags/ofrep/v1/evaluate
-{"context":{"targetingKey":"run-1","experiment_id":"E53"},"flags":["verified_solver_decode"]}
-```
-
-## Honesty
-
-- Fixture / scratch matrix runs that flip flags are still not ship claims.
-- Flag evaluation never weakens `--ship-gates`.
-- A missing provider or unknown flag returns the typed default with
-  `reason=DEFAULT` / `ERROR` — never a silent enable.
-
-## Follow-ups
-
-1. Optional `openfeature` extra wrapping `openfeature-sdk` + OFREP/flagd providers.
-2. Dashboard Experiments page: show live assignment details beside scoreboard rows.
-3. Tracking hook emitting `experiment.Assigned` / OTEL attrs when OpenFeature
-   experimentation conventions stabilize.
+Research-harness lever evaluation (ModelBuildConfig overlay, OFREP
+`/api/flags/*`, `OPENUI_FLAGS_*`) lives in
+[`openfeature-research-levers.md`](openfeature-research-levers.md) /
+`slm_training.flags`. Product flags and research harness levers are separate
+registries.

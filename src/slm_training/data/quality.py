@@ -203,10 +203,20 @@ def semantic_role_reachable_candidates(
     placeholders: list[str], component_names: list[str]
 ) -> dict[str, tuple[str, ...]]:
     """Map slots to components whose public schema can contain their role."""
+    return semantic_role_reachable_candidates_from_properties(
+        semantic_role_properties(placeholders),
+        component_names,
+    )
+
+
+def semantic_role_reachable_candidates_from_properties(
+    properties_by_slot: dict[str, tuple[str, ...]],
+    component_names: list[str],
+) -> dict[str, tuple[str, ...]]:
+    """Map declared role properties to components that can contain them."""
     from slm_training.dsl.lang_core import library_schema
 
     definitions = library_schema().get("$defs", {})
-    properties_by_slot = semantic_role_properties(placeholders)
 
     def reaches(
         schema: dict[str, Any], compatible: set[str], seen: frozenset[str]
@@ -241,7 +251,7 @@ def semantic_role_reachable_candidates(
         )
 
     result: dict[str, tuple[str, ...]] = {}
-    for placeholder in sorted(set(placeholders)):
+    for placeholder in sorted(properties_by_slot):
         compatible = set(properties_by_slot[placeholder])
         result[placeholder] = tuple(
             name
@@ -291,6 +301,28 @@ def semantic_role_contract(
     )
 
 
+_COUNT_PHRASE_BOUNDARIES = frozenset(
+    {
+        "after",
+        "and",
+        "around",
+        "before",
+        "between",
+        "contain",
+        "containing",
+        "contains",
+        "for",
+        "inside",
+        "of",
+        "or",
+        "outside",
+        "plus",
+        "then",
+        "with",
+    }
+)
+
+
 def _prompt_component_requirements(
     prompt: str,
     *,
@@ -303,9 +335,10 @@ def _prompt_component_requirements(
     explicit counts. It is consumed by the binding-aware meaningful-program eval.
     """
     normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    component_phrases = _component_phrases()
     occupied: list[tuple[int, int]] = []
     required: dict[str, int] = {}
-    for name, phrase, matcher in _component_phrases():
+    for name, phrase, matcher in component_phrases:
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
@@ -325,30 +358,45 @@ def _prompt_component_requirements(
                 r"(?:\breplace|\bswap|\bchange)\s+(?:a |an |the )?$", before
             ) and re.match(r"\s+(?:with|for|to)\b", after):
                 continue
-            count_match = re.search(
-                r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
-                r"(?:\s+[a-z0-9]+)?\s+$",
-                before,
+            count_match = next(
+                reversed(
+                    tuple(
+                        re.finditer(
+                            r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b",
+                            before,
+                        )
+                    )
+                ),
+                None,
             )
             count = 1
             if count_match:
-                count = {
-                    "one": 1,
-                    "two": 2,
-                    "three": 3,
-                    "four": 4,
-                    "five": 5,
-                    "six": 6,
-                    "seven": 7,
-                    "eight": 8,
-                    "nine": 9,
-                    "ten": 10,
-                }.get(
-                    count_match.group(1),
-                    int(count_match.group(1))
-                    if count_match.group(1).isdigit()
-                    else 1,
+                intervening = before[count_match.end() :].strip()
+                crosses_boundary = bool(
+                    _COUNT_PHRASE_BOUNDARIES.intersection(intervening.split())
+                    or any(
+                        other_name != name and other_matcher.search(intervening)
+                        for other_name, _phrase, other_matcher in component_phrases
+                    )
                 )
+                if not crosses_boundary:
+                    count = {
+                        "one": 1,
+                        "two": 2,
+                        "three": 3,
+                        "four": 4,
+                        "five": 5,
+                        "six": 6,
+                        "seven": 7,
+                        "eight": 8,
+                        "nine": 9,
+                        "ten": 10,
+                    }.get(
+                        count_match.group(1),
+                        int(count_match.group(1))
+                        if count_match.group(1).isdigit()
+                        else 1,
+                    )
             if name.endswith("s") and match.group(0) == phrase:
                 count = 1
             if preserve_repeated_mentions:
@@ -781,20 +829,12 @@ def assess_record(
         reasons.append("too_few_placeholders")
         score -= 0.35
 
-    # Free-form quoted strings that are not placeholders are a smell
-    # (except enum-like tokens handled by the bridge policy already).
-    for match in re.finditer(r'"([^"]+)"', openui):
-        val = match.group(1)
-        if val.startswith(":"):
-            continue
-        if re.fullmatch(r"[a-z0-9_\-]+", val):
-            # enum / field name
-            continue
-        if re.fullmatch(r"[0-9]+(\.[0-9]+)?", val):
-            continue
+    # The output language is closed: schema/AST literals and placeholders only.
+    from slm_training.dsl.language_contract import output_contract_violations
+
+    if output_contract_violations(openui):
         reasons.append("non_placeholder_string")
         score -= 0.2
-        break
 
     counts = component_counts(openui)
     n_comp = sum(counts.values())

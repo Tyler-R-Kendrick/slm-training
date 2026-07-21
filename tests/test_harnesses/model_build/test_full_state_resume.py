@@ -12,6 +12,7 @@ torch = pytest.importorskip("torch")
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.train_loop import train
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.models.twotower import TwoTowerModel
 
 HERO = (
@@ -114,8 +115,16 @@ def test_wall_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> None
 def test_wall_budget_is_hard_capped_at_three_minutes(
     train_dir: Path, tmp_path: Path
 ) -> None:
-    with pytest.raises(ValueError, match="at most 3"):
-        train(_cfg(train_dir, tmp_path, "over_wall", 1, max_wall_minutes=3.01))
+    with pytest.raises(ValueError, match=f"at most {MAX_RUN_MINUTES}"):
+        train(
+            _cfg(
+                train_dir,
+                tmp_path,
+                "over_wall",
+                1,
+                max_wall_minutes=MAX_RUN_MINUTES + 0.01,
+            )
+        )
 
 
 def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None:

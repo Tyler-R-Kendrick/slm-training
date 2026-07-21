@@ -6,14 +6,17 @@ from pathlib import Path
 
 import pytest
 
+from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.lang_core import bridge_available
+from slm_training.dsl.analysis.templatize import templatize
+from slm_training.dsl.language_contract import OutputContractError
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
     DIR_PREFIX,
     LIT_PREFIX,
-    LIT_STR,
+    LIT_NUM,
     NAME_PREFIX,
     NAME_STR,
     TERNARY_OP,
@@ -72,7 +75,17 @@ def test_load_rejects_foreign_sidecar(tmp_path: Path) -> None:
 def test_kind_ids_partition(tok: ChoiceTokenizer) -> None:
     all_ids = set(range(tok.vocab_size))
     covered: set[int] = set()
-    for kind in ("special", "struct", "component", "builtin", "lit", "byte", "sym", "bind", "state"):
+    for kind in (
+        "special",
+        "struct",
+        "component",
+        "builtin",
+        "lit",
+        "byte",
+        "sym",
+        "bind",
+        "state",
+    ):
         ids = tok.kind_ids(kind)
         assert not (ids & covered)
         covered |= ids
@@ -88,28 +101,28 @@ def test_fixture_corpus_ids_are_decode_fixed_points(tok: ChoiceTokenizer) -> Non
     ):
         records.extend(load_jsonl(path))
     for record in records:
+        target = templatize(record.openui)
         table = SymbolTable.from_placeholders(
-            list(record.placeholders or []), max_slots=tok.sym_slots
+            list(target.placeholders), max_slots=tok.sym_slots
         )
-        ids = tok.encode(record.openui, add_special=True, table=table)
+        ids = tok.encode(target.source, add_special=True, table=table)
         assert tok.unk_id not in ids, record.id
         decoded = tok.decode(ids, table=table)
         assert decoded, record.id
         assert validate(decoded).serialized == decoded, record.id
         fresh = SymbolTable.from_placeholders(
-            list(record.placeholders or []), max_slots=tok.sym_slots
+            list(target.placeholders), max_slots=tok.sym_slots
         )
         assert tok.encode(decoded, add_special=True, table=fresh) == ids, record.id
 
 
 @needs_bridge
-def test_free_literals_use_byte_channel_not_unk(tok: ChoiceTokenizer) -> None:
+def test_free_literals_are_rejected_instead_of_byte_spelled(tok: ChoiceTokenizer) -> None:
     source = 'root = Tabs([tab])\ntab = TabItem("one", ":tabs.one", [c])\nc = TextContent(":tabs.body")'
     table = SymbolTable.from_placeholders([":tabs.one", ":tabs.body"], max_slots=64)
-    ids = tok.encode(source, add_special=False, table=table)
-    assert tok.unk_id not in ids
-    decoded = tok.decode(ids, table=table)
-    assert '"one"' in decoded
+    with pytest.raises(OutputContractError, match="free-form strings"):
+        tok.encode(source, add_special=False, table=table)
+    assert "LIT_STR" not in tok.token_to_id
 
 
 @needs_bridge
@@ -240,7 +253,7 @@ def test_choice_state_does_not_collapse_content_array_to_placeholder(
 ) -> None:
     state = ChoiceDecodeState(tok, slot_count=3)
     assert state.advance_id(tok.token_to_id["+TabItem"])
-    assert state.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert state.advance_id(tok.token_to_id["@0"])
     assert state.advance_id(tok.token_to_id["@0"])
 
     assert tok.token_to_id["@1"] not in state.allowed_ids(12)
@@ -321,9 +334,7 @@ def test_direct_candidates_match_exhaustive_oracle_on_reachable_states(
         assert state.advance_id(tok.token_to_id[token])
         return state
 
-    component = next(
-        token for token in tok.token_to_id if token.startswith("+")
-    )
+    component = next(token for token in tok.token_to_id if token.startswith("+"))
     object_state = advanced("{")
     states = [
         ChoiceDecodeState(tok, slot_count=3),
@@ -332,7 +343,7 @@ def test_direct_candidates_match_exhaustive_oracle_on_reachable_states(
         advanced("["),
         object_state,
         advanced(NAME_STR, object_state),
-        advanced(LIT_STR),
+        advanced(LIT_NUM),
         advanced(TERNARY_OP),
     ]
     for state in states:
@@ -359,7 +370,7 @@ def test_direct_candidates_avoid_most_vocabulary_ids(tok: ChoiceTokenizer) -> No
     assert tok.vocab_candidates_avoided > 0
 
     literal = initial.clone()
-    assert literal.advance_id(tok.token_to_id[LIT_STR])
+    assert literal.advance_id(tok.token_to_id[LIT_NUM])
     literal_candidates = literal._candidate_ids()
     assert len(literal_candidates) < tok.vocab_size // 2
 
@@ -415,9 +426,7 @@ def test_minimum_completion_cache_collapses_equivalent_literal_states(
     tok: ChoiceTokenizer,
 ) -> None:
     literals = [
-        token
-        for token in tok.token_to_id
-        if token.startswith(LIT_PREFIX + '"')
+        token for token in tok.token_to_id if token.startswith(LIT_PREFIX + '"')
     ][:2]
     assert len(literals) == 2
     states = []
@@ -438,7 +447,9 @@ def test_minimum_completion_cache_collapses_equivalent_literal_states(
 
 
 @needs_bridge
-def test_twotower_choice_wiring(tmp_path: Path) -> None:
+def test_twotower_choice_wiring(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """from_records builds the choice tokenizer; train/save/load round trip."""
     import torch  # noqa: F401 - environment guard
 
@@ -478,6 +489,44 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     text = model.generate("Hero card", gold=records[0])
     assert text
     assert validate(text).serialized == text
+    projected = HERO.replace(":hero.title", ":slot_0").replace(":hero.body", ":slot_1")
+    projected_ids = model.tokenizer.encode(
+        projected, placeholders=[":slot_0", ":slot_1"]
+    )
+
+    def deterministic_choice_decode(
+        _ctx: object,
+        _ctx_pad: object,
+        length: int,
+        contracts: list[list[str] | None],
+    ) -> object:
+        assert contracts == [[":slot_0", ":slot_1"]]
+        canvas = torch.full((1, length), model.tokenizer.pad_id, dtype=torch.long)
+        canvas[0, : len(projected_ids)] = torch.tensor(projected_ids)
+        return canvas
+
+    monkeypatch.setattr(model, "_choice_ltr_decode_batch", deterministic_choice_decode)
+    choice = model.generate_batch_choice_requests(
+        [
+            GenerationRequest(
+                prompt="Hero card",
+                slot_contract=(":hero.title", ":hero.body"),
+            )
+        ],
+        max_len=64,
+    )[0]
+    assert choice.status == "verified"
+    assert choice.opaque_slot_contract == (":slot_0", ":slot_1")
+    assert choice.slot_projection == (
+        (":hero.title", ":slot_0"),
+        (":hero.body", ":slot_1"),
+    )
+    assert (
+        model.tokenizer.decode(
+            list(choice.choice_ids), placeholders=choice.opaque_slot_contract
+        ).strip()
+        == choice.canonical_source
+    )
 
     ckpt = tmp_path / "choice.pt"
     model.save(ckpt)

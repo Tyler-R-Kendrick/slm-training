@@ -27,6 +27,7 @@ from slm_training.web.routes import (
     observability_router,
     otel_ingest_router,
 )
+from slm_training.features.runtime import FeatureRuntime
 from slm_training.web.service import PlaygroundService
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -181,6 +182,8 @@ def create_app(
         token=otel_token if otel_token is not None else os.getenv("SLM_OTEL_TOKEN"),
     )
 
+    feature_runtime = FeatureRuntime.configure()
+
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         if registry is not None:
@@ -190,6 +193,7 @@ def create_app(
         await otel.stop()
         if registry is not None:
             await registry.shutdown()
+        feature_runtime.shutdown()
 
     app = FastAPI(
         title="TwoTower OpenUI Playground", version="0.2.0", lifespan=lifespan
@@ -198,6 +202,7 @@ def create_app(
         app_root, persist_insights=capabilities.execution
     )
     app.state.capabilities = capabilities
+    app.state.features = feature_runtime
     app.state.otel = otel
     if registry is not None:
         app.state.jobs = registry

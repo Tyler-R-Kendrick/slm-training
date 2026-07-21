@@ -11,7 +11,7 @@
 
 **Goal:** Clear honest `--ship-gates` by attacking fidelity=0 / parse≈0 with every approach from the quality brief.
 
-**Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached. Runtime levers that map to progressive-delivery toggles are also evaluable through the OpenFeature-compatible port (`docs/design/openfeature-experiments.md`); matrices remain offline ablation evidence, not live targeting.
+**Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached. Runtime levers that map to progressive-delivery toggles are also evaluable through the research OpenFeature port (`docs/design/openfeature-research-levers.md`); matrices remain offline ablation evidence, not live targeting. Product/dashboard flags live in `docs/design/openfeature-experiments.md`.
 
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
 **Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
@@ -1606,6 +1606,12 @@ cancels the learned `<SYM_i>`/`<BIND_j>` pool rows with deterministic
 byte-compositional vectors through the V8 delta path (weight tying and
 batching untouched; same surface → identical vector at every slot, by
 construction and by test).
+
+**Contract note (2026-07-21):** this default-off experiment uses external marker
+spelling as its embedding identity and remains unchanged for checkpoint/evidence
+compatibility. It must not be treated as a production identity authority. The new
+bound and exact-choice generation APIs apply a separate opaque ordinal projection;
+E278 is not evidence for that projection without a matched rerun.
 
 | ID | Isolated lever | Baseline | Status |
 | --- | --- | --- | --- |
@@ -5282,3 +5288,136 @@ adversarial fidelity falls 0.8333→0.5833, validity 0.90→0.65, component reca
 
 Evidence: [narrative](iter-e707-carrier-root-reference-20260721.md) and
 [JSON](iter-e707-carrier-root-reference-20260721.json).
+
+## E708 carrier-specific root-reference obligation
+
+E708 records the exact missing-slot carrier and forces only that reference when
+the terminal `Stack` is about to close. The final five-suite `n=19` replay is
+quality-identical to E701 outside Rico. Rico fidelity improves 0.9583→1.0,
+validity 0.9750→1.0, structure 0.7611→0.7915, node F1 0.7942→0.8419, and reward
+0.9875→1.0; edge F1 moves 0.7757→0.7727. Retain v180 with schema-value weight 5
+as scratch evidence. Rico strict remains 0.0, AgentV is 0/5, and no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e708-carrier-reference-obligation-20260721.md) and
+[JSON](iter-e708-carrier-reference-obligation-20260721.json).
+
+## E709 final schema-value margin
+
+E709 applies enum-slot protection after semantic biases and margin-closes a
+fully covered terminal `Stack`. After the v181 mainline rebase, a matched v181
+control and v182 treatment use the same v37 typed-runtime-symbol eval adapter and
+five-suite `n=19` policy. Every non-Rico quality metric is identical; E709 alone
+raises Rico binding-aware strict meaningfulness 0.0→1.0. Rico recall, fidelity,
+validity, and reward remain 1.0, and all three records have no semantic reason
+codes. Retain v182 with schema-value weight 5 as scratch evidence. AgentV remains
+0/5 and the Rico length budget still fails, so this is not a ship claim. No
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e709-final-schema-value-margin-20260721.md) and
+[JSON](iter-e709-final-schema-value-margin-20260721.json).
+
+## E710 role-binding negative margin
+
+E710 tested final typed role-binding negative margins. The first OOD diagnostic
+raised strict meaningfulness 0.50→0.75, but the five-suite guardrail regressed
+held-out strict 1.0→0.8 and fidelity 1.0→0.96. A narrower component-only replay
+kept the held-out loss, returned OOD to 0.5, and introduced duplicate-slot spam.
+Reject and fully revert the code lever. The evidence points upstream to semantic-
+plan component capacity: do not add a component whose required string properties
+cannot all be satisfied by its assigned roles. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e710-role-binding-negative-margin-20260721.md) and
+[JSON](iter-e710-role-binding-negative-margin-20260721.json).
+
+## E711 planned role capacity before joint carriers
+
+E711 checks whether prompt-planned families can cover an entire role group before
+adding an unprompted joint carrier. The final five-suite `n=19` replay leaves all
+non-OOD quality metrics unchanged from E709. OOD strict rises 0.5→1.0, structure
+0.7073→0.7823, node F1 0.8056→0.85, and edge F1 0.6951→0.7486; reward shifts
+0.979→0.973. Retain v183 as scratch evidence. AgentV remains 0/5 and the Rico
+length budget still fails. No checkpoint was created or synced.
+
+Evidence: [narrative](iter-e711-planned-role-capacity-20260721.md) and
+[JSON](iter-e711-planned-role-capacity-20260721.json).
+
+## E712 component counts across descriptive phrases
+
+E712 carries the closest explicit count through arbitrary descriptive modifiers
+without crossing conjunction, preposition, or component-family boundaries. On the
+matched five-suite `n=19` replay, adversarial strict rises 0.25→0.50, normalized
+placeholder fidelity 0.8333→1.0, structure 0.76575→0.88325, node F1
+0.8318→0.9152, and edge F1 0.7169→0.8419; the other four suites match E711.
+Retain model v184 and meaningfulness metric 2.10.0 as scratch evidence. AgentV
+remains 0/5 and the Rico length budget still fails. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e712-component-count-phrases-20260721.md) and
+[JSON](iter-e712-component-count-phrases-20260721.json).
+
+## E713 explicit outer-group topology
+
+E713 compiles explicit “group inside outer component” prose into a verified
+nested root plan. On the historical E620 checkpoint, adversarial strict rises
+0.50→0.75, structure 0.88325→0.916675, node F1 0.9152→0.9318, and edge F1
+0.8419→0.8611; the other suites match E712. AgentV remains 0/5 and Rico still
+fails the 160-symbol length budget. Output contract v2 subsequently invalidates
+the pre-v2 checkpoint, so retain only the generalized topology implementation and
+treat these results as historical diagnostic evidence. No checkpoint was created
+or synced.
+
+Evidence: [narrative](iter-e713-outer-group-topology-20260721.md),
+[JSON](iter-e713-outer-group-topology-20260721.json), and
+[symbol-only output contract](symbol-only-output-contract.md).
+
+## E714 first symbol-only scratch baseline
+
+E714 trains the first output-contract-v2-compatible checkpoint from scratch on
+the strict 141-record symbol-only snapshot. Local CPU training completed 600
+steps in 48.72 seconds under `max_wall_minutes=2`; no remote compute or bucket
+sync was used. Across five bounded diagnostic suites, every prediction satisfies
+the symbol-only contract, but strict meaningfulness and reward remain 0.0,
+AgentV is 0/5, and learned LTR decoding produces invalid or incomplete schema
+structures with five timeouts. Retain the checkpoint only as the compatible
+baseline for decode treatments; it is not promotable or ship.
+
+Evidence: [narrative](iter-e714-symbol-only-baseline-20260721.md) and
+[JSON](iter-e714-symbol-only-baseline-20260721.json).
+
+## E715 tree decode on E714
+
+E715 changes only E714's compiler decode mode from off to tree on the same
+three-record local smoke subset. Symbol-only verification remains 3/3 and p50
+falls from 14.06s to 5.75s, but parse regresses 0.3333→0.0, fidelity
+1.0→0.6667, structure 0.0880→0.0619, recall 0.4167→0.1667, and one timeout is
+introduced. AgentV remains 0/1. Reject tree mode for this checkpoint and do not
+extend the arm to other suites.
+
+Evidence: [narrative](iter-e715-tree-decode-symbol-only-20260721.md) and
+[JSON](iter-e715-tree-decode-symbol-only-20260721.json).
+
+## E716 schema-typed string candidates
+
+E716 corrects the compiler's lexer-native `STRING` mapping: fixed string and
+template symbols remain legal, while booleans, `null`, `LIT_NUM`, `LIT_END`, and
+raw byte text are excluded. The clean local E715 replay removes the invalid
+`TextArea.name=LIT_NUM` edge and its null-required failure, with all three
+outputs still passing symbol-only verification. Aggregate smoke quality is
+neutral versus E715 (parse/strict 0.0, structure 0.0619, AgentV 0/1), so retain
+model v188 as a correctness fix while leaving tree decoding rejected.
+
+Evidence: [narrative](iter-e716-schema-typed-string-candidates-20260721.md) and
+[JSON](iter-e716-schema-typed-string-candidates-20260721.json).
+
+## E718 96-symbol LTR canvas
+
+E718 shortens E714's local smoke canvas from 160 to 96 symbols. Parse remains
+0.3333, fidelity 1.0, structure rises 0.0880→0.0963, and timeouts remain zero,
+while p50 falls 14.06s→5.29s. Component recall regresses 0.4167→0.25 and
+meaningful/strict/reward/AgentV remain zero. Retain only as a local runtime
+Pareto lever; do not treat it as model-quality progress or change the default.
+
+Evidence: [narrative](iter-e718-ltr-canvas96-20260721.md) and
+[JSON](iter-e718-ltr-canvas96-20260721.json).

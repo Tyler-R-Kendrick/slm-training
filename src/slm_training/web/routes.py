@@ -33,6 +33,7 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
+from slm_training.features.levers import lever_registry_payload
 
 observability_router = APIRouter(prefix="/api")
 actions_router = APIRouter(prefix="/api")
@@ -75,15 +76,36 @@ def capabilities(request: Request) -> dict[str, Any]:
         "peers_configured": bool(hub and hub.peers),
         "auth_mode": hub.auth_mode if hub else "open",
     }
+    features = getattr(request.app.state, "features", None)
+    caps["features"] = {
+        "openfeature": bool(features),
+        "provider": features.provider if features else None,
+    }
     flag_client = getattr(request.app.state, "flag_client", None)
-    caps["openfeature"] = {
+    caps["research_flags"] = {
         "enabled": True,
         "provider": getattr(flag_client, "provider_name", "InMemoryProvider"),
         "evaluate": "/api/flags/ofrep/v1/evaluate",
         "levers": "/api/flags/levers",
-        "docs": "docs/design/openfeature-experiments.md",
+        "docs": "docs/design/openfeature-research-levers.md",
     }
     return caps
+
+
+@observability_router.get("/features/bootstrap")
+def features_bootstrap(
+    request: Request,
+    targeting_key: str = Query(default="anonymous", max_length=320),
+) -> dict[str, Any]:
+    features = getattr(request.app.state, "features", None)
+    if features is None:
+        raise HTTPException(status_code=503, detail="feature runtime unavailable")
+    return features.bootstrap_payload(targeting_key=targeting_key)
+
+
+@observability_router.get("/features/levers")
+def features_levers() -> dict[str, Any]:
+    return lever_registry_payload()
 
 
 @observability_router.get("/overview")
@@ -367,7 +389,7 @@ def flags_levers() -> dict[str, Any]:
     return {
         "provider": "InMemoryProvider",
         "standard": "openfeature",
-        "docs": "docs/design/openfeature-experiments.md",
+        "docs": "docs/design/openfeature-research-levers.md",
         "levers": [
             {
                 "key": spec.key,

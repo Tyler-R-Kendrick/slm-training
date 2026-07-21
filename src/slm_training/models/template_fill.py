@@ -76,9 +76,7 @@ def ensure_prompt_inventory(prompt: str, placeholders: list[str] | None) -> str:
     return f"{base}\nPlaceholders: {joined}"
 
 
-def ensure_prompt_semantic_roles(
-    prompt: str, placeholders: list[str] | None
-) -> str:
+def ensure_prompt_semantic_roles(prompt: str, placeholders: list[str] | None) -> str:
     """Normalize prompt-mentioned component types into an honest role contract."""
     if any(line.startswith("Semantic roles:") for line in prompt.splitlines()):
         return prompt
@@ -135,9 +133,7 @@ def prompt_semantic_role_candidates(
     )
     clauses = [
         re.findall(r"[a-z0-9]+", clause)
-        for clause in re.split(
-            r"[,;.!?]|\b(?:and|with)\b", authored_prompt.lower()
-        )
+        for clause in re.split(r"[,;.!?]|\b(?:and|with)\b", authored_prompt.lower())
     ]
 
     def positions(words: list[str], needle: list[str]) -> list[int]:
@@ -163,10 +159,68 @@ def prompt_semantic_role_candidates(
                 for family_at in positions(clause, family)
             ):
                 candidates.setdefault(slot, set()).add(component)
-    return {
-        slot: tuple(sorted(candidates.get(slot, ())))
-        for slot in slots
+    return {slot: tuple(sorted(candidates.get(slot, ()))) for slot in slots}
+
+
+def typed_semantic_role_candidates(
+    prompt: str,
+    placeholders: list[str] | None,
+    runtime_symbols: list[object] | None,
+    *,
+    include_schema_candidates: bool = False,
+) -> dict[str, tuple[str, ...]]:
+    """Map declared roles to components without inspecting marker spellings."""
+    slots = normalize_placeholders(placeholders)
+    symbols = {
+        str(getattr(symbol, "surface", "")): str(
+            getattr(symbol, "semantic_role", "") or ""
+        )
+        for symbol in runtime_symbols or ()
     }
+    from slm_training.data.quality import (
+        _official_component_names,
+        _prompt_component_mentions,
+        semantic_role_candidates,
+    )
+
+    mentioned = sorted(_prompt_component_mentions(prompt))
+    components = (
+        sorted(_official_component_names()) if include_schema_candidates else mentioned
+    )
+    result: dict[str, tuple[str, ...]] = {}
+    for slot in slots:
+        role = symbols.get(slot, "")
+        if not role or not components:
+            result[slot] = ()
+            continue
+        typed_slot = f":typed.{role}"
+        result[slot] = semantic_role_candidates([typed_slot], components)[typed_slot]
+    return result
+
+
+def typed_semantic_role_properties(
+    placeholders: list[str] | None,
+    runtime_symbols: list[object] | None,
+) -> dict[str, tuple[str, ...]]:
+    """Return declared role property aliases without reading marker spellings."""
+    slots = normalize_placeholders(placeholders)
+    symbols = {
+        str(getattr(symbol, "surface", "")): str(
+            getattr(symbol, "semantic_role", "") or ""
+        )
+        for symbol in runtime_symbols or ()
+    }
+    from slm_training.data.quality import semantic_role_properties
+
+    result: dict[str, tuple[str, ...]] = {}
+    for slot in slots:
+        role = symbols.get(slot, "")
+        if not role:
+            result[slot] = ()
+            continue
+        typed_slot = f":typed.{role}"
+        result[slot] = semantic_role_properties([typed_slot])[typed_slot]
+    return result
 
 
 def prompt_semantic_plan(prompt: str):
@@ -175,6 +229,7 @@ def prompt_semantic_plan(prompt: str):
         PlanArchetype,
         PlanCoverage,
         PlanIdentity,
+        PlanTopology,
         RoleSlot,
         SemanticPlanV1,
     )
@@ -217,6 +272,16 @@ def prompt_semantic_plan(prompt: str):
         components = sorted(_prompt_component_mentions(prompt))
     if not components:
         return None
+    role_slots = tuple(
+        RoleSlot(
+            role_id=f"prompt_component_{index}",
+            component_family=component,
+            required=True,
+            evidence_spans=(component,),
+        )
+        for index, component in enumerate(components)
+    )
+    topology = _prompt_outer_group_topology(authored_prompt, role_slots)
     return SemanticPlanV1(
         identity=PlanIdentity(
             pack_id="openui",
@@ -224,19 +289,102 @@ def prompt_semantic_plan(prompt: str):
             provenance="predicted",
         ),
         archetype=PlanArchetype(confidence=1.0),
-        role_slots=tuple(
-            RoleSlot(
-                role_id=f"prompt_component_{index}",
-                component_family=component,
-                required=True,
-                evidence_spans=(component,),
+        role_slots=role_slots,
+        topology=PlanTopology(
+            parent_relation_candidates=(topology,) if topology is not None else None,
+            sibling_order_groups=(
+                tuple(topology["sibling_role_ids"]),
             )
-            for index, component in enumerate(components)
+            if topology is not None
+            else None,
         ),
         coverage=PlanCoverage(
             named_requirements_accounted_for=tuple(components),
         ),
     )
+
+
+def _prompt_outer_group_topology(
+    prompt: str,
+    role_slots: tuple[object, ...],
+) -> dict[str, object] | None:
+    """Extract an explicit group-inside-outer-component relation.
+
+    This deliberately abstains unless the prompt names both a multi-component
+    group and an outer component. It never infers topology from component counts
+    alone.
+    """
+    from slm_training.data.quality import _prompt_component_requirements
+
+    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    relation = re.search(
+        r"\b(?:group|them|these)\s+(?:inside|within)\s+"
+        r"(?:an?\s+|the\s+)?outer\s+(.+)$",
+        normalized,
+    )
+    if relation is None:
+        return None
+    outer = _prompt_component_requirements(
+        relation.group(1), preserve_repeated_mentions=True
+    )
+    inner_prompt = normalized[: relation.start()]
+    inner = list(
+        _prompt_component_requirements(
+            inner_prompt,
+            preserve_repeated_mentions=True,
+        )
+    )
+    if len(outer) != 1 or len(inner) < 2:
+        return None
+    outer_family = outer[0]
+    matching_outer_slots = [
+        str(getattr(slot, "role_id"))
+        for slot in role_slots
+        if getattr(slot, "component_family", None) == outer_family
+    ]
+    if not matching_outer_slots:
+        return None
+
+    sibling_families = inner
+    if " around " in inner_prompt:
+        left_prompt, right_prompt = inner_prompt.split(" around ", 1)
+        right_prompt = right_prompt.split(" then ", 1)[0]
+        left = list(
+            _prompt_component_requirements(
+                left_prompt,
+                preserve_repeated_mentions=True,
+            )
+        )
+        right = list(
+            _prompt_component_requirements(
+                right_prompt,
+                preserve_repeated_mentions=True,
+            )
+        )
+        if len(left) >= 2 and right:
+            sibling_families = [left[0], *right, *left[1:]]
+
+    remaining_role_ids: dict[str, list[str]] = {}
+    for slot in role_slots:
+        family = str(getattr(slot, "component_family", "") or "")
+        remaining_role_ids.setdefault(family, []).append(str(getattr(slot, "role_id")))
+    remaining_role_ids[outer_family].remove(matching_outer_slots[-1])
+    sibling_role_ids: list[str] = []
+    for family in sibling_families:
+        candidates = remaining_role_ids.get(family, [])
+        if not candidates:
+            return None
+        sibling_role_ids.append(candidates.pop(0))
+    return {
+        "relation": "outer_group",
+        "parent_role_id": matching_outer_slots[-1],
+        "parent_family": outer_family,
+        "group_family": "Stack",
+        "sibling_role_ids": sibling_role_ids,
+        "sibling_families": sibling_families,
+        "direction": "column",
+        "evidence": relation.group(0),
+    }
 
 
 def inventory_from_prompt(

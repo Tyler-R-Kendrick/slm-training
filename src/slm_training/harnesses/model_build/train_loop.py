@@ -16,6 +16,7 @@ from pathlib import Path
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.runtime.telemetry import (
     CycleTelemetry,
     bind_telemetry,
@@ -165,9 +166,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     )
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
-    max_wall_minutes = 3.0 if max_wall_minutes is None else float(max_wall_minutes)
-    if not 0 < max_wall_minutes <= 3:
-        raise ValueError("max_wall_minutes must be positive and at most 3")
+    max_wall_minutes = (
+        float(MAX_RUN_MINUTES) if max_wall_minutes is None else float(max_wall_minutes)
+    )
+    if not 0 < max_wall_minutes <= MAX_RUN_MINUTES:
+        raise ValueError(
+            f"max_wall_minutes must be positive and at most {MAX_RUN_MINUTES}"
+        )
     wall_started = time.monotonic()
     wall_deadline = wall_started + max_wall_minutes * 60
 

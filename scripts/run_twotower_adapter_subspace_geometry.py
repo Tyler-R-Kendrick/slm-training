@@ -30,6 +30,7 @@ from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.distill.trace_store import checkpoint_sha
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.harnesses.preference.adapter_subspace_geometry import (
     profile_adapter_subspace_geometry,
     write_geometry_report,
@@ -222,8 +223,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--budget",
         type=float,
-        default=3.0,
-        help="cumulative wall budget in minutes (default 3, hard cap 3)",
+        default=float(MAX_RUN_MINUTES),
+        help=(
+            "cumulative wall budget in minutes "
+            f"(default and hard cap {MAX_RUN_MINUTES})"
+        ),
     )
     parser.add_argument(
         "--admit",

@@ -8,6 +8,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from slm_training.levers import MAX_RUN_MINUTES
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -20,7 +22,9 @@ class StrictModel(BaseModel):
 class CampaignBudget(StrictModel):
     max_experiments: int = Field(default=12, ge=1, le=1000)
     max_gpu_hours: float = Field(default=0.0, ge=0)
-    max_wall_minutes: float = Field(default=3.0, gt=0, le=3.0)
+    max_wall_minutes: float = Field(
+        default=float(MAX_RUN_MINUTES), gt=0, le=float(MAX_RUN_MINUTES)
+    )
 
 
 DEFAULT_ALLOWED_KNOBS = frozenset(

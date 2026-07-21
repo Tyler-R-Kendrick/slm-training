@@ -1,6 +1,6 @@
 """OpenFeature-compatible evaluation for experiment levers.
 
-See ``docs/design/openfeature-experiments.md``.
+See ``docs/design/openfeature-research-levers.md``.
 """
 
 from __future__ import annotations

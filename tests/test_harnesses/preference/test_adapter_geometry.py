@@ -22,6 +22,7 @@ from slm_training.harnesses.preference.local_decisions import (  # noqa: E402
     split_for_group,
 )
 from slm_training.harnesses.preference.local_train import _event_logits  # noqa: E402
+from slm_training.levers import MAX_RUN_SECONDS  # noqa: E402
 from slm_training.models.adapters import TwoTowerAdapterSpec  # noqa: E402
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel  # noqa: E402
 
@@ -227,9 +228,13 @@ def test_rank_matrix_emits_expired_record_over_budget() -> None:
 
 
 def test_rank_matrix_rejects_more_than_three_minutes() -> None:
-    with pytest.raises(ValueError, match="at most 180"):
+    with pytest.raises(ValueError, match=f"at most {MAX_RUN_SECONDS}"):
         profile_rank_matrix(
-            _model, _spec_at_rank, _event(), ranks=(2,), max_wall_seconds=180.01
+            _model,
+            _spec_at_rank,
+            _event(),
+            ranks=(2,),
+            max_wall_seconds=MAX_RUN_SECONDS + 0.01,
         )
 
 

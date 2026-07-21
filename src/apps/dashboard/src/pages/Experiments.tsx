@@ -20,7 +20,7 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const [kind, setKind] = useState("research");
   const [jobId, setJobId] = useState<string | null>(null);
-  const board = usePoll<any>(`/api/scoreboards/${kind}`, 0);
+  const board = usePoll<any>(`/api/scoreboards/${kind}`, 30000);
 
   const results = board.data?.results ?? [];
   const metricColumns = board.data?.metric_columns ?? [];

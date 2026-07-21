@@ -17,7 +17,7 @@ import {
 import { metricLabel, smokeGate } from "../metrics";
 
 function PhaseBreakdown({ runId, fallback }: { runId: string; fallback: any }) {
-  const detail = usePoll<any>(runId ? `/api/runs/${encodeURIComponent(runId)}` : null, 0);
+  const detail = usePoll<any>(runId ? `/api/runs/${encodeURIComponent(runId)}` : null, 10000);
   const data = detail.data?.insights?.phases?.length
     ? detail.data.insights.phases
     : [
@@ -31,8 +31,8 @@ function PhaseBreakdown({ runId, fallback }: { runId: string; fallback: any }) {
 export function Smoke({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const [jobId, setJobId] = useState<string | null>(null);
-  const perf = usePoll<any>("/api/scoreboards/perf", 0);
-  const quality = usePoll<any>("/api/scoreboards/quality", 0);
+  const perf = usePoll<any>("/api/scoreboards/perf", 15000);
+  const quality = usePoll<any>("/api/scoreboards/quality", 15000);
   const gatePolicy = usePoll<any>("/api/gates/policy", 0);
 
   // Canary lever + threshold come from the live ship-gate policy — the pill

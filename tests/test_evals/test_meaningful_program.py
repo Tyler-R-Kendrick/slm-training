@@ -53,6 +53,22 @@ def test_unknown_prompt_contract_never_scores_positive() -> None:
     assert any(check.status is CheckStatus.UNKNOWN for check in report.checks)
 
 
+def test_free_form_output_string_fails_both_meaningfulness_metrics() -> None:
+    source = 'root = Button(":cta.label", "submit")'
+    record = ExampleRecord(
+        id="free-form",
+        prompt="Add a submit button with :cta.label",
+        openui='root = Button(":cta.label", ":cta.action")',
+        placeholders=[":cta.label", ":cta.action"],
+    )
+    ok, reason, _ = meaningful_program_v1(source, gold=record)
+    assert ok is False
+    assert reason == "free_form_output_string"
+    report = binding_aware_meaningful_v2(source, record=record)
+    assert report.verdict is False
+    assert "free_form_output_string" in report.reason_codes
+
+
 def test_hard_prompt_inventory_rejects_extra_placeholder_identity() -> None:
     record = ExampleRecord(
         id="extra",
@@ -195,8 +211,8 @@ def test_v2_recognizes_singular_prose_for_plural_schema_component() -> None:
         ),
     )
 
-    assert report.verdict is True
-    assert "prompt_contract_unknown" not in report.reason_codes
+    assert report.verdict is False
+    assert "free_form_output_string" in report.reason_codes
 
 
 def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
@@ -218,7 +234,8 @@ def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
         ),
     )
 
-    assert report.verdict is True
+    assert report.verdict is False
+    assert "free_form_output_string" in report.reason_codes
 
 
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
@@ -236,7 +253,8 @@ def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
         ),
     )
 
-    assert report.verdict is True
+    assert report.verdict is False
+    assert "free_form_output_string" in report.reason_codes
 
 
 @pytest.mark.parametrize(
@@ -365,6 +383,54 @@ def test_v2_does_not_require_likeness_modifier() -> None:
     assert report.verdict is True
 
 
+def test_v2_allows_text_slots_when_requested_components_cannot_own_them() -> None:
+    source = (
+        'root = Stack([outer], "column")\n'
+        'a = Card([TextContent(":rare.a.title")])\n'
+        'rule = Separator()\n'
+        'b = Card([TextContent(":rare.b.body")])\n'
+        'group = Stack([a, rule, b], "column")\n'
+        'outer = Card([group])'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="nested-text-owners",
+            prompt=(
+                "Place two cards around a separator, then put the group inside an "
+                "outer card. Placeholders: :rare.a.title :rare.b.body"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+    assert "mechanical_inventory_coverage" not in report.reason_codes
+
+
+def test_v2_rejects_text_only_routing_when_requested_component_can_own_roles() -> None:
+    source = (
+        'root = Stack([button, first, second], "column")\n'
+        'button = Button(":unrelated.button.label")\n'
+        'first = TextContent(":cta.primary.label")\n'
+        'second = TextContent(":cta.secondary.label")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="mechanical-text-owners",
+            prompt=(
+                "Build a Button in a Stack. "
+                "Placeholders: :cta.primary.label :cta.secondary.label"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is False
+    assert "mechanical_inventory_coverage" in report.reason_codes
+
+
 def test_v2_enforces_explicit_component_multiplicity() -> None:
     source = 'root = Button(":cta.first")'
     report = binding_aware_meaningful_v2(
@@ -430,6 +496,7 @@ def test_v2_metric_hash_includes_semantic_dependencies() -> None:
         package / "data" / "verify" / "stack.py",
         package / "dsl" / "parser.py",
         package / "dsl" / "placeholders.py",
+        package / "dsl" / "language_contract.py",
     )
     digest = hashlib.sha256()
     for path in dependencies:
@@ -491,7 +558,8 @@ def test_v2_accepts_valid_runtime_bindings_and_dynamic_schema_values() -> None:
             openui=source,
         ),
     )
-    assert report.verdict is True
+    assert report.verdict is False
+    assert "free_form_output_string" in report.reason_codes
 
 
 def test_v2_aggregate_reports_strict_and_coverage_conditioned_rates() -> None:

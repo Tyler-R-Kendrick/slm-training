@@ -494,6 +494,9 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
             request = requests[0]
             assert request.prompt == "CTA"
             assert request.slot_contract == (":prod.cta",)
+            assert len(request.runtime_symbols) == 1
+            assert request.runtime_symbols[0].surface == ":prod.cta"
+            assert request.runtime_symbols[0].semantic_role == "cta"
             assert not hasattr(request, "openui")
             return [gold]
 
