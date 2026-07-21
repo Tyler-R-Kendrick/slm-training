@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "run_id": "e648-root-only-role-plans-r1",
+  "experiment_id": "E648",
+  "original_run_id": "e642-root-only-role-plans-r1",
+  "original_experiment_id": "E642",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Restricting visible-role-inferred plan families to completed root-section boundaries will retain E647 coverage gains without nested component spam.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "location": "outputs/runs/e620-required-slot-coverage-scratch800-20260720/checkpoints/last.pt", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"baseline_run_id": "e637-nested-family-accounting-r2", "treatment_run_id": "e648-root-only-role-plans-r1", "original_treatment_run_id": "e642-root-only-role-plans-r1", "test_dir": "src/slm_training/resources/data/eval/remediated", "suite": "ood", "n": 4, "device": "cpu", "grammar_ltr_primary": true, "compiler_decode_mode": "restricted", "slot_contract_in_context": true, "honest_slot_contract": true, "slot_contract_constrained_decode": true, "semantic_role_contract_in_context": true, "semantic_role_decode_weight": 8.0, "semantic_role_schema_candidates": true, "schema_value_decode_weight": 4.0, "schema_opaque_decode_weight": 4.0, "schema_opaque_close_decode_weight": 4.0, "schema_role_slot_decode_weight": 8.0, "slot_coverage_close_decode_weight": 2.0, "semantic_plan_decode_weight": 4.0, "semantic_plan_margin_decode_weight": 2.0, "semantic_plan_binding_decode_weight": 1.0, "semantic_plan_root_decode_weight": 8.0, "semantic_plan_root_margin_decode_weight": 2.0, "semantic_plan_repeated_array_close_margin_decode_weight": 2.0, "semantic_plan_repeated_slot_margin_decode_weight": 2.0, "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0, "semantic_plan_typed_array_item_margin_decode_weight": 2.0, "grammar_ltr_max_tokens": 160},
+  "baseline": {"meaningful_program_rate": 0.75, "binding_aware_meaningful_v2_rate_strict": 0.5, "placeholder_fidelity": 0.675, "placeholder_validity": 0.805, "structural_similarity": 0.581675, "component_type_recall": 0.625, "reward_score": 0.8545, "ast_node_f1": 0.6436507936507937, "ast_edge_f1": 0.4553571428571429, "latency_ms_p50": 2303.87, "latency_ms_p95": 6831.74},
+  "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.5, "binding_aware_meaningful_v2_rate_strict": 0.5, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 0.675, "placeholder_validity": 0.805, "structural_similarity": 0.48835, "component_type_recall": 0.625, "reward_score": 0.844, "ast_node_f1": 0.5330917874396135, "ast_edge_f1": 0.3928571428571429, "latency_ms_p50": 3342.87, "latency_ms_p95": 36906.76, "decode_timeout_count": 0, "fallback_count": 0}},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "prediction_evidence": [{"id": "ood_dashboard_01", "prediction_sha256": "4205dfe112b53da27c4c1035a3bc645c25ef66efc294b5c6e07f762eb7cb539e", "output_chars": 49}, {"id": "ood_gallery_01", "prediction_sha256": "f23be49d6cf6bafe5e5efb5c255bf042981fad07c2ac926d10d9f9092eb5c09d", "output_chars": 1290, "shape": "deep Button/Carousel/Modal spam"}, {"id": "ood_modal_01", "prediction_sha256": "34ac0532c9f2f22a839ec4a7611c8317a7d7ec81e8836df10a19db06e85f45f3", "output_chars": 141}, {"id": "ood_auth_01", "prediction_sha256": "4e066853e76dbbb3d2980c2cad1888e58a5736b04887fdb6563701cd5b14c980", "output_chars": 135}],
+  "decision": "Reject the treatment stamped v84. After rebasing onto E647 restoration v87, the append-only lineage records the renumbered E648 as treatment v88 and restoration v89. Strict v2 stayed 2/4, but meaningful v1, structure, reward, AST F1, and latency regressed; Gallery expanded to 1290 characters of irrelevant nested components.",
+  "rebased_component_versions": {"model.twotower_treatment": "v88", "model.twotower_restoration": "v89"},
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "e85f51987131dae73cdafe761cf2d12153c13d4d", "code_dirty": false, "components": {"harness.model_build.eval": "v32", "evals.meaningful_program": "2.2.1", "evals.scoring": "v12", "model.twotower": "v84"}, "stamped_at": "2026-07-21T03:10:42.270734+00:00"}
+}
