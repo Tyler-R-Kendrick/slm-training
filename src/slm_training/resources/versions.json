@@ -1467,7 +1467,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v71",
+      "version": "v72",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1482,6 +1482,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v72",
+          "date": "2026-07-21",
+          "note": "E634 rejection: restore v70 repeated-slot behavior after retargeting the margin at the pre-content literal for the first repeated instance collapsed Auth to a single unrelated TextContent component and regressed every aggregate quality metric, on the checkpoint available for replay"
+        },
         {
           "version": "v71",
           "date": "2026-07-21",

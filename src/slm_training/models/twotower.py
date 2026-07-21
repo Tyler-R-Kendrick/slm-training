@@ -4761,32 +4761,6 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
-    def _schema_pre_content_arg(
-        self,
-        frame: Any,
-    ) -> bool:
-        """True at the required non-content string argument immediately
-        preceding a placeholder-annotated content property (e.g. `Input.name`
-        directly before `Input.placeholder`). Shared by `_schema_opaque_bias`
-        (which floors the legal literal here) and
-        `_semantic_plan_repeated_slot_bias` (which composes with that floor
-        instead of independently placing a visible slot in this argument for
-        every repeated instance of the owning family; see E633/E634)."""
-        schemas = tuple(getattr(frame, "schemas", ()))
-        index = int(getattr(frame, "arg_index", -1))
-        if getattr(frame, "kind", None) != "component" or not (
-            0 <= index < len(schemas)
-        ):
-            return False
-        schema = schemas[index]
-        return (
-            schema.get("type") == "string"
-            and not schema.get("x-openui-placeholder")
-            and not self._schema_contains_enum(schema)
-            and index + 1 < len(schemas)
-            and bool(schemas[index + 1].get("x-openui-placeholder"))
-        )
-
     def _schema_opaque_bias(
         self,
         state: Any,
@@ -4812,7 +4786,13 @@ class TwoTowerModel(nn.Module):
         optional_unconstrained = (
             index >= int(getattr(frame, "required_args", 0)) and not schema
         )
-        followed_by_content = self._schema_pre_content_arg(frame)
+        followed_by_content = (
+            schema.get("type") == "string"
+            and not schema.get("x-openui-placeholder")
+            and not self._schema_contains_enum(schema)
+            and index + 1 < len(schemas)
+            and bool(schemas[index + 1].get("x-openui-placeholder"))
+        )
         if not (optional_unconstrained or followed_by_content):
             return None
         slot_positions = [
@@ -5473,41 +5453,6 @@ class TwoTowerModel(nn.Module):
             token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
         ):
             return None
-        opaque_weight = float(
-            getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0
-        )
-        frames = list(getattr(state, "frames", ()))
-        if (
-            opaque_weight > 0.0
-            and frames
-            and self._schema_pre_content_arg(frames[-1])
-        ):
-            # Compose with `_schema_opaque_bias` at the final choice boundary
-            # instead of competing with it: at a required non-content string
-            # directly before a placeholder-annotated content property (e.g.
-            # `Input.name` before `Input.placeholder`), the correct target for
-            # *this* repeated instance is the legal empty literal, not a
-            # visible slot. Retarget the same one-shot per-instance margin at
-            # the literal so every repeated instance is corrected — not just
-            # the last one, as in E633 where this margin independently
-            # floored a slot and overrode the earlier schema score for the
-            # first instance. (E634: on the checkpoint available for
-            # replay, this correction collapses the whole repeated family's
-            # decode instead of just fixing the pre-content argument, so this
-            # branch is default-off evidence pending a checkpoint that can
-            # support it — see docs/design/iter-e634-composed-role-scoring-20260721.md.)
-            from slm_training.dsl.production_codec import LIT_PREFIX
-
-            literal_id = self.tokenizer.token_to_id.get(f'{LIT_PREFIX}""')
-            if literal_id is None or literal_id not in candidate_ids:
-                return None
-            target = candidate_ids.index(literal_id)
-            bias = scores.new_zeros(len(candidate_ids))
-            bias[target] = max(
-                0.0,
-                float(scores.max().item()) + margin - float(scores[target].item()),
-            )
-            return bias
         used_slot_ids = visible_slot_ids.intersection(prefix[:owner_position])
         targets = [
             position
