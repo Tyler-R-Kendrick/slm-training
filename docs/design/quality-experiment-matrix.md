@@ -4785,3 +4785,14 @@ behavior as v127. No checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e671-nested-role-owner-20260721.md) and
 [JSON](iter-e671-nested-role-owner-20260721.json).
+
+## E672 schema-owned typed array item
+
+E672 removes the authored-plan owner dependency for active typed-array schemas,
+but the OOD `n=4` run remains byte-identical to E671. Carousel's item union is
+composed of public `$ref` entries that the slot-reachability predicate does not
+resolve, so the policy still abstains. Reject neutral v128 and restore v129.
+No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e672-schema-owned-array-20260721.md) and
+[JSON](iter-e672-schema-owned-array-20260721.json).
