@@ -1046,7 +1046,27 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     bias = model._schema_value_bias(state, (slot_id, close_id), scores)
 
     assert bias is not None
-    assert bias.tolist() == [-4.0, 0.0]
+    assert bias.tolist() == [0.0, 4.0]
+
+
+def test_schema_value_bias_floors_required_enum_literal_above_dynamic_string() -> None:
+    from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import LIT_STR, ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_value_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=3)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Callout"])
+    dynamic_id = tokenizer.token_to_id[LIT_STR]
+    info_id = tokenizer.token_to_id[f'{LIT_PREFIX}"info"']
+    bias = model._schema_value_bias(
+        state,
+        (dynamic_id, info_id),
+        torch.tensor([10.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 13.0]
 
 
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
