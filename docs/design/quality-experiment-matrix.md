@@ -4530,3 +4530,19 @@ not another selection bias. No checkpoint was created or synced; AgentV remained
 Evidence:
 [iter-e646-complete-root-reachability-20260720.md](iter-e646-complete-root-reachability-20260720.md)
 and [JSON](iter-e646-complete-root-reachability-20260720.json).
+
+## E647 semantic-root abstention trace
+
+E647 added bounded, behavior-neutral root-verifier abstention evidence. The
+deduplicated r2 reproduces E644 exactly and emits one Dashboard record at
+position 35: `ParseError: unknown choice token: LIT_STR` for a 44-token planned
+closure over five sections and five references. Retain the telemetry stamped
+v92. After rebasing onto E646 restoration v93, the append-only lineage records
+E647 instrumentation v94 and deduplicated telemetry v95. The next repair is
+dynamic-literal normalization inside the verification probe, not more root
+weighting. No checkpoint was created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e647-root-abstention-trace-20260720.md](iter-e647-root-abstention-trace-20260720.md),
+[authoritative r2 JSON](iter-e647-root-abstention-trace-20260720.json), and
+[r1 JSON](iter-e647-root-abstention-trace-r1-20260720.json).

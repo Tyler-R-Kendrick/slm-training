@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "e647-root-abstention-trace-r1",
+  "experiment_id": "E647-r1",
+  "date_utc": "2026-07-21",
+  "status": "completed_diagnostic_superseded",
+  "run_class": "scratch_matrix",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"baseline_run_id": "e644-role-obligation-margin-r1", "suite": "ood", "n": 4, "device": "cpu", "exact_e644_decode_policy": true},
+  "suites": {"ood": {"n": 4, "meaningful_program_rate": 0.75, "binding_aware_meaningful_v2_rate_strict": 0.75, "placeholder_fidelity": 0.85, "placeholder_validity": 0.91, "structural_similarity": 0.605625, "component_type_recall": 0.6875, "reward_score": 0.9115, "ast_node_f1": 0.6777777777777778, "ast_edge_f1": 0.44642857142857145, "latency_ms_p50": 2822.76, "latency_ms_p95": 12860.35, "decode_timeout_count": 0, "fallback_count": 0}},
+  "telemetry": {"semantic_plan_root_abstention_count": 51, "first": {"reason": "verifier_rejected", "error_type": "ParseError", "error": "unknown choice token: LIT_STR", "planned_token_count": 44, "section_count": 5, "reference_count": 5}, "superseded_reason": "changing counts defeated exact-evidence deduplication"},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "rebased_component_versions": {"model.twotower_instrumentation": "v94"},
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "a353e31475c9827b78085b66094d978278c1dcdb", "code_dirty": false, "components": {"harness.model_build.eval": "v32", "evals.meaningful_program": "2.2.1", "evals.scoring": "v12", "model.twotower": "v91"}, "stamped_at": "2026-07-21T04:03:50.818417+00:00"}
+}
