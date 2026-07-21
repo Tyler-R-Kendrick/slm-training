@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "e703-enum-safe-repeated-slots-r1",
+  "experiment_id": "E703",
+  "date_utc": "2026-07-21",
+  "status": "completed_neutral_reverted_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Prevent repeated-instance visible-slot flooring from overriding enum-valued component properties.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"control_run_id": "e701-schema-aware-role-capacity-r6", "treatment_run_id": "e703-enum-safe-repeated-slots-r1", "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"], "n": 19, "device": "cpu", "steps": 0, "context_backend": "scratch", "full_suites": true, "honest_slot_contract": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160, "max_wall_minutes": 3},
+  "suites": {
+    "smoke": {"n": 3, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 1.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.8308333333333334, "component_type_recall": 0.75, "reward_score": 0.957, "ast_node_f1": 0.903030303030303, "ast_edge_f1": 0.48148148148148145, "decode_timeout_count": 0, "fallback_count": 0},
+    "held_out": {"n": 5, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 1.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.81042, "component_type_recall": 0.8933333333333333, "reward_score": 0.9658, "ast_node_f1": 0.883095238095238, "ast_edge_f1": 0.7173626373626373, "decode_timeout_count": 0, "fallback_count": 0},
+    "adversarial": {"n": 4, "meaningful_program_rate": 0.5, "binding_aware_meaningful_v2_rate_strict": 0.25, "binding_aware_meaningful_v2_coverage": 0.75, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.9, "structural_similarity": 0.62825, "component_type_recall": 1.0, "reward_score": 0.9035, "ast_node_f1": 0.7484848484848484, "ast_edge_f1": 0.4668803418803419, "decode_timeout_count": 0, "fallback_count": 0},
+    "ood": {"n": 4, "meaningful_program_rate": 0.75, "binding_aware_meaningful_v2_rate_strict": 0.75, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.7073, "component_type_recall": 0.875, "reward_score": 0.979, "ast_node_f1": 0.8055555555555556, "ast_edge_f1": 0.695054945054945, "decode_timeout_count": 0, "fallback_count": 0},
+    "rico_held": {"n": 3, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 0.9583333333333334, "placeholder_validity": 0.975, "structural_similarity": 0.7611333333333334, "component_type_recall": 1.0, "reward_score": 0.9874999999999999, "ast_node_f1": 0.7942028985507247, "ast_edge_f1": 0.7757073844030365, "decode_timeout_count": 0, "fallback_count": 0}
+  },
+  "comparison_to_e701": {"changed_predictions": 0, "unchanged_predictions": 19, "all_tracked_quality_metrics_identical": true},
+  "failure_analysis": "The Rico TextContent.size mismatch is not caused by the repeated-instance slot margin at an enum-valued component frame; the intervention never changed a final prediction.",
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "mean_score": 0.5},
+  "length_budget": {"ok": false, "effective_budget": 160, "failures": ["rico_held:p95=190 exceeds effective_budget=160"]},
+  "decision": "Reject v174 as dead complexity and restore v173 behavior as v175. Trace the role-mismatched slot through another scoring phase before changing decode policy.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "aa80e3c29e6a64987c966513ab92eb904e95a94e", "code_dirty": true, "components": {"harness.model_build.eval": "v36", "evals.meaningful_program": "2.9.0", "evals.scoring": "v13", "model.twotower": "v174"}, "stamped_at": "2026-07-21T17:40:57.158823+00:00"}
+}
