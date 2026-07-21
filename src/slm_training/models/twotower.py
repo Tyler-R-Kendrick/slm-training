@@ -5432,6 +5432,26 @@ class TwoTowerModel(nn.Module):
         ``candidate_kinds`` reports the grammar kind of both the pre-bias and
         post-bias argmax token so a slot-vs-component swap is visible even
         away from the root position.
+
+        E646: ``hijacked_non_slot_candidate`` (``before_kind != "sym"``) is a
+        deliberately broad screen -- it also fires whenever the pre-bias
+        argmax was a ``bind`` candidate (a ``&N`` reference reusing an
+        already-completed top-level statement/value), which is a materially
+        different situation from the ``component``/``struct``/``builtin``
+        displacements E628/E630/E645 traced and fixed. A live trace on
+        ``rico_eval_test_25`` (margin-sweep diff, see
+        ``iter-e646-required-slot-margin-bind-reference-residual-20260721``)
+        found the bind-reference candidate there was reusing a *stale*
+        already-emitted placeholder value, and the slot the bias floored
+        instead was the correct still-missing gold slot --
+        ``placeholder_fidelity`` for that record rose (0.625 -> 0.875) with
+        the bias's override, not fell. ``hijacked_bind_reference_candidate``
+        isolates this narrower, evidenced-benign-or-desirable sub-case so a
+        future session mining these traces for genuine structural hijacks can
+        exclude it (``hijacked_non_slot_candidate and not
+        hijacked_bind_reference_candidate``) instead of re-deriving this
+        finding. Purely additive: it does not change ``_required_slot_margin_
+        bias``'s decode-time behavior or gating, only what gets recorded.
         """
         if len(stats.constrained_selection_traces) >= 64:
             return None
@@ -5456,6 +5476,9 @@ class TwoTowerModel(nn.Module):
             "choice_changed": before != after,
             "hijacked_non_slot_candidate": (
                 before != after and candidate_kinds[before] != "sym"
+            ),
+            "hijacked_bind_reference_candidate": (
+                before != after and candidate_kinds[before] == "bind"
             ),
             "required_slot_margin_decode_weight": float(
                 getattr(self.config, "required_slot_margin_decode_weight", 0.0)
