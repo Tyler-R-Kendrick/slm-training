@@ -1,0 +1,355 @@
+{
+  "arms": [
+    "canonical_dfs",
+    "random_order",
+    "oracle_order",
+    "bfs_min_edits",
+    "astar_admissible",
+    "beam_symbolic",
+    "search_work_energy"
+  ],
+  "budgets": [
+    10,
+    100,
+    1000
+  ],
+  "disposition": "solver_ceiling_established",
+  "experiment_id": "slm195-solver-only-semantic-ceiling",
+  "fixture_constraint_version": "v1",
+  "fixture_pack_id": "vss4-fixture-word",
+  "honest_caveats": [
+    "Fixture-only wiring evidence: no trained model, checkpoint, GPU, or ship-gate claim is involved.",
+    "The reference fixture is the committed VSS finite word tree; the only verifier-accepted terminal is 'aa'.",
+    "Symbolic rankers (including search_work_energy) are deterministic stand-ins for a learned energy model.",
+    "A* and beam heuristics are admissible w.r.t. remaining decisions, not a learned value function.",
+    "Random-order results depend on the manifest random_seed and are expected to vary."
+  ],
+  "matrix_set": "slm195_solver_only_semantic_ceiling",
+  "matrix_version": "ffe3-04-v1",
+  "notes": [
+    "ran 7 arms × 3 budgets in 0.022284s"
+  ],
+  "random_seed": 0,
+  "rows": [
+    {
+      "arm_name": "canonical_dfs",
+      "budget": 10,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0013048530090600252
+    },
+    {
+      "arm_name": "canonical_dfs",
+      "budget": 100,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010863280040211976
+    },
+    {
+      "arm_name": "canonical_dfs",
+      "budget": 1000,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0009529009985271841
+    },
+    {
+      "arm_name": "random_order",
+      "budget": 10,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0013606410066131502
+    },
+    {
+      "arm_name": "random_order",
+      "budget": 100,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.001334270986262709
+    },
+    {
+      "arm_name": "random_order",
+      "budget": 1000,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0009700249938759953
+    },
+    {
+      "arm_name": "oracle_order",
+      "budget": 10,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0009605700033716857
+    },
+    {
+      "arm_name": "oracle_order",
+      "budget": 100,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0009727569995447993
+    },
+    {
+      "arm_name": "oracle_order",
+      "budget": 1000,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010274930100422353
+    },
+    {
+      "arm_name": "bfs_min_edits",
+      "budget": 10,
+      "counters": {},
+      "decisions": 3,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0009761179971974343
+    },
+    {
+      "arm_name": "bfs_min_edits",
+      "budget": 100,
+      "counters": {},
+      "decisions": 3,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0009897759882733226
+    },
+    {
+      "arm_name": "bfs_min_edits",
+      "budget": 1000,
+      "counters": {},
+      "decisions": 3,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010152019967790693
+    },
+    {
+      "arm_name": "astar_admissible",
+      "budget": 10,
+      "counters": {},
+      "decisions": 3,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010748759959824383
+    },
+    {
+      "arm_name": "astar_admissible",
+      "budget": 100,
+      "counters": {},
+      "decisions": 3,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.001010473002679646
+    },
+    {
+      "arm_name": "astar_admissible",
+      "budget": 1000,
+      "counters": {},
+      "decisions": 3,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.001016567024635151
+    },
+    {
+      "arm_name": "beam_symbolic",
+      "budget": 10,
+      "counters": {},
+      "decisions": 4,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010189830209128559
+    },
+    {
+      "arm_name": "beam_symbolic",
+      "budget": 100,
+      "counters": {},
+      "decisions": 4,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.001020455005345866
+    },
+    {
+      "arm_name": "beam_symbolic",
+      "budget": 1000,
+      "counters": {},
+      "decisions": 4,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.001006165985018015
+    },
+    {
+      "arm_name": "search_work_energy",
+      "budget": 10,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010432529961690307
+    },
+    {
+      "arm_name": "search_work_energy",
+      "budget": 100,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010138360084965825
+    },
+    {
+      "arm_name": "search_work_energy",
+      "budget": 1000,
+      "counters": {
+        "backtracks": 0,
+        "depth": 1,
+        "nodes": 2,
+        "tokens": 6,
+        "verifier_calls": 5
+      },
+      "decisions": 1,
+      "error": "",
+      "status": "SOLVED_ACCEPTED",
+      "stop_reason": null,
+      "terminal_program": "aa",
+      "wall_seconds": 0.0010184580169152468
+    }
+  ],
+  "run_id": "slm195_cli_test",
+  "schema_version": "solver_ceiling_report/v1",
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "timestamps": {
+    "finished_at": "2026-07-21T10:57:24.321486Z",
+    "started_at": "2026-07-21T10:57:24.321471Z"
+  },
+  "version_stamp": {
+    "code_commit": "d89d928c765cd14e35f64785b10d8e29fefbcc3d",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v61",
+      "harness.experiments.slm195_solver_only_semantic_ceiling": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T10:57:24.298276+00:00"
+  }
+}

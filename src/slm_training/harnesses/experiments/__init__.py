@@ -388,6 +388,28 @@ _LAZY_SLM191_EXPORTS = {
     "validate_slm191_manifest": "validate_manifest",
 }
 
+_LAZY_SLM262_EXPORTS = {
+    "SLM262_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM262_MATRIX_SET": "MATRIX_SET",
+    "SLM262_MATRIX_VERSION": "MATRIX_VERSION",
+    "AcceleratorRunManifestV1": "AcceleratorRunManifestV1",
+    "build_slm262_default_manifest": "build_default_manifest",
+    "run_slm262_local_smoke": "run_local_smoke",
+}
+
+_LAZY_SLM195_EXPORTS = {
+    "SLM195_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM195_MATRIX_SET": "MATRIX_SET",
+    "SLM195_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM195_ARM_NAMES": "ARM_NAMES",
+    "SolverCeilingManifestV1": "SolverCeilingManifestV1",
+    "SolverCeilingReport": "SolverCeilingReport",
+    "ArmResult": "ArmResult",
+    "build_slm195_default_manifest": "build_default_manifest",
+    "run_slm195_ceiling": "run_ceiling",
+    "render_slm195_markdown": "render_markdown",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -438,6 +460,18 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm191_termination_matrix
 
         value = getattr(slm191_termination_matrix, _LAZY_SLM191_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM262_EXPORTS:
+        from slm_training.harnesses.experiments import slm262_gpu_reference
+
+        value = getattr(slm262_gpu_reference, _LAZY_SLM262_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM195_EXPORTS:
+        from slm_training.harnesses.experiments import slm195_solver_semantic_ceiling
+
+        value = getattr(slm195_solver_semantic_ceiling, _LAZY_SLM195_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -563,6 +597,22 @@ __all__ = [
     "run_slm191_fixture",
     "render_slm191_markdown",
     "validate_slm191_manifest",
+    "SLM262_EXPERIMENT_ID",
+    "SLM262_MATRIX_SET",
+    "SLM262_MATRIX_VERSION",
+    "AcceleratorRunManifestV1",
+    "build_slm262_default_manifest",
+    "run_slm262_local_smoke",
+    "SLM195_EXPERIMENT_ID",
+    "SLM195_MATRIX_SET",
+    "SLM195_MATRIX_VERSION",
+    "SLM195_ARM_NAMES",
+    "SolverCeilingManifestV1",
+    "SolverCeilingReport",
+    "ArmResult",
+    "build_slm195_default_manifest",
+    "run_slm195_ceiling",
+    "render_slm195_markdown",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
