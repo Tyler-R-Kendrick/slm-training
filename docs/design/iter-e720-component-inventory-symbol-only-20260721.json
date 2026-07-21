@@ -1,0 +1,92 @@
+{
+  "schema_version": "openui.experiment_result/v1",
+  "experiment_id": "E720",
+  "date": "2026-07-21",
+  "decision": "rejected",
+  "hypothesis": "A learned component-inventory objective can correct requested-component omissions in the symbol-only baseline.",
+  "train": {
+    "run_id": "e720-symbol-only-component-inventory600-r1",
+    "run_class": "scratch_matrix",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "records": 141,
+    "data_manifest_sha": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45",
+    "steps": 600,
+    "batch_size": 4,
+    "max_wall_minutes": 2,
+    "elapsed_wall_seconds": 72.38363401999231,
+    "seen_prompt_tokens": 307003,
+    "seen_target_tokens": 63841,
+    "component_inventory_loss_weight": 1.0,
+    "component_inventory_decode_weight": 4.0,
+    "last_loss": 3.841475009918213,
+    "primary_final_reconstruction_loss": 2.5073935985565186,
+    "component_inventory_loss": 0.5906189680099487,
+    "component_inventory_topk_recall": 0.6875,
+    "component_inventory_score_margin": 2.521211624145508,
+    "component_inventory_positive_count_mean": 1.75,
+    "checkpoint": "outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "842a1a21fb9897fe5ee594d9c9d2835315d63d4a12905e3c3640eec348f91a11",
+    "checkpoint_sync": "disabled-explicitly",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "9640f7befe5e7739b2373cb495104ce12c137f0d",
+      "code_dirty": false,
+      "components": {
+        "harness.model_build.train": "v18"
+      },
+      "stamped_at": "2026-07-21T23:42:06.865320+00:00"
+    }
+  },
+  "evaluations": [
+    {
+      "run_id": "e720-component-inventory-tree-smoke-r1",
+      "suite": "smoke",
+      "n": 3,
+      "component_inventory_decode_weight": 4.0,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 3,
+      "empty_prediction_count": 3,
+      "latency_ms_p50": 8000.83,
+      "latency_ms_p95": 8000.98,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e720-component-inventory-tree-bias0-smoke-r2",
+      "suite": "smoke",
+      "n": 3,
+      "component_inventory_decode_weight": 0.0,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.8055555555555555,
+      "structural_similarity": 0.2902666666666667,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "empty_prediction_count": 0,
+      "latency_ms_p50": 3465.93,
+      "latency_ms_p95": 6258.84,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "conclusion": "The inventory target learned, but neither arm produced a valid or meaningful program; decode weight 4 caused 3/3 timeouts. Reject checkpoint and bias.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9640f7befe5e7739b2373cb495104ce12c137f0d",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v38",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v188"
+    },
+    "stamped_at": "2026-07-21T23:43:24.143738+00:00"
+  }
+}

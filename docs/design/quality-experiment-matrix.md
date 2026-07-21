@@ -5432,3 +5432,18 @@ Pareto lever with no default change.
 
 Evidence: [narrative](iter-e719-ltr-canvas128-20260721.md) and
 [JSON](iter-e719-ltr-canvas128-20260721.json).
+
+## E720 symbol-only component inventory
+
+E720 tests whether the existing generalized component-inventory objective can
+correct E714's requested-component omissions. The exact strict snapshot already
+contains Button, Callout, Card, and hero coverage, so no examples or component
+special cases were added. A local CPU 600-step run completed in 72.38 seconds
+under `max_wall_minutes=2`; its inventory head learned (top-k recall 0.6875),
+but smoke parse and strict-v2 meaning remained 0.0. Decode weight 4 timed out
+3/3; bias 0 recovered fidelity 0.8056, structure 0.2903, and component recall
+0.3333 but still produced 0/3 valid programs and AgentV 0/1. The checkpoint and
+bias are rejected; no upload or promotion.
+
+Evidence: [narrative](iter-e720-component-inventory-symbol-only-20260721.md) and
+[JSON](iter-e720-component-inventory-symbol-only-20260721.json).
