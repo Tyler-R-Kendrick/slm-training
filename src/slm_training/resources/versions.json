@@ -162,12 +162,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v58",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v59",
+          "date": "2026-07-21",
+          "note": "add SLM-191 FFE2-03 termination-policy protocol and fixture matrix lazy re-exports"
+        },
         {
           "version": "v58",
           "date": "2026-07-21",
@@ -3849,6 +3854,58 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-183 PQR powered cluster-aware confirmation protocol statistical utilities"
+        }
+      ]
+    },
+    "flow.termination": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flow/termination.py",
+        "tests/test_flow/termination/test_termination_policy.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-191 FFE2-03 shared TerminationPolicy protocol, arms, and exact-CTMC sampler instrumentation"
+        }
+      ]
+    },
+    "harness.experiments.slm191_termination_matrix": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm191_termination_matrix.py",
+        "tests/test_harnesses/experiments/test_slm191_termination_matrix.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-191 FFE2-03 termination-policy fixture matrix, TerminationManifestV1, and calibration instrumentation"
+        }
+      ]
+    },
+    "matrix.slm191_termination_matrix": {
+      "version": "ffe2-03-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_termination_matrix.py",
+        "tests/test_scripts/test_run_termination_matrix.py",
+        "docs/design/iter-slm191-termination-matrix-20260721.json",
+        "docs/design/iter-slm191-termination-matrix-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe2-03-v1",
+          "date": "2026-07-21",
+          "note": "no-bump: CLI test passes --no-write-design-docs so committed design docs are not overwritten during pytest; matrix semantics unchanged"
+        },
+        {
+          "version": "ffe2-03-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-191 FFE2-03 termination-policy fixture matrix"
         }
       ]
     }

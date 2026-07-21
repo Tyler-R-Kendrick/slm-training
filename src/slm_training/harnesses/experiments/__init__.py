@@ -374,6 +374,20 @@ _LAZY_SLM190_EXPORTS = {
     "validate_slm190_report": "validate_report",
 }
 
+_LAZY_SLM191_EXPORTS = {
+    "SLM191_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM191_MATRIX_SET": "MATRIX_SET",
+    "SLM191_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM191_ARM_NAMES": "ARM_NAMES",
+    "TerminationTargetRowV1": "TerminationTargetRowV1",
+    "TerminationCase": "TerminationCase",
+    "TerminationArmSummary": "TerminationArmSummary",
+    "TerminationManifestV1": "TerminationManifestV1",
+    "run_slm191_fixture": "run_termination_matrix",
+    "render_slm191_markdown": "render_markdown",
+    "validate_slm191_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -418,6 +432,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm190_exact_flow
 
         value = getattr(slm190_exact_flow, _LAZY_SLM190_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM191_EXPORTS:
+        from slm_training.harnesses.experiments import slm191_termination_matrix
+
+        value = getattr(slm191_termination_matrix, _LAZY_SLM191_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -532,6 +552,17 @@ __all__ = [
     "run_slm190_fixture",
     "render_slm190_markdown",
     "validate_slm190_report",
+    "SLM191_EXPERIMENT_ID",
+    "SLM191_MATRIX_SET",
+    "SLM191_MATRIX_VERSION",
+    "SLM191_ARM_NAMES",
+    "TerminationTargetRowV1",
+    "TerminationCase",
+    "TerminationArmSummary",
+    "TerminationManifestV1",
+    "run_slm191_fixture",
+    "render_slm191_markdown",
+    "validate_slm191_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
