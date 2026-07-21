@@ -4326,3 +4326,17 @@ ms. Reject and revert as model v67; no checkpoint or ship claim.
 Evidence:
 [iter-e632-input-role-assignment-20260720.md](iter-e632-input-role-assignment-20260720.md)
 and [JSON](iter-e632-input-role-assignment-20260720.json).
+
+## E633 active Input role routing
+
+E633 floors a legal literal only when a required operational string directly
+precedes a placeholder-annotated content property. The authoritative r3 exactly
+preserves E631's OOD `n=4` aggregate scoreboard and changes one bad Input-name
+slot to an empty literal, but another Input-name mismatch remains and strict v2
+stays zero. A broader r2 restriction on the later repeated-slot margin collapsed
+Auth to TextContent and was reverted. Retain v70 default-off as partial evidence;
+no checkpoint, promotion, or ship claim.
+
+Evidence:
+[iter-e633-input-active-role-routing-20260720.md](iter-e633-input-active-role-routing-20260720.md)
+and [authoritative JSON](iter-e633-input-active-role-routing-20260720.json).
