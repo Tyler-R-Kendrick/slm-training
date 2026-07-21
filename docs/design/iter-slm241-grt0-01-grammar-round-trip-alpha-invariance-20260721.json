@@ -1,0 +1,2934 @@
+{
+  "claim_class": "wiring",
+  "count_per_seed": 50,
+  "disposition": "ceiling_confirmed_at_scale",
+  "disposition_rationale": "All 150 generated candidates (149 with 2+ non-root binders) were idempotent under canonicalize, always re-validated, and were alpha-invariant under a full non-root binder permutation (0 permuted variants failed to even parse, which would itself be a renamer artifact, not counted against the claim). The canonicalizer's documented normal-form property holds across this generator-scale corpus, beyond the 3 hand-picked unit-test examples.",
+  "experiment_id": "slm241-grammar-round-trip-alpha-invariance",
+  "falsifier": "Any generated candidate for which canonicalize(canonicalize(x)) != canonicalize(x); or canonicalize(x) fails to re-validate through slm_training.dsl.parser.validate; or a binder-permuted variant of x (same layout, only non-root local identifiers renamed) is grammar-valid but canonicalizes to a different string than x.",
+  "gate_hash": "a9615c016fbf0bb4aa7adab02e485062d567d84bd36e981903b9fe4f301b6c96",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no checkpoint, GPU run, or ship-gate claim is made or implied.",
+    "This is a positive/ceiling-style probe: it asks whether an existing, documented normal-form claim holds at generator scale, not whether some new mechanism should ship. It does not change canonicalize, production_codec, the parser, or any generator default.",
+    "The corpus generator (ProgramGenerator._choose / _build_program) is the same coverage-guided candidate machinery generate_one() uses, but this harness calls it directly and validates candidates through slm_training.dsl.parser.validate (hybrid, Lark-fallback) instead of generate_one()'s verify_record path, because verify_record's G2 gate calls the bridge-only slm_training.dsl.lang_core.validate, which raises unconditionally when the official @openuidev/lang-core Node bridge is unavailable -- as it is in this sandbox. Cross-backend parity between the official lang-core parser and the in-process Lark grammar is therefore untested here; only the Lark-backed path is exercised.",
+    "The binder renamer is a regex-based identifier substitution (string literals are masked first, then whole-word non-root binder identifiers are substituted via a single alternation regex, then literals are restored) -- not an AST-level rename. It is exercised against, and passes, the same placeholder-aliasing edge case already regression-tested in tests/test_dsl/test_canonicalize.py (binder stems appearing inside quoted placeholder text), but it is a test-harness utility, not a reusable production renamer.",
+    "Candidates with 0 or 1 non-root binder (root refers to nothing else, or exactly one other statement) have no possible nontrivial permutation and are recorded as trivial (alpha_invariant=None), not counted toward the alpha-invariance claim."
+  ],
+  "hypothesis": "The D2 canonicalizer (slm_training.dsl.canonicalize.canonicalize, built on production_codec.encode_openui/decode_productions) is a stable normal form across a broad, coverage-guided corpus of generated OpenUI programs -- not just the 3 hand-picked examples in tests/test_dsl/test_canonicalize.py: (1) canonicalize is idempotent, (2) canonicalize's output always re-validates through the real parser, and (3) renaming every non-root local binder identifier to a fresh, disjoint set of names never changes the canonical form (alpha-invariance).",
+  "matrix_set": "slm241_grammar_round_trip_alpha_invariance",
+  "matrix_version": "grt0-01-v1",
+  "rows": [
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 1.8496890006645117,
+      "components": [
+        "TextArea",
+        "TextCallout",
+        "TextContent"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 0,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 253,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1397910002415301,
+      "components": [
+        "Accordion",
+        "AccordionItem",
+        "AreaChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 1,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 199,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0908039985224605,
+      "components": [
+        "Image",
+        "ImageBlock",
+        "ImageGallery"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 2,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 185,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 1.5006129997345852,
+      "components": [
+        "Callout",
+        "Card",
+        "CardHeader"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 3,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 262,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.086124000721611,
+      "components": [
+        "Point",
+        "RadarChart",
+        "RadialChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 4,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 150,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2965140012966003,
+      "components": [
+        "CodeBlock",
+        "Col",
+        "DatePicker"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 5,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 231,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2973819993931102,
+      "components": [
+        "Input",
+        "Label",
+        "LineChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 6,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 184,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.3749320005445043,
+      "components": [
+        "Carousel",
+        "CheckBoxGroup",
+        "CheckBoxItem"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 7,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 245,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.157474998763064,
+      "components": [
+        "SwitchItem",
+        "TabItem",
+        "Table"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 8,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 181,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3604609994217753,
+      "components": [
+        "BarChart",
+        "Button",
+        "Buttons"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 9,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 188,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 1.484431999415392,
+      "components": [
+        "ScatterSeries",
+        "Select",
+        "SelectItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 10,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 272,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.491679999162443,
+      "components": [
+        "Slice",
+        "Slider",
+        "Stack"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 11,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 177,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.176247000330477,
+      "components": [
+        "Tabs",
+        "Tag",
+        "TagBlock"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 12,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 159,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2385490008455236,
+      "components": [
+        "Separator",
+        "Series",
+        "SingleStackedBarChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 13,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 175,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 1.4436889996432,
+      "components": [
+        "Steps",
+        "StepsItem",
+        "SwitchGroup"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 14,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 276,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.7447400005039526,
+      "components": [
+        "RadioGroup",
+        "RadioItem",
+        "ScatterChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 15,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 269,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 1.5222420006466564,
+      "components": [
+        "MarkDownRenderer",
+        "Modal",
+        "PieChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 16,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 298,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 6,
+      "canonicalize_ms": 1.6885160002857447,
+      "components": [
+        "Form",
+        "FormControl",
+        "HorizontalBarChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 17,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 310,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1729340003512334,
+      "components": [
+        "Accordion",
+        "AccordionItem",
+        "AreaChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 18,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 201,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.6180880011233967,
+      "components": [
+        "LineChart",
+        "SwitchGroup"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 19,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 190,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9499879997747485,
+      "components": [
+        "PieChart",
+        "Tabs"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 20,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 88,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2872959996457212,
+      "components": [
+        "Modal",
+        "Series"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 21,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 159,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8324889986397466,
+      "components": [
+        "SingleStackedBarChart",
+        "Steps"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 22,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 130,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.185934999739402,
+      "components": [
+        "Form",
+        "Select"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 23,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 127,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9985569995478727,
+      "components": [
+        "Slider"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 24,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 111,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.0102019987243693,
+      "components": [
+        "Point",
+        "Slider"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 25,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 111,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.3121599986334331,
+      "components": [
+        "ScatterSeries",
+        "SingleStackedBarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 26,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 194,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.032827000017278,
+      "components": [
+        "Label",
+        "RadarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 27,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 156,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0950280011456925,
+      "components": [
+        "RadioGroup",
+        "SelectItem"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 28,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 186,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2302550003369106,
+      "components": [
+        "Select",
+        "Series"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 29,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 132,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.9896280007524183,
+      "components": [
+        "AreaChart",
+        "TextCallout"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 30,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 145,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.120944998547202,
+      "components": [
+        "AreaChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 31,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 142,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8871419995557517,
+      "components": [
+        "BarChart",
+        "TextCallout"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 32,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 107,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.0052840007119812,
+      "components": [
+        "CheckBoxItem",
+        "RadioGroup"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 33,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 200,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.343756999631296,
+      "components": [
+        "AccordionItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 34,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 253,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1170790003234288,
+      "components": [
+        "SwitchGroup",
+        "TextCallout"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 35,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 152,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2091400003555464,
+      "components": [
+        "Slider"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 36,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 150,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2737110009766184,
+      "components": [
+        "Input",
+        "SwitchItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 37,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 183,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.074249999874155,
+      "components": [
+        "AccordionItem",
+        "Tabs"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 38,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 141,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1749160003091674,
+      "components": [
+        "ScatterChart",
+        "TabItem"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 39,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 178,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.299481000387459,
+      "components": [
+        "Callout",
+        "TagBlock"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 40,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 200,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2145649998274166,
+      "components": [
+        "HorizontalBarChart",
+        "TagBlock"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 41,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 197,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2516409988165833,
+      "components": [
+        "Image",
+        "MarkDownRenderer"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 42,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 249,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.327224999840837,
+      "components": [
+        "BarChart",
+        "ScatterSeries"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 43,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 190,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2356999995972728,
+      "components": [
+        "RadialChart",
+        "TagBlock"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 44,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 176,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.90118299885944,
+      "components": [
+        "Image",
+        "Select"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 45,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 110,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2606020009116037,
+      "components": [
+        "CheckBoxItem",
+        "Series"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 46,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 224,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2093679997633444,
+      "components": [
+        "CheckBoxItem",
+        "RadarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 47,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 235,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2350349988992093,
+      "components": [
+        "ImageGallery",
+        "ScatterChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 48,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 187,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.25934999960009,
+      "components": [
+        "Carousel",
+        "Input"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 49,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 0,
+      "source_len": 161,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.6533220002893358,
+      "components": [
+        "Tabs",
+        "Tag",
+        "TagBlock"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 0,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 159,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5307089995767456,
+      "components": [
+        "Accordion",
+        "AccordionItem",
+        "AreaChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 1,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 199,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5394460004026769,
+      "components": [
+        "Separator",
+        "Series",
+        "SingleStackedBarChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 2,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 175,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.602530999458395,
+      "components": [
+        "Callout",
+        "Card",
+        "CardHeader"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 3,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 262,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 6,
+      "canonicalize_ms": 0.6880040000396548,
+      "components": [
+        "Form",
+        "FormControl",
+        "HorizontalBarChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 4,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 310,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.6462300007115118,
+      "components": [
+        "ScatterSeries",
+        "Select",
+        "SelectItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 5,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 272,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5341460000636289,
+      "components": [
+        "BarChart",
+        "Button",
+        "Buttons"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 6,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 188,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.7473480000044219,
+      "components": [
+        "CodeBlock",
+        "Col",
+        "DatePicker"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 7,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 231,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5540430011024,
+      "components": [
+        "Input",
+        "Label",
+        "LineChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 8,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 184,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.5915110014029779,
+      "components": [
+        "TextArea",
+        "TextCallout",
+        "TextContent"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 9,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 253,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5780760002380703,
+      "components": [
+        "Slice",
+        "Slider",
+        "Stack"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 10,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 177,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.7087920002959436,
+      "components": [
+        "Steps",
+        "StepsItem",
+        "SwitchGroup"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 11,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 276,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.4415379989950452,
+      "components": [
+        "Point",
+        "RadarChart",
+        "RadialChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 12,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 150,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5269449993647868,
+      "components": [
+        "Accordion",
+        "AccordionItem",
+        "AreaChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 13,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 201,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5161039989616256,
+      "components": [
+        "Carousel",
+        "CheckBoxGroup",
+        "CheckBoxItem"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 14,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 245,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.594997998632607,
+      "components": [
+        "Image",
+        "ImageBlock",
+        "ImageGallery"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 15,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 185,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5489240011229413,
+      "components": [
+        "SwitchItem",
+        "TabItem",
+        "Table"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 16,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 181,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5932559997745557,
+      "components": [
+        "RadioGroup",
+        "RadioItem",
+        "ScatterChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 17,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 269,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.6302389992924873,
+      "components": [
+        "MarkDownRenderer",
+        "Modal",
+        "PieChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 18,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 298,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3621329999295995,
+      "components": [
+        "CheckBoxGroup",
+        "TextContent"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 19,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 226,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8507269994879607,
+      "components": [
+        "Carousel",
+        "RadarChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 20,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 103,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.4541450000251643,
+      "components": [
+        "Callout",
+        "Separator"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 21,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 238,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9420799997315044,
+      "components": [
+        "RadialChart",
+        "SwitchItem"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 22,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 131,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1014439987775404,
+      "components": [
+        "CheckBoxItem",
+        "TextCallout"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 23,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 232,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8351369997399161,
+      "components": [
+        "Carousel",
+        "TextCallout"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 24,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 100,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0508659997867653,
+      "components": [
+        "CheckBoxGroup",
+        "Form"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 25,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 145,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.0651140000845771,
+      "components": [
+        "SwitchGroup"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 26,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 109,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1446040007285774,
+      "components": [
+        "Point",
+        "ScatterChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 27,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 138,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.197368999783066,
+      "components": [
+        "SelectItem",
+        "Slider"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 28,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 195,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0747220003395341,
+      "components": [
+        "FormControl",
+        "Tag"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 29,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 182,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2558750004245667,
+      "components": [
+        "PieChart",
+        "ScatterChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 30,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 182,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8960550003394019,
+      "components": [
+        "HorizontalBarChart",
+        "Point"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 31,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 125,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9435100000700913,
+      "components": [
+        "TabItem"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 32,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 130,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.182504000098561,
+      "components": [
+        "Image",
+        "ScatterChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 33,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 157,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.801641999714775,
+      "components": [
+        "Buttons",
+        "Steps"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 34,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 81,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.932314000237966,
+      "components": [
+        "ImageGallery",
+        "Slice"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 35,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 107,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8452029996988131,
+      "components": [
+        "Buttons",
+        "Carousel"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 36,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 93,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2690780004049884,
+      "components": [
+        "CodeBlock",
+        "TextArea"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 37,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 216,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.4904910003679106,
+      "components": [
+        "Modal",
+        "TextContent"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 38,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 233,
+      "width": 2
+    },
+    {
+      "alpha_invariant": null,
+      "binder_count": 0,
+      "canonicalize_ms": 0.8402820003539091,
+      "components": [
+        "Card"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 39,
+      "permute_error": "",
+      "permuted_valid": null,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 82,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9787990002223523,
+      "components": [
+        "Col",
+        "ScatterSeries"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 40,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 129,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.386752999474993,
+      "components": [
+        "BarChart",
+        "TextCallout"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 41,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 107,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1302580005576601,
+      "components": [
+        "CheckBoxGroup",
+        "RadarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 42,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 164,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2320459991315147,
+      "components": [
+        "Button",
+        "HorizontalBarChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 43,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 221,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 1.4878359997965163,
+      "components": [
+        "Form",
+        "ScatterSeries"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 44,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 215,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3151849998394027,
+      "components": [
+        "FormControl",
+        "PieChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 45,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 212,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9113719988818048,
+      "components": [
+        "BarChart",
+        "FormControl"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 46,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 142,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3779920009255875,
+      "components": [
+        "RadioGroup"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 47,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 258,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.076635999197606,
+      "components": [
+        "Input",
+        "PieChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 48,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 127,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1217859992029844,
+      "components": [
+        "ScatterSeries",
+        "Stack"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 49,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 1,
+      "source_len": 145,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.8372060001420323,
+      "components": [
+        "ScatterSeries",
+        "Select",
+        "SelectItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 0,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 272,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.6091399991419166,
+      "components": [
+        "CodeBlock",
+        "Col",
+        "DatePicker"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 1,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 231,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.49793200014391914,
+      "components": [
+        "Image",
+        "ImageBlock",
+        "ImageGallery"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 2,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 185,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.7566779986518668,
+      "components": [
+        "MarkDownRenderer",
+        "Modal",
+        "PieChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 3,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 298,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.6332709999696817,
+      "components": [
+        "Callout",
+        "Card",
+        "CardHeader"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 4,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 262,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.4991349996998906,
+      "components": [
+        "Separator",
+        "Series",
+        "SingleStackedBarChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 5,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 175,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 6,
+      "canonicalize_ms": 0.6658229995082365,
+      "components": [
+        "Form",
+        "FormControl",
+        "HorizontalBarChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 6,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 310,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.7823559990356443,
+      "components": [
+        "Steps",
+        "StepsItem",
+        "SwitchGroup"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 7,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 276,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5695020008715801,
+      "components": [
+        "Slice",
+        "Slider",
+        "Stack"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 8,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 177,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.4807959994650446,
+      "components": [
+        "Accordion",
+        "AccordionItem",
+        "AreaChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 9,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 201,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5000130004191305,
+      "components": [
+        "Input",
+        "Label",
+        "LineChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 10,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 184,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.6359369999699993,
+      "components": [
+        "Accordion",
+        "AccordionItem",
+        "AreaChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 11,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 199,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.47590600115654524,
+      "components": [
+        "Tabs",
+        "Tag",
+        "TagBlock"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 12,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 159,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.45719099944108166,
+      "components": [
+        "Point",
+        "RadarChart",
+        "RadialChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 13,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 150,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.5262600006972207,
+      "components": [
+        "BarChart",
+        "Button",
+        "Buttons"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 14,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 188,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 5,
+      "canonicalize_ms": 0.7097899997461354,
+      "components": [
+        "TextArea",
+        "TextCallout",
+        "TextContent"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 15,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 253,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.6123530001787003,
+      "components": [
+        "RadioGroup",
+        "RadioItem",
+        "ScatterChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 16,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 269,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5107470005896175,
+      "components": [
+        "Carousel",
+        "CheckBoxGroup",
+        "CheckBoxItem"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 17,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 245,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 0.5406860000221059,
+      "components": [
+        "SwitchItem",
+        "TabItem",
+        "Table"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 18,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 181,
+      "width": 3
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.157662998593878,
+      "components": [
+        "SwitchGroup",
+        "TextArea"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 19,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 117,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.1706669993145624,
+      "components": [
+        "AreaChart",
+        "CardHeader"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 20,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 177,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.050287999532884,
+      "components": [
+        "Card"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 21,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 113,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1440630005381536,
+      "components": [
+        "RadioGroup",
+        "Table"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 22,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 133,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9403140011272626,
+      "components": [
+        "RadioItem",
+        "TextArea"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 23,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 172,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1510130007081898,
+      "components": [
+        "CardHeader",
+        "RadarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 24,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 142,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1132870004075812,
+      "components": [
+        "Button",
+        "FormControl"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 25,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 192,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.8836749984766357,
+      "components": [
+        "HorizontalBarChart"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 26,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 127,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0157920005440246,
+      "components": [
+        "Buttons",
+        "Tag"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 27,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 135,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1757390002458123,
+      "components": [
+        "AccordionItem",
+        "RadarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 28,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 200,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0969300001306692,
+      "components": [
+        "TextCallout"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 29,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 142,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0320060009689769,
+      "components": [
+        "Image",
+        "PieChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 30,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 149,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.9862639999482781,
+      "components": [
+        "BarChart"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 31,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 99,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.1901559992111288,
+      "components": [
+        "FormControl",
+        "Slider"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 32,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 192,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.914202999410918,
+      "components": [
+        "MarkDownRenderer",
+        "Modal"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 33,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 185,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0794800000439864,
+      "components": [
+        "BarChart",
+        "DatePicker"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 34,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 145,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.126740000472637,
+      "components": [
+        "CheckBoxGroup"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 35,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 159,
+      "width": 1
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 1.1023059996659867,
+      "components": [
+        "AccordionItem",
+        "Point"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 36,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 151,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0474210012034746,
+      "components": [
+        "ImageGallery",
+        "Select"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 37,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 142,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.0583950006548548,
+      "components": [
+        "SwitchItem",
+        "TagBlock"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 38,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 150,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3424470016616397,
+      "components": [
+        "RadioItem",
+        "Stack"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 39,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 235,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 3,
+      "canonicalize_ms": 1.2220309999975143,
+      "components": [
+        "CodeBlock",
+        "SwitchGroup"
+      ],
+      "depth": 2,
+      "idempotent": true,
+      "index": 40,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 190,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2528490005934145,
+      "components": [
+        "LineChart",
+        "PieChart"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 41,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 177,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2738770001305966,
+      "components": [
+        "CheckBoxGroup",
+        "TagBlock"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 42,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 189,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.799794999693404,
+      "components": [
+        "Separator",
+        "Tag"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 43,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 102,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 2,
+      "canonicalize_ms": 0.916582999707316,
+      "components": [
+        "CheckBoxGroup",
+        "RadioGroup"
+      ],
+      "depth": 1,
+      "idempotent": true,
+      "index": 44,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 133,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3667740004166262,
+      "components": [
+        "HorizontalBarChart",
+        "TextContent"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 45,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 240,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 0.569697000173619,
+      "components": [
+        "Carousel",
+        "Input"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 46,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 161,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3169319990993245,
+      "components": [
+        "AreaChart",
+        "SelectItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 47,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 215,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.3054909995844355,
+      "components": [
+        "RadarChart",
+        "SelectItem"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 48,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 221,
+      "width": 2
+    },
+    {
+      "alpha_invariant": true,
+      "binder_count": 4,
+      "canonicalize_ms": 1.2534699999378063,
+      "components": [
+        "LineChart",
+        "TagBlock"
+      ],
+      "depth": 3,
+      "idempotent": true,
+      "index": 49,
+      "permute_error": "",
+      "permuted_valid": true,
+      "revalidate_error": "",
+      "revalidates": true,
+      "seed": 2,
+      "source_len": 173,
+      "width": 2
+    }
+  ],
+  "run_id": "slm241-grammar-round-trip-alpha-invariance-20260721",
+  "schema": "GrammarRoundTripReportV1",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "status": "fixture",
+  "timestamp": "2026-07-21T07:53:22.761832Z",
+  "version_stamp": {
+    "code_commit": "979f261ce1c7a872c3a64f50ef8f0144f748ce1a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm241_grammar_round_trip_alpha_invariance": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T07:53:22.761792+00:00"
+  }
+}

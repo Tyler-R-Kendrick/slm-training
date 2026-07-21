@@ -3791,6 +3791,25 @@
         }
       ]
     },
+    "harness.experiments.slm241_grammar_round_trip_alpha_invariance": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm241_grammar_round_trip_alpha_invariance.py",
+        "scripts/run_slm241_grammar_round_trip_alpha_invariance.py",
+        "tests/test_harnesses/experiments/test_slm241_grammar_round_trip_alpha_invariance.py",
+        "tests/test_scripts/test_run_slm241_grammar_round_trip_alpha_invariance.py",
+        "docs/design/iter-slm241-grt0-01-grammar-round-trip-alpha-invariance-20260721.json",
+        "docs/design/iter-slm241-grt0-01-grammar-round-trip-alpha-invariance-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-241 GRT0-01 D2 canonicalizer round-trip / alpha-invariance stress probe: scales the canonicalize() normal-form claim (idempotent, always-valid, alpha-invariant under non-root binder renaming) from the 3 hand-picked tests/test_dsl/test_canonicalize.py examples to a coverage-guided generator corpus (ProgramGenerator._choose/_build_program candidates, validated through the real slm_training.dsl.parser.validate hybrid/Lark backend since the official lang-core Node bridge is unavailable in this sandbox); positive/ceiling-style probe over real unmodified canonicalize/parser code, no gate, canonicalizer, or generator default is changed"
+        }
+      ]
+    },
     "harness.experiments.slm240_lr_schedule_gap": {
       "version": "v1",
       "kind": "harness",
