@@ -461,6 +461,32 @@
         }
       ]
     },
+    "features.openfeature": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/features/keys.py",
+        "src/slm_training/features/defaults.py",
+        "src/slm_training/features/levers.py",
+        "src/slm_training/features/runtime.py",
+        "src/slm_training/web/routes.py",
+        "src/apps/dashboard/src/features/keys.ts",
+        "src/apps/dashboard/src/features/runtime.ts",
+        "docs/design/openfeature-experiments.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "LaunchDarkly OpenFeature provider, experiment lever registry, /api/features/levers, server-side LD browser model"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial OpenFeature product experiment layer: in-memory + optional PostHog providers, /api/features/bootstrap, dashboard default-renderer flag"
+        }
+      ]
+    },
     "gates.ship": {
       "version": "openui_ship_gates_v1",
       "kind": "gate",

@@ -2978,6 +2978,21 @@ def test_read_only_reports_capabilities(ro_client: TestClient) -> None:
     assert caps["execution"] is False
     assert caps["read_only"] is True
     assert len(caps["jobs"]) >= 5
+    assert caps["features"]["openfeature"] is True
+    assert caps["features"]["provider"] == "in_memory"
+
+
+def test_features_bootstrap_returns_evaluated_defaults(ro_client: TestClient) -> None:
+    payload = ro_client.get("/api/features/bootstrap?targeting_key=test").json()
+    assert payload["provider"] == "in_memory"
+    assert payload["evaluated"]["dashboard.default-renderer"] == "interpreted"
+    assert payload["targeting_key"] == "test"
+    assert any(row["lever_id"] == "dashboard-renderer" for row in payload["levers"])
+
+
+def test_features_levers_registry(ro_client: TestClient) -> None:
+    payload = ro_client.get("/api/features/levers").json()
+    assert any(row["flag_key"] == "dashboard.default-renderer" for row in payload["levers"])
 
 
 def test_read_only_blocks_execution(ro_client: TestClient) -> None:
