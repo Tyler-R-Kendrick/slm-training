@@ -4673,3 +4673,15 @@ checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e656-repeated-slot-role-ownership-20260721.md) and
 [JSON](iter-e656-repeated-slot-role-ownership-20260721.json).
+
+## E657 combined raw-slot role ownership
+
+E657 combines E655 and E656. The interaction changes Dashboard's raw Carousel
+metric into `Slice(metric, 1)`, but puts the placeholder in `Slice.category`.
+Strict failures remain; structure falls 0.7692→0.7513, node/edge F1 regress,
+and latency worsens. Reject v111 and restore E653 behavior as v112. This
+narrows the next repair to property-level role compatibility. No checkpoint was
+created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e657-combined-role-ownership-20260721.md) and
+[JSON](iter-e657-combined-role-ownership-20260721.json).
