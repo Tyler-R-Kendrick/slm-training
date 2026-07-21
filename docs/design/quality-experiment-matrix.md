@@ -4710,3 +4710,18 @@ No checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e659-property-role-guard-20260721.md) and
 [JSON](iter-e659-property-role-guard-20260721.json).
+
+## E666 post-decode schema-enum normalization
+
+E666 normalizes a completed dynamic literal only when the active public-schema
+property is enum-valued, after model decoding has finished. Dashboard's invalid
+`Callout.variant` becomes `"info"`; every later choice and all other outputs
+match E653. Meaningful v1 stays 4/4, strict v2 stays 3/4, and fidelity,
+validity, structure, recall, reward, and AST F1 are unchanged. Retain v117 as a
+schema-validity correction, not ship evidence: Carousel ownership still fails,
+the OOD suite is only `n=4`, and AgentV is 0/1. The observed p95 increase needs
+a larger matched performance run before attribution. No checkpoint was created
+or synced.
+
+Evidence: [narrative](iter-e666-schema-enum-finalize-20260721.md) and
+[JSON](iter-e666-schema-enum-finalize-20260721.json).
