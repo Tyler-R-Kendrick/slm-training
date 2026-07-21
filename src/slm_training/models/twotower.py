@@ -4767,7 +4767,7 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
-        """Discourage visible placeholders in non-content string arguments."""
+        """Discourage visible placeholders in optional unconstrained arguments."""
         weight = float(getattr(self.config, "schema_opaque_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
@@ -4775,20 +4775,13 @@ class TwoTowerModel(nn.Module):
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
         index = int(getattr(frame, "arg_index", -1))
-        if getattr(frame, "kind", None) != "component" or not (
-            0 <= index < len(schemas)
+        if (
+            getattr(frame, "kind", None) != "component"
+            or index < int(getattr(frame, "required_args", 0))
+            or index < 0
+            or index >= len(schemas)
+            or schemas[index]
         ):
-            return None
-        schema = schemas[index]
-        optional_unconstrained = (
-            index >= int(getattr(frame, "required_args", 0)) and not schema
-        )
-        noncontent_string = (
-            schema.get("type") == "string"
-            and not schema.get("x-openui-placeholder")
-            and not self._schema_contains_enum(schema)
-        )
-        if not (optional_unconstrained or noncontent_string):
             return None
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
