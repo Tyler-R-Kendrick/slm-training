@@ -26,7 +26,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 METRIC_NAME = "binding_aware_meaningful_v2"
-METRIC_VERSION = "2.2.0"
+METRIC_VERSION = "2.2.1"
 _ASSIGNMENT_RE = re.compile(
     r"(?m)^\s*(\$?[A-Za-z_][A-Za-z0-9_]*)\s*="
 )
@@ -409,6 +409,8 @@ def _inventory_check(
         )
         if owner == "Input" and prop == "name":
             role_mismatches.append(f"{row['placeholder']}->{owner}.{prop}")
+        elif term in _FORM_SLOT_TERMS and owner in {"Input", "TextArea", "Select"}:
+            continue
         elif recognized_role and not schema_placeholder_role_matches(
             str(row["placeholder"]), owner, prop
         ):

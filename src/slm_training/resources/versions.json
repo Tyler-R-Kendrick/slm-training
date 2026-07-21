@@ -390,12 +390,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.2.0",
+      "version": "2.2.1",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.2.1",
+          "date": "2026-07-20",
+          "note": "E636 r1 correction: preserve the established form-slot compatibility contract for Input, TextArea, and Select placeholder/value properties while retaining explicit rejection of Input.name"
+        },
         {
           "version": "2.2.0",
           "date": "2026-07-20",

@@ -134,6 +134,24 @@ def test_v2_accepts_schema_declared_modal_title_role() -> None:
     assert report.verdict is True
 
 
+def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
+    source = (
+        'root = Stack([name, email], "column")\n'
+        'name = Input("", ":auth.name")\n'
+        'email = Input("", ":auth.email")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="auth-inputs",
+            prompt="Build two Inputs. Placeholders: :auth.name :auth.email",
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
 @pytest.mark.parametrize(
     "source",
     [
