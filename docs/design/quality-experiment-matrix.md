@@ -5052,3 +5052,16 @@ synced.
 
 Evidence: [narrative](iter-e691-structured-content-schema-20260721.md) and
 [JSON](iter-e691-structured-content-schema-20260721.json).
+
+## E692 fixed enum finalization
+
+E692 extends post-decode enum normalization to invalid fixed literals while
+preserving semantically valid compact spellings. Corrected Held-out r2 changes
+only tabs: `Callout.variant` becomes `info`, strict rises 2/5→3/5, and every
+continuous quality metric stays exactly flat. Retain v148 as a schema-validity
+correction, not ship evidence. V147/r1 is excluded as implementation-confounded
+because it rewrote valid compact Stack directions in all five records. AgentV
+is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e692-fixed-enum-finalize-20260721.md) and
+[JSON](iter-e692-fixed-enum-finalize-20260721.json).
