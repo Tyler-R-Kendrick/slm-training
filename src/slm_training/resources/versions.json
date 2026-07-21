@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v89",
+      "version": "v90",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v90",
+          "date": "2026-07-20",
+          "note": "E649: bind visible-role-inferred families to compatible required plain-string content arguments while preserving pre-content operational literals; renumbered from the originally launched E643 arm after rebase"
+        },
         {
           "version": "v89",
           "date": "2026-07-21",
