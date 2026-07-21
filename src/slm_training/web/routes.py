@@ -33,6 +33,7 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
+from slm_training.features.levers import lever_registry_payload
 
 observability_router = APIRouter(prefix="/api")
 actions_router = APIRouter(prefix="/api")
@@ -92,6 +93,11 @@ def features_bootstrap(
     if features is None:
         raise HTTPException(status_code=503, detail="feature runtime unavailable")
     return features.bootstrap_payload(targeting_key=targeting_key)
+
+
+@observability_router.get("/features/levers")
+def features_levers() -> dict[str, Any]:
+    return lever_registry_payload()
 
 
 @observability_router.get("/overview")

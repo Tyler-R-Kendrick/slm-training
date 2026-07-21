@@ -13,8 +13,9 @@ from openfeature.provider.in_memory_provider import InMemoryFlag, InMemoryProvid
 
 from slm_training.features.defaults import PRODUCT_FLAG_DEFAULTS
 from slm_training.features.keys import PRODUCT_FLAG_KEYS
+from slm_training.features.levers import lever_registry_payload
 
-ProviderKind = Literal["in_memory", "posthog"]
+ProviderKind = Literal["in_memory", "posthog", "launchdarkly"]
 
 
 def _merged_defaults(overrides: dict[str, Any] | None) -> dict[str, Any]:
@@ -49,17 +50,35 @@ def _posthog_api_key() -> str | None:
     return None
 
 
+def _launchdarkly_sdk_key() -> str | None:
+    for name in ("LAUNCHDARKLY_SDK_KEY", "LD_SDK_KEY"):
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return None
+
+
+def _auto_provider_kind() -> ProviderKind:
+    if _launchdarkly_sdk_key():
+        return "launchdarkly"
+    if _posthog_api_key():
+        return "posthog"
+    return "in_memory"
+
+
 def _resolve_provider_kind(requested: str) -> ProviderKind:
     normalized = requested.strip().lower() or "auto"
     if normalized == "in_memory":
         return "in_memory"
     if normalized == "posthog":
         return "posthog"
+    if normalized == "launchdarkly":
+        return "launchdarkly"
     if normalized == "auto":
-        return "posthog" if _posthog_api_key() else "in_memory"
+        return _auto_provider_kind()
     raise ValueError(
         f"unknown SLM_OPENFEATURE_PROVIDER={requested!r} "
-        "(expected auto, in_memory, or posthog)"
+        "(expected auto, in_memory, posthog, or launchdarkly)"
     )
 
 
@@ -82,6 +101,23 @@ def _build_posthog_provider() -> tuple[Any, Callable[[], None] | None]:
     return provider, client.shutdown
 
 
+def _build_launchdarkly_provider() -> tuple[Any, Callable[[], None] | None]:
+    sdk_key = _launchdarkly_sdk_key()
+    if not sdk_key:
+        raise RuntimeError("LAUNCHDARKLY_SDK_KEY is required for launchdarkly provider")
+    try:
+        from ld_openfeature import LaunchDarklyProvider
+        from ldclient.config import Config
+    except ImportError as exc:  # pragma: no cover - optional extra
+        raise RuntimeError(
+            "install launchdarkly-openfeature-server for LaunchDarkly provider "
+            "(pip install -e '.[features-launchdarkly]')"
+        ) from exc
+
+    provider = LaunchDarklyProvider(Config(sdk_key))
+    return provider, provider.shutdown
+
+
 @dataclass
 class FeatureRuntime:
     """Configured OpenFeature provider for product experiments."""
@@ -98,6 +134,8 @@ class FeatureRuntime:
         shutdown: Callable[[], None] | None = None
         if kind == "posthog":
             provider, shutdown = _build_posthog_provider()
+        elif kind == "launchdarkly":
+            provider, shutdown = _build_launchdarkly_provider()
         else:
             provider = InMemoryProvider(_in_memory_flags(_merged_defaults(merged_overrides)))
 
@@ -144,11 +182,13 @@ class FeatureRuntime:
                 if self.provider == "posthog" and posthog_key
                 else None
             ),
+            "launchdarkly": self.provider == "launchdarkly",
             "defaults": dict(PRODUCT_FLAG_DEFAULTS),
             "evaluated": self.evaluate_all(
                 targeting_key=targeting_key, attributes=attributes
             ),
             "targeting_key": targeting_key,
+            "levers": lever_registry_payload()["levers"],
         }
 
     def shutdown(self) -> None:

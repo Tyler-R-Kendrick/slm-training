@@ -13,11 +13,20 @@ import {
 } from "./keys";
 
 export interface FeatureBootstrap {
-  provider: "in_memory" | "posthog";
+  provider: "in_memory" | "posthog" | "launchdarkly";
   posthog: { project_api_key: string; host: string } | null;
+  launchdarkly: boolean;
   defaults: Record<string, JsonValue>;
   evaluated: Record<string, JsonValue>;
   targeting_key: string;
+  levers: Array<{
+    lever_id: string;
+    flag_key: string;
+    kind: string;
+    description: string;
+    matrix_ref: string | null;
+    provider_affinity: string;
+  }>;
 }
 
 let bootstrapCache: FeatureBootstrap | null = null;
@@ -87,6 +96,9 @@ export async function initFeatureRuntime(): Promise<FeatureBootstrap> {
         } catch (err) {
           console.warn("PostHog OpenFeature provider failed; using bootstrap snapshot", err);
         }
+      }
+      if (bootstrap.provider === "launchdarkly") {
+        // Server-side LD evaluation only — hydrate client from evaluated snapshot.
       }
       await OpenFeature.setProviderAndWait(
         new TypedInMemoryProvider(toInMemoryFlags(bootstrap.evaluated)),
