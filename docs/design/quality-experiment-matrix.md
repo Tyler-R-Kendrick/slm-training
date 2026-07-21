@@ -4340,3 +4340,31 @@ no checkpoint, promotion, or ship claim.
 Evidence:
 [iter-e633-input-active-role-routing-20260720.md](iter-e633-input-active-role-routing-20260720.md)
 and [authoritative JSON](iter-e633-input-active-role-routing-20260720.json).
+
+## E634 composed schema-role/repeated-instance scoring at the pre-content boundary
+
+E634 implements E633's named next step: compose the schema-opaque pre-content
+floor with the repeated-instance margin at the final choice boundary instead
+of letting them override each other, so the *first* repeated Input instance's
+`.name` argument floors the legal empty literal too, not just the last. E620's
+original checkpoint was unavailable in this sandbox, so its exact recipe was
+replayed to produce a new local-only checkpoint (same data manifest SHA, loss
+matching to 5 significant figures). Two variants were tried: a hard gate that
+defers entirely to the schema-opaque floor, and a retarget that keeps the
+margin active but points it at the literal instead of a slot. Both correctly
+fix the first Input's `.name` argument but both collapse Auth entirely to
+`root = TextContent(email)`, regressing every continuous aggregate metric
+(meaningful v1 0.75 to 0.50, fidelity 0.675 to 0.508, structure 0.573 to
+0.338, component recall 0.625 to 0.375, reward 0.852 to 0.785). Dashboard,
+Gallery, and Modal are unaffected in both variants, confirming the
+composition only engages the intended pattern. Reject both variants and
+revert model.twotower to v72 (byte-identical to E633's v70); no checkpoint,
+promotion, or ship claim. The composition is directionally correct but this
+checkpoint cannot support correcting the family's first repeated instance
+without destabilizing decode; a follow-up needs either a retrain with this
+pattern present early in a repeated-family curriculum or a decode-time
+recovery step.
+
+Evidence:
+[iter-e634-composed-role-scoring-20260721.md](iter-e634-composed-role-scoring-20260721.md)
+and [JSON](iter-e634-composed-role-scoring-20260721.json).

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "run_id": "e634-composed-role-scoring-treatment-20260721",
+  "experiment_id": "E634",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Composing the schema-opaque pre-content floor with the repeated-instance margin at the final choice boundary (instead of letting them independently override each other) will make every repeated Input instance floor the legal empty literal at `.name`, not just the last one.",
+  "checkpoint": {
+    "run_id": "e634-required-slot-coverage-scratch800-20260721",
+    "location": "outputs/runs/e634-required-slot-coverage-scratch800-20260721/checkpoints/last.pt",
+    "sha256": "8ab4f5deeb0e1322064259ca92837e71dfdf662d25b46371172ad8779668a4cd",
+    "reused": false,
+    "created": true,
+    "synced": false,
+    "promoted": false,
+    "reproduction_note": "E620's original checkpoint (sha256 3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f) was not present in this sandbox's gitignored outputs/runs (a concurrent session had left only its own unrelated e632-schema-identifier-scratch800-20260721 artifacts there). Replayed E620's exact recipe byte-for-byte (train_dir/manifest, scratch backend, choice tokenizer, seed 0, batch size 1, steps 800, no-sync-checkpoints): data_manifest_sha matches E620 exactly (e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2) and last_loss matches to 5 significant figures (4.068013 vs E620's 4.068010), but the checkpoint file sha256 differs, so this is a faithful reproduction, not the original artifact."
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "data_manifest_sha": "e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2",
+    "record_count": 244,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "device": "cpu",
+    "steps": 800,
+    "batch_size": 1,
+    "seed": 0,
+    "last_loss": 4.0680131912231445,
+    "elapsed_wall_seconds": 33.28969865799991,
+    "no_sync_checkpoints": true
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e634-required-slot-coverage-scratch800-20260721-baseline",
+    "treatment_run_id": "e634-composed-role-scoring-treatment-20260721",
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 8.0,
+    "semantic_role_schema_candidates": true,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "schema_opaque_decode_weight": 4.0,
+    "grammar_ltr_max_tokens": 160
+  },
+  "baseline": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.75,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.675,
+    "placeholder_validity": 0.805,
+    "structural_similarity": 0.572925,
+    "component_type_recall": 0.625,
+    "reward_score": 0.8515,
+    "ast_node_f1": 0.6357142857142857,
+    "ast_edge_f1": 0.5125,
+    "latency_ms_p50": 1316.34,
+    "latency_ms_p95": 5198.77,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "treatment_variants": {
+    "v1_hard_gate": {
+      "description": "Return None from `_semantic_plan_repeated_slot_bias` whenever the active argument matches the pre-content schema pattern and schema_opaque_decode_weight>0 (defer entirely to the already-applied schema-opaque floor).",
+      "suites": {"ood": {"n": 4, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5083333333333333, "placeholder_validity": 0.705, "structural_similarity": 0.337925, "component_type_recall": 0.375, "reward_score": 0.785, "ast_node_f1": 0.38571428571428573, "ast_edge_f1": 0.2625, "latency_ms_p50": 1794.83, "latency_ms_p95": 7792.18, "decode_timeout_count": 0, "fallback_count": 0}},
+      "auth_prediction": "root = TextContent(\":ood.auth.email\")"
+    },
+    "v2_retarget_to_literal": {
+      "description": "Instead of disabling the margin outright, retarget the same one-shot per-instance floor at the legal empty literal token (when present in candidates) rather than the best unused visible slot, at the pre-content argument only.",
+      "suites": {"ood": {"n": 4, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5083333333333333, "placeholder_validity": 0.705, "structural_similarity": 0.337925, "component_type_recall": 0.375, "reward_score": 0.785, "ast_node_f1": 0.38571428571428573, "ast_edge_f1": 0.2625, "latency_ms_p50": 1579.36, "latency_ms_p95": 6593.25, "decode_timeout_count": 0, "fallback_count": 0}},
+      "auth_prediction": "root = TextContent(\":ood.auth.email\")"
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "per_record_baseline": {
+    "ood_dashboard_01": "root = Card([TextContent(\":ood.dash.status.body\")])",
+    "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\", details: \":ood.gallery.caption\"}])",
+    "ood_modal_01": "root = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\"), Button(\":ood.modal.confirm\")], \"itet\")",
+    "ood_auth_01": "root = Stack([v0, v1, v4], \"column\")\nv0 = Button(\":ood.auth.create\")\nv1 = Input(\":ood.auth.email\", \":ood.auth.name\")\nv4 = Input(\"\", \":ood.auth.email\")"
+  },
+  "per_record_treatment_both_variants": {
+    "ood_dashboard_01": "root = Card([TextContent(\":ood.dash.status.body\")])",
+    "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\", details: \":ood.gallery.caption\"}])",
+    "ood_modal_01": "root = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\"), Button(\":ood.modal.confirm\")], \"itet\")",
+    "ood_auth_01": "root = TextContent(\":ood.auth.email\")"
+  },
+  "analysis": "Dashboard, Gallery, and Modal are byte-identical between baseline and both treatment variants, confirming the composition only ever engages on Auth's Input family (the intended pre-content schema pattern) and is not a broader implementation bug. Both variants correctly move the FIRST Input's `.name` argument from a visible slot to the legal empty literal (the specific defect E633 diagnosed), but doing so shifts the greedy decode trajectory early enough in the sequence (the first repeated instance, not the last) that this specific 800-step scratch checkpoint cannot recover: the choice-token trace after that point degenerates into long runs of structural filler tokens, and the harness's own scoring (not a fallback substitution; parse succeeded) settles on a single unrelated `TextContent(email)` root, collapsing Auth's component recall to 0 and regressing every continuous aggregate metric versus baseline. This reproduces the same collapse signature E633 r2 hit when it tried to restrict the repeated-slot margin similarly, and shows the failure mode is not sensitive to which exact scoring formula wins at that argument (hard gate vs literal-retargeted margin produce the same collapse) but to the fact that the corrected argument is the family's first (not last) occurrence in decode order.",
+  "decision": "Reject both composition variants and revert model.twotower to v72, byte-identical to the E633-committed v70 code (v71 was the introduced composition, v72 is its recorded revert). Do not sync, promote, checkpoint, or claim ship readiness. The pre-content composition idea from E633's decision is directionally confirmed correct (both variants successfully retarget the first Input's `.name` argument to the literal) but this checkpoint lineage cannot support a correction at the family's first repeated instance without destabilizing the rest of decode. A follow-up must either retrain with the corrected first-instance pattern actually present in a scratch curriculum (so the model has seen a literal-then-content continuation early in a repeated family) or add a decode-time recovery/verification step that can retry the family's later instances from a stable checkpoint instead of relying on unbroken greedy continuation from the corrected first argument.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp_at_eval_time": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d3bfb7342af079bd1161d5e71edb44be1b59c943",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v70"
+    },
+    "stamped_at": "2026-07-21T01:04:31.945480+00:00",
+    "note": "The eval harness reads the registered version from versions.json at run time (v70, the committed HEAD when these runs executed) and flags code_dirty=true because the working tree carried the uncommitted E634 composition under test; this is expected for an in-session A/B replay and does not indicate an untracked checkpoint or harness change. The composition was subsequently committed as v71 and reverted as v72 (this experiment's final state)."
+  }
+}
