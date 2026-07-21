@@ -4456,3 +4456,17 @@ checkpoint was created or synced; AgentV remained 0/1.
 Evidence:
 [iter-e641-role-plan-completion-20260720.md](iter-e641-role-plan-completion-20260720.md)
 and [JSON](iter-e641-role-plan-completion-20260720.json).
+
+## E642 root-only inferred role plans
+
+E642 restricted E641's inferred-family bias to top-level section boundaries.
+Strict v2 stayed 2/4, but meaningful v1, structure, reward, AST F1, and latency
+regressed; Gallery expanded into a 1,290-character irrelevant tree. Reject the
+treatment stamped v84. After rebasing onto E641 restoration v86, the append-only
+lineage records E642 as treatment v87 and restoration v88. Boundary restriction
+is not a substitute for family-to-slot binding. No checkpoint was created or
+synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e642-root-only-role-plans-20260720.md](iter-e642-root-only-role-plans-20260720.md)
+and [JSON](iter-e642-root-only-role-plans-20260720.json).
