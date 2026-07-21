@@ -4578,3 +4578,18 @@ checkpoint was created or synced; AgentV remained 0/1.
 Evidence:
 [iter-e649-refresh-action-role-20260720.md](iter-e649-refresh-action-role-20260720.md)
 and [JSON](iter-e649-refresh-action-role-20260720.json).
+
+## E650 planned-family visible-role binding
+
+E650 attaches compatible visible slots to families already required by the
+prompt plan before inferring new instances. Dashboard now emits its refresh
+slot on the one planned Button without nesting or duplication. Meaningful v1
+and strict v2 hold at 4/4 and 3/4; fidelity and validity rise to 1.0000 and
+reward to 0.9790 while structure and AST F1 hold. Retain the treatment stamped
+v96. After rebasing onto E649 restoration v98, the append-only lineage records
+the retained E650 behavior as v99. Do not claim ship from the OOD `n=4` subset with AgentV 0/1. No
+checkpoint was created or synced.
+
+Evidence:
+[iter-e650-planned-family-role-binding-20260720.md](iter-e650-planned-family-role-binding-20260720.md)
+and [JSON](iter-e650-planned-family-role-binding-20260720.json).
