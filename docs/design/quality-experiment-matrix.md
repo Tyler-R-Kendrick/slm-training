@@ -5037,3 +5037,18 @@ was created or synced.
 
 Evidence: [narrative](iter-e690-bound-transitive-wrappers-20260721.md) and
 [JSON](iter-e690-bound-transitive-wrappers-20260721.json).
+
+## E691 structured content schema
+
+E691 distinguishes direct scalar placeholder schemas from structured content
+schemas that are merely transitively slot-bearing. Only the tabs prediction
+changes: both TabItem bodies become schema-valid one-item TextContent arrays,
+overview is recovered, and the other four Held-out predictions remain
+byte-identical. Fidelity, validity, structure, recall, reward, and both AST F1
+metrics improve; strict stays 2/5 because the changed path selects the invalid
+`Callout.variant="column"`. Retain v146 as a schema-correctness fix and positive
+quality lever, not ship evidence. AgentV is 0/1; no checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e691-structured-content-schema-20260721.md) and
+[JSON](iter-e691-structured-content-schema-20260721.json).

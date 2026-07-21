@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "run_id": "e691-structured-content-schema-r1",
+  "experiment_id": "E691",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "A transitively slot-bearing marker must not let a structured array or object schema admit a raw placeholder; preserving the public schema boundary will force TabItem.content through its array and component carriers.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e690-bound-transitive-wrappers-r1",
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.4,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.8666666666666666,
+      "placeholder_validity": 0.9199999999999999,
+      "structural_similarity": 0.6657599999999999,
+      "component_type_recall": 0.6933333333333334,
+      "reward_score": 0.9209999999999999,
+      "ast_node_f1": 0.7639743589743591,
+      "ast_edge_f1": 0.6434232434232434,
+      "latency_ms_p50": 3714.48,
+      "latency_ms_p95": 6075.57,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e690": {
+    "changed_predictions": 1,
+    "strict_v2": [0.4, 0.4],
+    "placeholder_fidelity": [0.8333333333333334, 0.8666666666666666],
+    "placeholder_validity": [0.9, 0.9199999999999999],
+    "structural_similarity": [0.61076, 0.6657599999999999],
+    "component_type_recall": [0.6533333333333333, 0.6933333333333334],
+    "reward_score": [0.9109999999999999, 0.9209999999999999],
+    "ast_node_f1": [0.7311538461538462, 0.7639743589743591],
+    "ast_edge_f1": [0.6294372294372295, 0.6434232434232434],
+    "latency_ms_p50": [2836.79, 3714.48],
+    "latency_ms_p95": [6154.14, 6075.57]
+  },
+  "prediction_evidence": {
+    "held_out_tabs_01": "Both TabItem.content values are now one-item TextContent arrays, heading and overview occupy distinct children, and the official parser accepts the structure. Strict v2 still fails only because Callout.variant is the schema-invalid literal column.",
+    "unchanged_other_predictions": 4
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v146 as a public-schema correctness fix and positive quality lever. Next, repair enum-valued literal selection without changing the now-correct TabItem structure.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a242de2bd27e782285106d9cff537c439ef1439e",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v35",
+      "evals.meaningful_program": "2.6.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v146"
+    },
+    "stamped_at": "2026-07-21T13:51:57.878067+00:00"
+  }
+}
