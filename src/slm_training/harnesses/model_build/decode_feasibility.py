@@ -112,6 +112,12 @@ def classify_parse_failure(
         return "no_placeholders"
     if error in {"empty_root_stack", "empty_card", "no_content_components"}:
         return "trivial_layout"
+    if error and error.startswith("empty_children:"):
+        # E631: structural (AST-based) empty-children check on component
+        # types the older literal Stack/Card substring checks never covered
+        # (Modal, Carousel, ...) -- same diagnostic bucket as the two named
+        # trivial-layout cases above.
+        return "trivial_layout"
     if error and (
         "parse" in error.lower()
         or "validation failed" in error.lower()

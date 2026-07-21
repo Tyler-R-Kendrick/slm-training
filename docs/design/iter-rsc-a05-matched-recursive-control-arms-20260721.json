@@ -1,0 +1,730 @@
+{
+  "run_id": "iter_rsc_a05_matched_recursive_control_arms",
+  "status": "complete",
+  "claim_class": "wiring",
+  "quality_claim_made": false,
+  "issue": "SLM-241 (RSC-A05): Build parameter-, state-, block-, and initialization-matched recursive control constructors",
+  "linear_context": "Parent campaign SLM-233 (matched recursive-depth quality campaign) is out of scope; this issue only builds reusable control constructors + fairness/accounting substrate.",
+  "arms": {
+    "all_arm_ids": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+    ],
+    "built_arm_ids": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H"
+    ],
+    "deferred_arm_ids": [],
+    "labels": {
+      "A": "stacked baseline (no z state, unshared blocks)",
+      "B": "shared recursive V1 (shared blocks, explicit z state)",
+      "C": "shared y-only recurrence (shared blocks, no distinct z state)",
+      "D": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
+      "E": "stacked + matched state capacity (unshared, non-recursive blocks; same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected once before the blocks run -- mirror image of D)",
+      "F": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+      "G": "R=1 shared architecture control (interface-, not behavior-, compatible)",
+      "H": "stop-gradient recurrence (arm B's exact construction; y/z detached between recursive steps -- identical forward values, no cross-step backprop through the recurrent state)"
+    },
+    "denoiser_arch_by_arm": {
+      "A": "stacked",
+      "B": "shared_recursive",
+      "C": "shared_recursive_y_only",
+      "D": "shared_recursive_no_extra_capacity",
+      "E": "stacked_matched_state",
+      "F": "stacked_depth_matched",
+      "G": "shared_recursive",
+      "H": "shared_recursive"
+    }
+  },
+  "control_arm_table_schema": "RecursiveControlArmReportV1",
+  "control_arm_table_config": {
+    "vocab_size": 23,
+    "d_model": 32,
+    "n_layers": 2,
+    "n_heads": 2,
+    "max_len": 256,
+    "recursive_steps": 2,
+    "recursive_transition_layers": 2,
+    "note": "Same denoiser-only config as the SLM-138 fixture (d_model=32, max_len=256); tower-level, not whole-TwoTowerModel (context tower is identical across arms and cancels out of any delta, same convention as RSC-A04). Arm F: block-evaluation-matched construction only -- see arm_f_dual_view for the parameter-nearest alternative. Arm E (this iteration): stacked + matched state capacity -- its parameter delta over A equals recursive_zstate_parameter_delta(d_model, max_len) exactly, no dual view needed."
+  },
+  "control_arm_table": [
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "A",
+      "label": "stacked baseline (no z state, unshared blocks)",
+      "denoiser_arch": "stacked",
+      "z_state_mode": null,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 42752,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34745,
+      "checkpoint_bytes": 187267,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 2,
+      "self_attn_calls_per_forward": 2,
+      "cross_attn_calls_per_forward": 2,
+      "mlp_calls_per_forward": 2,
+      "estimated_forward_flops": 304128.0,
+      "matching_target": "baseline (self); no matching target",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 0,
+      "parameter_count_delta_vs_baseline_pct": 0.0,
+      "residual_matching_error_params": 0,
+      "within_matching_tolerance": true,
+      "notes": []
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "B",
+      "label": "shared recursive V1 (shared blocks, explicit z state)",
+      "denoiser_arch": "shared_recursive",
+      "z_state_mode": "full",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 35990,
+      "checkpoint_bytes": 231866,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "none declared -- V1 always adds z_latent+ctx_proj on top of the shared transition blocks (see recursive_zstate_parameter_delta); this arm is not intended to parameter-match A",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": []
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "C",
+      "label": "shared y-only recurrence (shared blocks, no distinct z state)",
+      "denoiser_arch": "shared_recursive_y_only",
+      "z_state_mode": "y_only",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 42752,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34749,
+      "checkpoint_bytes": 193987,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "match A's total parameters exactly when recursive_transition_layers == A's n_layers (no z-state parameter bank of any kind)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 0,
+      "parameter_count_delta_vs_baseline_pct": 0.0,
+      "residual_matching_error_params": 0,
+      "within_matching_tolerance": true,
+      "notes": [
+        "no z-state parameter bank declared"
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "D",
+      "label": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
+      "denoiser_arch": "shared_recursive_no_extra_capacity",
+      "z_state_mode": "parameter_free",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 42752,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34751,
+      "checkpoint_bytes": 193987,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "match A's total parameters exactly when recursive_transition_layers == A's n_layers (z-state made parameter-free instead of removed)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 0,
+      "parameter_count_delta_vs_baseline_pct": 0.0,
+      "residual_matching_error_params": 0,
+      "within_matching_tolerance": true,
+      "notes": [
+        "no z-state parameter bank declared"
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "E",
+      "label": "stacked + matched state capacity (unshared, non-recursive blocks; same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected once before the blocks run -- mirror image of D)",
+      "denoiser_arch": "stacked_matched_state",
+      "z_state_mode": null,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 35992,
+      "checkpoint_bytes": 225146,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 2,
+      "self_attn_calls_per_forward": 2,
+      "cross_attn_calls_per_forward": 2,
+      "mlp_calls_per_forward": 2,
+      "estimated_forward_flops": 304128.0,
+      "matching_target": "matches arm B's total parameter DELTA over a same-n_layers arm A exactly -- recursive_zstate_parameter_delta(d_model, max_len) -- via same-shaped state+state_ctx_proj injected once; NOT intended to match A's raw total parameter count (that is C's/D's kind of target, not E's -- E is the mirror image of D)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": [
+        "unshared, non-recursive tower (mirror image of D); parameter_count_delta_vs_baseline=9248 vs recursive_zstate_parameter_delta(d_model=32, max_len=256)=9248 -- matches_formula=True; state/state_ctx_proj consumed once before the transition blocks run, never recurrently re-applied."
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "F",
+      "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+      "denoiser_arch": "stacked_depth_matched",
+      "z_state_mode": null,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 4,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 76544,
+      "parameter_count_denoiser": 67584,
+      "active_parameter_count": 68529,
+      "checkpoint_bytes": 337913,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "matches arm B's block_evaluations_per_forward exactly (this row's construction); does NOT match A's or B's parameter count -- see build_arm_f_dual_view for the real measured parameter-nearest alternative construction and its block-evaluation residual instead",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 33792,
+      "parameter_count_delta_vs_baseline_pct": 79.04191616766467,
+      "residual_matching_error_params": 33792,
+      "within_matching_tolerance": false,
+      "notes": [
+        "block-evaluation-matched against arm B by construction (block_evaluations_per_forward=4); no z-state parameter bank (same as A); MORE parameters than B because nothing is shared -- see build_arm_f_dual_view for the measured parameter-nearest alternative and its block-evaluation residual."
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "G",
+      "label": "R=1 shared architecture control (interface-, not behavior-, compatible)",
+      "denoiser_arch": "shared_recursive",
+      "z_state_mode": "full",
+      "recursive_steps": 1,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 35991,
+      "checkpoint_bytes": 231866,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "block_evaluations_per_forward": 2,
+      "self_attn_calls_per_forward": 2,
+      "cross_attn_calls_per_forward": 2,
+      "mlp_calls_per_forward": 2,
+      "estimated_forward_flops": 304128.0,
+      "matching_target": "none declared -- architecture-change control at R=1, not a parameter-matching arm (same parameter profile as B)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": [
+        "R=1 architecture-change control -- interface-compatible with the stacked baseline, not behaviorally equivalent (SLM-240)."
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
+      "arm_id": "H",
+      "label": "stop-gradient recurrence (arm B's exact construction; y/z detached between recursive steps -- identical forward values, no cross-step backprop through the recurrent state)",
+      "denoiser_arch": "shared_recursive",
+      "z_state_mode": "full",
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 34553,
+      "checkpoint_bytes": 231866,
+      "undeclared_zstate_parameter_names": [
+        "ctx_proj.bias",
+        "ctx_proj.weight",
+        "z_latent"
+      ],
+      "block_evaluations_per_forward": 4,
+      "self_attn_calls_per_forward": 4,
+      "cross_attn_calls_per_forward": 4,
+      "mlp_calls_per_forward": 4,
+      "estimated_forward_flops": 608256.0,
+      "matching_target": "matches arm B's total parameter count and block_evaluations_per_forward EXACTLY at every config -- identical construction to B (same denoiser_arch, same z_state_mode='full'), only detach_between_steps=True differs, which changes no parameter and no block evaluation, only the backward graph",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": [
+        "gradient-flow-only variant of arm B: identical construction (same denoiser_arch, same z_state_mode='full', same parameters, same block-evaluations) with detach_between_steps=True -- y/z are detached between recursive steps so a later step's loss cannot backpropagate through the recurrent state into an earlier step's block application; the shared weights still receive gradient from every step's own (same-step) contribution. See tests/test_models/test_recursive_denoiser.py for the forward-identity (bit-identical to B) and gradient-divergence (hook-based mechanism) evidence."
+      ]
+    }
+  ],
+  "parameter_delta_formula_check": {
+    "recursive_zstate_parameter_delta_d32_maxlen256": 9248,
+    "measured_B_delta_vs_A": 9248,
+    "measured_C_delta_vs_A": 0,
+    "measured_D_delta_vs_A": 0,
+    "measured_G_delta_vs_A": 9248,
+    "measured_F_delta_vs_A_block_evaluation_matched": 33792,
+    "measured_F_delta_vs_B_block_evaluation_matched": 24544,
+    "measured_F_delta_vs_B_parameter_nearest": 7648,
+    "measured_F_block_eval_delta_vs_B_parameter_nearest": -1,
+    "measured_E_delta_vs_A": 9248,
+    "measured_E_delta_vs_A_matches_formula": true,
+    "measured_E_delta_vs_B_total_parameters": 0,
+    "measured_H_delta_vs_A": 9248,
+    "measured_H_delta_vs_A_matches_formula": true,
+    "measured_H_delta_vs_B_total_parameters": 0,
+    "measured_H_block_evals_delta_vs_B": 0
+  },
+  "recursive_control_initialization_report_schema": "RecursiveControlInitializationV1",
+  "recursive_control_initialization_report_instance": {
+    "contract_version": "RecursiveControlInitializationV1",
+    "base_seed": 0,
+    "num_common_tensors": 49,
+    "common_tensor_names": [
+      "layers.0.cross_attn.k_proj.bias",
+      "layers.0.cross_attn.k_proj.weight",
+      "layers.0.cross_attn.out_proj.bias",
+      "layers.0.cross_attn.out_proj.weight",
+      "layers.0.cross_attn.q_proj.bias",
+      "layers.0.cross_attn.q_proj.weight",
+      "layers.0.cross_attn.v_proj.bias",
+      "layers.0.cross_attn.v_proj.weight",
+      "layers.0.mlp.0.bias",
+      "layers.0.mlp.0.weight",
+      "layers.0.mlp.2.bias",
+      "layers.0.mlp.2.weight",
+      "layers.0.norm1.weight",
+      "layers.0.norm2.weight",
+      "layers.0.norm_cross.weight",
+      "layers.0.self_attn.k_proj.bias",
+      "layers.0.self_attn.k_proj.weight",
+      "layers.0.self_attn.out_proj.bias",
+      "layers.0.self_attn.out_proj.weight",
+      "layers.0.self_attn.q_proj.bias",
+      "layers.0.self_attn.q_proj.weight",
+      "layers.0.self_attn.v_proj.bias",
+      "layers.0.self_attn.v_proj.weight",
+      "layers.1.cross_attn.k_proj.bias",
+      "layers.1.cross_attn.k_proj.weight",
+      "layers.1.cross_attn.out_proj.bias",
+      "layers.1.cross_attn.out_proj.weight",
+      "layers.1.cross_attn.q_proj.bias",
+      "layers.1.cross_attn.q_proj.weight",
+      "layers.1.cross_attn.v_proj.bias",
+      "layers.1.cross_attn.v_proj.weight",
+      "layers.1.mlp.0.bias",
+      "layers.1.mlp.0.weight",
+      "layers.1.mlp.2.bias",
+      "layers.1.mlp.2.weight",
+      "layers.1.norm1.weight",
+      "layers.1.norm2.weight",
+      "layers.1.norm_cross.weight",
+      "layers.1.self_attn.k_proj.bias",
+      "layers.1.self_attn.k_proj.weight",
+      "layers.1.self_attn.out_proj.bias",
+      "layers.1.self_attn.out_proj.weight",
+      "layers.1.self_attn.q_proj.bias",
+      "layers.1.self_attn.q_proj.weight",
+      "layers.1.self_attn.v_proj.bias",
+      "layers.1.self_attn.v_proj.weight",
+      "norm.weight",
+      "pos.weight",
+      "tok.weight"
+    ],
+    "common_tensor_hashes_match_across_arms": true,
+    "architecture_specific_seeds": {
+      "A": 60000,
+      "B": 70000,
+      "C": 80000,
+      "D": 90000,
+      "E": 110000,
+      "F": 100000
+    },
+    "architecture_specific_tensor_names_and_shapes": {
+      "A": {},
+      "B": {
+        "z_latent": [
+          256,
+          32
+        ],
+        "ctx_proj.weight": [
+          32,
+          32
+        ],
+        "ctx_proj.bias": [
+          32
+        ]
+      },
+      "C": {},
+      "D": {},
+      "E": {
+        "state": [
+          256,
+          32
+        ],
+        "state_ctx_proj.weight": [
+          32,
+          32
+        ],
+        "state_ctx_proj.bias": [
+          32
+        ]
+      },
+      "F": {
+        "layers.2.self_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.self_attn.q_proj.bias": [
+          32
+        ],
+        "layers.2.self_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.self_attn.k_proj.bias": [
+          32
+        ],
+        "layers.2.self_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.self_attn.v_proj.bias": [
+          32
+        ],
+        "layers.2.self_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.self_attn.out_proj.bias": [
+          32
+        ],
+        "layers.2.norm1.weight": [
+          32
+        ],
+        "layers.2.cross_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.cross_attn.q_proj.bias": [
+          32
+        ],
+        "layers.2.cross_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.cross_attn.k_proj.bias": [
+          32
+        ],
+        "layers.2.cross_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.cross_attn.v_proj.bias": [
+          32
+        ],
+        "layers.2.cross_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.2.cross_attn.out_proj.bias": [
+          32
+        ],
+        "layers.2.norm_cross.weight": [
+          32
+        ],
+        "layers.2.mlp.0.weight": [
+          128,
+          32
+        ],
+        "layers.2.mlp.0.bias": [
+          128
+        ],
+        "layers.2.mlp.2.weight": [
+          32,
+          128
+        ],
+        "layers.2.mlp.2.bias": [
+          32
+        ],
+        "layers.2.norm2.weight": [
+          32
+        ],
+        "layers.3.self_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.self_attn.q_proj.bias": [
+          32
+        ],
+        "layers.3.self_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.self_attn.k_proj.bias": [
+          32
+        ],
+        "layers.3.self_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.self_attn.v_proj.bias": [
+          32
+        ],
+        "layers.3.self_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.self_attn.out_proj.bias": [
+          32
+        ],
+        "layers.3.norm1.weight": [
+          32
+        ],
+        "layers.3.cross_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.cross_attn.q_proj.bias": [
+          32
+        ],
+        "layers.3.cross_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.cross_attn.k_proj.bias": [
+          32
+        ],
+        "layers.3.cross_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.cross_attn.v_proj.bias": [
+          32
+        ],
+        "layers.3.cross_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.3.cross_attn.out_proj.bias": [
+          32
+        ],
+        "layers.3.norm_cross.weight": [
+          32
+        ],
+        "layers.3.mlp.0.weight": [
+          128,
+          32
+        ],
+        "layers.3.mlp.0.bias": [
+          128
+        ],
+        "layers.3.mlp.2.weight": [
+          32,
+          128
+        ],
+        "layers.3.mlp.2.bias": [
+          32
+        ],
+        "layers.3.norm2.weight": [
+          32
+        ]
+      }
+    },
+    "optimizer_group_membership_arm_count": 6,
+    "optimizer_initial_state_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "notes": [
+      "common_tensor_hashes cover only names present with identical shape in every provided arm (tok/pos/kind/layers.*/norm/lm_head when recursive_transition_layers matches the stacked baseline's n_layers); architecture-specific tensors (e.g. z_latent/ctx_proj for the 'full' z_state_mode) are listed under architecture_specific_tensor_names_and_shapes instead.",
+      "architecture_specific_seeds are declared/reserved, not literally consumed mid-construction by the current single-pass tower constructors -- see the class docstring.",
+      "optimizer_initial_state_hash is the hash of an empty optimizer state (pre-first-step); AdamW allocates exp_avg/exp_avg_sq lazily."
+    ]
+  },
+  "deferred_arms_rationale": {},
+  "tests": {
+    "file": "tests/test_models/test_recursive_denoiser.py",
+    "new_tests_added": 8,
+    "total_tests_in_file": 108,
+    "requirement_coverage": {
+      "1_constructs_and_roundtrips": "test_arm_c_d_train_one_step_and_roundtrip_checkpoint (C/D); test_arm_e_denoiser_arch_wired_through_twotower_config_and_roundtrips (E); test_arm_f_denoiser_arch_wired_through_twotower_config_and_roundtrips (F); existing test_twotower_shared_recursive_trains_and_roundtrips covers B; A is exercised throughout the existing suite.",
+      "2_parameter_counts_match_formula": "test_arm_c_d_parameter_count_matches_stacked_baseline; test_arm_e_parameter_count_matches_zstate_delta_formula_exactly; test_control_arm_table_reports_every_built_arm_no_parity_or_winner cross-checks B/G/E against recursive_zstate_parameter_delta and F against B.",
+      "3_B_independent_of_R": "Reused/confirmed via existing test_recursive_parameter_count_independent_of_recursive_steps (SLM-237/238) -- not re-implemented.",
+      "4_C_D_no_undeclared_zstate": "test_arm_c_d_have_no_zstate_parameters",
+      "5_E_consumes_capacity": "test_arm_e_consumes_matched_state_and_receives_gradients -- ablation (zeroing state/state_ctx_proj changes the forward output) + gradient flow (state.grad and state_ctx_proj.weight.grad are non-None and nonzero after backward).",
+      "6_F_block_calls": "test_arm_f_block_evaluations_match_arm_b_verified_by_hook_count; test_arm_e_block_evaluations_match_arm_a_verified_by_hook_count (E's analogous requirement, targeted at arm A's block-eval count instead of B's).",
+      "7_H_forward_equal_grad_diverge": "test_arm_h_forward_values_identical_to_arm_b_before_backward (forward identity: B and H, same seed/weights/inputs, bit-identical logits/depth_logits/depth_hiddens via torch.equal, max abs diff measured 0.0); test_arm_h_blocks_cross_step_gradient_flow_that_arm_b_has (gradient divergence, mechanism-precise: a backward hook on the real step-1 y-boundary tensor, exposed via recursive_outputs(return_step_boundaries=True) captured BEFORE any detach, fires with nonzero gradient for B and never fires at all for H, when the loss is the last recursion step's logits only -- proving the specific detach_between_steps edge is what severs the autograd path, not some other confound); test_arm_h_shared_weights_still_receive_same_step_gradient (rules out an over-aggressive detach: shared block parameters still receive real nonzero gradient from every step's own application in H).",
+      "8_common_init_hashes_and_disjoint_seeds": "test_recursive_control_initialization_common_tensors_match_and_seeds_disjoint; test_recursive_control_initialization_rejects_mismatched_common_tensors (fail-closed case)",
+      "9_runtime_compat": "test_deep_supervision_works_for_arm_c_and_d (recursive_outputs duck-typing); existing runtime-symbol-feature/attention-return/checkpoint-path tests already cover SharedRecursiveDenoiserTower generically (C/D subclass no new code path there).",
+      "10_invalid_combinations_fail_closed": "test_zstate_mode_rejects_unknown_value; test_denoiser_arch_rejects_unknown_value; test_deferred_arms_fail_closed_not_silently_built; test_construct_arm_tower_rejects_unknown_arm_id; test_recursive_control_initialization_rejects_mismatched_common_tensors",
+      "11_fixture_emits_complete_table": "test_control_arm_table_reports_every_built_arm_no_parity_or_winner; scripts/run_slm138_recursive_denoiser_fixture.py's control_arm_table field/markdown section",
+      "5_F_construction_and_dual_view": "test_arm_f_is_unshared_depth_matched_tower_with_no_zstate; test_arm_f_block_evaluations_match_arm_b_verified_by_hook_count (requirement #6, real forward-hook instrumentation, not just len(layers)); test_arm_f_parameter_count_exceeds_arm_b_real_measured; test_build_arm_f_dual_view_reports_honest_residuals; test_arm_f_denoiser_arch_wired_through_twotower_config_and_roundtrips (requirement #1); test_recursive_control_initialization_includes_arm_f_with_disjoint_seed."
+    },
+    "new_tests_added_rsc_a05b": 6,
+    "removed_parametrized_cases_rsc_a05b": 1,
+    "net_test_count_change_rsc_a05b": "+5 (6 new arm-F tests minus test_deferred_arms_fail_closed_not_silently_built[F], removed since F is no longer in DEFERRED_ARM_IDS)",
+    "new_tests_added_rsc_a05c": 9,
+    "removed_tests_rsc_a05c": 1,
+    "net_test_count_change_rsc_a05c": "+8 (9 new arm-H tests minus the stale test_deferred_arm_ids_now_only_contains_h, replaced by test_all_eight_control_arms_now_built since H is no longer deferred)"
+  },
+  "version_bumps": {
+    "model.recursive_denoiser": "v9 -> v10",
+    "model.twotower": "v68 -> v69"
+  },
+  "note": "Wiring-only evidence. All eight arms (A-H) are now fully implemented: construct through the canonical factory, train one step, round-trip a checkpoint, real resource accounting. Arm H (stop-gradient recurrence) reuses arm B's exact construction (denoiser_arch='shared_recursive', z_state_mode='full') plus detach_between_steps=True -- same parameters (52,000 at this config), same block-evaluations (4), forward values bit-identical to B (measured max abs diff 0.0 across depth_logits/depth_hiddens/logits); its gradient-divergence evidence is a mechanism-precise hook test (not a magnitude-only comparison): a backward hook on the real step-1 y-boundary tensor (exposed via a new opt-in recursive_outputs(return_step_boundaries=True), captured before any detach) fires with nonzero gradient for B and never fires for H when the loss is restricted to the last recursion step's logits only -- because torch.Tensor.detach() creates a tensor with no grad_fn, so there is no autograd edge back to the pre-detach tensor once the detached copy is what the next step actually consumes. Shared block weights still receive real, nonzero gradient in H from every step's own (same-step) application, so the detach is not over-aggressive. Arm F is reported with two honest views (block-evaluation-matched vs parameter-nearest, see arm_f_dual_view). Arm E's parameter delta over A matches recursive_zstate_parameter_delta exactly. No quality or efficiency conclusion is drawn from any number in this document -- SLM-233's own matched-depth quality campaign remains untouched and out of scope. SLM-241 (RSC-A05) is complete: all 8 control arms addressed, none fabricated, none silently skipped.",
+  "recommended_next_iteration": "SLM-241 (RSC-A05) is complete -- all eight control arms (A-H) are built, resource-accounted, and fairness-init-covered (H documented as deliberately excluded from any single fairness report alongside B, same restriction already established for B+G, since both reuse B's exact denoiser_arch string and would otherwise collide on the same arch_specific:shared_recursive seed). The next work belongs to the parent campaign, SLM-233 (matched recursive-depth quality campaign), which actually trains and compares these arms on real data under matched compute/parameter budgets -- out of scope for this issue and not attempted here (claim_class stays 'wiring' throughout).",
+  "generated_at": "2026-07-21T03:27:27.379122+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f536523b69fd7758e311f4b3e5219a3f37bc328a",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v10",
+      "model.twotower": "v69"
+    },
+    "stamped_at": "2026-07-21T03:27:27.379232+00:00"
+  },
+  "arm_f_dual_view": {
+    "target_arm": "B",
+    "target_total_parameters": 52000,
+    "target_block_evaluations_per_forward": 4,
+    "per_layer_parameter_cost_formula": {
+      "note": "measured from real constructed 1-layer/2-layer DenoiserTower instances, never hard-coded",
+      "common_parameters": 8960,
+      "per_layer_parameters": 16896
+    },
+    "block_evaluation_matched": {
+      "matching_dimension": "block_evaluations_per_forward",
+      "residual_dimension": "parameter_count_total",
+      "n_layers": 4,
+      "report": {
+        "contract_version": "RecursiveControlArmReportV1",
+        "claim_class": "wiring",
+        "arm_id": "F",
+        "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+        "denoiser_arch": "stacked_depth_matched",
+        "z_state_mode": null,
+        "recursive_steps": 0,
+        "recursive_transition_layers": 4,
+        "d_model": 32,
+        "max_len": 256,
+        "parameter_count_total": 76544,
+        "parameter_count_denoiser": 67584,
+        "active_parameter_count": 68521,
+        "checkpoint_bytes": 337913,
+        "undeclared_zstate_parameter_names": [],
+        "block_evaluations_per_forward": 4,
+        "self_attn_calls_per_forward": 4,
+        "cross_attn_calls_per_forward": 4,
+        "mlp_calls_per_forward": 4,
+        "estimated_forward_flops": 608256.0,
+        "matching_target": "matches arm B's block_evaluations_per_forward exactly (this row's construction); does NOT match A's or B's parameter count -- see build_arm_f_dual_view for the real measured parameter-nearest alternative construction and its block-evaluation residual instead",
+        "matching_tolerance_params": 0,
+        "parameter_count_delta_vs_baseline": 33792,
+        "parameter_count_delta_vs_baseline_pct": 79.04191616766467,
+        "residual_matching_error_params": 33792,
+        "within_matching_tolerance": false,
+        "notes": [
+          "block-evaluation-matched against arm B by construction (block_evaluations_per_forward=4); no z-state parameter bank (same as A); MORE parameters than B because nothing is shared -- see build_arm_f_dual_view for the measured parameter-nearest alternative and its block-evaluation residual."
+        ]
+      },
+      "parameter_count_delta_vs_target_arm_b": 24544
+    },
+    "parameter_nearest": {
+      "matching_dimension": "parameter_count_total",
+      "residual_dimension": "block_evaluations_per_forward",
+      "n_layers": 3,
+      "report": {
+        "contract_version": "RecursiveControlArmReportV1",
+        "claim_class": "wiring",
+        "arm_id": "F",
+        "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+        "denoiser_arch": "stacked_depth_matched",
+        "z_state_mode": null,
+        "recursive_steps": 0,
+        "recursive_transition_layers": 3,
+        "d_model": 32,
+        "max_len": 256,
+        "parameter_count_total": 59648,
+        "parameter_count_denoiser": 50688,
+        "active_parameter_count": 51637,
+        "checkpoint_bytes": 262590,
+        "undeclared_zstate_parameter_names": [],
+        "block_evaluations_per_forward": 3,
+        "self_attn_calls_per_forward": 3,
+        "cross_attn_calls_per_forward": 3,
+        "mlp_calls_per_forward": 3,
+        "estimated_forward_flops": 456192.0,
+        "matching_target": "matches arm B's block_evaluations_per_forward exactly (this row's construction); does NOT match A's or B's parameter count -- see build_arm_f_dual_view for the real measured parameter-nearest alternative construction and its block-evaluation residual instead",
+        "matching_tolerance_params": 0,
+        "parameter_count_delta_vs_baseline": 16896,
+        "parameter_count_delta_vs_baseline_pct": 39.52095808383233,
+        "residual_matching_error_params": 16896,
+        "within_matching_tolerance": false,
+        "notes": [
+          "block-evaluation-matched against arm B by construction (block_evaluations_per_forward=3); no z-state parameter bank (same as A); MORE parameters than B because nothing is shared -- see build_arm_f_dual_view for the measured parameter-nearest alternative and its block-evaluation residual."
+        ]
+      },
+      "parameter_count_delta_vs_target_arm_b": 7648,
+      "block_evaluations_delta_vs_target_arm_b": -1
+    }
+  }
+}

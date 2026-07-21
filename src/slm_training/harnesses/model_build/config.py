@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from slm_training.models.twotower_numeric_gates import (
+    NumericValidationError,
+    validate_model_build_config,
+)
+
 
 @dataclass
 class ModelBuildConfig:
@@ -54,12 +59,24 @@ class ModelBuildConfig:
     # scratch | hf — B4: adapt the pretrained hf_model_name causal LM into the
     # (trainable) masked denoiser instead of the from-scratch DenoiserTower.
     denoiser_backend: str = "scratch"
-    # stacked | shared_recursive — SLM-138 shared recursive denoiser tower.
+    # stacked | stacked_depth_matched | shared_recursive |
+    # shared_recursive_y_only | shared_recursive_no_extra_capacity —
+    # SLM-138 shared recursive denoiser tower; SLM-241 (RSC-A05) adds the
+    # y_only/no_extra_capacity control arms plus stacked_depth_matched (an
+    # unshared depth-matched tower, arm F).
     denoiser_arch: str = "stacked"
     # SLM-138: recurrence and transition-depth knobs for shared_recursive.
     recursive_steps: int = 1
     recursive_transition_layers: int = 0
+    # SLM-241 (RSC-A05) arm H: stop-gradient recurrence -- detaches y/z
+    # between recursive steps (forward values unchanged, backward graph
+    # only). Reuses denoiser_arch="shared_recursive" (arm B's/G's arch
+    # string), no new arch value.
+    recursive_detach_between_steps: bool = False
     recursive_depth_supervision_weights: tuple[float, ...] = ()
+    # SLM-238 (RSC-A02): explicit final-depth semantics for deep supervision.
+    recursive_depth_aux_mode: str | None = None
+    recursive_depth_aux_weight: float = 1.0
     # SLM-211: default-on tying; False creates an independent output head.
     tie_output_embedding: bool = True
     grammar_constrained: bool = True
@@ -288,6 +305,7 @@ class ModelBuildConfig:
     schema_opaque_decode_weight: float | None = None
     schema_opaque_close_decode_weight: float | None = None
     schema_role_slot_decode_weight: float | None = None
+    required_slot_margin_decode_weight: float | None = None
     semantic_plan_decode_weight: float | None = None
     semantic_plan_margin_decode_weight: float | None = None
     semantic_plan_seed_decode_weight: float | None = None
@@ -435,6 +453,13 @@ class ModelBuildConfig:
     constraint_debt_routing_fallback_policy: str = "fixed_maskgit"
     constraint_debt_routing_budget_mode: str = "equal_verifier_budget"
     constraint_debt_routing_calibrator_path: Path | None = None
+
+    def __post_init__(self) -> None:
+        # SLM-242: fail-closed numeric/schedule gate.
+        try:
+            validate_model_build_config(self)
+        except NumericValidationError as exc:
+            raise ValueError(str(exc)) from exc
 
     @property
     def run_dir(self) -> Path:

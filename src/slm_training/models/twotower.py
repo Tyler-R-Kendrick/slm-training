@@ -21,7 +21,14 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
-from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
+from slm_training.models.twotower_numeric_gates import (
+    NumericValidationError,
+    validate_twotower_config,
+)
+from slm_training.models.recursive_denoiser import (
+    SharedRecursiveDenoiserTower,
+    StackedMatchedStateDenoiserTower,
+)
 from slm_training.models.context import (
     HFContextEncoder,
     ScratchContextEncoder,
@@ -88,6 +95,36 @@ from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 _QUOTED_SPAN_RE = re.compile(r'("(?:\\.|[^"\\])*")')
 _REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
 _DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
+
+#: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
+#: control arm this issue builds (A/B/C/D/E/F/G/H; see
+#: ``slm_training.models.recursive_control_arms`` for the full A-H registry.
+#: G and H both reuse "shared_recursive" -- G varies ``recursive_steps=1``,
+#: H varies ``recursive_detach_between_steps=True`` (below), neither needs a
+#: new arch string). "stacked" is arm A; the three
+#: ``SharedRecursiveDenoiserTower`` archs map onto its ``z_state_mode``;
+#: "stacked_depth_matched" (arm F) is a plain, unshared ``DenoiserTower`` built
+#: with ``recursive_steps * recursive_transition_layers`` independent
+#: transition blocks instead of ``denoiser_layers`` -- the same class as arm
+#: A, just deeper, so it needs no new tower code, only this dispatch branch.
+#: "stacked_matched_state" (arm E) is a genuinely new tower
+#: (``StackedMatchedStateDenoiserTower``): the same unshared, non-recursive
+#: block structure as arm A, plus a learned ``state``/``state_ctx_proj`` pair
+#: shape-matched to B's z-state path and injected once before the blocks run.
+STACKED_DENOISER_ARCH = "stacked"
+STACKED_DEPTH_MATCHED_DENOISER_ARCH = "stacked_depth_matched"
+STACKED_MATCHED_STATE_DENOISER_ARCH = "stacked_matched_state"
+SHARED_RECURSIVE_ARCH_Z_STATE_MODES: dict[str, str] = {
+    "shared_recursive": "full",  # arm B (and, with recursive_steps=1, arm G)
+    "shared_recursive_y_only": "y_only",  # arm C
+    "shared_recursive_no_extra_capacity": "parameter_free",  # arm D
+}
+KNOWN_DENOISER_ARCHES: tuple[str, ...] = (
+    STACKED_DENOISER_ARCH,
+    STACKED_DEPTH_MATCHED_DENOISER_ARCH,
+    STACKED_MATCHED_STATE_DENOISER_ARCH,
+    *SHARED_RECURSIVE_ARCH_Z_STATE_MODES,
+)
 
 
 def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
@@ -185,19 +222,50 @@ class TwoTowerConfig:
     # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
     # hf_model_name causal LM as a bidirectional masked denoiser backbone.
     denoiser_backend: str = "scratch"
-    # stacked | shared_recursive — SLM-138 shared recursive denoiser tower.
+    # stacked | stacked_depth_matched | stacked_matched_state |
+    # shared_recursive | shared_recursive_y_only |
+    # shared_recursive_no_extra_capacity — SLM-138 shared recursive denoiser
+    # tower (SLM-241/RSC-A05 adds the y_only/no_extra_capacity control arms
+    # plus stacked_depth_matched (unshared depth-matched tower / arm F) and
+    # stacked_matched_state (unshared tower + matched state capacity / arm
+    # E); see KNOWN_DENOISER_ARCHES / slm_training.models.recursive_control_arms).
     denoiser_arch: str = "stacked"
     # SLM-138: number of recurrences for the shared recursive denoiser.
     recursive_steps: int = 1
     # SLM-138: number of shared TransformerBlocks in the recursive transition.
     # 0 means inherit from denoiser_layers.
     recursive_transition_layers: int = 0
+    # SLM-241 (RSC-A05) arm H: stop-gradient recurrence. Orthogonal to
+    # denoiser_arch/z_state_mode -- detaches the carried-forward y/z between
+    # recursive steps (never changes forward values, only the backward
+    # graph). Only meaningful when denoiser_arch is one of
+    # SHARED_RECURSIVE_ARCH_Z_STATE_MODES; arm H sets it True with
+    # denoiser_arch="shared_recursive" (arm B's exact arch string, same reuse
+    # convention as arm G's recursive_steps=1).
+    recursive_detach_between_steps: bool = False
     # SLM-138: per-recursion CE weights for deep supervision (empty = off).
     recursive_depth_supervision_weights: tuple[float, ...] = ()
     # SLM-211: default-on weight tying between token embedding and output head.
     # Default True preserves exact prior behavior; False creates an independent
     # output projection initialized as a copy of the token embedding.
     tie_output_embedding: bool = True
+    # SLM-238 (RSC-A02): explicit final-depth double-counting semantics.
+    # ``None`` (the true dataclass default) resolves deterministically at
+    # validation time -- see ``resolve_recursive_depth_aux_mode`` -- to "off"
+    # when ``recursive_depth_supervision_weights`` is empty, or to
+    # "legacy_all_depths" when it is non-empty (this reproduces SLM-237's
+    # weighted-mean-over-every-depth objective unchanged, so any config or
+    # checkpoint written before this field existed keeps its exact prior
+    # numeric behavior). New configs should set this explicitly to one of
+    # "off" | "intermediate_only" | "all_depths"; "legacy_all_depths" is a
+    # reproduction-only label, never the recommended choice for new runs --
+    # see docs/design/iter-rsc-a02-*.
+    recursive_depth_aux_mode: str | None = None
+    # SLM-238 (RSC-A02): overall coefficient scaling the whole recursive-depth
+    # auxiliary term, independent of the *relative* per-depth weighting in
+    # ``recursive_depth_supervision_weights``. Must be finite and >= 0;
+    # defaults to 1.0 (neutral -- unchanged scale relative to SLM-237).
+    recursive_depth_aux_weight: float = 1.0
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
@@ -260,6 +328,10 @@ class TwoTowerConfig:
     schema_opaque_decode_weight: float = 0.0
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
+    # E626: floor the best-scoring legal candidate that fills a required slot
+    # still absent anywhere in the prefix (targets required_inventory_coverage
+    # directly, unlike schema_role_slot_decode_weight's flat role-compatible bonus).
+    required_slot_margin_decode_weight: float = 0.0
     semantic_plan_decode_weight: float = 0.0
     semantic_plan_margin_decode_weight: float = 0.0
     semantic_plan_seed_decode_weight: float = 0.0
@@ -537,6 +609,37 @@ class TwoTowerConfig:
     speculative_fanout: int = 2
     speculative_overlap: bool = False
 
+    def __post_init__(self) -> None:
+        # SLM-242: generic fail-closed numeric/schedule gate.
+        try:
+            validate_twotower_config(self)
+        except NumericValidationError as exc:
+            raise ValueError(str(exc)) from exc
+        # SLM-237/238: architecture-aware recursive-depth supervision gate.
+        if self.recursive_depth_supervision_weights or (
+            self.recursive_depth_aux_mode is not None
+        ):
+            resolved_mode = resolve_recursive_depth_aux_mode(
+                self.recursive_depth_aux_mode,
+                self.recursive_depth_supervision_weights,
+            )
+            supports = self.denoiser_arch in {
+                "shared_recursive",
+                "shared_recursive_y_only",
+                "shared_recursive_no_extra_capacity",
+            }
+            try:
+                validate_recursive_depth_supervision(
+                    weights=self.recursive_depth_supervision_weights,
+                    num_depths=self.recursive_steps,
+                    supports_recursive_outputs=supports,
+                    architecture=self.denoiser_arch,
+                    mode=resolved_mode,
+                    aux_weight=self.recursive_depth_aux_weight,
+                )
+            except ValueError as exc:
+                raise ValueError(str(exc)) from exc
+
 
 def _pad_batch(
     seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None
@@ -589,13 +692,30 @@ def _load_checkpoint_state(
         key for key in missing if key.startswith("root_reference_identity_head.")
     }
     # SLM-138: a shared-recursive denoiser adds z-state parameters that older
-    # stacked checkpoints legitimately omit; warm-start them randomly.
+    # stacked checkpoints legitimately omit; warm-start them randomly. Only
+    # the "full" z_state_mode (denoiser_arch="shared_recursive") declares
+    # these tensors at all -- SLM-241 (RSC-A05)'s "y_only"/"no_extra_capacity"
+    # arms never have them, so no allowance is needed (or correct) for those.
+    # Arm H (recursive_detach_between_steps=True) reuses this exact
+    # denoiser_arch string and the identical z_latent/ctx_proj parameter
+    # names, so it needs no separate allowance either.
     if getattr(config, "denoiser_arch", None) == "shared_recursive":
         allowed_missing |= {
             key
             for key in missing
             if key.startswith("denoiser.")
             and key.split(".")[1] in {"z_latent", "ctx_proj"}
+        }
+    # SLM-241 (RSC-A05) arm E: stacked_matched_state adds its own
+    # state/state_ctx_proj parameters (never present on an older plain
+    # "stacked" checkpoint) -- same warm-start allowance, distinct tensor
+    # names so it never collides with the shared_recursive allowance above.
+    if getattr(config, "denoiser_arch", None) == STACKED_MATCHED_STATE_DENOISER_ARCH:
+        allowed_missing |= {
+            key
+            for key in missing
+            if key.startswith("denoiser.")
+            and key.split(".")[1] in {"state", "state_ctx_proj"}
         }
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
@@ -644,6 +764,380 @@ def _check_output_head_tie_migration(
     if not source_tie and target_tie:
         # Merge policy: keep the token embedding, discard the separate lm_head.
         model.denoiser.lm_head.weight = model.denoiser.tok.weight
+
+
+#: SLM-238 (RSC-A02): the recursive-depth auxiliary term's semantic modes.
+#: "off" = primary final reconstruction only, no auxiliary term at all.
+#: "intermediate_only" = auxiliary weights cover depths 0..R-2; the final
+#: depth (R-1, numerically identical to the primary reconstruction logits --
+#: see ``SharedRecursiveDenoiserTower.recursive_outputs``) is never read by
+#: the auxiliary loop, let alone differentiated through, in this mode.
+#: "all_depths" = auxiliary weights cover depths 0..R-1; the final depth is
+#: *intentionally* counted in both the primary and the auxiliary terms.
+#: "legacy_all_depths" is semantically identical to "all_depths" (same
+#: length rule, same math) but is a reproduction-only label reserved for
+#: configs/checkpoints migrated from before this field existed -- never the
+#: recommended choice for a new config. See ``resolve_recursive_depth_aux_mode``.
+RECURSIVE_DEPTH_AUX_MODES: tuple[str, ...] = (
+    "off",
+    "intermediate_only",
+    "all_depths",
+    "legacy_all_depths",
+)
+
+
+def resolve_recursive_depth_aux_mode(
+    mode: str | None, weights: tuple[float, ...]
+) -> str:
+    """SLM-238 (RSC-A02): deterministic backward-compatible mode resolution.
+
+    ``mode=None`` is the ``TwoTowerConfig.recursive_depth_aux_mode`` dataclass
+    default -- i.e. any config or checkpoint written before this field existed,
+    or any new config that has not opted into the versioned semantics. It
+    resolves deterministically so historical behavior never silently changes:
+
+    - empty ``weights`` -> ``"off"`` (matches the historical always-off
+      default when deep supervision was never configured).
+    - non-empty ``weights`` -> ``"legacy_all_depths"`` (reproduces SLM-237's
+      weighted-mean-over-every-depth objective byte-for-byte, since that mode
+      shares "all_depths"'s length rule and math, with
+      ``recursive_depth_aux_weight`` defaulting to the neutral ``1.0``).
+
+    An explicitly supplied ``mode`` (including a deliberate "legacy_all_depths"
+    for reproduction) always passes through unchanged.
+    """
+    if mode is not None:
+        return mode
+    return "legacy_all_depths" if weights else "off"
+
+
+@dataclass(frozen=True)
+class ValidatedDepthSupervision:
+    """SLM-237/SLM-238 (RSC-A01/RSC-A02): validated deep-supervision config.
+
+    ``weights`` is the exact, un-mutated tuple from the persisted config (a
+    validator must never rewrite what gets checkpointed). ``enabled`` is
+    ``False`` for the explicit off case and the documented R=1
+    ``intermediate_only`` reduce-to-primary-only case; every other
+    configuration either normalizes cleanly or raises during
+    :func:`validate_recursive_depth_supervision`. ``mode`` and ``aux_weight``
+    are always populated (even when ``enabled`` is ``False``) so telemetry can
+    always report the resolved, concrete objective semantics -- never
+    "unspecified".
+    """
+
+    weights: tuple[float, ...]
+    enabled: bool
+    mode: str = "off"
+    aux_weight: float = 1.0
+    num_depths: int = 0
+
+    @property
+    def weight_sum(self) -> float:
+        return float(sum(self.weights))
+
+    def normalized(self) -> tuple[float, ...]:
+        """Per-depth weights divided by their sum (the intended objective)."""
+        if not self.enabled:
+            return ()
+        total = self.weight_sum
+        return tuple(float(w) / total for w in self.weights)
+
+    @property
+    def final_depth_included(self) -> bool:
+        """Whether the auxiliary term counts depth ``num_depths - 1``.
+
+        True only for "all_depths"/"legacy_all_depths" -- the deliberate
+        (or migrated-legacy) double-counting of the final recursion, which
+        is numerically identical to the primary reconstruction logits.
+        """
+        return self.enabled and self.mode in ("all_depths", "legacy_all_depths")
+
+
+def validate_recursive_depth_supervision(
+    *,
+    weights: tuple[float, ...],
+    num_depths: int,
+    supports_recursive_outputs: bool,
+    architecture: str = "denoiser",
+    mode: str = "legacy_all_depths",
+    aux_weight: float = 1.0,
+) -> ValidatedDepthSupervision:
+    """SLM-237/SLM-238 (RSC-A01/RSC-A02): fail-closed deep-supervision validator.
+
+    Historical defect (SLM-138 audit, see docs/design/iter-rsc-a01-*): the
+    training loop computed ``sum(L_d) / sum(w_d)`` -- an unweighted mean that
+    silently ignored every ``w_d`` -- and never rejected any of: zero weights
+    that should disable a depth, all-zero configs, negative/NaN/inf weights,
+    length mismatches (silently truncated via ``min(...)``), or weights
+    supplied to an architecture without ``recursive_outputs`` (silently
+    ignored). SLM-237 made all of those fail closed.
+
+    SLM-238 (RSC-A02) adds an explicit ``mode`` so the *final* recursion
+    depth's inclusion in the auxiliary term is a deliberate, named choice
+    rather than an unstated accident: ``rec_out["logits"] ==
+    rec_out["depth_logits"][-1]`` exactly, so "all_depths"/"legacy_all_depths"
+    intentionally count that depth in both the primary and auxiliary terms,
+    while "intermediate_only" excludes it. ``mode`` defaults to
+    "legacy_all_depths" here purely for this function's own direct-caller
+    backward compatibility (its length rule -- ``len(weights) == num_depths``
+    -- is byte-identical to the pre-SLM-238 validator); callers that care
+    about the new semantics (i.e. ``TwoTowerModel.training_loss``) always pass
+    an explicit, resolved ``mode`` via :func:`resolve_recursive_depth_aux_mode`.
+
+    An empty ``weights`` tuple with ``mode="off"`` means the feature is
+    explicitly off -- the only valid configuration for architectures (e.g.
+    ``stacked``/HF denoisers, or an un-migrated checkpoint) that do not
+    support ``recursive_outputs`` -- and always returns ``enabled=False`` with
+    no mutation of the persisted config. R=1 with ``mode="intermediate_only"``
+    has no eligible depth (0..R-2 is empty); per this validator's documented
+    contract, an empty ``weights`` tuple there also reduces to
+    ``enabled=False`` (primary-only), while a *non-empty* tuple still raises
+    the usual length-mismatch error (0 weights expected, none supplied).
+    """
+    if mode not in RECURSIVE_DEPTH_AUX_MODES:
+        raise ValueError(
+            f"recursive_depth_aux_mode={mode!r} is not one of "
+            f"{RECURSIVE_DEPTH_AUX_MODES!r}."
+        )
+    if not math.isfinite(aux_weight):
+        raise ValueError(
+            f"recursive_depth_aux_weight={aux_weight!r} is not finite. "
+            "NaN/inf coefficients are rejected -- they would corrupt the "
+            "combined objective and its gradient."
+        )
+    if aux_weight < 0.0:
+        raise ValueError(
+            f"recursive_depth_aux_weight={aux_weight!r} is negative. The "
+            "coefficient must be >= 0; a negative value would anti-supervise "
+            "the whole auxiliary term instead of merely down-weighting it."
+        )
+
+    if mode == "off":
+        if weights:
+            raise ValueError(
+                "recursive_depth_aux_mode='off' requires an empty "
+                f"recursive_depth_supervision_weights tuple, got {weights!r}. "
+                "Choose mode='intermediate_only' or mode='all_depths' to "
+                "enable the auxiliary term, or clear the weights to keep it "
+                "off -- a non-empty tuple under mode='off' would silently "
+                "configure weights that are never applied."
+            )
+        return ValidatedDepthSupervision(
+            weights=(),
+            enabled=False,
+            mode="off",
+            aux_weight=float(aux_weight),
+            num_depths=num_depths,
+        )
+
+    # mode is intermediate_only / all_depths / legacy_all_depths: an
+    # auxiliary term is being requested, so eligible-depth length depends on
+    # whether the final depth (index num_depths - 1) is excluded.
+    expected_len = max(num_depths - 1, 0) if mode == "intermediate_only" else num_depths
+
+    if not weights:
+        if expected_len == 0:
+            # R<=1 intermediate_only (or R=0 with no recursive outputs at
+            # all): no eligible depth exists. Documented contract: reduce to
+            # primary-only rather than reject an explicitly empty tuple.
+            return ValidatedDepthSupervision(
+                weights=(),
+                enabled=False,
+                mode=mode,
+                aux_weight=float(aux_weight),
+                num_depths=num_depths,
+            )
+        raise ValueError(
+            f"recursive_depth_aux_mode={mode!r} requires {expected_len} "
+            "depth weight(s) (recursive_depth_supervision_weights was an "
+            "empty tuple). Supply exactly that many weights, or switch "
+            "mode='off' to disable the auxiliary term."
+        )
+
+    if not supports_recursive_outputs:
+        raise ValueError(
+            "recursive_depth_supervision_weights is non-empty "
+            f"({weights!r}) but denoiser_arch={architecture!r} does not "
+            "expose recursive_outputs (e.g. a 'stacked' or HF denoiser, or "
+            "an un-migrated checkpoint). Deep supervision requires a "
+            "recursive-outputs-capable architecture (e.g. "
+            "denoiser_arch='shared_recursive'); leave the tuple empty () to "
+            "keep the feature off for this architecture."
+        )
+
+    if len(weights) != expected_len:
+        raise ValueError(
+            "recursive_depth_supervision_weights has length "
+            f"{len(weights)} ({weights!r}) but recursive_depth_aux_mode="
+            f"{mode!r} with {num_depths} recursion depth(s) requires exactly "
+            f"{expected_len} weight(s) "
+            + (
+                "(depths 0..R-2 -- the final depth is excluded from the "
+                "auxiliary term in intermediate_only mode)"
+                if mode == "intermediate_only"
+                else "(depths 0..R-1 -- every recursion depth, including the "
+                "final one)"
+            )
+            + ". No truncation or padding via min(len(...), len(...)) is "
+            "performed; fix recursive_steps or the weights tuple so they "
+            "agree."
+        )
+
+    for depth, w in enumerate(weights):
+        if not math.isfinite(w):
+            raise ValueError(
+                f"recursive_depth_supervision_weights[{depth}] = {w!r} is "
+                "not finite. NaN/inf weights are rejected -- they would "
+                "corrupt the normalized objective and its gradient."
+            )
+        if w < 0.0:
+            raise ValueError(
+                f"recursive_depth_supervision_weights[{depth}] = {w!r} is "
+                "negative. Weights must be >= 0; a negative weight would "
+                "anti-supervise that depth instead of merely down-weighting "
+                "it."
+            )
+
+    total = math.fsum(weights)
+    if total <= 0.0:
+        raise ValueError(
+            f"recursive_depth_supervision_weights={weights!r} are all "
+            "zero. An all-zero configuration would silently disable the "
+            "objective and its telemetry while still looking wired up; use "
+            "an empty tuple () to explicitly turn the feature off instead."
+        )
+
+    return ValidatedDepthSupervision(
+        weights=tuple(float(w) for w in weights),
+        enabled=True,
+        mode=mode,
+        aux_weight=float(aux_weight),
+        num_depths=num_depths,
+    )
+
+
+def migrate_recursive_depth_aux_config(raw_cfg: dict) -> dict:
+    """SLM-238 (RSC-A02): deterministic persisted-config/checkpoint migration.
+
+    Any checkpoint or config JSON written before ``recursive_depth_aux_mode``
+    existed is missing that key entirely (as opposed to a config that
+    explicitly chose one of the versioned modes). This makes that historical
+    state an explicit, persisted value instead of relying forever on
+    :func:`resolve_recursive_depth_aux_mode`'s ``None``-resolution at every
+    load: "off" when ``recursive_depth_supervision_weights`` was never set,
+    "legacy_all_depths" (reproduction-only -- never the recommended new
+    default) when it was. Returns a new dict; ``raw_cfg`` is never mutated in
+    place. Idempotent -- a config that already has the key is returned
+    unchanged (aside from the copy).
+    """
+    migrated = dict(raw_cfg)
+    if "recursive_depth_aux_mode" not in migrated:
+        legacy_weights = tuple(migrated.get("recursive_depth_supervision_weights") or ())
+        migrated["recursive_depth_aux_mode"] = (
+            "legacy_all_depths" if legacy_weights else "off"
+        )
+    if migrated.get("recursive_depth_aux_weight") is None:
+        migrated["recursive_depth_aux_weight"] = 1.0
+    return migrated
+
+
+#: SLM-238 (RSC-A02): schema tag pinned into every persisted
+#: ``RecursiveObjectiveContractV2`` so a future change to the decomposition
+#: fields is detectable in old telemetry/design-doc JSON rather than silently
+#: reinterpreted.
+RECURSIVE_OBJECTIVE_CONTRACT_VERSION = "RecursiveObjectiveContractV2"
+
+
+@dataclass(frozen=True)
+class RecursiveObjectiveContractV2:
+    """SLM-238 (RSC-A02): the required objective-decomposition schema.
+
+    A validated, typed view over the flat ``last_training_metrics`` scalar
+    fields ``TwoTowerModel.training_loss`` always populates (see
+    ``docs/design/iter-rsc-a02-*``): ``recursive_depth_aux_mode``/
+    ``recursive_depth_aux_weight`` (the resolved, concrete objective
+    semantics) and the five loss terms. The flat metrics dict remains the
+    single source of truth (this schema is built *from* it via
+    :meth:`from_metrics`, never the reverse) so no caller needs two
+    divergent representations of the same numbers.
+
+    ``__post_init__`` re-checks, at construction time, the two identities the
+    decomposition is required to satisfy exactly:
+    ``recursive_intermediate_aux_loss + recursive_final_depth_aux_contribution
+    == recursive_depth_supervision_loss`` and
+    ``primary_final_reconstruction_loss + recursive_depth_supervision_loss ==
+    combined_training_loss`` -- so a future edit that breaks either identity
+    fails fast here, not only in a unit test.
+    """
+
+    contract_version: str
+    mode: str
+    aux_weight: float
+    primary_final_reconstruction_loss: float
+    recursive_intermediate_aux_loss: float
+    recursive_final_depth_aux_contribution: float
+    recursive_depth_supervision_loss: float
+    combined_training_loss: float
+
+    def __post_init__(self) -> None:
+        if self.contract_version != RECURSIVE_OBJECTIVE_CONTRACT_VERSION:
+            raise ValueError(
+                f"contract_version={self.contract_version!r} does not match "
+                f"{RECURSIVE_OBJECTIVE_CONTRACT_VERSION!r}."
+            )
+        aux_sum = (
+            self.recursive_intermediate_aux_loss
+            + self.recursive_final_depth_aux_contribution
+        )
+        if not math.isclose(
+            aux_sum, self.recursive_depth_supervision_loss, rel_tol=1e-4, abs_tol=1e-6
+        ):
+            raise ValueError(
+                "recursive_intermediate_aux_loss + "
+                f"recursive_final_depth_aux_contribution ({aux_sum!r}) != "
+                f"recursive_depth_supervision_loss "
+                f"({self.recursive_depth_supervision_loss!r})."
+            )
+        combined = (
+            self.primary_final_reconstruction_loss
+            + self.recursive_depth_supervision_loss
+        )
+        if not math.isclose(
+            combined, self.combined_training_loss, rel_tol=1e-4, abs_tol=1e-6
+        ):
+            raise ValueError(
+                "primary_final_reconstruction_loss + "
+                f"recursive_depth_supervision_loss ({combined!r}) != "
+                f"combined_training_loss ({self.combined_training_loss!r})."
+            )
+
+    @classmethod
+    def from_metrics(cls, metrics: dict[str, Any]) -> RecursiveObjectiveContractV2:
+        """Build from a ``last_training_metrics`` dict; raises ``KeyError``
+        if any required field is missing (it never should be -- see the
+        module docstring above)."""
+        return cls(
+            contract_version=RECURSIVE_OBJECTIVE_CONTRACT_VERSION,
+            mode=str(metrics["recursive_depth_aux_mode"]),
+            aux_weight=float(metrics["recursive_depth_aux_weight"]),
+            primary_final_reconstruction_loss=float(
+                metrics["primary_final_reconstruction_loss"]
+            ),
+            recursive_intermediate_aux_loss=float(
+                metrics["recursive_intermediate_aux_loss"]
+            ),
+            recursive_final_depth_aux_contribution=float(
+                metrics["recursive_final_depth_aux_contribution"]
+            ),
+            recursive_depth_supervision_loss=float(
+                metrics["recursive_depth_supervision_loss"]
+            ),
+            combined_training_loss=float(metrics["combined_training_loss"]),
+        )
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 class TwoTowerModel(nn.Module):
@@ -733,7 +1227,7 @@ class TwoTowerModel(nn.Module):
             denoiser_arch = str(
                 getattr(self.config, "denoiser_arch", "stacked")
             ).lower()
-            if denoiser_arch == "shared_recursive":
+            if denoiser_arch in SHARED_RECURSIVE_ARCH_Z_STATE_MODES:
                 transition_layers = int(
                     getattr(self.config, "recursive_transition_layers", 0) or 0
                 )
@@ -753,8 +1247,12 @@ class TwoTowerModel(nn.Module):
                     ),
                     recursive_transition_layers=transition_layers,
                     tie_output_embedding=bool(self.config.tie_output_embedding),
+                    z_state_mode=SHARED_RECURSIVE_ARCH_Z_STATE_MODES[denoiser_arch],
+                    detach_between_steps=bool(
+                        getattr(self.config, "recursive_detach_between_steps", False)
+                    ),
                 )
-            else:
+            elif denoiser_arch == STACKED_DENOISER_ARCH:
                 self.denoiser = DenoiserTower(
                     vocab_size=tokenizer.vocab_size,
                     d_model=self.config.d_model,
@@ -765,6 +1263,61 @@ class TwoTowerModel(nn.Module):
                     kind_ids=kind_ids,
                     n_kinds=max(kind_ids) + 1 if kind_ids else 0,
                     tie_output_embedding=bool(self.config.tie_output_embedding),
+                )
+            elif denoiser_arch == STACKED_DEPTH_MATCHED_DENOISER_ARCH:
+                # SLM-241 (RSC-A05) arm F: an ordinary *unshared* DenoiserTower
+                # (no weight sharing, no z state -- literally the same class
+                # as arm A) built with recursive_steps * transition_layers
+                # independent TransformerBlocks instead of denoiser_layers, so
+                # its per-forward block-evaluation count matches the shared
+                # recursive arm's (arm B) exactly. This necessarily has MORE
+                # parameters than B (nothing is shared) -- see
+                # slm_training.models.recursive_control_arms.build_arm_f_dual_view
+                # for the honest block-evaluation-matched vs
+                # parameter-nearest residual accounting.
+                f_transition_layers = int(
+                    getattr(self.config, "recursive_transition_layers", 0) or 0
+                )
+                if f_transition_layers <= 0:
+                    f_transition_layers = self.config.denoiser_layers
+                f_steps = int(getattr(self.config, "recursive_steps", 1) or 1)
+                self.denoiser = DenoiserTower(
+                    vocab_size=tokenizer.vocab_size,
+                    d_model=self.config.d_model,
+                    n_layers=f_steps * f_transition_layers,
+                    n_heads=self.config.n_heads,
+                    max_len=self.config.max_target_len,
+                    dropout=self.config.dropout,
+                    kind_ids=kind_ids,
+                    n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                )
+            elif denoiser_arch == STACKED_MATCHED_STATE_DENOISER_ARCH:
+                # SLM-241 (RSC-A05) arm E: an unshared, non-recursive
+                # DenoiserTower variant (denoiser_layers blocks, each called
+                # exactly once -- same block-evaluation count as arm A) plus
+                # a learned state/state_ctx_proj pair shape-matched to arm
+                # B's z_latent/ctx_proj, injected once before the transition
+                # blocks run (never recurrently re-applied). Mirror image of
+                # arm D: D removes the z-state parameters from a recursive
+                # tower; E adds them (once) to a non-recursive one.
+                self.denoiser = StackedMatchedStateDenoiserTower(
+                    vocab_size=tokenizer.vocab_size,
+                    d_model=self.config.d_model,
+                    n_layers=self.config.denoiser_layers,
+                    n_heads=self.config.n_heads,
+                    max_len=self.config.max_target_len,
+                    dropout=self.config.dropout,
+                    kind_ids=kind_ids,
+                    n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                )
+            else:
+                # SLM-241 (RSC-A05): fail closed on an unrecognized
+                # denoiser_arch rather than silently falling back to
+                # "stacked" -- a typo (e.g. a not-yet-built control arm id)
+                # would otherwise silently construct the wrong architecture.
+                raise ValueError(
+                    f"unknown denoiser_arch {denoiser_arch!r}; expected one "
+                    f"of {KNOWN_DENOISER_ARCHES!r}"
                 )
         else:
             raise ValueError(f"unknown denoiser_backend {denoiser_backend!r}")
@@ -2030,12 +2583,12 @@ class TwoTowerModel(nn.Module):
                 [self._symbol_tables.get(key) for key in cache_keys]
             )
             try:
-                ds_weights = tuple(
+                ds_weights_raw = tuple(
                     getattr(self.config, "recursive_depth_supervision_weights", None)
                     or ()
                 )
                 has_recursive_outputs = hasattr(self.denoiser, "recursive_outputs")
-                if ds_weights and has_recursive_outputs:
+                if ds_weights_raw and has_recursive_outputs:
                     rec_out = self.denoiser.recursive_outputs(
                         noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
                     )
@@ -2054,6 +2607,39 @@ class TwoTowerModel(nn.Module):
                 # bias it. (Same defect class as PR #275's loss-suite fix —
                 # cleared here at the source.)
                 self.denoiser.set_runtime_symbol_features(None)
+
+        # SLM-237/SLM-238 (RSC-A01/RSC-A02): validate/normalize before any loss
+        # term is computed from depth_logits. This runs unconditionally (not
+        # just when predict_mask has any masked tokens) so an invalid config
+        # -- unsupported architecture, length mismatch, negative/NaN/inf,
+        # all-zero, or an invalid mode/coefficient -- fails closed before a
+        # training step, never emitting an apparently-valid run with missing
+        # telemetry. ``resolve_recursive_depth_aux_mode`` keeps any config or
+        # checkpoint that predates recursive_depth_aux_mode byte-identical to
+        # its historical (SLM-237) behavior.
+        resolved_aux_mode = resolve_recursive_depth_aux_mode(
+            getattr(self.config, "recursive_depth_aux_mode", None), ds_weights_raw
+        )
+        resolved_aux_weight = float(
+            getattr(self.config, "recursive_depth_aux_weight", 1.0)
+            if getattr(self.config, "recursive_depth_aux_weight", None) is not None
+            else 1.0
+        )
+        validated_ds = validate_recursive_depth_supervision(
+            weights=ds_weights_raw,
+            num_depths=len(depth_logits) if depth_logits is not None else 0,
+            supports_recursive_outputs=has_recursive_outputs,
+            architecture=str(getattr(self.config, "denoiser_arch", "stacked")),
+            mode=resolved_aux_mode,
+            aux_weight=resolved_aux_weight,
+        )
+        self.last_training_metrics["recursive_depth_supervision_enabled"] = (
+            validated_ds.enabled
+        )
+        self.last_training_metrics["recursive_depth_aux_mode"] = validated_ds.mode
+        self.last_training_metrics["recursive_depth_aux_weight"] = (
+            validated_ds.aux_weight
+        )
         if predict_mask.any():
             flat_logits = logits.reshape(-1, logits.size(-1))
             flat_targets = target_ids.reshape(-1)
@@ -2092,29 +2678,114 @@ class TwoTowerModel(nn.Module):
                 .tolist()
             )
 
-            # SLM-138: deep supervision over per-recursion logits.
-            if depth_logits is not None and ds_weights:
-                depth_losses: list[torch.Tensor] = []
-                usable = min(len(depth_logits), len(ds_weights))
-                total_w = sum(ds_weights[:usable])
-                if total_w > 0.0:
-                    for d, w in enumerate(ds_weights[:usable]):
-                        d_logits = depth_logits[d]
-                        d_flat = d_logits.reshape(-1, d_logits.size(-1))
-                        d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
-                        d_loss = (d_ce * weights)[mask_flat].mean()
-                        depth_losses.append(d_loss)
-                        self.last_training_metrics[f"recursive_depth_loss_{d}"] = float(
-                            d_loss.detach().cpu()
-                        )
-                    normalized = torch.stack(depth_losses).sum() / total_w
-                    mask_loss = mask_loss + normalized
-                    self.last_training_metrics["recursive_depth_supervision_loss"] = (
-                        float(normalized.detach().cpu())
+            # SLM-238 (RSC-A02): explicit objective decomposition. ``logits``
+            # (the primary reconstruction) and ``depth_logits[-1]`` (the last
+            # recursion) are numerically identical --
+            # ``SharedRecursiveDenoiserTower.recursive_outputs`` sets
+            # ``logits = depth_logits[-1]`` -- so
+            # ``primary_final_reconstruction_loss`` already reflects the final
+            # depth once, before any auxiliary term is added. Whether the
+            # auxiliary term counts it a *second* time is exactly what
+            # ``recursive_depth_aux_mode`` names: "all_depths"/
+            # "legacy_all_depths" deliberately double-count it,
+            # "intermediate_only"/"off" never do.
+            primary_final_reconstruction_loss = mask_loss
+            self.last_training_metrics["primary_final_reconstruction_loss"] = float(
+                primary_final_reconstruction_loss.detach().cpu()
+            )
+
+            # SLM-237 (RSC-A01): deep supervision over per-recursion logits.
+            # Corrected weighted objective:
+            #   weighted_depth_contribution[d] = w[d] * raw_depth_loss[d] / sum(w)
+            #   recursive_depth_supervision_loss =
+            #       recursive_depth_aux_weight * sum(weighted_depth_contribution)
+            intermediate_aux_sum = mask_loss.new_zeros(())
+            final_depth_aux_contribution = mask_loss.new_zeros(())
+            if depth_logits is not None and validated_ds.enabled:
+                cfg_weights = validated_ds.weights
+                norm_weights = validated_ds.normalized()
+                total_w = validated_ds.weight_sum
+                final_depth_index = validated_ds.num_depths - 1
+                self.last_training_metrics[
+                    "recursive_depth_supervision_weight_sum"
+                ] = total_w
+                contributions: list[torch.Tensor] = []
+                for d, (cfg_w, norm_w) in enumerate(zip(cfg_weights, norm_weights)):
+                    # SLM-238: `d` only ever ranges over
+                    # `range(len(validated_ds.weights))`, which the validator
+                    # sized to exactly depths 0..R-2 for "intermediate_only" --
+                    # so `depth_logits[final_depth_index]` is structurally
+                    # never indexed (let alone differentiated through) in
+                    # that mode, not merely zero-weighted.
+                    d_logits = depth_logits[d]
+                    d_flat = d_logits.reshape(-1, d_logits.size(-1))
+                    d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
+                    raw_depth_loss = (d_ce * weights)[mask_flat].mean()
+                    weighted_contribution = norm_w * raw_depth_loss
+                    contributions.append(weighted_contribution)
+                    self.last_training_metrics[f"recursive_depth_loss_{d}"] = float(
+                        raw_depth_loss.detach().cpu()
                     )
+                    self.last_training_metrics[f"recursive_depth_weight_{d}"] = float(
+                        cfg_w
+                    )
+                    self.last_training_metrics[
+                        f"recursive_depth_weighted_contribution_{d}"
+                    ] = float(weighted_contribution.detach().cpu())
+                    if validated_ds.final_depth_included and d == final_depth_index:
+                        final_depth_aux_contribution = weighted_contribution
+                    else:
+                        intermediate_aux_sum = (
+                            intermediate_aux_sum + weighted_contribution
+                        )
+                unweighted_aux = torch.stack(contributions).sum()
+                recursive_depth_supervision_loss = (
+                    validated_ds.aux_weight * unweighted_aux
+                )
+                mask_loss = mask_loss + recursive_depth_supervision_loss
+                self.last_training_metrics["recursive_depth_supervision_loss"] = (
+                    float(recursive_depth_supervision_loss.detach().cpu())
+                )
+            else:
+                # SLM-238: explicit zero telemetry -- an off/disabled
+                # auxiliary term must still record a concrete 0.0, never omit
+                # the field, so a disabled run is distinguishable from a
+                # missing-metrics bug (same rationale as
+                # recursive_depth_supervision_enabled in SLM-237).
+                self.last_training_metrics["recursive_depth_supervision_loss"] = 0.0
+
+            # SLM-238: the two auxiliary components are scaled by the same
+            # coefficient as the combined term, so
+            # recursive_intermediate_aux_loss + recursive_final_depth_aux_contribution
+            # reproduces recursive_depth_supervision_loss exactly (test #2/#8).
+            self.last_training_metrics["recursive_intermediate_aux_loss"] = float(
+                (validated_ds.aux_weight * intermediate_aux_sum).detach().cpu()
+            )
+            self.last_training_metrics[
+                "recursive_final_depth_aux_contribution"
+            ] = float((validated_ds.aux_weight * final_depth_aux_contribution).detach().cpu())
+            self.last_training_metrics["combined_training_loss"] = (
+                self.last_training_metrics["primary_final_reconstruction_loss"]
+                + self.last_training_metrics["recursive_depth_supervision_loss"]
+            )
         else:
             mask_loss = logits.sum() * 0.0
             self._last_example_token_losses = [0.0] * len(batch)
+            self.last_training_metrics["primary_final_reconstruction_loss"] = 0.0
+            self.last_training_metrics["recursive_depth_supervision_loss"] = 0.0
+            self.last_training_metrics["recursive_intermediate_aux_loss"] = 0.0
+            self.last_training_metrics["recursive_final_depth_aux_contribution"] = 0.0
+            self.last_training_metrics["combined_training_loss"] = 0.0
+
+        # SLM-238 (RSC-A02): the required RecursiveObjectiveContractV2 schema,
+        # built from (never a second source of truth alongside) the flat
+        # scalar fields above -- its __post_init__ re-verifies both sum
+        # identities at construction time.
+        self.last_training_metrics["recursive_objective_contract"] = (
+            RecursiveObjectiveContractV2.from_metrics(
+                self.last_training_metrics
+            ).as_dict()
+        )
 
         length_w = float(
             getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0
@@ -5137,6 +5808,79 @@ class TwoTowerModel(nn.Module):
             }
         )
 
+    def _record_required_slot_margin_trace(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        scores_before: torch.Tensor,
+        margin_bias: torch.Tensor,
+        scores_after: torch.Tensor,
+    ) -> dict[str, object] | None:
+        """Record bounded evidence for one required_slot_margin_decode_weight fire.
+
+        E627 root-cause instrumentation for E626's open question: does the
+        floor ever compete directly against a component/structural candidate
+        at the *same* decode position (a genuine scope leak into
+        root/component choice), or does it only ever win against other slot
+        candidates (correctly scoped, but the chosen value can still starve
+        structural continuation indirectly by winning too early/too often)?
+        ``_choice_phase_evidence``'s ``aggregation_scope`` reports
+        ``"v05_root"`` when this fires at the program's own ``r=`` root
+        assignment position — the direct-hijack signature — and
+        ``candidate_kinds`` reports the grammar kind of both the pre-bias and
+        post-bias argmax token so a slot-vs-component swap is visible even
+        away from the root position.
+        """
+        if len(stats.constrained_selection_traces) >= 64:
+            return None
+        before = int(scores_before.argmax().item())
+        after = int(scores_after.argmax().item())
+        ranked = torch.topk(
+            scores_after,
+            k=min(8, int(scores_after.numel())),
+        ).indices.tolist()
+        trace: dict[str, object] = {
+            "phase": "required_slot_margin",
+            "row": int(row),
+            "position": int(position),
+            "before_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[before], "")
+            ),
+            "before_kind": candidate_kinds[before],
+            "chosen_token": str(
+                self.tokenizer.id_to_token.get(candidate_ids[after], "")
+            ),
+            "chosen_kind": candidate_kinds[after],
+            "choice_changed": before != after,
+            "hijacked_non_slot_candidate": (
+                before != after and candidate_kinds[before] != "sym"
+            ),
+            "required_slot_margin_decode_weight": float(
+                getattr(self.config, "required_slot_margin_decode_weight", 0.0)
+                or 0.0
+            ),
+            "top_candidates": [
+                {
+                    "token": str(
+                        self.tokenizer.id_to_token.get(candidate_ids[index], "")
+                    ),
+                    "kind": candidate_kinds[index],
+                    "score_before": round(float(scores_before[index].item()), 6),
+                    "margin_bias": round(float(margin_bias[index].item()), 6),
+                    "score_after": round(float(scores_after[index].item()), 6),
+                }
+                for index in ranked
+            ],
+            **self._choice_phase_evidence(state),
+        }
+        stats.constrained_selection_traces.append(trace)
+        return trace
+
     def _schema_value_bias(
         self,
         state: Any,
@@ -5486,6 +6230,9 @@ class TwoTowerModel(nn.Module):
                 slot = slot_contract[slot_index]
             except (ValueError, IndexError):
                 continue
+            candidate_score = float(scores[position].item())
+            if bound_slots is not None and not math.isfinite(candidate_score):
+                continue
             if (
                 component in semantic_role_candidates.get(slot, ())
                 and (bound_slots is None or slot in bound_slots)
@@ -5500,7 +6247,7 @@ class TwoTowerModel(nn.Module):
                         0.0,
                         float(scores.max().item())
                         + weight
-                        - float(scores[position].item()),
+                        - candidate_score,
                     )
                     if bound_slots is not None
                     else weight
@@ -5693,6 +6440,7 @@ class TwoTowerModel(nn.Module):
         )
         return bias
 
+
     def _record_slot_coverage_close_trace(
         self,
         stats: DecodeStats,
@@ -5794,6 +6542,133 @@ class TwoTowerModel(nn.Module):
         }
         stats.constrained_selection_traces.append(trace)
         return trace
+
+    def _required_slot_margin_bias(
+        self,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+        slot_contract: list[str] | None,
+        state: Any = None,
+    ) -> torch.Tensor | None:
+        """Floor the best legal candidate that fills a still-missing required slot.
+
+        E626: analogous to how ``semantic_plan_margin_decode_weight`` floors a
+        still-required plan family above the best legal component score, this
+        floors whichever legal visible-slot candidate corresponds to a required
+        slot that has not appeared anywhere in the prefix yet, directly above
+        the current best candidate score. Unlike ``_schema_role_slot_bias``
+        (a flat bonus for any role-compatible slot, filled or not) it only
+        fires for slots ``required_inventory_coverage`` would otherwise still
+        judge missing, and it is a no-op once every candidate slot in this
+        legal set has already been emitted.
+
+        E628: E627's trace showed every margin=6 hijack of Dashboard's root
+        happens at ``frame_depth == 0`` (before any component/object frame has
+        opened, i.e. a fresh top-level statement's value) -- the grammar
+        legally allows a bare visible-slot token there as an alternative to
+        opening a real component, and a large-enough margin floors the slot
+        token above the correct component candidate before the later
+        ``semantic_plan_root*`` corrective biases run. Excluding
+        ``frame_depth == 0`` from this bias's target set removes that
+        magnitude race entirely: the lever now only fires once decoding is
+        already inside a real component/object frame, matching the intent of
+        "fill slots as arguments", not "choose the root". ``state`` is
+        optional (``None`` skips this check, e.g. from lower-level direct
+        unit tests that construct scores/candidates without a full decode
+        state) so existing call sites that only exercise the missing-slot
+        logic are unaffected.
+
+        E630: a widened-suite sweep (E629) found a second, distinct
+        ``frame_depth >= 1`` failure mode on ``rico_eval_test_25``: at any
+        margin > 0, one ``Button`` absorbed 5 still-missing required slots
+        across all 5 of its positional arguments (``label``, ``action``,
+        ``variant``, ``type``, ``size``), and a nested ``TextContent.size`` /
+        ``Card.variant`` showed the same pattern. This bias's floor
+        (``old_max + margin``) is constructed to always exceed whatever score
+        the *current* best legal candidate holds -- so it wins against
+        ``_schema_value_bias``'s enum discouragement, ``_schema_opaque_bias``'s
+        opaque discouragement, and ``_schema_enum_close_bias`` /
+        ``_schema_opaque_close_bias``'s closure preference at *any* margin > 0,
+        not only a large one, because all four run earlier in the same
+        per-position bias stack. The grammar's own ``_schema_accepts`` legally
+        allows a placeholder value at *any* string-typed argument regardless of
+        enum/opaque-ness, so nothing upstream of this bias can out-argue it
+        once it fires. Gating the fire to exactly the positions
+        ``_schema_role_slot_bias`` already treats as slot-eligible (the
+        ``x-openui-placeholder``-flagged content property on a ``component``
+        frame, or a schema that can reach a visible slot on an ``object``
+        frame) confines the floor to the argument positions it was designed
+        for and leaves optional enum/opaque properties to the biases already
+        built to police them.
+        """
+        margin = float(
+            getattr(self.config, "required_slot_margin_decode_weight", 0.0) or 0.0
+        )
+        if margin <= 0.0 or not slot_contract:
+            return None
+        if state is not None and len(getattr(state, "frames", ())) == 0:
+            return None
+        if state is not None and not self._required_slot_margin_position_accepts_slot(
+            state
+        ):
+            return None
+        sym_slots = int(getattr(self.tokenizer, "sym_slots", 0) or 0)
+        if sym_slots <= 0:
+            return None
+        try:
+            visible_slot_ids = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(min(len(slot_contract), sym_slots))
+            }
+        except (AttributeError, KeyError, ValueError):
+            return None
+        if not visible_slot_ids:
+            return None
+        filled = set(prefix)
+        targets = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if token_id in visible_slot_ids and token_id not in filled
+        ]
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + margin - float(scores[target].item()),
+        )
+        return bias
+
+    @staticmethod
+    def _required_slot_margin_position_accepts_slot(state: Any) -> bool:
+        """Whether the active argument position is schema-tagged for a slot.
+
+        E630: mirrors ``_schema_role_slot_bias``'s own ``accepts_slot`` gate
+        exactly -- a ``component`` frame's current argument must carry
+        ``x-openui-placeholder`` (the content properties: ``label``, ``text``,
+        ``title``, ...), and an ``object`` frame's current property schema
+        must be able to reach a visible slot at all. Any other frame kind
+        (``variadic``, ``fixed``, ...) is left permissive (``True``) since
+        this bias's only observed failure mode is stuffing missing slots into
+        optional enum/opaque *component*/*object* properties, not array items.
+        """
+        frames = list(getattr(state, "frames", ()))
+        if not frames:
+            return True
+        frame = frames[-1]
+        kind = getattr(frame, "kind", None)
+        if kind not in {"component", "object"}:
+            return True
+        schemas = tuple(getattr(frame, "schemas", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        if not (0 <= index < len(schemas)):
+            return False
+        if kind == "component":
+            return bool(schemas[index].get("x-openui-placeholder"))
+        return TwoTowerModel._schema_can_reach_visible_slot(dict(schemas[index]))
+
 
     def _semantic_plan_repeated_owner_id(
         self,
@@ -8057,6 +8932,38 @@ class TwoTowerModel(nn.Module):
                                     ),
                                 )
                             )
+                    required_slot_margin_bias = self._required_slot_margin_bias(
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                        (
+                            self._slot_contracts[row]
+                            if self._slot_contracts and row < len(self._slot_contracts)
+                            else None
+                        ),
+                        state=states[row],
+                    )
+                    if required_slot_margin_bias is not None:
+                        before_required_slot_margin = int(scores.argmax().item())
+                        scores_before_required_slot_margin = scores.clone()
+                        scores = scores + required_slot_margin_bias
+                        if stats is not None:
+                            stats.required_slot_margin_applications += 1
+                            stats.required_slot_margin_choice_changes += int(
+                                int(scores.argmax().item())
+                                != before_required_slot_margin
+                            )
+                            self._record_required_slot_margin_trace(
+                                stats,
+                                row=row,
+                                position=position,
+                                state=states[row],
+                                candidate_ids=candidate_ids,
+                                candidate_kinds=candidate_kinds,
+                                scores_before=scores_before_required_slot_margin,
+                                margin_bias=required_slot_margin_bias,
+                                scores_after=scores,
+                            )
                     repeated_array_close_bias = (
                         self._semantic_plan_repeated_array_close_bias(
                             row,
@@ -9141,22 +10048,24 @@ class TwoTowerModel(nn.Module):
             self._slot_contracts = None
         if not use_contract_decode:
             # E617: schema_role_slot_decode_weight, slot_coverage_close_decode_weight,
-            # and the semantic_plan_typed_array_*/repeated_slot_margin decode weights
-            # all gate their own bias functions on a populated `self._slot_contracts`
-            # row (see `_schema_role_slot_bias`, `_slot_coverage_close_bias`,
+            # the semantic_plan_typed_array_*/repeated_slot_margin decode weights,
+            # and (E626) required_slot_margin_decode_weight all gate their own bias
+            # functions on a populated `self._slot_contracts` row (see
+            # `_schema_role_slot_bias`, `_slot_coverage_close_bias`,
             # `_semantic_plan_typed_array_nonempty_bias`,
-            # `_semantic_plan_repeated_slot_bias`), which this method only populates
-            # when `slot_contract_constrained_decode` (or `template_fill_decode`) is
-            # enabled. Setting one of these weights without either flag used to
-            # silently no-op every step (E611-E616 replayed a matched control/
-            # treatment eval this way without ever observing a difference). Fail
-            # loud instead of reproducing that footgun.
+            # `_semantic_plan_repeated_slot_bias`, `_required_slot_margin_bias`),
+            # which this method only populates when `slot_contract_constrained_decode`
+            # (or `template_fill_decode`) is enabled. Setting one of these weights
+            # without either flag used to silently no-op every step (E611-E616
+            # replayed a matched control/treatment eval this way without ever
+            # observing a difference). Fail loud instead of reproducing that footgun.
             _contract_gated_weight_names = (
                 "schema_role_slot_decode_weight",
                 "slot_coverage_close_decode_weight",
                 "semantic_plan_typed_array_nonempty_margin_decode_weight",
                 "semantic_plan_typed_array_item_margin_decode_weight",
                 "semantic_plan_repeated_slot_margin_decode_weight",
+                "required_slot_margin_decode_weight",
             )
             _active_contract_gated_weights = sorted(
                 name
@@ -10658,10 +11567,17 @@ class TwoTowerModel(nn.Module):
         for key in ("diffusion_policies", "diffusion_length_buckets"):
             if isinstance(raw_cfg.get(key), list):
                 raw_cfg[key] = tuple(raw_cfg[key])
+        if isinstance(raw_cfg.get("recursive_depth_supervision_weights"), list):
+            raw_cfg["recursive_depth_supervision_weights"] = tuple(
+                raw_cfg["recursive_depth_supervision_weights"]
+            )
         if raw_cfg.get("grammar_ltr_stages") is None:
             raw_cfg["grammar_ltr_stages"] = (64, 128, 192, 256)
         if local_files_only is not None:
             raw_cfg["local_files_only"] = bool(local_files_only)
+        # SLM-238 (RSC-A02): make the historical recursive-depth-aux behavior
+        # of any pre-SLM-238 checkpoint an explicit, persisted value.
+        raw_cfg = migrate_recursive_depth_aux_config(raw_cfg)
         # Ignore unknown keys for forward/back compat
         valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
         cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})

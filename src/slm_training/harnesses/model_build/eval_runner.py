@@ -406,6 +406,9 @@ def _effective_evaluation_policy(
         "schema_role_slot_decode_weight": float(
             value("schema_role_slot_decode_weight") or 0.0
         ),
+        "required_slot_margin_decode_weight": float(
+            value("required_slot_margin_decode_weight") or 0.0
+        ),
         "semantic_plan_decode_weight": float(
             value("semantic_plan_decode_weight") or 0.0
         ),
@@ -462,6 +465,56 @@ def _effective_evaluation_policy(
     }
 
 
+def _first_empty_children_component(node: Any) -> str | None:
+    """
+    Recursively find an element whose ``children`` array is genuinely empty.
+
+    Walks the real parsed AST (``Program.root``, an ``ElementNode`` tree)
+    rather than the serialized text. A component's ``children`` array is a
+    *separate* key from its other (positional) properties in this AST, so a
+    component that had non-content required slots stuffed into its remaining
+    arguments (e.g. serialized as ``Card([], ":a", ":b")``) is still caught
+    here even though a literal ``"Card([])"`` substring match on the text
+    would miss it -- the ``variant``/``direction`` stuffing lives in
+    ``props``, ``children`` is still ``[]`` regardless of what else was
+    stuffed into sibling props. Returns the component's ``typeName`` (e.g.
+    ``"Card"``, ``"Modal"``, ``"Carousel"``, ``"Stack"``) on the first empty
+    match found, else ``None``. Any component type the parser itself marks
+    with a ``children`` prop is covered -- no hardcoded type allowlist.
+    """
+    if isinstance(node, dict):
+        if node.get("type") == "element":
+            props = node.get("props")
+            if isinstance(props, dict):
+                children = props.get("children")
+                if isinstance(children, list):
+                    if not children:
+                        type_name = node.get("typeName")
+                        return type_name if isinstance(type_name, str) else "unknown"
+                    for child in children:
+                        found = _first_empty_children_component(child)
+                        if found:
+                            return found
+                for key, value in props.items():
+                    if key == "children":
+                        continue
+                    found = _first_empty_children_component(value)
+                    if found:
+                        return found
+            return None
+        for value in node.values():
+            found = _first_empty_children_component(value)
+            if found:
+                return found
+        return None
+    if isinstance(node, list):
+        for item in node:
+            found = _first_empty_children_component(item)
+            if found:
+                return found
+    return None
+
+
 def _is_meaningful_program(
     pred: str,
     *,
@@ -483,6 +536,20 @@ def _is_meaningful_program(
         return False, "empty_root_stack", serialized
     if "Card([])" in compact:
         return False, "empty_card", serialized
+    # AST-structural check (E631): catches an empty ``children`` array that
+    # the literal substring checks above miss -- e.g. a Card whose non-content
+    # properties absorbed extra values (``Card([], ":a", ":b")``), or any
+    # other children-bearing component (Modal, Carousel, ...) the literal
+    # checks never covered. Purely additive: every case the literal checks
+    # already caught is unaffected (same branch, same reason string, still
+    # runs first); this only adds new rejections, never removes one.
+    empty_type = _first_empty_children_component(program.root)
+    if empty_type == "Stack":
+        return False, "empty_root_stack", serialized
+    if empty_type == "Card":
+        return False, "empty_card", serialized
+    if empty_type is not None:
+        return False, f"empty_children:{empty_type}", serialized
     comps = _component_multiset(serialized)
     non_stack = {k: v for k, v in comps.items() if k != "Stack"}
     if not non_stack:

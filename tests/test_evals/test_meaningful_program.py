@@ -546,3 +546,68 @@ def test_meaningful_program_v1_backward_lock(source: str, reason: str | None) ->
     assert ok is (reason is None)
     assert actual_reason == reason
     assert serialized is not None
+
+
+# E631: `_is_meaningful_program`'s literal "Card([])" substring check missed
+# a component whose `children` array is genuinely empty but whose remaining
+# (non-content) positional arguments got padded with unrelated values --
+# exactly the shape `required_slot_margin_decode_weight` produced on
+# `rico_eval_test_25`/`rico_eval_test_42`/`rico_eval_test_77` and on
+# `ood_dashboard_01` (see docs/design iter-e629/e630). The fix walks the real
+# parsed AST (`Program.root`) instead of the serialized text, so a padded
+# empty `children` array is caught regardless of what else is stuffed into
+# sibling props.
+@pytest.mark.parametrize(
+    ("source", "reason"),
+    [
+        # The exact rico_eval_test_25 shape (E629/E630): Card's children are
+        # empty but its `variant` prop absorbed a stuffed slot.
+        ('root = Card([], ":stuffed.variant")', "empty_card"),
+        # The exact ood_dashboard_01 shape (E630): two stuffed non-content
+        # args after an empty children array.
+        (
+            'root = Card([], ":ood.dash.m1.value", ":ood.dash.m1.value")',
+            "empty_card",
+        ),
+        # Nested: nothing in the literal check's own substring form catches
+        # this either, since the padding still breaks the exact "Card([])"
+        # match even when nested inside a Stack.
+        (
+            'root = Stack([v0, v1], "column")\n'
+            'v0 = Card([TextContent(":a")])\n'
+            'v1 = Card([], ":stuffed.variant")',
+            "empty_card",
+        ),
+        # Modal/Carousel also declare a required `children` array in the
+        # schema but were never covered by the old literal check at all
+        # (it only special-cased Stack/Card by name).
+        ('root = Modal(":title", true, [])', "empty_children:Modal"),
+        ('root = Carousel([])', "empty_children:Carousel"),
+    ],
+)
+def test_meaningful_program_v1_catches_padded_empty_children(
+    source: str, reason: str
+) -> None:
+    ok, actual_reason, serialized = meaningful_program_v1(source)
+    assert ok is False
+    assert actual_reason == reason
+    assert serialized is not None
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        # Non-empty children with other props also present must still pass
+        # -- the fix must not reject a genuinely-populated component just
+        # because it also carries non-content properties.
+        'root = Card([TextContent(":a")], ":real.variant")',
+        'root = Stack([Card([TextContent(":a")])], "column")',
+    ],
+)
+def test_meaningful_program_v1_still_accepts_genuinely_nonempty_components(
+    source: str,
+) -> None:
+    ok, reason, serialized = meaningful_program_v1(source)
+    assert ok is True
+    assert reason is None
+    assert serialized is not None

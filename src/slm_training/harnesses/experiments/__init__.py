@@ -342,6 +342,52 @@ _LAZY_SLM212_EXPORTS = {
     "validate_slm212_manifest": "validate_manifest",
 }
 
+_LAZY_SLM189_EXPORTS = {
+    "SLM189_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM189_MATRIX_SET": "MATRIX_SET",
+    "SLM189_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM189_ARM_NAMES": "ARM_NAMES",
+    "BridgePlannerCase": "BridgePlannerCase",
+    "BridgePlannerArmSummary": "BridgePlannerArmSummary",
+    "BridgePlannerManifest": "BridgePlannerManifest",
+    "build_slm189_exact_fixture_targets": "build_exact_fixture_targets",
+    "build_slm189_synthetic_scale_targets": "build_synthetic_scale_targets",
+    "run_slm189_fixture": "run_bridge_planner_fixture",
+    "render_slm189_markdown": "render_markdown",
+    "validate_slm189_manifest": "validate_manifest",
+}
+
+_LAZY_SLM190_EXPORTS = {
+    "SLM190_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM190_MATRIX_SET": "MATRIX_SET",
+    "SLM190_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM190_ARM_NAMES": "ARM_NAMES",
+    "ExactFlowCase": "ExactFlowCase",
+    "ObjectiveComparisonRow": "ObjectiveComparisonRow",
+    "LumpabilityCase": "LumpabilityCase",
+    "ExactFlowReport": "ExactFlowReport",
+    "build_toy_layout_adapter": "build_toy_layout_adapter",
+    "build_choice_sequence_adapter": "build_choice_sequence_adapter",
+    "build_canonical_edit_adapter": "build_canonical_edit_adapter",
+    "run_slm190_fixture": "run_exact_flow_fixture",
+    "render_slm190_markdown": "render_markdown",
+    "validate_slm190_report": "validate_report",
+}
+
+_LAZY_SLM191_EXPORTS = {
+    "SLM191_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM191_MATRIX_SET": "MATRIX_SET",
+    "SLM191_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM191_ARM_NAMES": "ARM_NAMES",
+    "TerminationTargetRowV1": "TerminationTargetRowV1",
+    "TerminationCase": "TerminationCase",
+    "TerminationArmSummary": "TerminationArmSummary",
+    "TerminationManifestV1": "TerminationManifestV1",
+    "run_slm191_fixture": "run_termination_matrix",
+    "render_slm191_markdown": "render_markdown",
+    "validate_slm191_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -374,6 +420,24 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm212_debt_routing
 
         value = getattr(slm212_debt_routing, _LAZY_SLM212_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM189_EXPORTS:
+        from slm_training.harnesses.experiments import slm189_bridge_planner
+
+        value = getattr(slm189_bridge_planner, _LAZY_SLM189_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM190_EXPORTS:
+        from slm_training.harnesses.experiments import slm190_exact_flow
+
+        value = getattr(slm190_exact_flow, _LAZY_SLM190_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM191_EXPORTS:
+        from slm_training.harnesses.experiments import slm191_termination_matrix
+
+        value = getattr(slm191_termination_matrix, _LAZY_SLM191_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -462,6 +526,43 @@ __all__ = [
     "run_slm212_fixture_matrix",
     "render_slm212_markdown",
     "validate_slm212_manifest",
+    "SLM189_EXPERIMENT_ID",
+    "SLM189_MATRIX_SET",
+    "SLM189_MATRIX_VERSION",
+    "SLM189_ARM_NAMES",
+    "BridgePlannerCase",
+    "BridgePlannerArmSummary",
+    "BridgePlannerManifest",
+    "build_slm189_exact_fixture_targets",
+    "build_slm189_synthetic_scale_targets",
+    "run_slm189_fixture",
+    "render_slm189_markdown",
+    "validate_slm189_manifest",
+    "SLM190_EXPERIMENT_ID",
+    "SLM190_MATRIX_SET",
+    "SLM190_MATRIX_VERSION",
+    "SLM190_ARM_NAMES",
+    "ExactFlowCase",
+    "ObjectiveComparisonRow",
+    "LumpabilityCase",
+    "ExactFlowReport",
+    "build_toy_layout_adapter",
+    "build_choice_sequence_adapter",
+    "build_canonical_edit_adapter",
+    "run_slm190_fixture",
+    "render_slm190_markdown",
+    "validate_slm190_report",
+    "SLM191_EXPERIMENT_ID",
+    "SLM191_MATRIX_SET",
+    "SLM191_MATRIX_VERSION",
+    "SLM191_ARM_NAMES",
+    "TerminationTargetRowV1",
+    "TerminationCase",
+    "TerminationArmSummary",
+    "TerminationManifestV1",
+    "run_slm191_fixture",
+    "render_slm191_markdown",
+    "validate_slm191_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",

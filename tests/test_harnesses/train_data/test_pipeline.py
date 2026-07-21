@@ -158,7 +158,7 @@ def test_semantic_role_contract_uses_only_visible_slots_and_types(
         )
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Semantic roles: hero(body, title)" in rows["t1"].prompt
+    assert "Semantic roles: hero(body -> TextContent, title -> TextContent)" in rows["t1"].prompt
     assert "Semantic roles: cta(label -> Button)" in rows["t2"].prompt
     assert " x" not in rows["t2"].prompt
     assert result["stats"]["prompt_semantic_role_contract"] is True

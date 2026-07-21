@@ -4392,3 +4392,346 @@ def test_constraint_evidence_is_deterministic_and_json_roundtrips() -> None:
         assert restored == record
     # The whole-forest view is JSON-serializable.
     json.dumps(first.evidence_as_json())
+
+
+def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
+    """E626: floor the best-scoring legal slot candidate that is genuinely
+
+    still missing from the prefix; already-filled slots and the fully-covered
+    case are both no-ops, and the default-off weight never fires.
+    """
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+
+    # slot0 already appears in the prefix; only slot1 is still missing.
+    prefix = [tokenizer.bos_id, slot0]
+    bias = model._required_slot_margin_bias(
+        prefix, candidates, scores, slot_contract
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # Once every visible slot has appeared, the lever no-ops (nothing missing).
+    assert (
+        model._required_slot_margin_bias(
+            [*prefix, slot1], candidates, scores, slot_contract
+        )
+        is None
+    )
+
+    # Default-off weight never fires, even with missing slots present.
+    off_model = _model(required_slot_margin_decode_weight=0.0)
+    assert (
+        off_model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract
+        )
+        is None
+    )
+
+    # No slot contract -> no-op regardless of weight.
+    assert (
+        model._required_slot_margin_bias(prefix, candidates, scores, None) is None
+    )
+
+
+def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
+    """E628: exclude the root/top-level statement position from the floor.
+
+    E627 traced margin=6's Dashboard regression to every hijack firing at
+    ``frame_depth == 0`` -- a fresh top-level statement's value, where the
+    grammar legally allows a bare visible-slot token as an alternative to
+    opening a real component. Passing a ``state`` whose ``frames`` is empty
+    (frame_depth 0) must now make the bias a no-op entirely, even though the
+    same missing-slot/candidate/score setup would otherwise floor it (as
+    ``test_required_slot_margin_bias_floors_only_still_missing_slots`` proves
+    above). Once inside a real component/object frame (``frames`` non-empty,
+    frame_depth >= 1) the bias still fires exactly as before -- this lever
+    should keep flooring slots-as-arguments, only no longer compete for the
+    root/top-level choice.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # frame_depth == 0 (no frame open yet): the bias must not fire at all,
+    # regardless of how genuinely missing slot1 is.
+    root_state = SimpleNamespace(frames=[])
+    assert (
+        model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract, state=root_state
+        )
+        is None
+    )
+
+    # frame_depth == 1 (inside an open component frame) at a content-flagged
+    # argument position (E630's schema-position gate, see
+    # ``test_required_slot_margin_bias_excludes_non_content_schema_positions``
+    # below): unchanged behavior, matching the no-state-passed case exactly.
+    inner_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Card",
+        phase="args",
+        arg_index=0,
+        schemas=({"x-openui-placeholder": True},),
+    )
+    inner_state = SimpleNamespace(frames=[inner_frame])
+    bias = model._required_slot_margin_bias(
+        prefix, candidates, scores, slot_contract, state=inner_state
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # state=None (unknown depth, e.g. a lower-level direct call) preserves
+    # the pre-E628 behavior of firing unconditionally.
+    assert (
+        model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract, state=None
+        )
+        is not None
+    )
+
+
+def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> None:
+    """E630: root-causing rico_eval_test_25's frame_depth>=1 over-stuffing.
+
+    E629's widened-suite sweep found a second failure mode distinct from
+    E627/E628's frame_depth==0 root hijack: at margin>=1, one ``Button``
+    absorbed 5 still-missing required slots across all 5 of its positional
+    arguments (``label``, ``action``, ``variant``, ``type``, ``size``), not
+    just the content-flagged ``label``. A live trace (E630) confirmed the
+    mechanism directly: ``_required_slot_margin_bias``'s floor
+    (``old_max + margin``) is computed relative to the *current* best legal
+    score -- i.e. after ``_schema_value_bias``/``_schema_opaque_bias`` have
+    already discouraged a placeholder there and ``_schema_enum_close_bias``/
+    ``_schema_opaque_close_bias`` have already preferred closing instead --
+    so the floor wins against all four at *any* margin > 0, not only a large
+    one, because all four run earlier in the same per-position bias stack.
+    Gating the fire to exactly the positions ``_schema_role_slot_bias``
+    already treats as slot-eligible removes this: a ``component`` frame's
+    active argument must be ``x-openui-placeholder``-flagged (a content
+    property), and an ``object`` frame's active property schema must be able
+    to reach a visible slot at all.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # component frame, non-content (enum) argument position: no fire, even
+    # though slot1 is genuinely still missing and legal there -- matches
+    # Button.variant/type/size in the traced rico_eval_test_25 regression.
+    enum_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Button",
+        phase="args",
+        arg_index=1,
+        schemas=(
+            {"x-openui-placeholder": True},
+            {"type": "string", "enum": ["primary", "secondary"]},
+        ),
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[enum_frame]),
+        )
+        is None
+    )
+
+    # component frame, the content (label) argument position: fires exactly
+    # as before -- this lever still floors slots as content-property fills.
+    content_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Button",
+        phase="args",
+        arg_index=0,
+        schemas=(
+            {"x-openui-placeholder": True},
+            {"type": "string", "enum": ["primary", "secondary"]},
+        ),
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[content_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # object frame, a property whose schema cannot reach a visible slot
+    # (e.g. a plain boolean): no fire.
+    boolean_object_frame = SimpleNamespace(
+        kind="object", arg_index=0, schemas=({"type": "boolean"},)
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[boolean_object_frame]),
+        )
+        is None
+    )
+
+    # object frame, a property whose schema can reach a visible slot: fires.
+    reachable_object_frame = SimpleNamespace(
+        kind="object", arg_index=0, schemas=({"x-openui-placeholder": True},)
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[reachable_object_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # A frame kind this bias never previously scoped (e.g. "variadic" array
+    # items) stays permissive -- this fix only targets the newly-traced
+    # component/object argument-position failure mode.
+    variadic_frame = SimpleNamespace(kind="variadic", expr_type="array", arg_index=0)
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[variadic_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+
+def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> None:
+    """E627 root-cause instrumentation for E626's open margin=6 regression.
+
+    When a still-missing slot candidate is legal at the *same* decode
+    position as a real component-opening candidate (frame_depth 0, i.e. no
+    component frame has been opened yet), a large-enough margin can floor
+    the slot token above the component token and win the position's argmax
+    -- this is the mechanism E626 observed collapsing Dashboard to a bare
+    ``Button``. The trace must surface this precisely: ``frame_depth == 0``,
+    ``chosen_kind == "sym"``, and ``hijacked_non_slot_candidate`` true
+    because the pre-bias argmax was a non-slot (component) candidate.
+
+    This test exercises ``_record_required_slot_margin_trace`` directly with a
+    hand-built ``margin_bias`` -- it stays a valid unit test of the trace
+    function's own labeling logic even after E628 makes this exact scenario
+    unreachable in production (``_required_slot_margin_bias`` now returns
+    ``None`` at ``frame_depth == 0``, so this call site is never reached with
+    a live margin_bias there anymore; see
+    ``test_required_slot_margin_bias_excludes_frame_depth_zero``).
+    """
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        required_slot_margin_decode_weight=6.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(3)
+    button_id = tokenizer.token_to_id["+Button"]
+    candidate_ids = (button_id, slot_id)
+    candidate_kinds = ("component_root_or_bound", "sym")
+    stats = DecodeStats()
+
+    trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=1,
+        state=SimpleNamespace(frames=[]),
+        candidate_ids=candidate_ids,
+        candidate_kinds=candidate_kinds,
+        scores_before=torch.tensor([11.8, 10.3]),
+        margin_bias=torch.tensor([0.0, 7.5]),
+        scores_after=torch.tensor([11.8, 17.8]),
+    )
+
+    assert trace is not None
+    assert trace["phase"] == "required_slot_margin"
+    assert trace["frame_depth"] == 0
+    assert trace["before_token"] == "+Button"
+    assert trace["before_kind"] == "component_root_or_bound"
+    assert trace["chosen_token"] == tokenizer.id_to_token[slot_id]
+    assert trace["chosen_kind"] == "sym"
+    assert trace["choice_changed"] is True
+    assert trace["hijacked_non_slot_candidate"] is True
+    assert stats.constrained_selection_traces == [trace]
+
+    # Inside an open component frame, a slot-vs-slot swap is not a hijack:
+    # the pre-bias argmax was already a slot candidate.
+    open_frame = SimpleNamespace(
+        kind="component", expr_type="element:Button", phase="args", arg_index=0
+    )
+    inner_trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=7,
+        state=SimpleNamespace(frames=[open_frame]),
+        candidate_ids=(slot_id, tokenizer.sym_id(4)),
+        candidate_kinds=("sym", "sym"),
+        scores_before=torch.tensor([9.0, 8.0]),
+        margin_bias=torch.tensor([0.0, 2.0]),
+        scores_after=torch.tensor([9.0, 10.0]),
+    )
+    assert inner_trace is not None
+    assert inner_trace["frame_depth"] == 1
+    assert inner_trace["choice_changed"] is True
+    assert inner_trace["hijacked_non_slot_candidate"] is False
+
+
+def test_schema_role_slot_bias_skips_masked_bound_role() -> None:
+    from slm_training.dsl.production_codec import OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=8.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Button"])
+    alt_id = tokenizer.sym_id(0)
+    cta_id = tokenizer.sym_id(1)
+
+    bias = model._schema_role_slot_bias(
+        state,
+        (alt_id, cta_id),
+        torch.tensor([20.0, float("-inf")]),
+        [":gallery.alt", ":gallery.cta"],
+        {
+            ":gallery.alt": ("ImageGallery",),
+            ":gallery.cta": ("Button",),
+        },
+        prefix=[],
+        role_bindings={"Button": (":gallery.cta",)},
+    )
+
+    assert bias is None

@@ -5151,3 +5151,31 @@ AgentV is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e699-role-capacity-revisit-20260721.md) and
 [JSON](iter-e699-role-capacity-revisit-20260721.json).
+
+## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
+
+## RSC-A02 final-depth double-counting semantics (SLM-238) — semantics + bounded calibration, no quality claim
+
+## E639 a decode-time margin that floors still-missing required slots directly
+
+## E640 root-causing why margin=6 hijacks Dashboard's root
+
+## E641 excluding `frame_depth == 0` fixes margin=6's root hijack
+
+## E642 a widened-suite margin sweep (1/2/3/4) surfaces a new frame_depth>=1 failure mode
+
+## E643 root-causing rico_eval_test_25's over-stuffing — fixed, but the fix reverts E639/E641's gain too
+
+## E644 fixing `meaningful_program_v1`'s empty-children detection gap (and the honest re-scoring it demands)
+
+## E645 root sibling coverage
+
+## E646 root slot-bearing references
+
+## E647 visible-role semantic-plan completion
+
+## E648 root-only inferred role plans
+
+## E649 required-string role binding
+
+## E650 concrete role-obligation margin
