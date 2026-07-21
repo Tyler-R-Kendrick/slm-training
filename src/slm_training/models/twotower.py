@@ -5254,13 +5254,6 @@ class TwoTowerModel(nn.Module):
                 )
             )
 
-        def owner_directly_matches(slot: str) -> bool:
-            return bool(
-                owner_component
-                and semantic_role_candidates
-                and owner_component in semantic_role_candidates.get(slot, ())
-            )
-
         if kind == "component" and semantic_role_candidates and not any(
             owner_matches(slot) for _index, slot in missing
         ):
@@ -5299,7 +5292,7 @@ class TwoTowerModel(nn.Module):
             if token_id in missing_slots_by_id:
                 slot = missing_slots_by_id[token_id]
                 if direct_slot_compatible and (
-                    not semantic_role_candidates or owner_directly_matches(slot)
+                    not semantic_role_candidates or owner_matches(slot)
                 ):
                     targets.append(position)
                 continue
@@ -5687,39 +5680,19 @@ class TwoTowerModel(nn.Module):
         )
         if owner_position < 0:
             return None
-        visible_slots_by_id = {
-            int(self.tokenizer.sym_id(index)): slot_contract[index]
+        visible_slot_ids = {
+            int(self.tokenizer.sym_id(index))
             for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
         }
-        visible_slot_ids = set(visible_slots_by_id)
         if any(
             token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
         ):
             return None
         used_slot_ids = visible_slot_ids.intersection(prefix[:owner_position])
-        role_candidates = (
-            self._semantic_role_candidates[row]
-            if self._semantic_role_candidates
-            and row < len(self._semantic_role_candidates)
-            else None
-        )
-        active_component = next(
-            (
-                str(frame.expr_type).removeprefix("element:")
-                for frame in reversed(getattr(state, "frames", ()))
-                if frame.kind == "component"
-            ),
-            "",
-        )
         targets = [
             position
             for position, token_id in enumerate(candidate_ids)
             if token_id in visible_slot_ids and token_id not in used_slot_ids
-            and (
-                not role_candidates
-                or active_component
-                in role_candidates.get(visible_slots_by_id[token_id], ())
-            )
         ]
         if not targets:
             return None
