@@ -5385,3 +5385,15 @@ baseline for decode treatments; it is not promotable or ship.
 
 Evidence: [narrative](iter-e714-symbol-only-baseline-20260721.md) and
 [JSON](iter-e714-symbol-only-baseline-20260721.json).
+
+## E715 tree decode on E714
+
+E715 changes only E714's compiler decode mode from off to tree on the same
+three-record local smoke subset. Symbol-only verification remains 3/3 and p50
+falls from 14.06s to 5.75s, but parse regresses 0.3333→0.0, fidelity
+1.0→0.6667, structure 0.0880→0.0619, recall 0.4167→0.1667, and one timeout is
+introduced. AgentV remains 0/1. Reject tree mode for this checkpoint and do not
+extend the arm to other suites.
+
+Evidence: [narrative](iter-e715-tree-decode-symbol-only-20260721.md) and
+[JSON](iter-e715-tree-decode-symbol-only-20260721.json).
