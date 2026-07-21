@@ -4661,3 +4661,15 @@ No checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e655-direct-role-slot-ownership-20260721.md) and
 [JSON](iter-e655-direct-role-slot-ownership-20260721.json).
+
+## E656 repeated-slot active role ownership
+
+E656 constrains the later repeated-plan raw-slot margin to the active
+component's direct semantic roles. Predictions and all quality metrics still
+exactly match E653 because the earlier coverage branch independently forces the
+same slot through transitive reachability. Reject neutral v109 and restore E653
+behavior as v110; the next arm must combine both ownership constraints. No
+checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e656-repeated-slot-role-ownership-20260721.md) and
+[JSON](iter-e656-repeated-slot-role-ownership-20260721.json).
