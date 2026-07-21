@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v145",
+      "version": "v146",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v146",
+          "date": "2026-07-21",
+          "note": "E691: keep transitively slot-bearing array content schema-constrained instead of admitting a raw placeholder"
+        },
         {
           "version": "v145",
           "date": "2026-07-21",

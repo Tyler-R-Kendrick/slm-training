@@ -80,6 +80,14 @@ _BYTE_PREFIX = "B:"
 _PLACEHOLDER_SCHEMA_KEY = "x-openui-placeholder"
 
 
+def _is_direct_placeholder_schema(schema: dict[str, Any]) -> bool:
+    """Distinguish scalar content slots from slot-bearing containers."""
+    return bool(schema.get(_PLACEHOLDER_SCHEMA_KEY)) and schema.get("type") in (
+        None,
+        "string",
+    )
+
+
 def _byte_token(ch: str) -> str:
     return f"{_BYTE_PREFIX}{ord(ch):02x}"
 
@@ -663,7 +671,7 @@ class ChoiceDecodeState:
     def _schema_accepts(schema: dict[str, Any], expr_type: str) -> bool:
         if not schema:
             return True
-        if schema.get(_PLACEHOLDER_SCHEMA_KEY):
+        if _is_direct_placeholder_schema(schema):
             return expr_type == "placeholder"
         if "anyOf" in schema:
             return any(
@@ -1017,7 +1025,7 @@ class ChoiceDecodeState:
 
     def _minimal_schema_id(self, schema: dict[str, Any]) -> int:
         tok = self.tokenizer
-        if schema.get(_PLACEHOLDER_SCHEMA_KEY):
+        if _is_direct_placeholder_schema(schema):
             return tok.token_to_id[f"{SLOT_PREFIX}0"]
         if "anyOf" in schema:
             return self._minimal_schema_id(dict(schema["anyOf"][0]))

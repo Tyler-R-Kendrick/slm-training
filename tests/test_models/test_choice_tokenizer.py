@@ -235,6 +235,21 @@ def test_choice_state_enforces_component_array_item_schema(
     assert state.advance_id(tok.eos_id)
 
 
+def test_choice_state_does_not_collapse_content_array_to_placeholder(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=3)
+    assert state.advance_id(tok.token_to_id["+TabItem"])
+    assert state.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert state.advance_id(tok.token_to_id["@0"])
+
+    assert tok.token_to_id["@1"] not in state.allowed_ids(12)
+    assert tok.token_to_id["["] in state.allowed_ids(12)
+    assert state.advance_id(tok.token_to_id["["])
+    assert tok.token_to_id["@1"] not in state.allowed_ids(11)
+    assert tok.token_to_id["+TextContent"] in state.allowed_ids(11)
+
+
 def test_choice_state_enforces_closed_typed_object_properties(
     tok: ChoiceTokenizer,
 ) -> None:
