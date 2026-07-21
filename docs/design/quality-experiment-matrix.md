@@ -4501,3 +4501,18 @@ slightly, and p95 latency nearly doubles. No checkpoint was created or synced.
 Evidence:
 [iter-e644-role-obligation-margin-20260720.md](iter-e644-role-obligation-margin-20260720.md)
 and [JSON](iter-e644-role-obligation-margin-20260720.json).
+
+## E645 semantic root-binding threshold
+
+E645 raised the existing semantic-plan binding weight from E644's 1 to 4 and
+8. Both arms are prediction- and quality-identical to E644 while observed
+latency trends worse. Reject the sweep and retain E644: these runs were stamped
+model.twotower v88, while the rebased retained E644 behavior is v91. The
+remaining Dashboard failure occurs at verified root projection, not
+binding-score selection. No checkpoint was created or synced; AgentV remained
+0/1 in both arms.
+
+Evidence:
+[iter-e645-root-binding-threshold-20260720.md](iter-e645-root-binding-threshold-20260720.md),
+[w4 JSON](iter-e645-root-binding-w4-20260720.json), and
+[w8 JSON](iter-e645-root-binding-w8-20260720.json).
