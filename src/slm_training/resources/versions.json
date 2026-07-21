@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v104",
+      "version": "v105",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v105",
+          "date": "2026-07-21",
+          "note": "E654: retry schema-valid enum flooring after E653 stabilizes nested visible-role ownership"
+        },
         {
           "version": "v104",
           "date": "2026-07-21",

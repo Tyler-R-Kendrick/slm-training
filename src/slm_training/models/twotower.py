@@ -4867,7 +4867,7 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
-        """Discourage visible placeholders in enum-valued component arguments."""
+        """Floor schema-valid literals or closure at enum-valued arguments."""
         weight = float(getattr(self.config, "schema_value_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
@@ -4882,16 +4882,42 @@ class TwoTowerModel(nn.Module):
             or not self._schema_contains_enum(schemas[index])
         ):
             return None
-        from slm_training.dsl.production_codec import SLOT_PREFIX
+        from slm_training.dsl.production_codec import LIT_PREFIX
+
+        def enum_values(schema: dict[str, Any]) -> set[Any]:
+            values = set(schema.get("enum", ()))
+            for key in ("anyOf", "oneOf"):
+                for option in schema.get(key, ()):
+                    if isinstance(option, dict):
+                        values.update(enum_values(option))
+            return values
+
+        legal_tokens = {
+            f"{LIT_PREFIX}{json.dumps(value, separators=(',', ':'))}"
+            for value in enum_values(dict(schemas[index]))
+        }
+        legal_positions = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if str(self.tokenizer.id_to_token.get(token_id, "")) in legal_tokens
+        ]
+        if index >= int(getattr(frame, "required_args", 0)):
+            close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
+            if close_id in candidate_ids:
+                legal_positions.append(candidate_ids.index(close_id))
+        if not legal_positions:
+            return None
 
         bias = scores.new_zeros(len(candidate_ids))
-        applied = False
-        for position, token_id in enumerate(candidate_ids):
-            token = str(self.tokenizer.id_to_token.get(token_id, ""))
-            if token.startswith(SLOT_PREFIX):
-                bias[position] = -weight
-                applied = True
-        return bias if applied else None
+        target = max(
+            legal_positions,
+            key=lambda position: float(scores[position].item()),
+        )
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + weight - float(scores[target].item()),
+        )
+        return bias
 
     def _semantic_plan_inline_bias(
         self,
