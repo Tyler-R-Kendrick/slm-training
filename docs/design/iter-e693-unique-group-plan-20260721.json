@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "run_id": "e693-unique-group-plan-r1",
+  "experiment_id": "E693",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_tradeoff_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "When the public schema exposes a Group family but no standalone base family, an authored base noun can safely require that unique Group component and prevent premature root closure.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e692-fixed-enum-finalize-r2",
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.6,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.66242,
+      "component_type_recall": 0.7933333333333333,
+      "reward_score": 0.9634,
+      "ast_node_f1": 0.7754029304029304,
+      "ast_edge_f1": 0.5900899100899101,
+      "latency_ms_p50": 3864.72,
+      "latency_ms_p95": 6155.73,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e692": {
+    "changed_predictions": 1,
+    "strict_v2": [0.6, 0.6],
+    "placeholder_fidelity": [0.8666666666666666, 1.0],
+    "placeholder_validity": [0.9199999999999999, 1.0],
+    "structural_similarity": [0.6657599999999999, 0.66242],
+    "component_type_recall": [0.6933333333333334, 0.7933333333333333],
+    "reward_score": [0.9209999999999999, 0.9634],
+    "ast_node_f1": [0.7639743589743591, 0.7754029304029304],
+    "ast_edge_f1": [0.6434232434232434, 0.5900899100899101],
+    "latency_ms_p50": [3489.19, 3864.72],
+    "latency_ms_p95": [6560.11, 6155.73]
+  },
+  "prediction_evidence": {
+    "held_out_settings_01": "The plan now emits SwitchGroup in addition to Slider, root retains both references, and all three visible slots are covered. Only schema_value_role_mismatch:Slider.variant remains.",
+    "unchanged_other_predictions": 4
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v149: the coverage, fidelity, recall, reward, and node-F1 gains outweigh the small structure and edge-F1 regressions on this exploratory replay. Next diagnose Slider.variant without disturbing the new SwitchGroup subtree.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7d870dac86fe7a2ffd0207736e85d6d3f3d042e8",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v35",
+      "evals.meaningful_program": "2.6.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v149"
+    },
+    "stamped_at": "2026-07-21T14:05:40.810868+00:00"
+  }
+}

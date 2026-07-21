@@ -5065,3 +5065,15 @@ is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e692-fixed-enum-finalize-20260721.md) and
 [JSON](iter-e692-fixed-enum-finalize-20260721.json).
+
+## E693 unique public Group planning
+
+E693 plans a public `*Group` family from its authored base noun only when no
+standalone base component exists. Settings now emits SwitchGroup beside Slider
+and covers all slots; fidelity/validity reach 1.0, recall rises to 0.7933, and
+reward reaches 0.9634. Strict remains 3/5 because Slider.variant is still
+role-invalid; structure and edge F1 slip slightly. Retain v149 as a positive
+tradeoff, not ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e693-unique-group-plan-20260721.md) and
+[JSON](iter-e693-unique-group-plan-20260721.json).
