@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v92",
+      "version": "v93",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v93",
+          "date": "2026-07-21",
+          "note": "Skip role-obligation margin flooring for candidates already blocked to a non-finite score by semantic candidate masks"
+        },
         {
           "version": "v92",
           "date": "2026-07-21",

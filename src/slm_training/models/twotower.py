@@ -5840,12 +5840,15 @@ class TwoTowerModel(nn.Module):
                     or active_property in properties_by_slot.get(slot, ())
                 )
             ):
+                candidate_score = float(scores[position].item())
+                if bound_slots is not None and not math.isfinite(candidate_score):
+                    continue
                 bias[position] = (
                     max(
                         0.0,
                         float(scores.max().item())
                         + weight
-                        - float(scores[position].item()),
+                        - candidate_score,
                     )
                     if bound_slots is not None
                     else weight

@@ -1525,6 +1525,33 @@ def test_schema_role_slot_bias_margin_floors_only_bound_unused_role() -> None:
     )
 
 
+def test_schema_role_slot_bias_skips_masked_bound_role() -> None:
+    from slm_training.dsl.production_codec import OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=8.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Button"])
+    alt_id = tokenizer.sym_id(0)
+    cta_id = tokenizer.sym_id(1)
+
+    bias = model._schema_role_slot_bias(
+        state,
+        (alt_id, cta_id),
+        torch.tensor([20.0, float("-inf")]),
+        [":gallery.alt", ":gallery.cta"],
+        {
+            ":gallery.alt": ("ImageGallery",),
+            ":gallery.cta": ("Button",),
+        },
+        prefix=[],
+        role_bindings={"Button": (":gallery.cta",)},
+    )
+
+    assert bias is None
+
+
 def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
     from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.production_codec import NAME_PREFIX, OPEN_PREFIX
