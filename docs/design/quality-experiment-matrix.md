@@ -5179,3 +5179,17 @@ Evidence: [narrative](iter-e699-role-capacity-revisit-20260721.md) and
 ## E649 required-string role binding
 
 ## E650 concrete role-obligation margin
+
+## E700 namespace role capacity
+
+E700 isolates distinct public string-property matching after likeness
+abstention. The focused planner test adds the intended TextContent carrier, but
+the authoritative constrained R3 decoder emits the same five predictions as
+E699 r3, including the Form record's missing `hint.title`; all aggregate quality
+metrics remain byte-identical. R1 is excluded for a fallback-policy mismatch and
+R2 is a v167 rollback control. Reject v166 and restore v165 behavior as v167.
+The next lever must make every planned role carrier reachable in the final root
+aggregation. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e700-namespace-role-capacity-20260721.md) and
+[JSON](iter-e700-namespace-role-capacity-20260721.json).
