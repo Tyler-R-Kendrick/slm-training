@@ -4563,3 +4563,18 @@ created or synced.
 Evidence:
 [iter-e648-dynamic-literal-root-probe-20260720.md](iter-e648-dynamic-literal-root-probe-20260720.md)
 and [JSON](iter-e648-dynamic-literal-root-probe-20260720.json).
+
+## E649 refresh action semantic-role alias
+
+E649 mapped `refresh` to the existing action-label role. Placeholder fidelity
+and validity reach 1.0000, but strict v2 remains 3/4 and meaningful v1 regresses
+from 4/4 to 3/4: Dashboard nests the refresh Button inside a duplicate body
+Button, misplaces metric content, and emits an empty Card. Reject the treatment
+stamped v94. After rebasing onto retained E648 v96, the append-only lineage
+records E649 as treatment v97 and restoration v98. The next repair must bind an already-planned
+family to a compatible slot without changing its cardinality or nesting. No
+checkpoint was created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e649-refresh-action-role-20260720.md](iter-e649-refresh-action-role-20260720.md)
+and [JSON](iter-e649-refresh-action-role-20260720.json).
