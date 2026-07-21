@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_id": "e657-combined-role-ownership-r1",
+  "experiment_id": "E657",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Constraining both coverage and repeated-plan raw-slot margins to direct active-component role ownership will force a semantically compatible nested leaf and clear the Carousel failure.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"baseline_run_id": "e653-nested-role-ownership-r2", "suite": "ood", "n": 4, "device": "cpu", "exact_e653_policy": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160},
+  "suites": {"ood": {"n": 4, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.75, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.75125, "component_type_recall": 0.875, "reward_score": 0.973, "ast_node_f1": 0.8097222222222222, "ast_edge_f1": 0.6964285714285714, "latency_ms_p50": 3176.54, "latency_ms_p95": 8127.3, "fallback_count": 0, "decode_timeout_count": 0}},
+  "failure_breakdown": {"placeholder_semantic_role_mismatch": 1, "schema_value_role_mismatch:Callout.variant": 1, "schema_value_role_mismatch:Carousel.children": 1},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "decision": "Reject v111 and restore retained E653 behavior as v112. The interaction changes Carousel's raw metric to Slice(metric, 1), but places the metric in Slice.category; strict failures remain while structure, AST F1, and latency regress.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "f4d92e52658081334b55ee7d5803ee05f65c7e0d", "code_dirty": false, "components": {"harness.model_build.eval": "v33", "evals.meaningful_program": "2.2.1", "evals.scoring": "v12", "model.twotower": "v111"}, "stamped_at": "2026-07-21T06:25:24.270270+00:00"}
+}

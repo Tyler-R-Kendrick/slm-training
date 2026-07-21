@@ -3342,138 +3342,6 @@ Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
 `outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
 `docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.
 
-**Annotation (SLM-237/SLM-238):** E303's deep-supervision auxiliary loss had
-a live weighting defect, fixed by SLM-237 (see `## RSC-A01` below), and its
-all-depth variant double-counts the final recursion depth against the
-primary term, made explicit and versioned by SLM-238 (see `## RSC-A02`
-below). Both are annotations layered on top of this section's original
-wiring-only landing — **V18's wiring-only verdict above is unchanged.**
-
-**Annotation (SLM-240 / RSC-A04):** the "same public contract" wording above
-is about the interface only. A separate false claim in
-``recursive_denoiser.py``'s docstring additionally asserted the R=1 tower
-had the "same parameter count and layer names" as ``DenoiserTower`` — untrue:
-V1 always adds `z_latent`/`ctx_proj` (exact delta 9,248 params / +14.23% for
-this fixture's config, reproduced from `recursive_zstate_parameter_delta`,
-never hard-coded). Corrected in the docstring, this doc, and the fixture's own rendered
-prose (README carried no such wording — checked, nothing to correct there);
-replaced the single retracted claim with
-`ArchitectureComparisonReportV1`'s independently-named, independently-tested
-fields (interface/output-shape/parameter-count/checkpoint-bytes/block-eval/
-FLOPs/behavioral-equivalence — never a collapsed `parity` boolean). See
-`docs/design/iter-rsc-a04-*`. Another annotation, not a re-verdict — **V18's
-wiring-only verdict above is unchanged.**
-
-## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
-
-E303/V18's deep-supervision auxiliary loss (`recursive_depth_supervision_weights`
-in `TwoTowerModel.training_loss`) had a live defect surfaced by the SLM-138
-adversarial audit ledger: the loop bound each per-depth weight `w` but never
-multiplied `d_loss` by it, computing `sum_d(L_d) / sum_d(w_d)` (an unweighted
-mean) instead of the intended `sum_d(w_d * L_d) / sum_d(w_d)`. The already-committed
-`docs/design/iter-slm138-recursive-denoiser-20260720.md` fixture values prove
-this numerically: `(L0 + L1) / 1.5 = 33.328...` exactly matches its recorded
-`recursive_depth_supervision_loss`, the defective formula, not the intended one.
-
-Independently reproduced (against the real pre-patch production code via
-`git stash`, not a re-implementation) and fixed:
-
-| # | Failure mode | Before | After |
-| --- | --- | --- | --- |
-| 1 | `(0, 1)` includes L0 (zero doesn't disable a depth) | `aux=61.2788 != L1=29.8113` | `aux == L1` exactly |
-| 2 | `(0.5, 1)` vs `(1, 2)` — should be the same normalized mean | exact 2x scale difference (`40.8526` vs `20.4263`) | identical (`30.3634` both) |
-| 3 | `(0, 0)` silently disables the objective and its telemetry | no error, no aux metrics logged | raises `ValueError` before any loss/backward |
-| 4 | Negative weights not rejected | accepted unchecked | raises `ValueError` |
-| 5 | Length mismatch silently truncated via `min(...)` | only depth 0 logged, depth 1 dropped silently | raises `ValueError` |
-| 6 | Weights on a denoiser without `recursive_outputs` silently ignored | no error, no aux term (confirmed in this repo's own `run_slm138_recursive_denoiser_fixture.py`, which applied the weights to the `stacked` arm too) | raises `ValueError`; fixture corrected to only weight the `shared_recursive` arm |
-
-Fix: a canonical `validate_recursive_depth_supervision` /
-`ValidatedDepthSupervision` validator (owned by `twotower.py`, called
-unconditionally right after the denoiser forward pass) fails closed on all
-six modes; the corrected weighted objective and new
-`recursive_depth_weight_{d}` / `recursive_depth_weighted_contribution_{d}` /
-`recursive_depth_supervision_weight_sum` / `recursive_depth_supervision_enabled`
-telemetry make raw and weighted per-depth terms independently inspectable.
-Empty-tuple backward compatibility (feature explicitly off) is unchanged on
-every architecture. 17 new deterministic tests in
-`tests/test_models/test_recursive_denoiser.py` (26 total, all passing) cover
-every property required by SLM-237. Full before/after evidence:
-`docs/design/iter-rsc-a01-depth-supervision-weighting-fix-20260721.json` and `.md`.
-
-**No quality claim is made from this patch** — it is a correctness fix only,
-per SLM-237's own acceptance criteria. RSC-A02 (whether the final recursion
-depth belongs in the auxiliary term) is out of scope. Version bumps:
-`model.twotower` v62 → v63, `model.recursive_denoiser` v1 → v2.
-
-**RSC-A02 annotation (SLM-238, 2026-07-21):** the all-depth objective this
-section describes double-counts the final recursion depth —
-`rec_out["logits"] == rec_out["depth_logits"][-1]` exactly (see
-`SharedRecursiveDenoiserTower.recursive_outputs`), so the primary
-reconstruction term and the historical all-depth auxiliary term both
-differentiate through the identical final-depth forward pass. Neither this
-section's original SLM-138 wiring-only landing nor SLM-237's weighting fix
-named that ambiguity. SLM-238 makes it an explicit, versioned choice
-(`TwoTowerConfig.recursive_depth_aux_mode`: `off` | `intermediate_only` |
-`all_depths` | `legacy_all_depths`, with a dedicated
-`recursive_depth_aux_weight` coefficient) and runs a bounded 5-arm
-calibration factorial — **this is an annotation, not a re-verdict**: SLM-138's
-wiring-only status and SLM-237's correctness-fix verdict are unchanged. See
-`docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.md`
-and the `## RSC-A02` section below.
-
-## RSC-A02 final-depth double-counting semantics (SLM-238) — semantics + bounded calibration, no quality claim
-
-SLM-237 fixed the deep-supervision objective's *weighting* math; SLM-238
-fixes its *semantics*: whether the final recursion depth should count once
-(primary term only) or twice (primary + auxiliary) was never a stated
-choice, despite `rec_out["logits"] == rec_out["depth_logits"][-1]` holding
-exactly (same tensor, not a recomputation).
-
-`TwoTowerConfig` gains `recursive_depth_aux_mode` (`off` |
-`intermediate_only` | `all_depths` | `legacy_all_depths`) and
-`recursive_depth_aux_weight` (a coefficient scaling the whole auxiliary
-term, independent of the per-depth `recursive_depth_supervision_weights`).
-SLM-237's `validate_recursive_depth_supervision`/`ValidatedDepthSupervision`
-was extended in place (not forked) to validate mode/coefficient and the
-mode-dependent eligible-depth range: `intermediate_only` requires weights
-covering exactly depths `0..R-2` and structurally never indexes
-`depth_logits[R-1]`; `all_depths` requires exactly `0..R-1` and deliberately
-double-counts the final depth. `resolve_recursive_depth_aux_mode` and
-`migrate_recursive_depth_aux_config` keep every pre-existing config/checkpoint
-(`recursive_depth_aux_mode` absent) byte-identical to SLM-237's behavior via
-the `legacy_all_depths` reproduction-only label — `off` is the new default
-only when `recursive_depth_supervision_weights` was never set. New objective-
-decomposition telemetry (`primary_final_reconstruction_loss`,
-`recursive_intermediate_aux_loss`, `recursive_final_depth_aux_contribution`,
-`recursive_depth_aux_weight`, `combined_training_loss`) is always populated,
-never omitted, and reproduces the scalar training loss exactly.
-
-A bounded 5-arm factorial (`scripts/run_rsc_a02_depth_aux_mode_factorial.py`)
-compared A=off, B=intermediate_only(λ=1), C=all_depths(λ=1),
-D=intermediate_only(λ=0.3), E=all_depths(λ=0.3) on a deterministic 2-record
-fixture and a bounded 6-record real-corpus smoke, 3 training steps each.
-Real fixture-arm `combined_training_loss`: A=23.041, B=50.046, C=48.725,
-D=31.144, E=30.748 — `combined_training_loss` reproduced the live
-`training_loss()` return value exactly in every arm, and
-`recursive_final_depth_aux_contribution` was exactly `0.0` and structurally
-absent from the per-depth telemetry in both `intermediate_only` arms.
-**Calibration/semantics only — no quality or LOTUS-transfer claim, no
-promotion, no GPU campaign.** 41 tests in
-`tests/test_models/test_recursive_denoiser.py` (26 pre-existing + 15 new)
-cover every SLM-238 acceptance property, including the required
-`RecursiveObjectiveContractV2` schema. Full evidence:
-`docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.json`/`.md`
-and `docs/design/iter-rsc-a02-depth-aux-mode-factorial-20260721.json`/`.md`.
-
-Recommendation for the future SLM-233 control matrix: `intermediate_only` is
-the default-candidate (final-depth supervision should come solely from the
-primary reconstruction term, since that term already *is* the actual
-prediction); `all_depths`/`legacy_all_depths` remain explicit alternative-
-hypothesis controls, since this bounded factorial cannot rule out that the
-double count helps in practice — that adoption decision is SLM-233's job, not
-decided here. Version bumps: `model.twotower` v63 → v65,
-`model.recursive_denoiser` v2 → v4.
-
 ## V19 stochastic recursive width (SLM-139) — closed
 
 SLM-139 gates on a positive shared-recursive verdict from SLM-138.  SLM-138
@@ -4544,549 +4412,770 @@ Evidence:
 [iter-e638-root-slot-coverage-20260720.md](iter-e638-root-slot-coverage-20260720.md)
 and [JSON](iter-e638-root-slot-coverage-20260720.json).
 
-> **PR #625 integration note:** The six sections below were originally numbered E626–E631 in `origin/claude/great-dirac-qd7ala`. They are renumbered E639–E644 here to avoid colliding with the E621–E638 sequence already landed on `main`; linked artifact file names keep their original labels.
+## E639 root sibling coverage
 
-## E639 a decode-time margin that floors still-missing required slots directly
-
-E639 pursues E620's "coverage-aware component/property closure" recommendation
-(and an open, unmerged PR #625's more concrete framing: floor still-missing
-*required slots* directly, analogous to how `semantic_plan_margin_decode_weight`
-already floors still-required *plan families*). A new default-off field,
-`required_slot_margin_decode_weight`, was threaded end to end
-(`TwoTowerConfig`/`ModelBuildConfig`, `apply_runtime_overrides`,
-`_effective_evaluation_policy`, CLI flags on `evaluate_model.py` and
-`train_model.py`, the E617 contract-gated `ValueError` guard) and unit-tested
-to fire only for slots genuinely still missing from the decode prefix, not
-already-filled ones.
-
-Reused E620's exact scratch recipe (E530-r2 corpus, 800 steps, seed 0); the
-fresh checkpoint's loss (4.068013) matches E620's (4.068010) to 4 decimal
-places. A matched OOD `n=4` control (`required_slot_margin_decode_weight=0`)
-vs two treatment arms replayed the full E617-era recipe
-(`schema_role_slot_decode_weight=8` plus the whole `semantic_plan_*` family
-fixed in every arm); the control reproduces E620's treatment numbers and
-per-record predictions exactly, confirming a faithful replay.
-
-| Metric | Control (0) | Treatment margin=2 | Treatment margin=6 |
-| --- | ---: | ---: | ---: |
-| meaningful v1 | 0.5000 | 0.7500 | 0.2500 |
-| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
-| placeholder fidelity | 0.5500 | 0.8333 | 0.3000 |
-| placeholder validity | 0.7300 | 0.9000 | 0.4800 |
-| structural similarity | 0.4886 | 0.5473 | 0.4261 |
-| component recall | 0.4792 | 0.5625 | 0.3958 |
-| reward | 0.8140 | 0.9005 | 0.5693 |
-| AST node / edge F1 | 0.5437 / 0.3750 | 0.6137 / 0.3485 | 0.4770 / 0.2500 |
-| AgentV | 0/1 | 0/1 | 0/1 |
-
-The result is real and dose-dependent: a moderate margin (2.0, matching the
-scale of sibling `*_margin_decode_weight` levers already in the recipe) raises
-every headline metric except AST edge F1 (Dashboard gains a `Callout` + `Card`s
-it previously omitted; Auth gains correctly role-matched components instead of
-one overloaded `Button`). A strong margin (6.0) instead regresses every
-headline metric below control — Dashboard collapses to a bare `Button` and
-Gallery's typed array closes empty again (E612's rejected failure mode
-reappearing), showing an overly large floor can hijack early root/component
-choice, not just fill slots. `binding_aware_meaningful_v2_rate_strict` (strict
-v2) stays 0.0 in all three arms — at least one record per arm still fails
-`required_placeholder_missing` and/or `placeholder_semantic_role_mismatch`.
-No decode timeouts or fallbacks in any arm. This is a single `n=4` matched-pair
-replay on one scratch checkpoint, not a confirmatory suite; no checkpoint was
-promoted or synced; not a ship claim. Retain the lever default-off at a
-moderate margin scale (~2.0); reject margin=6 as a default. Next: a powered
-multi-seed/full-suite replay sweeping the margin, and a root-cause trace of
-why margin=6 hijacks root-component choice.
-
-Evidence:
-[iter-e626-required-slot-margin-decode-weight-20260720.md](iter-e626-required-slot-margin-decode-weight-20260720.md)
-and
-[JSON](iter-e626-required-slot-margin-decode-weight-20260720.json).
-
-## E640 root-causing why margin=6 hijacks Dashboard's root
-
-E640 picks E639's deferred root-cause trace (not the powered multi-seed
-sweep, still open). Added observability only —
-`DecodeStats.required_slot_margin_applications`/`_choice_changes` counters and
-`TwoTowerModel._record_required_slot_margin_trace`, a bounded
-`constrained_selection_traces` entry per fire recording `frame_depth` (via the
-existing `_choice_phase_evidence` helper), before/after argmax token + grammar
-kind, and a `hijacked_non_slot_candidate` flag — following the repo's existing
-`_record_semantic_plan_root_trace` pattern exactly. No bias formula or default
-changed (`model.twotower` stays v60, `no-bump:` history entry).
-
-Reused E639's own already-trained scratch checkpoint verbatim (no retrain) and
-replayed its exact matched recipe with `--eval-limit 1` on `ood_dashboard_01`
-(record 0 of the `ood` suite — the exact record E639 reported collapsing),
-varying only `required_slot_margin_decode_weight` in `{0, 2, 6}`. All three
-reproduce E639's own per-record predictions for this record exactly, then the
-new traces are read directly:
-
-At margin=6, all 5 `required_slot_margin` fires happen at `frame_depth==0`
-(no component frame open yet — a fresh top-level statement's value), 3 of 5
-flipping the argmax away from a real component candidate (`+Image`,
-`+Callout`) or a literal to a bare slot token. The grammar legally allows a
-bare visible-slot token as a complete top-level statement value — an
-alternative production to opening a real component — and the bias's "still
-missing anywhere in the prefix" criterion is true for every required slot at
-decode start, so it fires with maximum force at the very first few statement
-positions. The model front-loads all 5 required slots into degenerate
-one-token `name = @N` statements in the first 5 decode positions before any
-real component tree exists; the lever then goes permanently silent (nothing
-left missing) for the remaining ~150 tokens, which do build a plausible
-Callout/Card/Card/Stack/Button tree — but whichever statement gets serialized
-as `root` was already decided in the corrupted opening stretch, so the real
-structure ends up as dead code the compiler drops. At margin=2, the *same*
-`frame_depth==0` competition is legal at the same position and the bias does
-win its own local before/after comparison there too — but the fixed, active
-`semantic_plan_root_margin_decode_weight=2`/`semantic_plan_root_decode_weight=8`
-biases, applied *later* in the same per-position bias stack
-(`required_slot_margin_bias` runs before `semantic_plan_bias`), push the score
-back above the floored slot token before the position's final `argmax()` is
-taken, so the emitted token is still the real component.
-
-**Answering E639's own framing directly:** not a scope leak in the sense of
-the bias ever scoring a non-slot candidate — it never does, and is exactly as
-narrowly scoped as designed. The leak is structural: the grammar makes a bare
-slot token a legal substitute for opening a component at the *same* decode
-position, and whether the intended behavior or this degenerate pass-through
-wins is decided purely by whether `required_slot_margin_decode_weight`
-exceeds the combined magnitude of the downstream `semantic_plan_root*`
-correction biases that run later in the same stack — not by base-logit
-strength and not by an unbounded scoping gap. A well-specified next code
-change (not attempted here): run `required_slot_margin_bias` after
-`semantic_plan_bias` in the stack, or exclude `frame_depth==0` candidates from
-its target set, then re-run this same trace to confirm the hijack disappears.
-
-This is a single-record (`n=1`), one-checkpoint causal trace, not a quality
-confirmation — E639's own `n=4` numbers remain the quality evidence of
-record. No checkpoint trained/promoted/synced; no gate touched; does not
-replace E639's deferred powered multi-seed sweep (still open). Gallery's
-"typed array re-closes empty" regression was not independently traced here
-and may or may not share this exact mechanism.
-
-Evidence:
-[iter-e627-required-slot-margin-root-cause-trace-20260720.md](iter-e627-required-slot-margin-root-cause-trace-20260720.md)
-and
-[JSON](iter-e627-required-slot-margin-root-cause-trace-20260720.json).
-
-## E641 excluding `frame_depth == 0` fixes margin=6's root hijack
-
-E641 implements E640's mitigation (2): `_required_slot_margin_bias`
-(`src/slm_training/models/twotower.py`) now takes an optional `state` and
-returns `None` (no fire at all) whenever `len(state.frames) == 0` — no
-component/object frame open yet, the exact condition E640 traced every
-margin=6 hijack to. Mitigation (1) (reorder the bias stack) was considered
-and rejected as less principled: the stack already applies
-`semantic_plan_root*` after `required_slot_margin_bias` and margin=2 already
-wins that race, so reordering would not remove the race, only change which
-correction gets the last additive word on the same score tensor — margin=6
-would still be large enough to escape whichever single correction runs last.
-Excluding `frame_depth == 0` instead matches the lever's own original intent
-(floor still-missing slots as *argument* fills, never as root/top-level
-choice) and removes the magnitude race entirely, at any margin. Default
-(`0.0`) and E617 contract-gating unchanged; `model.twotower` v60 -> v61.
-New unit test `test_required_slot_margin_bias_excludes_frame_depth_zero`
-proves the no-op at `frame_depth == 0` and unchanged firing at
-`frame_depth == 1`.
-
-Reused E639's own already-trained scratch checkpoint verbatim (sha256
-verified to match) and replayed the identical matched OOD `n=4` recipe
-(`ood` suite, `src/slm_training/resources/data/eval/remediated`), varying
-only `required_slot_margin_decode_weight` over `{0, 2, 6}`. The `margin=0`
-control reproduces E639's own control exactly (all metrics to 4 decimal
-places).
-
-| Metric | Control (0) | Margin=2 | Margin=6 |
-| --- | ---: | ---: | ---: |
-| meaningful v1 | 0.5000 | 0.7500 | 0.7500 |
-| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
-| placeholder fidelity | 0.5500 | 0.8333 | 0.8333 |
-| placeholder validity | 0.7300 | 0.9000 | 0.9000 |
-| structural similarity | 0.4886 | 0.5473 | 0.5473 |
-| component recall | 0.4792 | 0.5625 | 0.5625 |
-| reward | 0.8140 | 0.9005 | 0.9005 |
-| AST node / edge F1 | 0.5437 / 0.3750 | 0.6137 / 0.3485 | 0.6137 / 0.3485 |
-| AgentV | 0/1 | 0/1 | 0/1 |
-
-**The regression is fixed, not merely reduced.** Margin=6 — E639's worst arm,
-regressing every headline metric below control — is now **byte-identical**
-to margin=2's already-verified positive arm: same per-record predictions
-across all 4 OOD records, same `required_slot_margin_applications_sum` (17)
-and `choice_changes_sum` (9) in both arms, and the new
-`constrained_selection_traces` confirm all 17 fires land at
-`frame_depth` in `{1, 2, 3}` — zero at `frame_depth == 0` — in both arms.
-Both of E639's headline failure signatures are independently confirmed
-fixed by inspecting the actual predicted programs: Dashboard now predicts
-`root = Stack([v0, v1, v3, v4], "column")` with a real `Callout` + `Card`s
-(not the bare `Button`), and Gallery's `ImageGallery` array is
-`[{src: ":ood.gallery.img", alt: ":ood.gallery.alt"}]` (not empty). Margin=2's
-benefit is unaffected, matching E639's own margin=2 numbers to 4 decimal
-places, confirming E640's prediction that margin=2 never hit this failure
-mode. `binding_aware_meaningful_v2_rate_strict` stays 0.0 in every arm,
-unchanged from E639 — this fix targets structural hijacking, not the
-remaining strict-v2 placeholder/role failures.
-
-Single small (`n=4`) matched-pair OOD replay on one reused scratch
-checkpoint, not a confirmatory multi-seed/full-suite result; not a ship
-claim; no checkpoint trained, promoted, or synced. Does not prove safety at
-arbitrary margin — only that the specific dose-dependent hijack observed
-within `{0, 2, 6}` on this checkpoint/suite is gone; a wider sweep or a
-different checkpoint/seed could still surface a different failure mode once
-the floor dominates a legitimate `frame_depth >= 1` argument-position
-competition, untested here. E639's powered multi-seed/`rico_held` sweep
-remains open; strict v2 remains 0.0 at every margin tested across
-E639/E640/E641 -- coverage-aware component/property closure remains the
-next lever after this one.
-
-Evidence:
-[iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md)
-and
-[JSON](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.json).
-
-## E642 a widened-suite margin sweep (1/2/3/4) surfaces a new frame_depth>=1 failure mode
-
-E642 picks up E639/E640/E641's shared deferral: a multi-value sweep of
-`required_slot_margin_decode_weight` against a fuller held-out suite than
-their shared `n=4` `ood`-only replay. A materially larger `rico_held` (via
-`slm data build-test --rico-hf-split test --rico-limit 2600`) would need a
-live HF fetch and fresh leakage check not tractable alongside the sweep
-itself; multi-seed retraining was intentionally skipped per this session's
-explicit apples-to-apples instruction to reuse E639's checkpoint verbatim. The
-suite used instead: the union of all 5 already-built, leakage-checked
-immutable suites under `src/slm_training/resources/data/eval/remediated`
-(`held_out`=5, `rico_held`=3, `adversarial`=4, `ood`=4, `smoke`=3, n=19) —
-~5x E639-E641's n, including `rico_held` by name, but still below
-`DEFAULT_MIN_SUITE_N=20` per suite (`ship_gates.py`) — exploratory, not a
-ship scoreboard.
-
-E639's own scratch checkpoint was reused verbatim (sha256 `c5b7c807…dd561221`
-verified) against the identical matched recipe, sweeping
-`required_slot_margin_decode_weight` over `{0, 1, 2, 3, 4}`. The `margin=0`
-control reproduces E639/E641's own `ood`-subset control exactly. No code
-changed this session (clean tree at `2caba977`); no version bump required.
-
-| Metric (pooled, n=19) | margin=0 | margin∈{1,2} | margin∈{3,4}\* |
-| --- | ---: | ---: | ---: |
-| meaningful_program_v1 rate | 0.6842 | 0.6842 | 0.6842 |
-| reward_score (mean) | 0.7889 | 0.9260 | 0.9260 |
-| placeholder_fidelity (mean) | 0.5781 | 0.8991 | 0.8991 |
-| structural_similarity (mean) | 0.4494 | 0.5295 | 0.5295 |
-| component_type_recall (mean) | 0.5965 | 0.6667 | 0.6667 |
-
-\* margins 3/4 differ from 1/2 in exactly 1/19 predictions, a cosmetic
-metric-neutral slot swap; margins 1 and 2 are byte-identical (0/19 diffs).
-
-Using `slm_training.evals.power_protocol`'s own `bootstrap_paired_ci` +
-`benjamini_hochberg` directly (the CLI's `analyze-existing` mode analyzes one
-arm at a time and has no built-in two-arm delta) on the 19 matched records:
-`reward_score` Δ=+0.137 (95% CI `[0.058, 0.253]`, BH-significant) and
-`placeholder_fidelity` Δ=+0.321 (CI `[0.188, 0.461]`, BH-significant);
-`structural_similarity` Δ=+0.080 and `component_type_recall` Δ=+0.070 are
-directionally positive but their CIs cross zero (not BH-significant) at
-n=19. **The binary `meaningful_program_v1` gate is exactly flat (13/19 in
-every arm)**: `ood_dashboard_01` gains (`False→True`, matching E639/E641's
-own reported fix) while `rico_eval_test_25` newly *loses* (`True→False`) at
-margin>=1 — a real gain and a real loss cancel to zero net movement. The
-paired bootstrap on the binary outcome itself: estimate 0.0, 95% CI
-`[-0.158, +0.158]` — not evidence of "no effect", evidence of "not enough
-data at this n to know".
-
-**A new failure mode.** `rico_eval_test_25` regresses at margin>=1 because
-one `Button` absorbs 5 placeholders belonging to 5 different role-appropriate
-slots (`schema_value_role_mismatch` on 3 `Button` properties,
-`placeholder_semantic_role_mismatch` on 6 placeholders) — a `frame_depth>=1`
-argument-position over-stuffing failure, not the `frame_depth==0` root hijack
-E640/E641 already fixed. This is exactly the risk E641's own "Next step" #2
-flagged as untested ("a different checkpoint/seed could still surface a
-different failure mode... once the floor dominates a legitimate
-`frame_depth>=1` argument-position competition") — surfacing here on the
-*same* checkpoint/seed at the *smallest* margin tested (1), on a suite record
-(`rico_held`) invisible to E639-E641's `n=4` ood-only replay.
-
-H19's Wilson/exact-binomial single-arm machinery is real and applicable here
-(pooled meaningful_program_v1 Wilson `[0.460, 0.846]`, exact binomial
-`[0.434, 0.874]`, identical in every arm); its seed-variance/MDE-simulation
-machinery is not meaningfully exercised — `seed_variance=0.0` correctly,
-since this stays single-checkpoint/single-seed by design. **Not a powered
-confirmatory result; not a ship claim.** No checkpoint trained, promoted, or
-synced; default `required_slot_margin_decode_weight` (`0.0`) unchanged.
-Margins 1-2 remain the best-supported range *if* adopted (3/4 show no benefit
-over 1/2), but the newly-discovered `rico_held` over-stuffing mode should be
-root-caused and fixed first — the same treatment E640/E641 gave the
-`frame_depth==0` hijack — before recommending any default change.
-`binding_aware_meaningful_v2_rate_strict` stays 0.0 across held_out/
-rico_held/adversarial/ood at every margin; E620's coverage-aware
-component/property closure work remains the next lever after that root-cause
-pass.
-
-Evidence:
-[iter-e629-required-slot-margin-widened-suite-sweep-20260720.md](iter-e629-required-slot-margin-widened-suite-sweep-20260720.md)
-and
-[JSON](iter-e629-required-slot-margin-widened-suite-sweep-20260720.json).
-
-## E643 root-causing rico_eval_test_25's over-stuffing — fixed, but the fix reverts E639/E641's gain too
-
-E643 root-causes E642's deferred `rico_eval_test_25` regression the same
-way E640 root-caused the `frame_depth==0` hijack, reusing the same
-`constrained_selection_traces` instrumentation (already surfaced through
-`scripts.evaluate_model`'s per-suite eval JSON — no new plumbing needed) on
-E639's own checkpoint, verbatim, sha256-verified.
-
-**Mechanism.** At margin=1 on `rico_eval_test_25`, `required_slot_margin_
-applications_sum=9`; 6 are `hijacked_non_slot_candidate=true`, all landing
-on schema-constrained enum/opaque argument positions of an already-open
-component (`frame_depth` in `{1,3}`) — `Button.action/variant/type/size`,
-`TextContent.size`, `Card.variant` — never the root. `Button` absorbs its
-content property (`label`, correctly) *and* all four of its non-content
-properties with four unrelated required slots, exactly matching E642's
-description; the trailing `Card` in the decode ends up `Card([])`
-(genuinely empty — `empty_card` failure), because required_slot_margin's
-global "still missing anywhere" accounting spent every remaining slot on
-those earlier non-content positions. Structurally this is a *different*
-mechanism from E640/E641's: `_required_slot_margin_bias`'s floor
-(`old_max + margin`) is computed **after** `_schema_value_bias`/
-`_schema_opaque_bias`/`_schema_enum_close_bias`/`_schema_opaque_close_bias`
-already ran in the same per-position stack, so it wins against all four at
-**any margin > 0** (not only a large one) by construction — E640/E641 found
-a magnitude race against a *later* bias; this is a guaranteed win against
-*earlier* ones, bounded only by whether a position is schema-eligible at
-all. The grammar's own `_schema_accepts` legally allows a placeholder value
-at any string-typed argument regardless of enum/opaque-ness, so nothing
-upstream can out-argue it once it fires.
-
-**Fix.** `_required_slot_margin_bias` gains a schema-position gate
-(new `_required_slot_margin_position_accepts_slot`), reusing
-`_schema_role_slot_bias`'s own `accepts_slot` convention: a `component`
-frame's active argument must be `x-openui-placeholder`-flagged (content
-properties only); an `object` frame's active property must be able to
-reach a visible slot. Other frame kinds stay permissive. Default (`0.0`)
-and E617 gating unchanged. `model.twotower` v61 → v62. New/updated tests in
-`tests/test_models/test_compiler_decode.py`.
-
-**Re-verification finds a genuine fix — and a genuine cost.**
-`rico_eval_test_25` is fully fixed: byte-identical to control across
-margin `{0,1,2,3,4}`, `meaningful_program_v1_rate=1.0` in every arm (was
-`1.0/0.0/0.0/0.0/0.0`). But re-running E639/E641's own matched `n=4` OOD
-replay shows the *same* fix reverts `ood_dashboard_01`'s previously-reported
-gain **entirely** — margin=2/6 are now byte-identical to control (0.5 in
-all three, was 0.75 at margin 2/6). Why: the pre-fix "win" prediction
-(`Callout(":ood.dash.status.title", ":ood.dash.status.body",
-":ood.dash.m2.value")`, 3 different slots in 3 positional args;
-`Card([], ":ood.dash.m1.value", ":ood.dash.m1.value")`, empty children plus
-2 stuffed non-content args) was the *identical* over-stuffing mechanism,
-just landing somewhere that happened to help. Because decode is greedy,
-removing the bias's fire anywhere on this path collapses the whole
-trajectory back to control's. Separately: that padded-but-still-empty
-`Card([], ...)` never tripped `_is_meaningful_program`'s literal
-`"Card([])"` substring check (which requires an *exactly*-empty call), even
-though its children were just as empty as `rico_eval_test_25`'s rejected
-`Card([])` — part of the original Dashboard "gain" was itself a
-substring-matching artifact, not new content.
-
-A widened n=19 re-sweep (same union E642 used) confirms this is a net loss,
-not a wash: `meaningful_program_v1` pooled rate at margin∈{1,2} is now
-**0.6316 (12/19)**, *below* control's 0.6842 (13/19) — was flat-at-0.6842 in
-E642's pre-fix sweep. Continuous metrics also drop (reward 0.7149 vs 0.7889
-control; pre-fix these had *risen* to 0.9260). Exactly one record differs
-between margin=0 and margin=2 post-fix, and it is neither the fixed
-`rico_eval_test_25` nor the reverted `ood_dashboard_01` — it is
-`smoke_hero_01`, newly regressing (`True -> False`, `empty_root_stack`), a
-third failure mode invisible pre-fix only because the old over-stuffing
-behavior happened to steer its already-near-incoherent greedy decode away
-from an empty result.
-
-**Verdict:** the fix is real, principled, and kept (default stays `0.0`,
-no regression to the shipped model) — but the honest headline is that
-`required_slot_margin_decode_weight`'s apparent net benefit on this single
-small/noisy scratch checkpoint does not survive closing the over-stuffing
-gaming path that produced it. Not a confirmatory result in either
-direction; no checkpoint trained, promoted, or synced. Next: a genuinely
-powered multi-seed/retrained comparison is likely more informative than a
-fourth single-checkpoint trace; E620's coverage-aware component/property
-closure recommendation remains the next untried lever;
-`_is_meaningful_program`'s literal empty-component substring checks are
-flagged (not fixed here) as worth hardening to a structural check.
-
-Evidence:
-[iter-e630-required-slot-margin-schema-position-gate-20260720.md](iter-e630-required-slot-margin-schema-position-gate-20260720.md)
-and
-[JSON](iter-e630-required-slot-margin-schema-position-gate-20260720.json).
-
-## E644 fixing `meaningful_program_v1`'s empty-children detection gap (and the honest re-scoring it demands)
-
-E644 picks up E643's own deferred "Next step" #3: `_is_meaningful_program`'s
-literal `"Card([])"` substring check misses an empty-children `Card` whose
-remaining positional arguments got padded with stuffed required-slot values
-(e.g. `Card([], ":a", ":b")`), because the substring only matches an
-*exactly*-empty call. E643's report is a paraphrase, so before touching
-anything the real implementation
-(`src/slm_training/harnesses/model_build/eval_runner.py::_is_meaningful_program`)
-was read in full and the exact padded strings E642/E643 reported were parsed
-through the real DSL parser to inspect the actual AST. The diagnosis holds,
-with one sharper detail E643 didn't call out: **Stack's own literal check
-already has a `"Stack([],"` companion clause for this padded case** — only
-`Card` lacked the equivalent clause, a narrow, already-visible asymmetry in
-the code, not merely an abstract "one syntactic shape." A schema check
-(`openui_schema.json`) also found two more component types with a required
-`children` array the old check never covered *at all*: `Modal` and
-`Carousel` (`Modal(":t", true, [])` and `Carousel([])` both passed
-`meaningful_program_v1` pre-fix).
-
-**Fix.** A new `_first_empty_children_component(node)` helper walks the real
-parsed AST (`Program.root`, not the serialized text) for any element whose
-`props["children"]` list is empty — `children` lives in `props` as its own
-key, structurally separate from a node's other (possibly stuffed) props, so
-padding those cannot hide emptiness. It runs *after*, not instead of, the two
-existing literal checks, so it can only add new rejections, never remove one
-the literal checks already made — purely additive, no gate-weakening path
-exists. Stack/Card keep their exact original reason strings
-(`empty_root_stack`/`empty_card`) when the AST check is what actually fires
-on them; genuinely new types get a new reason code
-(`empty_children:<TypeName>`). `decode_feasibility.py::classify_parse_failure`
-buckets the new reason alongside the existing two under `trivial_layout`
-(diagnostics-only). `harness.model_build.eval` v33 → v34.
-
-New tests in `tests/test_evals/test_meaningful_program.py` reproduce the
-exact `rico_eval_test_25`/`ood_dashboard_01` padded shapes (now correctly
-rejected, `empty_card`), a nested case, the two new component types
-(`empty_children:Modal`/`empty_children:Carousel`), and regression guards
-confirming genuinely non-empty components (with other props present) still
-pass. The pre-existing `test_meaningful_program_v1_backward_lock` (Stack/Card
-literal cases) is untouched and still passes bit-for-bit. 36/36 passed in
-this file; 56/56 across four other related test files. (A pre-existing,
-unrelated `test_gate_engine_golden.py` golden-fixture failure — a stale
-`binding_aware_meaningful_v2` version string from a prior session's
-`no-bump:` note — reproduces identically on a clean checkout before this
-session's changes; not touched, out of scope.)
-
-**Honest re-scoring against the real E639 checkpoint.** Re-running the fixed
-metric against the exact same n=19 suite union and recipe E642/E643 used, on
-E639's own reused scratch checkpoint (sha256 `c5b7c807…dd561221`, re-verified,
-no retrain, no further decode-time change), shows the stricter check does
-flip previously-passing records — required by this task, not skipped.
-Monkeypatching `_is_meaningful_program` to print `(record_id, reason,
-prediction)` while running the real `evaluate_model` CLI (not inferring from
-aggregates) pinpoints exactly which: at margin=0 (the lever fully inactive,
-pure baseline), `rico_eval_test_42` and `rico_eval_test_77` both flip
-`True → False` (`empty_card`) — each has 2-3 `Card([], <stuffed value>)`
-nodes already present in the checkpoint's *unmodified* decode, unrelated to
-`required_slot_margin_decode_weight` entirely. Pooled n=19 margin=0:
-0.6842 (13/19) → **0.5789 (11/19)**. Pooled n=19 margin=2 (post-E643-fix):
-0.6316 (12/19) → **0.5263 (10/19)** — same two records, same reason, at every
-margin. Because both flipped records fail identically regardless of margin,
-they cancel out of the margin-vs-control *delta* that actually matters for
-judging the lever: the gap stays -1 record either way (13→12 pre-metric-fix
-per E643, now 11→10 post-metric-fix) — still net non-positive.
-**The metric fix does not change E643's headline verdict about
-`required_slot_margin_decode_weight`** (fixed regression, reverted gain, net
-non-positive on this checkpoint); it only corrects the absolute baseline
-level by catching two real, pre-existing, lever-independent scoring
-artifacts. `ood`/`adversarial` are byte-identical pre/post metric-fix at both
-margins (no Modal/Carousel in those predictions); `smoke_hero_01`'s
-already-documented (E643) regression is unaffected by the metric change.
-
-A single scratch checkpoint (800 steps, seed 0); n=19, still below
-`DEFAULT_MIN_SUITE_N=20` per suite — not a ship claim, not a powered
-multi-seed result. Does not touch `evals/meaningful_program.py`
-(`binding_aware_meaningful_v2` / strict v2) — confirmed by direct inspection
-to have no literal empty-substring check of this kind, so nothing there
-needed fixing. Next: E620's coverage-aware component/property closure
-recommendation remains the next untried lever; a genuinely powered
-multi-seed/retrained comparison of `required_slot_margin_decode_weight`
-remains open; `smoke_hero_01`'s regression remains untraced.
-
-Evidence:
-[iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md)
-and
-[JSON](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.json).
-
-## E645 root sibling coverage
-
-E645 positively selected legal role-compatible components at completed root
+E639 positively selected legal role-compatible components at completed root
 section boundaries. The policy-matched r2 changed selection traces but not final
 outputs: the verified semantic root discarded every unplanned sibling, so all
 quality metrics stayed exactly at E637. Reject the treatment stamped v78. After
-integrating the SLM-242 numeric-gate lineage at v81, the append-only lineage
-records E645 as treatment v82 and restoration v83. The next lever belongs in verifier-
+rebasing onto E638's production lineage at v80, the append-only lineage records
+E639 as treatment v81 and restoration v82. The next lever belongs in verifier-
 safe root reference selection. No checkpoint was created or synced; AgentV
-remained 0/1. The run was originally launched as E639 and renumbered after the
-rebase incorporated the independently landed E639–E644 sequence.
+remained 0/1.
 
 Evidence:
-[iter-e645-root-sibling-coverage-20260720.md](iter-e645-root-sibling-coverage-20260720.md),
-[authoritative JSON](iter-e645-root-sibling-coverage-20260720.json), and
-[r1 recipe diagnostic](iter-e645-root-sibling-coverage-r1-20260720.json).
+[iter-e639-root-sibling-coverage-20260720.md](iter-e639-root-sibling-coverage-20260720.md),
+[authoritative JSON](iter-e639-root-sibling-coverage-20260720.json), and
+[r1 recipe diagnostic](iter-e639-root-sibling-coverage-r1-20260720.json).
 
-## E646 root slot-bearing references
+## E640 root slot-bearing references
 
-E646 tracked visible slots per completed top-level section and allowed the
+E640 tracked visible slots per completed top-level section and allowed the
 verified semantic root to reference supplemental slot-bearing sections. The
 policy-matched OOD `n=4` output and every quality metric remained exactly at
-E637. Reject the treatment stamped v80. After rebasing onto E645 restoration
-v83, the append-only lineage records E646 as treatment v84 and restoration v85:
+E637. Reject the treatment stamped v80. After rebasing onto E639 restoration
+v82, the append-only lineage records E640 as treatment v83 and restoration v84:
 Gallery's missing roles must be recovered inside its planned subtree. No
 checkpoint was created or synced; AgentV remained 0/1.
 
 Evidence:
-[iter-e646-root-slot-references-20260720.md](iter-e646-root-slot-references-20260720.md)
-and [JSON](iter-e646-root-slot-references-20260720.json).
+[iter-e640-root-slot-references-20260720.md](iter-e640-root-slot-references-20260720.md)
+and [JSON](iter-e640-root-slot-references-20260720.json).
 
-## E647 visible-role semantic-plan completion
+## E641 visible-role semantic-plan completion
 
-E647 added house-style-preferred schema-compatible families for visible roles
+E641 added house-style-preferred schema-compatible families for visible roles
 that no prompt-planned family could own. Fidelity rose from 0.6750 to 0.7583 and
 reward from 0.8545 to 0.8840, but strict v2 fell from 2/4 to 1/4, structure
 regressed, and p95 more than doubled. Reject the treatment stamped v82. After
-rebasing onto E646 restoration v85, the append-only lineage records E647 as
-treatment v86 and restoration v87. Future inference must bind a family to a
+rebasing onto E640 restoration v84, the append-only lineage records E641 as
+treatment v85 and restoration v86. Future inference must bind a family to a
 specific uncovered slot instead of adding family cardinality alone. No
 checkpoint was created or synced; AgentV remained 0/1.
 
 Evidence:
-[iter-e647-role-plan-completion-20260720.md](iter-e647-role-plan-completion-20260720.md)
-and [JSON](iter-e647-role-plan-completion-20260720.json).
+[iter-e641-role-plan-completion-20260720.md](iter-e641-role-plan-completion-20260720.md)
+and [JSON](iter-e641-role-plan-completion-20260720.json).
 
-## E648 root-only inferred role plans
+## E642 root-only inferred role plans
 
-E648 restricted E647's inferred-family bias to top-level section boundaries.
+E642 restricted E641's inferred-family bias to top-level section boundaries.
 Strict v2 stayed 2/4, but meaningful v1, structure, reward, AST F1, and latency
 regressed; Gallery expanded into a 1,290-character irrelevant tree. Reject the
-treatment stamped v84. After rebasing onto E647 restoration v87, the append-only
-lineage records E648 as treatment v88 and restoration v89. Boundary restriction
+treatment stamped v84. After rebasing onto E641 restoration v86, the append-only
+lineage records E642 as treatment v87 and restoration v88. Boundary restriction
 is not a substitute for family-to-slot binding. No checkpoint was created or
 synced; AgentV remained 0/1.
 
 Evidence:
-[iter-e648-root-only-role-plans-20260720.md](iter-e648-root-only-role-plans-20260720.md)
-and [JSON](iter-e648-root-only-role-plans-20260720.json).
+[iter-e642-root-only-role-plans-20260720.md](iter-e642-root-only-role-plans-20260720.md)
+and [JSON](iter-e642-root-only-role-plans-20260720.json).
 
-## E649 required-string role binding
+## E643 required-string role binding
 
-E649 combined visible-role-inferred families with direct role-compatible slot
-bias at required plain-string content arguments. It exactly reproduced E647's
+E643 combined visible-role-inferred families with direct role-compatible slot
+bias at required plain-string content arguments. It exactly reproduced E641's
 quality profile apart from runtime noise: fidelity and reward rose, but strict
 v2 fell to 1/4, structure regressed, and p95 more than doubled. Reject the
-treatment stamped v86. After rebasing onto E648 restoration v89, the append-only
-lineage records E649 as treatment v90 and restoration v91. Family cardinality
+treatment stamped v86. After rebasing onto E642 restoration v88, the append-only
+lineage records E643 as treatment v89 and restoration v90. Family cardinality
 and role binding must be one
 concrete obligation, not independent biases. No checkpoint was created or
 synced; AgentV remained 0/1.
 
 Evidence:
-[iter-e649-bound-role-plans-20260720.md](iter-e649-bound-role-plans-20260720.md)
-and [JSON](iter-e649-bound-role-plans-20260720.json).
+[iter-e643-bound-role-plans-20260720.md](iter-e643-bound-role-plans-20260720.md)
+and [JSON](iter-e643-bound-role-plans-20260720.json).
 
-## E650 concrete role-obligation margin
+## E644 concrete role-obligation margin
 
-E650 paired every visible-role-inferred family with a concrete unused slot and
+E644 paired every visible-role-inferred family with a concrete unused slot and
 margin-floored only that assignment. Strict v2 improved from 2/4 to 3/4;
 fidelity, validity, structure, recall, reward, and node F1 also improved.
 Gallery's CTA and hint roles are now distinct and spam-free. Retain the
-treatment stamped v88 as the next scratch baseline. After rebasing onto E649
-restoration v91, the append-only lineage records the retained E650 behavior as
-v92. Do not claim ship: AgentV fails the `n=4` evidence floor, edge F1 slips
+treatment stamped v88 as the next scratch baseline. After rebasing onto E643
+restoration v90, the append-only lineage records the retained E644 behavior as
+v91. Do not claim ship: AgentV fails the `n=4` evidence floor, edge F1 slips
 slightly, and p95 latency nearly doubles. No checkpoint was created or synced.
 
 Evidence:
-[iter-e650-role-obligation-margin-20260720.md](iter-e650-role-obligation-margin-20260720.md)
-and [JSON](iter-e650-role-obligation-margin-20260720.json).
+[iter-e644-role-obligation-margin-20260720.md](iter-e644-role-obligation-margin-20260720.md)
+and [JSON](iter-e644-role-obligation-margin-20260720.json).
+
+## E645 semantic root-binding threshold
+
+E645 raised the existing semantic-plan binding weight from E644's 1 to 4 and
+8. Both arms are prediction- and quality-identical to E644 while observed
+latency trends worse. Reject the sweep and retain E644: these runs were stamped
+model.twotower v88, while the rebased retained E644 behavior is v91. The
+remaining Dashboard failure occurs at verified root projection, not
+binding-score selection. No checkpoint was created or synced; AgentV remained
+0/1 in both arms.
+
+Evidence:
+[iter-e645-root-binding-threshold-20260720.md](iter-e645-root-binding-threshold-20260720.md),
+[w4 JSON](iter-e645-root-binding-w4-20260720.json), and
+[w8 JSON](iter-e645-root-binding-w8-20260720.json).
+
+## E646 complete semantic-root reachability
+
+E646 referenced every completed top-level element after required plan coverage
+to eliminate possible orphan sections. The OOD `n=4` output and every quality
+metric remain exactly at E644. Reject the treatment stamped v89. After rebasing
+onto retained E644 v91, the append-only lineage records E646 as treatment v92
+and restoration v93. The next step is bounded root-verifier abstention evidence,
+not another selection bias. No checkpoint was created or synced; AgentV remained
+0/1.
+
+Evidence:
+[iter-e646-complete-root-reachability-20260720.md](iter-e646-complete-root-reachability-20260720.md)
+and [JSON](iter-e646-complete-root-reachability-20260720.json).
+
+## E647 semantic-root abstention trace
+
+E647 added bounded, behavior-neutral root-verifier abstention evidence. The
+deduplicated r2 reproduces E644 exactly and emits one Dashboard record at
+position 35: `ParseError: unknown choice token: LIT_STR` for a 44-token planned
+closure over five sections and five references. Retain the telemetry stamped
+v92. After rebasing onto E646 restoration v93, the append-only lineage records
+E647 instrumentation v94 and deduplicated telemetry v95. The next repair is
+dynamic-literal normalization inside the verification probe, not more root
+weighting. No checkpoint was created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e647-root-abstention-trace-20260720.md](iter-e647-root-abstention-trace-20260720.md),
+[authoritative r2 JSON](iter-e647-root-abstention-trace-20260720.json), and
+[r1 JSON](iter-e647-root-abstention-trace-r1-20260720.json).
+
+## E648 dynamic-literal-aware semantic-root probe
+
+E648 verifies planned semantic roots through the tokenizer's dynamic-literal-
+aware decode path. This removes E647's `LIT_STR` abstention and closes Dashboard
+as a valid five-section `Stack`. Meaningful v1 rises to 1.0000, fidelity to
+0.9500, validity to 0.9700, structure to 0.7355, component recall to 0.8750,
+reward to 0.9640, node F1 to 0.7987, and edge F1 to 0.5798; strict v2 holds at
+3/4 and p95 falls to 7705.93 ms. Retain the treatment stamped v93. After
+rebasing onto E647 deduplicated telemetry v95, the append-only lineage records
+the retained E648 behavior as v96. Do not claim ship from an OOD
+`n=4` subset whose AgentV evidence-size gate remains 0/1. No checkpoint was
+created or synced.
+
+Evidence:
+[iter-e648-dynamic-literal-root-probe-20260720.md](iter-e648-dynamic-literal-root-probe-20260720.md)
+and [JSON](iter-e648-dynamic-literal-root-probe-20260720.json).
+
+## E649 refresh action semantic-role alias
+
+E649 mapped `refresh` to the existing action-label role. Placeholder fidelity
+and validity reach 1.0000, but strict v2 remains 3/4 and meaningful v1 regresses
+from 4/4 to 3/4: Dashboard nests the refresh Button inside a duplicate body
+Button, misplaces metric content, and emits an empty Card. Reject the treatment
+stamped v94. After rebasing onto retained E648 v96, the append-only lineage
+records E649 as treatment v97 and restoration v98. The next repair must bind an already-planned
+family to a compatible slot without changing its cardinality or nesting. No
+checkpoint was created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e649-refresh-action-role-20260720.md](iter-e649-refresh-action-role-20260720.md)
+and [JSON](iter-e649-refresh-action-role-20260720.json).
+
+## E650 planned-family visible-role binding
+
+E650 attaches compatible visible slots to families already required by the
+prompt plan before inferring new instances. Dashboard now emits its refresh
+slot on the one planned Button without nesting or duplication. Meaningful v1
+and strict v2 hold at 4/4 and 3/4; fidelity and validity rise to 1.0000 and
+reward to 0.9790 while structure and AST F1 hold. Retain the treatment stamped
+v96. After rebasing onto E649 restoration v98, the append-only lineage records
+the retained E650 behavior as v99. Do not claim ship from the OOD `n=4` subset with AgentV 0/1. No
+checkpoint was created or synced.
+
+Evidence:
+[iter-e650-planned-family-role-binding-20260720.md](iter-e650-planned-family-role-binding-20260720.md)
+and [JSON](iter-e650-planned-family-role-binding-20260720.json).
+
+## E651 schema enum-literal margin
+
+E651 floors schema-valid enum literals or optional closure above invalid
+dynamic values. It repairs Dashboard's Callout variant and improves structure,
+AST F1, and p95, but changes content allocation: status body is displaced and a
+planned Card becomes empty. Meaningful v1 falls from 4/4 to 3/4 while strict v2
+stays 3/4. Reject the treatment stamped v97. After rebasing onto retained E650
+v99, the append-only lineage records E651 as treatment v100 and restoration
+v101. No checkpoint was
+created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e651-schema-enum-literal-margin-20260720.md](iter-e651-schema-enum-literal-margin-20260720.md)
+and [JSON](iter-e651-schema-enum-literal-margin-20260720.json).
+
+## E652 display-value text role
+
+E652 gives metric values simple TextContent owners. Structure and node F1 rise,
+but the leaves are detached root sections, both planned Cards become empty, and
+meaningful v1 falls to 3/4 while strict v2 stays 3/4. Reject the treatment
+stamped v99. After rebasing onto E651 restoration v101, the append-only lineage
+records E652 as treatment v102 and restoration v103. Future metric ownership must be nested inside each
+specific planned Card. No checkpoint was created or synced; AgentV remained
+0/1.
+
+Evidence:
+[iter-e652-value-text-role-20260720.md](iter-e652-value-text-role-20260720.md)
+and [JSON](iter-e652-value-text-role-20260720.json).
+
+## E653 nested planned-container role ownership
+
+E653 binds a compatible leaf role without adding top-level family cardinality
+when an already-planned component can reach that role through its public
+schema. Matched OOD `n=4` r2 holds meaningful v1 at 4/4, strict v2 at 3/4,
+fidelity/validity at 1.0000, and recall at 0.8750. Structure improves
+0.7355→0.7692, node F1 0.7987→0.8222, edge F1 0.5798→0.7102, and p95
+7879.73→7045.22 ms; reward slips 0.9790→0.9730. Retain v104 as a scratch
+Pareto baseline, not ship evidence. R1 is excluded for a fallback-policy
+mismatch despite zero observed fallbacks. No checkpoint was created or synced;
+AgentV remained 0/1.
+
+Evidence:
+[iter-e653-nested-role-ownership-20260721.md](iter-e653-nested-role-ownership-20260721.md),
+[authoritative r2 JSON](iter-e653-nested-role-ownership-20260721.json), and
+[excluded r1 JSON](iter-e653-nested-role-ownership-r1-20260721.json).
+
+## E654 nested ownership plus enum flooring
+
+E654 retries E651's enum floor over retained E653. Strict v2 and AST F1 hold
+and p95 improves, but fidelity falls 1.0000→0.9500, validity 1.0000→0.9700,
+structure 0.7692→0.7629, and reward 0.9730→0.9580. Reject v105 and restore
+E653 behavior as v106. No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e654-nested-role-enum-20260721.md) and
+[JSON](iter-e654-nested-role-enum-20260721.json).
+
+## E655 direct role ownership before raw slots
+
+E655 distinguishes direct semantic-role owners from transitively reachable
+containers before forcing raw visible slots. The focused invariant passes, but
+the matched OOD `n=4` run exactly reproduces E653's predictions, quality metrics,
+AST scores, and strict failures. Reject neutral v107 and restore retained E653
+behavior as v108; the surviving Carousel failure is decided earlier in decode.
+No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e655-direct-role-slot-ownership-20260721.md) and
+[JSON](iter-e655-direct-role-slot-ownership-20260721.json).
+
+## E656 repeated-slot active role ownership
+
+E656 constrains the later repeated-plan raw-slot margin to the active
+component's direct semantic roles. Predictions and all quality metrics still
+exactly match E653 because the earlier coverage branch independently forces the
+same slot through transitive reachability. Reject neutral v109 and restore E653
+behavior as v110; the next arm must combine both ownership constraints. No
+checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e656-repeated-slot-role-ownership-20260721.md) and
+[JSON](iter-e656-repeated-slot-role-ownership-20260721.json).
+
+## E657 combined raw-slot role ownership
+
+E657 combines E655 and E656. The interaction changes Dashboard's raw Carousel
+metric into `Slice(metric, 1)`, but puts the placeholder in `Slice.category`.
+Strict failures remain; structure falls 0.7692→0.7513, node/edge F1 regress,
+and latency worsens. Reject v111 and restore E653 behavior as v112. This
+narrows the next repair to property-level role compatibility. No checkpoint was
+created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e657-combined-role-ownership-20260721.md) and
+[JSON](iter-e657-combined-role-ownership-20260721.json).
+
+## E658 active positional-property role ownership
+
+E658 applies property-level schema-role checks to both raw-slot margins while
+preserving generic `Input.placeholder`. Dashboard instead reuses `status.body`
+inside `Slice.category` and drops the metric. Fidelity, validity, structure,
+reward, and AST F1 regress; reject v113 and restore E653 behavior as v114.
+This closes the positive-margin line: the next lever must exclude invalid
+property-role candidates rather than merely prefer alternatives. No checkpoint
+was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e658-property-role-ownership-20260721.md) and
+[JSON](iter-e658-property-role-ownership-20260721.json).
+
+## E659 final property-role candidate guard
+
+E659 hard-masks schema-role-invalid visible slots after all positive margins.
+It removes the target Carousel slot but collapses Gallery into a placeholder-free
+literal list. Meaningful v1, strict v2, fidelity, validity, structure, recall,
+reward, both AST F1 metrics, and p95 all regress. Reject v115 and restore E653
+behavior as v116. The current role map cannot safely support hard exclusion.
+No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e659-property-role-guard-20260721.md) and
+[JSON](iter-e659-property-role-guard-20260721.json).
+
+## E666 post-decode schema-enum normalization
+
+E666 normalizes a completed dynamic literal only when the active public-schema
+property is enum-valued, after model decoding has finished. Dashboard's invalid
+`Callout.variant` becomes `"info"`; every later choice and all other outputs
+match E653. Meaningful v1 stays 4/4, strict v2 stays 3/4, and fidelity,
+validity, structure, recall, reward, and AST F1 are unchanged. Retain v117 as a
+schema-validity correction, not ship evidence: Carousel ownership still fails,
+the OOD suite is only `n=4`, and AgentV is 0/1. The observed p95 increase needs
+a larger matched performance run before attribution. No checkpoint was created
+or synced.
+
+Evidence: [narrative](iter-e666-schema-enum-finalize-20260721.md) and
+[JSON](iter-e666-schema-enum-finalize-20260721.json).
+
+## E667 nested typed-array component ownership
+
+E667 lets typed-array item bias find the nearest enclosing component across
+nested arrays. The focused invariant passes, but the matched OOD `n=4` run
+produces byte-for-byte identical predictions and quality metrics to E666;
+Dashboard still fails `Carousel.children` ownership. Reject neutral v118 and
+restore retained E666 behavior as v119. The small p95 difference is not an
+attributable performance result. No checkpoint was created or synced; AgentV
+was 0/1.
+
+Evidence: [narrative](iter-e667-nested-typed-array-owner-20260721.md) and
+[JSON](iter-e667-nested-typed-array-owner-20260721.json).
+
+## E668 typed-array semantic-role wrapper
+
+E668 prefers a schema-allowed component wrapper compatible with the missing
+slot's semantic role at the first item of an empty typed array. The invariant
+passes, but the matched OOD `n=4` run produces byte-for-byte identical outputs
+and metrics to E667; `Carousel.children` still fails. Reject neutral v120 and
+restore retained E666 behavior as v121. The small p95 difference is not an
+attributable performance result. No checkpoint was created or synced; AgentV
+was 0/1.
+
+Evidence: [narrative](iter-e668-typed-array-role-wrapper-20260721.md) and
+[JSON](iter-e668-typed-array-role-wrapper-20260721.json).
+
+## E669 nested array schema propagation
+
+E669 preserves active item schemas through nested list frames. It removes the
+`Carousel.children` schema mismatch, but chooses a semantically wrong `Form`
+wrapper, leaves strict v2 at 3/4, and regresses structure, AST F1, and p95.
+Reject v122 and restore retained E666 behavior as v123. The next retry must
+pair inner-schema preservation with role-aware component selection. No
+checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e669-nested-array-schema-20260721.md) and
+[JSON](iter-e669-nested-array-schema-20260721.json).
+
+## E670 nested array role-aware wrapper
+
+E670 combines preserved inner-array schemas with schema-allowed semantic-role
+wrapper preference. The matched OOD `n=4` run still selects E669's wrong
+`Form` wrapper, leaving strict v2 at 3/4 and retaining the structure and AST F1
+regressions. Reject v124 and restore retained E666 behavior as v125. No
+checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e670-nested-array-role-20260721.md) and
+[JSON](iter-e670-nested-array-role-20260721.json).
+
+## E671 nested role-aware array ownership
+
+E671 adds nearest-component ownership to E670's nested schema and role-aware
+item selection. The matched OOD `n=4` run remains byte-identical to E670: the
+real Carousel is model-introduced rather than authored in the semantic plan,
+so the owner gate still abstains. Reject neutral v126 and restore retained E666
+behavior as v127. No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e671-nested-role-owner-20260721.md) and
+[JSON](iter-e671-nested-role-owner-20260721.json).
+
+## E672 schema-owned typed array item
+
+E672 removes the authored-plan owner dependency for active typed-array schemas,
+but the OOD `n=4` run remains byte-identical to E671. Carousel's item union is
+composed of public `$ref` entries that the slot-reachability predicate does not
+resolve, so the policy still abstains. Reject neutral v128 and restore v129.
+No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e672-schema-owned-array-20260721.md) and
+[JSON](iter-e672-schema-owned-array-20260721.json).
+
+## E673 public schema-reference reachability
+
+E673 resolves cycle-safe public `$ref` entries in the guarded typed-array
+reachability predicate. The OOD `n=4` run preserves strict v2 at 3/4 while
+improving structure 0.7230→0.7931, node/edge F1 0.7987/0.6845→0.8556/0.7486,
+and p95 9332.10→6621.10 ms. Retain v130 as a positive research baseline, not a
+ship result: one semantic-role mismatch remains and AgentV is 0/1. No
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e673-schema-ref-reachability-20260721.md) and
+[JSON](iter-e673-schema-ref-reachability-20260721.json).
+
+## E674 canonical semantic-role alias contract
+
+E674 aligns visible role aliases with schema-valid positions already used by
+canonical fixtures: `action` may occupy `Button.label`, `body` may occupy
+`Callout.description`, and display `value` may occupy `TextContent.text`.
+Dashboard changes from two wrong role assignments to five gold-aligned slots;
+Gallery, Modal, and Auth remain byte-identical. Strict v2.3.0 is 4/4 versus
+v2.2.1's 3/4, while every non-strict quality metric is unchanged. Retain v131
+and metric v2.3.0 as a positive research baseline, not ship evidence: the
+strict delta is metric-version-bound, the suite is only `n=4`, and AgentV is
+0/1. No checkpoint was created or synced.
+
+Evidence: [narrative](iter-e674-semantic-role-alias-contract-20260721.md) and
+[JSON](iter-e674-semantic-role-alias-contract-20260721.json).
+
+## E675 prompt-authored open-property visibility
+
+E675 adds a default-off margin that prefers `true` only at a boolean `open`
+property of the active prompt-authored component. The OOD `n=4` run changes one
+token, repairing the requested Modal from invisible `open=false` to the
+schema- and gold-aligned `open=true`; the other three predictions are
+byte-identical. Existing aggregate metrics do not score this literal and are
+all unchanged. Retain v132 as a narrow render-semantic correction, not a
+quantitative or ship result. AgentV is 0/1 and no checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e675-schema-open-visibility-20260721.md) and
+[JSON](iter-e675-schema-open-visibility-20260721.json).
+
+## E676 joint semantic-role carrier
+
+E676 groups same-namespace roles into one component only when distinct direct
+public-schema string properties cover every role and the visible candidate
+contract permits that family. Gallery replaces two loose TextContent leaves
+with one `Callout(info, hint.title, hint.body)`; the other three records are
+byte-identical. Structure improves 0.7931→0.8181 and node/edge F1 improve
+0.8556/0.7486→0.8722/0.7665, while reward slips 0.973→0.970. Retain v133 as a
+positive research baseline with the tradeoff recorded, not ship evidence:
+`n=4`, AgentV 0/1, and no checkpoint created or synced.
+
+Evidence: [narrative](iter-e676-joint-role-carrier-20260721.md) and
+[JSON](iter-e676-joint-role-carrier-20260721.json).
+
+## E677 incomplete all-suite confirmation
+
+The combined five-suite E677 attempt ended after writing only Smoke and
+Held-out JSON. It produced no terminal payload, scoreboard, AgentEvals, or
+AgentV bundle. Treat every partial metric as invalid and retry suites
+independently. No checkpoint was created or synced.
+
+Evidence: [narrative](iter-e677-joint-role-all-suites-20260721.md) and
+[JSON](iter-e677-joint-role-all-suites-20260721.json).
+
+## E678 joint-role provenance correction
+
+E678 relocates E676's model-only helper out of the module hashed by
+binding-aware meaningful v2. The matched OOD `n=4` replay is prediction- and
+metric-identical to E676, while v2.3.0's implementation hash is restored to
+`8253…89b55`. Retain v134 as a behavior-neutral provenance correction, not new
+quality or ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e678-joint-role-provenance-20260721.md) and
+[JSON](iter-e678-joint-role-provenance-20260721.json).
+
+## E679 independent joint-role Smoke confirmation
+
+E679 replaces invalid combined E677 evidence with an independently terminal
+full Smoke `n=3` replay of retained v134. Syntax and meaningful v1 are 1.0,
+but strict v2.3.0 is only 1/3: the hero omits `kicker` and misplaces
+`subtitle`, while the callout omits `heading`. Retain v134 as the OOD research
+baseline, but reject the hypothesis that whole-namespace joint grouping
+generalizes to Smoke. The next lever must partition larger namespaces into
+jointly coverable subsets and carry residual visible text roles. AgentV is
+0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e679-joint-role-smoke-20260721.md) and
+[JSON](iter-e679-joint-role-smoke-20260721.json).
+
+## E680 display-role aliases
+
+E680 maps general `kicker` and `heading` display roles to
+`TextContent.text`, advancing binding-aware meaningful to v2.4.0 without
+changing ship thresholds. On the matched full Smoke `n=3` replay, strict v2
+improves 1/3→2/3, fidelity reaches 1.0, structure improves 0.6878→0.7276,
+recall 0.5833→0.6667, reward 0.8907→0.9530, and the callout becomes exact.
+The hero still misroutes `subtitle` through `TabItem.content`, exposing the
+need to partition larger namespaces into jointly coverable role subsets.
+Retain v135 as positive research evidence, not ship evidence. AgentV is 0/1;
+no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e680-display-role-aliases-20260721.md) and
+[JSON](iter-e680-display-role-aliases-20260721.json).
+
+## E681 maximal semantic-role subsets
+
+E681 partitions larger namespaces into maximal disjoint role groups covered
+by specific direct-schema carriers. On matched Smoke `n=3`, the hero replaces
+the invalid Tabs path with CardHeader; structure improves 0.7276→0.8156,
+recall 0.6667→0.7500, node/edge F1 0.8051/0.4545→0.8778/0.5333, and p95 falls
+6313.97→5389.64 ms. Strict v2.4.0 remains 2/3 because positional component
+arguments still repeat or swap title/subtitle roles. Retain v136 as positive
+structural research evidence, not ship evidence. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e681-maximal-role-subsets-20260721.md) and
+[JSON](iter-e681-maximal-role-subsets-20260721.json).
+
+## E682 property-aware positional role binding
+
+E682 constrains explicitly planned positional slots by their active public
+schema property. The matched full Smoke `n=3` replay clears strict v2.4.0 on
+all records; structure improves 0.8156→0.8308, node F1 0.8778→0.9030, and p95
+falls 5389.64→4786.91 ms. Edge F1 regresses 0.5333→0.4815 and is retained as a
+tradeoff. Retain v137 as positive research evidence, not ship evidence:
+AgentV is 0/1 and no multi-suite gates ran. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e682-positional-role-binding-20260721.md) and
+[JSON](iter-e682-positional-role-binding-20260721.json).
+
+## E683 independent v137 Held-out confirmation
+
+E683 independently evaluates retained v137 on the full Held-out `n=5` suite.
+Syntax is 1.0 and meaningful v1 is 0.8, but strict v2.4.0 is only 2/5 with
+0.8 coverage. Login is exact and dual-card is strict-valid; form placeholder
+spam, unknown hyphenated/plural two-tab contract coverage, and incomplete
+settings roles reject suite-level generalization. Retain v137 for Smoke, but
+record E683 as a negative Held-out confirmation. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e683-positional-role-heldout-20260721.md) and
+[JSON](iter-e683-positional-role-heldout-20260721.json).
+
+## E684 singular prose for plural schema families
+
+E684 recognizes singular prose forms for plural public-schema families and
+advances binding-aware meaningful to v2.5.0 without changing thresholds. On
+Held-out `n=5`, coverage improves 0.8→1.0 and the tabs failure becomes an
+explicit missing-Tabs contract violation. Strict remains 2/5; structure,
+recall, node F1, and latency improve, while fidelity and reward regress.
+Retain the contract correction but reject the quality hypothesis: the next
+lever must enforce the recognized Tabs plan. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e684-singular-plural-family-20260721.md) and
+[JSON](iter-e684-singular-plural-family-20260721.json).
+
+## E685 numbered tab role carriers
+
+E685 normalizes numbered tab roles and plans their unique public-schema
+`TabItem.trigger` carriers, advancing binding-aware meaningful to v2.6.0
+without changing thresholds. The valid independently terminal Held-out `n=5`
+replay is prediction- and quality-metric-identical to E684: the tabs record
+still emits only `TextContent(tab2)`, strict remains 2/5, and AgentV is 0/1.
+Reject the quality hypothesis: child-carrier planning does not reach decode
+while the parent Tabs family is absent. The earlier `r1` attempt is explicitly
+invalid because its terminal payload was lost. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e685-numbered-tab-carriers-20260721.md) and
+[JSON](iter-e685-numbered-tab-carriers-20260721.json).
+
+## E686 per-row decoder trace budget
+
+E686 tests a per-row constrained-selection trace budget as an observability
+repair. Quality remains identical to E685, and the hypothesis fails: all 98
+aggregated traces report model-local `row=0`, while the tabs record remains
+unidentifiable. The evaluator generates one record per call and concatenates
+independent `DecodeStats` without record identity, so the fix belongs at that
+aggregation boundary. Reject and revert v140. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e686-per-row-trace-budget-20260721.md) and
+[JSON](iter-e686-per-row-trace-budget-20260721.json).
+
+## E687 decoder trace record identity
+
+E687 restores the original model-local trace bound and attaches stable record
+IDs at the eval aggregation boundary. Quality remains identical to E685, while
+all 104 Held-out traces become attributable, including 30 tabs traces. Those
+show a `Tabs` owner repeatedly adding `TabItem`: heading/overview/tab labels
+are consumed, but `details.title`/`details.body` remain from positions 18–148
+until the token cap. Retain eval harness v35 as positive observability evidence;
+the next quality lever must route those roles into TabItem content. AgentV is
+0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e687-trace-record-identity-20260721.md) and
+[JSON](iter-e687-trace-record-identity-20260721.json).
+
+## E688 bound wrapper roles
+
+E688 constrains transitive wrapper continuation to explicit role bindings, but
+the full Held-out replay is prediction-, metric-, and trace-identical to E687.
+The realistic schema inventory maps each numbered tab role to both
+`AccordionItem` and `TabItem`, so no TabItem binding exists and the guard never
+activates. Reject and revert v142. The next lever must disambiguate child roles
+through the already planned parent schema. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e688-bound-wrapper-roles-20260721.md) and
+[JSON](iter-e688-bound-wrapper-roles-20260721.json).
+
+## E689 planned child carriers
+
+E689 disambiguates ambiguous visible-role carriers through descendants of an
+already planned parent schema. Corrected Held-out `r2` keeps strict v2 at 2/5
+while meaningful v1 reaches 1.0, fidelity 0.8667, structure 0.6019, reward
+0.9210, edge F1 0.6061, and p95 falls 19753.82→6325.63 ms. Tabs becomes a
+finite Tabs/Callout tree but still overproduces five TabItems and misuses raw
+content placeholders. Retain v144 as positive research evidence. `r1` is
+explicitly excluded as implementation-confounded. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e689-planned-child-carriers-20260721.md) and
+[JSON](iter-e689-planned-child-carriers-20260721.json).
+
+## E690 bound transitive wrappers
+
+E690 stops a schema-reachable wrapper after all of its explicit planned roles
+are covered. Held-out strict remains 2/5, while tabs contracts from five to
+exactly two TabItems and retains the correct details Callout. Structure, node
+F1, edge F1, and latency improve; fidelity, validity, and reward slip slightly
+because heading/overview remain raw TabItem.content strings. Retain v145 as a
+positive structural tradeoff, not ship evidence. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e690-bound-transitive-wrappers-20260721.md) and
+[JSON](iter-e690-bound-transitive-wrappers-20260721.json).
+
+## E691 structured content schema
+
+E691 distinguishes direct scalar placeholder schemas from structured content
+schemas that are merely transitively slot-bearing. Only the tabs prediction
+changes: both TabItem bodies become schema-valid one-item TextContent arrays,
+overview is recovered, and the other four Held-out predictions remain
+byte-identical. Fidelity, validity, structure, recall, reward, and both AST F1
+metrics improve; strict stays 2/5 because the changed path selects the invalid
+`Callout.variant="column"`. Retain v146 as a schema-correctness fix and positive
+quality lever, not ship evidence. AgentV is 0/1; no checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e691-structured-content-schema-20260721.md) and
+[JSON](iter-e691-structured-content-schema-20260721.json).
+
+## E692 fixed enum finalization
+
+E692 extends post-decode enum normalization to invalid fixed literals while
+preserving semantically valid compact spellings. Corrected Held-out r2 changes
+only tabs: `Callout.variant` becomes `info`, strict rises 2/5→3/5, and every
+continuous quality metric stays exactly flat. Retain v148 as a schema-validity
+correction, not ship evidence. V147/r1 is excluded as implementation-confounded
+because it rewrote valid compact Stack directions in all five records. AgentV
+is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e692-fixed-enum-finalize-20260721.md) and
+[JSON](iter-e692-fixed-enum-finalize-20260721.json).
+
+## E693 unique public Group planning
+
+E693 plans a public `*Group` family from its authored base noun only when no
+standalone base component exists. Settings now emits SwitchGroup beside Slider
+and covers all slots; fidelity/validity reach 1.0, recall rises to 0.7933, and
+reward reaches 0.9634. Strict remains 3/5 because Slider.variant is still
+role-invalid; structure and edge F1 slip slightly. Retain v149 as a positive
+tradeoff, not ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e693-unique-group-plan-20260721.md) and
+[JSON](iter-e693-unique-group-plan-20260721.json).
+
+## E694 open-vocabulary enum finalization
+
+E694 lets the retained post-decode enum finalizer emit a framed public-schema
+enum when no fixed vocabulary token exists and row capacity permits. Settings'
+Slider variant becomes `continuous`, strict rises 3/5→4/5, and all continuous
+quality metrics remain exactly flat. Retain v150 as a fail-closed schema fix,
+not ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e694-open-enum-finalize-20260721.md) and
+[JSON](iter-e694-open-enum-finalize-20260721.json).
+
+## E695 role/property capacity
+
+E695 bounds planned-family role reuse by distinct public string-property
+capacity. Form only swaps two title roles; the same placeholder remains reused
+three times, strict stays 4/5, and every aggregate quality metric is identical.
+Reject v151 and restore v150 behavior as v152. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e695-role-property-capacity-20260721.md) and
+[JSON](iter-e695-role-property-capacity-20260721.json).
+
+## E696 scalar role literal fallback
+
+E696 routes a scalar string away from repeated visible roles when no unused
+role-compatible slot remains. R1 is an excluded no-op because its fixed literal
+was absent from live candidate sets. Corrected r2 leaves Form spam unchanged
+and turns two stable operational names into arbitrary `itet` literals; strict
+stays 4/5 and every aggregate quality metric is identical. Reject v153/v154 and
+restore v152 behavior as v155. AgentV is 0/1; no checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e696-role-literal-fallback-20260721.md) and
+[JSON](iter-e696-role-literal-fallback-20260721.json).
+
+## E697 required parent ordering
+
+E697 emits a planned parent before planned families reachable through required
+non-alternative schema paths, while corrected r2 defers opaque aggregators.
+Form now owns the correct submit Button and email Input; structure rises to
+0.6826, component recall to 0.8433, and node F1 to 0.8062. Strict stays 4/5,
+edge F1 and reward slip, and hint-title spam remains. Retain v157 as a positive
+structural tradeoff, not ship evidence. R1 is excluded because premature Stack
+emission dropped meaningful-v1 to 0.8 and reward to 0.7688. AgentV is 0/1; no
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e697-required-parent-order-20260721.md) and
+[JSON](iter-e697-required-parent-order-20260721.json).
+
+## E698 likeness abstention
+
+E698 treats `component-like` prose as descriptive and uses unique public enum
+evidence to resolve ambiguous visible-role carriers. Form becomes the intended
+Button/Callout/Input/Stack structure: structure rises to 0.7724, node F1 to
+0.8609, and edge F1 to 0.6888 with recall unchanged. One hint-title slot remains
+missing, so strict stays 4/5, fidelity is 0.96, and reward is 0.9514. Retain
+v159 behavior, later restored as v163, as a positive structural tradeoff—not
+ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e698-likeness-abstention-20260721.md) and
+[JSON](iter-e698-likeness-abstention-20260721.json).
+
+## E699 role capacity revisit
+
+E699 reintroduces family-level string-property capacity after E698. Capacity
+and generic form aliases collapse email+submit into RadioItem and destabilize
+the Form case; strict remains 4/5 and structural/AST metrics regress from E698.
+Reject v160-v162. R3 removes both mechanisms, advances the candidate metric to
+restoration version 2.9.0, and exactly restores E698 predictions as v163.
+AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e699-role-capacity-revisit-20260721.md) and
+[JSON](iter-e699-role-capacity-revisit-20260721.json).
+
+## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
+
+## RSC-A02 final-depth double-counting semantics (SLM-238) — semantics + bounded calibration, no quality claim
+
+## E639 a decode-time margin that floors still-missing required slots directly
+
+## E640 root-causing why margin=6 hijacks Dashboard's root
+
+## E641 excluding `frame_depth == 0` fixes margin=6's root hijack
+
+## E642 a widened-suite margin sweep (1/2/3/4) surfaces a new frame_depth>=1 failure mode
+
+## E643 root-causing rico_eval_test_25's over-stuffing — fixed, but the fix reverts E639/E641's gain too
+
+## E644 fixing `meaningful_program_v1`'s empty-children detection gap (and the honest re-scoring it demands)
+
+## E645 root sibling coverage
+
+## E646 root slot-bearing references
+
+## E647 visible-role semantic-plan completion
+
+## E648 root-only inferred role plans
+
+## E649 required-string role binding
+
+## E650 concrete role-obligation margin

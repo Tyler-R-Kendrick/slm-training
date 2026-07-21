@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "run_id": "e682-positional-role-binding-r1",
+  "experiment_id": "E682",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Constraining explicitly planned positional slots by their active public-schema property will eliminate the remaining CardHeader title/subtitle mismatch.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e681-maximal-role-subsets-r1",
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.8308333333333334,
+      "component_type_recall": 0.75,
+      "reward_score": 0.957,
+      "ast_node_f1": 0.903030303030303,
+      "ast_edge_f1": 0.48148148148148145,
+      "latency_ms_p50": 1439.6,
+      "latency_ms_p95": 4786.91,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e681": {
+    "strict_v2": [
+      0.6666666666666666,
+      1.0
+    ],
+    "structural_similarity": [
+      0.8155666666666667,
+      0.8308333333333334
+    ],
+    "component_type_recall": [
+      0.75,
+      0.75
+    ],
+    "reward_score": [
+      0.957,
+      0.957
+    ],
+    "ast_node_f1": [
+      0.8777777777777778,
+      0.903030303030303
+    ],
+    "ast_edge_f1": [
+      0.5333333333333333,
+      0.48148148148148145
+    ]
+  },
+  "failure_breakdown": {},
+  "prediction_evidence": {
+    "smoke_hero_01": "CardHeader now receives title then subtitle, while the Card carries kicker and body; the record clears strict v2.4.0.",
+    "all_smoke_records_strict": true
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v137. Property-aware positional binding clears strict v2.4.0 on all Smoke records and improves structure, node F1, and latency, with the edge-F1 regression explicitly retained as a tradeoff. Confirm independently on another suite before any broader claim.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9572bc4c218890ceabc1e39714e4b030ce99b319",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.4.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v137"
+    },
+    "stamped_at": "2026-07-21T12:38:54.153560+00:00"
+  }
+}

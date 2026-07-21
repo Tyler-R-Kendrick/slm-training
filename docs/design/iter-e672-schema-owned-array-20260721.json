@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "run_id": "e672-schema-owned-array-r1",
+  "experiment_id": "E672",
+  "date_utc": "2026-07-21",
+  "status": "completed_neutral_scratch_rejected",
+  "run_class": "scratch_matrix",
+  "hypothesis": "An active typed-array schema that can reach a missing visible slot can safely start its minimal item even when its enclosing component was model-introduced.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"baseline_run_id": "e671-nested-role-owner-r1", "suite": "ood", "n": 4, "device": "cpu", "steps": 0, "context_backend": "scratch", "exact_e653_policy": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160},
+  "suites": {"ood": {"n": 4, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.75, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.72295, "component_type_recall": 0.875, "reward_score": 0.973, "ast_node_f1": 0.7986928104575164, "ast_edge_f1": 0.6845238095238095, "latency_ms_p50": 2927.77, "latency_ms_p95": 9293.75, "fallback_count": 0, "decode_timeout_count": 0}},
+  "failure_breakdown": {"placeholder_semantic_role_mismatch": 1},
+  "prediction_hashes_match_baseline": true,
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "decision": "Reject neutral v128 and restore retained E666 behavior as v129. Active schema ownership removes the authored-plan dependency, but the real Carousel item schema is a union of references that the slot-reachability predicate does not resolve, so the policy still abstains.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "3ef3f8c1aa6adc913f78cf1d5cef3bd47e0d3fe5", "code_dirty": false, "components": {"harness.model_build.eval": "v33", "evals.meaningful_program": "2.2.1", "evals.scoring": "v12", "model.twotower": "v128"}, "stamped_at": "2026-07-21T10:46:08.043732+00:00"}
+}

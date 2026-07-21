@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "run_id": "e679-joint-role-smoke-r1",
+  "experiment_id": "E679",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_confirmation_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "The retained v134 joint-role planner will preserve its OOD semantic gains on the independent full Smoke suite.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.3333333333333333,
+      "placeholder_fidelity": 0.8055555555555555,
+      "placeholder_validity": 0.8833333333333333,
+      "structural_similarity": 0.6878000000000001,
+      "component_type_recall": 0.5833333333333334,
+      "reward_score": 0.8906666666666666,
+      "ast_node_f1": 0.8111111111111112,
+      "ast_edge_f1": 0.35555555555555557,
+      "latency_ms_p50": 1550.39,
+      "latency_ms_p95": 7455.96,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "failure_breakdown": {
+    "required_placeholder_missing": 2,
+    "placeholder_semantic_role_mismatch": 1
+  },
+  "diagnosis": {
+    "strict_pass_records": [
+      "smoke_button_01"
+    ],
+    "missing_visible_roles": [
+      ":smoke.hero.kicker",
+      ":smoke.callout.heading"
+    ],
+    "mismatched_visible_roles": [
+      ":smoke.hero.subtitle->CardHeader.title"
+    ]
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v134 as the OOD research baseline, but reject the hypothesis that its role grouping is sufficient across Smoke. The next lever must partition larger namespaces into jointly coverable role subsets and give unmatched visible text roles a schema-valid carrier.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "52e481d9981fccd492a5c86db57ad10722aedac1",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.3.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v134"
+    },
+    "stamped_at": "2026-07-21T12:18:53.270563+00:00"
+  }
+}

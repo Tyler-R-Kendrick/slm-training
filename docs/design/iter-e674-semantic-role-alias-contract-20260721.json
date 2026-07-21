@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "run_id": "e674-semantic-role-alias-contract-r1",
+  "experiment_id": "E674",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_scratch_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Aligning visible semantic-role aliases with canonical fixture schema positions will repair Dashboard slot ownership without disturbing unrelated predictions or non-strict quality metrics.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e673-schema-ref-reachability-r1",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "exact_e653_policy": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160
+  },
+  "metric_contract": {
+    "before": "binding_aware_meaningful_v2/2.2.1",
+    "after": "binding_aware_meaningful_v2/2.3.0",
+    "aliases_added": {
+      "action": ["label"],
+      "body": ["description"],
+      "value": ["text"]
+    },
+    "ship_threshold_changed": false
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.7931250000000001,
+      "component_type_recall": 0.875,
+      "reward_score": 0.973,
+      "ast_node_f1": 0.8555555555555556,
+      "ast_edge_f1": 0.7486263736263736,
+      "latency_ms_p50": 2701.25,
+      "latency_ms_p95": 5879.49,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "prediction_evidence": {
+    "unchanged_records": [
+      "ood_gallery_01",
+      "ood_modal_01",
+      "ood_auth_01"
+    ],
+    "changed_record": "ood_dashboard_01",
+    "before": "Callout(info, status.title, m2.value); Button(refresh); Card(TextContent(status.body)); Card(TextContent(m1.value))",
+    "after": "Button(refresh); Callout(info, status.title, status.body); Card(TextContent(m1.value)); Card(TextContent(m2.value))",
+    "gold_aligned_visible_roles": true
+  },
+  "failure_breakdown": {},
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v131 and binding-aware meaningful v2.3.0 as the next research baseline, not a ship result. The treatment repairs Dashboard's visible role assignments, leaves all other predictions and non-strict quality metrics unchanged, and clears the strict n=4 subset. Because the evaluator contract changed in the same arm, the strict-rate delta is version-bound; the prediction-level repair is the independent evidence.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "91e4d2db5b4eb8898b5049e6c4ba1be5b2175e17",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.3.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v131"
+    },
+    "stamped_at": "2026-07-21T11:28:43.649683+00:00"
+  }
+}

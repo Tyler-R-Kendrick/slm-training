@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_id": "e652-value-text-role-r1",
+  "experiment_id": "E652",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Mapping display value roles to text-compatible leaves will keep metric values out of complex nested widget properties.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "location": "outputs/runs/e620-required-slot-coverage-scratch800-20260720/checkpoints/last.pt",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e650-planned-family-role-binding-r1",
+    "treatment_run_id": "e652-value-text-role-r1",
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "exact_e650_decode_policy": true,
+    "grammar_ltr_max_tokens": 160
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "binding_aware_meaningful_v2_rate_strict": 0.75,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.78235,
+      "component_type_recall": 0.875,
+      "reward_score": 0.97975,
+      "ast_node_f1": 0.8409722222222222,
+      "ast_edge_f1": 0.5892857142857143,
+      "latency_ms_p50": 2932.12,
+      "latency_ms_p95": 6767.31,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "failure_breakdown": {"trivial_layout": 1},
+  "prediction_set_sha256": [
+    "8ea315536425d483cdffe16f8a4d2cf4587cc944c3a3c4fbc81f04b777e96a5f",
+    "685e1d9d2fbd74ed8ea1fc0fee7f570064a60fa6a90644bcbb85f101db0b63a5",
+    "953588af7654974658f95ef02d3dede0f32ac8ead0f6d5180db1dc0ee6b0b73d",
+    "4e066853e76dbbb3d2980c2cad1888e58a5736b04887fdb6563701cd5b14c980"
+  ],
+  "decision": "Reject the treatment stamped v99. After rebasing onto E651 restoration v101, the append-only lineage records E652 as treatment v102 and restoration v103. Metric TextContent leaves were emitted as detached root sections, both planned Cards became empty, and meaningful v1 regressed while strict v2 did not improve.",
+  "rebased_component_versions": {"model.twotower_treatment": "v102", "model.twotower_restoration": "v103"},
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "81d52808b8f40797494d4d97fe8d904e0a0a5109",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.2.1",
+      "evals.scoring": "v12",
+      "model.twotower": "v99"
+    },
+    "stamped_at": "2026-07-21T04:45:27.739458+00:00"
+  }
+}

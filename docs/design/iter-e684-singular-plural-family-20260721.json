@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "run_id": "e684-singular-plural-family-r1",
+  "experiment_id": "E684",
+  "date_utc": "2026-07-21",
+  "status": "completed_mixed_contract_correction_retained_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Schema-derived singular recognition for plural component families will turn the two-tab Held-out request into a valid Tabs prediction.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e683-positional-role-heldout-r1",
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "meaningful_program_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.4,
+      "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.4,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.7,
+      "placeholder_validity": 0.82,
+      "structural_similarity": 0.51076,
+      "component_type_recall": 0.5733333333333334,
+      "reward_score": 0.8602000000000001,
+      "ast_node_f1": 0.6217521367521368,
+      "ast_edge_f1": 0.5203463203463203,
+      "latency_ms_p50": 3289.2,
+      "latency_ms_p95": 18338.0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e683": {
+    "strict_v2": [
+      0.4,
+      0.4
+    ],
+    "coverage": [
+      0.8,
+      1.0
+    ],
+    "placeholder_fidelity": [
+      0.7333333333333333,
+      0.7
+    ],
+    "structural_similarity": [
+      0.49326,
+      0.51076
+    ],
+    "component_type_recall": [
+      0.5333333333333333,
+      0.5733333333333334
+    ],
+    "reward_score": [
+      0.8702,
+      0.8602000000000001
+    ],
+    "ast_node_f1": [
+      0.5773076923076923,
+      0.6217521367521368
+    ],
+    "ast_edge_f1": [
+      0.5203463203463203,
+      0.5203463203463203
+    ]
+  },
+  "failure_breakdown": {
+    "mechanical_inventory_coverage": 1,
+    "placeholder_semantic_role_mismatch": 1,
+    "placeholder_spam": 1,
+    "prompt_component_missing": 1,
+    "required_component_missing": 1,
+    "required_placeholder_missing": 2,
+    "schema_value_role_mismatch:Slider.variant": 1
+  },
+  "prediction_evidence": {
+    "held_out_tabs_01": "Prompt coverage is now known and explicitly requires Tabs, but decode emits only TextContent(tab2), so the quality hypothesis fails.",
+    "other_predictions_identical_to_e683": true
+  },
+  "metric_provenance": {
+    "metric": "binding_aware_meaningful_v2/2.5.0",
+    "implementation_hash": "2fc7843fbf173c504d6900c41f88c6c1c5b4342a5c01da99773bf1b1eafd9dcb",
+    "note": "The contract now recognizes the schema-derived singular form and reports explicit missing-component evidence; thresholds remain disabled and unchanged."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain metric v2.5.0 and model v138 as an honest prompt-contract correction, but reject the quality hypothesis. The next lever must enforce the already recognized authored Tabs family rather than change morphology again.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "61943f91aa7453daf18f6db8c2eeb22c758c3262",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.5.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v138"
+    },
+    "stamped_at": "2026-07-21T12:48:27.210439+00:00"
+  }
+}

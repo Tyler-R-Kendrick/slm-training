@@ -2068,13 +2068,13 @@ def test_e638_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert run_id not in checkpoints
 
 
-def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
+def test_e639_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
     readers = Readers(Path(__file__).parents[2])
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
     expected = {
-        "e645-root-sibling-coverage-r1": 0.0,
-        "e645-root-sibling-coverage-r2": 0.5,
+        "e639-root-sibling-coverage-r1": 0.0,
+        "e639-root-sibling-coverage-r2": 0.5,
     }
     for run_id, strict in expected.items():
         run = readers.run(run_id)
@@ -2086,6 +2086,455 @@ def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> No
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
     assert checkpoints.isdisjoint(expected)
+
+
+def test_e640_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e640-root-slot-references-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.5
+    assert suite["structural_similarity"] == 0.581675
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e641_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e641-role-plan-completion-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.25
+    assert suite["reward_score"] == 0.884
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e642_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e642-root-only-role-plans-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.5
+    assert suite["structural_similarity"] == 0.48835
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e643_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e643-bound-role-plans-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.25
+    assert suite["placeholder_fidelity"] == 0.7583333333333333
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e644_retained_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e644-role-obligation-margin-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.605625
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {"e645-root-binding-w4-r1", "e645-root-binding-w8-r1"}
+    for run_id in run_ids:
+        run = readers.run(run_id)
+        assert run["provenance"] == "committed"
+        suite = run["scoreboard"]["suites"]["ood"]
+        assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+        assert suite["structural_similarity"] == 0.605625
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids.isdisjoint(checkpoints)
+
+
+def test_e646_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e646-complete-root-reachability-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.605625
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e647_diagnostic_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {"e647-root-abstention-trace-r1", "e647-root-abstention-trace-r2"}
+    for run_id in run_ids:
+        run = readers.run(run_id)
+        assert run["provenance"] == "committed"
+        suite = run["scoreboard"]["suites"]["ood"]
+        assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+        assert suite["structural_similarity"] == 0.605625
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids.isdisjoint(checkpoints)
+
+
+def test_e648_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e648-dynamic-literal-root-probe-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 1.0
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.73545
+    assert suite["component_type_recall"] == 0.875
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e649_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e649-refresh-action-role-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 0.75
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["placeholder_fidelity"] == 1.0
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e650_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e650-planned-family-role-binding-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 1.0
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["placeholder_fidelity"] == 1.0
+    assert suite["placeholder_validity"] == 1.0
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e651_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e651-schema-enum-literal-margin-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 0.75
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.7629250000000001
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e652_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e652-value-text-role-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 0.75
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.78235
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e653_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e653-nested-role-ownership-r2"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 1.0
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.769175
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+
+
+def test_e654_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e654-nested-role-enum-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["placeholder_fidelity"] == 0.95
+    assert suite["structural_similarity"] == 0.7629250000000001
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e655_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e655-direct-role-slot-ownership-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["placeholder_fidelity"] == 1.0
+    assert suite["structural_similarity"] == 0.769175
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e656_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e656-repeated-slot-role-ownership-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["reward_score"] == 0.973
+    assert suite["structural_similarity"] == 0.769175
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e657_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e657-combined-role-ownership-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["structural_similarity"] == 0.75125
+    assert suite["ast_edge_f1"] == 0.6964285714285714
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e658_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e658-property-role-ownership-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["placeholder_fidelity"] == 0.95
+    assert suite["reward_score"] == 0.958
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e659_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e659-property-role-guard-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["meaningful_program_rate"] == 0.75
+    assert suite["placeholder_fidelity"] == 0.65
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e666_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e666-schema-enum-finalize-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["placeholder_fidelity"] == 1.0
+    assert suite["structural_similarity"] == 0.769175
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e667_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e667-nested-typed-array-owner-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.769175
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e668_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e668-typed-array-role-wrapper-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.769175
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e669_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e669-nested-array-schema-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.72295
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e670_negative_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e670-nested-array-role-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.72295
+    assert run.get("checkpoint") is None
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e671_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e671-nested-role-owner-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.72295
+    assert run.get("checkpoint") is None
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e672_neutral_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e672-schema-owned-array-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.72295
+    assert run.get("checkpoint") is None
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+
+
+def test_e673_positive_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e673-schema-ref-reachability-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.75
+    assert suite["structural_similarity"] == 0.7931250000000001
+    assert run.get("checkpoint") is None
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
 
 
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:

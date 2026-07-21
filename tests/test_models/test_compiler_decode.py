@@ -541,7 +541,6 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
     assert bias is not None
     assert bias.tolist() == [7.0, 0.0]
 
-
 def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     from types import SimpleNamespace
 
@@ -572,6 +571,56 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
 
     assert bias is not None
     assert bias.tolist() == [7.0, 0.0]
+
+
+def test_slot_coverage_wrapper_stops_after_bound_roles_are_covered() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", slot_coverage_close_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    tab_item_id = tokenizer.token_to_id["+TabItem"]
+    close_id = tokenizer.token_to_id["]"]
+    tab1_id = tokenizer.sym_id(0)
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Tabs"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=({"$ref": "#/$defs/TabItem"},),
+                close="]",
+            ),
+        ]
+    )
+    slots = [":tabs.tab1", ":tabs.tab2", ":tabs.details.title"]
+    candidates = {
+        ":tabs.tab1": ("AccordionItem", "TabItem"),
+        ":tabs.tab2": ("AccordionItem", "TabItem"),
+        ":tabs.details.title": ("Callout", "CardHeader"),
+    }
+    bindings = {"TabItem": (":tabs.tab1", ":tabs.tab2")}
+
+    second = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, tab1_id],
+        (tab_item_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        slots,
+        candidates,
+        bindings,
+    )
+    complete = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, tab1_id, tokenizer.sym_id(1)],
+        (tab_item_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        slots,
+        candidates,
+        bindings,
+    )
+
+    assert second is not None and second.tolist() == [7.0, 0.0]
+    assert complete is None
 
 
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
@@ -844,322 +893,6 @@ def test_slot_coverage_close_trace_labels_owner_escape() -> None:
     assert trace["chosen_token"] == "-"
 
 
-def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
-    """E626: floor the best-scoring legal slot candidate that is genuinely
-
-    still missing from the prefix; already-filled slots and the fully-covered
-    case are both no-ops, and the default-off weight never fires.
-    """
-    model = _model(required_slot_margin_decode_weight=2.0)
-    tokenizer = model.tokenizer
-    slot0 = tokenizer.sym_id(0)
-    slot1 = tokenizer.sym_id(1)
-    button_id = tokenizer.token_to_id["Button"]
-    slot_contract = [":status.title", ":status.body"]
-    candidates = (slot0, slot1, button_id)
-    scores = torch.tensor([9.0, 2.0, 10.0])
-
-    # slot0 already appears in the prefix; only slot1 is still missing.
-    prefix = [tokenizer.bos_id, slot0]
-    bias = model._required_slot_margin_bias(
-        prefix, candidates, scores, slot_contract
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [0.0, 10.0, 0.0]
-
-    # Once every visible slot has appeared, the lever no-ops (nothing missing).
-    assert (
-        model._required_slot_margin_bias(
-            [*prefix, slot1], candidates, scores, slot_contract
-        )
-        is None
-    )
-
-    # Default-off weight never fires, even with missing slots present.
-    off_model = _model(required_slot_margin_decode_weight=0.0)
-    assert (
-        off_model._required_slot_margin_bias(
-            prefix, candidates, scores, slot_contract
-        )
-        is None
-    )
-
-    # No slot contract -> no-op regardless of weight.
-    assert (
-        model._required_slot_margin_bias(prefix, candidates, scores, None) is None
-    )
-
-
-def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
-    """E628: exclude the root/top-level statement position from the floor.
-
-    E627 traced margin=6's Dashboard regression to every hijack firing at
-    ``frame_depth == 0`` -- a fresh top-level statement's value, where the
-    grammar legally allows a bare visible-slot token as an alternative to
-    opening a real component. Passing a ``state`` whose ``frames`` is empty
-    (frame_depth 0) must now make the bias a no-op entirely, even though the
-    same missing-slot/candidate/score setup would otherwise floor it (as
-    ``test_required_slot_margin_bias_floors_only_still_missing_slots`` proves
-    above). Once inside a real component/object frame (``frames`` non-empty,
-    frame_depth >= 1) the bias still fires exactly as before -- this lever
-    should keep flooring slots-as-arguments, only no longer compete for the
-    root/top-level choice.
-    """
-    from types import SimpleNamespace
-
-    model = _model(required_slot_margin_decode_weight=2.0)
-    tokenizer = model.tokenizer
-    slot0 = tokenizer.sym_id(0)
-    slot1 = tokenizer.sym_id(1)
-    button_id = tokenizer.token_to_id["Button"]
-    slot_contract = [":status.title", ":status.body"]
-    candidates = (slot0, slot1, button_id)
-    scores = torch.tensor([9.0, 2.0, 10.0])
-    prefix = [tokenizer.bos_id, slot0]
-
-    # frame_depth == 0 (no frame open yet): the bias must not fire at all,
-    # regardless of how genuinely missing slot1 is.
-    root_state = SimpleNamespace(frames=[])
-    assert (
-        model._required_slot_margin_bias(
-            prefix, candidates, scores, slot_contract, state=root_state
-        )
-        is None
-    )
-
-    # frame_depth == 1 (inside an open component frame) at a content-flagged
-    # argument position (E630's schema-position gate, see
-    # ``test_required_slot_margin_bias_excludes_non_content_schema_positions``
-    # below): unchanged behavior, matching the no-state-passed case exactly.
-    inner_frame = SimpleNamespace(
-        kind="component",
-        expr_type="element:Card",
-        phase="args",
-        arg_index=0,
-        schemas=({"x-openui-placeholder": True},),
-    )
-    inner_state = SimpleNamespace(frames=[inner_frame])
-    bias = model._required_slot_margin_bias(
-        prefix, candidates, scores, slot_contract, state=inner_state
-    )
-    assert bias is not None
-    assert bias.tolist() == [0.0, 10.0, 0.0]
-
-    # state=None (unknown depth, e.g. a lower-level direct call) preserves
-    # the pre-E628 behavior of firing unconditionally.
-    assert (
-        model._required_slot_margin_bias(
-            prefix, candidates, scores, slot_contract, state=None
-        )
-        is not None
-    )
-
-
-def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> None:
-    """E630: root-causing rico_eval_test_25's frame_depth>=1 over-stuffing.
-
-    E629's widened-suite sweep found a second failure mode distinct from
-    E627/E628's frame_depth==0 root hijack: at margin>=1, one ``Button``
-    absorbed 5 still-missing required slots across all 5 of its positional
-    arguments (``label``, ``action``, ``variant``, ``type``, ``size``), not
-    just the content-flagged ``label``. A live trace (E630) confirmed the
-    mechanism directly: ``_required_slot_margin_bias``'s floor
-    (``old_max + margin``) is computed relative to the *current* best legal
-    score -- i.e. after ``_schema_value_bias``/``_schema_opaque_bias`` have
-    already discouraged a placeholder there and ``_schema_enum_close_bias``/
-    ``_schema_opaque_close_bias`` have already preferred closing instead --
-    so the floor wins against all four at *any* margin > 0, not only a large
-    one, because all four run earlier in the same per-position bias stack.
-    Gating the fire to exactly the positions ``_schema_role_slot_bias``
-    already treats as slot-eligible removes this: a ``component`` frame's
-    active argument must be ``x-openui-placeholder``-flagged (a content
-    property), and an ``object`` frame's active property schema must be able
-    to reach a visible slot at all.
-    """
-    from types import SimpleNamespace
-
-    model = _model(required_slot_margin_decode_weight=2.0)
-    tokenizer = model.tokenizer
-    slot0 = tokenizer.sym_id(0)
-    slot1 = tokenizer.sym_id(1)
-    button_id = tokenizer.token_to_id["Button"]
-    slot_contract = [":status.title", ":status.body"]
-    candidates = (slot0, slot1, button_id)
-    scores = torch.tensor([9.0, 2.0, 10.0])
-    prefix = [tokenizer.bos_id, slot0]
-
-    # component frame, non-content (enum) argument position: no fire, even
-    # though slot1 is genuinely still missing and legal there -- matches
-    # Button.variant/type/size in the traced rico_eval_test_25 regression.
-    enum_frame = SimpleNamespace(
-        kind="component",
-        expr_type="element:Button",
-        phase="args",
-        arg_index=1,
-        schemas=(
-            {"x-openui-placeholder": True},
-            {"type": "string", "enum": ["primary", "secondary"]},
-        ),
-    )
-    assert (
-        model._required_slot_margin_bias(
-            prefix,
-            candidates,
-            scores,
-            slot_contract,
-            state=SimpleNamespace(frames=[enum_frame]),
-        )
-        is None
-    )
-
-    # component frame, the content (label) argument position: fires exactly
-    # as before -- this lever still floors slots as content-property fills.
-    content_frame = SimpleNamespace(
-        kind="component",
-        expr_type="element:Button",
-        phase="args",
-        arg_index=0,
-        schemas=(
-            {"x-openui-placeholder": True},
-            {"type": "string", "enum": ["primary", "secondary"]},
-        ),
-    )
-    bias = model._required_slot_margin_bias(
-        prefix,
-        candidates,
-        scores,
-        slot_contract,
-        state=SimpleNamespace(frames=[content_frame]),
-    )
-    assert bias is not None
-    assert bias.tolist() == [0.0, 10.0, 0.0]
-
-    # object frame, a property whose schema cannot reach a visible slot
-    # (e.g. a plain boolean): no fire.
-    boolean_object_frame = SimpleNamespace(
-        kind="object", arg_index=0, schemas=({"type": "boolean"},)
-    )
-    assert (
-        model._required_slot_margin_bias(
-            prefix,
-            candidates,
-            scores,
-            slot_contract,
-            state=SimpleNamespace(frames=[boolean_object_frame]),
-        )
-        is None
-    )
-
-    # object frame, a property whose schema can reach a visible slot: fires.
-    reachable_object_frame = SimpleNamespace(
-        kind="object", arg_index=0, schemas=({"x-openui-placeholder": True},)
-    )
-    bias = model._required_slot_margin_bias(
-        prefix,
-        candidates,
-        scores,
-        slot_contract,
-        state=SimpleNamespace(frames=[reachable_object_frame]),
-    )
-    assert bias is not None
-    assert bias.tolist() == [0.0, 10.0, 0.0]
-
-    # A frame kind this bias never previously scoped (e.g. "variadic" array
-    # items) stays permissive -- this fix only targets the newly-traced
-    # component/object argument-position failure mode.
-    variadic_frame = SimpleNamespace(kind="variadic", expr_type="array", arg_index=0)
-    bias = model._required_slot_margin_bias(
-        prefix,
-        candidates,
-        scores,
-        slot_contract,
-        state=SimpleNamespace(frames=[variadic_frame]),
-    )
-    assert bias is not None
-    assert bias.tolist() == [0.0, 10.0, 0.0]
-
-
-def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> None:
-    """E627 root-cause instrumentation for E626's open margin=6 regression.
-
-    When a still-missing slot candidate is legal at the *same* decode
-    position as a real component-opening candidate (frame_depth 0, i.e. no
-    component frame has been opened yet), a large-enough margin can floor
-    the slot token above the component token and win the position's argmax
-    -- this is the mechanism E626 observed collapsing Dashboard to a bare
-    ``Button``. The trace must surface this precisely: ``frame_depth == 0``,
-    ``chosen_kind == "sym"``, and ``hijacked_non_slot_candidate`` true
-    because the pre-bias argmax was a non-slot (component) candidate.
-
-    This test exercises ``_record_required_slot_margin_trace`` directly with a
-    hand-built ``margin_bias`` -- it stays a valid unit test of the trace
-    function's own labeling logic even after E628 makes this exact scenario
-    unreachable in production (``_required_slot_margin_bias`` now returns
-    ``None`` at ``frame_depth == 0``, so this call site is never reached with
-    a live margin_bias there anymore; see
-    ``test_required_slot_margin_bias_excludes_frame_depth_zero``).
-    """
-    from types import SimpleNamespace
-
-    from slm_training.models.decode_stats import DecodeStats
-
-    model = _model(
-        output_tokenizer="choice",
-        required_slot_margin_decode_weight=6.0,
-    )
-    tokenizer = model.tokenizer
-    slot_id = tokenizer.sym_id(3)
-    button_id = tokenizer.token_to_id["+Button"]
-    candidate_ids = (button_id, slot_id)
-    candidate_kinds = ("component_root_or_bound", "sym")
-    stats = DecodeStats()
-
-    trace = model._record_required_slot_margin_trace(
-        stats,
-        row=0,
-        position=1,
-        state=SimpleNamespace(frames=[]),
-        candidate_ids=candidate_ids,
-        candidate_kinds=candidate_kinds,
-        scores_before=torch.tensor([11.8, 10.3]),
-        margin_bias=torch.tensor([0.0, 7.5]),
-        scores_after=torch.tensor([11.8, 17.8]),
-    )
-
-    assert trace is not None
-    assert trace["phase"] == "required_slot_margin"
-    assert trace["frame_depth"] == 0
-    assert trace["before_token"] == "+Button"
-    assert trace["before_kind"] == "component_root_or_bound"
-    assert trace["chosen_token"] == tokenizer.id_to_token[slot_id]
-    assert trace["chosen_kind"] == "sym"
-    assert trace["choice_changed"] is True
-    assert trace["hijacked_non_slot_candidate"] is True
-    assert stats.constrained_selection_traces == [trace]
-
-    # Inside an open component frame, a slot-vs-slot swap is not a hijack:
-    # the pre-bias argmax was already a slot candidate.
-    open_frame = SimpleNamespace(
-        kind="component", expr_type="element:Button", phase="args", arg_index=0
-    )
-    inner_trace = model._record_required_slot_margin_trace(
-        stats,
-        row=0,
-        position=7,
-        state=SimpleNamespace(frames=[open_frame]),
-        candidate_ids=(slot_id, tokenizer.sym_id(4)),
-        candidate_kinds=("sym", "sym"),
-        scores_before=torch.tensor([9.0, 8.0]),
-        margin_bias=torch.tensor([0.0, 2.0]),
-        scores_after=torch.tensor([9.0, 10.0]),
-    )
-    assert inner_trace is not None
-    assert inner_trace["frame_depth"] == 1
-    assert inner_trace["choice_changed"] is True
-    assert inner_trace["hijacked_non_slot_candidate"] is False
-
-
 def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None:
     from types import SimpleNamespace
 
@@ -1402,6 +1135,172 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
     assert bias.tolist() == [10.0, 0.0, 0.0]
 
 
+def test_typed_array_item_bias_prefers_schema_allowed_role_wrapper() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    bar_id = tokenizer.token_to_id["+BarChart"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{}]
+    model._slot_contracts = [[":metric"]]
+    model._semantic_role_candidates = [{":metric": ("BarChart",)}]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Carousel"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(
+                    {
+                        "anyOf": [
+                            {"$ref": "#/$defs/TextContent"},
+                            {
+                                "$ref": "#/$defs/BarChart",
+                                "type": "object",
+                                "properties": {
+                                    "value": {"x-openui-placeholder": True}
+                                },
+                            },
+                        ]
+                    },
+                ),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        [tokenizer.bos_id],
+        (bar_id, text_id, slot_id, close_id),
+        torch.tensor([1.0, 6.0, 9.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [10.0, 0.0, 0.0, 0.0]
+
+
+def test_nested_array_frame_preserves_inner_component_schema() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+
+    assert state.advance_id(tokenizer.token_to_id["+Carousel"])
+    assert state.advance_id(tokenizer.token_to_id["["])
+    assert state.advance_id(tokenizer.token_to_id["["])
+    assert not state.advance_id(tokenizer.sym_id(0))
+    assert state.advance_id(tokenizer.token_to_id["+TextContent"])
+
+
+def test_typed_array_item_bias_accepts_model_introduced_schema_owner() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    text_id = tokenizer.token_to_id["+TextContent"]
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    model._semantic_plan_action_counts = [{}]
+    model._slot_contracts = [[":metric"]]
+    model._semantic_role_candidates = [{":metric": ()}]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Carousel"),
+            SimpleNamespace(kind="variadic", expr_type="array"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                item_count=0,
+                schemas=(
+                    {
+                        "type": "object",
+                        "properties": {"text": {"type": "string"}},
+                    },
+                ),
+                close="]",
+            ),
+        ],
+        _minimal_schema_id=lambda _schema: text_id,
+    )
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        [tokenizer.bos_id],
+        (text_id, slot_id, close_id),
+        torch.tensor([1.0, 9.0, 8.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [10.0, 0.0, 0.0]
+
+
+def test_schema_slot_reachability_resolves_public_component_refs() -> None:
+    from slm_training.dsl.lang_core import library_schema
+
+    carousel = library_schema()["$defs"]["Carousel"]
+    item_schema = carousel["properties"]["children"]["items"]["items"]
+
+    assert TwoTowerModel._schema_can_reach_visible_slot(item_schema)
+
+
+def test_schema_open_bias_prefers_true_for_authored_visible_component() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", schema_open_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    modal_id = tokenizer.token_to_id["+Modal"]
+    true_id = tokenizer.token_to_id["#true"]
+    false_id = tokenizer.token_to_id["#false"]
+    model._semantic_plan_action_counts = [{modal_id: 1}]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Modal",
+                arg_index=1,
+                schemas=({"type": "string"}, {"type": "boolean"}),
+                property_names=("title", "open"),
+            )
+        ]
+    )
+
+    bias = model._schema_open_bias(
+        0,
+        state,
+        (true_id, false_id),
+        torch.tensor([1.0, 6.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [7.0, 0.0]
+
+    model._semantic_plan_action_counts = [{}]
+    assert (
+        model._schema_open_bias(
+            0,
+            state,
+            (true_id, false_id),
+            torch.tensor([1.0, 6.0]),
+        )
+        is None
+    )
+
+
 @pytest.mark.parametrize(
     "weight_name",
     [
@@ -1410,7 +1309,6 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
         "semantic_plan_typed_array_nonempty_margin_decode_weight",
         "semantic_plan_typed_array_item_margin_decode_weight",
         "semantic_plan_repeated_slot_margin_decode_weight",
-        "required_slot_margin_decode_weight",
     ],
 )
 def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
@@ -1473,6 +1371,88 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
 
     assert bias is not None
     assert bias.tolist() == [-4.0, 0.0]
+
+
+def test_schema_enum_finalize_preserves_choices_after_dynamic_literal() -> None:
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    source = 'root = Callout("invalid", ":title", ":body")'
+    ids = torch.tensor(
+        [tokenizer.encode(source, placeholders=[":title", ":body"])],
+        dtype=torch.long,
+    )
+
+    finalized = model._finalize_schema_enum_choices(ids, [[":title", ":body"]])
+
+    assert model._decode_openui(
+        finalized[0], placeholders=[":title", ":body"]
+    ) == 'root = Callout("info", ":title", ":body")'
+
+
+def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    invalid = torch.tensor(
+        [
+            tokenizer.encode(
+                'root = Callout("column", ":title", ":body")',
+                placeholders=[":title", ":body"],
+            )
+        ],
+        dtype=torch.long,
+    )
+    valid = torch.tensor(
+        [
+            tokenizer.encode(
+                'root = Callout("warning", ":title", ":body")',
+                placeholders=[":title", ":body"],
+            )
+        ],
+        dtype=torch.long,
+    )
+    compact_valid = torch.tensor(
+        [
+            tokenizer.encode(
+                'root = Stack([TextContent(":title")], "column")',
+                placeholders=[":title"],
+            )
+        ],
+        dtype=torch.long,
+    )
+
+    finalized_invalid = model._finalize_schema_enum_choices(
+        invalid, [[":title", ":body"]]
+    )
+    finalized_valid = model._finalize_schema_enum_choices(
+        valid, [[":title", ":body"]]
+    )
+    finalized_compact_valid = model._finalize_schema_enum_choices(
+        compact_valid, [[":title"]]
+    )
+
+    assert model._decode_openui(
+        finalized_invalid[0], placeholders=[":title", ":body"]
+    ) == 'root = Callout("info", ":title", ":body")'
+    assert torch.equal(finalized_valid, valid)
+    assert torch.equal(finalized_compact_valid, compact_valid)
+
+
+def test_schema_enum_finalize_spells_open_vocabulary_enum_with_capacity() -> None:
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    encoded = tokenizer.encode(
+        'root = Slider(":notify", "tet", 1, 1)', placeholders=[":notify"]
+    )
+    ids = torch.tensor(
+        [[*encoded, *([tokenizer.pad_id] * 16)]],
+        dtype=torch.long,
+    )
+
+    finalized = model._finalize_schema_enum_choices(ids, [[":notify"]])
+
+    assert model._decode_openui(
+        finalized[0], placeholders=[":notify"]
+    ) == 'root = Slider(":notify", "continuous", 1, 1)'
 
 
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
@@ -1634,31 +1614,43 @@ def test_schema_role_slot_bias_margin_floors_only_bound_unused_role() -> None:
     )
 
 
-def test_schema_role_slot_bias_skips_masked_bound_role() -> None:
+def test_schema_role_slot_bias_matches_bound_positional_property() -> None:
+    from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.production_codec import OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 
     model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=8.0)
     tokenizer = model.tokenizer
     state = ChoiceDecodeState(tokenizer, slot_count=2)
-    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Button"])
-    alt_id = tokenizer.sym_id(0)
-    cta_id = tokenizer.sym_id(1)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}CardHeader"])
+    slots = [":hero.title", ":hero.subtitle"]
+    candidates = semantic_role_candidates(slots, ["CardHeader"])
+    title_id, subtitle_id = (tokenizer.sym_id(index) for index in range(2))
 
-    bias = model._schema_role_slot_bias(
+    title_bias = model._schema_role_slot_bias(
         state,
-        (alt_id, cta_id),
-        torch.tensor([20.0, float("-inf")]),
-        [":gallery.alt", ":gallery.cta"],
-        {
-            ":gallery.alt": ("ImageGallery",),
-            ":gallery.cta": ("Button",),
-        },
+        (title_id, subtitle_id),
+        torch.zeros(2),
+        slots,
+        candidates,
         prefix=[],
-        role_bindings={"Button": (":gallery.cta",)},
+        role_bindings={"CardHeader": tuple(slots)},
     )
+    assert title_bias is not None
+    assert title_bias.tolist() == [8.0, 0.0]
 
-    assert bias is None
+    assert state.advance_id(title_id)
+    subtitle_bias = model._schema_role_slot_bias(
+        state,
+        (title_id, subtitle_id),
+        torch.zeros(2),
+        slots,
+        candidates,
+        prefix=[title_id],
+        role_bindings={"CardHeader": tuple(slots)},
+    )
+    assert subtitle_bias is not None
+    assert subtitle_bias.tolist() == [0.0, 8.0]
 
 
 def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
@@ -1710,6 +1702,193 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
         ":modal.confirm": ("Button",),
         ":modal.title": ("Modal", "TextContent"),
     }
+
+
+def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":dashboard.refresh"],
+        ["Button", "TextContent"],
+    )
+
+    assert candidates == {":dashboard.refresh": ("Button",)}
+
+
+def test_semantic_role_candidates_map_display_heading_and_kicker_to_text() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":hero.kicker", ":callout.heading"],
+        ["Callout", "CardHeader", "TextContent"],
+    )
+
+    assert candidates == {
+        ":callout.heading": ("TextContent",),
+        ":hero.kicker": ("TextContent",),
+    }
+
+
+def test_semantic_role_candidates_map_numbered_tabs_to_trigger() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":tabs.overview", ":tabs.tab1", ":tabs.tab2"],
+        ["TabItem", "TextContent"],
+    )
+
+    assert candidates == {
+        ":tabs.overview": ("TextContent",),
+        ":tabs.tab1": ("TabItem",),
+        ":tabs.tab2": ("TabItem",),
+    }
+
+
+def test_joint_role_candidates_require_distinct_schema_properties() -> None:
+    slots = [":gallery.hint.title", ":gallery.hint.body"]
+    candidates = TwoTowerModel._semantic_role_joint_candidates(
+        slots, ["Callout", "TextCallout", "TextContent"]
+    )
+
+    assert candidates[tuple(sorted(slots))] == ("Callout", "TextCallout")
+
+
+def test_joint_role_candidates_partition_larger_namespace_by_specificity() -> None:
+    slots = [
+        ":hero.body",
+        ":hero.kicker",
+        ":hero.subtitle",
+        ":hero.title",
+    ]
+    candidates = TwoTowerModel._semantic_role_joint_candidates(
+        slots, ["Callout", "CardHeader", "TextContent"]
+    )
+
+    assert candidates == {
+        (":hero.subtitle", ":hero.title"): ("CardHeader",),
+    }
+
+
+def test_role_obligations_use_one_joint_schema_carrier() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"ImageGallery": 1}),
+        {
+            ":gallery.hint.title": ("Callout", "TextContent"),
+            ":gallery.hint.body": ("Callout", "TextContent"),
+        },
+    )
+
+    assert counts == Counter({"ImageGallery": 1, "Callout": 1})
+    assert bindings["Callout"] == (
+        ":gallery.hint.body",
+        ":gallery.hint.title",
+    )
+
+
+def test_role_obligations_partition_hero_roles_into_schema_carriers() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 1, "Stack": 1}),
+        {
+            ":hero.body": ("Callout", "TextContent"),
+            ":hero.kicker": ("TextContent",),
+            ":hero.subtitle": ("CardHeader",),
+            ":hero.title": ("Callout", "CardHeader", "TextContent"),
+        },
+    )
+
+    assert counts == Counter(
+        {"TextContent": 2, "Card": 1, "Stack": 1, "CardHeader": 1}
+    )
+    assert bindings == {
+        "CardHeader": (":hero.subtitle", ":hero.title"),
+        "TextContent": (":hero.body", ":hero.kicker"),
+    }
+
+
+def test_role_obligations_plan_unique_non_house_style_carriers() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Tabs": 1}),
+        {
+            ":tabs.tab1": ("TabItem",),
+            ":tabs.tab2": ("TabItem",),
+        },
+    )
+
+    assert counts == Counter({"TabItem": 2, "Tabs": 1})
+    assert bindings == {
+        "TabItem": (":tabs.tab1", ":tabs.tab2"),
+    }
+
+
+def test_role_obligations_disambiguate_visible_role_with_public_enum() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Button": 1, "Stack": 1}),
+        {
+            ":form.email": ("DatePicker", "Input", "Select", "TextArea"),
+            ":form.submit": ("Button",),
+        },
+    )
+
+    assert counts == Counter({"Button": 1, "Stack": 1, "Input": 1})
+    assert bindings == {
+        "Button": (":form.submit",),
+        "Input": (":form.email",),
+    }
+
+
+def test_role_obligations_disambiguate_children_from_planned_parent_schema() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+    from slm_training.dsl.lang_core import library_schema
+
+    slots = [":tabs.tab1", ":tabs.tab2"]
+    candidates = semantic_role_candidates(
+        slots,
+        sorted(library_schema()["$defs"]),
+    )
+
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Tabs": 1}),
+        candidates,
+    )
+
+    assert candidates == {
+        ":tabs.tab1": ("AccordionItem", "TabItem"),
+        ":tabs.tab2": ("AccordionItem", "TabItem"),
+    }
+    assert counts == Counter({"TabItem": 2, "Tabs": 1})
+    assert bindings == {"TabItem": (":tabs.tab1", ":tabs.tab2")}
+
+
+def test_prompt_semantic_plan_recognizes_one_plural_family_container() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Two-tab panel with an introductory heading and details content."
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == ["Tabs"]
+
+
+def test_prompt_semantic_plan_recognizes_public_group_from_unique_base() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Settings list with a switch and a slider.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Slider",
+        "SwitchGroup",
+    ]
+
+
+def test_prompt_semantic_plan_does_not_require_likeness_modifier() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Form-like stack with title text and submit button.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == ["Button", "Stack"]
 
 
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
@@ -1913,6 +2092,55 @@ def test_prompt_semantic_plan_margin_floors_only_missing_families() -> None:
 
     assert bias is not None
     assert bias.tolist() == [68.0, 0.0, 0.0]
+
+
+def test_prompt_semantic_plan_orders_required_parent_before_child() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    form_id = tokenizer.token_to_id["+Form"]
+    button_id = tokenizer.token_to_id["+Button"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    callout_id = tokenizer.token_to_id["+Callout"]
+    candidates = (button_id, form_id, stack_id, callout_id)
+    model._semantic_plan_action_scores = [{token_id: 1.0 for token_id in candidates}]
+    model._semantic_plan_action_counts = [{token_id: 1 for token_id in candidates}]
+
+    bias = model._semantic_plan_bias(
+        0,
+        candidates,
+        ("component_bound",) * 4,
+        SimpleNamespace(section_types=[], frames=[]),
+        prefix=[tokenizer.bos_id],
+        candidate_scores=torch.zeros(4),
+    )
+
+    assert model._schema_required_descendant_families("Form") >= {
+        "Buttons",
+        "Button",
+        "FormControl",
+    }
+    assert "Button" not in model._schema_required_descendant_families("Stack")
+    assert bias is not None
+    assert bias.tolist() == [4.0, 6.0, 4.0, 4.0]
+
+    after_form = model._semantic_plan_bias(
+        0,
+        (stack_id, callout_id),
+        ("component_bound", "component_bound"),
+        SimpleNamespace(
+            section_types=["element:Form", "element:Button"], frames=[]
+        ),
+        prefix=[tokenizer.bos_id, form_id, button_id],
+        candidate_scores=torch.zeros(2),
+    )
+    assert after_form is not None
+    assert after_form.tolist() == [4.0, 6.0]
 
 
 def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() -> None:
@@ -2330,8 +2558,44 @@ def test_semantic_plan_role_obligations_pair_uncovered_roles() -> None:
 
     assert counts == Counter({"TextContent": 2, "ImageGallery": 1, "Button": 1})
     assert bindings == {
+        "ImageGallery": (":gallery.img", ":gallery.caption"),
         "TextContent": (":gallery.hint.title", ":gallery.hint.body"),
         "Button": (":gallery.cta",),
+    }
+
+
+def test_semantic_plan_role_obligations_bind_existing_action_family() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Callout": 1, "Button": 1}),
+        {
+            ":dashboard.title": ("Callout", "TextContent"),
+            ":dashboard.refresh": ("Button",),
+        },
+    )
+
+    assert counts == Counter({"Callout": 1, "Button": 1})
+    assert bindings == {
+        "Callout": (":dashboard.title",),
+        "Button": (":dashboard.refresh",),
+    }
+
+
+def test_semantic_plan_role_obligations_keep_reachable_roles_nested() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 2}),
+        {
+            ":dashboard.m1.value": ("TextContent",),
+            ":dashboard.m2.value": ("TextContent",),
+        },
+        {
+            ":dashboard.m1.value": ("Card", "TextContent"),
+            ":dashboard.m2.value": ("Card", "TextContent"),
+        },
+    )
+
+    assert counts == Counter({"Card": 2})
+    assert bindings == {
+        "TextContent": (":dashboard.m1.value", ":dashboard.m2.value")
     }
 
 
@@ -2406,6 +2670,76 @@ def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
 
     assert bias is not None
     assert bias.tolist() == [75.0, 0.0, 0.0]
+
+
+def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> None:
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(output_tokenizer="choice")
+    stats = DecodeStats()
+    state = SimpleNamespace(mode="structural", frames=[], section_types=[])
+    model._semantic_plan_root_last_abstention = {
+        "reason": "verifier_rejected",
+        "error_type": "ValueError",
+        "error": "unreachable section",
+        "planned_token_count": 20,
+        "section_count": 5,
+        "reference_count": 4,
+    }
+
+    model._record_semantic_plan_root_abstention(
+        stats, row=0, position=35, state=state
+    )
+    first_evidence = dict(model._semantic_plan_root_last_abstention)
+    model._semantic_plan_root_last_abstention["section_count"] = 6
+    model._record_semantic_plan_root_abstention(
+        stats, row=0, position=36, state=state
+    )
+
+    assert len(stats.constrained_selection_traces) == 1
+    assert stats.constrained_selection_traces[0]["evidence"] == first_evidence
+
+
+def test_semantic_plan_root_probe_decodes_dynamic_literal_frames() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    callout_id = tokenizer.token_to_id["+Callout"]
+    model._semantic_plan_action_scores = [{callout_id: 1.0}]
+    model._semantic_plan_action_counts = [{callout_id: 1}]
+    model._slot_contracts = [[":status.title", ":status.body"]]
+    prefix = [
+        callout_id,
+        tokenizer.token_to_id["LIT_STR"],
+        tokenizer.token_to_id["LIT_END"],
+        tokenizer.sym_id(0),
+        tokenizer.sym_id(1),
+        tokenizer.token_to_id["-"],
+    ]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Callout"],
+    )
+    candidates = (tokenizer.token_to_id["+Stack"], tokenizer.eos_id)
+
+    bias = model._semantic_plan_root_bias(
+        0,
+        state,
+        prefix,
+        candidates,
+        torch.zeros(2),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [2.0, 0.0]
+    assert model._semantic_plan_root_last_abstention is None
 
 
 def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
@@ -4167,3 +4501,346 @@ def test_constraint_evidence_is_deterministic_and_json_roundtrips() -> None:
         assert restored == record
     # The whole-forest view is JSON-serializable.
     json.dumps(first.evidence_as_json())
+
+
+def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
+    """E626: floor the best-scoring legal slot candidate that is genuinely
+
+    still missing from the prefix; already-filled slots and the fully-covered
+    case are both no-ops, and the default-off weight never fires.
+    """
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+
+    # slot0 already appears in the prefix; only slot1 is still missing.
+    prefix = [tokenizer.bos_id, slot0]
+    bias = model._required_slot_margin_bias(
+        prefix, candidates, scores, slot_contract
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # Once every visible slot has appeared, the lever no-ops (nothing missing).
+    assert (
+        model._required_slot_margin_bias(
+            [*prefix, slot1], candidates, scores, slot_contract
+        )
+        is None
+    )
+
+    # Default-off weight never fires, even with missing slots present.
+    off_model = _model(required_slot_margin_decode_weight=0.0)
+    assert (
+        off_model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract
+        )
+        is None
+    )
+
+    # No slot contract -> no-op regardless of weight.
+    assert (
+        model._required_slot_margin_bias(prefix, candidates, scores, None) is None
+    )
+
+
+def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
+    """E628: exclude the root/top-level statement position from the floor.
+
+    E627 traced margin=6's Dashboard regression to every hijack firing at
+    ``frame_depth == 0`` -- a fresh top-level statement's value, where the
+    grammar legally allows a bare visible-slot token as an alternative to
+    opening a real component. Passing a ``state`` whose ``frames`` is empty
+    (frame_depth 0) must now make the bias a no-op entirely, even though the
+    same missing-slot/candidate/score setup would otherwise floor it (as
+    ``test_required_slot_margin_bias_floors_only_still_missing_slots`` proves
+    above). Once inside a real component/object frame (``frames`` non-empty,
+    frame_depth >= 1) the bias still fires exactly as before -- this lever
+    should keep flooring slots-as-arguments, only no longer compete for the
+    root/top-level choice.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # frame_depth == 0 (no frame open yet): the bias must not fire at all,
+    # regardless of how genuinely missing slot1 is.
+    root_state = SimpleNamespace(frames=[])
+    assert (
+        model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract, state=root_state
+        )
+        is None
+    )
+
+    # frame_depth == 1 (inside an open component frame) at a content-flagged
+    # argument position (E630's schema-position gate, see
+    # ``test_required_slot_margin_bias_excludes_non_content_schema_positions``
+    # below): unchanged behavior, matching the no-state-passed case exactly.
+    inner_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Card",
+        phase="args",
+        arg_index=0,
+        schemas=({"x-openui-placeholder": True},),
+    )
+    inner_state = SimpleNamespace(frames=[inner_frame])
+    bias = model._required_slot_margin_bias(
+        prefix, candidates, scores, slot_contract, state=inner_state
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # state=None (unknown depth, e.g. a lower-level direct call) preserves
+    # the pre-E628 behavior of firing unconditionally.
+    assert (
+        model._required_slot_margin_bias(
+            prefix, candidates, scores, slot_contract, state=None
+        )
+        is not None
+    )
+
+
+def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> None:
+    """E630: root-causing rico_eval_test_25's frame_depth>=1 over-stuffing.
+
+    E629's widened-suite sweep found a second failure mode distinct from
+    E627/E628's frame_depth==0 root hijack: at margin>=1, one ``Button``
+    absorbed 5 still-missing required slots across all 5 of its positional
+    arguments (``label``, ``action``, ``variant``, ``type``, ``size``), not
+    just the content-flagged ``label``. A live trace (E630) confirmed the
+    mechanism directly: ``_required_slot_margin_bias``'s floor
+    (``old_max + margin``) is computed relative to the *current* best legal
+    score -- i.e. after ``_schema_value_bias``/``_schema_opaque_bias`` have
+    already discouraged a placeholder there and ``_schema_enum_close_bias``/
+    ``_schema_opaque_close_bias`` have already preferred closing instead --
+    so the floor wins against all four at *any* margin > 0, not only a large
+    one, because all four run earlier in the same per-position bias stack.
+    Gating the fire to exactly the positions ``_schema_role_slot_bias``
+    already treats as slot-eligible removes this: a ``component`` frame's
+    active argument must be ``x-openui-placeholder``-flagged (a content
+    property), and an ``object`` frame's active property schema must be able
+    to reach a visible slot at all.
+    """
+    from types import SimpleNamespace
+
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+    button_id = tokenizer.token_to_id["Button"]
+    slot_contract = [":status.title", ":status.body"]
+    candidates = (slot0, slot1, button_id)
+    scores = torch.tensor([9.0, 2.0, 10.0])
+    prefix = [tokenizer.bos_id, slot0]
+
+    # component frame, non-content (enum) argument position: no fire, even
+    # though slot1 is genuinely still missing and legal there -- matches
+    # Button.variant/type/size in the traced rico_eval_test_25 regression.
+    enum_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Button",
+        phase="args",
+        arg_index=1,
+        schemas=(
+            {"x-openui-placeholder": True},
+            {"type": "string", "enum": ["primary", "secondary"]},
+        ),
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[enum_frame]),
+        )
+        is None
+    )
+
+    # component frame, the content (label) argument position: fires exactly
+    # as before -- this lever still floors slots as content-property fills.
+    content_frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Button",
+        phase="args",
+        arg_index=0,
+        schemas=(
+            {"x-openui-placeholder": True},
+            {"type": "string", "enum": ["primary", "secondary"]},
+        ),
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[content_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # object frame, a property whose schema cannot reach a visible slot
+    # (e.g. a plain boolean): no fire.
+    boolean_object_frame = SimpleNamespace(
+        kind="object", arg_index=0, schemas=({"type": "boolean"},)
+    )
+    assert (
+        model._required_slot_margin_bias(
+            prefix,
+            candidates,
+            scores,
+            slot_contract,
+            state=SimpleNamespace(frames=[boolean_object_frame]),
+        )
+        is None
+    )
+
+    # object frame, a property whose schema can reach a visible slot: fires.
+    reachable_object_frame = SimpleNamespace(
+        kind="object", arg_index=0, schemas=({"x-openui-placeholder": True},)
+    )
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[reachable_object_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+    # A frame kind this bias never previously scoped (e.g. "variadic" array
+    # items) stays permissive -- this fix only targets the newly-traced
+    # component/object argument-position failure mode.
+    variadic_frame = SimpleNamespace(kind="variadic", expr_type="array", arg_index=0)
+    bias = model._required_slot_margin_bias(
+        prefix,
+        candidates,
+        scores,
+        slot_contract,
+        state=SimpleNamespace(frames=[variadic_frame]),
+    )
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0, 0.0]
+
+
+def test_required_slot_margin_trace_flags_a_root_level_component_hijack() -> None:
+    """E627 root-cause instrumentation for E626's open margin=6 regression.
+
+    When a still-missing slot candidate is legal at the *same* decode
+    position as a real component-opening candidate (frame_depth 0, i.e. no
+    component frame has been opened yet), a large-enough margin can floor
+    the slot token above the component token and win the position's argmax
+    -- this is the mechanism E626 observed collapsing Dashboard to a bare
+    ``Button``. The trace must surface this precisely: ``frame_depth == 0``,
+    ``chosen_kind == "sym"``, and ``hijacked_non_slot_candidate`` true
+    because the pre-bias argmax was a non-slot (component) candidate.
+
+    This test exercises ``_record_required_slot_margin_trace`` directly with a
+    hand-built ``margin_bias`` -- it stays a valid unit test of the trace
+    function's own labeling logic even after E628 makes this exact scenario
+    unreachable in production (``_required_slot_margin_bias`` now returns
+    ``None`` at ``frame_depth == 0``, so this call site is never reached with
+    a live margin_bias there anymore; see
+    ``test_required_slot_margin_bias_excludes_frame_depth_zero``).
+    """
+    from types import SimpleNamespace
+
+    from slm_training.models.decode_stats import DecodeStats
+
+    model = _model(
+        output_tokenizer="choice",
+        required_slot_margin_decode_weight=6.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(3)
+    button_id = tokenizer.token_to_id["+Button"]
+    candidate_ids = (button_id, slot_id)
+    candidate_kinds = ("component_root_or_bound", "sym")
+    stats = DecodeStats()
+
+    trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=1,
+        state=SimpleNamespace(frames=[]),
+        candidate_ids=candidate_ids,
+        candidate_kinds=candidate_kinds,
+        scores_before=torch.tensor([11.8, 10.3]),
+        margin_bias=torch.tensor([0.0, 7.5]),
+        scores_after=torch.tensor([11.8, 17.8]),
+    )
+
+    assert trace is not None
+    assert trace["phase"] == "required_slot_margin"
+    assert trace["frame_depth"] == 0
+    assert trace["before_token"] == "+Button"
+    assert trace["before_kind"] == "component_root_or_bound"
+    assert trace["chosen_token"] == tokenizer.id_to_token[slot_id]
+    assert trace["chosen_kind"] == "sym"
+    assert trace["choice_changed"] is True
+    assert trace["hijacked_non_slot_candidate"] is True
+    assert stats.constrained_selection_traces == [trace]
+
+    # Inside an open component frame, a slot-vs-slot swap is not a hijack:
+    # the pre-bias argmax was already a slot candidate.
+    open_frame = SimpleNamespace(
+        kind="component", expr_type="element:Button", phase="args", arg_index=0
+    )
+    inner_trace = model._record_required_slot_margin_trace(
+        stats,
+        row=0,
+        position=7,
+        state=SimpleNamespace(frames=[open_frame]),
+        candidate_ids=(slot_id, tokenizer.sym_id(4)),
+        candidate_kinds=("sym", "sym"),
+        scores_before=torch.tensor([9.0, 8.0]),
+        margin_bias=torch.tensor([0.0, 2.0]),
+        scores_after=torch.tensor([9.0, 10.0]),
+    )
+    assert inner_trace is not None
+    assert inner_trace["frame_depth"] == 1
+    assert inner_trace["choice_changed"] is True
+    assert inner_trace["hijacked_non_slot_candidate"] is False
+
+
+def test_schema_role_slot_bias_skips_masked_bound_role() -> None:
+    from slm_training.dsl.production_codec import OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=8.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Button"])
+    alt_id = tokenizer.sym_id(0)
+    cta_id = tokenizer.sym_id(1)
+
+    bias = model._schema_role_slot_bias(
+        state,
+        (alt_id, cta_id),
+        torch.tensor([20.0, float("-inf")]),
+        [":gallery.alt", ":gallery.cta"],
+        {
+            ":gallery.alt": ("ImageGallery",),
+            ":gallery.cta": ("Button",),
+        },
+        prefix=[],
+        role_bindings={"Button": (":gallery.cta",)},
+    )
+
+    assert bias is None

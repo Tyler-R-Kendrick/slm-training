@@ -329,6 +329,7 @@ class TwoTowerConfig:
     slot_coverage_close_decode_weight: float = 0.0
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
+    schema_open_decode_weight: float = 0.0
     schema_opaque_decode_weight: float = 0.0
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
@@ -1548,6 +1549,7 @@ class TwoTowerModel(nn.Module):
         self._semantic_plan_role_bindings: list[
             dict[str, tuple[str, ...]]
         ] | None = None
+        self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -5044,9 +5046,117 @@ class TwoTowerModel(nn.Module):
         )
 
     @staticmethod
+    def _semantic_role_joint_candidates(
+        placeholders: list[str], component_names: list[str]
+    ) -> dict[tuple[str, ...], tuple[str, ...]]:
+        """Partition namespaces into jointly coverable direct-string role groups."""
+        from itertools import combinations
+
+        from slm_training.data.quality import semantic_role_properties
+        from slm_training.dsl.lang_core import library_schema
+
+        groups: dict[str, list[str]] = {}
+        for placeholder in sorted(set(placeholders)):
+            parts = placeholder.removeprefix(":").split(".")
+            if len(parts) > 1:
+                groups.setdefault(".".join(parts[:-1]), []).append(placeholder)
+        definitions = library_schema().get("$defs", {})
+        properties_by_slot = semantic_role_properties(placeholders)
+        direct_string_properties = {
+            name: {
+                property_name
+                for property_name, schema in (definition.get("properties") or {}).items()
+                if isinstance(schema, dict) and schema.get("type") == "string"
+            }
+            for name in sorted(set(component_names))
+            if isinstance((definition := definitions.get(name)), dict)
+        }
+        slot_candidate_counts = {
+            slot: sum(
+                bool(set(properties).intersection(component_properties))
+                for component_properties in direct_string_properties.values()
+            )
+            for slot, properties in properties_by_slot.items()
+        }
+
+        def covers(slots: tuple[str, ...], properties: dict[str, Any]) -> bool:
+            string_properties = {
+                name
+                for name, schema in properties.items()
+                if isinstance(schema, dict) and schema.get("type") == "string"
+            }
+
+            def match(index: int, used: frozenset[str]) -> bool:
+                if index == len(slots):
+                    return True
+                return any(
+                    match(index + 1, used | {name})
+                    for name in properties_by_slot[slots[index]]
+                    if name in string_properties and name not in used
+                )
+
+            return match(0, frozenset())
+
+        result: dict[tuple[str, ...], tuple[str, ...]] = {}
+        for slots_list in groups.values():
+            candidates: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+            for size in range(len(slots_list), 1, -1):
+                for slots in combinations(slots_list, size):
+                    compatible = tuple(
+                        name
+                        for name in sorted(set(component_names))
+                        if isinstance((definition := definitions.get(name)), dict)
+                        and covers(slots, definition.get("properties") or {})
+                    )
+                    if compatible:
+                        candidates.append((slots, compatible))
+            used: set[str] = set()
+            for slots, compatible in sorted(
+                candidates,
+                key=lambda item: (
+                    -len(item[0]),
+                    sum(slot_candidate_counts[slot] for slot in item[0]),
+                    len(item[1]),
+                    item[0],
+                ),
+            ):
+                if used.intersection(slots):
+                    continue
+                result[slots] = compatible
+                used.update(slots)
+        return result
+
+    @staticmethod
+    def _semantic_role_enum_candidates(
+        slot: str, candidates: tuple[str, ...]
+    ) -> tuple[str, ...]:
+        """Return candidate families whose public enum names the visible role."""
+        from slm_training.dsl.lang_core import library_schema
+
+        role = re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
+        definitions = library_schema().get("$defs", {})
+
+        def enum_values(value: object) -> set[str]:
+            if isinstance(value, dict):
+                return {
+                    str(item).lower()
+                    for item in value.get("enum", ())
+                } | set().union(*(enum_values(child) for child in value.values()))
+            if isinstance(value, list):
+                return set().union(*(enum_values(child) for child in value), set())
+            return set()
+
+        return tuple(
+            family
+            for family in candidates
+            if role.lower() in enum_values(definitions.get(family, {}))
+        )
+
+    @staticmethod
     def _semantic_plan_role_obligations(
         family_counts: Counter[str],
         role_candidates: dict[str, tuple[str, ...]] | None,
+        reachable_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> tuple[Counter[str], dict[str, tuple[str, ...]]]:
         """Pair uncovered visible roles with preferred compatible leaf families."""
         if not role_candidates:
@@ -5055,9 +5165,71 @@ class TwoTowerModel(nn.Module):
 
         completed = family_counts.copy()
         planned = set(family_counts)
+        schema_descendants = TwoTowerModel._schema_descendant_families(planned)
         bindings: dict[str, list[str]] = defaultdict(list)
+        bound_slots: set[str] = set()
+        component_names = sorted(
+            {component for candidates in role_candidates.values() for component in candidates}
+        )
+        for slots, candidates in TwoTowerModel._semantic_role_joint_candidates(
+            list(role_candidates), component_names
+        ).items():
+            candidates = tuple(
+                family
+                for family in candidates
+                if all(family in role_candidates[slot] for slot in slots)
+            )
+            if not candidates:
+                continue
+            family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in planned and preferred in candidates
+                ),
+                next(iter(sorted(planned.intersection(candidates))), None),
+            )
+            if family is None:
+                family = next(iter(candidates))
+                completed[family] += 1
+                planned.add(family)
+            bindings[family].extend(slots)
+            bound_slots.update(slots)
         for slot, candidates in role_candidates.items():
-            if planned.intersection(candidates):
+            if slot in bound_slots:
+                continue
+            planned_family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in planned and preferred in candidates
+                ),
+                next(iter(sorted(planned.intersection(candidates))), None),
+            )
+            if planned_family is not None:
+                bindings[planned_family].append(slot)
+                continue
+            if planned.intersection(
+                (reachable_role_candidates or {}).get(slot, ())
+            ):
+                family = next(
+                    (
+                        preferred
+                        for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                        if preferred in candidates
+                    ),
+                    None,
+                )
+                if family is not None:
+                    bindings[family].append(slot)
+                    continue
+            nested_candidates = tuple(
+                family for family in candidates if family in schema_descendants
+            )
+            if len(nested_candidates) == 1:
+                family = nested_candidates[0]
+                completed[family] += 1
+                bindings[family].append(slot)
                 continue
             family = next(
                 (
@@ -5067,12 +5239,101 @@ class TwoTowerModel(nn.Module):
                 ),
                 None,
             )
+            enum_candidates = TwoTowerModel._semantic_role_enum_candidates(
+                slot, candidates
+            )
+            if family is None and len(enum_candidates) == 1:
+                family = enum_candidates[0]
+            if family is None and len(candidates) == 1:
+                family = candidates[0]
             if family is not None:
                 completed[family] += 1
                 bindings[family].append(slot)
         return completed, {
             family: tuple(slots) for family, slots in bindings.items()
         }
+
+    @staticmethod
+    def _schema_descendant_families(families: set[str]) -> set[str]:
+        """Return cycle-safe component refs nested below planned families."""
+        from slm_training.dsl.lang_core import library_schema
+
+        definitions = library_schema().get("$defs", {})
+        descendants: set[str] = set()
+        visited = set(families)
+        pending = [definitions[family] for family in families if family in definitions]
+        while pending:
+            value = pending.pop()
+            if isinstance(value, list):
+                pending.extend(value)
+                continue
+            if not isinstance(value, dict):
+                continue
+            reference = str(value.get("$ref") or "")
+            if reference.startswith("#/$defs/"):
+                family = reference.rsplit("/", 1)[-1]
+                descendants.add(family)
+                if family not in visited and family in definitions:
+                    visited.add(family)
+                    pending.append(definitions[family])
+            pending.extend(value.values())
+        return descendants
+
+    @staticmethod
+    def _schema_required_descendant_families(family: str) -> set[str]:
+        """Return families reachable through required, non-alternative paths."""
+        from slm_training.dsl.lang_core import library_schema
+
+        definitions = library_schema().get("$defs", {})
+
+        def visit(schema: object, seen: frozenset[str]) -> set[str]:
+            if not isinstance(schema, dict):
+                return set()
+            reference = str(schema.get("$ref") or "")
+            if reference.startswith("#/$defs/"):
+                name = reference.rsplit("/", 1)[-1]
+                if name in seen:
+                    return {name}
+                return {name} | visit(definitions.get(name), seen | {name})
+            alternatives = [
+                option
+                for key in ("anyOf", "oneOf")
+                for option in schema.get(key, ())
+                if isinstance(option, dict)
+            ]
+            if alternatives:
+                common = visit(alternatives[0], seen)
+                for option in alternatives[1:]:
+                    common.intersection_update(visit(option, seen))
+                return common
+            if schema.get("type") == "array":
+                return visit(schema.get("items"), seen)
+            required = set(schema.get("required", ()))
+            return set().union(
+                *(
+                    visit(child, seen)
+                    for name, child in schema.get("properties", {}).items()
+                    if name in required
+                ),
+                set(),
+            )
+
+        return visit(definitions.get(family), frozenset({family}))
+
+    @staticmethod
+    def _schema_has_opaque_required_collection(family: str) -> bool:
+        """Whether a required collection intentionally accepts broad elements."""
+        from slm_training.dsl.lang_core import library_schema
+
+        definition = library_schema().get("$defs", {}).get(family, {})
+        required = set(definition.get("required", ()))
+        return any(
+            isinstance(schema, dict)
+            and schema.get("type") == "array"
+            and not schema.get("items")
+            for name, schema in definition.get("properties", {}).items()
+            if name in required
+        )
 
     def _semantic_plan_bias(
         self,
@@ -5167,6 +5428,46 @@ class TwoTowerModel(nn.Module):
                     )
                 applied = True
         frames = getattr(state, "frames", ())
+        if margin > 0.0 and remaining_counts is not None and not frames:
+            remaining_families = {
+                family
+                for family, token_id in family_token_ids.items()
+                if remaining_counts.get(token_id, 0) > 0
+            }
+            containment = {
+                position: len(
+                    self._schema_required_descendant_families(
+                        str(self.tokenizer.id_to_token[token_id])
+                        .removeprefix("COMP:")
+                        .removeprefix("+")
+                    ).intersection(remaining_families)
+                )
+                for position, (token_id, kind) in enumerate(
+                    zip(candidate_ids, candidate_kinds, strict=True)
+                )
+                if kind in component_kinds
+                and remaining_counts.get(token_id, 0) > 0
+            }
+            if containment and (best := max(containment.values())) > 0:
+                for position, count in containment.items():
+                    if count == best:
+                        bias[position] += margin
+                        applied = True
+            elif containment:
+                ambiguous_aggregators = {
+                    position
+                    for position in containment
+                    if self._schema_has_opaque_required_collection(
+                        str(self.tokenizer.id_to_token[candidate_ids[position]])
+                        .removeprefix("COMP:")
+                        .removeprefix("+")
+                    )
+                }
+                concrete = set(containment).difference(ambiguous_aggregators)
+                if ambiguous_aggregators and concrete:
+                    for position in concrete:
+                        bias[position] += margin
+                        applied = True
         if remaining_counts is not None and prefix and frames:
             frame = frames[-1]
             family = str(getattr(frame, "expr_type", "")).removeprefix("element:")
@@ -5505,6 +5806,39 @@ class TwoTowerModel(nn.Module):
         stats.constrained_selection_traces.append(trace)
         return trace
 
+    def _record_semantic_plan_root_abstention(
+        self,
+        stats: DecodeStats,
+        *,
+        row: int,
+        position: int,
+        state: Any,
+    ) -> None:
+        """Record one bounded verifier abstention without changing scores."""
+        evidence = self._semantic_plan_root_last_abstention
+        if evidence is None or len(stats.constrained_selection_traces) >= 64:
+            return
+        if any(
+            trace.get("phase") == "semantic_plan_root_abstention"
+            and trace.get("row") == row
+            and isinstance(trace.get("evidence"), dict)
+            and all(
+                trace["evidence"].get(key) == evidence.get(key)
+                for key in ("reason", "error_type", "error")
+            )
+            for trace in stats.constrained_selection_traces
+        ):
+            return
+        stats.constrained_selection_traces.append(
+            {
+                "phase": "semantic_plan_root_abstention",
+                "row": row,
+                "position": position,
+                "evidence": dict(evidence),
+                **self._choice_phase_evidence(state),
+            }
+        )
+
     def _record_required_slot_margin_trace(
         self,
         stats: DecodeStats,
@@ -5756,6 +6090,58 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _schema_open_bias(
+        self,
+        row: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Prefer a visible authored component's boolean ``open`` property."""
+        weight = float(
+            getattr(self.config, "schema_open_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not frames:
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        property_names = tuple(getattr(frame, "property_names", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        family = str(getattr(frame, "expr_type", "")).removeprefix("element:")
+        owner_id = self._semantic_plan_owner_id(row, state)
+        family_ids = {
+            token_id
+            for token_id in (
+                self.tokenizer.token_to_id.get(f"+{family}"),
+                self.tokenizer.token_to_id.get(f"COMP:{family}"),
+                self.tokenizer.token_to_id.get(family),
+            )
+            if token_id is not None
+        }
+        if (
+            getattr(frame, "kind", None) != "component"
+            or not (0 <= index < len(schemas) and index < len(property_names))
+            or property_names[index] != "open"
+            or schemas[index].get("type") != "boolean"
+            or owner_id not in family_ids
+        ):
+            return None
+        true_id = self.tokenizer.token_to_id.get("#true")
+        false_id = self.tokenizer.token_to_id.get("#false")
+        if true_id not in candidate_ids or false_id not in candidate_ids:
+            return None
+        true_position = candidate_ids.index(true_id)
+        false_position = candidate_ids.index(false_id)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[true_position] = max(
+            0.0,
+            float(scores[false_position].item())
+            + weight
+            - float(scores[true_position].item()),
+        )
+        return bias
+
     def _schema_opaque_close_bias(
         self,
         state: Any,
@@ -5817,9 +6203,22 @@ class TwoTowerModel(nn.Module):
             component = str(getattr(frame, "expr_type", "")).removeprefix(
                 "element:"
             )
+            property_names = tuple(getattr(frame, "property_names", ()))
+            if (
+                role_bindings
+                and component in role_bindings
+                and 0 <= index < len(property_names)
+            ):
+                active_property = str(property_names[index])
             accepts_slot = (
                 0 <= index < len(schemas)
-                and bool(schemas[index].get("x-openui-placeholder"))
+                and (
+                    bool(schemas[index].get("x-openui-placeholder"))
+                    or (
+                        active_property is not None
+                        and schemas[index].get("type") == "string"
+                    )
+                )
             )
         elif getattr(frame, "kind", None) == "object":
             active_property = getattr(frame, "active_property", None)
@@ -5862,6 +6261,9 @@ class TwoTowerModel(nn.Module):
                 slot = slot_contract[slot_index]
             except (ValueError, IndexError):
                 continue
+            candidate_score = float(scores[position].item())
+            if bound_slots is not None and not math.isfinite(candidate_score):
+                continue
             if (
                 component in semantic_role_candidates.get(slot, ())
                 and (bound_slots is None or slot in bound_slots)
@@ -5871,9 +6273,6 @@ class TwoTowerModel(nn.Module):
                     or active_property in properties_by_slot.get(slot, ())
                 )
             ):
-                candidate_score = float(scores[position].item())
-                if bound_slots is not None and not math.isfinite(candidate_score):
-                    continue
                 bias[position] = (
                     max(
                         0.0,
@@ -5895,6 +6294,7 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
+        role_bindings: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
         """Prefer coverage-compatible continuations before legal frame closure."""
         weight = float(
@@ -6023,7 +6423,14 @@ class TwoTowerModel(nn.Module):
                         semantic_role_candidates
                         and component in semantic_role_candidates.get(slot, ())
                     )
-                    or component in reachable_candidates.get(slot, ())
+                    or (
+                        component in reachable_candidates.get(slot, ())
+                        and (
+                            not role_bindings
+                            or component not in role_bindings
+                            or slot in role_bindings[component]
+                        )
+                    )
                     for _index, slot in missing
                 ):
                     targets.append(position)
@@ -6335,11 +6742,26 @@ class TwoTowerModel(nn.Module):
         return None
 
     @staticmethod
-    def _schema_can_reach_visible_slot(schema: dict[str, Any]) -> bool:
+    def _schema_can_reach_visible_slot(
+        schema: dict[str, Any], seen: frozenset[str] = frozenset()
+    ) -> bool:
+        reference = str(schema.get("$ref") or "")
+        if reference.startswith("#/$defs/"):
+            name = reference.rsplit("/", 1)[-1]
+            if name in seen:
+                return False
+            from slm_training.dsl.lang_core import library_schema
+
+            target = library_schema().get("$defs", {}).get(name)
+            return isinstance(
+                target, dict
+            ) and TwoTowerModel._schema_can_reach_visible_slot(
+                target, seen | {name}
+            )
         if schema.get("x-openui-placeholder") or schema.get("type") == "string":
             return True
         return any(
-            TwoTowerModel._schema_can_reach_visible_slot(dict(child))
+            TwoTowerModel._schema_can_reach_visible_slot(dict(child), seen)
             for child in (
                 *schema.get("anyOf", ()),
                 *schema.get("properties", {}).values(),
@@ -6399,44 +6821,77 @@ class TwoTowerModel(nn.Module):
             or not self._schema_can_reach_visible_slot(dict(schemas[0]))
         ):
             return None
-        owner_id = self._semantic_plan_owner_id(row, state)
-        if owner_id is None:
-            return None
-        owner_frame = frames[-2]
-        owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
-            "element:"
-        )
-        if (
-            getattr(owner_frame, "kind", None) != "component"
-            or owner_id
-            not in {
-                self.tokenizer.token_to_id.get(f"+{owner_family}"),
-                self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
-                self.tokenizer.token_to_id.get(owner_family),
-            }
-        ):
-            return None
         visible_slot_ids = {
             int(self.tokenizer.sym_id(index))
             for index in range(
                 min(len(slot_contract), int(self.tokenizer.sym_slots))
             )
         }
-        if not visible_slot_ids.difference(prefix):
+        missing_slot_ids = visible_slot_ids.difference(prefix)
+        if not missing_slot_ids:
             return None
         close_id = self.tokenizer.token_to_id.get(str(getattr(frame, "close", "")))
         if close_id not in candidate_ids:
             return None
         typed_target_id = None
         if typed_margin > 0.0:
-            try:
-                typed_target_id = state._minimal_schema_id(dict(schemas[0]))
-            except (AttributeError, KeyError, TypeError, ValueError):
-                return None
-            if typed_target_id not in candidate_ids:
-                return None
-            targets = [candidate_ids.index(typed_target_id)]
+            allowed_components: set[str] = set()
+            pending = [dict(schemas[0])]
+            while pending:
+                schema = pending.pop()
+                ref = str(schema.get("$ref") or "")
+                if ref.startswith("#/$defs/"):
+                    allowed_components.add(ref.rsplit("/", 1)[-1])
+                pending.extend(
+                    dict(child)
+                    for child in schema.get("anyOf", ())
+                    if isinstance(child, dict)
+                )
+                if isinstance(schema.get("items"), dict):
+                    pending.append(dict(schema["items"]))
+            role_candidates = (
+                self._semantic_role_candidates[row]
+                if self._semantic_role_candidates
+                and row < len(self._semantic_role_candidates)
+                else {}
+            )
+            role_target_ids = {
+                self.tokenizer.token_to_id.get(f"+{component}")
+                for index, slot in enumerate(slot_contract)
+                if int(self.tokenizer.sym_id(index)) in missing_slot_ids
+                for component in role_candidates.get(slot, ())
+                if component in allowed_components
+            }
+            targets = [
+                candidate_ids.index(token_id)
+                for token_id in role_target_ids
+                if token_id in candidate_ids
+            ]
+            if not targets:
+                try:
+                    typed_target_id = state._minimal_schema_id(dict(schemas[0]))
+                except (AttributeError, KeyError, TypeError, ValueError):
+                    return None
+                if typed_target_id not in candidate_ids:
+                    return None
+                targets = [candidate_ids.index(typed_target_id)]
         else:
+            owner_id = self._semantic_plan_owner_id(row, state)
+            owner_frame = frames[-2]
+            owner_family = str(getattr(owner_frame, "expr_type", "")).removeprefix(
+                "element:"
+            )
+            if (
+                owner_id is None
+                or getattr(owner_frame, "kind", None) != "component"
+                or owner_id
+                not in {
+                    self.tokenizer.token_to_id.get(f"+{owner_family}"),
+                    self.tokenizer.token_to_id.get(f"COMP:{owner_family}"),
+                    self.tokenizer.token_to_id.get(owner_family),
+                }
+            ):
+                return None
             targets = [
                 position
                 for position, token_id in enumerate(candidate_ids)
@@ -6563,6 +7018,115 @@ class TwoTowerModel(nn.Module):
             if isinstance(option, dict)
         )
 
+    @staticmethod
+    def _schema_enum_values(schema: dict[str, Any]) -> tuple[Any, ...]:
+        values: list[Any] = list(schema.get("enum", ()))
+        for key in ("anyOf", "oneOf"):
+            for option in schema.get(key, ()):
+                if isinstance(option, dict):
+                    values.extend(TwoTowerModel._schema_enum_values(dict(option)))
+        unique: list[Any] = []
+        for value in values:
+            if value not in unique:
+                unique.append(value)
+        return tuple(unique)
+
+    def _finalize_schema_enum_choices(
+        self,
+        ids: torch.Tensor,
+        contracts: list[list[str] | None],
+    ) -> torch.Tensor:
+        """Replace completed dynamic enum literals without changing later choices."""
+        from slm_training.dsl.production_codec import DIR_PREFIX, LIT_PREFIX
+        from slm_training.models.choice_tokenizer import (
+            LIT_END,
+            LIT_NUM,
+            LIT_STR,
+            ChoiceDecodeState,
+        )
+
+        tok = self.tokenizer
+        finalized = ids.clone()
+        for row_index, (row, contract) in enumerate(
+            zip(ids.tolist(), contracts, strict=True)
+        ):
+            state = ChoiceDecodeState(tok, slot_count=len(contract or ()))
+            output = [int(row[0])]
+            position = 1
+            while position < len(row):
+                token_id = int(row[position])
+                token = str(tok.id_to_token.get(token_id, ""))
+                frames = list(getattr(state, "frames", ()))
+                replacement: list[int] | None = None
+                dynamic_literal = token in {LIT_STR, LIT_NUM}
+                fixed_literal = token.startswith((DIR_PREFIX, LIT_PREFIX))
+                if (dynamic_literal or fixed_literal) and frames:
+                    frame = frames[-1]
+                    schemas = tuple(getattr(frame, "schemas", ()))
+                    arg_index = int(getattr(frame, "arg_index", -1))
+                    if (
+                        getattr(frame, "kind", None) == "component"
+                        and 0 <= arg_index < len(schemas)
+                    ):
+                        enum_ids: list[int] = []
+                        for value in self._schema_enum_values(
+                            dict(schemas[arg_index])
+                        ):
+                            spellings = [f"{LIT_PREFIX}{json.dumps(value)}"]
+                            if isinstance(value, str):
+                                spellings.append(f"{DIR_PREFIX}{value}")
+                            enum_ids.extend(
+                                candidate
+                                for spelling in spellings
+                                if (candidate := tok.token_to_id.get(spelling))
+                                is not None
+                            )
+                            if replacement is None:
+                                fixed_id = tok.token_to_id.get(spellings[0])
+                                replacement = (
+                                    [fixed_id]
+                                    if fixed_id is not None
+                                    else tok._frame(
+                                        LIT_STR if isinstance(value, str) else LIT_NUM,
+                                        str(value),
+                                    )
+                                )
+                        if token_id in enum_ids:
+                            replacement = None
+                if replacement:
+                    end = position
+                    if dynamic_literal:
+                        end += 1
+                        while (
+                            end < len(row)
+                            and str(tok.id_to_token.get(int(row[end]), "")) != LIT_END
+                        ):
+                            end += 1
+                    probe = state.clone()
+                    if (not dynamic_literal or end < len(row)) and all(
+                        probe.advance_id(replacement_id)
+                        for replacement_id in replacement
+                    ):
+                        state = probe
+                        output.extend(replacement)
+                        position = end + 1
+                        continue
+                output.append(token_id)
+                if token_id == tok.eos_id:
+                    break
+                if token_id != tok.pad_id and not state.advance_id(token_id):
+                    break
+                position += 1
+            if len(output) > finalized.shape[1]:
+                continue
+            finalized[row_index].fill_(tok.pad_id)
+            finalized[row_index, : len(output)] = torch.tensor(
+                output,
+                dtype=finalized.dtype,
+                device=finalized.device,
+            )
+        return finalized
+
     def _semantic_plan_binding_bias(
         self,
         row: int,
@@ -6644,6 +7208,7 @@ class TwoTowerModel(nn.Module):
         candidate_scores: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         """Soft-follow a verifier-valid Stack closure after plan role coverage."""
+        self._semantic_plan_root_last_abstention = None
         weight = float(
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
         )
@@ -6750,15 +7315,33 @@ class TwoTowerModel(nn.Module):
                     target_id = self.tokenizer.token_to_id.get(closure[0])
             try:
                 from slm_training.dsl.parser import validate
-                from slm_training.dsl.production_codec import decode_choices
 
                 slot_contract = (
                     self._slot_contracts[row]
                     if self._slot_contracts and row < len(self._slot_contracts)
                     else ()
                 )
-                validate(decode_choices(planned, slot_contract or ()))
-            except Exception:  # noqa: BLE001 - predicted plans fail closed
+                planned_ids = [
+                    int(self.tokenizer.token_to_id[token]) for token in planned
+                ]
+                decoded = self.tokenizer.decode(
+                    planned_ids,
+                    placeholders=slot_contract or (),
+                )
+                if not decoded:
+                    raise ValueError("choice tokenizer rejected planned root closure")
+                validate(decoded)
+            except Exception as exc:  # noqa: BLE001 - predicted plans fail closed
+                self._semantic_plan_root_last_abstention = {
+                    "reason": "verifier_rejected",
+                    "error_type": type(exc).__name__,
+                    "error": str(exc)[:160],
+                    "planned_token_count": len(planned),
+                    "section_count": len(section_types),
+                    "reference_count": sum(
+                        str(token).startswith("&") for token in planned
+                    ),
+                }
                 return None
         if target_id is None or target_id not in candidate_ids:
             return None
@@ -8309,6 +8892,11 @@ class TwoTowerModel(nn.Module):
                     )
                     if schema_enum_close_bias is not None:
                         scores = scores + schema_enum_close_bias
+                    schema_open_bias = self._schema_open_bias(
+                        row, states[row], candidate_ids, scores
+                    )
+                    if schema_open_bias is not None:
+                        scores = scores + schema_open_bias
                     schema_opaque_bias = self._schema_opaque_bias(
                         states[row], candidate_ids, scores
                     )
@@ -8358,6 +8946,12 @@ class TwoTowerModel(nn.Module):
                             self._semantic_role_candidates[row]
                             if self._semantic_role_candidates
                             and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
+                        (
+                            self._semantic_plan_role_bindings[row]
+                            if self._semantic_plan_role_bindings
+                            and row < len(self._semantic_plan_role_bindings)
                             else None
                         ),
                     )
@@ -8524,6 +9118,13 @@ class TwoTowerModel(nn.Module):
                                     scores_after=scores,
                                 )
                             )
+                    elif stats is not None:
+                        self._record_semantic_plan_root_abstention(
+                            stats,
+                            row=row,
+                            position=position,
+                            state=states[row],
+                        )
                     repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
                         row,
                         states[row],
@@ -9747,6 +10348,7 @@ class TwoTowerModel(nn.Module):
                     "constrained decode"
                 )
             from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
+            from slm_training.data.quality import semantic_role_reachable_candidates
 
             component_ids = self._component_inventory_token_ids()
             action_ids = []
@@ -9777,6 +10379,11 @@ class TwoTowerModel(nn.Module):
                         and row < len(self._semantic_role_candidates)
                         else None
                     ),
+                    semantic_role_reachable_candidates(
+                        self._slot_contracts[row], action_ids
+                    )
+                    if self._slot_contracts and row < len(self._slot_contracts)
+                    else None,
                 )
                 action_scores = {
                     token_id: feature.plan_confidence
@@ -9868,6 +10475,7 @@ class TwoTowerModel(nn.Module):
                 for i in range(len(prompts))
             ]
             ids = self._choice_ltr_decode_batch(ctx, ctx_pad, length, contracts)
+            ids = self._finalize_schema_enum_choices(ids, contracts)
             self._last_generation_evidence = self._choice_generation_evidence(
                 ids, contracts
             )

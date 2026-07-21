@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "run_id": "e695-role-property-capacity-r1",
+  "experiment_id": "E695",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Bounding planned-family role reuse by distinct public string-property capacity will prevent one role placeholder from being stuffed into multiple Form subtree owners.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e694-open-enum-finalize-r1",
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.8,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.66242,
+      "component_type_recall": 0.7933333333333333,
+      "reward_score": 0.9634,
+      "ast_node_f1": 0.7754029304029304,
+      "ast_edge_f1": 0.5900899100899101,
+      "latency_ms_p50": 3379.44,
+      "latency_ms_p95": 6370.84,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e694": {
+    "changed_predictions": 1,
+    "strict_v2": [0.8, 0.8],
+    "continuous_metrics_identical": true,
+    "latency_ms_p50": [3414.5, 3379.44],
+    "latency_ms_p95": [5951.17, 6370.84]
+  },
+  "prediction_evidence": {
+    "held_out_form_01": "The treatment only swaps form.title and hint.title between Callout and Form. hint.title remains repeated three times, so placeholder_semantic_role_mismatch and placeholder_spam both remain.",
+    "unchanged_other_predictions": 4
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Reject v151 and restore v150 behavior as v152. The next Form lever must assign roles per component instance or property position rather than changing family-level capacity accounting.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1611f85c0b0fa933e9719b3fa1bdb48306a9b180",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v35",
+      "evals.meaningful_program": "2.6.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v151"
+    },
+    "stamped_at": "2026-07-21T14:18:00.714149+00:00"
+  }
+}

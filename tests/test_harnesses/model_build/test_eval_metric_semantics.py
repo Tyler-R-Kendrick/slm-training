@@ -36,6 +36,22 @@ def _record(**overrides: object) -> ExampleRecord:
     return ExampleRecord.from_dict(data)
 
 
+def test_decode_trace_annotation_preserves_eval_record_identity() -> None:
+    from slm_training.models.decode_stats import DecodeStats
+
+    stats = DecodeStats()
+    stats.constrained_selection_traces.extend(
+        [{"row": 0, "phase": "first"}, {"row": 1, "phase": "second"}]
+    )
+    records = [_record(id="held-a"), _record(id="held-b")]
+
+    eval_runner._annotate_decode_trace_records(stats, records)
+
+    assert [
+        trace["record_id"] for trace in stats.constrained_selection_traces
+    ] == ["held-a", "held-b"]
+
+
 def test_empty_set_metrics_are_undefined_not_perfect() -> None:
     bare = _record(openui="root = Stack([])", placeholders=[])
     pred = "root = Stack([])"

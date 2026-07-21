@@ -134,6 +134,93 @@ def test_v2_accepts_schema_declared_modal_title_role() -> None:
     assert report.verdict is True
 
 
+def test_v2_accepts_display_body_and_value_aliases_from_dashboard_gold() -> None:
+    source = (
+        'status = Callout("info", ":dash.status.title", ":dash.status.body")\n'
+        'm1 = Card([TextContent(":dash.m1.value")])\n'
+        'm2 = Card([TextContent(":dash.m2.value")])\n'
+        'root = Stack([status, m1, m2], "column")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="dashboard-display-aliases",
+            prompt=(
+                "Build a status Callout and two Cards. "
+                "Placeholders: :dash.status.title :dash.status.body "
+                ":dash.m1.value :dash.m2.value"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
+def test_v2_accepts_heading_and_kicker_as_display_text() -> None:
+    source = (
+        'kicker = TextContent(":hero.kicker")\n'
+        'heading = TextContent(":callout.heading")\n'
+        'root = Stack([kicker, heading], "column")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="display-text-aliases",
+            prompt=(
+                "Build a Stack with display text. "
+                "Placeholders: :hero.kicker :callout.heading"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
+def test_v2_recognizes_singular_prose_for_plural_schema_component() -> None:
+    source = (
+        'root = Tabs([TabItem("overview", ":tabs.trigger", '
+        '[TextContent(":tabs.text")])])'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="singular-tabs-prose",
+            prompt=(
+                "Build a two-tab panel. "
+                "Placeholders: :tabs.trigger :tabs.text"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+    assert "prompt_contract_unknown" not in report.reason_codes
+
+
+def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
+    source = (
+        'overview = TextContent(":tabs.overview")\n'
+        'one = TabItem("one", ":tabs.tab1", [overview])\n'
+        'two = TabItem("two", ":tabs.tab2", [overview])\n'
+        'root = Tabs([one, two])'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="numbered-tab-roles",
+            prompt=(
+                "Build a two-tab panel. Placeholders: "
+                ":tabs.overview :tabs.tab1 :tabs.tab2"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
     source = (
         'root = Stack([name, email], "column")\n'
@@ -260,6 +347,21 @@ def test_v2_excludes_replaced_or_negated_components(prompt: str) -> None:
         record=ExampleRecord(id="replacement", prompt=prompt, openui=source),
     )
     assert report.prompt_contract.required_components == ("Card",)
+    assert report.verdict is True
+
+
+def test_v2_does_not_require_likeness_modifier() -> None:
+    source = 'root = Stack([submit], "column")\nsubmit = Button(":form.submit")'
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="likeness",
+            prompt="Form-like stack with submit button. Placeholders: :form.submit",
+            openui=source,
+        ),
+    )
+
+    assert report.prompt_contract.required_components == ("Button", "Stack")
     assert report.verdict is True
 
 

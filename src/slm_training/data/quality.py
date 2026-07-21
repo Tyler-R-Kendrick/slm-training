@@ -21,11 +21,17 @@ _QUOTED_RE = re.compile(r'"(?:\\.|[^"\\])*"')
 _COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
 _CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
 _SEMANTIC_ROLE_PROPERTY_ALIASES = {
-    "body": {"text"},
+    "action": {"label"},
+    "body": {"description", "text"},
     "caption": {"details", "text"},
     "copy": {"text"},
     "description": {"details", "text"},
+    "heading": {"text"},
+    "kicker": {"text"},
+    "overview": {"text"},
+    "tab": {"trigger"},
     "title": {"text"},
+    "value": {"text"},
     "img": {"image", "src"},
     "image": {"src"},
     "confirm": {"action", "label"},
@@ -35,6 +41,7 @@ _SEMANTIC_ROLE_PROPERTY_ALIASES = {
     "submit": {"action", "label"},
     "continue": {"action", "label"},
     "cta": {"action", "label"},
+    "refresh": {"action", "label"},
 }
 
 # Preferred structural vocabulary for high-signal layouts.
@@ -102,7 +109,10 @@ def _component_phrases() -> tuple[tuple[str, str, "re.Pattern[str]"], ...]:
         # as "the Buttons component" are resolved separately by the exact matcher.
         if name.endswith("s") and name[:-1] in names:
             continue
-        rows.append((name, re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()))
+        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
+        if phrase.endswith("s") and not phrase.endswith("series"):
+            phrase = phrase[:-1]
+        rows.append((name, phrase))
     rows.sort(key=lambda item: len(item[1]), reverse=True)
     return tuple(
         (name, phrase, re.compile(rf"\b{re.escape(phrase)}s?\b"))
@@ -116,10 +126,12 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     normalized = re.sub(r"[^a-z0-9]+", " ", prose.lower()).strip()
     occupied: list[tuple[int, int]] = []
     found: set[str] = set()
-    for name, _phrase, matcher in _component_phrases():
+    for name, phrase, matcher in _component_phrases():
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
+                continue
+            if re.match(r"\s+like\b", normalized[span[1] :]):
                 continue
             occupied.append(span)
             found.add(name)
@@ -132,9 +144,16 @@ def semantic_role_properties(
     """Map visible slots to public-schema property names implied by their role."""
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
-        role = placeholder.removeprefix(":").split(".")[-1]
+        raw_role = placeholder.removeprefix(":").split(".")[-1]
+        role = re.sub(r"\d+$", "", raw_role) or raw_role
         result[placeholder] = tuple(
-            sorted({role, *_SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, ())})
+            sorted(
+                {
+                    raw_role,
+                    role,
+                    *_SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, ()),
+                }
+            )
         )
     return result
 
@@ -286,10 +305,12 @@ def _prompt_component_requirements(
     normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
     occupied: list[tuple[int, int]] = []
     required: dict[str, int] = {}
-    for name, _phrase, matcher in _component_phrases():
+    for name, phrase, matcher in _component_phrases():
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
+                continue
+            if re.match(r"\s+like\b", normalized[span[1] :]):
                 continue
             occupied.append(span)
             before = normalized[max(0, span[0] - 48) : span[0]]
@@ -328,6 +349,8 @@ def _prompt_component_requirements(
                     if count_match.group(1).isdigit()
                     else 1,
                 )
+            if name.endswith("s") and match.group(0) == phrase:
+                count = 1
             if preserve_repeated_mentions:
                 required[name] = required.get(name, 0) + count
             else:

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_id": "e677-joint-role-all-suites-r1",
+  "experiment_id": "E677",
+  "date_utc": "2026-07-21",
+  "status": "invalid_incomplete_no_terminal_state",
+  "run_class": "scratch_matrix",
+  "hypothesis": "The retained E676 policy will preserve quality across all five committed remediated suites.",
+  "attempted_suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"],
+  "partial_artifacts": ["eval_smoke.json", "eval_held_out.json", "eval.json", "trace.json"],
+  "missing_artifacts": ["scoreboard.json", "eval_adversarial.json", "eval_ood.json", "eval_rico_held.json", "AgentEvals JSONL", "AgentV result bundle"],
+  "terminal_state": null,
+  "valid_evidence": false,
+  "decision": "Discard the partial attempt as evidence. The process ended without a terminal payload after writing only Smoke and Held-out JSON; no partial metric is used. Retry suites independently under the hard cap.",
+  "checkpoint_created": false,
+  "checkpoint_synced": false,
+  "ship_gates": false
+}
