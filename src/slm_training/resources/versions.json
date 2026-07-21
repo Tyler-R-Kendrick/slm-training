@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v125",
+      "version": "v126",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v126",
+          "date": "2026-07-21",
+          "note": "E671: combine nested item schemas and role-aware targets with nearest-component ownership through nested arrays"
+        },
         {
           "version": "v125",
           "date": "2026-07-21",
