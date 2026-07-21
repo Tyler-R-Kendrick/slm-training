@@ -4901,3 +4901,17 @@ no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e680-display-role-aliases-20260721.md) and
 [JSON](iter-e680-display-role-aliases-20260721.json).
+
+## E681 maximal semantic-role subsets
+
+E681 partitions larger namespaces into maximal disjoint role groups covered
+by specific direct-schema carriers. On matched Smoke `n=3`, the hero replaces
+the invalid Tabs path with CardHeader; structure improves 0.7276→0.8156,
+recall 0.6667→0.7500, node/edge F1 0.8051/0.4545→0.8778/0.5333, and p95 falls
+6313.97→5389.64 ms. Strict v2.4.0 remains 2/3 because positional component
+arguments still repeat or swap title/subtitle roles. Retain v136 as positive
+structural research evidence, not ship evidence. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e681-maximal-role-subsets-20260721.md) and
+[JSON](iter-e681-maximal-role-subsets-20260721.json).
