@@ -46,8 +46,21 @@ depth without a parallel/ad hoc implementation:
   ``docs/design/iter-rsc-a05-*`` for the measured residual).
 
 See :mod:`slm_training.models.recursive_control_arms` for the named arm
-registry (A-H; only A/B/C/D/G are constructed as of SLM-241) and resource
-accounting built on top of these modes.
+registry (A-H; A/B/C/D/E/F/G are constructed as of this SLM-241 iteration --
+only H remains deferred) and resource accounting built on top of these modes.
+
+SLM-241 (RSC-A05) follow-up -- :class:`StackedMatchedStateDenoiserTower`
+(arm E, ``denoiser_arch="stacked_matched_state"``): the mirror image of arm D.
+D keeps the recursive y/z split but makes z's initial value parameter-free;
+E keeps the stacked baseline's unshared, non-recursive block structure but
+gives it the *same* parameter budget V1's z-state path adds -- a learned
+``state[max_len, d_model]`` bank plus a ``state_ctx_proj`` context projection,
+injected into the initial hidden state **exactly once**, before any
+transition block runs. Unlike B/G, there is no recurrence and no repeated
+consumption of this state across depth -- it isolates "added state capacity"
+from "repeated shared computation" as two independent resource dimensions.
+See :class:`StackedMatchedStateDenoiserTower`'s own docstring for the exact
+formula and injection point.
 
 SLM-240 (RSC-A04) correction -- read this before citing any "parity" claim
 for this tower:
@@ -465,6 +478,134 @@ class SharedRecursiveDenoiserTower(nn.Module):
         return logits
 
 
+class StackedMatchedStateDenoiserTower(DenoiserTower):
+    """SLM-241 (RSC-A05) arm E -- stacked baseline + matched state capacity.
+
+    Subclasses :class:`~slm_training.models.blocks.DenoiserTower` unmodified
+    (same ``tok``/``pos``/``kind``/``layers``/``norm``/``lm_head``
+    construction, same ``n_layers`` unshared ``TransformerBlock`` instances
+    called exactly once each per forward -- **no recurrence, no weight
+    sharing added**) and adds exactly two new parameter tensors, shape-matched
+    to :class:`SharedRecursiveDenoiserTower`'s (arm B) z-state path so the
+    added parameter budget is identical by construction, not by coincidence:
+
+    * ``state``: a learned ``[max_len, d_model]`` bank, indexed by target
+      position -- same shape as arm B's ``z_latent``.
+    * ``state_ctx_proj``: a ``Linear(d_model, d_model)`` projection of the
+      (masked-)mean-pooled context -- same shape as arm B's ``ctx_proj``.
+
+    ``recursive_zstate_parameter_delta(d_model, max_len)`` (below) is exactly
+    ``state.numel() + state_ctx_proj.weight.numel() +
+    state_ctx_proj.bias.numel()``, so this tower's total parameter count
+    equals a same-``n_layers`` ``DenoiserTower`` (arm A) plus that formula's
+    value, exactly -- never merely close.
+
+    Both new tensors are injected into the initial hidden state **exactly
+    once**, before the first transition block runs::
+
+        y_0 = token + position + kind (+ symbol features)
+        y_0 = y_0 + state[position] + state_ctx_proj(mean_pool(context))
+        for block in layers:               # n_layers blocks, each called once
+            y = block(y, context)          # no recurrence, no re-injection
+
+    This is the mirror image of arm D (``z_state_mode="parameter_free"``):
+    D keeps the recursive y/z split but strips the z-state parameters; E
+    keeps the stacked baseline's unshared, single-pass block structure but
+    adds the z-state parameters back, consumed once rather than every
+    recursion step. Because the injection happens once and both tensors sit
+    on the residual stream feeding every downstream block, they are not dead
+    padding: zeroing ``state`` changes the forward output (verified in
+    ``tests/test_models/test_recursive_denoiser.py``), and both receive
+    nonzero gradient from a real backward pass.
+    """
+
+    def __init__(
+        self,
+        vocab_size: int,
+        d_model: int = 128,
+        n_layers: int = 4,
+        n_heads: int = 4,
+        max_len: int = 512,
+        dropout: float = 0.0,
+        *,
+        kind_ids: list[int] | None = None,
+        n_kinds: int = 0,
+    ) -> None:
+        super().__init__(
+            vocab_size,
+            d_model,
+            n_layers,
+            n_heads,
+            max_len,
+            dropout,
+            kind_ids=kind_ids,
+            n_kinds=n_kinds,
+        )
+        self.state = nn.Parameter(torch.zeros(max_len, d_model))
+        self.state_ctx_proj = nn.Linear(d_model, d_model)
+
+    def encode(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+        *,
+        return_attn: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        """Same as ``DenoiserTower.encode`` plus one-time matched-state
+        injection before the (unshared, single-pass) transition blocks run."""
+        bsz, seq = noisy_ids.shape
+        if seq > self.max_len:
+            noisy_ids = noisy_ids[:, : self.max_len]
+            seq = self.max_len
+        pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
+        x = self.tok(noisy_ids) + self.pos(pos)
+        features = self._features_for_batch(bsz)
+        if features is not None:
+            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
+            x = x + features[row, noisy_ids.clamp(0, features.size(1) - 1)]
+        if self.kind is not None:
+            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
+            x = x + self.kind(self.kind_lookup[safe])
+
+        # SLM-241 (RSC-A05) arm E: inject the matched-state capacity exactly
+        # once here -- never inside the block loop below, never re-applied
+        # per layer. Pooling matches SharedRecursiveDenoiserTower's z-state
+        # pooling exactly (masked mean over context when a pad mask is given).
+        if ctx_pad_mask is None:
+            pooled = context.mean(dim=1)
+        else:
+            mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
+            pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+        x = x + self.state[pos] + self.state_ctx_proj(pooled).unsqueeze(1)
+
+        self_pad = noisy_ids.eq(pad_id)
+        attn: torch.Tensor | None = None
+        last = len(self.layers) - 1
+        for i, layer in enumerate(self.layers):
+            if return_attn and i == last:
+                out = layer(
+                    x,
+                    self_pad_mask=self_pad,
+                    ctx=context,
+                    ctx_pad_mask=ctx_pad_mask,
+                    return_self_attn=True,
+                )
+                assert isinstance(out, tuple)
+                x, attn = out
+            else:
+                out = layer(
+                    x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask
+                )
+                x = out if not isinstance(out, tuple) else out[0]
+        hidden = self.norm(x)
+        if return_attn:
+            assert attn is not None
+            return hidden, attn
+        return hidden
+
+
 # ---------------------------------------------------------------------------
 # SLM-240 (RSC-A04): explicit multi-dimensional architecture comparison.
 #
@@ -509,6 +650,12 @@ def recursive_zstate_parameter_delta(*, d_model: int, max_len: int) -> int:
     ``(d_model, max_len)`` pairs, including the SLM-138 fixture's own
     ``d_model=32, max_len=256`` (delta 9,248) -- the number is reproduced from
     this formula, never hard-coded.
+
+    SLM-241 (RSC-A05) follow-up: :class:`StackedMatchedStateDenoiserTower`
+    (arm E)'s ``state``/``state_ctx_proj`` tensors are shape-matched to this
+    exact formula too, so its parameter delta over a same-``n_layers`` arm A
+    also equals this function's return value exactly, not merely to within a
+    tolerance.
     """
     z_latent = int(max_len) * int(d_model)
     ctx_proj = int(d_model) * int(d_model) + int(d_model)

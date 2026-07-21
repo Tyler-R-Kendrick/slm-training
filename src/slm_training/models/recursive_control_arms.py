@@ -14,7 +14,7 @@ resource accounting for it -- never a quality/efficiency claim (``claim_class
 == "wiring"`` always). See ``docs/design/iter-rsc-a05-*`` for the exact
 formulas, residual matching errors, and an explicit built-vs-deferred split.
 
-Built (SLM-241, A/B/C/D/G; F added in a follow-up SLM-241 iteration):
+Built (SLM-241, A/B/C/D/G; F and E added in follow-up SLM-241 iterations):
   - **A** -- stacked baseline (``denoiser_arch="stacked"``).
   - **B** -- shared recursive V1 (``denoiser_arch="shared_recursive"``,
     ``z_state_mode="full"``).
@@ -22,6 +22,15 @@ Built (SLM-241, A/B/C/D/G; F added in a follow-up SLM-241 iteration):
     "shared_recursive_y_only"``, ``z_state_mode="y_only"``).
   - **D** -- recursive no-extra-capacity control (``denoiser_arch=
     "shared_recursive_no_extra_capacity"``, ``z_state_mode="parameter_free"``).
+  - **E** -- stacked + matched state capacity (``denoiser_arch=
+    "stacked_matched_state"``): the mirror image of D. A plain, unshared,
+    non-recursive tower (:class:`~slm_training.models.recursive_denoiser.
+    StackedMatchedStateDenoiserTower`, ``n_layers`` blocks, each called
+    exactly once, same as arm A) plus a learned ``state``/``state_ctx_proj``
+    pair shape-matched to B's ``z_latent``/``ctx_proj`` and injected once
+    before any transition block runs (never recurrently re-applied). Its
+    total parameter count equals a same-``n_layers`` arm A plus
+    ``recursive_zstate_parameter_delta(d_model, max_len)`` exactly.
   - **F** -- unshared depth-matched tower (``denoiser_arch=
     "stacked_depth_matched"``): a plain, unshared ``DenoiserTower`` -- the
     exact same class as arm A, no new tower code -- built with
@@ -39,8 +48,6 @@ Built (SLM-241, A/B/C/D/G; F added in a follow-up SLM-241 iteration):
     not re-derived, here).
 
 Explicitly deferred (see the dated design note for why):
-  - **E** -- stacked + matched state capacity (a learned target-position
-    state + context projection injected once, no recurrence).
   - **H** -- stop-gradient recurrence (same forward recurrence, y/z detached
     between steps).
 """
@@ -56,24 +63,30 @@ import torch.nn as nn
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.recursive_denoiser import (
     SharedRecursiveDenoiserTower,
+    StackedMatchedStateDenoiserTower,
     active_parameter_count,
     checkpoint_state_dict_bytes,
     estimate_transformer_block_flops,
+    recursive_zstate_parameter_delta,
 )
 
 RECURSIVE_CONTROL_ARM_REPORT_VERSION = "RecursiveControlArmReportV1"
 
 #: Arm ids from Linear SLM-241 (RSC-A05).
 ALL_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G", "H")
-BUILT_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "F", "G")
-DEFERRED_ARM_IDS: tuple[str, ...] = ("E", "H")
+BUILT_ARM_IDS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F", "G")
+DEFERRED_ARM_IDS: tuple[str, ...] = ("H",)
 
 ARM_LABELS: dict[str, str] = {
     "A": "stacked baseline (no z state, unshared blocks)",
     "B": "shared recursive V1 (shared blocks, explicit z state)",
     "C": "shared y-only recurrence (shared blocks, no distinct z state)",
     "D": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
-    "E": "stacked + matched state capacity (deferred)",
+    "E": (
+        "stacked + matched state capacity (unshared, non-recursive blocks; "
+        "same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected "
+        "once before the blocks run -- mirror image of D)"
+    ),
     "F": (
         "unshared depth-matched tower (block-evaluation-matched against B; "
         "no z state, no weight sharing -- MORE parameters than B, see "
@@ -90,18 +103,23 @@ ARM_LABELS: dict[str, str] = {
 #: (``DenoiserTower``) but under its own ``denoiser_arch`` string
 #: (``"stacked_depth_matched"``) because its layer count is derived from
 #: ``recursive_steps * recursive_transition_layers`` rather than ``n_layers``
-#: -- a distinct, named, discoverable config choice, not a shadow path.
+#: -- a distinct, named, discoverable config choice, not a shadow path. Arm E
+#: (``"stacked_matched_state"``) is a genuinely new tower class
+#: (``StackedMatchedStateDenoiserTower``), same convention.
 ARM_DENOISER_ARCH: dict[str, str] = {
     "A": "stacked",
     "B": "shared_recursive",
     "C": "shared_recursive_y_only",
     "D": "shared_recursive_no_extra_capacity",
+    "E": "stacked_matched_state",
     "F": "stacked_depth_matched",
     "G": "shared_recursive",
 }
 
-#: ``z_state_mode`` each built (non-stacked) arm maps onto. F has no z state
-#: (same as A), so it is deliberately absent from this dict, same as A.
+#: ``z_state_mode`` each built (non-stacked) arm maps onto. E/F have no z
+#: state (same as A -- E's matched capacity lives in ``state``/
+#: ``state_ctx_proj``, a distinct tensor pair, not a z-state mode), so both
+#: are deliberately absent from this dict, same as A.
 ARM_Z_STATE_MODE: dict[str, str] = {
     "B": "full",
     "C": "y_only",
@@ -126,6 +144,13 @@ ARM_MATCHING_TARGET: dict[str, str] = {
     "D": (
         "match A's total parameters exactly when recursive_transition_layers "
         "== A's n_layers (z-state made parameter-free instead of removed)"
+    ),
+    "E": (
+        "matches arm B's total parameter DELTA over a same-n_layers arm A "
+        "exactly -- recursive_zstate_parameter_delta(d_model, max_len) -- "
+        "via same-shaped state+state_ctx_proj injected once; NOT intended to "
+        "match A's raw total parameter count (that is C's/D's kind of "
+        "target, not E's -- E is the mirror image of D)"
     ),
     "F": (
         "matches arm B's block_evaluations_per_forward exactly (this row's "
@@ -156,7 +181,7 @@ def construct_arm_tower(
 ) -> nn.Module:
     """Construct one control arm's denoiser tower via the same constructors
     ``TwoTowerModel`` uses for ``denoiser_arch``/``z_state_mode`` -- never a
-    parallel/ad hoc implementation. Fails closed for deferred (E/H) or
+    parallel/ad hoc implementation. Fails closed for deferred (H) or
     unknown arm ids.
     """
     if arm_id in DEFERRED_ARM_IDS:
@@ -174,6 +199,25 @@ def construct_arm_tower(
     arch = ARM_DENOISER_ARCH[arm_id]
     if arch == "stacked":
         return DenoiserTower(
+            vocab_size=vocab_size,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=n_heads,
+            max_len=max_len,
+            dropout=dropout,
+            kind_ids=kind_ids,
+            n_kinds=n_kinds,
+        )
+    if arch == "stacked_matched_state":
+        # Arm E: an unshared, non-recursive DenoiserTower variant (n_layers
+        # blocks, each called once -- same block-evaluation count as arm A)
+        # with a state/state_ctx_proj pair shape-matched to B's
+        # z_latent/ctx_proj, injected once before the blocks run. n_layers
+        # here is the plain requested n_layers (never
+        # recursive_steps * transition_layers -- that is arm F's dial, not
+        # E's), so build_arm_report's generic len(tower.layers) block-eval
+        # measurement comes out exactly equal to arm A's automatically.
+        return StackedMatchedStateDenoiserTower(
             vocab_size=vocab_size,
             d_model=d_model,
             n_layers=n_layers,
@@ -361,6 +405,19 @@ def build_arm_report(
             "nothing is shared -- see build_arm_f_dual_view for the "
             "measured parameter-nearest alternative and its block-"
             "evaluation residual."
+        )
+    if arm_id == "E":
+        formula_delta = recursive_zstate_parameter_delta(
+            d_model=d_model, max_len=int(getattr(tower, "max_len", 0))
+        )
+        notes.append(
+            "unshared, non-recursive tower (mirror image of D); "
+            f"parameter_count_delta_vs_baseline={delta} vs "
+            f"recursive_zstate_parameter_delta(d_model={d_model}, "
+            f"max_len={getattr(tower, 'max_len', 0)})={formula_delta} -- "
+            f"matches_formula={delta == formula_delta}; state/state_ctx_proj "
+            "consumed once before the transition blocks run, never "
+            "recurrently re-applied."
         )
 
     z_state_mode = getattr(tower, "z_state_mode", None)

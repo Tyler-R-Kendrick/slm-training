@@ -21,11 +21,11 @@
       "B",
       "C",
       "D",
+      "E",
       "F",
       "G"
     ],
     "deferred_arm_ids": [
-      "E",
       "H"
     ],
     "labels": {
@@ -33,7 +33,7 @@
       "B": "shared recursive V1 (shared blocks, explicit z state)",
       "C": "shared y-only recurrence (shared blocks, no distinct z state)",
       "D": "recursive no-extra-capacity control (shared blocks, parameter-free z)",
-      "E": "stacked + matched state capacity (deferred)",
+      "E": "stacked + matched state capacity (unshared, non-recursive blocks; same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected once before the blocks run -- mirror image of D)",
       "F": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
       "G": "R=1 shared architecture control (interface-, not behavior-, compatible)",
       "H": "stop-gradient recurrence (deferred)"
@@ -43,6 +43,7 @@
       "B": "shared_recursive",
       "C": "shared_recursive_y_only",
       "D": "shared_recursive_no_extra_capacity",
+      "E": "stacked_matched_state",
       "F": "stacked_depth_matched",
       "G": "shared_recursive"
     }
@@ -56,7 +57,7 @@
     "max_len": 256,
     "recursive_steps": 2,
     "recursive_transition_layers": 2,
-    "note": "Same denoiser-only config as the SLM-138 fixture (d_model=32, max_len=256); tower-level, not whole-TwoTowerModel (context tower is identical across arms and cancels out of any delta, same convention as RSC-A04). Arm F added (RSC-A05 follow-up): block-evaluation-matched construction only -- see arm_f_dual_view for the parameter-nearest alternative."
+    "note": "Same denoiser-only config as the SLM-138 fixture (d_model=32, max_len=256); tower-level, not whole-TwoTowerModel (context tower is identical across arms and cancels out of any delta, same convention as RSC-A04). Arm F: block-evaluation-matched construction only -- see arm_f_dual_view for the parameter-nearest alternative. Arm E (this iteration): stacked + matched state capacity -- its parameter delta over A equals recursive_zstate_parameter_delta(d_model, max_len) exactly, no dual view needed."
   },
   "control_arm_table": [
     {
@@ -72,7 +73,7 @@
       "max_len": 256,
       "parameter_count_total": 42752,
       "parameter_count_denoiser": 33792,
-      "active_parameter_count": 34738,
+      "active_parameter_count": 34745,
       "checkpoint_bytes": 187267,
       "undeclared_zstate_parameter_names": [],
       "block_evaluations_per_forward": 2,
@@ -101,7 +102,7 @@
       "max_len": 256,
       "parameter_count_total": 52000,
       "parameter_count_denoiser": 33792,
-      "active_parameter_count": 35997,
+      "active_parameter_count": 35990,
       "checkpoint_bytes": 231866,
       "undeclared_zstate_parameter_names": [
         "ctx_proj.bias",
@@ -186,6 +187,37 @@
     {
       "contract_version": "RecursiveControlArmReportV1",
       "claim_class": "wiring",
+      "arm_id": "E",
+      "label": "stacked + matched state capacity (unshared, non-recursive blocks; same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected once before the blocks run -- mirror image of D)",
+      "denoiser_arch": "stacked_matched_state",
+      "z_state_mode": null,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 2,
+      "d_model": 32,
+      "max_len": 256,
+      "parameter_count_total": 52000,
+      "parameter_count_denoiser": 33792,
+      "active_parameter_count": 35992,
+      "checkpoint_bytes": 225146,
+      "undeclared_zstate_parameter_names": [],
+      "block_evaluations_per_forward": 2,
+      "self_attn_calls_per_forward": 2,
+      "cross_attn_calls_per_forward": 2,
+      "mlp_calls_per_forward": 2,
+      "estimated_forward_flops": 304128.0,
+      "matching_target": "matches arm B's total parameter DELTA over a same-n_layers arm A exactly -- recursive_zstate_parameter_delta(d_model, max_len) -- via same-shaped state+state_ctx_proj injected once; NOT intended to match A's raw total parameter count (that is C's/D's kind of target, not E's -- E is the mirror image of D)",
+      "matching_tolerance_params": 0,
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.631736526946106,
+      "residual_matching_error_params": 9248,
+      "within_matching_tolerance": false,
+      "notes": [
+        "unshared, non-recursive tower (mirror image of D); parameter_count_delta_vs_baseline=9248 vs recursive_zstate_parameter_delta(d_model=32, max_len=256)=9248 -- matches_formula=True; state/state_ctx_proj consumed once before the transition blocks run, never recurrently re-applied."
+      ]
+    },
+    {
+      "contract_version": "RecursiveControlArmReportV1",
+      "claim_class": "wiring",
       "arm_id": "F",
       "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
       "denoiser_arch": "stacked_depth_matched",
@@ -196,7 +228,7 @@
       "max_len": 256,
       "parameter_count_total": 76544,
       "parameter_count_denoiser": 67584,
-      "active_parameter_count": 68534,
+      "active_parameter_count": 68529,
       "checkpoint_bytes": 337913,
       "undeclared_zstate_parameter_names": [],
       "block_evaluations_per_forward": 4,
@@ -227,7 +259,7 @@
       "max_len": 256,
       "parameter_count_total": 52000,
       "parameter_count_denoiser": 33792,
-      "active_parameter_count": 35994,
+      "active_parameter_count": 35991,
       "checkpoint_bytes": 231866,
       "undeclared_zstate_parameter_names": [
         "ctx_proj.bias",
@@ -259,7 +291,10 @@
     "measured_F_delta_vs_A_block_evaluation_matched": 33792,
     "measured_F_delta_vs_B_block_evaluation_matched": 24544,
     "measured_F_delta_vs_B_parameter_nearest": 7648,
-    "measured_F_block_eval_delta_vs_B_parameter_nearest": -1
+    "measured_F_block_eval_delta_vs_B_parameter_nearest": -1,
+    "measured_E_delta_vs_A": 9248,
+    "measured_E_delta_vs_A_matches_formula": true,
+    "measured_E_delta_vs_B_total_parameters": 0
   },
   "recursive_control_initialization_report_schema": "RecursiveControlInitializationV1",
   "recursive_control_initialization_report_instance": {
@@ -323,6 +358,7 @@
       "B": 70000,
       "C": 80000,
       "D": 90000,
+      "E": 110000,
       "F": 100000
     },
     "architecture_specific_tensor_names_and_shapes": {
@@ -342,6 +378,19 @@
       },
       "C": {},
       "D": {},
+      "E": {
+        "state": [
+          256,
+          32
+        ],
+        "state_ctx_proj.weight": [
+          32,
+          32
+        ],
+        "state_ctx_proj.bias": [
+          32
+        ]
+      },
       "F": {
         "layers.2.self_attn.q_proj.weight": [
           32,
@@ -503,7 +552,7 @@
         ]
       }
     },
-    "optimizer_group_membership_arm_count": 5,
+    "optimizer_group_membership_arm_count": 6,
     "optimizer_initial_state_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "notes": [
       "common_tensor_hashes cover only names present with identical shape in every provided arm (tok/pos/kind/layers.*/norm/lm_head when recursive_transition_layers matches the stacked baseline's n_layers); architecture-specific tensors (e.g. z_latent/ctx_proj for the 'full' z_state_mode) are listed under architecture_specific_tensor_names_and_shapes instead.",
@@ -512,20 +561,19 @@
     ]
   },
   "deferred_arms_rationale": {
-    "E": "Stacked + matched state capacity requires a new (learned target-position state + context projection injected once, no recurrence) constructor sharing D's parameter-free-vs-learned distinction in the opposite direction -- not yet built; construct_arm_tower('E', ...) raises NotImplementedError.",
     "H": "Stop-gradient recurrence requires detaching y/z between recursive steps inside recursive_outputs and a paired forward-equivalence/gradient-divergence test -- not yet built."
   },
   "tests": {
     "file": "tests/test_models/test_recursive_denoiser.py",
-    "new_tests_added": 19,
-    "total_tests_in_file": 94,
+    "new_tests_added": 7,
+    "total_tests_in_file": 100,
     "requirement_coverage": {
-      "1_constructs_and_roundtrips": "test_arm_c_d_train_one_step_and_roundtrip_checkpoint (C/D); existing test_twotower_shared_recursive_trains_and_roundtrips covers B; A is exercised throughout the existing suite.",
-      "2_parameter_counts_match_formula": "test_arm_c_d_parameter_count_matches_stacked_baseline; test_control_arm_table_reports_every_built_arm_no_parity_or_winner cross-checks B/G against recursive_zstate_parameter_delta.",
+      "1_constructs_and_roundtrips": "test_arm_c_d_train_one_step_and_roundtrip_checkpoint (C/D); test_arm_e_denoiser_arch_wired_through_twotower_config_and_roundtrips (E); test_arm_f_denoiser_arch_wired_through_twotower_config_and_roundtrips (F); existing test_twotower_shared_recursive_trains_and_roundtrips covers B; A is exercised throughout the existing suite.",
+      "2_parameter_counts_match_formula": "test_arm_c_d_parameter_count_matches_stacked_baseline; test_arm_e_parameter_count_matches_zstate_delta_formula_exactly; test_control_arm_table_reports_every_built_arm_no_parity_or_winner cross-checks B/G/E against recursive_zstate_parameter_delta and F against B.",
       "3_B_independent_of_R": "Reused/confirmed via existing test_recursive_parameter_count_independent_of_recursive_steps (SLM-237/238) -- not re-implemented.",
       "4_C_D_no_undeclared_zstate": "test_arm_c_d_have_no_zstate_parameters",
-      "5_E_consumes_capacity": "not applicable -- E deferred",
-      "6_F_block_calls": "not applicable -- F deferred",
+      "5_E_consumes_capacity": "test_arm_e_consumes_matched_state_and_receives_gradients -- ablation (zeroing state/state_ctx_proj changes the forward output) + gradient flow (state.grad and state_ctx_proj.weight.grad are non-None and nonzero after backward).",
+      "6_F_block_calls": "test_arm_f_block_evaluations_match_arm_b_verified_by_hook_count; test_arm_e_block_evaluations_match_arm_a_verified_by_hook_count (E's analogous requirement, targeted at arm A's block-eval count instead of B's).",
       "7_H_forward_equal_grad_diverge": "not applicable -- H deferred",
       "8_common_init_hashes_and_disjoint_seeds": "test_recursive_control_initialization_common_tensors_match_and_seeds_disjoint; test_recursive_control_initialization_rejects_mismatched_common_tensors (fail-closed case)",
       "9_runtime_compat": "test_deep_supervision_works_for_arm_c_and_d (recursive_outputs duck-typing); existing runtime-symbol-feature/attention-return/checkpoint-path tests already cover SharedRecursiveDenoiserTower generically (C/D subclass no new code path there).",
@@ -538,20 +586,20 @@
     "net_test_count_change_rsc_a05b": "+5 (6 new arm-F tests minus test_deferred_arms_fail_closed_not_silently_built[F], removed since F is no longer in DEFERRED_ARM_IDS)"
   },
   "version_bumps": {
-    "model.recursive_denoiser": "v7 -> v8",
-    "model.twotower": "v66 -> v67"
+    "model.recursive_denoiser": "v8 -> v9",
+    "model.twotower": "v67 -> v68"
   },
-  "note": "Wiring-only evidence. A/B/C/D/F/G are fully implemented (construct through the canonical factory, train one step, round-trip checkpoint, real resource accounting). E/H remain explicitly deferred, not fabricated -- construct_arm_tower raises NotImplementedError for them. Arm F is reported with two honest views (block-evaluation-matched vs parameter-nearest, see arm_f_dual_view) -- never a bare 'matched' claim on both dimensions at once. No quality or efficiency conclusion is drawn from any number in this document.",
-  "recommended_next_iteration": "Build E (stacked + matched state capacity) next: it needs a genuinely new constructor (a learned target-position state + context projection injected once into an otherwise-unshared stacked tower, the mirror image of D), but is a pure construction/wiring task like C/D/F were. H (stop-gradient recurrence) should come after E: it needs the same y/z-detach-between-steps change inside recursive_outputs plus a careful paired test proving identical forward values but divergent cross-step gradient paths vs the non-detached B -- a test-design problem, not just a constructor change, so it is riskier to get subtly wrong than E. SLM-233 itself remains untouched and out of scope.",
-  "generated_at": "2026-07-21T02:34:19.908804+00:00",
+  "note": "Wiring-only evidence. A/B/C/D/E/F/G are fully implemented (construct through the canonical factory, train one step, round-trip checkpoint, real resource accounting). Only H remains explicitly deferred, not fabricated -- construct_arm_tower raises NotImplementedError for it. Arm F is reported with two honest views (block-evaluation-matched vs parameter-nearest, see arm_f_dual_view) -- never a bare 'matched' claim on both dimensions at once. Arm E's parameter delta over A matches recursive_zstate_parameter_delta exactly (the same formula/target B's delta over A matches), verified against real constructed towers, and its added state/state_ctx_proj is verified (not merely asserted) to be consumed by the forward pass and receive real gradients. No quality or efficiency conclusion is drawn from any number in this document.",
+  "recommended_next_iteration": "Only H (stop-gradient recurrence) remains. It needs y/z detached between recursive steps inside SharedRecursiveDenoiserTower.recursive_outputs (likely a detach_between_steps constructor flag, following this module's existing z_state_mode-style single-class-plus-flag convention), plus a careful paired test proving identical forward values but divergent cross-step gradient paths vs the non-detached B. This is a genuine test-design problem, not just a constructor change: having now built E, F, C, D, and G, the constructor-and-wiring half of this issue is a well-worn, low-risk path; H's risk is concentrated in proving a gradient-path negative correctly (a residual connection or tied weight elsewhere could let gradient flow through an ostensibly detached path indirectly), so real effort should go into constructing an unambiguous minimal case. SLM-233 itself remains untouched and out of scope.",
+  "generated_at": "2026-07-21T03:01:20.114835+00:00",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "93ac50629c6dbe7009d4f256d9e1e8b09076ee31",
+    "code_commit": "b871c64f10c36faa569e8a934d1c71e295fc702a",
     "code_dirty": true,
     "components": {
-      "model.recursive_denoiser": "v8"
+      "model.recursive_denoiser": "v9"
     },
-    "stamped_at": "2026-07-21T02:34:19.930755+00:00"
+    "stamped_at": "2026-07-21T03:01:20.132392+00:00"
   },
   "arm_f_dual_view": {
     "target_arm": "B",

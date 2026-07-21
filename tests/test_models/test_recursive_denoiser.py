@@ -20,10 +20,12 @@ from slm_training.models.blocks import DenoiserTower
 from slm_training.models.recursive_denoiser import (
     ArchitectureComparisonReportV1,
     SharedRecursiveDenoiserTower,
+    StackedMatchedStateDenoiserTower,
     compare_denoiser_architectures,
     recursive_zstate_parameter_delta,
 )
 from slm_training.models.recursive_control_arms import (
+    ALL_ARM_IDS,
     ARM_DENOISER_ARCH,
     BUILT_ARM_IDS,
     DEFERRED_ARM_IDS,
@@ -1705,6 +1707,13 @@ def test_control_arm_table_reports_every_built_arm_no_parity_or_winner() -> None
     assert by_id["F"].parameter_count_total > by_id["B"].parameter_count_total
     assert not by_id["F"].within_matching_tolerance
     assert by_id["F"].undeclared_zstate_parameter_names == ()
+    # E: unshared, non-recursive -- same block-evaluation count as A -- but
+    # its parameter delta over A equals recursive_zstate_parameter_delta
+    # exactly (same formula B/G's delta matches), never A's own zero-delta
+    # target (that's C's/D's kind of match, not E's).
+    assert by_id["E"].block_evaluations_per_forward == by_id["A"].block_evaluations_per_forward
+    assert by_id["E"].parameter_count_delta_vs_baseline == expected_delta
+    assert by_id["E"].undeclared_zstate_parameter_names == ()
 
 
 def test_recursive_control_arm_report_rejects_bad_contract_version() -> None:
@@ -2063,3 +2072,214 @@ def test_recursive_control_initialization_includes_arm_f_with_disjoint_seed() ->
     seeds = report.architecture_specific_seeds
     assert seeds["F"] not in {v for k, v in seeds.items() if k != "F"}
     assert len(set(seeds.values())) == len(seeds)
+
+
+# ---------------------------------------------------------------------------
+# SLM-241 (RSC-A05) follow-up: arm E -- stacked + matched state capacity.
+# ---------------------------------------------------------------------------
+
+
+def test_arm_e_is_unshared_non_recursive_tower_with_matched_state() -> None:
+    """Arm E is a plain, unshared, non-recursive tower (same block-evaluation
+    count as arm A) plus its own state/state_ctx_proj -- never B's
+    z_latent/ctx_proj names, never a SharedRecursiveDenoiserTower."""
+    tower = construct_arm_tower(
+        "E", vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+    )
+    assert isinstance(tower, StackedMatchedStateDenoiserTower)
+    assert not hasattr(tower, "recursive_steps")
+    assert not hasattr(tower, "z_latent")
+    assert not hasattr(tower, "ctx_proj")
+    assert hasattr(tower, "state")
+    assert hasattr(tower, "state_ctx_proj")
+    assert tuple(tower.state.shape) == (32, 16)
+    assert tuple(tower.state_ctx_proj.weight.shape) == (16, 16)
+    assert len(tower.layers) == 2
+    # No weight sharing: every block is a distinct parameterized object.
+    block_ids = [id(layer) for layer in tower.layers]
+    assert len(set(block_ids)) == len(block_ids)
+    names = dict(tower.named_parameters())
+    assert not any(name.split(".")[0] in {"z_latent", "ctx_proj"} for name in names)
+
+
+def test_arm_e_block_evaluations_match_arm_a_verified_by_hook_count() -> None:
+    """Arm E's block-evaluation count must equal arm A's exactly (no
+    recurrence added) -- verified with a real forward-hook call counter, not
+    just a structural len(layers) claim."""
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    e_tower = construct_arm_tower(
+        "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len,
+    )
+    a_tower = construct_arm_tower(
+        "A", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=2,
+        max_len=max_len,
+    )
+
+    def _count_block_calls(tower: torch.nn.Module) -> int:
+        calls = {"n": 0}
+
+        def _hook(module: torch.nn.Module, inp: object, out: object) -> None:
+            calls["n"] += 1
+
+        handles = [layer.register_forward_hook(_hook) for layer in tower.layers]
+        noisy = torch.randint(1, vocab, (2, 6))
+        ctx = torch.randn(2, 3, d_model)
+        tower(noisy, ctx, pad_id=0)
+        for handle in handles:
+            handle.remove()
+        return calls["n"]
+
+    e_calls = _count_block_calls(e_tower)
+    a_calls = _count_block_calls(a_tower)
+    assert e_calls == a_calls == n_layers == len(e_tower.layers)
+
+
+def test_arm_e_parameter_count_matches_zstate_delta_formula_exactly() -> None:
+    """Requirement #2: arm E's total-parameter delta over a same-n_layers
+    arm A equals recursive_zstate_parameter_delta(d_model, max_len) exactly
+    -- the same formula/target arm B's delta matches -- since its
+    state/state_ctx_proj tensors are shape-matched to B's z_latent/ctx_proj."""
+    vocab, d_model, n_layers, n_heads, max_len = 23, 32, 3, 2, 256
+    stacked = construct_arm_tower(
+        "A", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        max_len=max_len,
+    )
+    e_tower = construct_arm_tower(
+        "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        max_len=max_len,
+    )
+    b_tower = construct_arm_tower(
+        "B", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        max_len=max_len, recursive_steps=2, recursive_transition_layers=n_layers,
+    )
+    stacked_total = sum(p.numel() for p in stacked.parameters())
+    e_total = sum(p.numel() for p in e_tower.parameters())
+    b_total = sum(p.numel() for p in b_tower.parameters())
+    formula = recursive_zstate_parameter_delta(d_model=d_model, max_len=max_len)
+
+    assert e_total - stacked_total == formula
+    assert b_total - stacked_total == formula
+    # E and B therefore add the identical parameter delta over the same
+    # stacked baseline, by construction -- even though E has no recurrence
+    # and B's transition blocks are recursion_steps-shared, not independent.
+    assert e_total - stacked_total == b_total - stacked_total
+
+
+def test_arm_e_consumes_matched_state_and_receives_gradients() -> None:
+    """Required test: arm E's added state/state_ctx_proj is not dead
+    padding. Zeroing it changes the forward output, and both tensors receive
+    real, nonzero gradient from a backward pass through the actual forward
+    computation (not merely declared with the right shape)."""
+    vocab, d_model, n_layers, n_heads, max_len = 23, 16, 2, 2, 32
+    tower = construct_arm_tower(
+        "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers, n_heads=n_heads,
+        max_len=max_len,
+    )
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+
+    # --- gradient consumption ---
+    tower.zero_grad(set_to_none=True)
+    out = tower(noisy, ctx, pad_id=0)
+    out.float().sum().backward()
+    assert tower.state.grad is not None
+    assert torch.any(tower.state.grad != 0)
+    assert tower.state_ctx_proj.weight.grad is not None
+    assert torch.any(tower.state_ctx_proj.weight.grad != 0)
+
+    # --- ablation: zeroing the matched state changes the forward output ---
+    with torch.no_grad():
+        zeroed = construct_arm_tower(
+            "E", vocab_size=vocab, d_model=d_model, n_layers=n_layers,
+            n_heads=n_heads, max_len=max_len,
+        )
+        zeroed.load_state_dict(tower.state_dict())
+        zeroed.state.zero_()
+        zeroed.state_ctx_proj.weight.zero_()
+        zeroed.state_ctx_proj.bias.zero_()
+    tower.eval()
+    zeroed.eval()
+    with torch.no_grad():
+        out_full = tower(noisy, ctx, pad_id=0)
+        out_zeroed = zeroed(noisy, ctx, pad_id=0)
+    assert not torch.allclose(out_full, out_zeroed)
+
+
+def test_arm_e_denoiser_arch_wired_through_twotower_config_and_roundtrips(
+    tmp_path: Path,
+) -> None:
+    """Requirement #1: E constructs through the canonical factory
+    (TwoTowerConfig.denoiser_arch), trains one step, and round-trips a
+    checkpoint, same as every other built arm."""
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32, n_heads=2, context_layers=1, denoiser_layers=2,
+            denoiser_arch="stacked_matched_state",  # type: ignore[arg-type]
+            grammar_constrained=False, gen_steps=2, seed=0,
+        ),
+        device="cpu",
+    )
+    assert isinstance(model.denoiser, StackedMatchedStateDenoiserTower)
+    assert len(model.denoiser.layers) == 2
+    opt = torch.optim.AdamW(model.trainable_parameters(), lr=1e-3)
+    opt.zero_grad(set_to_none=True)
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+    loss.backward()
+    opt.step()
+
+    ckpt = tmp_path / "arm_e.pt"
+    model.save(ckpt)
+    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    assert loaded.config.denoiser_arch == "stacked_matched_state"
+    assert isinstance(loaded.denoiser, StackedMatchedStateDenoiserTower)
+    assert len(loaded.denoiser.layers) == 2
+
+
+def test_recursive_control_initialization_includes_arm_e_with_disjoint_seed() -> None:
+    """The fairness contract covers arm E too: common tensors (tok/pos/the
+    unshared transition blocks) match across A/B/C/D/E, E's state/
+    state_ctx_proj are its own architecture-specific tensors, and its
+    reserved arch_specific:stacked_matched_state seed is disjoint from every
+    other arm's."""
+    base_seed = 0
+    vocab, d_model, n_layers, max_len = 23, 16, 2, 32
+    arm_ids = ("A", "B", "C", "D", "E")
+    towers = {}
+    for arm_id in arm_ids:
+        torch.manual_seed(derive_seed(base_seed, "model_initialization"))
+        towers[arm_id] = construct_arm_tower(
+            arm_id, vocab_size=vocab, d_model=d_model, n_layers=n_layers,
+            n_heads=2, max_len=max_len, recursive_steps=2,
+            recursive_transition_layers=n_layers,
+        )
+    report = build_recursive_control_initialization(
+        base_seed=base_seed,
+        arm_towers=towers,
+        arm_denoiser_arch={arm_id: ARM_DENOISER_ARCH[arm_id] for arm_id in arm_ids},
+    )
+    assert report.common_tensor_hashes_match_across_arms is True
+    assert "tok.weight" in report.common_tensor_names
+    assert any(name.startswith("layers.") for name in report.common_tensor_names)
+    # E's state/state_ctx_proj are architecture-specific to E alone.
+    e_specific = report.architecture_specific_tensor_names_and_shapes["E"]
+    assert "state" in e_specific
+    assert "state_ctx_proj.weight" in e_specific
+    assert "state_ctx_proj.bias" in e_specific
+    assert "z_latent" not in e_specific
+    assert "ctx_proj.weight" not in e_specific
+    seeds = report.architecture_specific_seeds
+    assert seeds["E"] not in {v for k, v in seeds.items() if k != "E"}
+    assert len(set(seeds.values())) == len(seeds)
+
+
+def test_deferred_arm_ids_now_only_contains_h() -> None:
+    """SLM-241 (RSC-A05) follow-up: E is no longer deferred -- only H
+    remains, so this is the honest fail-closed set construct_arm_tower
+    raises NotImplementedError for."""
+    assert DEFERRED_ARM_IDS == ("H",)
+    assert "E" in BUILT_ARM_IDS
+    assert set(BUILT_ARM_IDS) | set(DEFERRED_ARM_IDS) == set(ALL_ARM_IDS)

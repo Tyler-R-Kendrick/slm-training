@@ -94,6 +94,14 @@ NAMESPACE_OFFSETS: dict[str, int] = {
     # reserved namespace exactly like every other arch_specific:* entry --
     # same "reserved, not literally consumed" honesty note applies.
     "arch_specific:stacked_depth_matched": 100_000,
+    # SLM-241 (RSC-A05) follow-up: arm E ("stacked_matched_state" --
+    # StackedMatchedStateDenoiserTower, an otherwise-unshared stacked tower
+    # with a learned target-position `state` + `state_ctx_proj` injected once
+    # before its (unshared, non-recursive) transition blocks run). Its two
+    # architecture-specific tensors are absent from every other arm's
+    # common-tensor set, same reserved/not-yet-consumed convention as every
+    # other arch_specific:* entry above.
+    "arch_specific:stacked_matched_state": 110_000,
 }
 
 DECLARED_NAMESPACES = tuple(sorted(NAMESPACE_OFFSETS))

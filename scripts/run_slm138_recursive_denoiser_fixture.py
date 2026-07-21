@@ -14,15 +14,18 @@ training-loss semantics, only the fixture's control of RNG around it.
 
 SLM-241 (RSC-A05): also emits a ``control_arm_table`` -- real, measured
 resource accounting (parameters/block-evaluations/estimated FLOPs) for every
-built matched-control arm (A/B/C/D/F/G; see
+built matched-control arm (A/B/C/D/E/F/G; see
 :mod:`slm_training.models.recursive_control_arms`), never a raw loss or a
-winner. E/H remain explicitly deferred -- see ``docs/design/iter-rsc-a05-*``.
+winner. Only H remains explicitly deferred -- see ``docs/design/iter-rsc-a05-*``.
 Arm F (unshared depth-matched tower) additionally gets an ``arm_f_dual_view``
 field: its block-evaluation-matched construction (the ``control_arm_table``
 row) necessarily has MORE parameters than arm B (nothing is shared), so a
 second, real, measured parameter-nearest construction is reported alongside
 it with its own (necessarily nonzero) block-evaluation residual -- never a
-bare "matched" claim on both dimensions at once.
+bare "matched" claim on both dimensions at once. Arm E (stacked + matched
+state capacity) needs no such dual view: its state/state_ctx_proj tensors
+are shape-matched exactly to arm B's z-state delta, so its ``control_arm_table``
+row alone reports the exact (never approximate) parameter-delta match.
 
 Example:
   python -m scripts.run_slm138_recursive_denoiser_fixture --mode plan-only
@@ -207,7 +210,7 @@ def _architecture_comparison(
 
 def _control_arm_table(stacked: TwoTowerModel, base_seed: int) -> list[dict[str, Any]]:
     """SLM-241 (RSC-A05): real, measured resource-accounting table for every
-    built control arm (A/B/C/D/G) -- requirement #11's "complete comparison
+    built control arm (A/B/C/D/E/F/G) -- requirement #11's "complete comparison
     table for every arm you built, without raw-loss winner language". Reuses
     the same deterministic ``shape_probe_inputs``/``shape_probe_context``
     namespaces as ``_architecture_comparison`` above.

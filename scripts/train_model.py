@@ -242,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=(
             "stacked",
             "stacked_depth_matched",
+            "stacked_matched_state",
             "shared_recursive",
             "shared_recursive_y_only",
             "shared_recursive_no_extra_capacity",
@@ -252,6 +253,9 @@ def main(argv: list[str] | None = None) -> int:
             "transition. SLM-241 (RSC-A05) control arms: "
             "shared_recursive_y_only (arm C, no z state), "
             "shared_recursive_no_extra_capacity (arm D, parameter-free z), "
+            "stacked_matched_state (arm E: unshared, non-recursive tower + a "
+            "learned state/state_ctx_proj pair shape-matched to the shared "
+            "recursive arm's z-state, injected once before the blocks run), "
             "and stacked_depth_matched (arm F: unshared depth-matched tower "
             "-- recursive_steps * recursive_transition_layers independent "
             "blocks, more parameters than the recursive arms since nothing "

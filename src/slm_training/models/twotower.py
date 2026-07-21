@@ -21,7 +21,10 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
-from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
+from slm_training.models.recursive_denoiser import (
+    SharedRecursiveDenoiserTower,
+    StackedMatchedStateDenoiserTower,
+)
 from slm_training.models.context import (
     HFContextEncoder,
     ScratchContextEncoder,
@@ -90,17 +93,22 @@ _REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
 _DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
 
 #: SLM-241 (RSC-A05): the canonical ``denoiser_arch`` string for each named
-#: control arm this issue builds (A/B/C/D/F; see
+#: control arm this issue builds (A/B/C/D/E/F; see
 #: ``slm_training.models.recursive_control_arms`` for the full A-H registry,
-#: including the still-deferred E/H arms and G, which reuses "shared_recursive"
+#: including the still-deferred H arm and G, which reuses "shared_recursive"
 #: with ``recursive_steps=1``). "stacked" is arm A; the three
 #: ``SharedRecursiveDenoiserTower`` archs map onto its ``z_state_mode``;
 #: "stacked_depth_matched" (arm F) is a plain, unshared ``DenoiserTower`` built
 #: with ``recursive_steps * recursive_transition_layers`` independent
 #: transition blocks instead of ``denoiser_layers`` -- the same class as arm
 #: A, just deeper, so it needs no new tower code, only this dispatch branch.
+#: "stacked_matched_state" (arm E) is a genuinely new tower
+#: (``StackedMatchedStateDenoiserTower``): the same unshared, non-recursive
+#: block structure as arm A, plus a learned ``state``/``state_ctx_proj`` pair
+#: shape-matched to B's z-state path and injected once before the blocks run.
 STACKED_DENOISER_ARCH = "stacked"
 STACKED_DEPTH_MATCHED_DENOISER_ARCH = "stacked_depth_matched"
+STACKED_MATCHED_STATE_DENOISER_ARCH = "stacked_matched_state"
 SHARED_RECURSIVE_ARCH_Z_STATE_MODES: dict[str, str] = {
     "shared_recursive": "full",  # arm B (and, with recursive_steps=1, arm G)
     "shared_recursive_y_only": "y_only",  # arm C
@@ -109,6 +117,7 @@ SHARED_RECURSIVE_ARCH_Z_STATE_MODES: dict[str, str] = {
 KNOWN_DENOISER_ARCHES: tuple[str, ...] = (
     STACKED_DENOISER_ARCH,
     STACKED_DEPTH_MATCHED_DENOISER_ARCH,
+    STACKED_MATCHED_STATE_DENOISER_ARCH,
     *SHARED_RECURSIVE_ARCH_Z_STATE_MODES,
 )
 
@@ -208,12 +217,13 @@ class TwoTowerConfig:
     # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
     # hf_model_name causal LM as a bidirectional masked denoiser backbone.
     denoiser_backend: str = "scratch"
-    # stacked | stacked_depth_matched | shared_recursive |
-    # shared_recursive_y_only | shared_recursive_no_extra_capacity —
-    # SLM-138 shared recursive denoiser tower (SLM-241/RSC-A05 adds the
-    # y_only/no_extra_capacity control arms plus stacked_depth_matched, an
-    # unshared depth-matched tower / arm F; see KNOWN_DENOISER_ARCHES /
-    # slm_training.models.recursive_control_arms).
+    # stacked | stacked_depth_matched | stacked_matched_state |
+    # shared_recursive | shared_recursive_y_only |
+    # shared_recursive_no_extra_capacity — SLM-138 shared recursive denoiser
+    # tower (SLM-241/RSC-A05 adds the y_only/no_extra_capacity control arms
+    # plus stacked_depth_matched (unshared depth-matched tower / arm F) and
+    # stacked_matched_state (unshared tower + matched state capacity / arm
+    # E); see KNOWN_DENOISER_ARCHES / slm_training.models.recursive_control_arms).
     denoiser_arch: str = "stacked"
     # SLM-138: number of recurrences for the shared recursive denoiser.
     recursive_steps: int = 1
@@ -643,6 +653,17 @@ def _load_checkpoint_state(
             for key in missing
             if key.startswith("denoiser.")
             and key.split(".")[1] in {"z_latent", "ctx_proj"}
+        }
+    # SLM-241 (RSC-A05) arm E: stacked_matched_state adds its own
+    # state/state_ctx_proj parameters (never present on an older plain
+    # "stacked" checkpoint) -- same warm-start allowance, distinct tensor
+    # names so it never collides with the shared_recursive allowance above.
+    if getattr(config, "denoiser_arch", None) == STACKED_MATCHED_STATE_DENOISER_ARCH:
+        allowed_missing |= {
+            key
+            for key in missing
+            if key.startswith("denoiser.")
+            and key.split(".")[1] in {"state", "state_ctx_proj"}
         }
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
@@ -1175,6 +1196,25 @@ class TwoTowerModel(nn.Module):
                     vocab_size=tokenizer.vocab_size,
                     d_model=self.config.d_model,
                     n_layers=f_steps * f_transition_layers,
+                    n_heads=self.config.n_heads,
+                    max_len=self.config.max_target_len,
+                    dropout=self.config.dropout,
+                    kind_ids=kind_ids,
+                    n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                )
+            elif denoiser_arch == STACKED_MATCHED_STATE_DENOISER_ARCH:
+                # SLM-241 (RSC-A05) arm E: an unshared, non-recursive
+                # DenoiserTower variant (denoiser_layers blocks, each called
+                # exactly once -- same block-evaluation count as arm A) plus
+                # a learned state/state_ctx_proj pair shape-matched to arm
+                # B's z_latent/ctx_proj, injected once before the transition
+                # blocks run (never recurrently re-applied). Mirror image of
+                # arm D: D removes the z-state parameters from a recursive
+                # tower; E adds them (once) to a non-recursive one.
+                self.denoiser = StackedMatchedStateDenoiserTower(
+                    vocab_size=tokenizer.vocab_size,
+                    d_model=self.config.d_model,
+                    n_layers=self.config.denoiser_layers,
                     n_heads=self.config.n_heads,
                     max_len=self.config.max_target_len,
                     dropout=self.config.dropout,
