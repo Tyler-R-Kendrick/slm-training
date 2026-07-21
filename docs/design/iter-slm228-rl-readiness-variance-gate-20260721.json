@@ -1,0 +1,259 @@
+{
+  "candidate_min_samples": 8,
+  "candidate_min_spread": 0.05,
+  "claim_class": "wiring",
+  "disposition": "gap_confirmed",
+  "disposition_rationale": "3/4 non-control arms (two_sample_wide, two_sample_epsilon, large_n_epsilon_outlier) were approved by the real assess_rl_readiness reward-variance check while failing the illustrative stronger candidate (n>=8, spread>=0.05). The mechanical variance>0 bar is confirmed gameable by degenerate-but-technically-diverse reward samples.",
+  "experiment_id": "slm228-rl-readiness-variance-gate",
+  "falsifier": "Every degenerate arm (near-zero spread with n>=2, or n==2 with a wide spread) is rejected by assess_rl_readiness while the healthy diverse arm and the two negative controls (zero variance, single sample) behave as expected -- i.e., some safeguard beyond the read source already closes this gap, or the mechanism cannot be exercised at all.",
+  "gate_hash": "9684e70e35b4e83710b64a4f712656abe66a05d25213111d66e5888f31c59475",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no checkpoint, GPU run, RL train step, or ship-gate claim is made or implied.",
+    "This exercises the real, unmodified assess_rl_readiness function against constructed evaluation payloads; the suite/AgentV/frozen-snapshot fields are fixture data built to satisfy every non-reward requirement, not a real production evaluation.",
+    "The CANDIDATE_MIN_SAMPLES / CANDIDATE_MIN_SPREAD thresholds are illustrative diagnostics only. They are not implemented in rl_gate.py, not proposed as the correct values, and passing/failing them makes no gate or promotion claim.",
+    "Whether tiny reward variance actually harms GRPO-lite training (as opposed to only being a weak proxy in the readiness report) is not measured here; this harness is about the readiness *gate*, not RL training dynamics.",
+    "Arms use hand-picked reward_samples values, not rewards sampled from any real policy or environment."
+  ],
+  "hypothesis": "The real assess_rl_readiness reward-variance requirement (len(reward_samples) >= 2 and statistics.pvariance(reward_samples) > 0) approves reward-sample arms with degenerate diversity -- vanishing spread and/or only two samples -- whenever every other RL-readiness requirement is independently satisfied, because the check has no minimum sample count beyond 2 and no minimum spread/magnitude floor.",
+  "matrix_set": "slm228_rl_readiness_variance_gate",
+  "matrix_version": "rlrg0-01-v1",
+  "results": [
+    {
+      "approved": true,
+      "arm": {
+        "description": "8 samples evenly spread across [0.05, 0.95]: the shape a real GRPO-lite reward distribution with a working signal should have.",
+        "is_negative_control": false,
+        "name": "healthy_diverse_n8",
+        "reward_samples": [
+          0.05,
+          0.15,
+          0.3,
+          0.45,
+          0.55,
+          0.7,
+          0.85,
+          0.95
+        ]
+      },
+      "candidate_would_pass": true,
+      "failures": [],
+      "gameable": false,
+      "n_samples": 8,
+      "reward_variance": 0.091875,
+      "spread": 0.8999999999999999
+    },
+    {
+      "approved": true,
+      "arm": {
+        "description": "The minimum n=2 the check accepts, but with a wide [0.1, 0.9] spread -- tests whether sample count alone is gameable even with genuinely different rewards.",
+        "is_negative_control": false,
+        "name": "two_sample_wide",
+        "reward_samples": [
+          0.1,
+          0.9
+        ]
+      },
+      "candidate_would_pass": false,
+      "failures": [],
+      "gameable": true,
+      "n_samples": 2,
+      "reward_variance": 0.16,
+      "spread": 0.8
+    },
+    {
+      "approved": true,
+      "arm": {
+        "description": "n=2 with a ~1e-9 spread: technically nonzero variance, no real reward diversity.",
+        "is_negative_control": false,
+        "name": "two_sample_epsilon",
+        "reward_samples": [
+          0.5,
+          0.500000001
+        ]
+      },
+      "candidate_would_pass": false,
+      "failures": [],
+      "gameable": true,
+      "n_samples": 2,
+      "reward_variance": 2.4999998585903447e-19,
+      "spread": 9.999999717180685e-10
+    },
+    {
+      "approved": true,
+      "arm": {
+        "description": "100 samples, 99 identical and 1 perturbed by 1e-7: mimics floating-point jitter from an otherwise near-deterministic reward function at a sample count no reasonable minimum-n check would flag.",
+        "is_negative_control": false,
+        "name": "large_n_epsilon_outlier",
+        "reward_samples": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5000001
+        ]
+      },
+      "candidate_would_pass": false,
+      "failures": [],
+      "gameable": true,
+      "n_samples": 100,
+      "reward_variance": 9.899999989578155e-17,
+      "spread": 9.999999994736442e-08
+    },
+    {
+      "approved": false,
+      "arm": {
+        "description": "10 identical reward samples: zero variance. Negative control -- the current gate must still reject this.",
+        "is_negative_control": true,
+        "name": "all_identical_control",
+        "reward_samples": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "candidate_would_pass": false,
+      "failures": [
+        "reward samples must have nonzero variance"
+      ],
+      "gameable": false,
+      "n_samples": 10,
+      "reward_variance": 0.0,
+      "spread": 0.0
+    },
+    {
+      "approved": false,
+      "arm": {
+        "description": "A single reward sample: below the len>=2 floor. Negative control -- the current gate must still reject this.",
+        "is_negative_control": true,
+        "name": "single_sample_control",
+        "reward_samples": [
+          0.5
+        ]
+      },
+      "candidate_would_pass": false,
+      "failures": [
+        "reward samples must have nonzero variance"
+      ],
+      "gameable": false,
+      "n_samples": 1,
+      "reward_variance": 0.0,
+      "spread": 0.0
+    }
+  ],
+  "run_id": "slm228-rl-readiness-variance-gate-20260721",
+  "schema": "RlReadinessVarianceGateReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T05:31:33.116112Z",
+  "version_stamp": {
+    "code_commit": "467f3941ca5381352db95fc132a145e536385f01",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm228_rl_readiness_variance_gate": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:31:33.116079+00:00"
+  }
+}

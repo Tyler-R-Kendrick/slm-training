@@ -3582,6 +3582,25 @@
         }
       ]
     },
+    "harness.experiments.slm228_rl_readiness_variance_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm228_rl_readiness_variance_gate.py",
+        "scripts/run_slm228_rl_readiness_variance_gate.py",
+        "tests/test_harnesses/experiments/test_slm228_rl_readiness_variance_gate.py",
+        "tests/test_scripts/test_run_slm228_rl_readiness_variance_gate.py",
+        "docs/design/iter-slm228-rl-readiness-variance-gate-20260721.json",
+        "docs/design/iter-slm228-rl-readiness-variance-gate-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-228 RLRG0-01 RL-readiness reward-variance gate stress test: exercises the real assess_rl_readiness function against a battery of reward-sample arms to check whether its mechanical variance>0 requirement is gameable by degenerate reward diversity"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
