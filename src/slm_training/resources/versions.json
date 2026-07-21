@@ -2480,7 +2480,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v36",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2490,6 +2490,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-07-21",
+          "note": "declare legacy visible slot-suffix semantic roles as typed runtime-symbol authority at the canonical evaluation request boundary"
+        },
         {
           "version": "v36",
           "date": "2026-07-21",
@@ -3513,7 +3518,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v181",
+      "version": "v182",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3533,6 +3538,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v182",
+          "date": "2026-07-21",
+          "note": "E709: finalize enum-slot protection after semantic biases and close fully covered terminal Stack lists by margin"
+        },
         {
           "version": "v181",
           "date": "2026-07-21",

@@ -13,6 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from slm_training.data.contract import RuntimeSymbol
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
@@ -743,7 +744,23 @@ def evaluate(
 
     def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
-        return GenerationRequest.from_record(record, schema=schema)
+        request = GenerationRequest.from_record(record, schema=schema)
+        # Historical evaluation checkpoints use visible placeholder suffixes as
+        # semantic-role features. Declare that compatibility authority explicitly;
+        # opaque production requests still require caller-provided typed symbols.
+        data = request.to_dict()
+        data["runtime_symbols"] = [
+            RuntimeSymbol(
+                surface=slot,
+                role="external_entity",
+                semantic_role=(
+                    re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
+                    or "value"
+                ),
+            ).to_dict()
+            for slot in request.slot_contract
+        ]
+        return GenerationRequest.from_dict(data)
 
     def _effective_request_for(record: ExampleRecord) -> GenerationRequest:
         request = _request_for(record)

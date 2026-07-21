@@ -6068,13 +6068,28 @@ class TwoTowerModel(nn.Module):
             return None
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
+        slot_positions = [
+            position
+            for position, token_id in enumerate(candidate_ids)
+            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(
+                SLOT_PREFIX
+            )
+        ]
+        non_slot_scores = [
+            float(scores[position].item())
+            for position in range(len(candidate_ids))
+            if position not in slot_positions
+        ]
+        if not slot_positions or not non_slot_scores:
+            return None
+        best_non_slot = max(non_slot_scores)
         bias = scores.new_zeros(len(candidate_ids))
-        applied = False
-        for position, token_id in enumerate(candidate_ids):
-            token = str(self.tokenizer.id_to_token.get(token_id, ""))
-            if token.startswith(SLOT_PREFIX):
-                bias[position] = -weight
-                applied = True
+        for position in slot_positions:
+            bias[position] = min(
+                -weight,
+                best_non_slot - weight - float(scores[position].item()),
+            )
+        applied = bool(slot_positions)
         return bias if applied else None
 
     def _semantic_plan_inline_bias(
@@ -6457,7 +6472,24 @@ class TwoTowerModel(nn.Module):
             return None
         bias = scores.new_zeros(len(candidate_ids))
         if not missing:
-            bias[candidate_ids.index(close_id)] = weight
+            close_position = candidate_ids.index(close_id)
+            terminal_stack = bool(
+                len(frames) == 2
+                and getattr(frames[-2], "kind", None) == "component"
+                and getattr(frames[-2], "expr_type", None) == "element:Stack"
+                and kind == "variadic"
+                and getattr(frame, "expr_type", None) == "array"
+            )
+            bias[close_position] = (
+                max(
+                    weight,
+                    float(scores.max().item())
+                    + weight
+                    - float(scores[close_position].item()),
+                )
+                if terminal_stack
+                else weight
+            )
             return bias
 
         from slm_training.dsl.production_codec import (
@@ -9172,11 +9204,6 @@ class TwoTowerModel(nn.Module):
                             stats.slot_component_choice_changes += int(
                                 int(scores.argmax().item()) != before_slot
                             )
-                    schema_value_bias = self._schema_value_bias(
-                        states[row], candidate_ids, scores
-                    )
-                    if schema_value_bias is not None:
-                        scores = scores + schema_value_bias
                     schema_enum_close_bias = self._schema_enum_close_bias(
                         states[row], candidate_ids, scores
                     )
@@ -9586,6 +9613,11 @@ class TwoTowerModel(nn.Module):
                                         **self._choice_phase_evidence(states[row]),
                                     }
                                 )
+                    schema_value_bias = self._schema_value_bias(
+                        states[row], candidate_ids, scores
+                    )
+                    if schema_value_bias is not None:
+                        scores = scores + schema_value_bias
                     self._finalize_semantic_plan_trace(
                         slot_coverage_close_trace,
                         candidate_ids=candidate_ids,
