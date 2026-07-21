@@ -60,10 +60,10 @@
       "test_ref": "test_differentiator_7_gates_are_mandatory_and_currently_unmet"
     }
   ],
-  "evidence_cutoff": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+  "evidence_cutoff": "42bbc610182c787e439e59599a2e38f7095d9f76",
   "experiment_id": "slm229-looped-latent-differentiation",
   "forbidden_duplicate_scope": "Do not duplicate: SemanticPlanV1 export/serialization (src/slm_training/data/progspec/semantic_plan.py), the archetype/role-set/topology/cardinality/pointer predictor heads (src/slm_training/models/semantic_plan_predictor.py), the plan compiler / seed builder / soft-action-feature / certified-restriction machinery (src/slm_training/data/semantic_plan/compiler.py, seed.py), or any topology/binding/pointer/cardinality target (SLM-145's blocked scope).",
-  "generated_at": "2026-07-21T02:45:52.530264Z",
+  "generated_at": "2026-07-21T06:08:44.544187Z",
   "matrix_set": "slm229_looped_latent_differentiation",
   "matrix_version": "rsc0-01-v1",
   "mechanism_comparison": [
@@ -254,7 +254,7 @@
     "unique_records_steps_notes": "SLM-144 fixture: train=51, val=13 unique records (archetypes=5, families=8, roles=4); SLM-146 fixture: n=13 synthetic records per arm. Both are toy-scale; no non-fixture step count exists."
   },
   "schema": "LoopedLatentDifferentiationV1",
-  "source_commit": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+  "source_commit": "42bbc610182c787e439e59599a2e38f7095d9f76",
   "status": "fixture",
   "target_support_audit": [
     {
@@ -276,16 +276,16 @@
       "target_id": "component_inventory"
     }
   ],
-  "timestamp": "2026-07-21T02:45:52.530933Z",
+  "timestamp": "2026-07-21T06:08:44.544670Z",
   "verdict": "blocked_by_recurrence",
   "version_stamp": {
-    "code_commit": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+    "code_commit": "42bbc610182c787e439e59599a2e38f7095d9f76",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v54",
+      "harness.experiments": "v58",
       "harness.experiments.slm229_looped_latent_differentiation": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T02:45:52.530309+00:00"
+    "stamped_at": "2026-07-21T06:08:44.544238+00:00"
   }
 }

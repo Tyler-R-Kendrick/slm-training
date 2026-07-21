@@ -10,9 +10,9 @@
 
 **Claim class:** wiring / zero-compute differentiation and authorization audit only. No model or data implementation, no training run, no checkpoint.
 
-**Source commit / evidence cutoff:** `42d31f1dd9fee295324d5d39bbc48c53dd87cb96`
+**Source commit / evidence cutoff:** `42bbc610182c787e439e59599a2e38f7095d9f76`
 
-**Generated at:** 2026-07-21T02:45:52.530264Z
+**Generated at:** 2026-07-21T06:08:44.544187Z
 
 **Verdict:** `blocked_by_recurrence`
 

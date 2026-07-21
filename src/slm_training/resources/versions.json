@@ -3640,6 +3640,11 @@
         {
           "version": "v1",
           "date": "2026-07-21",
+          "note": "no-bump: regenerate fixture docs after merge-conflict resolution; harness code and matrix version unchanged"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
           "note": "initial registration; SLM-229 RSC0-01 zero-compute looped-latent differentiation and MinimalCompilerLatentContractV1 authorization audit"
         }
       ]
