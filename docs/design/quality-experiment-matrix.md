@@ -4608,3 +4608,17 @@ created or synced; AgentV remained 0/1.
 Evidence:
 [iter-e651-schema-enum-literal-margin-20260720.md](iter-e651-schema-enum-literal-margin-20260720.md)
 and [JSON](iter-e651-schema-enum-literal-margin-20260720.json).
+
+## E652 display-value text role
+
+E652 gives metric values simple TextContent owners. Structure and node F1 rise,
+but the leaves are detached root sections, both planned Cards become empty, and
+meaningful v1 falls to 3/4 while strict v2 stays 3/4. Reject the treatment
+stamped v99. After rebasing onto E651 restoration v101, the append-only lineage
+records E652 as treatment v102 and restoration v103. Future metric ownership must be nested inside each
+specific planned Card. No checkpoint was created or synced; AgentV remained
+0/1.
+
+Evidence:
+[iter-e652-value-text-role-20260720.md](iter-e652-value-text-role-20260720.md)
+and [JSON](iter-e652-value-text-role-20260720.json).
