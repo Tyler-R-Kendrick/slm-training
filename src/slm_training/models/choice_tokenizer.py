@@ -629,6 +629,8 @@ class ChoiceDecodeState:
     mode: str | None = None
     frames: list[_ChoiceFrame] = field(default_factory=list)
     section_types: list[str] = field(default_factory=list)
+    section_slot_ids: list[frozenset[int]] = field(default_factory=list)
+    current_section_slot_ids: set[int] = field(default_factory=set)
     current_marker: str | None = None
     valid_root_seen: bool = False
     literal_frame: str | None = None
@@ -642,6 +644,8 @@ class ChoiceDecodeState:
             mode=self.mode,
             frames=deepcopy(self.frames),
             section_types=list(self.section_types),
+            section_slot_ids=list(self.section_slot_ids),
+            current_section_slot_ids=set(self.current_section_slot_ids),
             current_marker=self.current_marker,
             valid_root_seen=self.valid_root_seen,
             literal_frame=self.literal_frame,
@@ -704,6 +708,8 @@ class ChoiceDecodeState:
     def _complete_expr(self, expr_type: str) -> bool:
         if not self.frames:
             self.section_types.append(expr_type)
+            self.section_slot_ids.append(frozenset(self.current_section_slot_ids))
+            self.current_section_slot_ids.clear()
             if self.mode == "v05":
                 if self.current_marker == "r=" and expr_type.startswith("element:"):
                     self.valid_root_seen = True
@@ -857,11 +863,18 @@ class ChoiceDecodeState:
             return self._complete_expr(expr_type)
         if token.startswith(SLOT_PREFIX):
             try:
-                if int(token[len(SLOT_PREFIX) :]) >= self.slot_count:
+                slot_index = int(token[len(SLOT_PREFIX) :])
+                if slot_index >= self.slot_count:
                     return False
             except ValueError:
                 return False
-            return self._complete_expr("placeholder")
+            already_seen = slot_index in self.current_section_slot_ids
+            self.current_section_slot_ids.add(slot_index)
+            if self._complete_expr("placeholder"):
+                return True
+            if not already_seen:
+                self.current_section_slot_ids.discard(slot_index)
+            return False
         if token.startswith(STATE_REF_PREFIX):
             return self._complete_expr("any")
         if token.startswith(DIR_PREFIX):
@@ -1093,6 +1106,8 @@ class ChoiceDecodeState:
                 for frame in self.frames
             ),
             tuple(self.section_types),
+            tuple(self.section_slot_ids),
+            tuple(sorted(self.current_section_slot_ids)),
             self.current_marker,
             self.valid_root_seen,
             self.literal_frame,
