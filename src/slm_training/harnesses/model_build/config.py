@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from slm_training.models.twotower_numeric_gates import (
+    NumericValidationError,
+    validate_model_build_config,
+)
+
 
 @dataclass
 class ModelBuildConfig:
@@ -69,6 +74,9 @@ class ModelBuildConfig:
     # string), no new arch value.
     recursive_detach_between_steps: bool = False
     recursive_depth_supervision_weights: tuple[float, ...] = ()
+    # SLM-238 (RSC-A02): explicit final-depth semantics for deep supervision.
+    recursive_depth_aux_mode: str | None = None
+    recursive_depth_aux_weight: float = 1.0
     # SLM-211: default-on tying; False creates an independent output head.
     tie_output_embedding: bool = True
     grammar_constrained: bool = True
@@ -444,6 +452,13 @@ class ModelBuildConfig:
     constraint_debt_routing_fallback_policy: str = "fixed_maskgit"
     constraint_debt_routing_budget_mode: str = "equal_verifier_budget"
     constraint_debt_routing_calibrator_path: Path | None = None
+
+    def __post_init__(self) -> None:
+        # SLM-242: fail-closed numeric/schedule gate.
+        try:
+            validate_model_build_config(self)
+        except NumericValidationError as exc:
+            raise ValueError(str(exc)) from exc
 
     @property
     def run_dir(self) -> Path:

@@ -21,6 +21,10 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
+from slm_training.models.twotower_numeric_gates import (
+    NumericValidationError,
+    validate_twotower_config,
+)
 from slm_training.models.recursive_denoiser import (
     SharedRecursiveDenoiserTower,
     StackedMatchedStateDenoiserTower,
@@ -603,6 +607,37 @@ class TwoTowerConfig:
     speculative_successor: bool = False
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+
+    def __post_init__(self) -> None:
+        # SLM-242: generic fail-closed numeric/schedule gate.
+        try:
+            validate_twotower_config(self)
+        except NumericValidationError as exc:
+            raise ValueError(str(exc)) from exc
+        # SLM-237/238: architecture-aware recursive-depth supervision gate.
+        if self.recursive_depth_supervision_weights or (
+            self.recursive_depth_aux_mode is not None
+        ):
+            resolved_mode = resolve_recursive_depth_aux_mode(
+                self.recursive_depth_aux_mode,
+                self.recursive_depth_supervision_weights,
+            )
+            supports = self.denoiser_arch in {
+                "shared_recursive",
+                "shared_recursive_y_only",
+                "shared_recursive_no_extra_capacity",
+            }
+            try:
+                validate_recursive_depth_supervision(
+                    weights=self.recursive_depth_supervision_weights,
+                    num_depths=self.recursive_steps,
+                    supports_recursive_outputs=supports,
+                    architecture=self.denoiser_arch,
+                    mode=resolved_mode,
+                    aux_weight=self.recursive_depth_aux_weight,
+                )
+            except ValueError as exc:
+                raise ValueError(str(exc)) from exc
 
 
 def _pad_batch(

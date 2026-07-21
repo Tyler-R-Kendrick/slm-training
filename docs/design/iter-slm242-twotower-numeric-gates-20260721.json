@@ -1,0 +1,118 @@
+{
+  "run_id": "iter_slm242_twotower_numeric_gates",
+  "status": "complete",
+  "claim_class": "wiring",
+  "quality_claim_made": false,
+  "issue": "SLM-242 (RSC-A06): Add a fail-closed property gate for every TwoTower weight and schedule vector",
+  "linear_context": "Follow-up to SLM-237/238 (RSC-A01/A02) recursive-depth supervision fixes; this issue makes every numeric/schedule field on ModelBuildConfig and TwoTowerConfig fail closed at construction time rather than silently truncating, zeroing, or ignoring invalid values.",
+  "components_touched": {
+    "model.twotower": "v80 -> v81",
+    "model.recursive_denoiser": "v10 no-bump (test expectations updated to match earlier raise)"
+  },
+  "files_changed": [
+    "src/slm_training/models/twotower_numeric_gates.py",
+    "src/slm_training/harnesses/model_build/config.py",
+    "src/slm_training/models/twotower.py",
+    "src/slm_training/harnesses/model_build/factory.py",
+    "scripts/train_model.py",
+    "tests/test_models/test_twotower_numeric_gates.py",
+    "tests/test_models/test_recursive_denoiser.py",
+    "src/slm_training/resources/versions.json"
+  ],
+  "new_module": {
+    "path": "src/slm_training/models/twotower_numeric_gates.py",
+    "responsibility": "Typed primitive validators (finite_scalar, non_negative_scalar, positive_scalar, interval_scalar, exact_length_vector, non_empty_vector, finite_non_negative_vector, positive_sum_vector, normalized_probability_vector, strictly_increasing_sequence, unique_enum_sequence, paired_equal_length_sequences, supported_capability_requirement) plus config-level validation reports and ModelBuildConfig/TwoTowerConfig fail-closed gates.",
+    "exports": [
+      "NumericValidationError",
+      "finite_scalar",
+      "non_negative_scalar",
+      "positive_scalar",
+      "interval_scalar",
+      "exact_length_vector",
+      "non_empty_vector",
+      "finite_non_negative_vector",
+      "positive_sum_vector",
+      "normalized_probability_vector",
+      "strictly_increasing_sequence",
+      "unique_enum_sequence",
+      "paired_equal_length_sequences",
+      "supported_capability_requirement",
+      "NumericScheduleValidationReportV1",
+      "validate_schedule_vector",
+      "validate_numeric_config",
+      "validate_model_build_config",
+      "validate_twotower_config"
+    ]
+  },
+  "config_gates": {
+    "ModelBuildConfig": {
+      "gate_location": "__post_init__",
+      "validator": "validate_model_build_config",
+      "checked_families": [
+        "positive architectural scalars (d_model, n_heads, layers, batch_size, steps, ...)",
+        "non-negative disabled-by-zero counters (recursive_transition_layers, eval_every, loss_eval_every, suffix_rollback_window, ...)",
+        "weight/threshold/margin/rate/frac/temperature/eps/bias suffix scalars",
+        "mask_min / mask_max in [0, 1] with mask_min <= mask_max",
+        "*_stages and *_buckets strictly increasing positive integers",
+        "recursive_depth_supervision_weights finite and non-negative",
+        "slot_component_class_weights / lexeme priors / span priors finite and non-negative",
+        "targeted_margin_family_weights finite and non-negative"
+      ]
+    },
+    "TwoTowerConfig": {
+      "gate_location": "__post_init__",
+      "validators": ["validate_twotower_config", "validate_recursive_depth_supervision"],
+      "notes": "Generic numeric gate plus the architecture-aware recursive-depth supervision gate from SLM-237/238, now invoked at config construction time when weights or recursive_depth_aux_mode are set."
+    }
+  },
+  "cli_changes": {
+    "scripts/train_model.py": [
+      "--recursive-depth-aux-mode choices: off, intermediate_only, all_depths, legacy_all_depths (default None)",
+      "--recursive-depth-aux-weight type=float default=1.0"
+    ]
+  },
+  "tests": {
+    "new_test_file": "tests/test_models/test_twotower_numeric_gates.py",
+    "total_tests_in_file": 28,
+    "coverage": {
+      "primitive_validators": "finite_scalar, non_negative_scalar, positive_scalar, interval_scalar, non_empty_vector, finite_non_negative_vector, positive_sum_vector, normalized_probability_vector, strictly_increasing_sequence, unique_enum_sequence",
+      "model_build_config_rejections": "negative/NaN/inf weights, mask_min > mask_max, mask outside [0,1], unsorted LTR stages, non-positive LTR stage, bad diffusion length buckets",
+      "twotower_config_recursive_depth_defects": [
+        "non-recursive arch with depth weights",
+        "wrong weight length",
+        "negative depth weight",
+        "NaN depth weight",
+        "intermediate_only with R=1 and non-empty weights",
+        "invalid aux_weight (NaN / negative)"
+      ]
+    },
+    "updated_test_file": "tests/test_models/test_recursive_denoiser.py",
+    "updated_tests": [
+      "test_training_loss_fails_closed_on_stacked_denoiser",
+      "test_training_loss_fails_closed_on_all_zero_weights",
+      "test_training_loss_fails_closed_on_length_mismatch"
+    ],
+    "updated_tests_rationale": "SLM-242 moves the recursive-depth supervision validation into TwoTowerConfig.__post_init__, so the same fail-closed invariant is now exercised at model construction time instead of inside training_loss()."
+  },
+  "verification": {
+    "pytest_command": "python -m pytest -q tests/test_harnesses/model_build tests/test_models tests/test_versioning",
+    "pytest_result": "908 passed, 1 skipped, 15 deselected",
+    "targeted_pytest_command": "python -m pytest tests/test_models/test_twotower_numeric_gates.py tests/test_models/test_recursive_denoiser.py tests/test_harnesses/model_build/test_factory_overrides.py -q",
+    "targeted_pytest_result": "143 passed, 1 skipped",
+    "repo_policy": "ok",
+    "version_stamps": "ok (model.twotower v81, model.recursive_denoiser v10 no-bump)",
+    "git_diff_check": "ok"
+  },
+  "recommended_next_iteration": "No further work in this issue. The fail-closed gate is now part of the construction path for both ModelBuildConfig and TwoTowerConfig. Future schedule/weight field additions that follow the existing *_weight / *_stages / *_buckets naming conventions will be gated automatically by validate_numeric_config; fields that do not match those conventions should be added explicitly to validate_numeric_config's family checks.",
+  "generated_at": "2026-07-21T04:23:05.945000+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ada0081bc85a9c0dce4d80c32b1ec9d98d1d3ebb",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v81",
+      "model.recursive_denoiser": "v10"
+    },
+    "stamped_at": "2026-07-21T04:23:05.945000+00:00"
+  }
+}
