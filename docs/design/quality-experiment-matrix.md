@@ -4851,3 +4851,13 @@ positive research baseline with the tradeoff recorded, not ship evidence:
 
 Evidence: [narrative](iter-e676-joint-role-carrier-20260721.md) and
 [JSON](iter-e676-joint-role-carrier-20260721.json).
+
+## E677 incomplete all-suite confirmation
+
+The combined five-suite E677 attempt ended after writing only Smoke and
+Held-out JSON. It produced no terminal payload, scoreboard, AgentEvals, or
+AgentV bundle. Treat every partial metric as invalid and retry suites
+independently. No checkpoint was created or synced.
+
+Evidence: [narrative](iter-e677-joint-role-all-suites-20260721.md) and
+[JSON](iter-e677-joint-role-all-suites-20260721.json).
