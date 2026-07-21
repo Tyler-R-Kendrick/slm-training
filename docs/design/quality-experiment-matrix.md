@@ -5023,7 +5023,7 @@ E646 tracked visible slots per completed top-level section and allowed the
 verified semantic root to reference supplemental slot-bearing sections. The
 policy-matched OOD `n=4` output and every quality metric remained exactly at
 E637. Reject the treatment stamped v80. After rebasing onto E645 restoration
-v82, the append-only lineage records E646 as treatment v83 and restoration v84:
+v83, the append-only lineage records E646 as treatment v84 and restoration v85:
 Gallery's missing roles must be recovered inside its planned subtree. No
 checkpoint was created or synced; AgentV remained 0/1.
 

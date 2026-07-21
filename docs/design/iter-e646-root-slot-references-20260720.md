@@ -32,8 +32,8 @@ AgentV SDK bundle without execution errors.
 Every prediction and quality metric matched E637. The missing Gallery roles
 therefore are not present in completed supplemental sections when the verified
 root is built. Reject the treatment stamped v80 and restore the baseline
-behavior. After rebasing onto E645 restoration v82, the append-only lineage
-records E646 as treatment v83 and restoration v84. The next lever must improve
+behavior. After rebasing onto E645 restoration v83, the append-only lineage
+records E646 as treatment v84 and restoration v85. The next lever must improve
 coverage inside the planned ImageGallery subtree. No checkpoint was created,
 synced, or promoted.
 

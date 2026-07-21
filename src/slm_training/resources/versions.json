@@ -2149,6 +2149,11 @@
       "history": [
         {
           "version": "v85",
+          "date": "2026-07-21",
+          "note": "no-bump: reconcile E646 evidence to treatment v84 and restoration v85 after integrating SLM-242 and E645 through v83; no model behavior change"
+        },
+        {
+          "version": "v85",
           "date": "2026-07-20",
           "note": "E646 rejection: restore v83 state and root references after supplemental slot-bearing reference tracking left every policy-matched output and metric unchanged; renumbered from the originally launched E640 arm after rebase"
         },
