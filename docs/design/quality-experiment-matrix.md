@@ -5330,3 +5330,15 @@ synced.
 
 Evidence: [narrative](iter-e710-role-binding-negative-margin-20260721.md) and
 [JSON](iter-e710-role-binding-negative-margin-20260721.json).
+
+## E711 planned role capacity before joint carriers
+
+E711 checks whether prompt-planned families can cover an entire role group before
+adding an unprompted joint carrier. The final five-suite `n=19` replay leaves all
+non-OOD quality metrics unchanged from E709. OOD strict rises 0.5→1.0, structure
+0.7073→0.7823, node F1 0.8056→0.85, and edge F1 0.6951→0.7486; reward shifts
+0.979→0.973. Retain v183 as scratch evidence. AgentV remains 0/5 and the Rico
+length budget still fails. No checkpoint was created or synced.
+
+Evidence: [narrative](iter-e711-planned-role-capacity-20260721.md) and
+[JSON](iter-e711-planned-role-capacity-20260721.json).

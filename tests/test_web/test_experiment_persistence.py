@@ -263,3 +263,29 @@ def test_e710_rejected_runs_persist_without_new_checkpoint(tmp_path: Path) -> No
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
     assert run_ids.isdisjoint(checkpoint_ids)
+
+
+def test_e711_retained_runs_persist_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_ids = {
+        "e711-required-role-capacity-r1",
+        "e711-required-role-capacity-r3",
+        "e711-required-role-capacity-r4",
+    }
+
+    visible_run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    assert run_ids <= visible_run_ids
+    retained = readers.run("e711-required-role-capacity-r4")
+    assert retained["provenance"] == "committed"
+    assert (
+        retained["scoreboard"]["suites"]["ood"][
+            "binding_aware_meaningful_v2_rate_strict"
+        ]
+        == 1.0
+    )
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_ids.isdisjoint(checkpoint_ids)

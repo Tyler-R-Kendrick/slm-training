@@ -3518,7 +3518,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v182",
+      "version": "v183",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3538,6 +3538,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v183",
+          "date": "2026-07-21",
+          "note": "E711: avoid unprompted joint role carriers when the prompt-planned families can cover the full role group within schema capacity"
+        },
         {
           "version": "v182",
           "date": "2026-07-21",
