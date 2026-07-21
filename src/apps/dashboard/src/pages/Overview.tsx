@@ -49,6 +49,8 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
   const dispData = {
     rows: (dispRaw?.jobs ?? []).map((j: any) => ({ id: j.id, job: j.job_key, status: j.status, url: j.remote_url })),
     remotes: (dispRaw?.remotes ?? []).map((r: any) => ({ run_id: r.run_id, url: r.url })),
+    hf_jobs: dispRaw?.hf_jobs,
+    bucket: dispRaw?.bucket,
   };
 
   return (
@@ -67,7 +69,14 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
         <Card title="Live jobs" right={<JobsBadgeView data={jobsData} />}>
           <JobLines data={jobsData} />
         </Card>
-        <Card title="Remote dispatches" right={<span className="prov prov-committed">hf jobs / pods</span>}>
+        <Card
+          title="Remote dispatches"
+          right={
+            <span className={`prov ${dispRaw?.provenance === "live" ? "prov-live" : "prov-committed"}`}>
+              hf jobs / bucket
+            </span>
+          }
+        >
           <DispatchLines data={dispData} navigate={navigate} />
         </Card>
       </div>
@@ -162,7 +171,7 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
           }}
         />
         <p className="hint" style={{ marginTop: "0.6rem" }}>
-          Persisted {cache.generated_at ?? "—"}; regenerated only when the model-card checkpoint roster or a track champion changes.
+          Persisted {cache.generated_at ?? "—"}; insight prose regenerates when the model-card roster, a track champion, or committed experiment boards change. Comparison rows always recompute.
         </p>
       </Card>
     </div>

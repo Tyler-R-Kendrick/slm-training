@@ -115,22 +115,25 @@ export const toolProvider: Record<string, QueryFn> = {
   overview_system: async () => {
     const d: any = await getJSON("/api/overview");
     const dep = d.system?.deployment ?? {};
+    const fresh = d.system?.freshness ?? {};
     return {
       rows: [
         { k: "checkpoint bucket", v: d.system?.checkpoint_bucket ?? "—" },
         { k: "deployed model", v: dep.selected ? "selected" : "none" },
         { k: "outputs/ present", v: String(d.system?.outputs_present) },
+        { k: "newest experiment", v: String(fresh.newest_experiment_date ?? "—") },
+        { k: "bucket runs", v: fresh.bucket?.ok ? String(fresh.bucket.count ?? 0) : String(fresh.bucket?.error ?? "—") },
         { k: "test suites", v: Object.entries(d.test_data?.suites ?? {}).map(([s, n]) => `${s}:${n}`).join("  ") },
       ],
     };
   },
   checkpoints_roster: async () => {
-    const [ck, ov]: any = await Promise.all([getJSON("/api/checkpoints"), getJSON("/api/overview").catch(() => ({}))]);
+    const ck: any = await getJSON("/api/checkpoints");
     return {
       rows: (ck.checkpoints ?? [])
         .slice(0, 8)
         .map((c: any) => ({ role: c.role, run_id: c.run_id || "—", kind: c.kind, status: c.status })),
-      provenance: ov.runs_provenance,
+      provenance: ck.provenance ?? "committed",
     };
   },
   dispatches: async () => {
@@ -139,6 +142,9 @@ export const toolProvider: Record<string, QueryFn> = {
       rows: (d.jobs ?? []).map((j: any) => ({ id: j.id, job: j.job_key, status: j.status, url: j.remote_url })),
       remotes: (d.remotes ?? []).map((r: any) => ({ run_id: r.run_id, url: r.url })),
       bucket_url: d.bucket_url,
+      hf_jobs: d.hf_jobs,
+      bucket: d.bucket,
+      provenance: d.provenance,
     };
   },
 
@@ -343,7 +349,8 @@ export const toolProvider: Record<string, QueryFn> = {
     const d: any = await getJSON("/api/checkpoints");
     const checkpoints = d.checkpoints ?? [];
     return {
-      provenance: checkpoints.some((c: any) => c.provenance === "live") ? "live" : "committed",
+      provenance: d.provenance ?? "committed",
+      bucket: d.bucket ?? {},
       rows: checkpoints.map((c: any) => ({
         role: c.role,
         run_id: c.run_id || "—",
@@ -352,6 +359,7 @@ export const toolProvider: Record<string, QueryFn> = {
         model_size: c.model_size,
         throughput: c.throughput,
         status: c.status,
+        source: c.source || "—",
       })),
     };
   },

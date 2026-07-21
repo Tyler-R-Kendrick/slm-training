@@ -19,6 +19,8 @@ import json
 import os
 import re
 import tempfile
+import time
+from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable
@@ -40,8 +42,17 @@ from slm_training.autoresearch.run_insights import (
 )
 from slm_training.lineage.records import content_sha
 from slm_training.lineage.store import LineageStore, utc_now
+from slm_training.harnesses.model_build.checkpoint_bucket import (
+    DEFAULT_CHECKPOINT_BUCKET_URI,
+    list_bucket_checkpoint_runs,
+)
 from slm_training.web.comparisons import BlindedComparisonStore
 from slm_training.web.deployments import DeploymentRegistry
+
+# HF Jobs list is best-effort and optional (needs HF_TOKEN). Cache briefly so
+# overview polling does not open a Hub round-trip every 15s.
+_HF_JOBS_CACHE: dict[str, Any] = {"ts": 0.0, "payload": None}
+_HF_JOBS_TTL_S = 30.0
 
 # docs/design scoreboard file names by matrix kind.
 SCOREBOARD_FILES: dict[str, str] = {
@@ -105,6 +116,15 @@ def _first_remote_url(text: str | None) -> str | None:
     return match.group(0).rstrip(".,)'\"") if match else None
 
 
+def _iso_mtime(path: Path) -> str | None:
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+    except OSError:
+        return None
+
+
 def _read_text_tail(path: Path, nbytes: int = 4000) -> str:
     try:
         with open(path, "rb") as handle:
@@ -165,6 +185,27 @@ def _parse_markdown_table(text: str, heading: str) -> list[dict[str, str]]:
 def _plain_markdown(value: str | None) -> str:
     text = re.sub(r"\[([^]]+)]\([^)]+\)", r"\1", value or "")
     return text.replace("`", "").replace("**", "").strip()
+
+
+def _newest_history_row(history: list[dict[str, str]]) -> dict[str, str] | None:
+    """Newest model-card Checkpoint-history row by date column.
+
+    The table has accumulated both prepended and appended rows, so position is
+    unreliable. ISO dates compare lexicographically; ``max`` keeps the first
+    occurrence on ties, matching the newest-first order used within a date.
+    """
+    if not history:
+        return None
+    return max(history, key=lambda row: _plain_markdown(row.get("date (utc)")))
+
+
+_STEM_DATE_RE = re.compile(r"(20\d{2})(\d{2})(\d{2})$")
+
+
+def _stem_date(stem: str) -> str | None:
+    """ISO date from a docs/design filename stem ending in YYYYMMDD."""
+    match = _STEM_DATE_RE.search(stem)
+    return "-".join(match.groups()) if match else None
 
 
 def _format_parameters(value: int | None, *, estimated: bool = False) -> str:
@@ -659,7 +700,9 @@ class Readers:
                     or payload.get("verdict")
                     or payload.get("status")
                     or path.stem,
-                    "date": payload.get("date_utc") or payload.get("date"),
+                    "date": payload.get("date_utc")
+                    or payload.get("date")
+                    or _stem_date(path.stem),
                     "pass": gate_pass,
                     "raw_gate_pass": raw_gate_pass,
                     "claim_class": claim_class,
@@ -698,6 +741,24 @@ class Readers:
             for row in self._load_live_matrix_rows()
             if _infer_matrix_kind(row) == kind
         ]
+
+    def _experiment_board_fingerprint(self) -> str:
+        """Identity of committed experiment boards for insight-cache invalidation."""
+        identity: list[tuple[str, str | None, bool | None, str | None]] = []
+        for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar"):
+            board = self.scoreboard(kind)
+            for row in board.get("results") or []:
+                if not isinstance(row, dict):
+                    continue
+                identity.append(
+                    (
+                        kind,
+                        str(row.get("id") or row.get("run_id") or "") or None,
+                        row.get("pass") if isinstance(row.get("pass"), bool) else None,
+                        str(row.get("date") or "") or None,
+                    )
+                )
+        return content_sha({"boards": identity})
 
     def _scoreboard_uncached(self, kind: str) -> dict[str, Any]:
         if kind == RESEARCH_SCOREBOARD_KIND:
@@ -829,7 +890,9 @@ class Readers:
                         "id": run_id,
                         "run_id": run_id,
                         "description": f"{description} ({matched.get('label') or run_id})",
-                        "date": payload.get("date_utc") or payload.get("date"),
+                        "date": payload.get("date_utc")
+                        or payload.get("date")
+                        or _stem_date(path.stem),
                         "pass": gate_pass,
                         "suites": normalized_suites,
                         "agentv": matched.get("agentv") or payload.get("agentv"),
@@ -963,6 +1026,7 @@ class Readers:
                         "run_id": row.get("run_id") or row.get("id"),
                         "experiment_id": row.get("id"),
                         "matrix": kind,
+                        "date": row.get("date"),
                         "pass": row.get("pass"),
                         "description": row.get("description"),
                         "checkpoint": row.get("checkpoint"),
@@ -998,6 +1062,7 @@ class Readers:
                     "run_id": row.get("run_id") or row.get("id"),
                     "experiment_id": row.get("id"),
                     "matrix": RESEARCH_SCOREBOARD_KIND,
+                    "date": row.get("date"),
                     "pass": row.get("pass"),
                     "description": row.get("description"),
                     "checkpoint": row.get("checkpoint"),
@@ -1012,6 +1077,10 @@ class Readers:
                     ),
                 }
             )
+        # Newest evidence first: the merged list is truncated by the overview,
+        # so board order (stale matrix mirrors before the research catch-all)
+        # must not decide what survives. Undated rows sort last.
+        derived.sort(key=lambda row: str(row.get("date") or ""), reverse=True)
         known = {row.get("run_id") for row in live}
         for row in derived:
             if row.get("run_id") not in known:
@@ -1413,13 +1482,134 @@ class Readers:
             ),
         }
 
+    def _local_run_checkpoints(self) -> list[dict[str, Any]]:
+        """Scan ``outputs/runs/*/`` for train summaries / bucket sidecars."""
+        runs_dir = self.outputs / "runs"
+        if not runs_dir.exists():
+            return []
+        rows: list[dict[str, Any]] = []
+        for run_dir in sorted(runs_dir.iterdir(), reverse=True):
+            if not run_dir.is_dir():
+                continue
+            run_id = run_dir.name
+            if not _RUN_ID_RE.fullmatch(run_id):
+                continue
+            summary = _read_json(run_dir / "train_summary.json") or {}
+            bucket = _read_json(run_dir / "checkpoint_bucket.json") or {}
+            matrix = _read_json(run_dir / "matrix_result.json") or {}
+            ckpt = run_dir / "last.pt"
+            if not ckpt.exists():
+                nested = run_dir / "checkpoints" / "last.pt"
+                if nested.exists():
+                    ckpt = nested
+            if not summary and not bucket and not matrix and not ckpt.exists():
+                continue
+            location = (
+                bucket.get("remote_uri")
+                or bucket.get("bucket_url")
+                or (
+                    str(ckpt.relative_to(self.root))
+                    if ckpt.exists()
+                    else f"outputs/runs/{run_id}/"
+                )
+            )
+            status = (
+                "synced"
+                if bucket.get("remote_uri") or bucket.get("bucket_url")
+                else "local"
+            )
+            rows.append(
+                {
+                    "role": "Local training run",
+                    "run_id": run_id,
+                    "kind": str(
+                        (summary.get("track") or {}).get("name")
+                        if isinstance(summary.get("track"), dict)
+                        else summary.get("context_backend")
+                        or "training run"
+                    ),
+                    "location": location,
+                    "status": status,
+                    "source": "local_runs",
+                    "provenance": "live",
+                    "mtime": (
+                        summary.get("finished_at")
+                        or summary.get("created_at")
+                        or bucket.get("synced_at")
+                    ),
+                }
+            )
+        return rows
+
+    def _bucket_checkpoints(self) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        inventory = list_bucket_checkpoint_runs()
+        rows: list[dict[str, Any]] = []
+        for item in inventory.get("runs") or []:
+            if not isinstance(item, dict):
+                continue
+            run_id = str(item.get("run_id") or "")
+            if not run_id:
+                continue
+            rows.append(
+                {
+                    "role": "HF bucket checkpoint",
+                    "run_id": run_id,
+                    "kind": "hf bucket",
+                    "location": item.get("uri") or item.get("url") or "",
+                    "status": "remote",
+                    "source": "bucket",
+                    "provenance": "bucket",
+                    "mtime": item.get("mtime"),
+                }
+            )
+        return rows, inventory
+
     def checkpoints(
         self, *, deployment: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         roster: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        sources = {
+            "model_card": 0,
+            "lineage": 0,
+            "local_runs": 0,
+            "bucket": 0,
+            "fixtures": 0,
+        }
+
+        def _add(row: dict[str, Any]) -> None:
+            run_id = str(row.get("run_id") or "")
+            source = str(row.get("source") or "")
+            # Keep first hit per run_id so model-card / lineage roles win over
+            # generic local/bucket duplicates, while still counting sources.
+            if source in sources:
+                sources[source] += 1
+            if run_id and run_id in seen:
+                # Upgrade a committed row when later live/bucket evidence arrives
+                # for the same run — otherwise the roster looks frozen even when
+                # the HF bucket is current.
+                if row.get("provenance") in {"live", "bucket"}:
+                    for existing in roster:
+                        if existing.get("run_id") != run_id:
+                            continue
+                        if existing.get("provenance") == "committed":
+                            existing["provenance"] = row["provenance"]
+                        if row.get("location") and (
+                            not existing.get("location")
+                            or str(existing.get("location")).startswith("outputs/")
+                        ):
+                            existing["location"] = row["location"]
+                        if row.get("mtime") and not existing.get("mtime"):
+                            existing["mtime"] = row["mtime"]
+                        break
+                return
+            if run_id:
+                seen.add(run_id)
+            roster.append(row)
+
         card_roster, _ = self._model_card_rows()
         for row in card_roster:
-            roster.append(
+            _add(
                 {
                     "role": row.get("role", ""),
                     "run_id": row.get("run id", "").strip("`"),
@@ -1434,7 +1624,7 @@ class Readers:
         champions = self.champions()["champions"]
         for track, pointer in champions.items():
             if pointer:
-                roster.append(
+                _add(
                     {
                         "role": f"Champion ({track})",
                         "run_id": pointer.get("run_id", ""),
@@ -1445,11 +1635,16 @@ class Readers:
                         "provenance": "live",
                     }
                 )
+        for row in self._local_run_checkpoints():
+            _add(row)
+        bucket_rows, bucket_inventory = self._bucket_checkpoints()
+        for row in bucket_rows:
+            _add(row)
         # Fixture checkpoints on disk.
         fx = self.fixtures / "checkpoints"
         if fx.exists():
             for ckpt in sorted(fx.glob("*/last.pt")):
-                roster.append(
+                _add(
                     {
                         "role": "Fixture checkpoint",
                         "run_id": ckpt.parent.name,
@@ -1460,27 +1655,26 @@ class Readers:
                         "provenance": "committed",
                     }
                 )
-        roster_ids = {row.get("run_id") for row in roster}
-        for ckpt in self._checkpoint_paths():
-            run_id = ckpt.parent.parent.name
-            if run_id in roster_ids:
-                continue
-            roster.append(
-                {
-                    "role": "Live checkpoint",
-                    "run_id": run_id,
-                    "kind": "outputs checkpoint",
-                    "location": ckpt.relative_to(self.root).as_posix()
-                    if ckpt.is_relative_to(self.root)
-                    else ckpt.as_posix(),
-                    "status": "local artifact",
-                    "source": "outputs",
-                    "provenance": "live",
-                }
-            )
-            roster_ids.add(run_id)
+        provenances = {str(row.get("provenance") or "") for row in roster}
+        if "live" in provenances or sources["local_runs"] or sources["lineage"]:
+            aggregate = "live"
+        elif "bucket" in provenances or sources["bucket"]:
+            aggregate = "bucket"
+        else:
+            aggregate = "committed"
         return {
             "checkpoints": [self._with_resource_metrics(row) for row in roster],
+            "provenance": aggregate,
+            "sources": sources,
+            "bucket": {
+                "ok": bucket_inventory.get("ok"),
+                "count": bucket_inventory.get("count")
+                or len(bucket_inventory.get("runs") or []),
+                "updated_at": bucket_inventory.get("bucket_updated_at"),
+                "url": bucket_inventory.get("url"),
+                "error": bucket_inventory.get("error"),
+                "fetched_at": bucket_inventory.get("fetched_at"),
+            },
             "deployment": deployment
             if deployment is not None
             else self.deployment_state(),
@@ -1900,10 +2094,90 @@ class Readers:
 
     # ---- remote dispatch monitoring ------------------------------------------
 
+    def _hf_jobs(self) -> dict[str, Any]:
+        """Best-effort ``HfApi.list_jobs`` (needs HF_TOKEN). Never raises."""
+        now = time.time()
+        cached = _HF_JOBS_CACHE
+        if (
+            isinstance(cached.get("payload"), dict)
+            and now - float(cached.get("ts") or 0.0) < _HF_JOBS_TTL_S
+        ):
+            return dict(cached["payload"])
+        if os.environ.get("SLM_DISABLE_REMOTE_INVENTORY", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }:
+            payload = {
+                "ok": False,
+                "jobs": [],
+                "error": "remote inventory disabled (SLM_DISABLE_REMOTE_INVENTORY)",
+                "auth": False,
+            }
+            _HF_JOBS_CACHE.update({"ts": now, "payload": payload})
+            return dict(payload)
+        try:
+            from huggingface_hub import HfApi, get_token  # type: ignore
+        except ImportError:
+            payload = {
+                "ok": False,
+                "jobs": [],
+                "error": "huggingface_hub not installed",
+                "auth": False,
+            }
+            _HF_JOBS_CACHE.update({"ts": now, "payload": payload})
+            return dict(payload)
+        token = get_token()
+        if not token:
+            payload = {
+                "ok": False,
+                "jobs": [],
+                "error": "HF_TOKEN missing — cannot list HF Jobs",
+                "auth": False,
+            }
+            _HF_JOBS_CACHE.update({"ts": now, "payload": payload})
+            return dict(payload)
+        try:
+            raw = list(HfApi(token=token).list_jobs(timeout=15, token=token))
+        except Exception as exc:
+            payload = {
+                "ok": False,
+                "jobs": [],
+                "error": str(exc),
+                "auth": True,
+            }
+            _HF_JOBS_CACHE.update({"ts": now, "payload": payload})
+            return dict(payload)
+        jobs: list[dict[str, Any]] = []
+        for job in raw:
+            job_id = getattr(job, "id", None) or getattr(job, "job_id", None)
+            status = getattr(job, "status", None)
+            status_s = (
+                getattr(status, "stage", None)
+                or getattr(status, "status", None)
+                or status
+            )
+            created = getattr(job, "created_at", None) or getattr(job, "createdAt", None)
+            url = f"https://huggingface.co/jobs/{job_id}" if job_id else None
+            jobs.append(
+                {
+                    "id": str(job_id) if job_id else None,
+                    "job_key": "hf_jobs",
+                    "status": str(status_s) if status_s is not None else "unknown",
+                    "created_at": str(created) if created is not None else None,
+                    "ended_at": None,
+                    "remote_url": url,
+                    "source": "hf_jobs",
+                }
+            )
+        payload = {"ok": True, "jobs": jobs, "error": None, "auth": True}
+        _HF_JOBS_CACHE.update({"ts": now, "payload": payload})
+        return dict(payload)
+
     def dispatches(self) -> dict[str, Any]:
         """Surface dispatched (remote GPU) trains: dispatch-kind jobs + their
-        parsed remote handle, plus durable remotes from synced runs. Reads the
-        persisted job meta/log so it works read-only and after a restart."""
+        parsed remote handle, plus durable remotes from synced runs / the HF
+        bucket, plus live HF Jobs when authenticated."""
         jobs: list[dict[str, Any]] = []
         jobs_dir = self.outputs / "jobs"
         if jobs_dir.exists():
@@ -1922,26 +2196,66 @@ class Readers:
                         "created_at": meta.get("created_at"),
                         "ended_at": meta.get("ended_at"),
                         "remote_url": remote_url,
+                        "source": "local_dispatch",
                     }
                 )
         remotes: list[dict[str, Any]] = []
+        seen_remote: set[str] = set()
         runs_dir = self.outputs / "runs"
         if runs_dir.exists():
             for cb_path in sorted(runs_dir.glob("*/checkpoint_bucket.json")):
                 cb = _read_json(cb_path) or {}
                 if cb.get("bucket_url") or cb.get("remote_uri"):
+                    run_id = str(cb.get("run_id", cb_path.parent.name))
+                    seen_remote.add(run_id)
                     remotes.append(
                         {
-                            "run_id": cb.get("run_id", cb_path.parent.name),
+                            "run_id": run_id,
                             "url": cb.get("bucket_url"),
                             "uri": cb.get("remote_uri"),
+                            "source": "local_sidecar",
                         }
                     )
+        bucket_inventory = list_bucket_checkpoint_runs()
+        for item in bucket_inventory.get("runs") or []:
+            if not isinstance(item, dict):
+                continue
+            run_id = str(item.get("run_id") or "")
+            if not run_id or run_id in seen_remote:
+                continue
+            seen_remote.add(run_id)
+            remotes.append(
+                {
+                    "run_id": run_id,
+                    "url": item.get("url"),
+                    "uri": item.get("uri"),
+                    "source": "bucket",
+                    "mtime": item.get("mtime"),
+                }
+            )
+        hf_jobs = self._hf_jobs()
+        for job in hf_jobs.get("jobs") or []:
+            if isinstance(job, dict):
+                jobs.append(job)
+        live = bool(jobs or remotes or hf_jobs.get("ok"))
         return {
-            "provenance": "live" if (jobs or remotes) else "committed",
+            "provenance": "live" if live else "committed",
             "jobs": jobs,
             "remotes": remotes,
-            "bucket_url": "https://huggingface.co/buckets/TKendrick/OpenUI",
+            "bucket_url": bucket_inventory.get("url")
+            or "https://huggingface.co/buckets/TKendrick/OpenUI",
+            "bucket": {
+                "ok": bucket_inventory.get("ok"),
+                "count": bucket_inventory.get("count"),
+                "updated_at": bucket_inventory.get("bucket_updated_at"),
+                "error": bucket_inventory.get("error"),
+            },
+            "hf_jobs": {
+                "ok": hf_jobs.get("ok"),
+                "auth": hf_jobs.get("auth"),
+                "count": len(hf_jobs.get("jobs") or []),
+                "error": hf_jobs.get("error"),
+            },
         }
 
     # ---- reference model + persisted performance insights -------------------
@@ -2033,10 +2347,13 @@ class Readers:
                 }
             )
 
-        # The final history row is the newest checkpoint recorded by the canonical
-        # model card. Keep it beside champions even when it has not been promoted.
-        if history:
-            newest = history[-1]
+        # The newest history row is the newest checkpoint recorded by the
+        # canonical model card. Keep it beside champions even when it has not
+        # been promoted. Agents have both prepended and appended to that table,
+        # so select by date (first occurrence wins ties — the table is
+        # newest-first within a date) rather than trusting row position.
+        newest = _newest_history_row(history)
+        if newest is not None:
             run_id = _plain_markdown(newest.get("run id"))
             matched = next(
                 (
@@ -2098,11 +2415,8 @@ class Readers:
                     for row in roster
                 ],
                 "latest_checkpoint_history": (
-                    {
-                        key: _plain_markdown(value)
-                        for key, value in history[-1].items()
-                    }
-                    if history
+                    {key: _plain_markdown(value) for key, value in newest.items()}
+                    if newest is not None
                     else None
                 ),
             }
@@ -2267,19 +2581,22 @@ class Readers:
 
     def performance_insights(self) -> dict[str, Any]:
         references, reference_identity = self._reference_models()
-        # The insight cache regenerates when the roster/champions change (by
-        # design) — and also when the gate policy changes, since every finding
-        # is derived from the policy's metric levers.
+        # Insight prose caches against the reference roster *and* the committed
+        # experiment boards — otherwise Improve/Carry/Novel stay frozen while
+        # new docs/design evidence lands.
         fingerprint = content_sha(
             {
                 "references": reference_identity,
                 "gate_policy": DEFAULT_SHIP_GATES,
-                "experiments": _path_stat_fingerprint(
-                    [
-                        *sorted(self.docs_design.glob("*.json")),
-                        *self._live_evidence_paths(),
-                    ]
-                ),
+                "experiments": {
+                    "paths": _path_stat_fingerprint(
+                        [
+                            *sorted(self.docs_design.glob("*.json")),
+                            *self._live_evidence_paths(),
+                        ]
+                    ),
+                    "boards": self._experiment_board_fingerprint(),
+                },
             }
         )
         rows, primary = self._performance_rows(references)
@@ -2342,18 +2659,60 @@ class Readers:
 
     # ---- system + overview aggregate -----------------------------------------
 
-    def system(self, *, deployment: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _outputs_present(self) -> bool:
+        """True when durable training artifacts exist — not dashboard caches."""
         try:
-            # An existing-but-empty outputs/ is still a cold start.
-            outputs_present = self.outputs.exists() and any(self.outputs.iterdir())
+            if not self.outputs.exists():
+                return False
+            for name in ("runs", "jobs", "lineage", "data"):
+                path = self.outputs / name
+                if path.exists() and any(path.iterdir()):
+                    return True
         except OSError:
-            outputs_present = False
+            return False
+        return False
+
+    def freshness(self) -> dict[str, Any]:
+        """Compact moving-target digest for the shell freshness banner."""
+        research = self.scoreboard(RESEARCH_SCOREBOARD_KIND)
+        newest_experiment = None
+        for row in research.get("results") or []:
+            if isinstance(row, dict) and row.get("date"):
+                newest_experiment = str(row["date"])
+                break
+        local_runs = self._local_run_checkpoints()
+        bucket = list_bucket_checkpoint_runs()
+        hf_jobs = self._hf_jobs()
         return {
-            "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+            "outputs_present": self._outputs_present(),
+            "newest_experiment_date": newest_experiment,
+            "experiment_count": research.get("count") or 0,
+            "model_card_mtime": _iso_mtime(self.model_card),
+            "local_run_count": len(local_runs),
+            "bucket": {
+                "ok": bucket.get("ok"),
+                "count": bucket.get("count") or 0,
+                "updated_at": bucket.get("bucket_updated_at"),
+                "error": bucket.get("error"),
+            },
+            "hf_jobs": {
+                "ok": hf_jobs.get("ok"),
+                "auth": hf_jobs.get("auth"),
+                "count": len(hf_jobs.get("jobs") or []),
+                "error": hf_jobs.get("error"),
+            },
+            "checkpoint_bucket": DEFAULT_CHECKPOINT_BUCKET_URI,
+        }
+
+    def system(self, *, deployment: dict[str, Any] | None = None) -> dict[str, Any]:
+        fresh = self.freshness()
+        return {
+            "checkpoint_bucket": DEFAULT_CHECKPOINT_BUCKET_URI,
             "deployment": deployment
             if deployment is not None
             else self.deployment_state(),
-            "outputs_present": outputs_present,
+            "outputs_present": bool(fresh.get("outputs_present")),
+            "freshness": fresh,
         }
 
     def overview(self) -> dict[str, Any]:
