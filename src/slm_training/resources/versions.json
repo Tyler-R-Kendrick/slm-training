@@ -506,6 +506,22 @@
         }
       ]
     },
+    "harness.autoresearch.openfeature": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/autoresearch/openfeature.py",
+        "tests/test_autoresearch/test_openfeature.py",
+        "docs/design/openfeature-experiments.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; OpenFeature (CNCF) representation of typed autoresearch experiments: flagd flag-definition export (knob flags, experiment-id variants, JsonLogic targeting) plus fail-closed ExperimentFlagProvider over ExperimentSpec knobs"
+        }
+      ]
+    },
     "harness.core": {
       "version": "v1",
       "kind": "harness",
@@ -2853,6 +2869,11 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "no-bump: scripts/autoresearch.py gains an export-openfeature subcommand (flagd flag-definition export of a hypothesis matrix); remine campaign behavior unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-19",

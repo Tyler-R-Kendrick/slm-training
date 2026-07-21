@@ -28,6 +28,7 @@ dev = [
   "httpx>=0.27,<1",
   "fastapi>=0.110,<1",
   "torch>=2.2,<2.6",
+  "openfeature-sdk>=0.7,<1",
 ]
 grammar = [
   "lark>=1.1",
@@ -60,6 +61,11 @@ mcp = [
   "fastmcp>=2.0,<3",
   "httpx>=0.27,<1",
   "python-dotenv>=1.0,<2",
+]
+# In-process OpenFeature provider over autoresearch experiments
+# (slm_training.autoresearch.openfeature); the flagd export needs no extra.
+openfeature = [
+  "openfeature-sdk>=0.7,<1",
 ]
 research = [
   "huggingface_hub>=0.30,<2",
