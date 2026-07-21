@@ -3342,6 +3342,47 @@ Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
 `outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
 `docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.
 
+## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
+
+E303/V18's deep-supervision auxiliary loss (`recursive_depth_supervision_weights`
+in `TwoTowerModel.training_loss`) had a live defect surfaced by the SLM-138
+adversarial audit ledger: the loop bound each per-depth weight `w` but never
+multiplied `d_loss` by it, computing `sum_d(L_d) / sum_d(w_d)` (an unweighted
+mean) instead of the intended `sum_d(w_d * L_d) / sum_d(w_d)`. The already-committed
+`docs/design/iter-slm138-recursive-denoiser-20260720.md` fixture values prove
+this numerically: `(L0 + L1) / 1.5 = 33.328...` exactly matches its recorded
+`recursive_depth_supervision_loss`, the defective formula, not the intended one.
+
+Independently reproduced (against the real pre-patch production code via
+`git stash`, not a re-implementation) and fixed:
+
+| # | Failure mode | Before | After |
+| --- | --- | --- | --- |
+| 1 | `(0, 1)` includes L0 (zero doesn't disable a depth) | `aux=61.2788 != L1=29.8113` | `aux == L1` exactly |
+| 2 | `(0.5, 1)` vs `(1, 2)` — should be the same normalized mean | exact 2x scale difference (`40.8526` vs `20.4263`) | identical (`30.3634` both) |
+| 3 | `(0, 0)` silently disables the objective and its telemetry | no error, no aux metrics logged | raises `ValueError` before any loss/backward |
+| 4 | Negative weights not rejected | accepted unchecked | raises `ValueError` |
+| 5 | Length mismatch silently truncated via `min(...)` | only depth 0 logged, depth 1 dropped silently | raises `ValueError` |
+| 6 | Weights on a denoiser without `recursive_outputs` silently ignored | no error, no aux term (confirmed in this repo's own `run_slm138_recursive_denoiser_fixture.py`, which applied the weights to the `stacked` arm too) | raises `ValueError`; fixture corrected to only weight the `shared_recursive` arm |
+
+Fix: a canonical `validate_recursive_depth_supervision` /
+`ValidatedDepthSupervision` validator (owned by `twotower.py`, called
+unconditionally right after the denoiser forward pass) fails closed on all
+six modes; the corrected weighted objective and new
+`recursive_depth_weight_{d}` / `recursive_depth_weighted_contribution_{d}` /
+`recursive_depth_supervision_weight_sum` / `recursive_depth_supervision_enabled`
+telemetry make raw and weighted per-depth terms independently inspectable.
+Empty-tuple backward compatibility (feature explicitly off) is unchanged on
+every architecture. 17 new deterministic tests in
+`tests/test_models/test_recursive_denoiser.py` (26 total, all passing) cover
+every property required by SLM-237. Full before/after evidence:
+`docs/design/iter-rsc-a01-depth-supervision-weighting-fix-20260721.json` and `.md`.
+
+**No quality claim is made from this patch** — it is a correctness fix only,
+per SLM-237's own acceptance criteria. RSC-A02 (whether the final recursion
+depth belongs in the auxiliary term) is out of scope. Version bumps:
+`model.twotower` v62 → v63, `model.recursive_denoiser` v1 → v2.
+
 ## V19 stochastic recursive width (SLM-139) — closed
 
 SLM-139 gates on a positive shared-recursive verdict from SLM-138.  SLM-138

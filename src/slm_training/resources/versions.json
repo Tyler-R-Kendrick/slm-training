@@ -1387,7 +1387,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v62",
+      "version": "v63",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1402,6 +1402,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v63",
+          "date": "2026-07-21",
+          "note": "SLM-237 (RSC-A01): fixed the recursive_depth_supervision_weights training_loss defect -- the loop bound each per-depth weight but never multiplied by it, computing sum(L_d)/sum(w_d) (an unweighted mean) instead of the intended sum(w_d*L_d)/sum(w_d). Added validate_recursive_depth_supervision/ValidatedDepthSupervision: fails closed on unsupported architecture, length mismatch, negative/NaN/inf weights, and all-zero configs (previously all silently accepted/truncated/ignored); empty tuple remains feature-off with no behavior change. Added recursive_depth_weight_{d}/recursive_depth_weighted_contribution_{d}/recursive_depth_supervision_weight_sum/recursive_depth_supervision_enabled telemetry. RSC-A02 (whether the final depth belongs in the auxiliary term) is out of scope."
+        },
         {
           "version": "v62",
           "date": "2026-07-20",
@@ -1730,7 +1735,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -1740,6 +1745,11 @@
         "docs/design/iter-slm138-recursive-denoiser-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "SLM-237 (RSC-A01): added 17 deterministic regression tests for the corrected weighted deep-supervision objective and the new validate_recursive_depth_supervision fail-closed validator (tests/test_models/test_recursive_denoiser.py). Fixed scripts/run_slm138_recursive_denoiser_fixture.py's own latent instance of failure mode #6 -- it applied recursive_depth_supervision_weights=(0.5, 1.0) to the 'stacked' arm too, which the old code silently ignored and the new fail-closed validator correctly rejects; now only the 'shared_recursive' arm sets the weights."
+        },
         {
           "version": "v1",
           "date": "2026-07-20",

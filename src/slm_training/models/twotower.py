@@ -614,6 +614,108 @@ def _load_checkpoint_state(
         )
 
 
+@dataclass(frozen=True)
+class ValidatedDepthSupervision:
+    """SLM-237 (RSC-A01): validated ``recursive_depth_supervision_weights``.
+
+    ``weights`` is the exact, un-mutated tuple from the persisted config (a
+    validator must never rewrite what gets checkpointed). ``enabled`` is
+    ``False`` only for the explicit backward-compatible empty-tuple case;
+    every other configuration either normalizes cleanly or raises during
+    :func:`validate_recursive_depth_supervision`.
+    """
+
+    weights: tuple[float, ...]
+    enabled: bool
+
+    @property
+    def weight_sum(self) -> float:
+        return float(sum(self.weights))
+
+    def normalized(self) -> tuple[float, ...]:
+        """Per-depth weights divided by their sum (the intended objective)."""
+        if not self.enabled:
+            return ()
+        total = self.weight_sum
+        return tuple(float(w) / total for w in self.weights)
+
+
+def validate_recursive_depth_supervision(
+    *,
+    weights: tuple[float, ...],
+    num_depths: int,
+    supports_recursive_outputs: bool,
+    architecture: str = "denoiser",
+) -> ValidatedDepthSupervision:
+    """SLM-237 (RSC-A01): fail-closed validator for deep-supervision weights.
+
+    Historical defect (SLM-138 audit, see docs/design/iter-rsc-a01-*): the
+    training loop computed ``sum(L_d) / sum(w_d)`` -- an unweighted mean that
+    silently ignored every ``w_d`` -- and never rejected any of: zero weights
+    that should disable a depth, all-zero configs, negative/NaN/inf weights,
+    length mismatches (silently truncated via ``min(...)``), or weights
+    supplied to an architecture without ``recursive_outputs`` (silently
+    ignored). This validator makes every one of those fail closed instead.
+
+    An empty ``weights`` tuple means the feature is explicitly off -- this is
+    the only valid configuration for architectures (e.g. ``stacked``/HF
+    denoisers, or an un-migrated checkpoint) that do not support
+    ``recursive_outputs``, and it always returns ``enabled=False`` with no
+    mutation of the persisted config.
+    """
+    if not weights:
+        return ValidatedDepthSupervision(weights=(), enabled=False)
+
+    if not supports_recursive_outputs:
+        raise ValueError(
+            "recursive_depth_supervision_weights is non-empty "
+            f"({weights!r}) but denoiser_arch={architecture!r} does not "
+            "expose recursive_outputs (e.g. a 'stacked' or HF denoiser, or "
+            "an un-migrated checkpoint). Deep supervision requires a "
+            "recursive-outputs-capable architecture (e.g. "
+            "denoiser_arch='shared_recursive'); leave the tuple empty () to "
+            "keep the feature off for this architecture."
+        )
+
+    if len(weights) != num_depths:
+        raise ValueError(
+            "recursive_depth_supervision_weights has length "
+            f"{len(weights)} ({weights!r}) but the denoiser produced "
+            f"{num_depths} recursion depth(s). The length must match "
+            "exactly -- no truncation or padding via min(len(...), "
+            "len(...)) is performed; fix recursive_steps or the weights "
+            "tuple so they agree."
+        )
+
+    for depth, w in enumerate(weights):
+        if not math.isfinite(w):
+            raise ValueError(
+                f"recursive_depth_supervision_weights[{depth}] = {w!r} is "
+                "not finite. NaN/inf weights are rejected -- they would "
+                "corrupt the normalized objective and its gradient."
+            )
+        if w < 0.0:
+            raise ValueError(
+                f"recursive_depth_supervision_weights[{depth}] = {w!r} is "
+                "negative. Weights must be >= 0; a negative weight would "
+                "anti-supervise that depth instead of merely down-weighting "
+                "it."
+            )
+
+    total = math.fsum(weights)
+    if total <= 0.0:
+        raise ValueError(
+            f"recursive_depth_supervision_weights={weights!r} are all "
+            "zero. An all-zero configuration would silently disable the "
+            "objective and its telemetry while still looking wired up; use "
+            "an empty tuple () to explicitly turn the feature off instead."
+        )
+
+    return ValidatedDepthSupervision(
+        weights=tuple(float(w) for w in weights), enabled=True
+    )
+
+
 class TwoTowerModel(nn.Module):
     """MaskGIT-style discrete diffusion conditioned on a prompt encoder."""
 
@@ -1981,12 +2083,12 @@ class TwoTowerModel(nn.Module):
                 [self._symbol_tables.get(key) for key in cache_keys]
             )
             try:
-                ds_weights = tuple(
+                ds_weights_raw = tuple(
                     getattr(self.config, "recursive_depth_supervision_weights", None)
                     or ()
                 )
                 has_recursive_outputs = hasattr(self.denoiser, "recursive_outputs")
-                if ds_weights and has_recursive_outputs:
+                if ds_weights_raw and has_recursive_outputs:
                     rec_out = self.denoiser.recursive_outputs(
                         noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
                     )
@@ -2005,6 +2107,22 @@ class TwoTowerModel(nn.Module):
                 # bias it. (Same defect class as PR #275's loss-suite fix —
                 # cleared here at the source.)
                 self.denoiser.set_runtime_symbol_features(None)
+
+        # SLM-237 (RSC-A01): validate/normalize before any loss term is
+        # computed from depth_logits. This runs unconditionally (not just
+        # when predict_mask has any masked tokens) so an invalid config --
+        # unsupported architecture, length mismatch, negative/NaN/inf, or
+        # all-zero -- fails closed before a training step, never emitting an
+        # apparently-valid run with missing telemetry.
+        validated_ds = validate_recursive_depth_supervision(
+            weights=ds_weights_raw,
+            num_depths=len(depth_logits) if depth_logits is not None else 0,
+            supports_recursive_outputs=has_recursive_outputs,
+            architecture=str(getattr(self.config, "denoiser_arch", "stacked")),
+        )
+        self.last_training_metrics["recursive_depth_supervision_enabled"] = (
+            validated_ds.enabled
+        )
         if predict_mask.any():
             flat_logits = logits.reshape(-1, logits.size(-1))
             flat_targets = target_ids.reshape(-1)
@@ -2043,26 +2161,41 @@ class TwoTowerModel(nn.Module):
                 .tolist()
             )
 
-            # SLM-138: deep supervision over per-recursion logits.
-            if depth_logits is not None and ds_weights:
-                depth_losses: list[torch.Tensor] = []
-                usable = min(len(depth_logits), len(ds_weights))
-                total_w = sum(ds_weights[:usable])
-                if total_w > 0.0:
-                    for d, w in enumerate(ds_weights[:usable]):
-                        d_logits = depth_logits[d]
-                        d_flat = d_logits.reshape(-1, d_logits.size(-1))
-                        d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
-                        d_loss = (d_ce * weights)[mask_flat].mean()
-                        depth_losses.append(d_loss)
-                        self.last_training_metrics[f"recursive_depth_loss_{d}"] = float(
-                            d_loss.detach().cpu()
-                        )
-                    normalized = torch.stack(depth_losses).sum() / total_w
-                    mask_loss = mask_loss + normalized
-                    self.last_training_metrics["recursive_depth_supervision_loss"] = (
-                        float(normalized.detach().cpu())
+            # SLM-237 (RSC-A01): deep supervision over per-recursion logits.
+            # Corrected weighted objective (the historical code computed
+            # sum(L_d) / sum(w_d) -- an unweighted mean that never actually
+            # multiplied by w_d):
+            #   weighted_depth_contribution[d] = w[d] * raw_depth_loss[d] / sum(w)
+            #   recursive_depth_supervision_loss = sum(weighted_depth_contribution)
+            if depth_logits is not None and validated_ds.enabled:
+                cfg_weights = validated_ds.weights
+                norm_weights = validated_ds.normalized()
+                total_w = validated_ds.weight_sum
+                self.last_training_metrics[
+                    "recursive_depth_supervision_weight_sum"
+                ] = total_w
+                contributions: list[torch.Tensor] = []
+                for d, (cfg_w, norm_w) in enumerate(zip(cfg_weights, norm_weights)):
+                    d_logits = depth_logits[d]
+                    d_flat = d_logits.reshape(-1, d_logits.size(-1))
+                    d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
+                    raw_depth_loss = (d_ce * weights)[mask_flat].mean()
+                    weighted_contribution = norm_w * raw_depth_loss
+                    contributions.append(weighted_contribution)
+                    self.last_training_metrics[f"recursive_depth_loss_{d}"] = float(
+                        raw_depth_loss.detach().cpu()
                     )
+                    self.last_training_metrics[f"recursive_depth_weight_{d}"] = float(
+                        cfg_w
+                    )
+                    self.last_training_metrics[
+                        f"recursive_depth_weighted_contribution_{d}"
+                    ] = float(weighted_contribution.detach().cpu())
+                recursive_depth_supervision_loss = torch.stack(contributions).sum()
+                mask_loss = mask_loss + recursive_depth_supervision_loss
+                self.last_training_metrics["recursive_depth_supervision_loss"] = (
+                    float(recursive_depth_supervision_loss.detach().cpu())
+                )
         else:
             mask_loss = logits.sum() * 0.0
             self._last_example_token_losses = [0.0] * len(batch)

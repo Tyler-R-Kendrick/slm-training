@@ -45,6 +45,12 @@ def _fixture_records() -> list[ExampleRecord]:
 
 
 def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
+    # SLM-237 (RSC-A01): recursive_depth_supervision_weights only applies to
+    # architectures that expose recursive_outputs. Applying it to "stacked"
+    # here was historical failure mode #6 (silently ignored pre-fix); the
+    # fail-closed validator now correctly rejects that combination, so this
+    # fixture only sets the weights for "shared_recursive".
+    ds_weights = (0.5, 1.0) if arch == "shared_recursive" else ()
     return TwoTowerModel.from_records(
         _fixture_records(),
         config=TwoTowerConfig(
@@ -55,7 +61,7 @@ def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
             denoiser_arch=arch,  # type: ignore[arg-type]
             recursive_steps=2,
             recursive_transition_layers=2,
-            recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_supervision_weights=ds_weights,
             grammar_constrained=False,
             gen_steps=2,
             seed=seed,
