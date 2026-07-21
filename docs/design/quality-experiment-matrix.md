@@ -4751,3 +4751,15 @@ was 0/1.
 
 Evidence: [narrative](iter-e668-typed-array-role-wrapper-20260721.md) and
 [JSON](iter-e668-typed-array-role-wrapper-20260721.json).
+
+## E669 nested array schema propagation
+
+E669 preserves active item schemas through nested list frames. It removes the
+`Carousel.children` schema mismatch, but chooses a semantically wrong `Form`
+wrapper, leaves strict v2 at 3/4, and regresses structure, AST F1, and p95.
+Reject v122 and restore retained E666 behavior as v123. The next retry must
+pair inner-schema preservation with role-aware component selection. No
+checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e669-nested-array-schema-20260721.md) and
+[JSON](iter-e669-nested-array-schema-20260721.json).
