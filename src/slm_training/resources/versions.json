@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v83",
+      "version": "v84",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v84",
+          "date": "2026-07-20",
+          "note": "E640 rejection: restore v82 state and root references after supplemental slot-bearing reference tracking left every policy-matched output and metric unchanged"
+        },
         {
           "version": "v83",
           "date": "2026-07-20",
