@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "run_id": "e636-checkpoint-reproducibility-gap-r1",
+  "experiment_id": "E636",
+  "date_utc": "2026-07-21",
+  "status": "blocked_not_reproducible",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Enabling the existing, currently-unused schema_enum_close_decode_weight decode bias on E620's frozen rejected checkpoint fixes Modal's optional enum-valued `size` argument garbage literal (E635's named next step: \"target Modal's property-role mismatch using the same active-property compatibility principle, without changing the now-correct Auth path\") without regressing Auth or Dashboard.",
+  "blocker": {
+    "summary": "outputs/ is not persisted across agent sessions (gitignored; scratch checkpoints are local-only under --no-sync-checkpoints per docs/design/checkpoint-bucket.md). E630-E635 all say \"reused\" E620's checkpoint, SHA-256 3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f, but that file did not exist at the start of this session. Retraining the exact documented E620 recipe reproduces the source data lineage and a comparable loss, but not the checkpoint bytes or, more importantly, its qualitative greedy-decode behavior: an 800-step scratch TwoTower is barely converged, so tiny cross-environment floating-point differences (this session resolved torch==2.5.1 fresh via uv; the original run's exact build is unknown/unpinned) cascade through ~150+ greedy argmax decode steps into a different decode path.",
+    "action_not_taken": "Did not run the schema_enum_close_decode_weight treatment against a non-representative substitute checkpoint, because neither reproduction attempt's OOD suite ever emits a literal Modal(...)/Input(...)/Button(...) call (see per_record_treatment below) -- the specific Modal `size`-argument mismatch this experiment targets cannot occur in either substitute checkpoint's decode path, so any comparison would be a fabricated positive/negative, not evidence."
+  },
+  "checkpoint": {"run_id": "e636-checkpoint-v2", "sha256": "d29a81757cefd07ccb64e4b3f44b38f8d8a9ba495eef0a779e20c1cafbbed17c", "reused": false, "created": true, "synced": false, "promoted": false},
+  "evaluation_policy": {"treatment_run_id": "e636-baseline-v2-r1", "suite": "ood", "n": 4, "device": "cpu", "context_backend": "scratch", "honest_slot_contract": true, "slot_contract_constrained_decode": true, "semantic_role_contract_in_context": true, "schema_opaque_decode_weight": 4.0, "slot_coverage_close_decode_weight": 2.0, "grammar_ltr_max_tokens": 160},
+  "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "binding_aware_meaningful_v2_rate_strict": 0.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.129075, "component_type_recall": 0.20833333333333331, "reward_score": 0.949, "ast_node_f1": 0.2833333333333333, "ast_edge_f1": 0.0, "latency_ms_p50": 5564.04, "latency_ms_p95": 13169.04, "decode_timeout_count": 0, "fallback_count": 0}},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "historical_checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": false,
+    "reason": "not present in this session's outputs/; local-only scratch checkpoint, never synced or promoted"
+  },
+  "reproduction_attempts": [
+    {
+      "run_id": "e636-checkpoint-v1",
+      "training_flags": "train-dir e530_visible_semantic_roles_r2_20260719, twotower, context-backend scratch, output-tokenizer choice, device cpu, steps 800, batch-size 1, seed 0, no-sync-checkpoints (schema/slot-contract context flags omitted, matching only the fields the E620 doc's training block enumerates)",
+      "data_manifest_sha": "e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2",
+      "record_count": 244,
+      "last_loss": 4.068013351821899,
+      "checkpoint_sha256": "8ab4f5deeb0e1322064259ca92837e71dfdf662d25b46371172ad8779668a4cd",
+      "eval_run_id": "e636-baseline-r1",
+      "eval_recipe": {"suite": "ood", "n": 4, "device": "cpu", "context_backend": "scratch", "honest_slot_contract": true, "slot_contract_constrained_decode": true, "semantic_role_contract_in_context": true, "schema_opaque_decode_weight": 4.0, "slot_coverage_close_decode_weight": 2.0, "grammar_ltr_max_tokens": 160},
+      "measured": {"syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "binding_aware_meaningful_v2_rate_strict": 0.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.16265, "component_type_recall": 0.14583333333333331, "reward_score": 0.70575, "ast_node_f1": 0.1, "ast_edge_f1": 0.0, "latency_ms_p50": 871.24, "latency_ms_p95": 7008.95, "decode_timeout_count": 0, "fallback_count": 0}
+    },
+    {
+      "run_id": "e636-checkpoint-v2",
+      "training_flags": "same as v1 plus --schema-in-context --slot-contract-in-context --honest-slot-contract --slot-contract-constrained-decode, to match the eval-time context contract exactly",
+      "data_manifest_sha": "e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2",
+      "record_count": 244,
+      "last_loss": 3.9921133518218994,
+      "checkpoint_sha256": "d29a81757cefd07ccb64e4b3f44b38f8d8a9ba495eef0a779e20c1cafbbed17c",
+      "eval_run_id": "e636-baseline-v2-r1",
+      "eval_recipe": {"suite": "ood", "n": 4, "device": "cpu", "context_backend": "scratch", "honest_slot_contract": true, "slot_contract_constrained_decode": true, "semantic_role_contract_in_context": true, "schema_opaque_decode_weight": 4.0, "slot_coverage_close_decode_weight": 2.0, "grammar_ltr_max_tokens": 160},
+      "measured": {"syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "binding_aware_meaningful_v2_rate_strict": 0.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.129075, "component_type_recall": 0.20833333333333331, "reward_score": 0.949, "ast_node_f1": 0.2833333333333333, "ast_edge_f1": 0.0, "latency_ms_p50": 5564.04, "latency_ms_p95": 13169.04, "decode_timeout_count": 0, "fallback_count": 0}
+    }
+  ],
+  "per_record_treatment": {
+    "ood_dashboard_01": "v1: root = v0; v0 = Image(title, body) -- unresolved variable soup, no literal component call reaches a closing constructor",
+    "ood_gallery_01": "v1: root = v0; v0 = Image(img, alt) -- unresolved variable soup",
+    "ood_modal_01": "v1/v2: never emits Modal(...); collapses to TextContent(title, body) inside unresolved variable soup",
+    "ood_auth_01": "v1/v2: never emits Stack/Button/Input; collapses to TextContent(name, email) inside unresolved variable soup"
+  },
+  "e635_reference": {
+    "run_id": "e635-property-compatible-coverage-r2",
+    "reward_score": 0.8515,
+    "structural_similarity": 0.572925,
+    "component_type_recall": 0.625,
+    "ast_node_f1": 0.6357142857142857,
+    "binding_aware_meaningful_v2_rate_strict": 0.25
+  },
+  "decision": "No treatment run against a substitute checkpoint. Document the reproducibility gap as blocking this session's continuation of the E630-E635 checkpoint-reuse thread. Recommend one of: (1) sync/persist a designated frozen checkpoint for this active multi-session ablation lineage instead of --no-sync-checkpoints, (2) pin exact torch/numpy build versions for byte-reproducible scratch trains, or (3) migrate the ablation to a fully-trained/promoted checkpoint immune to 800-step scratch instability. Neither new local checkpoint (v1, v2) is synced or promoted; both are discarded scratch artifacts.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d59de56ae6954e5e1db7b69492312c54ff72ba28",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v32",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v73"
+    },
+    "stamped_at": "2026-07-21T01:41:12.872669+00:00"
+  }
+}

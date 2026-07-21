@@ -2010,6 +2010,24 @@ def test_e635_confirmed_runs_persist_without_new_checkpoints(tmp_path: Path) -> 
     assert checkpoints.isdisjoint(run_ids)
 
 
+def test_e636_blocked_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e636-checkpoint-reproducibility-gap-r1"
+    run = readers.run(run_id)
+    assert run["provenance"] == "committed"
+    suite = run["scoreboard"]["suites"]["ood"]
+    assert suite["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert suite["reward_score"] == 0.949
+    assert run["scoreboard"]["agentv"]["passed"] == 0
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id not in checkpoints
+    assert "e636-checkpoint-v2" not in checkpoints
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
