@@ -3493,7 +3493,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v179",
+      "version": "v180",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3512,6 +3512,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v180",
+          "date": "2026-07-21",
+          "note": "E708: retain only a newly created missing-slot carrier in terminal Stack aggregation"
+        },
         {
           "version": "v179",
           "date": "2026-07-21",

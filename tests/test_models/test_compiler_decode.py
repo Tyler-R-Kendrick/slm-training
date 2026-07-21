@@ -2830,6 +2830,114 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
     ) is None
 
 
+def test_prompt_semantic_plan_root_bias_records_missing_slot_carrier_reference() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["+Input"]
+    button_id = tokenizer.token_to_id["+Button"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    model._semantic_plan_action_scores = [{input_id: 1.0, button_id: 1.0}]
+    model._semantic_plan_action_counts = [{input_id: 1, button_id: 1}]
+    model._slot_contracts = [[":auth.email", ":auth.submit", ":auth.body"]]
+    model._semantic_role_candidates = [
+        {
+            ":auth.email": ("Input",),
+            ":auth.submit": ("Button",),
+            ":auth.body": ("Callout", "TextContent"),
+        }
+    ]
+    model._semantic_plan_role_bindings = [
+        {"Input": (":auth.email",), "Button": (":auth.submit",)}
+    ]
+    model._semantic_plan_required_root_references = [{}]
+    prefix = [
+        tokenizer.bos_id,
+        input_id,
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id["-"],
+        button_id,
+        tokenizer.sym_id(1),
+        tokenizer.token_to_id["-"],
+    ]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button"],
+    )
+    candidates = (stack_id, text_id, tokenizer.eos_id)
+
+    bias = model._semantic_plan_root_bias(
+        0, state, prefix, candidates, torch.tensor([12.0, 1.0, 0.0])
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 13.0, 0.0]
+    assert model._semantic_plan_required_root_references == [
+        {2: "element:TextContent"}
+    ]
+
+
+def test_semantic_plan_required_reference_bias_targets_only_carrier() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    ref1 = tokenizer.token_to_id["&1"]
+    ref2 = tokenizer.token_to_id["&2"]
+    close = tokenizer.token_to_id["]"]
+    model._semantic_plan_required_root_references = [{2: "element:TextContent"}]
+    state = SimpleNamespace(
+        section_types=[
+            "element:Input",
+            "element:Callout",
+            "element:TextContent",
+        ],
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(kind="variadic", expr_type="array", close="]"),
+        ]
+    )
+    candidates = (ref1, ref2, close)
+
+    bias = model._semantic_plan_required_reference_bias(
+        0, state, [tokenizer.bos_id], candidates, torch.tensor([15.0, 1.0, 20.0])
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 21.0, 0.0]
+    assert (
+        model._semantic_plan_required_reference_bias(
+            0,
+            state,
+            [tokenizer.bos_id],
+            candidates,
+            torch.tensor([20.0, 1.0, 15.0]),
+        )
+        is None
+    )
+    assert (
+        model._semantic_plan_required_reference_bias(
+            0,
+            state,
+            [tokenizer.bos_id, ref2],
+            candidates,
+            torch.zeros(3),
+        )
+        is None
+    )
+
+
 def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> None:
     from types import SimpleNamespace
 
