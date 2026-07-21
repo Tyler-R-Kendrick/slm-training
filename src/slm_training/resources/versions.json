@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-07-21",
+          "note": "E631: _is_meaningful_program (meaningful_program_v1) gains an AST-structural empty-children check (_first_empty_children_component, walking Program.root) alongside its existing Stack([])/Card([]) literal substring checks -- purely additive, never removes an existing rejection. Fixes the gap E630 flagged and deferred: a component whose children array is genuinely empty but whose remaining non-content positional arguments got padded with unrelated stuffed values (e.g. `Card([], \":a\", \":b\")`) never matched the literal \"Card([])\" substring, so it passed as meaningful when it should not have. The AST check reads children from the parsed props dict, which is structurally separate from a node's other props, so padding those other props cannot hide an empty children array. Generalizes for free to any schema component the parser itself marks with a children prop (Modal, Carousel), which the old literal check never covered at all (new reason code `empty_children:<TypeName>`; Stack/Card keep their original `empty_root_stack`/`empty_card` reason strings for backward compatibility). Verified against the real scratch checkpoint reused from E626/E628/E630 (sha256 c5b7c807...dd561221): re-scoring the already-recorded rico_held suite at required_slot_margin_decode_weight=0 (pure control, no lever active) flips rico_eval_test_42 and rico_eval_test_77 from previously (incorrectly) True to correctly False (both have a `Card([], \":cardN.title\")`-shaped padded-empty Card already present in the checkpoint's baseline decode, unrelated to the lever) -- an honest, expected tightening, not a regression. New/updated tests in tests/test_evals/test_meaningful_program.py. See docs/design iter-e631."
+        },
         {
           "version": "v33",
           "date": "2026-07-20",
