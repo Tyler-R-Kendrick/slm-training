@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v87",
+      "version": "v88",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v88",
+          "date": "2026-07-20",
+          "note": "E642 rejection: restore v83 prompt-only semantic plans after root-only inferred families regressed meaning, structure, reward, AST F1, and tail latency"
+        },
         {
           "version": "v87",
           "date": "2026-07-20",
