@@ -12,10 +12,10 @@ The capped run was originally launched as E640. It was renumbered E646 when
 the rebase incorporated the independently landed E639–E644 sequence; the
 committed JSON retains the original run ID explicitly.
 
-No training ran and no checkpoint was created. One capped CPU OOD `n=4` run
-reused E620's rejected local-only checkpoint with the exact E637 policy. It
-completed without timeout or fallback and emitted AgentEvals JSONL plus an
-AgentV SDK bundle without execution errors.
+No training ran (`steps=0`) and no checkpoint was created. One capped CPU OOD
+`n=4` run used the scratch context backend and reused E620's rejected local-only
+checkpoint with the exact E637 policy. It completed without timeout or fallback
+and emitted AgentEvals JSONL plus an AgentV SDK bundle without execution errors.
 
 | OOD `n=4` | E637 r2 baseline | E646 r1 |
 | --- | ---: | ---: |
