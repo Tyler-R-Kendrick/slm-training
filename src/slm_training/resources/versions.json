@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v110",
+      "version": "v111",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v111",
+          "date": "2026-07-21",
+          "note": "E657: combine direct-owner raw-slot constraints across coverage and repeated-plan margins"
+        },
         {
           "version": "v110",
           "date": "2026-07-21",
