@@ -2123,7 +2123,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v81",
+      "version": "v83",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2142,6 +2142,21 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v83",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E639 sibling-coverage evidence to E645 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v83",
+          "date": "2026-07-20",
+          "note": "E645 rejection: restore v81 numeric-gate and root-boundary behavior after sibling coverage sampling changed traces but the verified root omitted those unplanned sections and every policy-matched metric stayed flat"
+        },
+        {
+          "version": "v82",
+          "date": "2026-07-20",
+          "note": "E645: continue from completed root sections with the best legal role-compatible component while visible slots remain; renumbered from the originally launched E639 arm after rebase"
+        },
         {
           "version": "v81",
           "date": "2026-07-21",
