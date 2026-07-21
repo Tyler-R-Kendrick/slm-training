@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v84",
+      "version": "v85",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v85",
+          "date": "2026-07-20",
+          "note": "E641: complete prompt-planned families with house-style-preferred schema-compatible leaves for visible roles no planned family can own"
+        },
         {
           "version": "v84",
           "date": "2026-07-20",
