@@ -4313,3 +4313,43 @@ Input property-role assignment. No ship claim.
 Evidence:
 [iter-e631-frame-aware-owner-escape-20260720.md](iter-e631-frame-aware-owner-escape-20260720.md)
 and [JSON](iter-e631-frame-aware-owner-escape-20260720.json).
+
+## E632 schema-identifier decode weight (rejected)
+
+E632 targeted E631's remaining Auth strict-v2 failure directly: a new
+`schema_identifier_decode_weight` bias discourages visible-slot placeholders
+from landing in required, non-enum, non-content string identifiers (e.g.
+`Input.name`), pushing the model toward a literal control token there instead
+(as gold does: `Input("text", ":slot")`). E620/E631's local checkpoint was not
+present in this session, so this iteration retrained the identical E620
+800-step scratch recipe (control-arm predictions came back byte-identical to
+E631's treatment on all 4 OOD records, confirming a faithful replay) and
+replayed the matched control/treatment OOD `n=4` recipe with only the new
+weight changed (0 vs 4.0).
+
+| OOD `n=4` | Control (weight=0) | Treatment (weight=4.0) |
+| --- | ---: | ---: |
+| meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
+| fidelity / validity | 0.6750 / 0.8050 | 0.5917 / 0.7550 |
+| structure / component recall | 0.5729 / 0.6250 | 0.4704 / 0.5000 |
+| reward | 0.8515 | 0.8205 |
+| AST node / edge F1 | 0.6357 / 0.5125 | 0.5524 / 0.3875 |
+| latency p50 / p95 | 1275.16 / 5073.26 ms | 1606.58 / 5086.41 ms |
+| closure applications / changes | 25 / 12 | 22 / 9 |
+| timeout / fallback | 0 / 0 | 0 / 0 |
+| AgentV | 0/1 | 0/1 |
+
+Every continuous metric regressed. On this parallel MaskGIT-style checkpoint,
+suppressing the model's only confident continuation at `Input.name`
+destabilizes the array-closure decision itself: the Auth prediction abandons
+the `Input(...)` wrapper entirely and emits bare slot references as direct
+`Stack` array items. Three intermediate weight probes (0.25/0.5/1.0) found a
+knife-edge with no usable middle ground — 0.25 is a no-op, 0.5+ is already
+fully destructive. Reject as a decode-time treatment on this checkpoint at
+every magnitude tried; keep the bias as a default-off, unit-tested knob for a
+future better-trained checkpoint or a decode-order-aware follow-up. No ship
+claim.
+
+Evidence:
+[iter-e632-schema-identifier-decode-weight-20260721.md](iter-e632-schema-identifier-decode-weight-20260721.md)
+and [JSON](iter-e632-schema-identifier-decode-weight-20260721.json).
