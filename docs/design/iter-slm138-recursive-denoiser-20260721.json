@@ -224,6 +224,91 @@
     "recursive_steps": 2,
     "recursive_transition_layers": 2
   },
+  "arm_f_dual_view": {
+    "block_evaluation_matched": {
+      "matching_dimension": "block_evaluations_per_forward",
+      "n_layers": 4,
+      "parameter_count_delta_vs_target_arm_b": 24544,
+      "report": {
+        "active_parameter_count": 68811,
+        "arm_id": "F",
+        "block_evaluations_per_forward": 4,
+        "checkpoint_bytes": 339065,
+        "claim_class": "wiring",
+        "contract_version": "RecursiveControlArmReportV1",
+        "cross_attn_calls_per_forward": 4,
+        "d_model": 32,
+        "denoiser_arch": "stacked_depth_matched",
+        "estimated_forward_flops": 608256.0,
+        "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+        "matching_target": "matches arm B's block_evaluations_per_forward exactly (this row's construction); does NOT match A's or B's parameter count -- see build_arm_f_dual_view for the real measured parameter-nearest alternative construction and its block-evaluation residual instead",
+        "matching_tolerance_params": 0,
+        "max_len": 256,
+        "mlp_calls_per_forward": 4,
+        "notes": [
+          "block-evaluation-matched against arm B by construction (block_evaluations_per_forward=4); no z-state parameter bank (same as A); MORE parameters than B because nothing is shared -- see build_arm_f_dual_view for the measured parameter-nearest alternative and its block-evaluation residual."
+        ],
+        "parameter_count_delta_vs_baseline": 33792,
+        "parameter_count_delta_vs_baseline_pct": 78.51301115241635,
+        "parameter_count_denoiser": 67584,
+        "parameter_count_total": 76832,
+        "recursive_steps": 0,
+        "recursive_transition_layers": 4,
+        "residual_matching_error_params": 33792,
+        "self_attn_calls_per_forward": 4,
+        "undeclared_zstate_parameter_names": [],
+        "within_matching_tolerance": false,
+        "z_state_mode": null
+      },
+      "residual_dimension": "parameter_count_total"
+    },
+    "parameter_nearest": {
+      "block_evaluations_delta_vs_target_arm_b": -1,
+      "matching_dimension": "parameter_count_total",
+      "n_layers": 3,
+      "parameter_count_delta_vs_target_arm_b": 7648,
+      "report": {
+        "active_parameter_count": 51917,
+        "arm_id": "F",
+        "block_evaluations_per_forward": 3,
+        "checkpoint_bytes": 263742,
+        "claim_class": "wiring",
+        "contract_version": "RecursiveControlArmReportV1",
+        "cross_attn_calls_per_forward": 3,
+        "d_model": 32,
+        "denoiser_arch": "stacked_depth_matched",
+        "estimated_forward_flops": 456192.0,
+        "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+        "matching_target": "matches arm B's block_evaluations_per_forward exactly (this row's construction); does NOT match A's or B's parameter count -- see build_arm_f_dual_view for the real measured parameter-nearest alternative construction and its block-evaluation residual instead",
+        "matching_tolerance_params": 0,
+        "max_len": 256,
+        "mlp_calls_per_forward": 3,
+        "notes": [
+          "block-evaluation-matched against arm B by construction (block_evaluations_per_forward=3); no z-state parameter bank (same as A); MORE parameters than B because nothing is shared -- see build_arm_f_dual_view for the measured parameter-nearest alternative and its block-evaluation residual."
+        ],
+        "parameter_count_delta_vs_baseline": 16896,
+        "parameter_count_delta_vs_baseline_pct": 39.25650557620818,
+        "parameter_count_denoiser": 50688,
+        "parameter_count_total": 59936,
+        "recursive_steps": 0,
+        "recursive_transition_layers": 3,
+        "residual_matching_error_params": 16896,
+        "self_attn_calls_per_forward": 3,
+        "undeclared_zstate_parameter_names": [],
+        "within_matching_tolerance": false,
+        "z_state_mode": null
+      },
+      "residual_dimension": "block_evaluations_per_forward"
+    },
+    "per_layer_parameter_cost_formula": {
+      "common_parameters": 9248,
+      "note": "measured from real constructed 1-layer/2-layer DenoiserTower instances, never hard-coded",
+      "per_layer_parameters": 16896
+    },
+    "target_arm": "B",
+    "target_block_evaluations_per_forward": 4,
+    "target_total_parameters": 52288
+  },
   "checkpoint_roundtrip_ok": true,
   "claim_class": "wiring",
   "control_arm_table": [
@@ -352,7 +437,38 @@
       "z_state_mode": "parameter_free"
     },
     {
-      "active_parameter_count": 36271,
+      "active_parameter_count": 68807,
+      "arm_id": "F",
+      "block_evaluations_per_forward": 4,
+      "checkpoint_bytes": 339065,
+      "claim_class": "wiring",
+      "contract_version": "RecursiveControlArmReportV1",
+      "cross_attn_calls_per_forward": 4,
+      "d_model": 32,
+      "denoiser_arch": "stacked_depth_matched",
+      "estimated_forward_flops": 608256.0,
+      "label": "unshared depth-matched tower (block-evaluation-matched against B; no z state, no weight sharing -- MORE parameters than B, see build_arm_f_dual_view for the honest parameter-nearest residual)",
+      "matching_target": "matches arm B's block_evaluations_per_forward exactly (this row's construction); does NOT match A's or B's parameter count -- see build_arm_f_dual_view for the real measured parameter-nearest alternative construction and its block-evaluation residual instead",
+      "matching_tolerance_params": 0,
+      "max_len": 256,
+      "mlp_calls_per_forward": 4,
+      "notes": [
+        "block-evaluation-matched against arm B by construction (block_evaluations_per_forward=4); no z-state parameter bank (same as A); MORE parameters than B because nothing is shared -- see build_arm_f_dual_view for the measured parameter-nearest alternative and its block-evaluation residual."
+      ],
+      "parameter_count_delta_vs_baseline": 33792,
+      "parameter_count_delta_vs_baseline_pct": 78.51301115241635,
+      "parameter_count_denoiser": 67584,
+      "parameter_count_total": 76832,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 4,
+      "residual_matching_error_params": 33792,
+      "self_attn_calls_per_forward": 4,
+      "undeclared_zstate_parameter_names": [],
+      "within_matching_tolerance": false,
+      "z_state_mode": null
+    },
+    {
+      "active_parameter_count": 36284,
       "arm_id": "G",
       "block_evaluations_per_forward": 2,
       "checkpoint_bytes": 233018,
@@ -392,11 +508,11 @@
     "B",
     "C",
     "D",
+    "F",
     "G"
   ],
   "control_arms_deferred": [
     "E",
-    "F",
     "H"
   ],
   "deep_supervision_metrics": {
@@ -467,6 +583,7 @@
       "arch_specific:shared_recursive_no_extra_capacity": 90000,
       "arch_specific:shared_recursive_y_only": 80000,
       "arch_specific:stacked": 60000,
+      "arch_specific:stacked_depth_matched": 100000,
       "control_only": 50000,
       "model_initialization": 0,
       "shape_probe_context": 20000,
@@ -483,12 +600,12 @@
   "stacked_params": 64994,
   "status": "wiring_only",
   "version_stamp": {
-    "code_commit": "8f524efc93fa92f888044a84dfcefbbb439753d5",
+    "code_commit": "f800cccb11c25058d858ded55682286688ceace0",
     "code_dirty": false,
     "components": {
-      "model.recursive_denoiser": "v7"
+      "model.recursive_denoiser": "v8"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T02:16:35.616573+00:00"
+    "stamped_at": "2026-07-21T02:41:20.470161+00:00"
   }
 }

@@ -32,7 +32,7 @@ Independently measured comparison dimensions -- never a single collapsed `parity
 
 ## SLM-241 (RSC-A05) control arm table
 
-Real, measured resource accounting per built control arm -- never a raw loss or a winner (see `docs/design/iter-rsc-a05-*` for the full formulas/residuals). Built arms: A, B, C, D, G. Deferred: E, F, H.
+Real, measured resource accounting per built control arm -- never a raw loss or a winner (see `docs/design/iter-rsc-a05-*` for the full formulas/residuals). Built arms: A, B, C, D, F, G. Deferred: E, H.
 
 | arm | denoiser_arch | z_state_mode | params (Δ vs A) | block evals | matched? |
 | --- | --- | --- | --- | --- | --- |
@@ -40,7 +40,22 @@ Real, measured resource accounting per built control arm -- never a raw loss or 
 | B | `shared_recursive` | `full` | 52288 (+9248) | 4 | False |
 | C | `shared_recursive_y_only` | `y_only` | 43040 (+0) | 4 | True |
 | D | `shared_recursive_no_extra_capacity` | `parameter_free` | 43040 (+0) | 4 | True |
+| F | `stacked_depth_matched` | `None` | 76832 (+33792) | 4 | False |
 | G | `shared_recursive` | `full` | 52288 (+9248) | 2 | False |
+
+## Arm F dual view (block-evaluation-matched vs parameter-nearest)
+
+Arm F (unshared depth-matched tower) has exactly one free dial (`n_layers`), so it cannot match both arm B's block-evaluation count and its parameter count simultaneously -- both real, measured constructions are reported below with an explicit residual on whichever dimension is not matched.
+
+- Target arm: **B** -- `52288` parameters, `4` block evaluations per forward.
+- Per-layer parameter cost (measured from real 1-layer/2-layer towers, never hard-coded): `16896` per layer, `9248` common (non-block) parameters.
+
+| view | n_layers | block evals | Δ block evals vs B | params | Δ params vs B |
+| --- | --- | --- | --- | --- | --- |
+| block_evaluation_matched | 4 | 4 | 0 | 76832 | +24544 |
+| parameter_nearest | 3 | 3 | -1 | 59936 | +7648 |
+
+Neither row is a 'matched' claim on both dimensions at once -- `block_evaluation_matched` is the `control_arm_table` "F" row above; `parameter_nearest` is a separate construction reported only here.
 
 ## Losses
 
@@ -80,7 +95,7 @@ Real, measured resource accounting per built control arm -- never a raw loss or 
 - Base seed: `0`
 - Probe order: `stacked_first`
 - Training-corruption seed: `30000`
-- Namespace seeds: `{'arch_specific:shared_recursive': 70000, 'arch_specific:shared_recursive_no_extra_capacity': 90000, 'arch_specific:shared_recursive_y_only': 80000, 'arch_specific:stacked': 60000, 'control_only': 50000, 'model_initialization': 0, 'shape_probe_context': 20000, 'shape_probe_inputs': 10000, 'training_batch_order': 40000, 'training_corruption': 30000}`
+- Namespace seeds: `{'arch_specific:shared_recursive': 70000, 'arch_specific:shared_recursive_no_extra_capacity': 90000, 'arch_specific:shared_recursive_y_only': 80000, 'arch_specific:stacked': 60000, 'arch_specific:stacked_depth_matched': 100000, 'control_only': 50000, 'model_initialization': 0, 'shape_probe_context': 20000, 'shape_probe_inputs': 10000, 'training_batch_order': 40000, 'training_corruption': 30000}`
 
 ## Clean-tree evidence gate
 

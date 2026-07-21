@@ -1779,6 +1779,11 @@
         {
           "version": "v8",
           "date": "2026-07-21",
+          "note": "no-bump: regenerated iter-slm138-recursive-denoiser-20260721.{json,md} on the clean committed v8 revision (f800cccb, code_dirty=false) to embed arm F (control_arm_table row + arm_f_dual_view section). Content-only refresh -- note: this run also surfaced a pre-existing, code-independent tokenizer-vocab-size drift versus the historical doc (43040 vs 42752 stacked-arm total parameters at this fixture config) reproduced identically on a clean checkout of the prior commit (93ac5062) in an isolated worktree, so it predates and is unrelated to this arm-F change; relative deltas/formulas (e.g. B/G +9248 vs A, matching recursive_zstate_parameter_delta) are unaffected and still verified."
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-21",
           "note": "SLM-241 (RSC-A05) follow-up: built control arm F (unshared depth-matched tower) -- recursive_control_arms.construct_arm_tower('F', ...) now returns a plain DenoiserTower with recursive_steps * recursive_transition_layers independent blocks (no longer NotImplementedError); added build_arm_f_dual_view (block-evaluation-matched vs parameter-nearest real-measured constructions, honest residual on whichever dimension isn't exact); rng_contract.py gained the arch_specific:stacked_depth_matched reserved namespace (offset 100_000); fixture script gained an arm_f_dual_view report field + markdown section. BUILT_ARM_IDS now (A,B,C,D,F,G); DEFERRED_ARM_IDS now (E,H). No change to A/B/C/D/G construction or reported values."
         },
         {
