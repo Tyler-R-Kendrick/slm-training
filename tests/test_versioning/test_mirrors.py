@@ -45,3 +45,11 @@ def test_verified_solver_matrix_version_is_mirrored() -> None:
     from slm_training.harnesses.experiments.verified_solver_matrix import MATRIX_VERSION
 
     assert component_version("matrix.verified_solver") == MATRIX_VERSION
+
+
+def test_sde5_floor_escape_matrix_version_is_mirrored() -> None:
+    from slm_training.harnesses.experiments.slm209_debt_targeted_curriculum import (
+        SDE5_MATRIX_VERSION,
+    )
+
+    assert component_version("harness.experiments.sde5_floor_escape_matrix") == SDE5_MATRIX_VERSION
