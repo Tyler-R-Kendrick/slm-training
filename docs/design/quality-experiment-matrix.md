@@ -5010,3 +5010,17 @@ created or synced.
 
 Evidence: [narrative](iter-e688-bound-wrapper-roles-20260721.md) and
 [JSON](iter-e688-bound-wrapper-roles-20260721.json).
+
+## E689 planned child carriers
+
+E689 disambiguates ambiguous visible-role carriers through descendants of an
+already planned parent schema. Corrected Held-out `r2` keeps strict v2 at 2/5
+while meaningful v1 reaches 1.0, fidelity 0.8667, structure 0.6019, reward
+0.9210, edge F1 0.6061, and p95 falls 19753.82→6325.63 ms. Tabs becomes a
+finite Tabs/Callout tree but still overproduces five TabItems and misuses raw
+content placeholders. Retain v144 as positive research evidence. `r1` is
+explicitly excluded as implementation-confounded. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e689-planned-child-carriers-20260721.md) and
+[JSON](iter-e689-planned-child-carriers-20260721.json).
