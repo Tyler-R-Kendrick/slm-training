@@ -61,12 +61,12 @@ def test_exact_force_requires_full_token_singleton() -> None:
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
     native = DSLNativeTokenizer.build()
-    prefix = native.encode("root", add_special=False)
+    prefix = native.encode("root = Card", add_special=False)
     state = make_grammar_state()
     forced = force_emit_token_id(native, prefix, state=state)
     assert exact_forced_token_id(
         native, prefix, forced_token_id=forced, state=state
-    ) == native.token_to_id["="]
+    ) == native.token_to_id["("]
 
     # The compositional tokenizer can still emit insignificant whitespace, so
     # its significant-lexeme force is not an exact tokenizer-token decision.
@@ -76,6 +76,28 @@ def test_exact_force_requires_full_token_singleton() -> None:
     forced = force_emit_token_id(compositional, prefix, state=state)
     assert exact_forced_token_id(
         compositional, prefix, forced_token_id=forced, state=state
+    ) is None
+
+
+def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode("root", add_special=False)
+    forced = tokenizer.token_to_id["="]
+    state = make_grammar_state()
+    forest = build_completion_forest(tokenizer, prefix, state=state)
+
+    assert forest.coverage == "complete"
+    assert forced in forest.candidate_ids
+    assert any(candidate != forced for candidate in forest.candidate_ids)
+
+    assert exact_forced_token_id(
+        tokenizer,
+        prefix,
+        forced_token_id=forced,
+        state=state,
     ) is None
 
 

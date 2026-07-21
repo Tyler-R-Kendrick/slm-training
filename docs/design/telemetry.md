@@ -102,8 +102,6 @@ artifact required.
 **Generate:** `generate_batch` → `generate_once` / `best_of_n_rank`, plus
 `context_encode` inside the model.
 
-## Decode-stats solver work metrics (VSS1-04 / SLM-64)
-
 ## Decode-stats deterministic-row metrics
 
 These counters share the existing `DecodeStats` envelope and aggregate under
@@ -120,6 +118,8 @@ These counters share the existing `DecodeStats` envelope and aggregate under
 accepted from already-computed logits remain `accepted_run_tokens`; they are not
 reported as no-forward proof decisions. Binding evidence contains keys, slot ids,
 digests, and byte counts but never raw caller content.
+
+## Decode-stats solver work metrics (VSS1-04 / SLM-64)
 
 The verified solver's per-decode work is measured on the existing
 [`DecodeStats`](../../src/slm_training/models/decode_stats.py) envelope (not a new

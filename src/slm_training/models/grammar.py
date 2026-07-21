@@ -414,7 +414,7 @@ def exact_forced_token_id(
             if forest.coverage != "complete":
                 return None
             compiler_candidates = set(forest.candidate_ids)
-            if forced not in compiler_candidates:
+            if compiler_candidates != {forced}:
                 return None
     except Exception:  # noqa: BLE001 - incomplete proof must fail closed
         return None
