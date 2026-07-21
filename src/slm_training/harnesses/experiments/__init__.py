@@ -327,6 +327,21 @@ _LAZY_SLM222_EXPORTS = {
     "run_slm222_fixture": "run_muon_baseline_fixture",
 }
 
+_LAZY_SLM212_EXPORTS = {
+    "SLM212_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM212_MATRIX_SET": "MATRIX_SET",
+    "SLM212_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM212_ARM_NAMES": "ARM_NAMES",
+    "DebtRoutingExample": "DebtRoutingExample",
+    "DebtRoutingArmResult": "DebtRoutingArmResult",
+    "DebtRoutingMatrixManifest": "DebtRoutingMatrixManifest",
+    "build_slm212_synthetic_routing_examples": "build_synthetic_routing_examples",
+    "build_slm212_matrix_manifest": "build_matrix_manifest",
+    "run_slm212_fixture_matrix": "run_fixture_matrix",
+    "render_slm212_markdown": "render_markdown",
+    "validate_slm212_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -353,6 +368,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm222_muon_baseline
 
         value = getattr(slm222_muon_baseline, _LAZY_SLM222_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM212_EXPORTS:
+        from slm_training.harnesses.experiments import slm212_debt_routing
+
+        value = getattr(slm212_debt_routing, _LAZY_SLM212_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -429,6 +450,18 @@ __all__ = [
     "MuonBaselineReport",
     "render_slm222_markdown",
     "run_slm222_fixture",
+    "SLM212_EXPERIMENT_ID",
+    "SLM212_MATRIX_SET",
+    "SLM212_MATRIX_VERSION",
+    "SLM212_ARM_NAMES",
+    "DebtRoutingExample",
+    "DebtRoutingArmResult",
+    "DebtRoutingMatrixManifest",
+    "build_slm212_synthetic_routing_examples",
+    "build_slm212_matrix_manifest",
+    "run_slm212_fixture_matrix",
+    "render_slm212_markdown",
+    "validate_slm212_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",

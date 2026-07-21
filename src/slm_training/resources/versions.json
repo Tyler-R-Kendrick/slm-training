@@ -12,15 +12,21 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v32",
+      "version": "v33",
       "kind": "harness",
       "paths": [
+        "src/slm_training/harnesses/model_build/debt_router.py",
         "src/slm_training/harnesses/model_build/eval_runner.py",
         "src/slm_training/harnesses/model_build/eval_policy.py",
         "src/slm_training/harnesses/quality/retrieval.py",
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v33",
+          "date": "2026-07-21",
+          "note": "SLM-212: add default-off constraint-debt routing config, DebtRoutingPolicy, CalibratedDebtRouter, CLI flags, and decode identity plumbing"
+        },
         {
           "version": "v32",
           "date": "2026-07-20",
@@ -721,12 +727,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v55",
+      "version": "v56",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v56",
+          "date": "2026-07-21",
+          "note": "add SLM-212 SDE5-05 constraint-debt routing fixture harness lazy re-exports"
+        },
         {
           "version": "v55",
           "date": "2026-07-21",
@@ -1523,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v77",
+      "version": "v78",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1538,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v78",
+          "date": "2026-07-21",
+          "note": "SLM-212: add default-off constraint_debt_routing_* fields to ModelBuildConfig"
+        },
         {
           "version": "v77",
           "date": "2026-07-21",
@@ -3438,6 +3454,38 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-222 NCS2-03 Muon/AdamW hybrid optimizer baseline fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm212_debt_routing": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm212_debt_routing.py",
+        "tests/test_harnesses/experiments/test_slm212_debt_routing.py",
+        "tests/test_scripts/test_run_slm212_debt_routing_fixture.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-212 SDE5-05 constraint-debt routing over decode paths wiring/fixture harness"
+        }
+      ]
+    },
+    "matrix.slm212_debt_routing": {
+      "version": "sde5-05-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_slm212_debt_routing_fixture.py",
+        "docs/design/iter-slm212-debt-routing-20260721.json",
+        "docs/design/iter-slm212-debt-routing-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "sde5-05-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-212 SDE5-05 constraint-debt routing MaskGIT/LTR/ASAp matched-budget fixture matrix"
         }
       ]
     },

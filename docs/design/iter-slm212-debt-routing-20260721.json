@@ -1,0 +1,291 @@
+{
+  "arms": [
+    {
+      "accuracy": 0.43333333333333335,
+      "arm_name": "fixed_maskgit",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.6673147631458474,
+      "mean_regret": 0.1454191338510178,
+      "route_by_kind": {
+        "argument_value": {
+          "maskgit": 5
+        },
+        "array_insert": {
+          "maskgit": 4
+        },
+        "component_choice": {
+          "maskgit": 3
+        },
+        "constraint_shadow": {
+          "maskgit": 6
+        },
+        "root_closure": {
+          "maskgit": 9
+        },
+        "slot_binding": {
+          "maskgit": 3
+        }
+      },
+      "route_counts": {
+        "maskgit": 30
+      },
+      "total_verifier_cost": 30.0
+    },
+    {
+      "accuracy": 0.36666666666666664,
+      "arm_name": "fixed_ltr",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.6406699731369515,
+      "mean_regret": 0.1720639238599136,
+      "route_by_kind": {
+        "argument_value": {
+          "ltr": 5
+        },
+        "array_insert": {
+          "ltr": 4
+        },
+        "component_choice": {
+          "ltr": 3
+        },
+        "constraint_shadow": {
+          "ltr": 6
+        },
+        "root_closure": {
+          "ltr": 9
+        },
+        "slot_binding": {
+          "ltr": 3
+        }
+      },
+      "route_counts": {
+        "ltr": 30
+      },
+      "total_verifier_cost": 90.0
+    },
+    {
+      "accuracy": 0.2,
+      "arm_name": "fixed_asap",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.617445883331397,
+      "mean_regret": 0.19528801366546802,
+      "route_by_kind": {
+        "argument_value": {
+          "asap": 5
+        },
+        "array_insert": {
+          "asap": 4
+        },
+        "component_choice": {
+          "asap": 3
+        },
+        "constraint_shadow": {
+          "asap": 6
+        },
+        "root_closure": {
+          "asap": 9
+        },
+        "slot_binding": {
+          "asap": 3
+        }
+      },
+      "route_counts": {
+        "asap": 30
+      },
+      "total_verifier_cost": 45.0
+    },
+    {
+      "accuracy": 0.7666666666666667,
+      "arm_name": "static_debt_router",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.7468478103183915,
+      "mean_regret": 0.06588608667847354,
+      "route_by_kind": {
+        "argument_value": {
+          "ltr": 3,
+          "maskgit": 2
+        },
+        "array_insert": {
+          "maskgit": 4
+        },
+        "component_choice": {
+          "maskgit": 3
+        },
+        "constraint_shadow": {
+          "ltr": 2,
+          "maskgit": 4
+        },
+        "root_closure": {
+          "ltr": 5,
+          "maskgit": 4
+        },
+        "slot_binding": {
+          "ltr": 2,
+          "maskgit": 1
+        }
+      },
+      "route_counts": {
+        "ltr": 12,
+        "maskgit": 18
+      },
+      "total_verifier_cost": 54.0
+    },
+    {
+      "accuracy": 0.7666666666666667,
+      "arm_name": "calibrated_debt_router",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.7468478103183915,
+      "mean_regret": 0.06588608667847354,
+      "route_by_kind": {
+        "argument_value": {
+          "ltr": 3,
+          "maskgit": 2
+        },
+        "array_insert": {
+          "maskgit": 4
+        },
+        "component_choice": {
+          "maskgit": 3
+        },
+        "constraint_shadow": {
+          "ltr": 2,
+          "maskgit": 4
+        },
+        "root_closure": {
+          "ltr": 5,
+          "maskgit": 4
+        },
+        "slot_binding": {
+          "ltr": 2,
+          "maskgit": 1
+        }
+      },
+      "route_counts": {
+        "ltr": 12,
+        "maskgit": 18
+      },
+      "total_verifier_cost": 54.0
+    },
+    {
+      "accuracy": 0.4666666666666667,
+      "arm_name": "signal_permuted_router",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.6582456446347762,
+      "mean_regret": 0.15448825236208893,
+      "route_by_kind": {
+        "argument_value": {
+          "ltr": 2,
+          "maskgit": 3
+        },
+        "array_insert": {
+          "ltr": 2,
+          "maskgit": 2
+        },
+        "component_choice": {
+          "ltr": 1,
+          "maskgit": 2
+        },
+        "constraint_shadow": {
+          "ltr": 3,
+          "maskgit": 3
+        },
+        "root_closure": {
+          "ltr": 4,
+          "maskgit": 5
+        },
+        "slot_binding": {
+          "maskgit": 3
+        }
+      },
+      "route_counts": {
+        "ltr": 12,
+        "maskgit": 18
+      },
+      "total_verifier_cost": 54.0
+    },
+    {
+      "accuracy": 1.0,
+      "arm_name": "oracle_router_ceiling",
+      "budget_mode": "equal_verifier_budget",
+      "mean_outcome": 0.8127338969968653,
+      "mean_regret": 0.0,
+      "route_by_kind": {
+        "argument_value": {
+          "asap": 1,
+          "ltr": 4
+        },
+        "array_insert": {
+          "asap": 1,
+          "maskgit": 3
+        },
+        "component_choice": {
+          "maskgit": 3
+        },
+        "constraint_shadow": {
+          "asap": 2,
+          "ltr": 1,
+          "maskgit": 3
+        },
+        "root_closure": {
+          "asap": 2,
+          "ltr": 4,
+          "maskgit": 3
+        },
+        "slot_binding": {
+          "ltr": 2,
+          "maskgit": 1
+        }
+      },
+      "route_counts": {
+        "asap": 6,
+        "ltr": 11,
+        "maskgit": 13
+      },
+      "total_verifier_cost": 55.0
+    }
+  ],
+  "budget_mode": "equal_verifier_budget",
+  "claim_class": "wiring",
+  "disposition": "signal_predictive",
+  "disposition_rationale": "Static debt router matches or beats the best fixed policy and improves over the signal-permuted control, suggesting the signal carries real routing information in this synthetic fixture.",
+  "experiment_id": "slm212-debt-routing",
+  "falsifier": "The static or calibrated router does not match or exceed the better fixed policy after budget matching; the signal-permuted control achieves the same regret; debt is not calibrated enough to choose the winning decode path; or gains require unequal verifier/forward budgets.",
+  "honest_caveats": [
+    "Synthetic fixture: signals and outcomes are randomly generated and only weakly correlated with the true-best route; real constraint-debt telemetry will differ.",
+    "No model, checkpoint, GPU, or verifier labels were used; this is wiring evidence only.",
+    "The oracle router uses synthetic outcome scores, not serving-time signals, and is a diagnostic ceiling only.",
+    "Budget accounting is a synthetic verifier-cost proxy, not measured wall time or forward passes on a real checkpoint.",
+    "No ship-gate claim is made; the route ceiling and signal calibration must be re-evaluated with real decode paths and AgentV evaluation."
+  ],
+  "hypothesis": "A deterministic constraint-debt router can choose the cheaper MaskGIT path when legal-mass debt is low and the stricter constrained-LTR path when debt is high, improving the quality/latency frontier over fixed policies at matched verifier budgets.",
+  "hysteresis": 1,
+  "lineage": {
+    "calibration_error": null,
+    "calibrator_hash": "bca18d763c286d7e8685a412a5770f43e49c99699834ed7451e30434e4abb9c8",
+    "outcome_digest": "638f34e2857e303f",
+    "signal_digest": "b9e1a67340f5d76f",
+    "synthetic_example_count": 30,
+    "wall_seconds": 0.001003099008812569
+  },
+  "matrix_set": "slm212_debt_routing",
+  "matrix_version": "sde5-05-v1",
+  "n_examples": 30,
+  "run_id": "slm212-debt-routing-20260721",
+  "schema": "DebtRoutingMatrixManifest",
+  "signal_name": "D_legal",
+  "status": "fixture",
+  "threshold_high": 2.0,
+  "threshold_low": 2.0,
+  "timestamp": "2026-07-21T04:15:30.006965Z",
+  "version_stamp": {
+    "code_commit": "96c51de50bde727d046ce1a463ed519897956eef",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v56",
+      "harness.experiments.slm212_debt_routing": "v1",
+      "harness.model_build.eval": "v33",
+      "matrix.slm212_debt_routing": "sde5-05-v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T04:15:30.006957+00:00"
+  }
+}
