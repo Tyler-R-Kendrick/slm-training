@@ -727,12 +727,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-07-21",
+          "note": "add SLM-223 NCS0-03 SemanticFloorGateV1 wiring/fixture harness over SLM-215 SpectralAtlasV1"
+        },
         {
           "version": "v56",
           "date": "2026-07-21",
@@ -3438,6 +3443,25 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins"
+        }
+      ]
+    },
+    "harness.experiments.slm223_semantic_floor_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py",
+        "scripts/build_semantic_floor_gate.py",
+        "tests/test_harnesses/experiments/test_slm223_semantic_floor_gate.py",
+        "tests/test_scripts/test_build_semantic_floor_gate.py",
+        "docs/design/iter-slm223-semantic-floor-gate-20260721.json",
+        "docs/design/iter-slm223-semantic-floor-gate-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-223 NCS0-03 SemanticFloorGateV1 wiring/fixture harness: role-weighted alpha_z aggregate over SpectralAtlasV1 rows, calibrated out-of-fold (leave-one-family-out), evaluated against a label-permutation-null baseline"
         }
       ]
     },
