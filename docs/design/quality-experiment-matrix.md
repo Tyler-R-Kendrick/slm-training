@@ -5105,3 +5105,17 @@ Evidence:
 [iter-e651-root-binding-threshold-20260720.md](iter-e651-root-binding-threshold-20260720.md),
 [w4 JSON](iter-e651-root-binding-w4-20260720.json), and
 [w8 JSON](iter-e651-root-binding-w8-20260720.json).
+
+## E652 complete semantic-root reachability
+
+E652 referenced every completed top-level element after required plan coverage
+to eliminate possible orphan sections. The OOD `n=4` output and every quality
+metric remain exactly at E650. Reject the treatment stamped v89. After rebasing
+onto retained E650 v92, the append-only lineage records E652 as treatment v93
+and restoration v94. The next step is bounded root-verifier abstention evidence,
+not another selection bias. No checkpoint was created or synced; AgentV remained
+0/1.
+
+Evidence:
+[iter-e652-complete-root-reachability-20260720.md](iter-e652-complete-root-reachability-20260720.md)
+and [JSON](iter-e652-complete-root-reachability-20260720.json).
