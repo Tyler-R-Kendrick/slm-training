@@ -4434,43 +4434,11 @@ class TwoTowerModel(nn.Module):
         if not role_candidates:
             return family_counts, {}
         from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
-        from slm_training.data.quality import semantic_role_properties
-        from slm_training.dsl.lang_core import library_schema
-
         completed = family_counts.copy()
         planned = set(family_counts)
         schema_descendants = TwoTowerModel._schema_descendant_families(planned)
         bindings: dict[str, list[str]] = defaultdict(list)
         bound_slots: set[str] = set()
-        definitions = library_schema().get("$defs", {})
-        properties_by_slot = semantic_role_properties(list(role_candidates))
-
-        def can_bind(family: str, slots: list[str]) -> bool:
-            definition = definitions.get(family)
-            properties = definition.get("properties", {}) if definition else {}
-            string_properties = {
-                name
-                for name, schema in properties.items()
-                if isinstance(schema, dict) and schema.get("type") == "string"
-            }
-            if not string_properties:
-                return True
-
-            capacity = max(1, completed[family])
-
-            def match(index: int, used: frozenset[tuple[str, int]]) -> bool:
-                if index == len(slots):
-                    return True
-                return any(
-                    match(index + 1, used | {(name, instance)})
-                    for name in properties_by_slot.get(slots[index], ())
-                    if name in string_properties
-                    for instance in range(capacity)
-                    if (name, instance) not in used
-                )
-
-            return match(0, frozenset())
-
         component_names = sorted(
             {component for candidates in role_candidates.values() for component in candidates}
         )
@@ -4506,16 +4474,8 @@ class TwoTowerModel(nn.Module):
                     preferred
                     for preferred in DEFAULT_HOUSE_STYLE.preferred_components
                     if preferred in planned and preferred in candidates
-                    and can_bind(preferred, [*bindings[preferred], slot])
                 ),
-                next(
-                    (
-                        family
-                        for family in sorted(planned.intersection(candidates))
-                        if can_bind(family, [*bindings[family], slot])
-                    ),
-                    None,
-                ),
+                next(iter(sorted(planned.intersection(candidates))), None),
             )
             if planned_family is not None:
                 bindings[planned_family].append(slot)

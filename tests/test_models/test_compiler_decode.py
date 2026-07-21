@@ -1734,26 +1734,6 @@ def test_role_obligations_disambiguate_children_from_planned_parent_schema() -> 
     assert bindings == {"TabItem": (":tabs.tab1", ":tabs.tab2")}
 
 
-def test_role_obligations_respect_distinct_string_property_capacity() -> None:
-    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
-        Counter({"Callout": 1}),
-        {
-            ":form.title": ("Callout",),
-            ":form.hint.title": ("Callout",),
-            ":form.hint.body": ("Callout",),
-        },
-    )
-
-    assert counts == Counter({"Callout": 2})
-    assert bindings == {
-        "Callout": (
-            ":form.hint.body",
-            ":form.hint.title",
-            ":form.title",
-        )
-    }
-
-
 def test_prompt_semantic_plan_recognizes_one_plural_family_container() -> None:
     from slm_training.models.template_fill import prompt_semantic_plan
 

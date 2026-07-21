@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v151",
+      "version": "v152",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v152",
+          "date": "2026-07-21",
+          "note": "E695 rejection: restore v150 behavior after property-capacity planning only swapped title roles and left placeholder spam, strict meaning, and aggregate quality unchanged"
+        },
         {
           "version": "v151",
           "date": "2026-07-21",
