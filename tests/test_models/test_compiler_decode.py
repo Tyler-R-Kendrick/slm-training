@@ -464,37 +464,6 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     assert bias.tolist() == [7.0, 0.0]
 
 
-def test_slot_coverage_wrapper_respects_explicit_role_bindings() -> None:
-    from types import SimpleNamespace
-
-    model = _model(output_tokenizer="choice", slot_coverage_close_decode_weight=4.0)
-    tokenizer = model.tokenizer
-    tab_item_id = tokenizer.token_to_id["+TabItem"]
-    close_id = tokenizer.token_to_id["]"]
-    state = SimpleNamespace(
-        frames=[
-            SimpleNamespace(kind="component", expr_type="element:Tabs"),
-            SimpleNamespace(
-                kind="variadic",
-                expr_type="array",
-                schemas=({"$ref": "#/$defs/TabItem"},),
-                close="]",
-            ),
-        ]
-    )
-
-    bias = model._slot_coverage_close_bias(
-        state,
-        [tokenizer.bos_id],
-        (tab_item_id, close_id),
-        torch.tensor([0.0, 3.0]),
-        [":tabs.details.title"],
-        {":tabs.details.title": ("Callout", "CardHeader")},
-        {"TabItem": (":tabs.tab1", ":tabs.tab2")},
-    )
-
-    assert bias is None
-
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
     from types import SimpleNamespace
 
@@ -1624,6 +1593,29 @@ def test_role_obligations_plan_unique_non_house_style_carriers() -> None:
     assert bindings == {
         "TabItem": (":tabs.tab1", ":tabs.tab2"),
     }
+
+
+def test_role_obligations_disambiguate_children_from_planned_parent_schema() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+    from slm_training.dsl.lang_core import library_schema
+
+    slots = [":tabs.tab1", ":tabs.tab2"]
+    candidates = semantic_role_candidates(
+        slots,
+        sorted(library_schema()["$defs"]),
+    )
+
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Tabs": 1}),
+        candidates,
+    )
+
+    assert candidates == {
+        ":tabs.tab1": ("AccordionItem", "TabItem"),
+        ":tabs.tab2": ("AccordionItem", "TabItem"),
+    }
+    assert counts == Counter({"TabItem": 2, "Tabs": 1})
+    assert bindings == {"TabItem": (":tabs.tab1", ":tabs.tab2")}
 
 
 def test_prompt_semantic_plan_recognizes_one_plural_family_container() -> None:

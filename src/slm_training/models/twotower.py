@@ -4436,6 +4436,7 @@ class TwoTowerModel(nn.Module):
         from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
         completed = family_counts.copy()
         planned = set(family_counts)
+        schema_descendants = TwoTowerModel._schema_descendant_families(planned)
         bindings: dict[str, list[str]] = defaultdict(list)
         bound_slots: set[str] = set()
         component_names = sorted(
@@ -4493,6 +4494,14 @@ class TwoTowerModel(nn.Module):
                 if family is not None:
                     bindings[family].append(slot)
                     continue
+            nested_candidates = tuple(
+                family for family in candidates if family in schema_descendants
+            )
+            if len(nested_candidates) == 1:
+                family = nested_candidates[0]
+                completed[family] += 1
+                bindings[family].append(slot)
+                continue
             family = next(
                 (
                     preferred
@@ -4507,6 +4516,32 @@ class TwoTowerModel(nn.Module):
         return completed, {
             family: tuple(slots) for family, slots in bindings.items()
         }
+
+    @staticmethod
+    def _schema_descendant_families(families: set[str]) -> set[str]:
+        """Return cycle-safe component refs nested below planned families."""
+        from slm_training.dsl.lang_core import library_schema
+
+        definitions = library_schema().get("$defs", {})
+        descendants: set[str] = set()
+        visited = set(families)
+        pending = [definitions[family] for family in families if family in definitions]
+        while pending:
+            value = pending.pop()
+            if isinstance(value, list):
+                pending.extend(value)
+                continue
+            if not isinstance(value, dict):
+                continue
+            reference = str(value.get("$ref") or "")
+            if reference.startswith("#/$defs/"):
+                family = reference.rsplit("/", 1)[-1]
+                descendants.add(family)
+                if family not in visited and family in definitions:
+                    visited.add(family)
+                    pending.append(definitions[family])
+            pending.extend(value.values())
+        return descendants
 
     def _semantic_plan_bias(
         self,
@@ -5351,7 +5386,6 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
-        role_bindings: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
         """Prefer coverage-compatible continuations before legal frame closure."""
         weight = float(
@@ -5480,14 +5514,7 @@ class TwoTowerModel(nn.Module):
                         semantic_role_candidates
                         and component in semantic_role_candidates.get(slot, ())
                     )
-                    or (
-                        component in reachable_candidates.get(slot, ())
-                        and (
-                            not role_bindings
-                            or component not in role_bindings
-                            or slot in role_bindings[component]
-                        )
-                    )
+                    or component in reachable_candidates.get(slot, ())
                     for _index, slot in missing
                 ):
                     targets.append(position)
@@ -7800,12 +7827,6 @@ class TwoTowerModel(nn.Module):
                             else None
                         ),
                         ids[row, :position].tolist(),
-                        (
-                            self._semantic_plan_role_bindings[row]
-                            if self._semantic_plan_role_bindings
-                            and row < len(self._semantic_plan_role_bindings)
-                            else None
-                        ),
                     )
                     if schema_role_slot_bias is not None:
                         scores = scores + schema_role_slot_bias
@@ -7823,12 +7844,6 @@ class TwoTowerModel(nn.Module):
                             self._semantic_role_candidates[row]
                             if self._semantic_role_candidates
                             and row < len(self._semantic_role_candidates)
-                            else None
-                        ),
-                        (
-                            self._semantic_plan_role_bindings[row]
-                            if self._semantic_plan_role_bindings
-                            and row < len(self._semantic_plan_role_bindings)
                             else None
                         ),
                     )

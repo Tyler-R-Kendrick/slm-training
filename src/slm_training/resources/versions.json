@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v142",
+      "version": "v143",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v143",
+          "date": "2026-07-21",
+          "note": "E689: disambiguate visible role carriers through cycle-safe schema descendants of already planned parent families; restore E688 wrapper behavior"
+        },
         {
           "version": "v142",
           "date": "2026-07-21",
