@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
-import { getJSON } from "./api";
+import { getJSON, usePoll } from "./api";
 import { CapsContext, type Caps } from "./caps";
 import { Overview } from "./pages/Overview";
 import { Data } from "./pages/Data";
@@ -86,25 +86,44 @@ function useMode(): [Mode, (m: Mode) => void] {
   return [mode, setMode];
 }
 
-/** Amber shell banner when every read is committed-snapshot fallback. */
+/** Shell strip: experiment / bucket / jobs freshness (always), cold-start callout when needed. */
 function FreshnessBanner() {
-  const [outputsPresent, setOutputsPresent] = useState<boolean | null>(null);
-  useEffect(() => {
-    const refresh = () => {
-      getJSON<{ outputs_present?: boolean }>("/api/system")
-        .then((sys) => setOutputsPresent(sys.outputs_present !== false))
-        .catch(() => setOutputsPresent(null));
+  const { data } = usePoll<{
+    outputs_present?: boolean;
+    freshness?: {
+      newest_experiment_date?: string | null;
+      experiment_count?: number;
+      local_run_count?: number;
+      bucket?: { ok?: boolean; count?: number; updated_at?: string | null; error?: string | null };
+      hf_jobs?: { ok?: boolean; auth?: boolean; count?: number; error?: string | null };
     };
-    refresh();
-    const id = setInterval(refresh, 15000);
-    return () => clearInterval(id);
-  }, []);
-  if (outputsPresent !== false) return null;
+  }>("/api/system", 30000);
+  if (!data) return null;
+  const f = data.freshness ?? {};
+  const cold = data.outputs_present === false;
+  const bucket = f.bucket?.ok
+    ? `${f.bucket.count ?? 0} remote${f.bucket.updated_at ? `, updated ${String(f.bucket.updated_at).slice(0, 10)}` : ""}`
+    : f.bucket?.error
+      ? "unavailable"
+      : "—";
+  const jobs = f.hf_jobs?.ok
+    ? String(f.hf_jobs.count ?? 0)
+    : f.hf_jobs?.auth === false
+      ? "auth needed"
+      : "—";
   return (
     <div className="freshness-banner" role="status">
-      <span className="prov prov-committed">snapshot</span>
-      Committed snapshot data — no live <span className="mono">outputs/</span> on this host. Run{" "}
-      <span className="mono">serve_playground</span> locally for live evidence.
+      <span className={`prov ${cold ? "prov-committed" : "prov-live"}`}>{cold ? "snapshot" : "live"}</span>
+      Experiments newest {f.newest_experiment_date ?? "—"}
+      {" · "}
+      Bucket {bucket}
+      {" · "}
+      HF Jobs {jobs}
+      {cold ? (
+        <>
+          {" — "}no local <span className="mono">outputs/</span>; remote inventory still listed when available.
+        </>
+      ) : null}
     </div>
   );
 }

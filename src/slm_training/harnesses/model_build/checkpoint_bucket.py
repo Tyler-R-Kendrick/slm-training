@@ -258,6 +258,162 @@ def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+# Best-effort inventory of durable checkpoints already in the OpenUI bucket.
+# The dashboard polls this; keep TTL short enough to feel live, long enough
+# that overview/scoreboard refresh storms do not hammer the Hub.
+_BUCKET_LIST_CACHE: dict[str, Any] = {"key": "", "ts": 0.0, "payload": None}
+_BUCKET_LIST_TTL_S = 60.0
+_BUCKET_API_ROOT = "https://huggingface.co/api/buckets"
+
+
+def _http_json(url: str, *, timeout_s: float = 12.0, token: str | None = None) -> Any:
+    """GET JSON from the Hub REST API (stdlib only — import-light for Vercel)."""
+    import urllib.error
+    import urllib.request
+
+    headers = {"User-Agent": "slm-training-dashboard/1.0", "Accept": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_s) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", "replace")[:240]
+        raise RuntimeError(f"HTTP {exc.code} for {url}: {body}") from exc
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"failed to fetch {url}: {exc}") from exc
+
+
+def list_bucket_checkpoint_runs(
+    bucket: str | None = None,
+    *,
+    token: str | bool | None = None,
+    ttl_s: float = _BUCKET_LIST_TTL_S,
+    fetch: Any | None = None,
+) -> dict[str, Any]:
+    """List ``checkpoints/<run_id>/`` prefixes in the OpenUI HF Bucket.
+
+    Uses the public Hub buckets tree API so the dashboard can show durable
+    remote checkpoints even when local ``outputs/`` is empty (Vercel / cold
+    start). Never raises — returns ``ok=False`` with an error string.
+    """
+    uri = normalize_bucket_uri(bucket)
+    bid = bucket_id_from_uri(uri)
+    cache_key = f"{bid}:{token is not None and token is not False}"
+    now = datetime.now(timezone.utc).timestamp()
+    cached = _BUCKET_LIST_CACHE
+    if (
+        cached.get("key") == cache_key
+        and isinstance(cached.get("payload"), dict)
+        and now - float(cached.get("ts") or 0.0) < ttl_s
+    ):
+        return dict(cached["payload"])
+
+    if os.environ.get("SLM_DISABLE_REMOTE_INVENTORY", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }:
+        payload = {
+            "ok": False,
+            "bucket_id": bid,
+            "uri": uri,
+            "url": f"https://huggingface.co/buckets/{bid}",
+            "runs": [],
+            "error": "remote inventory disabled (SLM_DISABLE_REMOTE_INVENTORY)",
+            "fetched_at": _utcnow_iso(),
+        }
+        _BUCKET_LIST_CACHE.update({"key": cache_key, "ts": now, "payload": payload})
+        return dict(payload)
+
+    tok: str | None = None
+    if isinstance(token, str) and token.strip():
+        tok = token.strip()
+    elif token is True or token is None:
+        try:
+            _, get_token = _require_hub()
+            resolved = get_token()
+            tok = resolved if isinstance(resolved, str) and resolved.strip() else None
+        except Exception:
+            tok = None
+
+    getter = fetch if callable(fetch) else _http_json
+    try:
+        info = getter(f"{_BUCKET_API_ROOT}/{bid}", timeout_s=12.0, token=tok)
+        tree = getter(
+            f"{_BUCKET_API_ROOT}/{bid}/tree/checkpoints?recursive=true&limit=1000",
+            timeout_s=12.0,
+            token=tok,
+        )
+    except Exception as exc:  # network / auth / parse — surface, don't crash readers
+        payload = {
+            "ok": False,
+            "bucket_id": bid,
+            "uri": uri,
+            "url": f"https://huggingface.co/buckets/{bid}",
+            "runs": [],
+            "error": str(exc),
+            "fetched_at": _utcnow_iso(),
+        }
+        _BUCKET_LIST_CACHE.update({"key": cache_key, "ts": now, "payload": payload})
+        return dict(payload)
+
+    by_run: dict[str, dict[str, Any]] = {}
+    rows = tree if isinstance(tree, list) else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        path = str(row.get("path") or "")
+        parts = path.split("/")
+        if len(parts) < 2 or parts[0] != "checkpoints" or not parts[1]:
+            continue
+        run_id = parts[1]
+        entry = by_run.setdefault(
+            run_id,
+            {
+                "run_id": run_id,
+                "uri": remote_run_prefix(uri, run_id),
+                "url": f"https://huggingface.co/buckets/{bid}/tree/checkpoints/{run_id}",
+                "files": 0,
+                "bytes": 0,
+                "mtime": None,
+            },
+        )
+        entry["files"] += 1
+        size = row.get("size")
+        if isinstance(size, int):
+            entry["bytes"] += size
+        mtime = row.get("mtime") or row.get("uploadedAt")
+        if isinstance(mtime, str) and (
+            entry["mtime"] is None or mtime > str(entry["mtime"])
+        ):
+            entry["mtime"] = mtime
+
+    runs = sorted(
+        by_run.values(),
+        key=lambda item: str(item.get("mtime") or ""),
+        reverse=True,
+    )
+    payload = {
+        "ok": True,
+        "bucket_id": bid,
+        "uri": uri,
+        "url": f"https://huggingface.co/buckets/{bid}",
+        "bucket_updated_at": (
+            info.get("updatedAt") if isinstance(info, dict) else None
+        ),
+        "bucket_size": info.get("size") if isinstance(info, dict) else None,
+        "total_files": info.get("totalFiles") if isinstance(info, dict) else None,
+        "runs": runs,
+        "count": len(runs),
+        "error": None,
+        "fetched_at": _utcnow_iso(),
+    }
+    _BUCKET_LIST_CACHE.update({"key": cache_key, "ts": now, "payload": payload})
+    return dict(payload)
+
+
 def _hash_stage(stage: Path) -> dict[str, dict[str, Any]]:
     """``{filename: {size_bytes, sha256}}`` for every non-reference staged file."""
     inventory: dict[str, dict[str, Any]] = {}
