@@ -2149,6 +2149,11 @@
       "history": [
         {
           "version": "v89",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E642 root-only-role-plan evidence to E648 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v89",
           "date": "2026-07-20",
           "note": "E648 rejection: restore v87 prompt-only semantic plans after root-only inferred families regressed meaning, structure, reward, AST F1, and tail latency; renumbered from the originally launched E642 arm after rebase"
         },

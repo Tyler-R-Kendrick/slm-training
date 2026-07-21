@@ -1,18 +1,22 @@
-# E642 — root-only inferred role plans
+# E648 — root-only inferred role plans
 
 Date: 2026-07-20
 Status: completed negative; reverted; not ship
 
-E642 retained E641's schema-derived, house-style-preferred inferred families but
+E648 retained E647's schema-derived, house-style-preferred inferred families but
 allowed their semantic-plan sampling bias only at completed top-level section
 boundaries.
+
+The capped run was originally launched as E642. It was renumbered E648 when
+the rebase incorporated the independently landed E639–E644 sequence; the
+committed JSON retains the original run ID explicitly.
 
 No training ran and no checkpoint was created. One capped CPU OOD `n=4` run
 reused E620's rejected local-only checkpoint with the exact E637 policy. It
 completed without timeout or fallback and emitted AgentEvals JSONL plus an
 AgentV SDK bundle without execution errors.
 
-| OOD `n=4` | E637 r2 baseline | E642 r1 |
+| OOD `n=4` | E637 r2 baseline | E648 r1 |
 | --- | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 |
 | meaningful v1 / strict v2 | 0.7500 / 0.5000 | 0.5000 / 0.5000 |
@@ -26,9 +30,9 @@ AgentV SDK bundle without execution errors.
 
 Modal and Auth remained strict, but Gallery became a 1,290-character nested
 Button/Carousel/Modal program and Dashboard lost meaning. Reject the treatment
-stamped v84. After rebasing onto E641 restoration v86, the append-only lineage
-records E642 as treatment v87 and restoration v88. Merely changing the sampling
+stamped v84. After rebasing onto E647 restoration v87, the append-only lineage
+records E648 as treatment v88 and restoration v89. Merely changing the sampling
 boundary does not bind inferred families to roles. No checkpoint was created,
 synced, or promoted.
 
-Evidence: [JSON](iter-e642-root-only-role-plans-20260720.json).
+Evidence: [JSON](iter-e648-root-only-role-plans-20260720.json).
