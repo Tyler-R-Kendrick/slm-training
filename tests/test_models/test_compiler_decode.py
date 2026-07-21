@@ -3671,6 +3671,15 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     )
     assert not (set(nested_children.candidate_ids) & set(tokenizer.kind_ids("lit")))
 
+    typed_string = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=TextArea(", add_special=False),
+        slot_contract=[":hero.title"],
+    )
+    assert tokenizer.sym_id(0) in typed_string.candidate_ids
+    for token in ("true", "false", "null", "LIT_NUM", "LIT_END"):
+        assert tokenizer.token_to_id[token] not in typed_string.candidate_ids
+
     monkeypatch.setattr(
         compiler_draft,
         "_official_schema",

@@ -5397,3 +5397,16 @@ extend the arm to other suites.
 
 Evidence: [narrative](iter-e715-tree-decode-symbol-only-20260721.md) and
 [JSON](iter-e715-tree-decode-symbol-only-20260721.json).
+
+## E716 schema-typed string candidates
+
+E716 corrects the compiler's lexer-native `STRING` mapping: fixed string and
+template symbols remain legal, while booleans, `null`, `LIT_NUM`, `LIT_END`, and
+raw byte text are excluded. The clean local E715 replay removes the invalid
+`TextArea.name=LIT_NUM` edge and its null-required failure, with all three
+outputs still passing symbol-only verification. Aggregate smoke quality is
+neutral versus E715 (parse/strict 0.0, structure 0.0619, AgentV 0/1), so retain
+model v188 as a correctness fix while leaving tree decoding rejected.
+
+Evidence: [narrative](iter-e716-schema-typed-string-candidates-20260721.md) and
+[JSON](iter-e716-schema-typed-string-candidates-20260721.json).

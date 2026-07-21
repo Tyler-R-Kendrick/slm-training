@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "run_id": "e716-e714-typed-tree-smoke-r1",
+  "experiment_id": "E716",
+  "date_utc": "2026-07-21",
+  "status": "completed_correctness_fix_quality_neutral",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "run_id": "e714-symbol-only-scratch600-r1",
+    "sha256": "71ef1d25efb5186b885e8ee9e1370002f419bf42ea53985111734c49cfd2b49e",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "change": {
+    "component": "model.twotower",
+    "before": "v187",
+    "after": "v188",
+    "string_terminal_allows": ["STR:*", "<SYM_n>", "LIT_STR when present"],
+    "string_terminal_excludes": ["true", "false", "null", "LIT_NUM", "LIT_END", "raw bytes"]
+  },
+  "verification": {
+    "tests_passed": 188,
+    "test_seconds": 11.31,
+    "version_stamps": "pass"
+  },
+  "evaluation_policy": {
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "compiler_decode_mode": "tree",
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_max_tokens": 160,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "allow_unconstrained_fallback": false,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "control_e715": {
+    "parse": 0.0,
+    "strict_v2": 0.0,
+    "placeholder_fidelity": 0.6666666666666666,
+    "structure": 0.06186666666666666,
+    "component_recall": 0.16666666666666666,
+    "timeouts": 1,
+    "p50_ms": 5746.57,
+    "p95_ms": 8029.84,
+    "text_area_name_numeric_marker_legal": true
+  },
+  "treatment_e716": {
+    "parse": 0.0,
+    "meaningful_v1": 0.0,
+    "strict_v2": 0.0,
+    "symbol_only_passed": 3,
+    "symbol_only_total": 3,
+    "placeholder_fidelity": 0.6666666666666666,
+    "structure": 0.06186666666666666,
+    "component_recall": 0.16666666666666666,
+    "reward": 0.0,
+    "ast_node_f1": null,
+    "ast_edge_f1": null,
+    "fallback_count": 2,
+    "timeouts": 1,
+    "p50_ms": 5247.78,
+    "p95_ms": 8000.81,
+    "text_area_name_numeric_marker_legal": false,
+    "text_area_name_choice": "STR:email",
+    "null_required_text_area_name_failure": false
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Retain type-safe candidate mapping; quality remains neutral and tree decode remains rejected.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "23300b58423aa98cc2b5fb9a1b17fc54f5d321fe",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v38",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v188"
+    },
+    "stamped_at": "2026-07-21T22:33:54.216554+00:00"
+  }
+}
