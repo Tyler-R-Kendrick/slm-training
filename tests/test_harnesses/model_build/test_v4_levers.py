@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 
+from slm_training.data.contract import RuntimeSymbol
 from slm_training.models.parallel_decode import (
     select_remask_indices,
     select_remask_policy_indices,
@@ -15,6 +16,7 @@ from slm_training.models.template_fill import (
     inventory_from_prompt,
     normalize_placeholders,
     prompt_semantic_role_candidates,
+    typed_semantic_role_candidates,
 )
 from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
@@ -96,6 +98,41 @@ def test_semantic_role_candidates_can_use_visible_roles_and_public_schema() -> N
     assert "Button" in candidates[":ood.modal.confirm"]
 
 
+def test_typed_semantic_roles_ignore_external_marker_spelling() -> None:
+    prompt = "Modal dialog with a title and confirm button."
+    left = typed_semantic_role_candidates(
+        prompt,
+        [":hero.title", ":hero.confirm"],
+        [
+            RuntimeSymbol(
+                surface=":hero.title",
+                role="external_entity",
+                semantic_role="title",
+            ),
+            RuntimeSymbol(
+                surface=":hero.confirm",
+                role="external_entity",
+                semantic_role="confirm",
+            ),
+        ],
+        include_schema_candidates=True,
+    )
+    right = typed_semantic_role_candidates(
+        prompt,
+        [":x", ":y"],
+        [
+            RuntimeSymbol(surface=":x", role="external_entity", semantic_role="title"),
+            RuntimeSymbol(
+                surface=":y", role="external_entity", semantic_role="confirm"
+            ),
+        ],
+        include_schema_candidates=True,
+    )
+    assert tuple(left.values()) == tuple(right.values())
+    assert "Modal" in left[":hero.title"]
+    assert "Button" in left[":hero.confirm"]
+
+
 def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:
     conf = torch.tensor([[0.9, 0.8, 0.1, 0.2, 0.05]])
     known = torch.tensor([[True, True, True, True, True]])
@@ -175,6 +212,7 @@ def test_legacy_kind_lookup_checkpoint_is_ignored() -> None:
     from slm_training.models.twotower import _load_checkpoint_state
 
     _load_checkpoint_state(model, sd)
+
 
 def test_honest_slot_contract_ignores_gold_placeholders() -> None:
     src = 'root = Stack([t], "column")\nt = TextContent(":hero.title")'

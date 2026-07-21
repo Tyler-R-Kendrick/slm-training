@@ -125,6 +125,21 @@
         }
       ]
     },
+    "dsl.scope_env": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/scope_env.py",
+        "tests/test_dsl/test_scope_env.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; Torch-free persistent typed ScopeEnv with opaque ordinal IDs, separate surface aliases, and explicit shadowing/forward-reference policies"
+        }
+      ]
+    },
     "dsl.solver.topology": {
       "version": "v1",
       "kind": "harness",
@@ -3189,6 +3204,11 @@
         {
           "version": "v4",
           "date": "2026-07-21",
+          "note": "no-bump: restore historical runtime-symbol-feature experiment descriptions while documenting the separate opaque production projection; matrix dispatch and recipes unchanged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-21",
           "note": "add SLM-210 --matrix-set sde5-floor-escape dispatch for preregistered floor-escape wiring fixture"
         },
         {
@@ -3493,7 +3513,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v180",
+      "version": "v181",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3502,6 +3522,7 @@
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/template_fill.py",
         "src/slm_training/data/quality.py",
+        "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
         "src/slm_training/harnesses/model_build/config.py",
         "src/slm_training/harnesses/model_build/factory.py",
@@ -3512,6 +3533,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v181",
+          "date": "2026-07-21",
+          "note": "add opaque request-local identity to opt-in bound/choice generation while preserving historical name-aware checkpoint semantics and retained v180 carrier behavior; exclude projected marker names from scoring while allowing declared typed authority; add verified exact-choice results, persistent typed scope primitives, and narrow one-hole deterministic MaskGIT completion"
+        },
         {
           "version": "v180",
           "date": "2026-07-21",

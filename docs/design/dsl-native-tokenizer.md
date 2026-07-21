@@ -144,12 +144,18 @@ contracts (E54 / X2–X7).
 `slot_contract`. Symbol-table serialization is v3 and reads v2 tables by
 deterministically reconstructing metadata; reserved token IDs do not move.
 
-`runtime_symbol_features=surface|role_gated` pools existing byte embedding rows
-for request-visible metadata and applies the resulting per-example delta at both
-input embedding and tied output projection. `role_gated` suppresses surface
-features for binders, retaining alpha-renaming invariance, while entities and
-states remain name-aware. `none` is the legacy path. Optional training slot
-permutation preserves root binder slot zero.
+The historical default-off
+`runtime_symbol_features=surface|role_gated|replace` experiments retain their
+name-derived feature semantics so old checkpoints and recorded evidence remain
+interpretable. They are compatibility levers, not production identity authority.
+
+The opt-in bound and exact-choice generation APIs instead activate an opaque
+projection: model-facing descriptors, learned slot/component inputs, and span-prior
+keys use stable request-local ordinals/classes. Runtime semantic-role bias in that
+projection requires an explicit `RuntimeSymbol.semantic_role`; it never infers a
+role from the final segment of a placeholder name. Renaming external aliases while
+preserving declaration order and typed metadata is invariant on these new paths.
+Typed role/type metadata remains usable authority; only marker spelling is excluded.
 
 Semantic masks conservatively hide undeclared entity/state rows but leave binder
 rows writable. The constraint graph reuses V7 clustering and ordered verification;

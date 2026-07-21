@@ -23,7 +23,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -91,6 +91,20 @@ def test_choice_decode_all_singletons_skips_denoiser(monkeypatch) -> None:
             AssertionError("all-singleton choice step must not run the denoiser")
         ),
     )
+    def forbidden_scoring(*_args, **_kwargs):
+        raise AssertionError("exact singleton must commit before semantic scoring")
+
+    for helper in (
+        "_component_inventory_bias",
+        "_component_plan_bias",
+        "_slot_component_bias",
+        "_schema_role_slot_bias",
+        "_slot_coverage_close_bias",
+        "_semantic_plan_bias",
+        "_semantic_plan_inline_bias",
+        "_semantic_plan_root_bias",
+    ):
+        monkeypatch.setattr(model, helper, forbidden_scoring)
     ctx, ctx_pad = model._encode_context(["one", "two"])
     with collect_decode_stats() as stats:
         ids = model._choice_ltr_decode_batch(ctx, ctx_pad, 8, [None, None])
@@ -533,9 +547,12 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
         state,
         [tokenizer.bos_id],
         (button_id, close_id),
-        torch.tensor([0.0, 3.0]),
-        [":dialog.confirm"],
-        {":dialog.confirm": ("Button",)},
+            torch.tensor([0.0, 3.0]),
+            [":dialog.confirm"],
+            {":dialog.confirm": ("Button",)},
+            semantic_role_properties={
+                ":dialog.confirm": ("action", "confirm", "label")
+            },
     )
 
     assert bias is not None
@@ -567,6 +584,9 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
         torch.tensor([0.0, 3.0]),
         [":dialog.confirm"],
         {":dialog.confirm": ("Button",)},
+        semantic_role_properties={
+            ":dialog.confirm": ("action", "confirm", "label")
+        },
     )
 
     assert bias is not None
@@ -657,6 +677,9 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("ImageGallery",)},
+        semantic_role_properties={
+            ":gallery.caption": ("caption", "details", "text")
+        },
     )
 
     assert bias is not None
@@ -668,6 +691,9 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("TextContent",)},
+        semantic_role_properties={
+            ":gallery.caption": ("caption", "details", "text")
+        },
     )
     assert schema_bias is not None and schema_bias.tolist() == [8.0, 0.0]
 
@@ -1346,9 +1372,34 @@ def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
         schema_role_slot_decode_weight=8.0,
         **{enabling_flag: True},
     )
-    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+    request = GenerationRequest(
+        prompt="Gallery block.",
+        slot_contract=[":gallery.image"],
+        runtime_symbols=(
+            RuntimeSymbol(
+                surface=":gallery.image",
+                role="external_entity",
+                semantic_role="image",
+            ),
+        ),
+    )
 
     model.generate_batch_requests([request])  # must not raise ValueError
+
+
+def test_marker_name_cannot_activate_semantic_role_scoring() -> None:
+    model = _model(
+        output_tokenizer="choice",
+        schema_role_slot_decode_weight=8.0,
+        slot_contract_constrained_decode=True,
+    )
+    request = GenerationRequest(
+        prompt="Gallery block.",
+        slot_contract=[":gallery.image"],
+    )
+
+    with pytest.raises(ValueError, match="RuntimeSymbol.semantic_role"):
+        model.generate_batch_requests([request])
 
 
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
@@ -1678,6 +1729,11 @@ def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
         torch.zeros(3),
         slots,
         candidates,
+        semantic_role_properties={
+            ":gallery.img": ("img", "src"),
+            ":gallery.alt": ("alt",),
+            ":gallery.caption": ("caption",),
+        },
     )
 
     assert candidates == {

@@ -46,14 +46,25 @@ class PlanSeedBuilder:
         }
 
         symbol_role: dict[str, str] = {
-            sym.symbol_id: sym.semantic_role or "text"
-            for sym in plan.symbols
+            sym.symbol_id: sym.semantic_role or "text" for sym in plan.symbols
+        }
+        # Surface syntax uses request-local ordinals only.  Semantic roles remain
+        # typed authority for choosing the component property; neither the caller's
+        # symbol spelling nor the role name becomes a template-marker identity.
+        symbol_slot = {
+            sym.symbol_id: f"slot_{index}" for index, sym in enumerate(plan.symbols)
         }
 
         # Apply content symbols to matching role slots.
         for binding in plan.bindings:
             candidates = binding.candidate_symbols or ()
             if candidates and binding.role_slot_id in roles:
+                if candidates[0] not in symbol_slot:
+                    return SeedResult(
+                        seed=None,
+                        ok=False,
+                        reason=f"unknown content symbol {candidates[0]}",
+                    )
                 roles[binding.role_slot_id]["content"] = candidates[0]
 
         # Identify root role.
@@ -103,11 +114,20 @@ class PlanSeedBuilder:
                     args.append(child_stmt)
             content_symbol = info["content"]
             if content_symbol is not None:
-                prop = symbol_role.get(content_symbol, self._content_prop(family) or "text")
-                args.append(f'":{content_symbol}.{prop}"')
+                prop = symbol_role.get(
+                    content_symbol, self._content_prop(family) or "text"
+                )
+                slot = symbol_slot.get(content_symbol)
+                if slot is None:
+                    raise ValueError(f"unknown content symbol {content_symbol}")
+                args.append(f'":{slot}.{prop}"')
 
             if args:
-                expr = f"{family}([{', '.join(args)}])" if children else f"{family}({', '.join(args)})"
+                expr = (
+                    f"{family}([{', '.join(args)}])"
+                    if children
+                    else f"{family}({', '.join(args)})"
+                )
             else:
                 expr = f"{family}()"
             rendered_expr[role_id] = expr
