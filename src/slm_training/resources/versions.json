@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v150",
+      "version": "v151",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v151",
+          "date": "2026-07-21",
+          "note": "E695: reuse a planned family for another visible role only when distinct public string properties can still bind every assigned role"
+        },
         {
           "version": "v150",
           "date": "2026-07-21",
