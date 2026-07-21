@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v141",
+      "version": "v142",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v142",
+          "date": "2026-07-21",
+          "note": "E688: prevent schema-reachable wrapper continuation from stealing missing roles outside that component's explicit semantic-plan bindings"
+        },
         {
           "version": "v141",
           "date": "2026-07-21",
