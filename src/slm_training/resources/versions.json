@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v92",
+      "version": "v93",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v93",
+          "date": "2026-07-20",
+          "note": "E652: close verified semantic roots over every completed top-level element after required plan coverage so unplanned valid sections cannot orphan the root; renumbered from the originally launched E646 arm after rebase"
+        },
         {
           "version": "v92",
           "date": "2026-07-21",
