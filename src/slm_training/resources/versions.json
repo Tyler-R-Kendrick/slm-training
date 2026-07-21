@@ -3753,6 +3753,25 @@
         }
       ]
     },
+    "harness.experiments.slm237_placeholder_contract_literal_content_robustness": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm237_placeholder_contract_literal_content_robustness.py",
+        "scripts/run_slm237_placeholder_contract_literal_content_robustness.py",
+        "tests/test_harnesses/experiments/test_slm237_placeholder_contract_literal_content_robustness.py",
+        "tests/test_scripts/test_run_slm237_placeholder_contract_literal_content_robustness.py",
+        "docs/design/iter-slm237-pcr0-01-placeholder-contract-literal-content-robustness-20260721.json",
+        "docs/design/iter-slm237-pcr0-01-placeholder-contract-literal-content-robustness-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-237 PCR0-01 placeholder-contract literal-content robustness probe: exercises the real extract_placeholders (dsl/placeholders.py), _contract_precision / _contract_recall / _placeholder_fidelity (harnesses/model_build/eval_runner.py), and score_openui RL-reward contract (integrations/openui_rl.py) over synthetic grammar-valid OpenUI document pairs that share identical DSL structure but differ only in leaf-literal text, to test whether an incidental placeholder-shaped literal mention can spuriously lower contract precision, and -- more severely -- award full false credit on all three contract metrics and the RL reward's placeholder_fidelity term for a prediction that omits its one real contract placeholder entirely"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",
