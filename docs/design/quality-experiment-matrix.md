@@ -4928,3 +4928,16 @@ synced.
 
 Evidence: [narrative](iter-e682-positional-role-binding-20260721.md) and
 [JSON](iter-e682-positional-role-binding-20260721.json).
+
+## E683 independent v137 Held-out confirmation
+
+E683 independently evaluates retained v137 on the full Held-out `n=5` suite.
+Syntax is 1.0 and meaningful v1 is 0.8, but strict v2.4.0 is only 2/5 with
+0.8 coverage. Login is exact and dual-card is strict-valid; form placeholder
+spam, unknown hyphenated/plural two-tab contract coverage, and incomplete
+settings roles reject suite-level generalization. Retain v137 for Smoke, but
+record E683 as a negative Held-out confirmation. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e683-positional-role-heldout-20260721.md) and
+[JSON](iter-e683-positional-role-heldout-20260721.json).

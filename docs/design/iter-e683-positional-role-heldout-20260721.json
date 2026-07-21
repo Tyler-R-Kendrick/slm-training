@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "run_id": "e683-positional-role-heldout-r1",
+  "experiment_id": "E683",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_confirmation_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "The retained v137 positional role binding will preserve its full strict semantic coverage on the independent full Held-out suite.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "meaningful_program_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.4,
+      "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.5,
+      "binding_aware_meaningful_v2_coverage": 0.8,
+      "placeholder_fidelity": 0.7333333333333333,
+      "placeholder_validity": 0.8400000000000001,
+      "structural_similarity": 0.49326,
+      "component_type_recall": 0.5333333333333333,
+      "reward_score": 0.8702,
+      "ast_node_f1": 0.5773076923076923,
+      "ast_edge_f1": 0.5203463203463203,
+      "latency_ms_p50": 3344.37,
+      "latency_ms_p95": 20817.96,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "failure_breakdown": {
+    "placeholder_semantic_role_mismatch": 1,
+    "placeholder_spam": 1,
+    "prompt_contract_unknown": 1,
+    "required_placeholder_missing": 2,
+    "schema_value_role_mismatch:Slider.variant": 1
+  },
+  "prediction_evidence": {
+    "strict_pass_records": [
+      "held_out_dual_card_01",
+      "held_out_input_01"
+    ],
+    "held_out_form_01": "Covers the visible form roles but repeats hint.title in incompatible Form and FormControl positions.",
+    "held_out_tabs_01": "The hyphenated/plural two-tab prompt yields unknown contract coverage and collapses to Image with missing slots.",
+    "held_out_settings_01": "Emits only Slider, omits switch/description roles, and places notify in Slider.variant."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain v137 for its verified Smoke gains, but reject suite-level generalization. The next independent lever should repair prompt component recognition for hyphenated/plural tab language before addressing the separate form and settings failures.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "008b91fa2bdf83585e3e328e827904836ec17bac",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v34",
+      "evals.meaningful_program": "2.4.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v137"
+    },
+    "stamped_at": "2026-07-21T12:41:48.597414+00:00"
+  }
+}
