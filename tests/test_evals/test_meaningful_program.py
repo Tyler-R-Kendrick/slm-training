@@ -157,6 +157,27 @@ def test_v2_accepts_display_body_and_value_aliases_from_dashboard_gold() -> None
     assert report.verdict is True
 
 
+def test_v2_accepts_heading_and_kicker_as_display_text() -> None:
+    source = (
+        'kicker = TextContent(":hero.kicker")\n'
+        'heading = TextContent(":callout.heading")\n'
+        'root = Stack([kicker, heading], "column")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="display-text-aliases",
+            prompt=(
+                "Build a Stack with display text. "
+                "Placeholders: :hero.kicker :callout.heading"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
     source = (
         'root = Stack([name, email], "column")\n'

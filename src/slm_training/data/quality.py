@@ -26,6 +26,8 @@ _SEMANTIC_ROLE_PROPERTY_ALIASES = {
     "caption": {"details", "text"},
     "copy": {"text"},
     "description": {"details", "text"},
+    "heading": {"text"},
+    "kicker": {"text"},
     "title": {"text"},
     "value": {"text"},
     "img": {"image", "src"},

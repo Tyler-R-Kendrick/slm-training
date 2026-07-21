@@ -1450,6 +1450,20 @@ def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
     assert candidates == {":dashboard.refresh": ("Button",)}
 
 
+def test_semantic_role_candidates_map_display_heading_and_kicker_to_text() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":hero.kicker", ":callout.heading"],
+        ["Callout", "CardHeader", "TextContent"],
+    )
+
+    assert candidates == {
+        ":callout.heading": ("TextContent",),
+        ":hero.kicker": ("TextContent",),
+    }
+
+
 def test_joint_role_candidates_require_distinct_schema_properties() -> None:
     slots = [":gallery.hint.title", ":gallery.hint.body"]
     candidates = TwoTowerModel._semantic_role_joint_candidates(

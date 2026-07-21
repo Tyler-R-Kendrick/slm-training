@@ -407,12 +407,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.3.0",
+      "version": "2.4.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.4.0",
+          "date": "2026-07-21",
+          "note": "E680: recognize kicker and heading as schema-valid display-text roles so visible prose can occupy TextContent.text"
+        },
         {
           "version": "2.3.0",
           "date": "2026-07-21",
@@ -594,6 +599,11 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.3.0 to 2.4.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -1549,7 +1559,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v134",
+      "version": "v135",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1564,6 +1574,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v135",
+          "date": "2026-07-21",
+          "note": "E680: map visible kicker and heading display roles to schema-valid TextContent carriers"
+        },
         {
           "version": "v134",
           "date": "2026-07-21",
