@@ -194,6 +194,10 @@ class TwoTowerConfig:
     recursive_transition_layers: int = 0
     # SLM-138: per-recursion CE weights for deep supervision (empty = off).
     recursive_depth_supervision_weights: tuple[float, ...] = ()
+    # SLM-211: default-on weight tying between token embedding and output head.
+    # Default True preserves exact prior behavior; False creates an independent
+    # output projection initialized as a copy of the token embedding.
+    tie_output_embedding: bool = True
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
@@ -610,6 +614,37 @@ def _load_checkpoint_state(
         )
 
 
+def _check_output_head_tie_migration(
+    model: "TwoTowerModel",
+    source_config: dict[str, Any],
+    *,
+    allow_tie_migration: bool = False,
+) -> None:
+    """Detect tie_output_embedding mismatch and optionally apply a merge policy.
+
+    Default behavior is fail-closed: loading a tied checkpoint into an untied
+    model (or vice versa) raises a clear error. Passing
+    ``allow_tie_migration=True`` opts in to a deterministic merge:
+
+    * tied -> untied: the checkpoint's shared matrix is copied into both the
+      token embedding and the new independent lm_head;
+    * untied -> tied: the lm_head is discarded and tied to the token embedding.
+    """
+    target_tie = bool(getattr(model.config, "tie_output_embedding", True))
+    source_tie = bool(source_config.get("tie_output_embedding", True))
+    if source_tie == target_tie:
+        return
+    if not allow_tie_migration:
+        raise ValueError(
+            "checkpoint tie_output_embedding mismatch: "
+            f"checkpoint={source_tie}, model={target_tie}. "
+            "Pass allow_tie_migration=True to explicitly copy or tie the output head."
+        )
+    if not source_tie and target_tie:
+        # Merge policy: keep the token embedding, discard the separate lm_head.
+        model.denoiser.lm_head.weight = model.denoiser.tok.weight
+
+
 class TwoTowerModel(nn.Module):
     """MaskGIT-style discrete diffusion conditioned on a prompt encoder."""
 
@@ -691,6 +726,7 @@ class TwoTowerModel(nn.Module):
                 local_files_only=self.config.local_files_only,
                 kind_ids=kind_ids,
                 n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                tie_output_embedding=bool(self.config.tie_output_embedding),
             )
         elif denoiser_backend in {"scratch", "token", "local"}:
             denoiser_arch = str(
@@ -715,6 +751,7 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "recursive_steps", 1) or 1
                     ),
                     recursive_transition_layers=transition_layers,
+                    tie_output_embedding=bool(self.config.tie_output_embedding),
                 )
             else:
                 self.denoiser = DenoiserTower(
@@ -726,6 +763,7 @@ class TwoTowerModel(nn.Module):
                     dropout=self.config.dropout,
                     kind_ids=kind_ids,
                     n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+                    tie_output_embedding=bool(self.config.tie_output_embedding),
                 )
         else:
             raise ValueError(f"unknown denoiser_backend {denoiser_backend!r}")
@@ -1068,7 +1106,12 @@ class TwoTowerModel(nn.Module):
             self.context.clear_backbone_cache()  # type: ignore[union-attr]
 
     def trainable_parameters(self):
-        return (p for p in self.parameters() if p.requires_grad)
+        """Yield trainable parameters, deduplicating shared/tied storage."""
+        seen: set[int] = set()
+        for p in self.parameters():
+            if p.requires_grad and id(p) not in seen:
+                seen.add(id(p))
+                yield p
 
     def take_detached_auxiliary_loss(self) -> torch.Tensor | None:
         loss = getattr(self, "_detached_auxiliary_loss", None)
@@ -1092,9 +1135,14 @@ class TwoTowerModel(nn.Module):
             "survival_head.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
+        seen: set[int] = set()
         for name, parameter in self.named_parameters():
             if not parameter.requires_grad:
                 continue
+            pid = id(parameter)
+            if pid in seen:
+                continue
+            seen.add(pid)
             owner = next(
                 (prefix for prefix in auxiliary if name.startswith(prefix)), "base"
             )
@@ -9849,11 +9897,16 @@ class TwoTowerModel(nn.Module):
         )
         torch.save(payload, path)
 
-    def load(self, path: Path | str) -> None:
+    def load(self, path: Path | str, *, allow_tie_migration: bool = False) -> None:
         path = Path(path)
         payload = torch.load(path, map_location=self.device_name, weights_only=True)
         if payload.get("kind") != "twotower":
             raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
+        _check_output_head_tie_migration(
+            self,
+            payload.get("config") or {},
+            allow_tie_migration=allow_tie_migration,
+        )
         _load_checkpoint_state(self, payload["state_dict"])
         source_config = payload.get("config") or {}
         restored_prior_fields: list[str] = []
@@ -9892,6 +9945,8 @@ class TwoTowerModel(nn.Module):
         path: Path | str,
         device: str | torch.device = "cpu",
         local_files_only: bool | None = None,
+        *,
+        allow_tie_migration: bool = False,
     ) -> TwoTowerModel:
         path = Path(path)
         payload = torch.load(path, map_location=device, weights_only=True)
@@ -9928,6 +9983,11 @@ class TwoTowerModel(nn.Module):
             config=cfg,
             device=device,
             context_tokenizer=context_tokenizer,
+        )
+        _check_output_head_tie_migration(
+            model,
+            raw_cfg,
+            allow_tie_migration=allow_tie_migration,
         )
         _load_checkpoint_state(model, payload["state_dict"])
         if "gen_len" in payload:

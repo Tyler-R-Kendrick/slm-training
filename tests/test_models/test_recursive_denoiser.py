@@ -35,9 +35,35 @@ def test_recursive_tower_matches_denoiser_interface() -> None:
     assert rec.tok.weight.shape == (vocab, d_model)
     assert rec.lm_head.weight is rec.tok.weight
     assert rec.max_len == max_len
+    assert rec.tie_output_embedding is True
     assert len(rec.layers) == 1
     assert hasattr(rec, "kind_lookup")
     assert hasattr(rec, "set_runtime_symbol_features")
+
+
+def test_recursive_tower_untied_output_head() -> None:
+    """Untied mode uses distinct storage but starts with identical logits."""
+    vocab, d_model, tgt, ctx_len = 23, 16, 6, 3
+    torch.manual_seed(0)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        tie_output_embedding=False,
+    )
+    assert tower.tie_output_embedding is False
+    assert tower.lm_head.weight is not tower.tok.weight
+    torch.testing.assert_close(tower.lm_head.weight, tower.tok.weight)
+
+    noisy = torch.randint(1, vocab, (2, tgt))
+    ctx = torch.randn(2, ctx_len, d_model)
+    tower.eval()
+    with torch.no_grad():
+        logits = tower(noisy, ctx, pad_id=0)
+    assert logits.shape == (2, tgt, vocab)
+    assert torch.isfinite(logits).all()
 
 
 def test_recursive_forward_shapes_and_gradients() -> None:

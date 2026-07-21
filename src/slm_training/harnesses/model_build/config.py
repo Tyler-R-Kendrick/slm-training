@@ -50,6 +50,8 @@ class ModelBuildConfig:
     recursive_steps: int = 1
     recursive_transition_layers: int = 0
     recursive_depth_supervision_weights: tuple[float, ...] = ()
+    # SLM-211: default-on tying; False creates an independent output head.
+    tie_output_embedding: bool = True
     grammar_constrained: bool = True
     # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout
     grammar_dsl: str = "openui"

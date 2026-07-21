@@ -316,6 +316,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         recursive_steps=config.recursive_steps,
         recursive_transition_layers=config.recursive_transition_layers,
         recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
+        tie_output_embedding=bool(config.tie_output_embedding),
         grammar_constrained=config.grammar_constrained,
         grammar_top_k=config.grammar_top_k,
         structural_bias=config.structural_bias,

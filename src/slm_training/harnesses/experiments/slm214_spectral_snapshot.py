@@ -171,6 +171,7 @@ class SpectralSnapshotV1:
     null_sd_alpha: float | None = None
     alpha_z: float | None = None
     randomized_esd_distance: float | None = None
+    tie_output_embedding: bool | None = None
     warnings: tuple[str, ...] = ()
     elapsed_ms: float = 0.0
 
@@ -207,6 +208,7 @@ class SpectralSnapshotV1:
             "null_sd_alpha": self.null_sd_alpha,
             "alpha_z": self.alpha_z,
             "randomized_esd_distance": self.randomized_esd_distance,
+            "tie_output_embedding": self.tie_output_embedding,
             "warnings": list(self.warnings),
             "elapsed_ms": self.elapsed_ms,
         }
@@ -245,6 +247,7 @@ class SpectralSnapshotV1:
             null_sd_alpha=data.get("null_sd_alpha"),
             alpha_z=data.get("alpha_z"),
             randomized_esd_distance=data.get("randomized_esd_distance"),
+            tie_output_embedding=data.get("tie_output_embedding"),
             warnings=tuple(data.get("warnings", ())),
             elapsed_ms=float(data.get("elapsed_ms", 0.0)),
         )
@@ -374,6 +377,7 @@ def _snapshot_one(
     null_draws: int,
     initializer_guess: str,
     device: torch.device,
+    tie_output_embedding: bool | None = None,
 ) -> SpectralSnapshotV1:
     """Build one SpectralSnapshotV1 row."""
     import time
@@ -455,6 +459,7 @@ def _snapshot_one(
         null_sd_alpha=null_sd_alpha,
         alpha_z=alpha_z,
         randomized_esd_distance=randomized_esd_distance,
+        tie_output_embedding=tie_output_embedding,
         warnings=tuple(warnings),
         elapsed_ms=elapsed_ms,
     )
@@ -500,6 +505,9 @@ def run_spectral_snapshot_fixture(
     device_obj = torch.device(device)
     groups = _tied_groups(model)
 
+    model_tie_output_embedding = getattr(
+        getattr(model, "config", None), "tie_output_embedding", None
+    )
     snapshots: list[SpectralSnapshotV1] = []
     for ptr, items in groups.items():
         names = [n for n, _ in items]
@@ -514,6 +522,7 @@ def run_spectral_snapshot_fixture(
             null_draws=null_draws,
             initializer_guess=initializer_guess,
             device=device_obj,
+            tie_output_embedding=model_tie_output_embedding,
         )
         snapshots.append(snapshot)
         if max_matrices is not None and len(snapshots) >= max_matrices:
