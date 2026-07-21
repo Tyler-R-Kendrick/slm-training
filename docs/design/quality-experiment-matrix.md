@@ -5024,3 +5024,16 @@ was created or synced.
 
 Evidence: [narrative](iter-e689-planned-child-carriers-20260721.md) and
 [JSON](iter-e689-planned-child-carriers-20260721.json).
+
+## E690 bound transitive wrappers
+
+E690 stops a schema-reachable wrapper after all of its explicit planned roles
+are covered. Held-out strict remains 2/5, while tabs contracts from five to
+exactly two TabItems and retains the correct details Callout. Structure, node
+F1, edge F1, and latency improve; fidelity, validity, and reward slip slightly
+because heading/overview remain raw TabItem.content strings. Retain v145 as a
+positive structural tradeoff, not ship evidence. AgentV is 0/1; no checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e690-bound-transitive-wrappers-20260721.md) and
+[JSON](iter-e690-bound-transitive-wrappers-20260721.json).
