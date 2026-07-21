@@ -4970,3 +4970,16 @@ synced.
 
 Evidence: [narrative](iter-e685-numbered-tab-carriers-20260721.md) and
 [JSON](iter-e685-numbered-tab-carriers-20260721.json).
+
+## E686 per-row decoder trace budget
+
+E686 tests a per-row constrained-selection trace budget as an observability
+repair. Quality remains identical to E685, and the hypothesis fails: all 98
+aggregated traces report model-local `row=0`, while the tabs record remains
+unidentifiable. The evaluator generates one record per call and concatenates
+independent `DecodeStats` without record identity, so the fix belongs at that
+aggregation boundary. Reject and revert v140. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e686-per-row-trace-budget-20260721.md) and
+[JSON](iter-e686-per-row-trace-budget-20260721.json).
