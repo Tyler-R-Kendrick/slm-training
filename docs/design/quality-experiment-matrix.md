@@ -4796,3 +4796,15 @@ No checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e672-schema-owned-array-20260721.md) and
 [JSON](iter-e672-schema-owned-array-20260721.json).
+
+## E673 public schema-reference reachability
+
+E673 resolves cycle-safe public `$ref` entries in the guarded typed-array
+reachability predicate. The OOD `n=4` run preserves strict v2 at 3/4 while
+improving structure 0.7230→0.7931, node/edge F1 0.7987/0.6845→0.8556/0.7486,
+and p95 9332.10→6621.10 ms. Retain v130 as a positive research baseline, not a
+ship result: one semantic-role mismatch remains and AgentV is 0/1. No
+checkpoint was created or synced.
+
+Evidence: [narrative](iter-e673-schema-ref-reachability-20260721.md) and
+[JSON](iter-e673-schema-ref-reachability-20260721.json).
