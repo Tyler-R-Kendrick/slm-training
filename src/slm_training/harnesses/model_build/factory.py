@@ -287,6 +287,20 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
                 )
         except Exception:  # noqa: BLE001
             pass
+    # RSC-A06 (SLM-242): overrides above ``setattr`` fields directly onto the
+    # loaded model's config, bypassing ``TwoTowerConfig.__post_init__``.
+    # Re-validate every numeric weight/schedule field once overrides settle so
+    # a CLI/eval-time override can never bypass the fail-closed gate. Scoped to
+    # TwoTowerConfig -- grammar_diffusion/tree_edit_diffusion configs are not
+    # part of this audit (see the design note's deferred-scope section).
+    from slm_training.models.twotower import TwoTowerConfig
+
+    if isinstance(cfg, TwoTowerConfig):
+        from slm_training.models.twotower_schedule_policy import (
+            validate_twotower_numeric_schedule,
+        )
+
+        validate_twotower_numeric_schedule(cfg)
     return model
 
 

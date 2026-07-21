@@ -435,6 +435,18 @@ class ModelBuildConfig:
     constraint_debt_routing_budget_mode: str = "equal_verifier_budget"
     constraint_debt_routing_calibrator_path: Path | None = None
 
+    def __post_init__(self) -> None:
+        # RSC-A06 (SLM-242): fail-closed gate for every numeric weight/schedule
+        # vector on the CLI/config-build surface, before a remote job is
+        # allocated or any evidence artifact is written. Deferred import keeps
+        # this dataclass torch-free at module import time (the validation
+        # policy module and its harness_core primitives are pure stdlib).
+        from slm_training.models.twotower_schedule_policy import (
+            validate_twotower_numeric_schedule,
+        )
+
+        validate_twotower_numeric_schedule(self)
+
     @property
     def run_dir(self) -> Path:
         return self.run_root / self.run_id

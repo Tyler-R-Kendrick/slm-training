@@ -1,0 +1,204 @@
+{
+  "date": "2026-07-21",
+  "deferred_scope": [
+    "src/slm_training/harnesses/quality/ curriculum/retrieval modules (curriculum stage weights, retrieval-bank scoring vectors) -- not read in this pass.",
+    "mixture_manifest-driven quota scalars (mixture_exposure_target_profile, mixture_total_decision_budget, mixture_per_root_cap, mixture_per_template_cap, mixture_max_importance_weight) -- these are scalars/paths on ModelBuildConfig, not vectors; the *contents* of an external mixture_manifest JSON file are not schema-validated by this change.",
+    "grammar_diffusion.py / tree_edit_diffusion.py own config surfaces (topology_max_*, block_size, production/slot/confidence_loss_weight, scope_* flags) -- separate model families from TwoTower; out of scope per this issue's TwoTower-scoped non-goals.",
+    "~30 individual semantic_plan_*/schema_*/binder_*/root_reference_*/component_* per-role float decode-weight SCALARS on TwoTowerConfig -- each is in-scope conceptually (a 'per-role weight') but has no vector shape or cross-field pairing to validate beyond finite/non-negative; a full per-field capability audit of all ~30 was not completed in this pass.",
+    "action_alias_manifest / targeted_margin_manifest / mixture_manifest Path fields -- only presence/type is implied by TwoTowerConfig's own type hints; external file *schema* validation is not part of this change.",
+    "src/slm_training/harnesses/model_build/checkpoint_path_manifest.py and decode_path.py -- read during this audit; contain no vector/schedule-shaped config fields, so nothing to add there."
+  ],
+  "field_count": 10,
+  "fields": [
+    {
+      "capability_rule": "non-empty vector requires denoiser_arch == 'shared_recursive' (the only arch implementing recursive_outputs).",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "recursive_depth_supervision_weights",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Per-recursion-depth cross-entropy weights for SLM-138 deep supervision over SharedRecursiveDenoiserTower.recursive_outputs; empty tuple = feature off.",
+      "status": "covered",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_length_mismatch_rejected_before_reaching_training_loss",
+        "tests/test_models/test_twotower_schedule_policy.py::test_all_zero_weights_rejected_before_reaching_training_loss",
+        "tests/test_models/test_twotower_schedule_policy.py::test_capability_ignore_rejected_for_non_recursive_denoiser_arch",
+        "tests/test_models/test_twotower_schedule_policy.py::test_negative_weight_rejected",
+        "tests/test_models/test_twotower_schedule_policy.py::test_zero_weighted_depth_still_reports_telemetry",
+        "tests/test_models/test_twotower_schedule_policy.py::test_runtime_override_revalidates_and_rejects_bypass_attempt"
+      ],
+      "validation_rule": "non-empty vectors: every weight finite & >=0 (positive_sum_vector rejects all-zero), length == recursive_steps exactly (exact_length_vector, rejects silent min()-truncation)."
+    },
+    {
+      "capability_rule": "none (always usable whenever LTR decode runs; no separate enable flag gates the vector itself).",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "grammar_ltr_stages",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Progressive left-to-right decode canvas stage lengths (short canvases first). None means 'use the built-in default (64,128,192,256)'.",
+      "status": "covered",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_grammar_ltr_stages_rejects_low_or_unsorted_or_duplicate"
+      ],
+      "validation_rule": "None always valid; else non-empty, every stage an int > 1 (stages <=1 are silently dropped by _ltr_canvas_stages's filter), strictly increasing (no duplicates/unsorted)."
+    },
+    {
+      "capability_rule": "none gated -- shape validated unconditionally; only ever read when mask_pattern=='diffusion' (benign default, not gated -- see found defect #2 discussion for the sibling weight field).",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "diffusion_policies",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Online corruption-policy mixture consumed by DiffusionConfig/corrupt_batch when mask_pattern=='diffusion'.",
+      "status": "covered (shape)",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_diffusion_policy_capability_guard_rejects_unknown_policy"
+      ],
+      "validation_rule": "non-empty, unique, every value in the known POLICIES set (slm_training.data.diffusion.adapter.POLICIES)."
+    },
+    {
+      "capability_rule": "none gated (same rationale as diffusion_policies).",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "diffusion_length_buckets",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Length-bucket boundaries sizing the diffusion length-prediction head (self.length_head), built only when mask_pattern=='diffusion'.",
+      "status": "covered (shape)",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_diffusion_length_buckets_rejects_duplicate (harness_core primitive coverage via strictly_increasing_sequence tests)"
+      ],
+      "validation_rule": "non-empty, positive ints, strictly increasing (stricter than DiffusionConfig's own 'sorted, dup ok' check)."
+    },
+    {
+      "capability_rule": "DELIBERATELY NOT GATED on mask_pattern=='diffusion' -- see found defect #2: the shipped default (0.1) is already inert under the shipped default mask_pattern ('random'); a capability rule here would reject TwoTowerConfig()/ModelBuildConfig() themselves, which the issue's non-goals forbid working around by changing the default.",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "diffusion_length_loss_weight",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Coefficient for the diffusion length-prediction auxiliary loss term.",
+      "status": "shape-only; capability check deliberately omitted (documented false-positive risk)",
+      "tests": [],
+      "validation_rule": "finite, >= 0."
+    },
+    {
+      "capability_rule": "none.",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "mask_min / mask_max",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Paired scalars bounding the per-row uniform mask-rate sample used by both random masking (_mask_targets) and DiffusionConfig.",
+      "status": "covered",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_inverted_mask_range_rejected"
+      ],
+      "validation_rule": "0 <= mask_min <= mask_max <= 1."
+    },
+    {
+      "capability_rule": "none written -- see found defect #3: the field has zero readers anywhere in twotower.py; it is dead configuration, so there is no downstream consumer to gate against.",
+      "config_classes": [
+        "TwoTowerConfig",
+        "ModelBuildConfig"
+      ],
+      "field": "targeted_margin_family_weights",
+      "owner_files": [
+        "src/slm_training/models/twotower.py",
+        "src/slm_training/harnesses/model_build/config.py"
+      ],
+      "semantics": "Per-family confusion-margin weight table, intended to pair with legal_margin_mode's targeted contrastive margin.",
+      "status": "shape-only",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_negative_targeted_margin_family_weight_rejected"
+      ],
+      "validation_rule": "unique family keys, every weight finite & >= 0."
+    },
+    {
+      "capability_rule": "non-empty vector requires slot_component_loss_weight > 0 or slot_component_decode_weight > 0 (slot-component head enabled).",
+      "config_classes": [
+        "TwoTowerConfig only -- not on ModelBuildConfig/CLI/apply_runtime_overrides surface"
+      ],
+      "field": "slot_component_class_weights",
+      "owner_files": [
+        "src/slm_training/models/twotower.py"
+      ],
+      "semantics": "Per-class cross-entropy weight for the slot-component head; computed internally by TwoTowerModel.from_records (class-balanced weighting), not user-authored.",
+      "status": "covered; length-vs-class-count check deferred (needs the built tokenizer's component inventory, unavailable at config-construction time, and the field is not user-reachable so the risk is low -- see design note).",
+      "tests": [
+        "tests/test_models/test_twotower_schedule_policy.py::test_capability_ignore_rejected_for_disabled_slot_component_head"
+      ],
+      "validation_rule": "non-negative finite entries, positive sum (all-zero rejected)."
+    },
+    {
+      "capability_rule": "none written -- weight>0-with-empty-table is a legitimate small-corpus outcome the runtime already treats as an intentional no-op (see design note; a capability rule here would false-positive against normal training).",
+      "config_classes": [
+        "TwoTowerConfig only -- model-derived"
+      ],
+      "field": "slot_component_lexeme_priors",
+      "owner_files": [
+        "src/slm_training/models/twotower.py"
+      ],
+      "semantics": "token -> per-class log-prior score table, mined from the training corpus, additively biasing slot-component logits when slot_component_lexeme_prior_weight > 0.",
+      "status": "shape-only",
+      "tests": [
+        "tests/test_harness_core/test_schedule_validation.py::test_paired_equal_length_sequences_rejects_mismatched_length"
+      ],
+      "validation_rule": "unique keys, every key's score vector the same length as every other key's (paired_equal_length_sequences), all values finite."
+    },
+    {
+      "capability_rule": "same as slot_component_lexeme_priors.",
+      "config_classes": [
+        "TwoTowerConfig only -- model-derived"
+      ],
+      "field": "slot_component_span_priors",
+      "owner_files": [
+        "src/slm_training/models/twotower.py"
+      ],
+      "semantics": "(role-pair key) -> per-class log-prior score table, mined from the training corpus, additively biasing slot-component logits when slot_component_span_prior_weight > 0.",
+      "status": "shape-only",
+      "tests": [
+        "tests/test_harness_core/test_schedule_validation.py::test_paired_equal_length_sequences_rejects_mismatched_length"
+      ],
+      "validation_rule": "same as slot_component_lexeme_priors."
+    }
+  ],
+  "issue": "SLM-242 (RSC-A06)",
+  "schema": "numeric_schedule_validation_report/v1",
+  "scope_statement": "Full audit of TwoTowerConfig's own numeric vector/schedule config surface (models/twotower.py) plus the ModelBuildConfig fields that mirror it (harnesses/model_build/config.py) and the factory/override/checkpoint call sites that construct or mutate a TwoTowerConfig. Explicitly does NOT claim coverage of grammar_diffusion.py, tree_edit_diffusion.py, or the quality/curriculum harness's own vector-shaped fields -- see deferred_scope.",
+  "version_stamp": {
+    "code_commit": "eb60c60090fad9693b7d04197c08f312f9c1c5bd",
+    "code_dirty": true,
+    "components": {
+      "harness.core": "v2",
+      "model.twotower": "v81"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T06:16:48.563242+00:00"
+  }
+}

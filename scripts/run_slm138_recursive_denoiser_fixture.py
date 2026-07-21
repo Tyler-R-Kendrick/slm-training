@@ -45,6 +45,12 @@ def _fixture_records() -> list[ExampleRecord]:
 
 
 def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
+    # RSC-A06 (SLM-242): recursive_depth_supervision_weights only has a
+    # capability to act on under denoiser_arch="shared_recursive" (the only
+    # arch implementing recursive_outputs); the fail-closed config gate now
+    # rejects a non-empty vector under "stacked" instead of silently ignoring
+    # it, so only pass the weights on the recursive arm.
+    ds_weights = (0.5, 1.0) if arch == "shared_recursive" else ()
     return TwoTowerModel.from_records(
         _fixture_records(),
         config=TwoTowerConfig(
@@ -55,7 +61,7 @@ def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
             denoiser_arch=arch,  # type: ignore[arg-type]
             recursive_steps=2,
             recursive_transition_layers=2,
-            recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_supervision_weights=ds_weights,
             grammar_constrained=False,
             gen_steps=2,
             seed=seed,

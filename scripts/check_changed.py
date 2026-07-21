@@ -222,6 +222,17 @@ def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = 
         stamp_command.append("--staged")
     if _run(stamp_command):
         return 1
+    # RSC-A06 (SLM-242): fail-closed static guard for the numeric weight/
+    # schedule fail-open patterns (silent min()-truncation, unguarded
+    # sum()>0 checks, unused loop-weight variables) whenever a change touches
+    # the canonical model-build loss/schedule code the guard scans.
+    from scripts.verify_numeric_schedule_guard import DEFAULT_SCAN_PATHS
+
+    if any(
+        path.startswith(scan_root) for path in paths for scan_root in DEFAULT_SCAN_PATHS
+    ):
+        if _run([sys.executable, "-m", "scripts.verify_numeric_schedule_guard"]):
+            return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [path for path in paths if path.endswith(".py") and (ROOT / path).is_file()]
     print(f"changed-check: {len(paths)} file(s), pytest targets: {', '.join(tests) or 'none'}")

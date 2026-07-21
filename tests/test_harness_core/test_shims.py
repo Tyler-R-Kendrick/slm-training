@@ -67,8 +67,19 @@ def test_class_identity_across_paths() -> None:
 
 
 def test_versioning_registry_resolves_from_new_location() -> None:
+    """The pre-extraction shim must resolve the same version as the new path.
+
+    Asserts consistency between the two import paths, not a specific version
+    number -- the registry version legitimately bumps whenever a
+    harness_core file changes (see src/slm_training/resources/versions.json).
+    """
+    from slm_training.harness_core.versioning import (
+        build_version_stamp as new_build_version_stamp,
+    )
     from slm_training.versioning import build_version_stamp
 
     stamp = build_version_stamp("harness.core")
+    new_stamp = new_build_version_stamp("harness.core")
     assert stamp["stamp_schema"] == "version_stamp/v1"
-    assert stamp["components"]["harness.core"] == "v1"
+    assert stamp["components"]["harness.core"] == new_stamp["components"]["harness.core"]
+    assert stamp["components"]["harness.core"].startswith("v")
