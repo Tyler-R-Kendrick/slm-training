@@ -1472,7 +1472,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v72",
+      "version": "v73",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1487,6 +1487,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v73",
+          "date": "2026-07-20",
+          "note": "E635: combine final pre-content literal routing with property-compatible slot coverage so direct visible slots cannot be floored into non-placeholder component arguments"
+        },
         {
           "version": "v72",
           "date": "2026-07-20",

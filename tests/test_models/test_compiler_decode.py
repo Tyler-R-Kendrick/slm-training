@@ -520,6 +520,46 @@ def test_slot_coverage_close_bias_rejects_wrong_owner_direct_slot() -> None:
     assert bias.tolist() == [0.0, 4.0]
 
 
+def test_slot_coverage_direct_slot_requires_placeholder_property() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["-"]
+    frame = SimpleNamespace(
+        kind="component",
+        expr_type="element:Input",
+        arg_index=0,
+        schemas=(
+            {"type": "string"},
+            {"type": "string", "x-openui-placeholder": True},
+            {"type": "string", "enum": ["text", "email"]},
+        ),
+        close="-",
+    )
+    state = SimpleNamespace(frames=[frame])
+    args = (
+        state,
+        [tokenizer.bos_id],
+        (slot_id, close_id),
+        torch.tensor([1.0, 5.0]),
+        [":auth.email"],
+        {":auth.email": ("Input",)},
+    )
+
+    assert model._slot_coverage_close_bias(*args) is None
+    frame.arg_index = 1
+    bias = model._slot_coverage_close_bias(*args)
+    assert bias is not None
+    assert bias.tolist() == [8.0, 0.0]
+    frame.arg_index = 2
+    assert model._slot_coverage_close_bias(*args) is None
+
+
 def test_slot_coverage_close_bias_escapes_wrong_owner_before_nested_component(
 ) -> None:
     from types import SimpleNamespace
@@ -1000,7 +1040,7 @@ def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> 
     assert bias.tolist() == [-4.0, 0.0]
 
 
-def test_schema_opaque_bias_routes_required_precontent_string_to_literal() -> None:
+def test_schema_precontent_literal_bias_routes_after_other_scores() -> None:
     from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 
@@ -1012,7 +1052,10 @@ def test_schema_opaque_bias_routes_required_precontent_string_to_literal() -> No
     literal_id = tokenizer.token_to_id[f'{LIT_PREFIX}""']
     scores = torch.tensor([9.0, 1.0])
 
-    bias = model._schema_opaque_bias(state, (slot_id, literal_id), scores)
+    assert model._schema_opaque_bias(state, (slot_id, literal_id), scores) is None
+    bias = model._schema_precontent_literal_bias(
+        state, (slot_id, literal_id), scores
+    )
 
     assert bias is not None
     assert bias.tolist() == [0.0, 12.0]
