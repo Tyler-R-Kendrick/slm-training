@@ -4543,6 +4543,62 @@ class TwoTowerModel(nn.Module):
             pending.extend(value.values())
         return descendants
 
+    @staticmethod
+    def _schema_required_descendant_families(family: str) -> set[str]:
+        """Return families reachable through required, non-alternative paths."""
+        from slm_training.dsl.lang_core import library_schema
+
+        definitions = library_schema().get("$defs", {})
+
+        def visit(schema: object, seen: frozenset[str]) -> set[str]:
+            if not isinstance(schema, dict):
+                return set()
+            reference = str(schema.get("$ref") or "")
+            if reference.startswith("#/$defs/"):
+                name = reference.rsplit("/", 1)[-1]
+                if name in seen:
+                    return {name}
+                return {name} | visit(definitions.get(name), seen | {name})
+            alternatives = [
+                option
+                for key in ("anyOf", "oneOf")
+                for option in schema.get(key, ())
+                if isinstance(option, dict)
+            ]
+            if alternatives:
+                common = visit(alternatives[0], seen)
+                for option in alternatives[1:]:
+                    common.intersection_update(visit(option, seen))
+                return common
+            if schema.get("type") == "array":
+                return visit(schema.get("items"), seen)
+            required = set(schema.get("required", ()))
+            return set().union(
+                *(
+                    visit(child, seen)
+                    for name, child in schema.get("properties", {}).items()
+                    if name in required
+                ),
+                set(),
+            )
+
+        return visit(definitions.get(family), frozenset({family}))
+
+    @staticmethod
+    def _schema_has_opaque_required_collection(family: str) -> bool:
+        """Whether a required collection intentionally accepts broad elements."""
+        from slm_training.dsl.lang_core import library_schema
+
+        definition = library_schema().get("$defs", {}).get(family, {})
+        required = set(definition.get("required", ()))
+        return any(
+            isinstance(schema, dict)
+            and schema.get("type") == "array"
+            and not schema.get("items")
+            for name, schema in definition.get("properties", {}).items()
+            if name in required
+        )
+
     def _semantic_plan_bias(
         self,
         row: int,
@@ -4636,6 +4692,46 @@ class TwoTowerModel(nn.Module):
                     )
                 applied = True
         frames = getattr(state, "frames", ())
+        if margin > 0.0 and remaining_counts is not None and not frames:
+            remaining_families = {
+                family
+                for family, token_id in family_token_ids.items()
+                if remaining_counts.get(token_id, 0) > 0
+            }
+            containment = {
+                position: len(
+                    self._schema_required_descendant_families(
+                        str(self.tokenizer.id_to_token[token_id])
+                        .removeprefix("COMP:")
+                        .removeprefix("+")
+                    ).intersection(remaining_families)
+                )
+                for position, (token_id, kind) in enumerate(
+                    zip(candidate_ids, candidate_kinds, strict=True)
+                )
+                if kind in component_kinds
+                and remaining_counts.get(token_id, 0) > 0
+            }
+            if containment and (best := max(containment.values())) > 0:
+                for position, count in containment.items():
+                    if count == best:
+                        bias[position] += margin
+                        applied = True
+            elif containment:
+                ambiguous_aggregators = {
+                    position
+                    for position in containment
+                    if self._schema_has_opaque_required_collection(
+                        str(self.tokenizer.id_to_token[candidate_ids[position]])
+                        .removeprefix("COMP:")
+                        .removeprefix("+")
+                    )
+                }
+                concrete = set(containment).difference(ambiguous_aggregators)
+                if ambiguous_aggregators and concrete:
+                    for position in concrete:
+                        bias[position] += margin
+                        applied = True
         if remaining_counts is not None and prefix and frames:
             frame = frames[-1]
             family = str(getattr(frame, "expr_type", "")).removeprefix("element:")

@@ -1584,7 +1584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v155",
+      "version": "v157",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1599,16 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v157",
+          "date": "2026-07-21",
+          "note": "E697 r2 correction: defer ambiguous aggregate families until concrete remaining planned families are emitted"
+        },
+        {
+          "version": "v156",
+          "date": "2026-07-21",
+          "note": "E697: order a planned parent before planned families reachable through its required non-alternative schema paths"
+        },
         {
           "version": "v155",
           "date": "2026-07-21",

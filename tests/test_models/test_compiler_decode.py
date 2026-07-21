@@ -1960,6 +1960,55 @@ def test_prompt_semantic_plan_margin_floors_only_missing_families() -> None:
     assert bias.tolist() == [68.0, 0.0, 0.0]
 
 
+def test_prompt_semantic_plan_orders_required_parent_before_child() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    form_id = tokenizer.token_to_id["+Form"]
+    button_id = tokenizer.token_to_id["+Button"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    callout_id = tokenizer.token_to_id["+Callout"]
+    candidates = (button_id, form_id, stack_id, callout_id)
+    model._semantic_plan_action_scores = [{token_id: 1.0 for token_id in candidates}]
+    model._semantic_plan_action_counts = [{token_id: 1 for token_id in candidates}]
+
+    bias = model._semantic_plan_bias(
+        0,
+        candidates,
+        ("component_bound",) * 4,
+        SimpleNamespace(section_types=[], frames=[]),
+        prefix=[tokenizer.bos_id],
+        candidate_scores=torch.zeros(4),
+    )
+
+    assert model._schema_required_descendant_families("Form") >= {
+        "Buttons",
+        "Button",
+        "FormControl",
+    }
+    assert "Button" not in model._schema_required_descendant_families("Stack")
+    assert bias is not None
+    assert bias.tolist() == [4.0, 6.0, 4.0, 4.0]
+
+    after_form = model._semantic_plan_bias(
+        0,
+        (stack_id, callout_id),
+        ("component_bound", "component_bound"),
+        SimpleNamespace(
+            section_types=["element:Form", "element:Button"], frames=[]
+        ),
+        prefix=[tokenizer.bos_id, form_id, button_id],
+        candidate_scores=torch.zeros(2),
+    )
+    assert after_form is not None
+    assert after_form.tolist() == [4.0, 6.0]
+
+
 def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() -> None:
     from types import SimpleNamespace
 
