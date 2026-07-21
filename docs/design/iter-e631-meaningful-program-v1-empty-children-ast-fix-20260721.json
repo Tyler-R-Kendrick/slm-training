@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "run_id": "e631-meaningful-program-v1-empty-children-ast-fix-20260721",
+  "experiment_id": "E631",
+  "date_utc": "2026-07-21",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "claim_class": "metric_bug_fix_verified_against_real_checkpoint_honest_re_scoring",
+  "hypothesis": "E630 flagged (but explicitly did not fix, calling it a different-harness deferral) that `_is_meaningful_program`'s literal `\"Card([])\"` substring check misses an empty-children component whose remaining (non-content) positional arguments got padded with stuffed required-slot values -- e.g. `Card([], \":a\", \":b\")` -- because the substring only matches an *exactly*-empty call. This iteration verifies that gap against real code and real data (not just E630's paraphrase), and if genuine, fixes it narrowly without weakening any existing rejection.",
+  "which_deferral_this_picks": "E630's own 'Next step' #3: '_is_meaningful_program's literal \"Card([])\" / \"Stack([])\" substring checks miss an empty-children component padded with trailing non-content properties -- observed evidence here, not fixed (different harness, evals.meaningful_program, out of this iteration's scope), worth hardening to a structural emptiness check in a future iteration.' (Note: the function actually lives in `harnesses/model_build/eval_runner.py`, not `evals/meaningful_program.py` -- E630's own text named the wrong module; `evals/meaningful_program.py` is the separate `binding_aware_meaningful_v2` metric and has no literal empty-substring check at all, confirmed by inspection, no change needed there.)",
+  "verification_before_fixing": {
+    "method": "Read the real implementation (src/slm_training/harnesses/model_build/eval_runner.py::_is_meaningful_program, public alias meaningful_program_v1) instead of trusting E630's prose paraphrase, then parsed the exact E629/E630-reported padded strings through the real DSL parser (slm_training.dsl.parser.validate) to inspect Program.root, the actual AST.",
+    "finding": "Confirmed exactly as E630 described, with one added precision: the literal checks are `if \"Stack([])\" in compact or \"Stack([],\" in compact: ... elif \"Card([])\" in compact: ...` -- Stack already has a companion `\"Stack([],\"` clause for the padded/trailing-args case, but Card does not. So the gap is not just 'one syntactic shape' in the abstract -- it is an asymmetry already visible in the code: Stack's own literal check already handles this exact padded shape, Card's does not.",
+    "ast_shape_confirmed": "Program.root for `Card([], \":a\", \":b\")` is `{type: element, typeName: Card, props: {children: [], variant: \":a\", direction: \":b\"}}` -- `children` is a key in `props`, structurally separate from the other (stuffed) prop values, and independently inspectable regardless of what the other props hold.",
+    "schema_scope_check": "Queried src/slm_training/dsl/grammars/openui_schema.json directly: four component types declare a required `children` array property -- Card, Carousel, Stack, Modal. The old literal check only ever special-cased Stack and Card by name; Carousel and Modal were never covered by any empty-check at all (confirmed: `root = Modal(\":t\", true, [])` and `root = Carousel([])` both passed meaningful_program_v1 pre-fix)."
+  },
+  "fix": {
+    "location": "src/slm_training/harnesses/model_build/eval_runner.py -- new `_first_empty_children_component(node)` helper, called from `_is_meaningful_program` immediately after (not instead of) the existing literal Stack/Card checks.",
+    "design": "Recursively walks the real parsed AST (`Program.root`, an ElementNode tree with `props` dicts and `props.children` arrays -- not the serialized text). For any element node whose `props['children']` is a list and is empty, returns that node's `typeName`. Reads `children` from wherever the parser itself put it (a dict key inside `props`), so it is inherently immune to stuffing extra values into a component's *other* props -- there is no serialized-text shape to dodge, because the check never looks at the text.",
+    "why_purely_additive_not_a_gate_weakening": "The two pre-existing literal branches (`Stack([])`/`Stack([],`/`Card([])`) are left completely unchanged and still run first, with their exact original reason strings. The new AST check only runs after them and can only ADD new rejections (any empty-children node the literal checks miss); it can never cause a program the literal checks already rejected to now pass, because that branch still returns False first, before the AST check is ever reached. This satisfies the iron-law requirement that a scoring-metric change must make the check strictly more correct, never looser.",
+    "backward_compatible_reason_strings": "When the AST check fires on a `Stack` or `Card` node, it returns the exact same reason strings the literal checks already used (`empty_root_stack`, `empty_card`) -- so no existing consumer of those reason strings (dashboards, failure_breakdown bucketing, tests) sees a new vocabulary for the two cases E630 already knew about. Only genuinely new component types (Modal, Carousel) get a new reason code, `empty_children:<TypeName>`.",
+    "diagnostics_bucketing": "src/slm_training/harnesses/model_build/decode_feasibility.py::classify_parse_failure additionally buckets any `empty_children:*` reason into the existing `trivial_layout` diagnostic bucket (alongside `empty_root_stack`/`empty_card`/`no_content_components`) -- a diagnostics-only change, does not affect meaningful_program_v1's pass/fail outcome.",
+    "version_bump": "harness.model_build.eval v33 -> v34 (src/slm_training/resources/versions.json)."
+  },
+  "tests": {
+    "file": "tests/test_evals/test_meaningful_program.py",
+    "new_parametrized_cases": [
+      "root = Card([], \":stuffed.variant\") -> empty_card (the exact rico_eval_test_25 shape)",
+      "root = Card([], \":ood.dash.m1.value\", \":ood.dash.m1.value\") -> empty_card (the exact ood_dashboard_01 shape)",
+      "nested Stack([Card(non-empty), Card([], stuffed)]) -> empty_card (nesting does not evade the check)",
+      "root = Modal(\":title\", true, []) -> empty_children:Modal (new coverage, previously undetected)",
+      "root = Carousel([]) -> empty_children:Carousel (new coverage, previously undetected)"
+    ],
+    "regression_guards": [
+      "root = Card([TextContent(\":a\")], \":real.variant\") -> True (a genuinely non-empty Card with other props present must still pass)",
+      "root = Stack([Card([TextContent(\":a\")])], \"column\") -> True (nested genuinely non-empty must still pass)"
+    ],
+    "existing_backward_lock_test_unmodified": "test_meaningful_program_v1_backward_lock (Stack([])->empty_root_stack, Card([])->empty_card, populated Stack->None, Separator->no_placeholders) still passes unchanged -- confirms the literal-check cases are bit-for-bit preserved.",
+    "result": "36/36 passed in tests/test_evals/test_meaningful_program.py (29 pre-existing + 7 new); 56/56 passed across test_audit_meaningful_program.py, test_matrix_meaningful_metrics.py, test_decode_invariance.py, test_eval_gates.py, test_language_contract.py."
+  },
+  "honest_re_scoring_against_real_checkpoint": {
+    "checkpoint_reused": {
+      "note": "E626's own scratch checkpoint reused verbatim (no retrain, no new decode-time code touched this session -- E630's twotower.py schema-position-gate fix stays exactly as committed); sha256 verified to match E626/E628/E629/E630's own JSON before running.",
+      "location": "outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt",
+      "sha256": "c5b7c807988d100f32fc60877b6fec932b7ee1ad08345558ca26c3e3dd561221",
+      "sha256_verified_this_run": true
+    },
+    "purpose": "Re-run the same recipe E629/E630 used, with only the metric code changed (the fixed meaningful_program_v1), to see whether any previously-passing record's judged status flips now that the check is stricter -- required by this task, not skipped.",
+    "recipe": "python -m scripts.evaluate_model --checkpoint outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt --model twotower --test-dir src/slm_training/resources/data/eval/remediated --suites held_out,rico_held,adversarial,ood,smoke --honest-slot-contract --slot-contract-constrained-decode --slot-contract-in-context --semantic-role-contract-in-context --semantic-role-decode-weight 8 --slot-coverage-close-decode-weight 2 --schema-value-decode-weight 4 --schema-opaque-close-decode-weight 4 --schema-role-slot-decode-weight 8 --semantic-plan-decode-weight 4 --semantic-plan-margin-decode-weight 2 --semantic-plan-binding-decode-weight 1 --semantic-plan-root-decode-weight 8 --semantic-plan-root-margin-decode-weight 2 --semantic-plan-repeated-array-close-margin-decode-weight 2 --semantic-plan-repeated-slot-margin-decode-weight 2 --semantic-plan-typed-array-nonempty-margin-decode-weight 2 --semantic-plan-typed-array-item-margin-decode-weight 2 --grammar-ltr-max-tokens 160 --required-slot-margin-decode-weight <0|2> --run-id e631-verify-margin<X> --run-root outputs/runs",
+    "pooled_n19_margin0_control_before_vs_after_metric_fix": {
+      "before_fix_E629_E630": {"meaningful_program_v1_rate": 0.6842, "n_pass": 13, "n": 19},
+      "after_fix_this_session": {"meaningful_program_v1_rate": 0.5789, "n_pass": 11, "n": 19},
+      "flip_source": "rico_held alone: 1.0 (3/3) before -> 0.3333 (1/3) after, at margin=0 -- the pure baseline decode, with required_slot_margin_decode_weight=0 (the lever entirely inactive). held_out/adversarial/ood/smoke rates are unchanged at margin=0 (0.6/0.5/0.5/1.0 respectively, matching E629 exactly)."
+    },
+    "which_records_flipped_and_why": {
+      "method": "Monkeypatched _is_meaningful_program in-process to print (record_id, ok, reason, serialized_prediction) while re-running the real evaluate_model CLI against the same checkpoint/suite/recipe -- direct observation of the actual model output, not inference from aggregate numbers.",
+      "rico_eval_test_25": {
+        "margin0_ok": true,
+        "prediction": "root = Stack([v0, v1, v2, v3, v4], \"column\")\nv0 = Button(\":sliding_tabs.label\")\nv1 = Card([Button(\":cardview.title\")])\nv2 = Card([Button(\":cardview.body\", \":cardview.body\")])\nv3 = Card([v2], \":toolbar.text\")\nv4 = Card([Button(\":cardview.body\", \":cardview.body\")])",
+        "note": "No empty children here at margin=0 (already true before this session's fix, and before E630's decode-bias fix too) -- unaffected, still True."
+      },
+      "rico_eval_test_42": {
+        "margin0_ok_before_this_fix": true,
+        "margin0_ok_after_this_fix": false,
+        "reason": "empty_card",
+        "prediction": "root = Stack([v0, v4, v5, v6, v9], \"column\")\nv0 = Card([TextContent(\":card0.title\")])\nv4 = Card([Button(\":card0.body\", \":card1.body\")])\nv5 = Card([], \":card2.title\")\nv6 = Card([], \":card3.body\")\nv9 = Card([], \":card2.body\")",
+        "note": "Genuinely new catch, correct and expected: v5/v6/v9 are all `Card([], <stuffed-non-content-value>)` -- an empty-children Card whose `variant`-position argument absorbed an unrelated value. This is present in the checkpoint's UNMODIFIED baseline decode (required_slot_margin_decode_weight=0, the lever entirely off) -- so this over-stuffing artifact was never specific to the lever under test at all; it is a pre-existing gap in the checkpoint's own output that the old literal check happened to miss regardless of margin."
+      },
+      "rico_eval_test_77": {
+        "margin0_ok_before_this_fix": true,
+        "margin0_ok_after_this_fix": false,
+        "reason": "empty_card",
+        "prediction": "root = Stack([v0, v4, v5, v6, v9], \"column\")\nv0 = Card([TextContent(\":coupon_container.title\")])\nv4 = Card([Button(\":coupon_container.body\", \":coupon_container_1.body\")])\nv5 = Card([], \":coupon_container_2.title\")\nv6 = Card([], \":coupon_container_3.body\")\nv9 = Card([], \":coupon_container_2.body\")",
+        "note": "Same shape and same verdict as rico_eval_test_42; genuinely new catch, same reasoning."
+      }
+    },
+    "pooled_n19_margin2_post_e630_decode_fix_before_vs_after_metric_fix": {
+      "before_metric_fix_E630": {"meaningful_program_v1_rate": 0.6316, "n_pass": 12, "n": 19},
+      "after_metric_fix_this_session": {"meaningful_program_v1_rate": 0.5263, "n_pass": 10, "n": 19},
+      "per_suite_after_metric_fix": {
+        "held_out": {"n": 5, "rate": 0.6, "note": "unchanged binary rate vs margin0; one record's continuous metrics differ (reward 0.7682->0.642, structural_similarity 0.301->0.274) -- a cosmetic margin-sensitive prediction swap that does not cross the meaningful gate, matching the kind of cosmetic diff E629 already documented elsewhere in this suite."},
+        "rico_held": {"n": 3, "rate": 0.3333, "note": "Byte-identical predictions and metrics between margin=0 and margin=2 (reward=0.897, fidelity=0.6667 both) -- rico_eval_test_25 stays fixed (E630's decode fix holds), and rico_eval_test_42/77 are equally (correctly) rejected at both margins, since their empty-Card padding is unrelated to required_slot_margin entirely."},
+        "adversarial": {"n": 4, "rate": 0.5, "note": "byte-identical between margin0/margin2, matching E630."},
+        "ood": {"n": 4, "rate": 0.5, "note": "byte-identical between margin0/margin2 -- confirms E630's own finding that ood_dashboard_01's margin=2 gain is fully reverted by E630's decode fix, and the metric fix changes nothing further here (no Modal/Carousel present in this suite's predictions)."},
+        "smoke": {"n": 3, "rate": 0.6667, "note": "drops from 1.0 (margin0) to 0.6667 (margin2) -- this is smoke_hero_01's previously-documented (E630) regression, driven entirely by the decode bias itself (empty_root_stack), not by this session's metric change; unaffected by the metric fix."}
+      }
+    },
+    "net_conclusion_under_the_corrected_metric": "The corrected metric shifts both the margin=0 and margin>=1 baselines down by exactly the same 2 records (rico_eval_test_42/77, unrelated to the lever, present at every margin equally) -- so the *delta* between margin=0 and margin>=1 (the quantity that actually matters for judging required_slot_margin_decode_weight) is essentially unchanged in direction: still net negative post-E630-fix (10/19 at margin=2 vs 11/19 at margin=0, i.e. -1, matching E630's own pre-metric-fix conclusion of -1, 12/19 vs 13/19). The metric fix does not change E630's headline verdict about the lever (still: fixed regression, reverted gain, net non-positive on this checkpoint) -- it only corrects the absolute baseline level by catching two real, pre-existing, lever-independent scoring artifacts."
+  },
+  "verdict": "E630's diagnosis was confirmed accurate against real code and real data, with one added precision (Stack's literal check already had the padded-args companion clause that Card's lacked). The fix is a purely additive AST-structural check that cannot remove any existing rejection, verified with dedicated regression tests for the newly-caught case, the two previously-caught cases (unchanged reason strings), and non-empty pass-through cases. Re-scoring the actual E626 scratch checkpoint's real predictions (not a synthetic replay) confirms two previously (incorrectly) passing rico_held records now correctly fail, at every margin including the pure control -- an expected, honest tightening, not a regression to hide. The corrected metric leaves E630's own net-effect conclusion about required_slot_margin_decode_weight intact (still net non-positive on this checkpoint/suite): both flipped records fail identically regardless of margin, so they cancel out of the before/after delta and only shift the absolute baseline.",
+  "what_this_is_not": "A single scratch checkpoint (800 steps, seed 0); n=19 (widened suite, still below DEFAULT_MIN_SUITE_N=20 per suite) -- not a ship claim, not a powered multi-seed result. Does not retrain or resweep margins 3/4 (already shown by E629/E630 to add nothing over 1/2). Does not touch evals/meaningful_program.py (binding_aware_meaningful_v2 / strict v2), which has no literal empty-substring check of this kind at all -- confirmed by direct inspection, not just deferred.",
+  "next_step": "1) E620's original coverage-aware component/property closure recommendation remains the next lever this lineage has not directly tried. 2) A genuinely powered multi-seed/retrained comparison of required_slot_margin_decode_weight remains open (E626's own deferral, still not picked up by E627-E631). 3) smoke_hero_01's regression (first surfaced in E630, unaffected by this session's metric fix) remains untraced.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "components": {"harness.model_build.eval": "v34"},
+    "code_git_sha": "3272e4bcafc066826bf181e104e41ae46d78b3fc",
+    "code_dirty": true
+  }
+}

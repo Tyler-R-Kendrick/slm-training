@@ -3342,6 +3342,138 @@ Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
 `outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
 `docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.
 
+**Annotation (SLM-237/SLM-238):** E303's deep-supervision auxiliary loss had
+a live weighting defect, fixed by SLM-237 (see `## RSC-A01` below), and its
+all-depth variant double-counts the final recursion depth against the
+primary term, made explicit and versioned by SLM-238 (see `## RSC-A02`
+below). Both are annotations layered on top of this section's original
+wiring-only landing — **V18's wiring-only verdict above is unchanged.**
+
+**Annotation (SLM-240 / RSC-A04):** the "same public contract" wording above
+is about the interface only. A separate false claim in
+``recursive_denoiser.py``'s docstring additionally asserted the R=1 tower
+had the "same parameter count and layer names" as ``DenoiserTower`` — untrue:
+V1 always adds `z_latent`/`ctx_proj` (exact delta 9,248 params / +14.23% for
+this fixture's config, reproduced from `recursive_zstate_parameter_delta`,
+never hard-coded). Corrected in the docstring, this doc, and the fixture's own rendered
+prose (README carried no such wording — checked, nothing to correct there);
+replaced the single retracted claim with
+`ArchitectureComparisonReportV1`'s independently-named, independently-tested
+fields (interface/output-shape/parameter-count/checkpoint-bytes/block-eval/
+FLOPs/behavioral-equivalence — never a collapsed `parity` boolean). See
+`docs/design/iter-rsc-a04-*`. Another annotation, not a re-verdict — **V18's
+wiring-only verdict above is unchanged.**
+
+## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
+
+E303/V18's deep-supervision auxiliary loss (`recursive_depth_supervision_weights`
+in `TwoTowerModel.training_loss`) had a live defect surfaced by the SLM-138
+adversarial audit ledger: the loop bound each per-depth weight `w` but never
+multiplied `d_loss` by it, computing `sum_d(L_d) / sum_d(w_d)` (an unweighted
+mean) instead of the intended `sum_d(w_d * L_d) / sum_d(w_d)`. The already-committed
+`docs/design/iter-slm138-recursive-denoiser-20260720.md` fixture values prove
+this numerically: `(L0 + L1) / 1.5 = 33.328...` exactly matches its recorded
+`recursive_depth_supervision_loss`, the defective formula, not the intended one.
+
+Independently reproduced (against the real pre-patch production code via
+`git stash`, not a re-implementation) and fixed:
+
+| # | Failure mode | Before | After |
+| --- | --- | --- | --- |
+| 1 | `(0, 1)` includes L0 (zero doesn't disable a depth) | `aux=61.2788 != L1=29.8113` | `aux == L1` exactly |
+| 2 | `(0.5, 1)` vs `(1, 2)` — should be the same normalized mean | exact 2x scale difference (`40.8526` vs `20.4263`) | identical (`30.3634` both) |
+| 3 | `(0, 0)` silently disables the objective and its telemetry | no error, no aux metrics logged | raises `ValueError` before any loss/backward |
+| 4 | Negative weights not rejected | accepted unchecked | raises `ValueError` |
+| 5 | Length mismatch silently truncated via `min(...)` | only depth 0 logged, depth 1 dropped silently | raises `ValueError` |
+| 6 | Weights on a denoiser without `recursive_outputs` silently ignored | no error, no aux term (confirmed in this repo's own `run_slm138_recursive_denoiser_fixture.py`, which applied the weights to the `stacked` arm too) | raises `ValueError`; fixture corrected to only weight the `shared_recursive` arm |
+
+Fix: a canonical `validate_recursive_depth_supervision` /
+`ValidatedDepthSupervision` validator (owned by `twotower.py`, called
+unconditionally right after the denoiser forward pass) fails closed on all
+six modes; the corrected weighted objective and new
+`recursive_depth_weight_{d}` / `recursive_depth_weighted_contribution_{d}` /
+`recursive_depth_supervision_weight_sum` / `recursive_depth_supervision_enabled`
+telemetry make raw and weighted per-depth terms independently inspectable.
+Empty-tuple backward compatibility (feature explicitly off) is unchanged on
+every architecture. 17 new deterministic tests in
+`tests/test_models/test_recursive_denoiser.py` (26 total, all passing) cover
+every property required by SLM-237. Full before/after evidence:
+`docs/design/iter-rsc-a01-depth-supervision-weighting-fix-20260721.json` and `.md`.
+
+**No quality claim is made from this patch** — it is a correctness fix only,
+per SLM-237's own acceptance criteria. RSC-A02 (whether the final recursion
+depth belongs in the auxiliary term) is out of scope. Version bumps:
+`model.twotower` v62 → v63, `model.recursive_denoiser` v1 → v2.
+
+**RSC-A02 annotation (SLM-238, 2026-07-21):** the all-depth objective this
+section describes double-counts the final recursion depth —
+`rec_out["logits"] == rec_out["depth_logits"][-1]` exactly (see
+`SharedRecursiveDenoiserTower.recursive_outputs`), so the primary
+reconstruction term and the historical all-depth auxiliary term both
+differentiate through the identical final-depth forward pass. Neither this
+section's original SLM-138 wiring-only landing nor SLM-237's weighting fix
+named that ambiguity. SLM-238 makes it an explicit, versioned choice
+(`TwoTowerConfig.recursive_depth_aux_mode`: `off` | `intermediate_only` |
+`all_depths` | `legacy_all_depths`, with a dedicated
+`recursive_depth_aux_weight` coefficient) and runs a bounded 5-arm
+calibration factorial — **this is an annotation, not a re-verdict**: SLM-138's
+wiring-only status and SLM-237's correctness-fix verdict are unchanged. See
+`docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.md`
+and the `## RSC-A02` section below.
+
+## RSC-A02 final-depth double-counting semantics (SLM-238) — semantics + bounded calibration, no quality claim
+
+SLM-237 fixed the deep-supervision objective's *weighting* math; SLM-238
+fixes its *semantics*: whether the final recursion depth should count once
+(primary term only) or twice (primary + auxiliary) was never a stated
+choice, despite `rec_out["logits"] == rec_out["depth_logits"][-1]` holding
+exactly (same tensor, not a recomputation).
+
+`TwoTowerConfig` gains `recursive_depth_aux_mode` (`off` |
+`intermediate_only` | `all_depths` | `legacy_all_depths`) and
+`recursive_depth_aux_weight` (a coefficient scaling the whole auxiliary
+term, independent of the per-depth `recursive_depth_supervision_weights`).
+SLM-237's `validate_recursive_depth_supervision`/`ValidatedDepthSupervision`
+was extended in place (not forked) to validate mode/coefficient and the
+mode-dependent eligible-depth range: `intermediate_only` requires weights
+covering exactly depths `0..R-2` and structurally never indexes
+`depth_logits[R-1]`; `all_depths` requires exactly `0..R-1` and deliberately
+double-counts the final depth. `resolve_recursive_depth_aux_mode` and
+`migrate_recursive_depth_aux_config` keep every pre-existing config/checkpoint
+(`recursive_depth_aux_mode` absent) byte-identical to SLM-237's behavior via
+the `legacy_all_depths` reproduction-only label — `off` is the new default
+only when `recursive_depth_supervision_weights` was never set. New objective-
+decomposition telemetry (`primary_final_reconstruction_loss`,
+`recursive_intermediate_aux_loss`, `recursive_final_depth_aux_contribution`,
+`recursive_depth_aux_weight`, `combined_training_loss`) is always populated,
+never omitted, and reproduces the scalar training loss exactly.
+
+A bounded 5-arm factorial (`scripts/run_rsc_a02_depth_aux_mode_factorial.py`)
+compared A=off, B=intermediate_only(λ=1), C=all_depths(λ=1),
+D=intermediate_only(λ=0.3), E=all_depths(λ=0.3) on a deterministic 2-record
+fixture and a bounded 6-record real-corpus smoke, 3 training steps each.
+Real fixture-arm `combined_training_loss`: A=23.041, B=50.046, C=48.725,
+D=31.144, E=30.748 — `combined_training_loss` reproduced the live
+`training_loss()` return value exactly in every arm, and
+`recursive_final_depth_aux_contribution` was exactly `0.0` and structurally
+absent from the per-depth telemetry in both `intermediate_only` arms.
+**Calibration/semantics only — no quality or LOTUS-transfer claim, no
+promotion, no GPU campaign.** 41 tests in
+`tests/test_models/test_recursive_denoiser.py` (26 pre-existing + 15 new)
+cover every SLM-238 acceptance property, including the required
+`RecursiveObjectiveContractV2` schema. Full evidence:
+`docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.json`/`.md`
+and `docs/design/iter-rsc-a02-depth-aux-mode-factorial-20260721.json`/`.md`.
+
+Recommendation for the future SLM-233 control matrix: `intermediate_only` is
+the default-candidate (final-depth supervision should come solely from the
+primary reconstruction term, since that term already *is* the actual
+prediction); `all_depths`/`legacy_all_depths` remain explicit alternative-
+hypothesis controls, since this bounded factorial cannot rule out that the
+double count helps in practice — that adoption decision is SLM-233's job, not
+decided here. Version bumps: `model.twotower` v63 → v65,
+`model.recursive_denoiser` v2 → v4.
+
 ## V19 stochastic recursive width (SLM-139) — closed
 
 SLM-139 gates on a positive shared-recursive verdict from SLM-138.  SLM-138
@@ -4411,3 +4543,459 @@ AgentV remained 0/1.
 Evidence:
 [iter-e638-root-slot-coverage-20260720.md](iter-e638-root-slot-coverage-20260720.md)
 and [JSON](iter-e638-root-slot-coverage-20260720.json).
+
+> **PR #625 integration note:** The six sections below were originally numbered E626–E631 in `origin/claude/great-dirac-qd7ala`. They are renumbered E639–E644 here to avoid colliding with the E621–E638 sequence already landed on `main`; linked artifact file names keep their original labels.
+
+## E639 a decode-time margin that floors still-missing required slots directly
+
+E639 pursues E620's "coverage-aware component/property closure" recommendation
+(and an open, unmerged PR #625's more concrete framing: floor still-missing
+*required slots* directly, analogous to how `semantic_plan_margin_decode_weight`
+already floors still-required *plan families*). A new default-off field,
+`required_slot_margin_decode_weight`, was threaded end to end
+(`TwoTowerConfig`/`ModelBuildConfig`, `apply_runtime_overrides`,
+`_effective_evaluation_policy`, CLI flags on `evaluate_model.py` and
+`train_model.py`, the E617 contract-gated `ValueError` guard) and unit-tested
+to fire only for slots genuinely still missing from the decode prefix, not
+already-filled ones.
+
+Reused E620's exact scratch recipe (E530-r2 corpus, 800 steps, seed 0); the
+fresh checkpoint's loss (4.068013) matches E620's (4.068010) to 4 decimal
+places. A matched OOD `n=4` control (`required_slot_margin_decode_weight=0`)
+vs two treatment arms replayed the full E617-era recipe
+(`schema_role_slot_decode_weight=8` plus the whole `semantic_plan_*` family
+fixed in every arm); the control reproduces E620's treatment numbers and
+per-record predictions exactly, confirming a faithful replay.
+
+| Metric | Control (0) | Treatment margin=2 | Treatment margin=6 |
+| --- | ---: | ---: | ---: |
+| meaningful v1 | 0.5000 | 0.7500 | 0.2500 |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
+| placeholder fidelity | 0.5500 | 0.8333 | 0.3000 |
+| placeholder validity | 0.7300 | 0.9000 | 0.4800 |
+| structural similarity | 0.4886 | 0.5473 | 0.4261 |
+| component recall | 0.4792 | 0.5625 | 0.3958 |
+| reward | 0.8140 | 0.9005 | 0.5693 |
+| AST node / edge F1 | 0.5437 / 0.3750 | 0.6137 / 0.3485 | 0.4770 / 0.2500 |
+| AgentV | 0/1 | 0/1 | 0/1 |
+
+The result is real and dose-dependent: a moderate margin (2.0, matching the
+scale of sibling `*_margin_decode_weight` levers already in the recipe) raises
+every headline metric except AST edge F1 (Dashboard gains a `Callout` + `Card`s
+it previously omitted; Auth gains correctly role-matched components instead of
+one overloaded `Button`). A strong margin (6.0) instead regresses every
+headline metric below control — Dashboard collapses to a bare `Button` and
+Gallery's typed array closes empty again (E612's rejected failure mode
+reappearing), showing an overly large floor can hijack early root/component
+choice, not just fill slots. `binding_aware_meaningful_v2_rate_strict` (strict
+v2) stays 0.0 in all three arms — at least one record per arm still fails
+`required_placeholder_missing` and/or `placeholder_semantic_role_mismatch`.
+No decode timeouts or fallbacks in any arm. This is a single `n=4` matched-pair
+replay on one scratch checkpoint, not a confirmatory suite; no checkpoint was
+promoted or synced; not a ship claim. Retain the lever default-off at a
+moderate margin scale (~2.0); reject margin=6 as a default. Next: a powered
+multi-seed/full-suite replay sweeping the margin, and a root-cause trace of
+why margin=6 hijacks root-component choice.
+
+Evidence:
+[iter-e626-required-slot-margin-decode-weight-20260720.md](iter-e626-required-slot-margin-decode-weight-20260720.md)
+and
+[JSON](iter-e626-required-slot-margin-decode-weight-20260720.json).
+
+## E640 root-causing why margin=6 hijacks Dashboard's root
+
+E640 picks E639's deferred root-cause trace (not the powered multi-seed
+sweep, still open). Added observability only —
+`DecodeStats.required_slot_margin_applications`/`_choice_changes` counters and
+`TwoTowerModel._record_required_slot_margin_trace`, a bounded
+`constrained_selection_traces` entry per fire recording `frame_depth` (via the
+existing `_choice_phase_evidence` helper), before/after argmax token + grammar
+kind, and a `hijacked_non_slot_candidate` flag — following the repo's existing
+`_record_semantic_plan_root_trace` pattern exactly. No bias formula or default
+changed (`model.twotower` stays v60, `no-bump:` history entry).
+
+Reused E639's own already-trained scratch checkpoint verbatim (no retrain) and
+replayed its exact matched recipe with `--eval-limit 1` on `ood_dashboard_01`
+(record 0 of the `ood` suite — the exact record E639 reported collapsing),
+varying only `required_slot_margin_decode_weight` in `{0, 2, 6}`. All three
+reproduce E639's own per-record predictions for this record exactly, then the
+new traces are read directly:
+
+At margin=6, all 5 `required_slot_margin` fires happen at `frame_depth==0`
+(no component frame open yet — a fresh top-level statement's value), 3 of 5
+flipping the argmax away from a real component candidate (`+Image`,
+`+Callout`) or a literal to a bare slot token. The grammar legally allows a
+bare visible-slot token as a complete top-level statement value — an
+alternative production to opening a real component — and the bias's "still
+missing anywhere in the prefix" criterion is true for every required slot at
+decode start, so it fires with maximum force at the very first few statement
+positions. The model front-loads all 5 required slots into degenerate
+one-token `name = @N` statements in the first 5 decode positions before any
+real component tree exists; the lever then goes permanently silent (nothing
+left missing) for the remaining ~150 tokens, which do build a plausible
+Callout/Card/Card/Stack/Button tree — but whichever statement gets serialized
+as `root` was already decided in the corrupted opening stretch, so the real
+structure ends up as dead code the compiler drops. At margin=2, the *same*
+`frame_depth==0` competition is legal at the same position and the bias does
+win its own local before/after comparison there too — but the fixed, active
+`semantic_plan_root_margin_decode_weight=2`/`semantic_plan_root_decode_weight=8`
+biases, applied *later* in the same per-position bias stack
+(`required_slot_margin_bias` runs before `semantic_plan_bias`), push the score
+back above the floored slot token before the position's final `argmax()` is
+taken, so the emitted token is still the real component.
+
+**Answering E639's own framing directly:** not a scope leak in the sense of
+the bias ever scoring a non-slot candidate — it never does, and is exactly as
+narrowly scoped as designed. The leak is structural: the grammar makes a bare
+slot token a legal substitute for opening a component at the *same* decode
+position, and whether the intended behavior or this degenerate pass-through
+wins is decided purely by whether `required_slot_margin_decode_weight`
+exceeds the combined magnitude of the downstream `semantic_plan_root*`
+correction biases that run later in the same stack — not by base-logit
+strength and not by an unbounded scoping gap. A well-specified next code
+change (not attempted here): run `required_slot_margin_bias` after
+`semantic_plan_bias` in the stack, or exclude `frame_depth==0` candidates from
+its target set, then re-run this same trace to confirm the hijack disappears.
+
+This is a single-record (`n=1`), one-checkpoint causal trace, not a quality
+confirmation — E639's own `n=4` numbers remain the quality evidence of
+record. No checkpoint trained/promoted/synced; no gate touched; does not
+replace E639's deferred powered multi-seed sweep (still open). Gallery's
+"typed array re-closes empty" regression was not independently traced here
+and may or may not share this exact mechanism.
+
+Evidence:
+[iter-e627-required-slot-margin-root-cause-trace-20260720.md](iter-e627-required-slot-margin-root-cause-trace-20260720.md)
+and
+[JSON](iter-e627-required-slot-margin-root-cause-trace-20260720.json).
+
+## E641 excluding `frame_depth == 0` fixes margin=6's root hijack
+
+E641 implements E640's mitigation (2): `_required_slot_margin_bias`
+(`src/slm_training/models/twotower.py`) now takes an optional `state` and
+returns `None` (no fire at all) whenever `len(state.frames) == 0` — no
+component/object frame open yet, the exact condition E640 traced every
+margin=6 hijack to. Mitigation (1) (reorder the bias stack) was considered
+and rejected as less principled: the stack already applies
+`semantic_plan_root*` after `required_slot_margin_bias` and margin=2 already
+wins that race, so reordering would not remove the race, only change which
+correction gets the last additive word on the same score tensor — margin=6
+would still be large enough to escape whichever single correction runs last.
+Excluding `frame_depth == 0` instead matches the lever's own original intent
+(floor still-missing slots as *argument* fills, never as root/top-level
+choice) and removes the magnitude race entirely, at any margin. Default
+(`0.0`) and E617 contract-gating unchanged; `model.twotower` v60 -> v61.
+New unit test `test_required_slot_margin_bias_excludes_frame_depth_zero`
+proves the no-op at `frame_depth == 0` and unchanged firing at
+`frame_depth == 1`.
+
+Reused E639's own already-trained scratch checkpoint verbatim (sha256
+verified to match) and replayed the identical matched OOD `n=4` recipe
+(`ood` suite, `src/slm_training/resources/data/eval/remediated`), varying
+only `required_slot_margin_decode_weight` over `{0, 2, 6}`. The `margin=0`
+control reproduces E639's own control exactly (all metrics to 4 decimal
+places).
+
+| Metric | Control (0) | Margin=2 | Margin=6 |
+| --- | ---: | ---: | ---: |
+| meaningful v1 | 0.5000 | 0.7500 | 0.7500 |
+| strict meaning v2 | 0.0000 | 0.0000 | 0.0000 |
+| placeholder fidelity | 0.5500 | 0.8333 | 0.8333 |
+| placeholder validity | 0.7300 | 0.9000 | 0.9000 |
+| structural similarity | 0.4886 | 0.5473 | 0.5473 |
+| component recall | 0.4792 | 0.5625 | 0.5625 |
+| reward | 0.8140 | 0.9005 | 0.9005 |
+| AST node / edge F1 | 0.5437 / 0.3750 | 0.6137 / 0.3485 | 0.6137 / 0.3485 |
+| AgentV | 0/1 | 0/1 | 0/1 |
+
+**The regression is fixed, not merely reduced.** Margin=6 — E639's worst arm,
+regressing every headline metric below control — is now **byte-identical**
+to margin=2's already-verified positive arm: same per-record predictions
+across all 4 OOD records, same `required_slot_margin_applications_sum` (17)
+and `choice_changes_sum` (9) in both arms, and the new
+`constrained_selection_traces` confirm all 17 fires land at
+`frame_depth` in `{1, 2, 3}` — zero at `frame_depth == 0` — in both arms.
+Both of E639's headline failure signatures are independently confirmed
+fixed by inspecting the actual predicted programs: Dashboard now predicts
+`root = Stack([v0, v1, v3, v4], "column")` with a real `Callout` + `Card`s
+(not the bare `Button`), and Gallery's `ImageGallery` array is
+`[{src: ":ood.gallery.img", alt: ":ood.gallery.alt"}]` (not empty). Margin=2's
+benefit is unaffected, matching E639's own margin=2 numbers to 4 decimal
+places, confirming E640's prediction that margin=2 never hit this failure
+mode. `binding_aware_meaningful_v2_rate_strict` stays 0.0 in every arm,
+unchanged from E639 — this fix targets structural hijacking, not the
+remaining strict-v2 placeholder/role failures.
+
+Single small (`n=4`) matched-pair OOD replay on one reused scratch
+checkpoint, not a confirmatory multi-seed/full-suite result; not a ship
+claim; no checkpoint trained, promoted, or synced. Does not prove safety at
+arbitrary margin — only that the specific dose-dependent hijack observed
+within `{0, 2, 6}` on this checkpoint/suite is gone; a wider sweep or a
+different checkpoint/seed could still surface a different failure mode once
+the floor dominates a legitimate `frame_depth >= 1` argument-position
+competition, untested here. E639's powered multi-seed/`rico_held` sweep
+remains open; strict v2 remains 0.0 at every margin tested across
+E639/E640/E641 -- coverage-aware component/property closure remains the
+next lever after this one.
+
+Evidence:
+[iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.md)
+and
+[JSON](iter-e628-required-slot-margin-frame-depth-exclusion-20260720.json).
+
+## E642 a widened-suite margin sweep (1/2/3/4) surfaces a new frame_depth>=1 failure mode
+
+E642 picks up E639/E640/E641's shared deferral: a multi-value sweep of
+`required_slot_margin_decode_weight` against a fuller held-out suite than
+their shared `n=4` `ood`-only replay. A materially larger `rico_held` (via
+`slm data build-test --rico-hf-split test --rico-limit 2600`) would need a
+live HF fetch and fresh leakage check not tractable alongside the sweep
+itself; multi-seed retraining was intentionally skipped per this session's
+explicit apples-to-apples instruction to reuse E639's checkpoint verbatim. The
+suite used instead: the union of all 5 already-built, leakage-checked
+immutable suites under `src/slm_training/resources/data/eval/remediated`
+(`held_out`=5, `rico_held`=3, `adversarial`=4, `ood`=4, `smoke`=3, n=19) —
+~5x E639-E641's n, including `rico_held` by name, but still below
+`DEFAULT_MIN_SUITE_N=20` per suite (`ship_gates.py`) — exploratory, not a
+ship scoreboard.
+
+E639's own scratch checkpoint was reused verbatim (sha256 `c5b7c807…dd561221`
+verified) against the identical matched recipe, sweeping
+`required_slot_margin_decode_weight` over `{0, 1, 2, 3, 4}`. The `margin=0`
+control reproduces E639/E641's own `ood`-subset control exactly. No code
+changed this session (clean tree at `2caba977`); no version bump required.
+
+| Metric (pooled, n=19) | margin=0 | margin∈{1,2} | margin∈{3,4}\* |
+| --- | ---: | ---: | ---: |
+| meaningful_program_v1 rate | 0.6842 | 0.6842 | 0.6842 |
+| reward_score (mean) | 0.7889 | 0.9260 | 0.9260 |
+| placeholder_fidelity (mean) | 0.5781 | 0.8991 | 0.8991 |
+| structural_similarity (mean) | 0.4494 | 0.5295 | 0.5295 |
+| component_type_recall (mean) | 0.5965 | 0.6667 | 0.6667 |
+
+\* margins 3/4 differ from 1/2 in exactly 1/19 predictions, a cosmetic
+metric-neutral slot swap; margins 1 and 2 are byte-identical (0/19 diffs).
+
+Using `slm_training.evals.power_protocol`'s own `bootstrap_paired_ci` +
+`benjamini_hochberg` directly (the CLI's `analyze-existing` mode analyzes one
+arm at a time and has no built-in two-arm delta) on the 19 matched records:
+`reward_score` Δ=+0.137 (95% CI `[0.058, 0.253]`, BH-significant) and
+`placeholder_fidelity` Δ=+0.321 (CI `[0.188, 0.461]`, BH-significant);
+`structural_similarity` Δ=+0.080 and `component_type_recall` Δ=+0.070 are
+directionally positive but their CIs cross zero (not BH-significant) at
+n=19. **The binary `meaningful_program_v1` gate is exactly flat (13/19 in
+every arm)**: `ood_dashboard_01` gains (`False→True`, matching E639/E641's
+own reported fix) while `rico_eval_test_25` newly *loses* (`True→False`) at
+margin>=1 — a real gain and a real loss cancel to zero net movement. The
+paired bootstrap on the binary outcome itself: estimate 0.0, 95% CI
+`[-0.158, +0.158]` — not evidence of "no effect", evidence of "not enough
+data at this n to know".
+
+**A new failure mode.** `rico_eval_test_25` regresses at margin>=1 because
+one `Button` absorbs 5 placeholders belonging to 5 different role-appropriate
+slots (`schema_value_role_mismatch` on 3 `Button` properties,
+`placeholder_semantic_role_mismatch` on 6 placeholders) — a `frame_depth>=1`
+argument-position over-stuffing failure, not the `frame_depth==0` root hijack
+E640/E641 already fixed. This is exactly the risk E641's own "Next step" #2
+flagged as untested ("a different checkpoint/seed could still surface a
+different failure mode... once the floor dominates a legitimate
+`frame_depth>=1` argument-position competition") — surfacing here on the
+*same* checkpoint/seed at the *smallest* margin tested (1), on a suite record
+(`rico_held`) invisible to E639-E641's `n=4` ood-only replay.
+
+H19's Wilson/exact-binomial single-arm machinery is real and applicable here
+(pooled meaningful_program_v1 Wilson `[0.460, 0.846]`, exact binomial
+`[0.434, 0.874]`, identical in every arm); its seed-variance/MDE-simulation
+machinery is not meaningfully exercised — `seed_variance=0.0` correctly,
+since this stays single-checkpoint/single-seed by design. **Not a powered
+confirmatory result; not a ship claim.** No checkpoint trained, promoted, or
+synced; default `required_slot_margin_decode_weight` (`0.0`) unchanged.
+Margins 1-2 remain the best-supported range *if* adopted (3/4 show no benefit
+over 1/2), but the newly-discovered `rico_held` over-stuffing mode should be
+root-caused and fixed first — the same treatment E640/E641 gave the
+`frame_depth==0` hijack — before recommending any default change.
+`binding_aware_meaningful_v2_rate_strict` stays 0.0 across held_out/
+rico_held/adversarial/ood at every margin; E620's coverage-aware
+component/property closure work remains the next lever after that root-cause
+pass.
+
+Evidence:
+[iter-e629-required-slot-margin-widened-suite-sweep-20260720.md](iter-e629-required-slot-margin-widened-suite-sweep-20260720.md)
+and
+[JSON](iter-e629-required-slot-margin-widened-suite-sweep-20260720.json).
+
+## E643 root-causing rico_eval_test_25's over-stuffing — fixed, but the fix reverts E639/E641's gain too
+
+E643 root-causes E642's deferred `rico_eval_test_25` regression the same
+way E640 root-caused the `frame_depth==0` hijack, reusing the same
+`constrained_selection_traces` instrumentation (already surfaced through
+`scripts.evaluate_model`'s per-suite eval JSON — no new plumbing needed) on
+E639's own checkpoint, verbatim, sha256-verified.
+
+**Mechanism.** At margin=1 on `rico_eval_test_25`, `required_slot_margin_
+applications_sum=9`; 6 are `hijacked_non_slot_candidate=true`, all landing
+on schema-constrained enum/opaque argument positions of an already-open
+component (`frame_depth` in `{1,3}`) — `Button.action/variant/type/size`,
+`TextContent.size`, `Card.variant` — never the root. `Button` absorbs its
+content property (`label`, correctly) *and* all four of its non-content
+properties with four unrelated required slots, exactly matching E642's
+description; the trailing `Card` in the decode ends up `Card([])`
+(genuinely empty — `empty_card` failure), because required_slot_margin's
+global "still missing anywhere" accounting spent every remaining slot on
+those earlier non-content positions. Structurally this is a *different*
+mechanism from E640/E641's: `_required_slot_margin_bias`'s floor
+(`old_max + margin`) is computed **after** `_schema_value_bias`/
+`_schema_opaque_bias`/`_schema_enum_close_bias`/`_schema_opaque_close_bias`
+already ran in the same per-position stack, so it wins against all four at
+**any margin > 0** (not only a large one) by construction — E640/E641 found
+a magnitude race against a *later* bias; this is a guaranteed win against
+*earlier* ones, bounded only by whether a position is schema-eligible at
+all. The grammar's own `_schema_accepts` legally allows a placeholder value
+at any string-typed argument regardless of enum/opaque-ness, so nothing
+upstream can out-argue it once it fires.
+
+**Fix.** `_required_slot_margin_bias` gains a schema-position gate
+(new `_required_slot_margin_position_accepts_slot`), reusing
+`_schema_role_slot_bias`'s own `accepts_slot` convention: a `component`
+frame's active argument must be `x-openui-placeholder`-flagged (content
+properties only); an `object` frame's active property must be able to
+reach a visible slot. Other frame kinds stay permissive. Default (`0.0`)
+and E617 gating unchanged. `model.twotower` v61 → v62. New/updated tests in
+`tests/test_models/test_compiler_decode.py`.
+
+**Re-verification finds a genuine fix — and a genuine cost.**
+`rico_eval_test_25` is fully fixed: byte-identical to control across
+margin `{0,1,2,3,4}`, `meaningful_program_v1_rate=1.0` in every arm (was
+`1.0/0.0/0.0/0.0/0.0`). But re-running E639/E641's own matched `n=4` OOD
+replay shows the *same* fix reverts `ood_dashboard_01`'s previously-reported
+gain **entirely** — margin=2/6 are now byte-identical to control (0.5 in
+all three, was 0.75 at margin 2/6). Why: the pre-fix "win" prediction
+(`Callout(":ood.dash.status.title", ":ood.dash.status.body",
+":ood.dash.m2.value")`, 3 different slots in 3 positional args;
+`Card([], ":ood.dash.m1.value", ":ood.dash.m1.value")`, empty children plus
+2 stuffed non-content args) was the *identical* over-stuffing mechanism,
+just landing somewhere that happened to help. Because decode is greedy,
+removing the bias's fire anywhere on this path collapses the whole
+trajectory back to control's. Separately: that padded-but-still-empty
+`Card([], ...)` never tripped `_is_meaningful_program`'s literal
+`"Card([])"` substring check (which requires an *exactly*-empty call), even
+though its children were just as empty as `rico_eval_test_25`'s rejected
+`Card([])` — part of the original Dashboard "gain" was itself a
+substring-matching artifact, not new content.
+
+A widened n=19 re-sweep (same union E642 used) confirms this is a net loss,
+not a wash: `meaningful_program_v1` pooled rate at margin∈{1,2} is now
+**0.6316 (12/19)**, *below* control's 0.6842 (13/19) — was flat-at-0.6842 in
+E642's pre-fix sweep. Continuous metrics also drop (reward 0.7149 vs 0.7889
+control; pre-fix these had *risen* to 0.9260). Exactly one record differs
+between margin=0 and margin=2 post-fix, and it is neither the fixed
+`rico_eval_test_25` nor the reverted `ood_dashboard_01` — it is
+`smoke_hero_01`, newly regressing (`True -> False`, `empty_root_stack`), a
+third failure mode invisible pre-fix only because the old over-stuffing
+behavior happened to steer its already-near-incoherent greedy decode away
+from an empty result.
+
+**Verdict:** the fix is real, principled, and kept (default stays `0.0`,
+no regression to the shipped model) — but the honest headline is that
+`required_slot_margin_decode_weight`'s apparent net benefit on this single
+small/noisy scratch checkpoint does not survive closing the over-stuffing
+gaming path that produced it. Not a confirmatory result in either
+direction; no checkpoint trained, promoted, or synced. Next: a genuinely
+powered multi-seed/retrained comparison is likely more informative than a
+fourth single-checkpoint trace; E620's coverage-aware component/property
+closure recommendation remains the next untried lever;
+`_is_meaningful_program`'s literal empty-component substring checks are
+flagged (not fixed here) as worth hardening to a structural check.
+
+Evidence:
+[iter-e630-required-slot-margin-schema-position-gate-20260720.md](iter-e630-required-slot-margin-schema-position-gate-20260720.md)
+and
+[JSON](iter-e630-required-slot-margin-schema-position-gate-20260720.json).
+
+## E644 fixing `meaningful_program_v1`'s empty-children detection gap (and the honest re-scoring it demands)
+
+E644 picks up E643's own deferred "Next step" #3: `_is_meaningful_program`'s
+literal `"Card([])"` substring check misses an empty-children `Card` whose
+remaining positional arguments got padded with stuffed required-slot values
+(e.g. `Card([], ":a", ":b")`), because the substring only matches an
+*exactly*-empty call. E643's report is a paraphrase, so before touching
+anything the real implementation
+(`src/slm_training/harnesses/model_build/eval_runner.py::_is_meaningful_program`)
+was read in full and the exact padded strings E642/E643 reported were parsed
+through the real DSL parser to inspect the actual AST. The diagnosis holds,
+with one sharper detail E643 didn't call out: **Stack's own literal check
+already has a `"Stack([],"` companion clause for this padded case** — only
+`Card` lacked the equivalent clause, a narrow, already-visible asymmetry in
+the code, not merely an abstract "one syntactic shape." A schema check
+(`openui_schema.json`) also found two more component types with a required
+`children` array the old check never covered *at all*: `Modal` and
+`Carousel` (`Modal(":t", true, [])` and `Carousel([])` both passed
+`meaningful_program_v1` pre-fix).
+
+**Fix.** A new `_first_empty_children_component(node)` helper walks the real
+parsed AST (`Program.root`, not the serialized text) for any element whose
+`props["children"]` list is empty — `children` lives in `props` as its own
+key, structurally separate from a node's other (possibly stuffed) props, so
+padding those cannot hide emptiness. It runs *after*, not instead of, the two
+existing literal checks, so it can only add new rejections, never remove one
+the literal checks already made — purely additive, no gate-weakening path
+exists. Stack/Card keep their exact original reason strings
+(`empty_root_stack`/`empty_card`) when the AST check is what actually fires
+on them; genuinely new types get a new reason code
+(`empty_children:<TypeName>`). `decode_feasibility.py::classify_parse_failure`
+buckets the new reason alongside the existing two under `trivial_layout`
+(diagnostics-only). `harness.model_build.eval` v33 → v34.
+
+New tests in `tests/test_evals/test_meaningful_program.py` reproduce the
+exact `rico_eval_test_25`/`ood_dashboard_01` padded shapes (now correctly
+rejected, `empty_card`), a nested case, the two new component types
+(`empty_children:Modal`/`empty_children:Carousel`), and regression guards
+confirming genuinely non-empty components (with other props present) still
+pass. The pre-existing `test_meaningful_program_v1_backward_lock` (Stack/Card
+literal cases) is untouched and still passes bit-for-bit. 36/36 passed in
+this file; 56/56 across four other related test files. (A pre-existing,
+unrelated `test_gate_engine_golden.py` golden-fixture failure — a stale
+`binding_aware_meaningful_v2` version string from a prior session's
+`no-bump:` note — reproduces identically on a clean checkout before this
+session's changes; not touched, out of scope.)
+
+**Honest re-scoring against the real E639 checkpoint.** Re-running the fixed
+metric against the exact same n=19 suite union and recipe E642/E643 used, on
+E639's own reused scratch checkpoint (sha256 `c5b7c807…dd561221`, re-verified,
+no retrain, no further decode-time change), shows the stricter check does
+flip previously-passing records — required by this task, not skipped.
+Monkeypatching `_is_meaningful_program` to print `(record_id, reason,
+prediction)` while running the real `evaluate_model` CLI (not inferring from
+aggregates) pinpoints exactly which: at margin=0 (the lever fully inactive,
+pure baseline), `rico_eval_test_42` and `rico_eval_test_77` both flip
+`True → False` (`empty_card`) — each has 2-3 `Card([], <stuffed value>)`
+nodes already present in the checkpoint's *unmodified* decode, unrelated to
+`required_slot_margin_decode_weight` entirely. Pooled n=19 margin=0:
+0.6842 (13/19) → **0.5789 (11/19)**. Pooled n=19 margin=2 (post-E643-fix):
+0.6316 (12/19) → **0.5263 (10/19)** — same two records, same reason, at every
+margin. Because both flipped records fail identically regardless of margin,
+they cancel out of the margin-vs-control *delta* that actually matters for
+judging the lever: the gap stays -1 record either way (13→12 pre-metric-fix
+per E643, now 11→10 post-metric-fix) — still net non-positive.
+**The metric fix does not change E643's headline verdict about
+`required_slot_margin_decode_weight`** (fixed regression, reverted gain, net
+non-positive on this checkpoint); it only corrects the absolute baseline
+level by catching two real, pre-existing, lever-independent scoring
+artifacts. `ood`/`adversarial` are byte-identical pre/post metric-fix at both
+margins (no Modal/Carousel in those predictions); `smoke_hero_01`'s
+already-documented (E643) regression is unaffected by the metric change.
+
+A single scratch checkpoint (800 steps, seed 0); n=19, still below
+`DEFAULT_MIN_SUITE_N=20` per suite — not a ship claim, not a powered
+multi-seed result. Does not touch `evals/meaningful_program.py`
+(`binding_aware_meaningful_v2` / strict v2) — confirmed by direct inspection
+to have no literal empty-substring check of this kind, so nothing there
+needed fixing. Next: E620's coverage-aware component/property closure
+recommendation remains the next untried lever; a genuinely powered
+multi-seed/retrained comparison of `required_slot_margin_decode_weight`
+remains open; `smoke_hero_01`'s regression remains untraced.
+
+Evidence:
+[iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md)
+and
+[JSON](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.json).

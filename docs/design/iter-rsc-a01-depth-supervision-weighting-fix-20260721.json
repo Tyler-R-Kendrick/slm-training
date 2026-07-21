@@ -1,0 +1,211 @@
+{
+  "run_id": "iter_rsc_a01_depth_supervision_weighting_fix",
+  "issue": "SLM-237 (RSC-A01)",
+  "linear_context": "SLM-138 adversarial audit ledger",
+  "status": "correctness_fix",
+  "claim_class": "correctness",
+  "quality_claim_made": false,
+  "note": "Correctness fix only, per SLM-237's own acceptance criteria: no OOD quality comparison or checkpoint-promotion claim is made from this patch. RSC-A02 (whether the final depth belongs in the auxiliary term) is explicitly out of scope.",
+  "verified_defect": {
+    "historical_formula": "sum_d(L_d) / sum_d(w_d)  (an unweighted mean -- w_d bound in the loop but never multiplied)",
+    "intended_formula": "sum_d(w_d * L_d) / sum_d(w_d)",
+    "checked_fixture_evidence": "docs/design/iter-slm138-recursive-denoiser-20260720.md recorded recursive_depth_supervision_loss=33.3280029296875 for weights=(0.5, 1.0), and its own recursive_depth_loss_0=26.03812026977539 / recursive_depth_loss_1=23.953886032104492 satisfy (L0+L1)/1.5 = 33.32800... exactly -- the historical defective (unweighted mean) formula, not the intended weighted one. Re-running the fixture after this patch (same weights) now yields the corrected weighted value instead."
+  },
+  "six_failure_modes": {
+    "before_fix": {
+      "reproduced_against": "actual pre-patch src/slm_training/models/twotower.py (git stash to HEAD, not a hand re-implementation)",
+      "results": {
+        "mode1_zero_disables_nothing": {
+          "L0": 31.46758270263672,
+          "L1": 29.811262130737305,
+          "defect_confirmed": true,
+          "equals_L1_alone": false,
+          "historical_aux_value": 61.278846740722656,
+          "matches_defective_formula_(L0+L1)/sum_w": true,
+          "weights": [
+            0.0,
+            1.0
+          ]
+        },
+        "mode2_scale_variant_not_invariant": {
+          "defect_confirmed_exact_2x": true,
+          "historical_aux_a": 40.85256576538086,
+          "historical_aux_b": 20.42628288269043,
+          "ratio_a_over_b": 2.0,
+          "weights_a": [
+            0.5,
+            1.0
+          ],
+          "weights_b": [
+            1.0,
+            2.0
+          ]
+        },
+        "mode3_all_zero_silently_disables": {
+          "defect_confirmed_silent_no_telemetry": true,
+          "loss_is_finite": true,
+          "raised": false,
+          "recursive_depth_loss_0_present": false,
+          "recursive_depth_supervision_loss_present": false,
+          "weights": [
+            0.0,
+            0.0
+          ]
+        },
+        "mode4_negative_weight_not_rejected": {
+          "L0": 31.46758270263672,
+          "L1": 29.811262130737305,
+          "defect_confirmed_accepted_without_error": true,
+          "historical_aux_value": 30.639423370361328,
+          "matches_defective_formula_(L0+L1)/total_w": true,
+          "note": "The historical loop never multiplies by w at all (the verified defect); a negative weight is accepted unchecked and silently changes the denominator (here -1+3=2, masquerading as if weights were symmetric (1,1)) instead of raising or anti-supervising L0 as a correctly-weighted formula would.",
+          "raised": false,
+          "total_w_denominator_used": 2.0,
+          "weights": [
+            -1.0,
+            3.0
+          ]
+        },
+        "mode5_length_mismatch_silently_truncated": {
+          "defect_confirmed_silently_used_only_first_depth": true,
+          "loss_is_finite": true,
+          "num_depths": 2,
+          "raised": false,
+          "recursive_depth_loss_0_present": true,
+          "recursive_depth_loss_1_present": false,
+          "weights": [
+            1.0
+          ]
+        },
+        "mode6_weights_silently_ignored_without_recursive_outputs": {
+          "arch": "stacked",
+          "defect_confirmed_silently_ignored": true,
+          "loss_is_finite": true,
+          "raised": false,
+          "recursive_depth_supervision_loss_present": false,
+          "weights": [
+            0.5,
+            1.0
+          ]
+        }
+      }
+    },
+    "after_fix": {
+      "reproduced_against": "current working tree (this patch)",
+      "results": {
+        "backward_compat_empty_tuple_off_everywhere": {
+          "fixed": true,
+          "recursive_enabled": false,
+          "stacked_enabled": false
+        },
+        "mode1_zero_disables_depth": {
+          "L0": 31.46758270263672,
+          "L1": 29.811262130737305,
+          "corrected_aux_value": 29.811262130737305,
+          "equals_L1_alone": true,
+          "fixed": true,
+          "weights": [
+            0.0,
+            1.0
+          ]
+        },
+        "mode2_scale_invariant": {
+          "corrected_aux_a": 30.363370895385742,
+          "corrected_aux_b": 30.363370895385742,
+          "fixed_identical": true,
+          "ratio_a_over_b": 1.0,
+          "weights_a": [
+            0.5,
+            1.0
+          ],
+          "weights_b": [
+            1.0,
+            2.0
+          ]
+        },
+        "mode3_all_zero_raises": {
+          "exception": "recursive_depth_supervision_weights=(0.0, 0.0) are all zero. An all-zero configuration would silently disable the objective and its telemetry while still looking wired up; use an empty tuple () to explicitly turn the feature off instead.",
+          "fixed": true,
+          "raised": true,
+          "weights": [
+            0.0,
+            0.0
+          ]
+        },
+        "mode4_negative_weight_raises": {
+          "exception": "recursive_depth_supervision_weights[0] = -1.0 is negative. Weights must be >= 0; a negative weight would anti-supervise that depth instead of merely down-weighting it.",
+          "fixed": true,
+          "raised": true,
+          "weights": [
+            -1.0,
+            3.0
+          ]
+        },
+        "mode5_length_mismatch_raises": {
+          "exception": "recursive_depth_supervision_weights has length 1 ((1.0,)) but the denoiser produced 2 recursion depth(s). The length must match exactly -- no truncation or padding via min(len(...), len(...)) is performed; fix recursive_steps or the weights tuple so they agree.",
+          "fixed": true,
+          "num_depths": 2,
+          "raised": true,
+          "weights": [
+            1.0
+          ]
+        },
+        "mode6_stacked_weights_raise": {
+          "arch": "stacked",
+          "exception": "recursive_depth_supervision_weights is non-empty ((0.5, 1.0)) but denoiser_arch='stacked' does not expose recursive_outputs (e.g. a 'stacked' or HF denoiser, or an un-migrated checkpoint). Deep supervision requires a recursive-outputs-capable architecture (e.g. denoiser_arch='shared_recursive'); leave the tuple empty () to keep the feature off for this architecture.",
+          "fixed": true,
+          "raised": true,
+          "weights": [
+            0.5,
+            1.0
+          ]
+        }
+      }
+    }
+  },
+  "implementation": {
+    "validator": "slm_training.models.twotower.validate_recursive_depth_supervision -> ValidatedDepthSupervision",
+    "telemetry_added_or_versioned": [
+      "recursive_depth_loss_{d}",
+      "recursive_depth_weight_{d}",
+      "recursive_depth_weighted_contribution_{d}",
+      "recursive_depth_supervision_weight_sum",
+      "recursive_depth_supervision_loss",
+      "recursive_depth_supervision_enabled"
+    ],
+    "backward_compatibility": "Empty tuple remains feature-off on every architecture (stacked, HF, shared_recursive, and old checkpoints) with no behavior change; malformed non-empty configs now fail with a named, migration-quality ValueError instead of silently truncating or ignoring."
+  },
+  "tests": {
+    "file": "tests/test_models/test_recursive_denoiser.py",
+    "new_tests": 17,
+    "properties_covered": [
+      "(0, 1) equals L1 exactly",
+      "(1, 0) equals L0 exactly",
+      "(0.5, 1) equals (1, 2)",
+      "(1, 1) equals (L0 + L1) / 2",
+      "negative/NaN/infinite weights raise",
+      "all-zero raises",
+      "shorter and longer tuples raise",
+      "non-empty weights on stacked denoiser raise",
+      "empty tuple valid on every architecture, no auxiliary term",
+      "gradient reaches only positive-weight depths",
+      "fixture JSON metrics agree with manual weighted-mean calculation"
+    ],
+    "command": "python -m pytest tests/test_models/test_recursive_denoiser.py -q",
+    "result": "26 passed (9 pre-existing + 17 new)"
+  },
+  "version_bumps": {
+    "model.twotower": "v62 -> v63",
+    "model.recursive_denoiser": "v1 -> v2"
+  },
+  "generated_at": "2026-07-21T00:35:47.323836+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3405a8af637927e56e1521436e234ed1f2c5faf2",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v63"
+    },
+    "stamped_at": "2026-07-21T00:35:47.339963+00:00"
+  }
+}

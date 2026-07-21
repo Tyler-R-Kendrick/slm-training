@@ -141,6 +141,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "schema_opaque_decode_weight",
         "schema_opaque_close_decode_weight",
         "schema_role_slot_decode_weight",
+        "required_slot_margin_decode_weight",
         "semantic_plan_decode_weight",
         "semantic_plan_margin_decode_weight",
         "semantic_plan_seed_decode_weight",
@@ -315,6 +316,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         denoiser_arch=config.denoiser_arch,
         recursive_steps=config.recursive_steps,
         recursive_transition_layers=config.recursive_transition_layers,
+        recursive_detach_between_steps=getattr(
+            config, "recursive_detach_between_steps", False
+        ),
         recursive_depth_supervision_weights=config.recursive_depth_supervision_weights,
         tie_output_embedding=bool(config.tie_output_embedding),
         grammar_constrained=config.grammar_constrained,

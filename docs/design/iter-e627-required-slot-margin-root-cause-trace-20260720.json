@@ -1,0 +1,995 @@
+{
+  "schema_version": 1,
+  "run_id": "e627-required-slot-margin-root-cause-trace-20260720",
+  "experiment_id": "E627",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "E626 deferred a root-cause trace of why required_slot_margin_decode_weight=6 collapses Dashboard's root to a bare Button while =2 helps. Hypothesis: the bias, though scoped to only ever add score to genuine visible-slot candidates, can still win the argmax at frame_depth==0 (a fresh top-level statement, before any component frame is open) where a bare slot token is a legal grammar alternative to opening a real component -- and whether it wins there is decided by margin size vs the downstream semantic_plan_root* biases that run later in the same per-position stack, not by any narrower scoping.",
+  "instrumentation": {
+    "new_fields": [
+      "DecodeStats.required_slot_margin_applications",
+      "DecodeStats.required_slot_margin_choice_changes"
+    ],
+    "new_method": "TwoTowerModel._record_required_slot_margin_trace",
+    "trace_fields": [
+      "frame_depth (0 == no component frame open yet)",
+      "before_token/before_kind, chosen_token/chosen_kind",
+      "choice_changed",
+      "hijacked_non_slot_candidate (choice_changed and before_kind != 'sym')"
+    ],
+    "no_bias_or_default_changed": true,
+    "version_bump": "model.twotower stays v60; no-bump: history entry added (behavior-neutral instrumentation)",
+    "unit_tests": [
+      "tests/test_models/test_compiler_decode.py::test_required_slot_margin_trace_flags_a_root_level_component_hijack",
+      "tests/test_models/test_decode_stats.py::test_decode_stats_aggregates_required_slot_margin_counts"
+    ]
+  },
+  "checkpoint_reused": {
+    "run_id": "e626-required-slot-margin-scratch800-20260720",
+    "location": "outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt",
+    "sha256": "c5b7c807988d100f32fc60877b6fec932b7ee1ad08345558ca26c3e3dd561221",
+    "note": "reused verbatim, no retrain; confirms this iteration is purely a decode-time causal trace"
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "eval_limit": 1,
+    "record": "ood_dashboard_01",
+    "note": "eval-limit 1 selects record index 0 of the ood suite, which is ood_dashboard_01 -- the exact record E626 reported collapsing at margin=6",
+    "fixed_flags_matching_e626": [
+      "honest_slot_contract",
+      "slot_contract_constrained_decode",
+      "slot_contract_in_context",
+      "semantic_role_contract_in_context",
+      "semantic_role_decode_weight=8",
+      "slot_coverage_close_decode_weight=2",
+      "schema_value_decode_weight=4",
+      "schema_opaque_close_decode_weight=4",
+      "schema_role_slot_decode_weight=8",
+      "semantic_plan_decode_weight=4",
+      "semantic_plan_margin_decode_weight=2",
+      "semantic_plan_binding_decode_weight=1",
+      "semantic_plan_root_decode_weight=8",
+      "semantic_plan_root_margin_decode_weight=2",
+      "semantic_plan_repeated_array_close_margin_decode_weight=2",
+      "semantic_plan_repeated_slot_margin_decode_weight=2",
+      "semantic_plan_typed_array_nonempty_margin_decode_weight=2",
+      "semantic_plan_typed_array_item_margin_decode_weight=2",
+      "grammar_ltr_max_tokens=160"
+    ],
+    "varied": "required_slot_margin_decode_weight in {0, 2, 6}"
+  },
+  "results_n1_dashboard_only": {
+    "margin_0": {
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.2,
+      "placeholder_validity": 0.52,
+      "structural_similarity": 0.1375,
+      "reward_score": 0.697,
+      "prediction": "root = Card([], \":ood.dash.status.body\")",
+      "required_slot_margin_applications": null,
+      "required_slot_margin_choice_changes": null,
+      "tokens_emitted": 115.0
+    },
+    "margin_2": {
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.6375,
+      "reward_score": 0.985,
+      "prediction": "root = Stack([v0, v1, v3, v4], \"column\")\nv0 = Callout(\":ood.dash.status.title\", \":ood.dash.status.body\", \":ood.dash.m2.value\")\nv1 = Button(\":ood.dash.m1.value\", \":ood.dash.refresh\")\nv3 = Card([], \":ood.dash.m1.value\", \":ood.dash.m1.value\")\nv4 = Card([], \":ood.dash.m1.value\")",
+      "required_slot_margin_applications": 7.0,
+      "required_slot_margin_choice_changes": 5.0,
+      "tokens_emitted": 31.0
+    },
+    "margin_6": {
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.2,
+      "placeholder_validity": 0.52,
+      "structural_similarity": 0.1125,
+      "reward_score": 0.667,
+      "prediction": "root = Button(\":ood.dash.m2.value\")",
+      "required_slot_margin_applications": 5.0,
+      "required_slot_margin_choice_changes": 4.0,
+      "tokens_emitted": 158.0
+    }
+  },
+  "required_slot_margin_traces_margin6": [
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 1,
+      "before_token": "+Image",
+      "before_kind": "component_root_or_bound",
+      "chosen_token": "@3",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": true,
+      "required_slot_margin_decode_weight": 6.0,
+      "top_candidates": [
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 10.296614,
+          "margin_bias": 7.536225,
+          "score_after": 17.83284
+        },
+        {
+          "token": "+Image",
+          "kind": "component_root_or_bound",
+          "score_before": 11.832839,
+          "margin_bias": 0.0,
+          "score_after": 11.832839
+        },
+        {
+          "token": "+Separator",
+          "kind": "component_root_or_bound",
+          "score_before": 11.262854,
+          "margin_bias": 0.0,
+          "score_after": 11.262854
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_root_or_bound",
+          "score_before": 11.082986,
+          "margin_bias": 0.0,
+          "score_after": 11.082986
+        },
+        {
+          "token": "+Select",
+          "kind": "component_root_or_bound",
+          "score_before": 10.836783,
+          "margin_bias": 0.0,
+          "score_after": 10.836783
+        },
+        {
+          "token": "+CardHeader",
+          "kind": "component_root_or_bound",
+          "score_before": 10.734384,
+          "margin_bias": 0.0,
+          "score_after": 10.734384
+        },
+        {
+          "token": "+CheckBoxItem",
+          "kind": "component_root_or_bound",
+          "score_before": 10.713023,
+          "margin_bias": 0.0,
+          "score_after": 10.713023
+        },
+        {
+          "token": "+ScatterSeries",
+          "kind": "component_root_or_bound",
+          "score_before": 10.595489,
+          "margin_bias": 0.0,
+          "score_after": 10.595489
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 2,
+      "before_token": "+Callout",
+      "before_kind": "component_bound",
+      "chosen_token": "@0",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": true,
+      "required_slot_margin_decode_weight": 6.0,
+      "top_candidates": [
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 16.030064,
+          "margin_bias": 6.231831,
+          "score_after": 22.261894
+        },
+        {
+          "token": "+Callout",
+          "kind": "component_bound",
+          "score_before": 16.261894,
+          "margin_bias": 0.0,
+          "score_after": 16.261894
+        },
+        {
+          "token": "LIT_STR",
+          "kind": "lit",
+          "score_before": 16.156504,
+          "margin_bias": 0.0,
+          "score_after": 16.156504
+        },
+        {
+          "token": "[",
+          "kind": "struct",
+          "score_before": 14.626161,
+          "margin_bias": 0.0,
+          "score_after": 14.626161
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 12.622482,
+          "margin_bias": 0.0,
+          "score_after": 12.622482
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_bound",
+          "score_before": 12.067722,
+          "margin_bias": 0.0,
+          "score_after": 12.067722
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 11.926998,
+          "margin_bias": 0.0,
+          "score_after": 11.926998
+        },
+        {
+          "token": "#1",
+          "kind": "lit",
+          "score_before": 11.81817,
+          "margin_bias": 0.0,
+          "score_after": 11.81817
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 3,
+      "before_token": "@1",
+      "before_kind": "sym",
+      "chosen_token": "@1",
+      "chosen_kind": "sym",
+      "choice_changed": false,
+      "hijacked_non_slot_candidate": false,
+      "required_slot_margin_decode_weight": 6.0,
+      "top_candidates": [
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 14.89694,
+          "margin_bias": 6.0,
+          "score_after": 20.89694
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 14.523475,
+          "margin_bias": 0.0,
+          "score_after": 14.523475
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_bound",
+          "score_before": 13.683981,
+          "margin_bias": 0.0,
+          "score_after": 13.683981
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 13.55884,
+          "margin_bias": 0.0,
+          "score_after": 13.55884
+        },
+        {
+          "token": "[",
+          "kind": "struct",
+          "score_before": 12.500429,
+          "margin_bias": 0.0,
+          "score_after": 12.500429
+        },
+        {
+          "token": "LIT_STR",
+          "kind": "lit",
+          "score_before": 12.127417,
+          "margin_bias": 0.0,
+          "score_after": 12.127417
+        },
+        {
+          "token": "+CardHeader",
+          "kind": "component_bound",
+          "score_before": 11.86722,
+          "margin_bias": 0.0,
+          "score_after": 11.86722
+        },
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 11.76403,
+          "margin_bias": 0.0,
+          "score_after": 11.76403
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 4,
+      "before_token": "LIT_STR",
+      "before_kind": "lit",
+      "chosen_token": "@2",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": true,
+      "required_slot_margin_decode_weight": 6.0,
+      "top_candidates": [
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 11.548409,
+          "margin_bias": 9.240144,
+          "score_after": 20.788553
+        },
+        {
+          "token": "LIT_STR",
+          "kind": "lit",
+          "score_before": 14.788553,
+          "margin_bias": 0.0,
+          "score_after": 14.788553
+        },
+        {
+          "token": "+Button",
+          "kind": "component_bound",
+          "score_before": 13.862264,
+          "margin_bias": 0.0,
+          "score_after": 13.862264
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_bound",
+          "score_before": 13.317847,
+          "margin_bias": 0.0,
+          "score_after": 13.317847
+        },
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 13.176798,
+          "margin_bias": 0.0,
+          "score_after": 13.176798
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 12.561771,
+          "margin_bias": 0.0,
+          "score_after": 12.561771
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 12.493958,
+          "margin_bias": 0.0,
+          "score_after": 12.493958
+        },
+        {
+          "token": "+Modal",
+          "kind": "component_bound",
+          "score_before": 11.986025,
+          "margin_bias": 0.0,
+          "score_after": 11.986025
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 5,
+      "before_token": "@1",
+      "before_kind": "sym",
+      "chosen_token": "@4",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": false,
+      "required_slot_margin_decode_weight": 6.0,
+      "top_candidates": [
+        {
+          "token": "@4",
+          "kind": "sym",
+          "score_before": 7.142525,
+          "margin_bias": 14.398209,
+          "score_after": 21.540733
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 15.540733,
+          "margin_bias": 0.0,
+          "score_after": 15.540733
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 14.089174,
+          "margin_bias": 0.0,
+          "score_after": 14.089174
+        },
+        {
+          "token": "[",
+          "kind": "struct",
+          "score_before": 13.919691,
+          "margin_bias": 0.0,
+          "score_after": 13.919691
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_bound",
+          "score_before": 13.216895,
+          "margin_bias": 0.0,
+          "score_after": 13.216895
+        },
+        {
+          "token": "&2",
+          "kind": "bind",
+          "score_before": 12.990242,
+          "margin_bias": 0.0,
+          "score_after": 12.990242
+        },
+        {
+          "token": "+Button",
+          "kind": "component_bound",
+          "score_before": 12.664152,
+          "margin_bias": 0.0,
+          "score_after": 12.664152
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 12.482205,
+          "margin_bias": 0.0,
+          "score_after": 12.482205
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    }
+  ],
+  "required_slot_margin_traces_margin2": [
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 1,
+      "before_token": "+Image",
+      "before_kind": "component_root_or_bound",
+      "chosen_token": "@3",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": true,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 10.296614,
+          "margin_bias": 3.536225,
+          "score_after": 13.832839
+        },
+        {
+          "token": "+Image",
+          "kind": "component_root_or_bound",
+          "score_before": 11.832839,
+          "margin_bias": 0.0,
+          "score_after": 11.832839
+        },
+        {
+          "token": "+Separator",
+          "kind": "component_root_or_bound",
+          "score_before": 11.262854,
+          "margin_bias": 0.0,
+          "score_after": 11.262854
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_root_or_bound",
+          "score_before": 11.082986,
+          "margin_bias": 0.0,
+          "score_after": 11.082986
+        },
+        {
+          "token": "+Select",
+          "kind": "component_root_or_bound",
+          "score_before": 10.836783,
+          "margin_bias": 0.0,
+          "score_after": 10.836783
+        },
+        {
+          "token": "+CardHeader",
+          "kind": "component_root_or_bound",
+          "score_before": 10.734384,
+          "margin_bias": 0.0,
+          "score_after": 10.734384
+        },
+        {
+          "token": "+CheckBoxItem",
+          "kind": "component_root_or_bound",
+          "score_before": 10.713023,
+          "margin_bias": 0.0,
+          "score_after": 10.713023
+        },
+        {
+          "token": "+ScatterSeries",
+          "kind": "component_root_or_bound",
+          "score_before": 10.595489,
+          "margin_bias": 0.0,
+          "score_after": 10.595489
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 2,
+      "before_token": "LIT_STR",
+      "before_kind": "lit",
+      "chosen_token": "@0",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": true,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 11.951619,
+          "margin_bias": 6.288871,
+          "score_after": 18.24049
+        },
+        {
+          "token": "LIT_STR",
+          "kind": "lit",
+          "score_before": 16.24049,
+          "margin_bias": 0.0,
+          "score_after": 16.24049
+        },
+        {
+          "token": "#\"primary\"",
+          "kind": "lit",
+          "score_before": 11.061422,
+          "margin_bias": 0.0,
+          "score_after": 11.061422
+        },
+        {
+          "token": "#\"info\"",
+          "kind": "lit",
+          "score_before": 10.281335,
+          "margin_bias": 0.0,
+          "score_after": 10.281335
+        },
+        {
+          "token": "^column",
+          "kind": "lit",
+          "score_before": 8.938148,
+          "margin_bias": 0.0,
+          "score_after": 8.938148
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 8.606083,
+          "margin_bias": 0.0,
+          "score_after": 8.606083
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 7.850705,
+          "margin_bias": 0.0,
+          "score_after": 7.850705
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 7.778979,
+          "margin_bias": 0.0,
+          "score_after": 7.778979
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 1,
+      "frame_path_truncated": false,
+      "frame_path": [
+        {
+          "kind": "component",
+          "expr_type": "element:Callout",
+          "phase": "",
+          "arg_index": 0
+        }
+      ]
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 3,
+      "before_token": "@0",
+      "before_kind": "sym",
+      "chosen_token": "@1",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": false,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 14.827782,
+          "margin_bias": 6.788136,
+          "score_after": 21.615917
+        },
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 19.615917,
+          "margin_bias": 0.0,
+          "score_after": 19.615917
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 14.462174,
+          "margin_bias": 0.0,
+          "score_after": 14.462174
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 13.526367,
+          "margin_bias": 0.0,
+          "score_after": 13.526367
+        },
+        {
+          "token": "@4",
+          "kind": "sym",
+          "score_before": 6.409014,
+          "margin_bias": 0.0,
+          "score_after": 6.409014
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 1,
+      "frame_path_truncated": false,
+      "frame_path": [
+        {
+          "kind": "component",
+          "expr_type": "element:Callout",
+          "phase": "",
+          "arg_index": 1
+        }
+      ]
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 4,
+      "before_token": "@0",
+      "before_kind": "sym",
+      "chosen_token": "@3",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": false,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 12.536646,
+          "margin_bias": 10.487099,
+          "score_after": 23.023745
+        },
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 21.023745,
+          "margin_bias": 0.0,
+          "score_after": 21.023745
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 12.416004,
+          "margin_bias": 0.0,
+          "score_after": 12.416004
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 11.478676,
+          "margin_bias": 0.0,
+          "score_after": 11.478676
+        },
+        {
+          "token": "@4",
+          "kind": "sym",
+          "score_before": 5.611119,
+          "margin_bias": 0.0,
+          "score_after": 5.611119
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 1,
+      "frame_path_truncated": false,
+      "frame_path": [
+        {
+          "kind": "component",
+          "expr_type": "element:Callout",
+          "phase": "",
+          "arg_index": 2
+        }
+      ]
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 6,
+      "before_token": "@2",
+      "before_kind": "sym",
+      "chosen_token": "@2",
+      "chosen_kind": "sym",
+      "choice_changed": false,
+      "hijacked_non_slot_candidate": false,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 13.770584,
+          "margin_bias": 2.0,
+          "score_after": 15.770584
+        },
+        {
+          "token": "LIT_STR",
+          "kind": "lit",
+          "score_before": 13.01946,
+          "margin_bias": 0.0,
+          "score_after": 13.01946
+        },
+        {
+          "token": "+Button",
+          "kind": "component_bound",
+          "score_before": 12.932038,
+          "margin_bias": 0.0,
+          "score_after": 12.932038
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 12.621248,
+          "margin_bias": 0.0,
+          "score_after": 12.621248
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 12.594803,
+          "margin_bias": 0.0,
+          "score_after": 12.594803
+        },
+        {
+          "token": "+Series",
+          "kind": "component_bound",
+          "score_before": 12.552378,
+          "margin_bias": 0.0,
+          "score_after": 12.552378
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component_bound",
+          "score_before": 12.38443,
+          "margin_bias": 0.0,
+          "score_after": 12.38443
+        },
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 11.627491,
+          "margin_bias": 0.0,
+          "score_after": 11.627491
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 0,
+      "frame_path_truncated": false,
+      "frame_path": []
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 7,
+      "before_token": "@2",
+      "before_kind": "sym",
+      "chosen_token": "@2",
+      "chosen_kind": "sym",
+      "choice_changed": false,
+      "hijacked_non_slot_candidate": false,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 13.885081,
+          "margin_bias": 2.0,
+          "score_after": 15.885081
+        },
+        {
+          "token": "@3",
+          "kind": "sym",
+          "score_before": 12.38119,
+          "margin_bias": 0.0,
+          "score_after": 12.38119
+        },
+        {
+          "token": "@1",
+          "kind": "sym",
+          "score_before": 12.300449,
+          "margin_bias": 0.0,
+          "score_after": 12.300449
+        },
+        {
+          "token": "@0",
+          "kind": "sym",
+          "score_before": 9.656744,
+          "margin_bias": 0.0,
+          "score_after": 9.656744
+        },
+        {
+          "token": "@4",
+          "kind": "sym",
+          "score_before": 8.36119,
+          "margin_bias": 0.0,
+          "score_after": 8.36119
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 1,
+      "frame_path_truncated": false,
+      "frame_path": [
+        {
+          "kind": "component",
+          "expr_type": "element:Button",
+          "phase": "",
+          "arg_index": 0
+        }
+      ]
+    },
+    {
+      "phase": "required_slot_margin",
+      "row": 0,
+      "position": 8,
+      "before_token": "-",
+      "before_kind": "struct",
+      "chosen_token": "@4",
+      "chosen_kind": "sym",
+      "choice_changed": true,
+      "hijacked_non_slot_candidate": true,
+      "required_slot_margin_decode_weight": 2.0,
+      "top_candidates": [
+        {
+          "token": "@4",
+          "kind": "sym",
+          "score_before": 5.254267,
+          "margin_bias": 14.519449,
+          "score_after": 19.773716
+        },
+        {
+          "token": "-",
+          "kind": "struct",
+          "score_before": 17.773716,
+          "margin_bias": 0.0,
+          "score_after": 17.773716
+        },
+        {
+          "token": "@2",
+          "kind": "sym",
+          "score_before": 15.034357,
+          "margin_bias": 0.0,
+          "score_after": 15.034357
+        },
+        {
+          "token": "[",
+          "kind": "struct",
+          "score_before": 14.81956,
+          "margin_bias": 0.0,
+          "score_after": 14.81956
+        },
+        {
+          "token": "+Button",
+          "kind": "component",
+          "score_before": 13.037601,
+          "margin_bias": 0.0,
+          "score_after": 13.037601
+        },
+        {
+          "token": "&0",
+          "kind": "bind",
+          "score_before": 12.975522,
+          "margin_bias": 0.0,
+          "score_after": 12.975522
+        },
+        {
+          "token": "+TextContent",
+          "kind": "component",
+          "score_before": 12.533485,
+          "margin_bias": 0.0,
+          "score_after": 12.533485
+        },
+        {
+          "token": "LIT_STR",
+          "kind": "lit",
+          "score_before": 12.504501,
+          "margin_bias": 0.0,
+          "score_after": 12.504501
+        }
+      ],
+      "aggregation_scope": "other",
+      "frame_depth": 1,
+      "frame_path_truncated": false,
+      "frame_path": [
+        {
+          "kind": "component",
+          "expr_type": "element:Button",
+          "phase": "",
+          "arg_index": 1
+        }
+      ]
+    }
+  ],
+  "mechanism": {
+    "finding": "At margin=6 all 5 required_slot_margin fires happen at frame_depth==0 (fresh top-level statement, no component frame open), 3 of 5 flipping the argmax away from a real component candidate (+Image, +Callout) or a literal (LIT_STR) to a bare slot token -- the model front-loads all 5 required slots into degenerate one-token 'name = @N' statements in the first 5 decode positions, before any real component tree exists. The lever then goes permanently silent (every slot is 'filled' in the prefix) for the remaining ~150 tokens of decode, which do build a plausible Callout/Card/Card/Stack/Button tree -- but whichever statement is serialized as 'root' was already decided in the corrupted opening stretch, so the real structure ends up as dead code the compiler drops. At margin=2, the SAME frame_depth==0 candidate-vs-slot competition is legal at the same position 1, and the bias does win its own local before/after comparison there too -- but the downstream semantic_plan_root_margin_decode_weight=2 / semantic_plan_root_decode_weight=8 biases (fixed, active in every arm, applied later in the same per-position bias stack) push the score back above the floored slot token before the position's final argmax is taken, so the emitted token is still the real component.",
+    "is_it_scope_leak_or_weak_base_logits": "Neither exactly as E626 framed the question. The bias never adds score to a non-slot candidate -- it is exactly as narrowly scoped as designed. The leak is that the grammar itself makes a bare slot token a legal substitute for opening a component at the same decode position, and which one wins is a magnitude race against the downstream semantic_plan_root* correction biases, decided purely by whether required_slot_margin_decode_weight exceeds their combined effect -- not by base-logit strength and not by any scoping gap in _required_slot_margin_bias itself.",
+    "bias_stack_order_relevant_here": [
+      "schema_role_slot_bias",
+      "schema_value_bias",
+      "schema_enum_close_bias",
+      "schema_opaque_bias",
+      "schema_opaque_close_bias",
+      "slot_coverage_close_bias",
+      "required_slot_margin_bias",
+      "repeated_array_close_bias",
+      "typed_array_nonempty_bias",
+      "semantic_plan_bias (incl. root margin)"
+    ]
+  },
+  "decision": "required_slot_margin_decode_weight stays default-off; margin=6 stays rejected (unchanged from E626). New, concrete, actionable finding: the failure is a position-0 race against the fixed semantic_plan_root* biases, not an unbounded scope leak -- a structural mitigation (run required_slot_margin_bias after semantic_plan_bias in the stack, or exclude frame_depth==0 targets) is now a well-specified next code change rather than a guess.",
+  "what_this_is_not": "n=1 (one record, one scratch checkpoint) -- a causal trace, not a quality confirmation; E626's own n=4 numbers remain the quality evidence of record. No checkpoint trained/promoted/synced. No gate touched. Does not validate or replace E626's deferred powered multi-seed margin sweep, which remains open.",
+  "next_step": "1) E626's original powered multi-seed rico_held/held-out sweep remains open. 2) Try the two named structural mitigations (reorder the bias stack; or exclude frame_depth==0 from _required_slot_margin_bias's target set) and re-run this same single-record trace to confirm the frame_depth==0 hijack disappears before considering either a real code change. 3) Gallery's 'typed array re-closes empty' regression was not independently traced here and may or may not share this exact mechanism.",
+  "ship_gate_result": "not_applicable",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b098554b2ef24a47e7ce2e8c711cfd711f1cfca2",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v60"
+    },
+    "stamped_at": "2026-07-20T23:06:16.838011+00:00"
+  }
+}
