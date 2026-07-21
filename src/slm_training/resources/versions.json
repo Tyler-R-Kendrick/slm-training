@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v126",
+      "version": "v127",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v127",
+          "date": "2026-07-21",
+          "note": "E671 rejection: restore retained E666 behavior after nearest nested ownership remained neutral because the real Carousel was not authored in the semantic plan"
+        },
         {
           "version": "v126",
           "date": "2026-07-21",

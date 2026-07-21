@@ -4774,3 +4774,14 @@ checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e670-nested-array-role-20260721.md) and
 [JSON](iter-e670-nested-array-role-20260721.json).
+
+## E671 nested role-aware array ownership
+
+E671 adds nearest-component ownership to E670's nested schema and role-aware
+item selection. The matched OOD `n=4` run remains byte-identical to E670: the
+real Carousel is model-introduced rather than authored in the semantic plan,
+so the owner gate still abstains. Reject neutral v126 and restore retained E666
+behavior as v127. No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e671-nested-role-owner-20260721.md) and
+[JSON](iter-e671-nested-role-owner-20260721.json).
