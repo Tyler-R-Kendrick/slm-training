@@ -4685,3 +4685,16 @@ created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e657-combined-role-ownership-20260721.md) and
 [JSON](iter-e657-combined-role-ownership-20260721.json).
+
+## E658 active positional-property role ownership
+
+E658 applies property-level schema-role checks to both raw-slot margins while
+preserving generic `Input.placeholder`. Dashboard instead reuses `status.body`
+inside `Slice.category` and drops the metric. Fidelity, validity, structure,
+reward, and AST F1 regress; reject v113 and restore E653 behavior as v114.
+This closes the positive-margin line: the next lever must exclude invalid
+property-role candidates rather than merely prefer alternatives. No checkpoint
+was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e658-property-role-ownership-20260721.md) and
+[JSON](iter-e658-property-role-ownership-20260721.json).
