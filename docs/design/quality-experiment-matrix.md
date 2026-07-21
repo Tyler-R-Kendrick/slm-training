@@ -4639,3 +4639,13 @@ Evidence:
 [iter-e653-nested-role-ownership-20260721.md](iter-e653-nested-role-ownership-20260721.md),
 [authoritative r2 JSON](iter-e653-nested-role-ownership-20260721.json), and
 [excluded r1 JSON](iter-e653-nested-role-ownership-r1-20260721.json).
+
+## E654 nested ownership plus enum flooring
+
+E654 retries E651's enum floor over retained E653. Strict v2 and AST F1 hold
+and p95 improves, but fidelity falls 1.0000→0.9500, validity 1.0000→0.9700,
+structure 0.7692→0.7629, and reward 0.9730→0.9580. Reject v105 and restore
+E653 behavior as v106. No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e654-nested-role-enum-20260721.md) and
+[JSON](iter-e654-nested-role-enum-20260721.json).

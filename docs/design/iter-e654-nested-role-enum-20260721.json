@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "run_id": "e654-nested-role-enum-r1",
+  "experiment_id": "E654",
+  "date_utc": "2026-07-21",
+  "status": "completed_negative_reverted",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Nested role ownership will prevent schema enum flooring from displacing visible content.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"baseline_run_id": "e653-nested-role-ownership-r2", "suite": "ood", "n": 4, "device": "cpu", "exact_e653_policy_except_schema_enum_close_decode_weight": 4.0, "allow_unconstrained_fallback": false},
+  "suites": {"ood": {"n": 4, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.75, "placeholder_fidelity": 0.95, "placeholder_validity": 0.97, "structural_similarity": 0.7629250000000001, "component_type_recall": 0.875, "reward_score": 0.958, "ast_node_f1": 0.8222222222222222, "ast_edge_f1": 0.7101648351648352, "latency_ms_p50": 2785.72, "latency_ms_p95": 6512.43, "fallback_count": 0, "decode_timeout_count": 0}},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "decision": "Reject v105 and restore retained E653 behavior as v106. Enum flooring still reduces fidelity, validity, structure, and reward; lower latency cannot offset quality regression.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "7025e7f3ae05a359533f20edb2cbe97d5b04c916", "code_dirty": false, "components": {"harness.model_build.eval": "v33", "evals.meaningful_program": "2.2.1", "evals.scoring": "v12", "model.twotower": "v105"}, "stamped_at": "2026-07-21T06:00:45.032473+00:00"}
+}
