@@ -1,19 +1,23 @@
-# E644 — concrete role-obligation margin
+# E650 — concrete role-obligation margin
 
 Date: 2026-07-20
 Status: completed positive scratch result; retained; not ship
 
-E644 converted each visible-role-inferred family into a concrete
+E650 converted each visible-role-inferred family into a concrete
 `(component family, visible slot)` obligation. At a compatible schema position,
 only the assigned unused slot receives a margin floor. Prompt-planned families
 and ordinary schema-role scoring retain their existing behavior.
+
+The capped run was originally launched as E644. It was renumbered E650 when
+the rebase incorporated the independently landed E639–E644 sequence; the
+committed JSON retains the original run ID explicitly.
 
 No training ran and no checkpoint was created. One capped CPU OOD `n=4` run
 reused E620's rejected local-only checkpoint with the exact E637 policy. It
 completed in 23.4 seconds without timeout or fallback and emitted AgentEvals
 JSONL plus an AgentV SDK bundle without execution errors.
 
-| OOD `n=4` | E637 r2 baseline | E644 r1 |
+| OOD `n=4` | E637 r2 baseline | E650 r1 |
 | --- | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 |
 | meaningful v1 / strict v2 | 0.7500 / 0.5000 | 0.7500 / 0.7500 |
@@ -26,13 +30,13 @@ JSONL plus an AgentV SDK bundle without execution errors.
 | AgentV | 0/1 | 0/1 |
 
 Gallery now emits each inferred role exactly once: CTA binds to Button and both
-hint roles bind to distinct TextContent instances, eliminating E641/E643's
+hint roles bind to distinct TextContent instances, eliminating E647/E649's
 nested Button spam. Dashboard also binds distinct title/body roles. Retain the
-treatment stamped v88 as the next scratch baseline. After rebasing onto E643
-restoration v90, the append-only lineage records the retained E644 behavior as
-v91. Every headline quality metric except edge F1 improves, but do not claim
+treatment stamped v88 as the next scratch baseline. After rebasing onto E649
+restoration v91, the append-only lineage records the retained E650 behavior as
+v92. Every headline quality metric except edge F1 improves, but do not claim
 ship readiness: this is a diagnostic `n=4`
 subset, AgentV fails the evidence-size gate, edge F1 slips slightly, and p95
 latency nearly doubles. No checkpoint was created, synced, or promoted.
 
-Evidence: [JSON](iter-e644-role-obligation-margin-20260720.json).
+Evidence: [JSON](iter-e650-role-obligation-margin-20260720.json).
