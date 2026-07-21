@@ -2100,7 +2100,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2115,6 +2115,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-07-20",
+          "note": "E639: continue from completed root sections with the best legal role-compatible component while visible slots remain"
+        },
         {
           "version": "v80",
           "date": "2026-07-21",
