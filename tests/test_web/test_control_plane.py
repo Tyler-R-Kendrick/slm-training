@@ -2068,13 +2068,13 @@ def test_e638_rejected_run_persists_without_new_checkpoint(tmp_path: Path) -> No
     assert run_id not in checkpoints
 
 
-def test_e639_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
+def test_e645_neutral_runs_persist_without_new_checkpoints(tmp_path: Path) -> None:
     readers = Readers(Path(__file__).parents[2])
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
     expected = {
-        "e639-root-sibling-coverage-r1": 0.0,
-        "e639-root-sibling-coverage-r2": 0.5,
+        "e645-root-sibling-coverage-r1": 0.0,
+        "e645-root-sibling-coverage-r2": 0.5,
     }
     for run_id, strict in expected.items():
         run = readers.run(run_id)

@@ -1,11 +1,15 @@
-# E639 — root sibling coverage
+# E645 — root sibling coverage
 
 Date: 2026-07-20
 Status: completed neutral; reverted; not ship
 
-E639 extended the existing visible-slot coverage bias to completed root-section
+E645 extended the existing visible-slot coverage bias to completed root-section
 boundaries. While slots remained, it floored the best legal component whose
 public schema could cover one of them.
+
+The capped runs were originally launched as E639. They were renumbered E645
+when the rebase incorporated the independently landed E639–E644 sequence; the
+committed JSON retains each original run ID explicitly.
 
 ## Runs and recipe
 
@@ -19,7 +23,7 @@ exact E637 OOD `n=4` policy and is authoritative.
 
 ## Measured result
 
-| OOD `n=4` | E637 r2 baseline | E639 r2 |
+| OOD `n=4` | E637 r2 baseline | E645 r2 |
 | --- | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 |
 | meaningful v1 / strict v2 | 0.7500 / 0.5000 | 0.7500 / 0.5000 |
@@ -40,11 +44,11 @@ discarded those extra sections.
 
 Reject the treatment stamped model v78 and restore the baseline behavior. After
 rebasing onto the E638 production lineage at v80, the append-only lineage
-records E639 as treatment v81 and restoration v82. Sampling extra sibling
+records E645 as treatment v81 and restoration v82. Sampling extra sibling
 sections without adding verifier-safe root references is neutral complexity.
 The next lever should select supplemental, visible-slot-bearing section
 references during verified root construction. No checkpoint was created,
 synced, or promoted.
 
-Evidence: [authoritative JSON](iter-e639-root-sibling-coverage-20260720.json)
-and [r1 recipe diagnostic](iter-e639-root-sibling-coverage-r1-20260720.json).
+Evidence: [authoritative JSON](iter-e645-root-sibling-coverage-20260720.json)
+and [r1 recipe diagnostic](iter-e645-root-sibling-coverage-r1-20260720.json).

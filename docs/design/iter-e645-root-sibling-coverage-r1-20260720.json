@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "e639-root-sibling-coverage-r1",
-  "experiment_id": "E639",
+  "run_id": "e645-root-sibling-coverage-r1",
+  "experiment_id": "E645",
+  "original_run_id": "e639-root-sibling-coverage-r1",
+  "original_experiment_id": "E639",
   "date_utc": "2026-07-21",
   "status": "completed_diagnostic_recipe_mismatch",
   "run_class": "scratch_matrix",

@@ -4999,6 +4999,7 @@ Evidence:
 [iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.md)
 and
 [JSON](iter-e631-meaningful-program-v1-empty-children-ast-fix-20260721.json).
+
 ## E645 root sibling coverage
 
 E645 positively selected legal role-compatible components at completed root
@@ -5008,7 +5009,8 @@ quality metrics stayed exactly at E637. Reject the treatment stamped v78. After
 rebasing onto E638's production lineage at v80, the append-only lineage records
 E645 as treatment v81 and restoration v82. The next lever belongs in verifier-
 safe root reference selection. No checkpoint was created or synced; AgentV
-remained 0/1.
+remained 0/1. The run was originally launched as E639 and renumbered after the
+rebase incorporated the independently landed E639–E644 sequence.
 
 Evidence:
 [iter-e645-root-sibling-coverage-20260720.md](iter-e645-root-sibling-coverage-20260720.md),

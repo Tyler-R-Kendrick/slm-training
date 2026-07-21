@@ -2117,6 +2117,11 @@
       "history": [
         {
           "version": "v82",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E639 sibling-coverage evidence to E645 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v82",
           "date": "2026-07-20",
           "note": "E639 rejection: restore v80 root-boundary behavior after sibling coverage sampling changed traces but the verified root omitted those unplanned sections and every policy-matched metric stayed flat"
         },
