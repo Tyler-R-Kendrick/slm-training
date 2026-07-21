@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-07-21T00:00:00Z",
+  "source_scope": "LOT0-01 (SLM-248) fidelity-contract sweep for a faithful LOTUS-to-OpenUI causal transfer. Covers the LOTUS looped-latent-CoT paper, its reference implementation, and the CODI comparator named in the issue's preregistered evidence nuances. The canonical LOTUS / SLM-138 adversarial-audit Linear document is recorded as an unresolved external reference per the parent issue's explicit instruction to proceed without it.",
+  "sources": [
+    {
+      "source_id": "arxiv-2606.31779",
+      "kind": "web",
+      "title": "LOTUS: Looped Transformers with Latent Chain-of-Thought",
+      "uri": "https://arxiv.org/abs/2606.31779",
+      "published_at": "2026-06-01",
+      "summary": "A looped, weight-reused causal transformer backbone runs R recurrent forward passes over K parallel latent reasoning blocks of c positions each, with the original input embedding re-injected at every pass (E + h_{t-1}); latent positions are supervised by projecting through the base model's own LM head against gold explicit-CoT-step tokens, with an explicit-to-latent curriculum that progressively replaces visible CoT tokens with latent positions across training stages. Reported to close most of the gap to explicit CoT at 3B scale while cutting thought-phase latency 2.5x-6.9x.",
+      "metadata": {
+        "authors": ["Yingfan Bot (repo attribution)", "additional authors not independently verified in this session"],
+        "arxiv_id": "2606.31779",
+        "category": "lotus_openui_transfer",
+        "feedback_claim": "A fixed-size latent workspace looped through a causal backbone, seeded with the original embedding, curriculum-trained from explicit CoT tokens, and read out through the shared LM head can approach explicit-CoT quality at a fraction of the decode latency.",
+        "repo_relevance": "LOT0-01 fidelity contract mechanism rows 2-8 (K x c workspace, loop, embedding injection, curriculum, post-loop head, final loss, fixed R).",
+        "implementation_status": "not_implemented",
+        "limitations": "Only the abstract/metadata was fetched in this session (WebFetch, 2026-07-21); the full PDF's numeric GSM8K/SVAMP tables and per-config latency figures were not independently re-derived here. Those specific numbers are carried from the parent issue's preregistered evidence-nuances list and are marked secondary_preregistered in the contract, not primary_fetched.",
+        "novel_hypothesis": "None implemented; LOT0-01 is a docs/spec-only fidelity contract and preregistered go/no-go gate, not a model change."
+      }
+    },
+    {
+      "source_id": "github-yingfan-bot-lotus",
+      "kind": "web",
+      "title": "yingfan-bot/lotus reference implementation",
+      "uri": "https://github.com/yingfan-bot/lotus",
+      "published_at": "2026-06-01",
+      "summary": "Reference training/eval code for LOTUS. scripts/lotus.py implements the looped forward pass (n_looped_iters, c_thought, block_start = loop_idx * c_thought, latent_injection_mode in {add, replace}, intermediate_loss_after_loop, shared base_model.lm_head). args/gsm8k_lotus_llama3b.yaml configures a two-stage recipe: Stage-1 explicit-CoT SFT checkpoint (yingfanbot/gsm-cot-llama3b) as init, Stage-2 looped latent training with a max_latent_stage curriculum, c_thought=25, intermediate_loss_weight=0.05, codi_loss_weight=0.0.",
+      "metadata": {
+        "authors": ["yingfan-bot (GitHub handle; individual author identity not independently verified in this session)"],
+        "arxiv_id": null,
+        "category": "lotus_openui_transfer",
+        "feedback_claim": "The paper's mechanisms (K x c latent blocks, R-loop causal recurrence, E + h_{t-1} injection, post-loop shared-head supervision, fixed-R primary config) are concretely realized as named, inspectable config knobs, not just prose.",
+        "repo_relevance": "LOT0-01 fidelity contract's paper/code evidence column for every mechanism row; source of the required-control names (K/c sweep, replace/no-injection ablation, R sweep, per-iteration vs post-loop control).",
+        "implementation_status": "not_implemented",
+        "limitations": "scripts/lotus.py and args/gsm8k_lotus_llama3b.yaml were fetched via WebFetch on 2026-07-21 and paraphrased through a summarizing model rather than read as raw diffed source in this session; quoted identifiers (c_thought, n_looped_iters, latent_injection_mode, intermediate_loss_after_loop, block_start) are treated as reliable but the full file body was not independently reproduced verbatim here.",
+        "novel_hypothesis": "None implemented; see arxiv-2606.31779 entry."
+      }
+    },
+    {
+      "source_id": "codi-comparator",
+      "kind": "web",
+      "title": "CODI (compact latent-CoT distillation comparator named in the LOTUS evidence nuances)",
+      "uri": "https://arxiv.org/abs/2602.31779",
+      "published_at": "2026-01-01",
+      "summary": "Named in the parent issue's preregistered evidence nuances as a comparator: LOTUS+CODI reaches 70.6 +/- 0.2 vs LOTUS 70.0 +/- 0.9 on 3B GSM8K, and CODI is reported faster than LOTUS under the compact latency protocol. Not independently fetched in this session; the exact arXiv id above is inferred from the issue's naming convention and is unverified.",
+      "metadata": {
+        "authors": ["not independently verified in this session"],
+        "arxiv_id": "unverified",
+        "category": "lotus_openui_transfer",
+        "feedback_claim": "A compact latent-CoT distillation baseline can match or exceed a looped-recurrence baseline's accuracy at lower latency, which the LOT0 contract must not silently erase when scoping a LOTUS-faithful transfer.",
+        "repo_relevance": "LOT0-01 evidence_nuances (codi-faster-than-lotus, gsm8k-3b-accuracy); motivates keeping the latency_frontier and efficiency_frontier claim classes distinct from semantic_quality.",
+        "implementation_status": "not_implemented",
+        "limitations": "This entry's URI/arXiv id was not independently fetched or verified in this session; treat as an unresolved citation pointer, not a confirmed source. The comparative numbers themselves are carried verbatim from the parent issue text (see evidence_nuances in the fidelity contract).",
+        "novel_hypothesis": "None implemented."
+      }
+    },
+    {
+      "source_id": "linear-doc-slm138-lotus-adversarial-audit",
+      "kind": "linear_doc",
+      "title": "LOTUS / SLM-138 adversarial audit (canonical audit, unresolved)",
+      "uri": "linear://document/SLM-138-lotus-adversarial-audit",
+      "published_at": null,
+      "summary": "Named by the parent issue as the canonical audit for this transfer. Not fetchable from this session; recorded per the issue's explicit instruction to proceed without it and note it as an unresolved external reference.",
+      "metadata": {
+        "authors": [],
+        "arxiv_id": null,
+        "category": "lotus_openui_transfer",
+        "feedback_claim": "unresolved",
+        "repo_relevance": "Named canonical audit for LOT0-01; this contract does not depend on any claim that only that audit could supply, since repository comparators were read directly.",
+        "implementation_status": "unresolved",
+        "limitations": "Document content was not retrieved in this session.",
+        "novel_hypothesis": null
+      }
+    }
+  ]
+}
