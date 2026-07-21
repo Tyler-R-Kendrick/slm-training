@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "run_id": "e698-likeness-abstention-r2",
+  "experiment_id": "E698",
+  "date_utc": "2026-07-21",
+  "status": "completed_positive_tradeoff_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "Component-like adjectives describe resemblance and must not become explicit component requirements; visible enum roles can disambiguate otherwise ambiguous schema carriers.",
+  "checkpoint": {
+    "run_id": "e620-required-slot-coverage-scratch800-20260720",
+    "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false
+  },
+  "evaluation_policy": {
+    "baseline_run_id": "e697-required-parent-order-r2",
+    "suite": "held_out",
+    "n": 5,
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "scratch",
+    "full_suite": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "max_wall_minutes": 3
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.8,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.96,
+      "placeholder_validity": 0.976,
+      "structural_similarity": 0.77242,
+      "component_type_recall": 0.8433333333333334,
+      "reward_score": 0.9513999999999999,
+      "ast_node_f1": 0.8608730158730159,
+      "ast_edge_f1": 0.6887912087912087,
+      "latency_ms_p50": 3950.94,
+      "latency_ms_p95": 4602.84,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
+  "comparison_to_e697": {
+    "changed_predictions": 1,
+    "strict_v2": [0.8, 0.8],
+    "placeholder_fidelity": [1.0, 0.96],
+    "structural_similarity": [0.6826399999999999, 0.77242],
+    "component_type_recall": [0.8433333333333334, 0.8433333333333334],
+    "reward_score": [0.961, 0.9513999999999999],
+    "ast_node_f1": [0.8061721611721613, 0.8608730158730159],
+    "ast_edge_f1": [0.5537262737262737, 0.6887912087912087]
+  },
+  "prediction_evidence": {
+    "held_out_form_01": "The false Form requirement disappears. Correct Button, Callout, and Input declarations replace the incompatible Form subtree; hint.title remains the sole missing slot.",
+    "unchanged_other_predictions": 4,
+    "r1_correction": "R1 removed Form but omitted Input. R2 uses the public enum value email to select Input from otherwise ambiguous role carriers.",
+    "restoration_confirmation": "E699 r3 under model.twotower v163 and metric 2.9.0 is byte-identical to E698 r2."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Retain the v159 behavior, restored after rejected E699 variants as v163. Structure and both AST F1 metrics improve substantially with unchanged recall; fidelity and reward slip because one hint-title slot remains missing. This is not ship evidence.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4c87965bfd2a0ee8dd8404fc62490c6af1fda609",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v35",
+      "evals.meaningful_program": "2.7.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v159"
+    },
+    "stamped_at": "2026-07-21T15:21:19.302086+00:00"
+  }
+}

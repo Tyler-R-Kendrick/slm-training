@@ -5126,3 +5126,28 @@ checkpoint was created or synced.
 
 Evidence: [narrative](iter-e697-required-parent-order-20260721.md) and
 [JSON](iter-e697-required-parent-order-20260721.json).
+
+## E698 likeness abstention
+
+E698 treats `component-like` prose as descriptive and uses unique public enum
+evidence to resolve ambiguous visible-role carriers. Form becomes the intended
+Button/Callout/Input/Stack structure: structure rises to 0.7724, node F1 to
+0.8609, and edge F1 to 0.6888 with recall unchanged. One hint-title slot remains
+missing, so strict stays 4/5, fidelity is 0.96, and reward is 0.9514. Retain
+v159 behavior, later restored as v163, as a positive structural tradeoff—not
+ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e698-likeness-abstention-20260721.md) and
+[JSON](iter-e698-likeness-abstention-20260721.json).
+
+## E699 role capacity revisit
+
+E699 reintroduces family-level string-property capacity after E698. Capacity
+and generic form aliases collapse email+submit into RadioItem and destabilize
+the Form case; strict remains 4/5 and structural/AST metrics regress from E698.
+Reject v160-v162. R3 removes both mechanisms, advances the candidate metric to
+restoration version 2.9.0, and exactly restores E698 predictions as v163.
+AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e699-role-capacity-revisit-20260721.md) and
+[JSON](iter-e699-role-capacity-revisit-20260721.json).
