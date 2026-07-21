@@ -161,13 +161,37 @@
         }
       ]
     },
+    "harness.experiments.slm262_gpu_reference_run": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm262_gpu_reference.py",
+        "scripts/run_gpu_reference.py",
+        "tests/test_harnesses/experiments/test_slm262_gpu_reference.py",
+        "tests/test_scripts/test_run_gpu_reference.py",
+        "docs/design/gpu-reference-run.md",
+        "docs/design/iter-slm262-gpu-reference-run-20260721.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-262 VSD0-03 AcceleratorRunManifestV1, provider adapters, and run_gpu_reference CLI"
+        }
+      ]
+    },
     "harness.experiments": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-21",
+          "note": "add SLM-262 VSD0-03 GPU reference-run manifest/adapter lazy re-exports"
+        },
         {
           "version": "v59",
           "date": "2026-07-21",
