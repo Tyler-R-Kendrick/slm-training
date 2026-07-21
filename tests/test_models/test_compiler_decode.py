@@ -980,7 +980,7 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     assert bias.tolist() == [-4.0, 0.0]
 
 
-def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
+def test_schema_opaque_bias_penalizes_optional_empty_schema() -> None:
     from slm_training.dsl.production_codec import CLOSE, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 
@@ -995,6 +995,27 @@ def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> 
     assert model._schema_opaque_bias(state, (slot_id, close_id), scores) is None
     assert state.advance_id(tokenizer.sym_id(0))
     bias = model._schema_opaque_bias(state, (slot_id, close_id), scores)
+
+    assert bias is not None
+    assert bias.tolist() == [-4.0, 0.0]
+
+
+def test_schema_opaque_bias_penalizes_required_noncontent_string() -> None:
+    from slm_training.dsl.production_codec import CLOSE, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_opaque_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id[CLOSE]
+
+    bias = model._schema_opaque_bias(
+        state,
+        (slot_id, close_id),
+        torch.zeros(2),
+    )
 
     assert bias is not None
     assert bias.tolist() == [-4.0, 0.0]
