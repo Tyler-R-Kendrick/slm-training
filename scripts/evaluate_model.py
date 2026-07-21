@@ -15,6 +15,12 @@ from slm_training.harnesses.model_build.eval_policy import (
     EVALUATION_POLICIES,
     STRICT_COMPILER_TREE_POLICY_ID,
 )
+from slm_training.harnesses.model_build.experiment_flags import (
+    apply_levers_from_environ,
+    apply_levers_from_mapping,
+    assignments_payload,
+    cli_lever_overrides,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -395,6 +401,16 @@ def main(argv: list[str] | None = None) -> int:
         "--verified-solver-decode",
         action="store_true",
         help="VSS1-03: prune the compiler forest via certified exact closure before ranking",
+    )
+    parser.add_argument(
+        "--flags-json",
+        default=None,
+        help=(
+            "OpenFeature in-memory ruleset as JSON object "
+            '(e.g. \'{"verified_solver_decode": true}\'). '
+            "Also honors OPENUI_FLAGS_JSON / OPENUI_FLAGS_PATH. "
+            "CLI lever flags win over the ruleset."
+        ),
     )
     parser.add_argument("--solver-max-nodes", type=int, default=512)
     parser.add_argument(
@@ -777,6 +793,20 @@ def main(argv: list[str] | None = None) -> int:
         constraint_debt_routing_calibrator_path=args.constraint_debt_routing_calibrator_path,
     )
 
+    # OpenFeature-compatible lever overlay (docs/design/openfeature-experiments.md).
+    # Precedence: CLI overrides > --flags-json / env ruleset > dataclass defaults.
+    lever_overrides = cli_lever_overrides(args)
+    if args.flags_json:
+        config, flag_assignments = apply_levers_from_mapping(
+            config,
+            json.loads(args.flags_json),
+            overrides=lever_overrides,
+        )
+    else:
+        config, flag_assignments = apply_levers_from_environ(
+            config, overrides=lever_overrides
+        )
+
     if args.check_decode_feasibility and config.test_dir is not None:
         from slm_training.harnesses.model_build.decode_feasibility import (
             evaluate_decode_feasibility,
@@ -813,6 +843,10 @@ def main(argv: list[str] | None = None) -> int:
                 write_gates=args.ship_gates,
                 cache=cache,
             )
+        if flag_assignments:
+            scoreboard["openfeature_assignments"] = assignments_payload(
+                flag_assignments
+            )
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.ship_gates:
             gates = scoreboard.get("gates") or write_ship_gates(
@@ -836,6 +870,8 @@ def main(argv: list[str] | None = None) -> int:
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
         metrics = evaluate(config, checkpoint=args.checkpoint, cache=cache)
     summary = {k: v for k, v in metrics.items() if k != "details"}
+    if flag_assignments:
+        summary["openfeature_assignments"] = assignments_payload(flag_assignments)
     print(json.dumps(summary, indent=2))
     return _check_fail_unders(metrics, args)
 
