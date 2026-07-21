@@ -4808,3 +4808,18 @@ checkpoint was created or synced.
 
 Evidence: [narrative](iter-e673-schema-ref-reachability-20260721.md) and
 [JSON](iter-e673-schema-ref-reachability-20260721.json).
+
+## E674 canonical semantic-role alias contract
+
+E674 aligns visible role aliases with schema-valid positions already used by
+canonical fixtures: `action` may occupy `Button.label`, `body` may occupy
+`Callout.description`, and display `value` may occupy `TextContent.text`.
+Dashboard changes from two wrong role assignments to five gold-aligned slots;
+Gallery, Modal, and Auth remain byte-identical. Strict v2.3.0 is 4/4 versus
+v2.2.1's 3/4, while every non-strict quality metric is unchanged. Retain v131
+and metric v2.3.0 as a positive research baseline, not ship evidence: the
+strict delta is metric-version-bound, the suite is only `n=4`, and AgentV is
+0/1. No checkpoint was created or synced.
+
+Evidence: [narrative](iter-e674-semantic-role-alias-contract-20260721.md) and
+[JSON](iter-e674-semantic-role-alias-contract-20260721.json).
