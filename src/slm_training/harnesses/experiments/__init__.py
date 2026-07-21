@@ -357,6 +357,23 @@ _LAZY_SLM189_EXPORTS = {
     "validate_slm189_manifest": "validate_manifest",
 }
 
+_LAZY_SLM190_EXPORTS = {
+    "SLM190_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM190_MATRIX_SET": "MATRIX_SET",
+    "SLM190_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM190_ARM_NAMES": "ARM_NAMES",
+    "ExactFlowCase": "ExactFlowCase",
+    "ObjectiveComparisonRow": "ObjectiveComparisonRow",
+    "LumpabilityCase": "LumpabilityCase",
+    "ExactFlowReport": "ExactFlowReport",
+    "build_toy_layout_adapter": "build_toy_layout_adapter",
+    "build_choice_sequence_adapter": "build_choice_sequence_adapter",
+    "build_canonical_edit_adapter": "build_canonical_edit_adapter",
+    "run_slm190_fixture": "run_exact_flow_fixture",
+    "render_slm190_markdown": "render_markdown",
+    "validate_slm190_report": "validate_report",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -395,6 +412,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm189_bridge_planner
 
         value = getattr(slm189_bridge_planner, _LAZY_SLM189_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM190_EXPORTS:
+        from slm_training.harnesses.experiments import slm190_exact_flow
+
+        value = getattr(slm190_exact_flow, _LAZY_SLM190_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -495,6 +518,20 @@ __all__ = [
     "run_slm189_fixture",
     "render_slm189_markdown",
     "validate_slm189_manifest",
+    "SLM190_EXPERIMENT_ID",
+    "SLM190_MATRIX_SET",
+    "SLM190_MATRIX_VERSION",
+    "SLM190_ARM_NAMES",
+    "ExactFlowCase",
+    "ObjectiveComparisonRow",
+    "LumpabilityCase",
+    "ExactFlowReport",
+    "build_toy_layout_adapter",
+    "build_choice_sequence_adapter",
+    "build_canonical_edit_adapter",
+    "run_slm190_fixture",
+    "render_slm190_markdown",
+    "validate_slm190_report",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
