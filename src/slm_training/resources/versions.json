@@ -2149,6 +2149,11 @@
       "history": [
         {
           "version": "v91",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E643 bound-role-plan evidence to E649 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v91",
           "date": "2026-07-20",
           "note": "E649 rejection: restore v89 prompt-only semantic plans after direct required-string role binding reproduced E647 strict, structure, and latency regressions; renumbered from the originally launched E643 arm after rebase"
         },
