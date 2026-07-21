@@ -5279,9 +5279,35 @@ class TwoTowerModel(nn.Module):
         component_names = sorted(
             {component for candidates in role_candidates.values() for component in candidates}
         )
+
+        def covered_by_planned(slots: tuple[str, ...]) -> bool:
+            trial = {family: list(assigned) for family, assigned in bindings.items()}
+
+            def match(index: int) -> bool:
+                if index == len(slots):
+                    return True
+                slot = slots[index]
+                for family in sorted(planned.intersection(role_candidates[slot])):
+                    assigned = trial.setdefault(family, [])
+                    if not TwoTowerModel._semantic_role_family_has_capacity(
+                        family,
+                        (*assigned, slot),
+                        completed[family],
+                    ):
+                        continue
+                    assigned.append(slot)
+                    if match(index + 1):
+                        return True
+                    assigned.pop()
+                return False
+
+            return match(0)
+
         for slots, candidates in TwoTowerModel._semantic_role_joint_candidates(
             list(role_candidates), component_names
         ).items():
+            if covered_by_planned(slots):
+                continue
             candidates = tuple(
                 family
                 for family in candidates

@@ -1998,6 +1998,9 @@ def test_role_obligations_replace_exhausted_joint_carrier() -> None:
 
 
 def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
+    assert isinstance(
+        TwoTowerModel.__dict__["_semantic_plan_role_obligations"], staticmethod
+    )
     counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
         Counter({"Button": 1, "Input": 2}),
         {
@@ -2007,10 +2010,10 @@ def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
         },
     )
 
-    assert counts == Counter({"Button": 1, "Input": 2, "CheckBoxItem": 1})
+    assert counts == Counter({"Button": 1, "Input": 2})
     assert bindings == {
-        "CheckBoxItem": (":auth.create", ":auth.name"),
-        "Input": (":auth.email",),
+        "Button": (":auth.create",),
+        "Input": (":auth.name", ":auth.email"),
     }
 
 
