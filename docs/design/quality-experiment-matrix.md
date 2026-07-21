@@ -4340,3 +4340,14 @@ no checkpoint, promotion, or ship claim.
 Evidence:
 [iter-e633-input-active-role-routing-20260720.md](iter-e633-input-active-role-routing-20260720.md)
 and [authoritative JSON](iter-e633-input-active-role-routing-20260720.json).
+
+## E634 final-boundary pre-content routing
+
+E634 moved E633's pre-content literal score after repeated-slot margins. Auth
+collapsed to TextContent, meaningful v1 fell from 0.75 to 0.50, every continuous
+aggregate metric regressed, and p95 rose to 16254.73 ms. Reject v71 and restore
+v70 behavior as v72. No checkpoint or ship claim.
+
+Evidence:
+[iter-e634-final-precontent-routing-20260720.md](iter-e634-final-precontent-routing-20260720.md)
+and [JSON](iter-e634-final-precontent-routing-20260720.json).

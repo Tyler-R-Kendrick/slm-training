@@ -1000,7 +1000,7 @@ def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> 
     assert bias.tolist() == [-4.0, 0.0]
 
 
-def test_schema_precontent_literal_bias_routes_after_other_scores() -> None:
+def test_schema_opaque_bias_routes_required_precontent_string_to_literal() -> None:
     from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 
@@ -1012,10 +1012,7 @@ def test_schema_precontent_literal_bias_routes_after_other_scores() -> None:
     literal_id = tokenizer.token_to_id[f'{LIT_PREFIX}""']
     scores = torch.tensor([9.0, 1.0])
 
-    assert model._schema_opaque_bias(state, (slot_id, literal_id), scores) is None
-    bias = model._schema_precontent_literal_bias(
-        state, (slot_id, literal_id), scores
-    )
+    bias = model._schema_opaque_bias(state, (slot_id, literal_id), scores)
 
     assert bias is not None
     assert bias.tolist() == [0.0, 12.0]
