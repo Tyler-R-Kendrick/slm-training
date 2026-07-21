@@ -1259,17 +1259,6 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
     }
 
 
-def test_semantic_role_candidates_map_display_value_to_text_content() -> None:
-    from slm_training.data.quality import semantic_role_candidates
-
-    candidates = semantic_role_candidates(
-        [":metric.value"],
-        ["Input", "TextContent"],
-    )
-
-    assert candidates == {":metric.value": ("Input", "TextContent")}
-
-
 def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
     from slm_training.data.quality import semantic_role_candidates
 
