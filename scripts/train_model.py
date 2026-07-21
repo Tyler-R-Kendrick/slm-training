@@ -255,9 +255,28 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--denoiser-arch",
-        choices=("stacked", "shared_recursive"),
+        choices=(
+            "stacked",
+            "stacked_depth_matched",
+            "stacked_matched_state",
+            "shared_recursive",
+            "shared_recursive_y_only",
+            "shared_recursive_no_extra_capacity",
+        ),
         default="stacked",
-        help="SLM-138: stacked independent blocks or shared recursive transition.",
+        help=(
+            "SLM-138: stacked independent blocks or shared recursive "
+            "transition. SLM-241 (RSC-A05) control arms: "
+            "shared_recursive_y_only (arm C, no z state), "
+            "shared_recursive_no_extra_capacity (arm D, parameter-free z), "
+            "stacked_matched_state (arm E: unshared, non-recursive tower + a "
+            "learned state/state_ctx_proj pair shape-matched to the shared "
+            "recursive arm's z-state, injected once before the blocks run), "
+            "and stacked_depth_matched (arm F: unshared depth-matched tower "
+            "-- recursive_steps * recursive_transition_layers independent "
+            "blocks, more parameters than the recursive arms since nothing "
+            "is shared)."
+        ),
     )
     parser.add_argument(
         "--recursive-steps",
@@ -270,6 +289,15 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=0,
         help="SLM-138: shared transition blocks (0 = use --denoiser-layers).",
+    )
+    parser.add_argument(
+        "--recursive-detach-between-steps",
+        action="store_true",
+        help=(
+            "SLM-241 (RSC-A05) arm H: detach y/z between recursive steps "
+            "(stop-gradient recurrence) -- identical forward values to "
+            "shared_recursive, only the backward graph differs."
+        ),
     )
     parser.add_argument(
         "--recursive-depth-supervision-weights",
@@ -652,6 +680,16 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Bias terminal root-list references by learned inclusion.",
+    )
+    parser.add_argument(
+        "--required-slot-margin-decode-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Floor the best legal candidate that fills a still-missing required "
+            "slot above the current best score (requires "
+            "--slot-contract-constrained-decode or --template-fill-decode)."
+        ),
     )
     parser.add_argument(
         "--no-design-md-context",
@@ -1056,6 +1094,7 @@ def main(argv: list[str] | None = None) -> int:
         denoiser_arch=args.denoiser_arch,
         recursive_steps=args.recursive_steps,
         recursive_transition_layers=args.recursive_transition_layers,
+        recursive_detach_between_steps=bool(args.recursive_detach_between_steps),
         recursive_depth_supervision_weights=tuple(
             float(v.strip())
             for v in args.recursive_depth_supervision_weights.split(",")
@@ -1161,6 +1200,9 @@ def main(argv: list[str] | None = None) -> int:
         ),
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight
+        ),
+        required_slot_margin_decode_weight=(
+            args.required_slot_margin_decode_weight
         ),
         fidelity_loss_weight=args.fidelity_loss_weight,
         grammar_ltr_primary=args.grammar_ltr_primary,

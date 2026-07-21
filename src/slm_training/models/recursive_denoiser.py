@@ -18,20 +18,130 @@ Architecture (V1 primary):
 
 F_theta and G_theta are built from the same small set of
 ``TransformerBlock(cross_attn=True)`` instances; they are reused by object
-identity every recursion.  With ``recursive_steps=1`` and
-``recursive_transition_layers`` equal to the old stacked layer count the tower
-has the same parameter count and layer names as ``DenoiserTower`` (the extra
-z-state path is new, so it is not byte-identical, but the public contract is
-preserved).
+identity every recursion, so the shared-transition parameter count is
+independent of ``recursive_steps`` -- adding recursion steps changes compute
+(more block evaluations per forward), never parameter count.
+
+SLM-241 (RSC-A05) -- ``z_state_mode`` control arms. The constructor now
+accepts a ``z_state_mode`` in ``{"full", "y_only", "parameter_free"}`` so a
+matched-control campaign can isolate the y/z split from shared repeated
+depth without a parallel/ad hoc implementation:
+
+* ``"full"`` (default, byte-identical to the historical V1 behavior / arm
+  **B** in ``docs/design/iter-rsc-a05-*``): learned ``z_latent`` +
+  ``ctx_proj`` as described above.
+* ``"y_only"`` (arm **C**): no distinct z state at all -- every recursion
+  step runs the F-layers directly on ``norm(y)`` (in place of the z-update)
+  and the G-layers on the result, so both updates flow through ``y`` alone.
+  No ``z_latent``/``ctx_proj`` parameter exists; ``recursive_outputs``'s
+  per-step block-evaluation count (``len(_f_layers) + len(_g_layers)`` per
+  recursion) is unchanged from ``"full"``.
+* ``"parameter_free"`` (arm **D**): the y/z split is kept structurally, but
+  ``z``'s initial value is a parameter-free pooled-context broadcast
+  (``context.mean(dim=1)`` expanded across positions, no learned
+  ``max_len``-sized bank, no learned projection) -- removing exactly the two
+  parameter tensors ``recursive_zstate_parameter_delta`` accounts for, so
+  this arm's total parameter count matches a stacked baseline with the same
+  ``recursive_transition_layers``/``n_layers`` to within 0 parameters (see
+  ``docs/design/iter-rsc-a05-*`` for the measured residual).
+
+See :mod:`slm_training.models.recursive_control_arms` for the named arm
+registry (A-H; all eight arms are constructed as of this SLM-241 iteration --
+none remain deferred) and resource accounting built on top of these modes.
+
+SLM-241 (RSC-A05) second follow-up -- ``detach_between_steps`` (arm **H**,
+stop-gradient recurrence). The constructor now also accepts
+``detach_between_steps: bool = False``. When ``True``, ``recursive_outputs``
+runs the *identical* forward recurrence (same ``y``/``z`` update equations,
+same shared blocks, same shapes -- byte-identical forward values to
+``detach_between_steps=False`` for the same seed/weights/inputs) but calls
+``.detach()`` on the carried-forward ``y`` (and ``z``, when the z-state path
+is active) at the end of every recursion step except the last, before the
+*next* step reads them. ``.detach()`` only cuts the autograd graph -- it never
+changes a tensor's numeric value -- so this flag changes gradient flow only:
+a later step's loss can still backpropagate into the shared block weights
+through *that step's own* application of them, but not through the recurrent
+chain back into an earlier step's application. Arm H
+(``denoiser_arch="shared_recursive"`` -- reused, not a new arch string, same
+as arm G's reuse -- plus ``detach_between_steps=True`` on the tower) is the
+mirror question to every other arm: does any gain from recurrence require
+genuine backprop-through-recurrence ("recurrent credit assignment"), or does
+merely re-applying the same shared weights repeatedly (without BPTT) capture
+it? See ``docs/design/iter-rsc-a05-*`` for the forward-identity and
+gradient-divergence evidence.
+
+SLM-241 (RSC-A05) follow-up -- :class:`StackedMatchedStateDenoiserTower`
+(arm E, ``denoiser_arch="stacked_matched_state"``): the mirror image of arm D.
+D keeps the recursive y/z split but makes z's initial value parameter-free;
+E keeps the stacked baseline's unshared, non-recursive block structure but
+gives it the *same* parameter budget V1's z-state path adds -- a learned
+``state[max_len, d_model]`` bank plus a ``state_ctx_proj`` context projection,
+injected into the initial hidden state **exactly once**, before any
+transition block runs. Unlike B/G, there is no recurrence and no repeated
+consumption of this state across depth -- it isolates "added state capacity"
+from "repeated shared computation" as two independent resource dimensions.
+See :class:`StackedMatchedStateDenoiserTower`'s own docstring for the exact
+formula and injection point.
+
+SLM-240 (RSC-A04) correction -- read this before citing any "parity" claim
+for this tower:
+
+* **No same-parameter-count claim exists.** When ``recursive_transition_layers``
+  equals ``DenoiserTower``'s ``n_layers``, the shared transition blocks are a
+  1:1 name/shape match against ``DenoiserTower.layers`` -- but V1 *always*
+  adds two new parameter tensors on top of that: ``z_latent``
+  (``[max_len, d_model]``) and ``ctx_proj`` (``Linear(d_model, d_model)``).
+  The total parameter count is therefore **never** equal to ``DenoiserTower``'s;
+  the exact delta is ``d_model * (max_len + d_model + 1)`` (see
+  :func:`recursive_zstate_parameter_delta`), reproduced from a formula, not a
+  hard-coded constant. For the SLM-138 fixture config (``d_model=32``,
+  ``max_len=256``) that delta is 9,248 parameters (+14.23% over the 64,994-
+  parameter stacked model) -- see ``docs/design/iter-rsc-a04-*``.
+* **``recursive_steps=1`` preserves the public interface and compatible
+  tensor shapes, NOT output equivalence.** ``forward``/``encode``/``project``/
+  ``set_runtime_symbol_features`` plus ``tok``/``kind``/``lm_head``/``max_len``/
+  ``layers`` all exist with matching shapes, so a caller can swap towers
+  without changing masking, decode, or downstream tensor plumbing. The
+  z-state path (``z_latent``/``ctx_proj``) is active at every ``R`` including
+  ``R=1``, so recursive and stacked outputs are numerically different by
+  construction -- there is no configuration of this tower that reproduces
+  ``DenoiserTower``'s outputs exactly.
+* **Checkpoint layer-name compatibility is partial.** Only the shared
+  transition-block keys (``layers.*``) plus the shared embedding/norm/head
+  keys (``tok``/``pos``/``kind``/``norm``/``lm_head``) are name/shape
+  compatible with ``DenoiserTower``. The z-state keys (``z_latent``,
+  ``ctx_proj.weight``, ``ctx_proj.bias``) have no ``DenoiserTower``
+  counterpart and require explicit initialization/migration -- see
+  :func:`slm_training.models.checkpoint_migrate.migrate_to_shared_recursive_denoiser`,
+  whose migration report lists them under ``initialized_keys``.
+* **No parameter-efficiency or quality claim exists** for this tower vs
+  ``DenoiserTower`` until a matched control campaign is run (a separate,
+  later, out-of-scope issue that builds actual parameter-matched control
+  constructors). This module's :class:`ArchitectureComparisonReportV1` /
+  :func:`compare_denoiser_architectures` report each comparison dimension
+  (interface, output shape, parameter counts, checkpoint bytes, per-forward
+  block-evaluation counts, estimated FLOPs) independently and never collapse
+  them into one ``parity`` boolean.
 """
 
 from __future__ import annotations
+
+import io
+from dataclasses import asdict, dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from slm_training.models.blocks import RMSNorm, TransformerBlock
+from slm_training.models.blocks import DenoiserTower, RMSNorm, TransformerBlock
+
+
+#: SLM-241 (RSC-A05): valid ``z_state_mode`` values. Fail closed on anything
+#: else -- a typo silently falling back to ``"full"`` would defeat the whole
+#: point of a matched-control campaign that needs *no* z-state parameters for
+#: arms C/D.
+Z_STATE_MODES: tuple[str, ...] = ("full", "y_only", "parameter_free")
 
 
 class SharedRecursiveDenoiserTower(nn.Module):
@@ -51,8 +161,21 @@ class SharedRecursiveDenoiserTower(nn.Module):
         recursive_steps: int = 1,
         recursive_transition_layers: int | None = None,
         tie_output_embedding: bool = True,
+        z_state_mode: str = "full",
+        detach_between_steps: bool = False,
     ) -> None:
         super().__init__()
+        if z_state_mode not in Z_STATE_MODES:
+            raise ValueError(
+                f"z_state_mode={z_state_mode!r} is not one of {Z_STATE_MODES!r}"
+            )
+        self.z_state_mode = z_state_mode
+        # SLM-241 (RSC-A05) arm H: stop-gradient recurrence. Purely a
+        # backward-graph flag -- adds no parameter, changes no forward
+        # computation. See the module docstring above for the exact
+        # semantics and slm_training.models.recursive_control_arms for the
+        # arm registry.
+        self.detach_between_steps = bool(detach_between_steps)
         self.d_model = d_model
         self.max_len = max_len
         self.recursive_steps = max(1, int(recursive_steps))
@@ -104,8 +227,15 @@ class SharedRecursiveDenoiserTower(nn.Module):
             self.lm_head.weight.data.copy_(self.tok.weight.data)
 
         # z-state path: learned latent + projected pooled context + position.
-        self.z_latent = nn.Parameter(torch.zeros(max_len, d_model))
-        self.ctx_proj = nn.Linear(d_model, d_model)
+        # SLM-241 (RSC-A05): only the "full" mode (arm B / historical V1)
+        # declares these parameter tensors at all -- "y_only" (arm C) and
+        # "parameter_free" (arm D) never register a ``z_latent``/``ctx_proj``
+        # attribute, so ``named_parameters()``/``state_dict()`` genuinely
+        # contain no z-shaped parameter bank for those modes (never a
+        # zeroed-out but still-declared tensor).
+        if self.z_state_mode == "full":
+            self.z_latent = nn.Parameter(torch.zeros(max_len, d_model))
+            self.ctx_proj = nn.Linear(d_model, d_model)
 
         self._runtime_symbol_features: torch.Tensor | None = None
 
@@ -172,6 +302,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         *,
         return_hidden: bool = False,
         return_attn: bool = False,
+        return_step_boundaries: bool = False,
     ) -> dict[str, torch.Tensor | list[torch.Tensor]]:
         """
         Run the full recursive recurrence and expose per-depth outputs.
@@ -182,6 +313,16 @@ class SharedRecursiveDenoiserTower(nn.Module):
           - ``depth_hiddens``: list of [B, T, D] for each recursion step
           - ``depth_logits``: list of [B, T, V] for each recursion step
           - ``attn``: last-layer self-attention [B, T, T] (only if ``return_attn=True``)
+          - ``step_boundaries``: (SLM-241/RSC-A05 arm H test support, only if
+            ``return_step_boundaries=True``) a list of ``{"step": r, "y": ...,
+            "z": ...}`` dicts, one per recursion step, holding the *real*
+            graph-connected ``y``/``z`` tensors exactly as computed at the end
+            of that step -- captured **before** any ``detach_between_steps``
+            detach is applied, so a test can register an autograd hook on
+            them to observe whether gradient from a later step's loss
+            actually reaches that point (arm B/G: yes; arm H: no, once the
+            detach has replaced what the *next* step actually consumes).
+            Never used by ``forward``/``encode`` -- opt-in and additive only.
         """
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
@@ -200,30 +341,59 @@ class SharedRecursiveDenoiserTower(nn.Module):
 
         self_pad = noisy_ids.eq(pad_id)
 
-        z = self.z_latent[pos]
+        # SLM-241 (RSC-A05): initial z state depends on ``z_state_mode``.
+        # "full" (arm B / historical V1): learned max_len latent + learned
+        # pooled-context projection + position -- unchanged from before this
+        # field existed. "parameter_free" (arm D): a deterministic,
+        # parameter-free pooled-context broadcast -- no learned max_len bank,
+        # no learned projection, so this mode declares neither ``z_latent``
+        # nor ``ctx_proj``. "y_only" (arm C) has no distinct z state at all;
+        # ``z`` stays ``None`` and the recursion loop below folds both
+        # updates through ``y``.
         if ctx_pad_mask is None:
             pooled = context.mean(dim=1)
         else:
             mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
             pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
-        z = z + self.ctx_proj(pooled).unsqueeze(1)
-        z = z + self.pos(pos)
+
+        z: torch.Tensor | None
+        if self.z_state_mode == "full":
+            z = self.z_latent[pos]
+            z = z + self.ctx_proj(pooled).unsqueeze(1)
+            z = z + self.pos(pos)
+        elif self.z_state_mode == "parameter_free":
+            z = pooled.unsqueeze(1).expand(-1, seq, -1)
+        else:  # "y_only"
+            z = None
 
         depth_hiddens: list[torch.Tensor] = []
         depth_logits: list[torch.Tensor] = []
         attn: torch.Tensor | None = None
+        step_boundaries: list[dict[str, Any]] = []
 
         for r in range(1, self.recursive_steps + 1):
-            # z_r = z_{r-1} + F_theta(norm(z_{r-1} + y_{r-1}), context)
-            f_in = self.norm(z + y)
-            f_out = self._apply_layers(
-                f_in, self._f_layers, self_pad, context, ctx_pad_mask
-            )
-            assert isinstance(f_out, torch.Tensor)
-            z = z + f_out
+            if z is None:
+                # "y_only" (arm C): both the F- and G-update layers run on
+                # the same ``y`` state -- there is no separate z variable to
+                # update, only ``y`` ever changes across recursion steps.
+                f_in = self.norm(y)
+                f_out = self._apply_layers(
+                    f_in, self._f_layers, self_pad, context, ctx_pad_mask
+                )
+                assert isinstance(f_out, torch.Tensor)
+                y = y + f_out
+                g_in = self.norm(y)
+            else:
+                # z_r = z_{r-1} + F_theta(norm(z_{r-1} + y_{r-1}), context)
+                f_in = self.norm(z + y)
+                f_out = self._apply_layers(
+                    f_in, self._f_layers, self_pad, context, ctx_pad_mask
+                )
+                assert isinstance(f_out, torch.Tensor)
+                z = z + f_out
+                g_in = self.norm(y + z)
 
             # y_r = y_{r-1} + G_theta(norm(y_{r-1} + z_r), context)
-            g_in = self.norm(y + z)
             return_last_attn = return_attn and r == self.recursive_steps
             g_out = self._apply_layers(
                 g_in,
@@ -243,6 +413,22 @@ class SharedRecursiveDenoiserTower(nn.Module):
             depth_hiddens.append(h)
             depth_logits.append(self.project(h))
 
+            if return_step_boundaries:
+                # Captured before any detach below -- the real, graph-
+                # connected tensor at this step's exit point, regardless of
+                # detach_between_steps.
+                step_boundaries.append({"step": r, "y": y, "z": z})
+
+            # SLM-241 (RSC-A05) arm H: cut the recurrent backward path here,
+            # never the forward value. Only between steps -- the final
+            # step's y/z must stay attached so the model's actual output
+            # loss can still backpropagate into the last step's block
+            # application normally.
+            if self.detach_between_steps and r < self.recursive_steps:
+                y = y.detach()
+                if z is not None:
+                    z = z.detach()
+
         final_hidden = depth_hiddens[-1]
         final_logits = depth_logits[-1]
 
@@ -255,6 +441,8 @@ class SharedRecursiveDenoiserTower(nn.Module):
             result["hidden"] = final_hidden
         if return_attn and attn is not None:
             result["attn"] = attn
+        if return_step_boundaries:
+            result["step_boundaries"] = step_boundaries
         return result
 
     def encode(
@@ -351,3 +539,477 @@ class SharedRecursiveDenoiserTower(nn.Module):
             assert isinstance(hidden, torch.Tensor)
             return logits, hidden
         return logits
+
+
+class StackedMatchedStateDenoiserTower(DenoiserTower):
+    """SLM-241 (RSC-A05) arm E -- stacked baseline + matched state capacity.
+
+    Subclasses :class:`~slm_training.models.blocks.DenoiserTower` unmodified
+    (same ``tok``/``pos``/``kind``/``layers``/``norm``/``lm_head``
+    construction, same ``n_layers`` unshared ``TransformerBlock`` instances
+    called exactly once each per forward -- **no recurrence, no weight
+    sharing added**) and adds exactly two new parameter tensors, shape-matched
+    to :class:`SharedRecursiveDenoiserTower`'s (arm B) z-state path so the
+    added parameter budget is identical by construction, not by coincidence:
+
+    * ``state``: a learned ``[max_len, d_model]`` bank, indexed by target
+      position -- same shape as arm B's ``z_latent``.
+    * ``state_ctx_proj``: a ``Linear(d_model, d_model)`` projection of the
+      (masked-)mean-pooled context -- same shape as arm B's ``ctx_proj``.
+
+    ``recursive_zstate_parameter_delta(d_model, max_len)`` (below) is exactly
+    ``state.numel() + state_ctx_proj.weight.numel() +
+    state_ctx_proj.bias.numel()``, so this tower's total parameter count
+    equals a same-``n_layers`` ``DenoiserTower`` (arm A) plus that formula's
+    value, exactly -- never merely close.
+
+    Both new tensors are injected into the initial hidden state **exactly
+    once**, before the first transition block runs::
+
+        y_0 = token + position + kind (+ symbol features)
+        y_0 = y_0 + state[position] + state_ctx_proj(mean_pool(context))
+        for block in layers:               # n_layers blocks, each called once
+            y = block(y, context)          # no recurrence, no re-injection
+
+    This is the mirror image of arm D (``z_state_mode="parameter_free"``):
+    D keeps the recursive y/z split but strips the z-state parameters; E
+    keeps the stacked baseline's unshared, single-pass block structure but
+    adds the z-state parameters back, consumed once rather than every
+    recursion step. Because the injection happens once and both tensors sit
+    on the residual stream feeding every downstream block, they are not dead
+    padding: zeroing ``state`` changes the forward output (verified in
+    ``tests/test_models/test_recursive_denoiser.py``), and both receive
+    nonzero gradient from a real backward pass.
+    """
+
+    def __init__(
+        self,
+        vocab_size: int,
+        d_model: int = 128,
+        n_layers: int = 4,
+        n_heads: int = 4,
+        max_len: int = 512,
+        dropout: float = 0.0,
+        *,
+        kind_ids: list[int] | None = None,
+        n_kinds: int = 0,
+    ) -> None:
+        super().__init__(
+            vocab_size,
+            d_model,
+            n_layers,
+            n_heads,
+            max_len,
+            dropout,
+            kind_ids=kind_ids,
+            n_kinds=n_kinds,
+        )
+        self.state = nn.Parameter(torch.zeros(max_len, d_model))
+        self.state_ctx_proj = nn.Linear(d_model, d_model)
+
+    def encode(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+        *,
+        return_attn: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        """Same as ``DenoiserTower.encode`` plus one-time matched-state
+        injection before the (unshared, single-pass) transition blocks run."""
+        bsz, seq = noisy_ids.shape
+        if seq > self.max_len:
+            noisy_ids = noisy_ids[:, : self.max_len]
+            seq = self.max_len
+        pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
+        x = self.tok(noisy_ids) + self.pos(pos)
+        features = self._features_for_batch(bsz)
+        if features is not None:
+            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
+            x = x + features[row, noisy_ids.clamp(0, features.size(1) - 1)]
+        if self.kind is not None:
+            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
+            x = x + self.kind(self.kind_lookup[safe])
+
+        # SLM-241 (RSC-A05) arm E: inject the matched-state capacity exactly
+        # once here -- never inside the block loop below, never re-applied
+        # per layer. Pooling matches SharedRecursiveDenoiserTower's z-state
+        # pooling exactly (masked mean over context when a pad mask is given).
+        if ctx_pad_mask is None:
+            pooled = context.mean(dim=1)
+        else:
+            mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
+            pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+        x = x + self.state[pos] + self.state_ctx_proj(pooled).unsqueeze(1)
+
+        self_pad = noisy_ids.eq(pad_id)
+        attn: torch.Tensor | None = None
+        last = len(self.layers) - 1
+        for i, layer in enumerate(self.layers):
+            if return_attn and i == last:
+                out = layer(
+                    x,
+                    self_pad_mask=self_pad,
+                    ctx=context,
+                    ctx_pad_mask=ctx_pad_mask,
+                    return_self_attn=True,
+                )
+                assert isinstance(out, tuple)
+                x, attn = out
+            else:
+                out = layer(
+                    x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask
+                )
+                x = out if not isinstance(out, tuple) else out[0]
+        hidden = self.norm(x)
+        if return_attn:
+            assert attn is not None
+            return hidden, attn
+        return hidden
+
+
+# ---------------------------------------------------------------------------
+# SLM-240 (RSC-A04): explicit multi-dimensional architecture comparison.
+#
+# Replaces the retracted single "same parameter count / layer names" claim in
+# the module docstring above with independently named, independently
+# falsifiable report fields. No dimension here implies any other -- a caller
+# must not infer output/behavioral equivalence from interface compatibility,
+# or a parameter-efficiency claim from a parameter-count comparison. There is
+# deliberately no single ``parity`` field.
+# ---------------------------------------------------------------------------
+
+ARCHITECTURE_COMPARISON_REPORT_VERSION = "ArchitectureComparisonReportV1"
+
+#: Public attributes/methods ``DenoiserTower`` and ``SharedRecursiveDenoiserTower``
+#: both expose -- the "public contract" the module docstring's interface claim
+#: refers to. Presence/shape-matchable, never behavioral.
+_DENOISER_INTERFACE_MEMBERS = (
+    "forward",
+    "encode",
+    "project",
+    "set_runtime_symbol_features",
+    "tok",
+    "kind",
+    "lm_head",
+    "max_len",
+    "layers",
+)
+
+
+def recursive_zstate_parameter_delta(*, d_model: int, max_len: int) -> int:
+    """Exact parameter-count delta the V1 z-state path adds over ``DenoiserTower``.
+
+    ``z_latent`` is a ``[max_len, d_model]`` free parameter and ``ctx_proj``
+    is a ``Linear(d_model, d_model)`` (``d_model**2`` weight entries plus
+    ``d_model`` bias entries). When ``recursive_transition_layers`` equals the
+    stacked model's ``n_layers``, the shared transition blocks are a 1:1
+    name/shape match against ``DenoiserTower.layers`` and contribute zero to
+    this delta -- it is independent of ``vocab_size``, ``n_layers``, and
+    ``recursive_steps`` (shared transition parameters do not scale with
+    recursion depth). ``tests/test_models/test_recursive_denoiser.py`` checks
+    this formula against real constructed towers across several
+    ``(d_model, max_len)`` pairs, including the SLM-138 fixture's own
+    ``d_model=32, max_len=256`` (delta 9,248) -- the number is reproduced from
+    this formula, never hard-coded.
+
+    SLM-241 (RSC-A05) follow-up: :class:`StackedMatchedStateDenoiserTower`
+    (arm E)'s ``state``/``state_ctx_proj`` tensors are shape-matched to this
+    exact formula too, so its parameter delta over a same-``n_layers`` arm A
+    also equals this function's return value exactly, not merely to within a
+    tolerance.
+    """
+    z_latent = int(max_len) * int(d_model)
+    ctx_proj = int(d_model) * int(d_model) + int(d_model)
+    return z_latent + ctx_proj
+
+
+def _estimate_transformer_block_flops(
+    *, seq_len: int, ctx_len: int, d_model: int, mlp_ratio: float = 4.0
+) -> float:
+    """Rough analytic FLOPs estimate for one cross-attention ``TransformerBlock``
+    forward pass.
+
+    A proxy for *relative* per-block cost comparison only (linear-projection
+    terms dominate at fixture scale) -- not a profiler measurement, and never
+    to be cited as an absolute latency/throughput claim.
+    """
+    self_attn = 4.0 * seq_len * d_model * d_model + 2.0 * seq_len * seq_len * d_model
+    cross_attn = (
+        4.0 * seq_len * d_model * d_model + 4.0 * seq_len * ctx_len * d_model
+    )
+    hidden = d_model * mlp_ratio
+    mlp = 4.0 * seq_len * d_model * hidden
+    return self_attn + cross_attn + mlp
+
+
+def estimate_transformer_block_flops(
+    *, seq_len: int, ctx_len: int, d_model: int, mlp_ratio: float = 4.0
+) -> float:
+    """Public alias of :func:`_estimate_transformer_block_flops` -- SLM-241
+    (RSC-A05)'s per-arm resource accounting reuses this exact estimator."""
+    return _estimate_transformer_block_flops(
+        seq_len=seq_len, ctx_len=ctx_len, d_model=d_model, mlp_ratio=mlp_ratio
+    )
+
+
+def checkpoint_state_dict_bytes(module: nn.Module) -> int:
+    """Public helper: serialized ``state_dict()`` byte size of ``module``.
+
+    Extracted from :func:`compare_denoiser_architectures`'s inline
+    ``_checkpoint_bytes`` closure so SLM-241 (RSC-A05)'s per-arm resource
+    accounting (:mod:`slm_training.models.recursive_control_arms`) reuses the
+    identical measurement instead of a parallel implementation.
+    """
+    buf = io.BytesIO()
+    torch.save(module.state_dict(), buf)
+    return len(buf.getvalue())
+
+
+@dataclass(frozen=True)
+class ArchitectureComparisonReportV1:
+    """SLM-240 (RSC-A04): the required multi-dimensional comparison schema.
+
+    Each field measures one independent claim dimension between a stacked
+    ``DenoiserTower`` and a ``SharedRecursiveDenoiserTower``. Built only via
+    :func:`compare_denoiser_architectures` (never hand-assembled), which
+    derives every value from real constructed modules / a real forward pass
+    -- nothing here is a hard-coded literal.
+    """
+
+    contract_version: str
+    claim_class: str
+    d_model: int
+    max_len: int
+    recursive_steps: int
+    recursive_transition_layers: int
+    interface_compatible: bool
+    output_shape_compatible: bool
+    parameter_count_total: dict[str, int]
+    parameter_count_denoiser: dict[str, int]
+    active_parameter_count: dict[str, int]
+    checkpoint_bytes: dict[str, int]
+    common_parameter_names_and_shapes: dict[str, list[int]]
+    architecture_specific_parameter_names_and_shapes: dict[str, dict[str, list[int]]]
+    parameter_count_delta: int
+    parameter_count_delta_pct: float
+    parameter_count_delta_matches_formula: bool
+    block_evaluations_per_forward: dict[str, int]
+    estimated_forward_flops: dict[str, float]
+    behaviorally_equivalent_under_declared_degeneracy: bool
+
+    def __post_init__(self) -> None:
+        if self.contract_version != ARCHITECTURE_COMPARISON_REPORT_VERSION:
+            raise ValueError(
+                f"contract_version={self.contract_version!r} does not match "
+                f"{ARCHITECTURE_COMPARISON_REPORT_VERSION!r}."
+            )
+        if self.claim_class != "wiring":
+            raise ValueError(
+                "ArchitectureComparisonReportV1 is wiring-only evidence; "
+                f"claim_class={self.claim_class!r} is not a defined value "
+                "(no quality/perf claim is ever encoded here)."
+            )
+        expected_delta = (
+            self.parameter_count_total["recursive"]
+            - self.parameter_count_total["stacked"]
+        )
+        if expected_delta != self.parameter_count_delta:
+            raise ValueError(
+                "parameter_count_delta "
+                f"({self.parameter_count_delta}) does not match "
+                f"parameter_count_total['recursive'] - "
+                f"parameter_count_total['stacked'] ({expected_delta})."
+            )
+        formula_delta = recursive_zstate_parameter_delta(
+            d_model=self.d_model, max_len=self.max_len
+        )
+        formula_matches = formula_delta == self.parameter_count_delta
+        if formula_matches != self.parameter_count_delta_matches_formula:
+            raise ValueError(
+                "parameter_count_delta_matches_formula "
+                f"({self.parameter_count_delta_matches_formula}) does not "
+                f"reflect the actual formula comparison (formula={formula_delta}, "
+                f"measured={self.parameter_count_delta})."
+            )
+        if "parity" in self.as_dict():
+            raise ValueError(
+                "ArchitectureComparisonReportV1 must never carry a field "
+                "named 'parity' -- each comparison dimension is independent."
+            )
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def _active_parameter_count(module: nn.Module, output: torch.Tensor) -> int:
+    """Count parameter *elements* that receive a nonzero gradient from
+    ``output`` -- i.e. actually touched by one concrete forward pass, as
+    opposed to the full declared tensor sizes. For embedding-like parameters
+    (``tok``/``pos``/``z_latent``) indexed by a short input sequence, only
+    the indexed rows are active; the rest of the declared table is excluded.
+    """
+    for p in module.parameters():
+        p.grad = None
+    output.float().sum().backward()
+    active = 0
+    for p in module.parameters():
+        if p.grad is not None:
+            active += int((p.grad != 0).sum().item())
+        p.grad = None
+    return active
+
+
+#: Public alias -- SLM-241 (RSC-A05)'s per-arm resource accounting
+#: (:mod:`slm_training.models.recursive_control_arms`) reuses this exact
+#: "elements that receive nonzero gradient from one concrete forward"
+#: measurement instead of reimplementing it.
+active_parameter_count = _active_parameter_count
+
+
+def compare_denoiser_architectures(
+    stacked: DenoiserTower,
+    recursive: SharedRecursiveDenoiserTower,
+    *,
+    noisy_ids: torch.Tensor,
+    context: torch.Tensor,
+    pad_id: int,
+) -> ArchitectureComparisonReportV1:
+    """Build a real, measured :class:`ArchitectureComparisonReportV1`.
+
+    ``stacked`` and ``recursive`` must share ``vocab_size``/``d_model``/
+    ``max_len`` (the SLM-138 fixture configuration does). Runs one real
+    forward pass on each tower with the given synthetic batch to measure
+    ``output_shape_compatible`` and
+    ``behaviorally_equivalent_under_declared_degeneracy`` -- neither is
+    assumed from configuration alone.
+    """
+    interface_compatible = all(
+        hasattr(stacked, member) and hasattr(recursive, member)
+        for member in _DENOISER_INTERFACE_MEMBERS
+    )
+
+    with torch.no_grad():
+        stacked_logits = stacked(noisy_ids, context, pad_id)
+        recursive_logits = recursive(noisy_ids, context, pad_id)
+    output_shape_compatible = stacked_logits.shape == recursive_logits.shape
+    behaviorally_equivalent = bool(
+        output_shape_compatible
+        and torch.allclose(stacked_logits, recursive_logits)
+    )
+
+    # Canonical (deduplicated-by-identity) declared parameters. Both towers'
+    # ``layers`` transition blocks are also aliased under ``_f_layers``/
+    # ``_g_layers`` (slicing an ``nn.ModuleList`` returns a *new* ModuleList
+    # wrapping the same block objects, which registers a second name for the
+    # same tensors); the default ``named_parameters()`` dedup -- by tensor
+    # identity, keeping the first-registered name -- collapses that back to
+    # one canonical ``layers.N....`` entry per shared block, and likewise
+    # collapses tied ``lm_head.weight``/``tok.weight`` to one name. This is
+    # the *correct* declared-parameter view; ``remove_duplicate=False`` would
+    # double-count the shared transition blocks as if they were distinct
+    # architecture-specific parameters, which they are not.
+    stacked_named = dict(stacked.named_parameters())
+    recursive_named = dict(recursive.named_parameters())
+
+    common_names = sorted(
+        name
+        for name in (set(stacked_named) & set(recursive_named))
+        if stacked_named[name].shape == recursive_named[name].shape
+    )
+    common = {name: list(stacked_named[name].shape) for name in common_names}
+    stacked_only = {
+        name: list(t.shape)
+        for name, t in stacked_named.items()
+        if name not in common_names
+    }
+    recursive_only = {
+        name: list(t.shape)
+        for name, t in recursive_named.items()
+        if name not in common_names
+    }
+
+    parameter_count_total = {
+        "stacked": int(sum(p.numel() for p in stacked_named.values())),
+        "recursive": int(sum(p.numel() for p in recursive_named.values())),
+    }
+    parameter_count_denoiser = {
+        "stacked": int(
+            sum(p.numel() for layer in stacked.layers for p in layer.parameters())
+        ),
+        "recursive": int(
+            sum(p.numel() for layer in recursive.layers for p in layer.parameters())
+        ),
+    }
+
+    # Active parameters: elements that actually receive nonzero gradient from
+    # *this concrete batch* -- distinct from ``parameter_count_total``'s full
+    # declared tensor sizes. ``tok``/``pos``/``z_latent`` are embedding-style
+    # tables indexed by a short input sequence; only the indexed rows are
+    # active, the remaining declared rows contribute exactly zero gradient
+    # and are excluded here. Requires a fresh (grad-enabled) forward per
+    # tower since the shape/equivalence check above ran under ``no_grad``.
+    active_parameter_count = {
+        "stacked": _active_parameter_count(
+            stacked, stacked(noisy_ids, context, pad_id)
+        ),
+        "recursive": _active_parameter_count(
+            recursive, recursive(noisy_ids, context, pad_id)
+        ),
+    }
+
+    checkpoint_bytes = {
+        "stacked": checkpoint_state_dict_bytes(stacked),
+        "recursive": checkpoint_state_dict_bytes(recursive),
+    }
+
+    delta = parameter_count_total["recursive"] - parameter_count_total["stacked"]
+    delta_pct = (
+        (delta / parameter_count_total["stacked"]) * 100.0
+        if parameter_count_total["stacked"]
+        else float("nan")
+    )
+    formula_delta = recursive_zstate_parameter_delta(
+        d_model=recursive.d_model, max_len=recursive.max_len
+    )
+
+    block_evaluations_per_forward = {
+        "stacked": len(stacked.layers),
+        "recursive": recursive.recursive_steps * recursive.recursive_transition_layers,
+    }
+    seq_len = int(noisy_ids.shape[1])
+    ctx_len = int(context.shape[1])
+    per_block_flops = _estimate_transformer_block_flops(
+        seq_len=seq_len, ctx_len=ctx_len, d_model=recursive.d_model
+    )
+    estimated_forward_flops = {
+        "stacked": per_block_flops * block_evaluations_per_forward["stacked"],
+        "recursive": per_block_flops * block_evaluations_per_forward["recursive"],
+    }
+
+    return ArchitectureComparisonReportV1(
+        contract_version=ARCHITECTURE_COMPARISON_REPORT_VERSION,
+        claim_class="wiring",
+        d_model=recursive.d_model,
+        max_len=recursive.max_len,
+        recursive_steps=recursive.recursive_steps,
+        recursive_transition_layers=recursive.recursive_transition_layers,
+        interface_compatible=interface_compatible,
+        output_shape_compatible=output_shape_compatible,
+        parameter_count_total=parameter_count_total,
+        parameter_count_denoiser=parameter_count_denoiser,
+        active_parameter_count=active_parameter_count,
+        checkpoint_bytes=checkpoint_bytes,
+        common_parameter_names_and_shapes=common,
+        architecture_specific_parameter_names_and_shapes={
+            "stacked_only": stacked_only,
+            "recursive_only": recursive_only,
+        },
+        parameter_count_delta=delta,
+        parameter_count_delta_pct=delta_pct,
+        parameter_count_delta_matches_formula=(formula_delta == delta),
+        block_evaluations_per_forward=block_evaluations_per_forward,
+        estimated_forward_flops=estimated_forward_flops,
+        behaviorally_equivalent_under_declared_degeneracy=behaviorally_equivalent,
+    )

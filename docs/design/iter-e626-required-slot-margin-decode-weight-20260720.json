@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "run_id": "e626-required-slot-margin-scratch800-20260720",
+  "experiment_id": "E626",
+  "date_utc": "2026-07-20",
+  "status": "completed_mixed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "E625's stated next lever (floor still-missing *required slots* directly, analogous to how semantic_plan_margin_decode_weight already floors still-required *plan families*) will raise required-slot coverage and/or downstream quality metrics beyond the existing generic schema_role_slot_decode_weight bias, at a reasonable margin scale, without harming structure when the margin is too strong.",
+  "implementation": {
+    "new_field": "required_slot_margin_decode_weight",
+    "default": 0.0,
+    "location": "TwoTowerConfig (src/slm_training/models/twotower.py), ModelBuildConfig (src/slm_training/harnesses/model_build/config.py)",
+    "bias_method": "TwoTowerModel._required_slot_margin_bias",
+    "wiring": [
+      "apply_runtime_overrides allowed-field list (src/slm_training/harnesses/model_build/factory.py)",
+      "_effective_evaluation_policy (src/slm_training/harnesses/model_build/eval_runner.py)",
+      "--required-slot-margin-decode-weight CLI flag on scripts/evaluate_model.py",
+      "--required-slot-margin-decode-weight CLI flag added new to scripts/train_model.py (this family of decode-weight flags did not exist at all on train_model.py's CLI at this branch tip; PR #623's claimed backfill has not landed here, so only this one flag was added, matching evaluate_model.py's style)",
+      "added to the E617 contract-gated ValueError guard list (self._slot_contracts must be populated via --slot-contract-constrained-decode or --template-fill-decode, or the bias silently no-ops)"
+    ],
+    "semantics": "Among the current position's grammar-legal candidates, find slot tokens whose visible slot has not appeared anywhere in the emitted prefix yet (genuinely still missing, unlike schema_role_slot_decode_weight's flat bonus for any role-compatible slot whether filled or not). Floor the best-scoring still-missing slot candidate to (max legal candidate score + margin), mirroring semantic_plan_margin_decode_weight's flooring of still-required plan families over the component-candidate ceiling. No-ops when the weight is 0, when there is no slot contract, or once every visible slot in the legal candidate set has already been emitted.",
+    "unit_tests": "tests/test_models/test_compiler_decode.py::test_required_slot_margin_bias_floors_only_still_missing_slots (fires only for a genuinely-missing slot, no-ops once fully covered, no-ops at weight 0, no-ops with no slot contract) + added to the parametrized test_contract_gated_decode_weight_without_slot_contract_decode_raises guard",
+    "version_bumps": {
+      "model.twotower": "v59 -> v60",
+      "harness.model_build.eval": "v32 -> v33"
+    }
+  },
+  "checkpoint": {
+    "run_id": "e626-required-slot-margin-scratch800-20260720",
+    "location": "outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt",
+    "sha256": "c5b7c807988d100f32fc60877b6fec932b7ee1ad08345558ca26c3e3dd561221",
+    "full_state_sha256": "aa95a7f3949c9426b3b794a053929e5e3145fdd23078d006181c9c596bcfc75d",
+    "synced": false,
+    "promoted": false
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "device": "cpu",
+    "steps": 800,
+    "batch_size": 1,
+    "seed": 0,
+    "last_loss": 4.068013191223145,
+    "elapsed_wall_seconds": 30.216392115999952,
+    "no_sync_checkpoints": true,
+    "note": "Reused E620's exact train recipe (same corpus/seed/steps/architecture); last_loss matches E620's 4.0680 to 4 decimal places, confirming an equivalent scratch checkpoint was reproduced independently on this branch."
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "control_run_id": "e626-control-r2",
+    "treatment_margin2_run_id": "e626-treatment-r3-w2",
+    "treatment_margin6_run_id": "e626-treatment-r2",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 8.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "control_required_slot_margin_decode_weight": 0.0,
+    "treatment_margin2_required_slot_margin_decode_weight": 2.0,
+    "treatment_margin6_required_slot_margin_decode_weight": 6.0,
+    "note": "control_run_id (E626 control, required_slot_margin=0) reproduces E620's treatment (schema_role_slot_decode_weight=8) numbers and per-record predictions exactly, confirming the full E617-era recipe (schema_role_slot_decode_weight and the semantic_plan_* family) was correctly replayed before adding the new lever."
+  },
+  "control": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.5,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.55,
+    "placeholder_validity": 0.73,
+    "structural_similarity": 0.48855,
+    "component_type_recall": 0.47916666666666663,
+    "reward_score": 0.814,
+    "ast_node_f1": 0.5436507936507936,
+    "ast_edge_f1": 0.375,
+    "latency_ms_p50": 1289.5,
+    "latency_ms_p95": 7235.76,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "treatment_margin2": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.75,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.8333333333333334,
+    "placeholder_validity": 0.9,
+    "structural_similarity": 0.5473,
+    "component_type_recall": 0.5625,
+    "reward_score": 0.9005,
+    "ast_node_f1": 0.6137362637362638,
+    "ast_edge_f1": 0.3484848484848485,
+    "latency_ms_p50": 1117.27,
+    "latency_ms_p95": 4755.78,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "treatment_margin6": {
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.25,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.3,
+    "placeholder_validity": 0.48,
+    "structural_similarity": 0.42605,
+    "component_type_recall": 0.3958333333333333,
+    "reward_score": 0.56925,
+    "ast_node_f1": 0.476984126984127,
+    "ast_edge_f1": 0.25,
+    "latency_ms_p50": 1120.82,
+    "latency_ms_p95": 10454.37,
+    "decode_timeout_count": 0,
+    "fallback_count": 0,
+    "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "per_record_control": {
+    "ood_dashboard_01": "root = Card([], \":ood.dash.status.body\")",
+    "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\"}])",
+    "ood_modal_01": "root = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\", \"i\")], \"itet\")",
+    "ood_auth_01": "root = Stack([v0, v1, v4], \"column\")\nv0 = Button(\":ood.auth.create\")\nv1 = Input(\":ood.auth.email\", \":ood.auth.name\")\nv4 = Input(\":ood.auth.name\", \":ood.auth.email\")"
+  },
+  "per_record_treatment_margin2": {
+    "ood_dashboard_01": "root = Stack([v0, v1, v3, v4], \"column\")\nv0 = Callout(\":ood.dash.status.title\", \":ood.dash.status.body\", \":ood.dash.m2.value\")\nv1 = Button(\":ood.dash.m1.value\", \":ood.dash.refresh\")\nv3 = Card([], \":ood.dash.m1.value\", \":ood.dash.m1.value\")\nv4 = Card([], \":ood.dash.m1.value\")",
+    "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\"}])",
+    "ood_modal_01": "root = Stack([v0, v1], \"column\")\nv0 = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\", \":ood.modal.confirm\")])\nv1 = Button(\":ood.modal.confirm\")",
+    "ood_auth_01": "root = Button(\":ood.auth.create\", \":ood.auth.email\", \":ood.auth.name\")"
+  },
+  "per_record_treatment_margin6": {
+    "ood_dashboard_01": {
+      "prediction": "root = Button(\":ood.dash.m2.value\")",
+      "reason_codes": ["prompt_component_missing", "required_placeholder_missing", "required_component_missing", "placeholder_semantic_role_mismatch"]
+    },
+    "ood_gallery_01": {
+      "prediction": "root = Stack([v6], \"column\")\nv6 = ImageGallery([])",
+      "reason_codes": ["required_placeholder_missing"]
+    },
+    "ood_modal_01": {
+      "prediction": "root = Modal(\":ood.modal.title\", false, [], \"itet\")",
+      "reason_codes": ["required_placeholder_missing", "placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Modal.size"]
+    },
+    "ood_auth_01": {
+      "prediction": "root = Stack([v3, v4, v5], \"column\")\nv3 = Button(\":ood.auth.create\")\nv4 = Input(\":ood.auth.create\", \":ood.auth.email\")\nv5 = Input(\":ood.auth.create\", \":ood.auth.email\", \":ood.auth.email\")",
+      "reason_codes": ["required_placeholder_missing", "placeholder_semantic_role_mismatch", "schema_value_role_mismatch:Input.type", "placeholder_spam"]
+    }
+  },
+  "comparison": {
+    "margin2_vs_control": {
+      "meaningful_program_rate": "0.50 -> 0.75",
+      "placeholder_fidelity": "0.5500 -> 0.8333",
+      "placeholder_validity": "0.7300 -> 0.9000",
+      "structural_similarity": "0.4886 -> 0.5473",
+      "component_type_recall": "0.4792 -> 0.5625",
+      "reward_score": "0.8140 -> 0.9005",
+      "ast_node_f1": "0.5437 -> 0.6137",
+      "ast_edge_f1": "0.3750 -> 0.3485",
+      "binding_aware_meaningful_v2_rate_strict": "0.0 -> 0.0"
+    },
+    "margin6_vs_control": {
+      "meaningful_program_rate": "0.50 -> 0.25",
+      "placeholder_fidelity": "0.5500 -> 0.3000",
+      "placeholder_validity": "0.7300 -> 0.4800",
+      "structural_similarity": "0.4886 -> 0.4261",
+      "component_type_recall": "0.4792 -> 0.3958",
+      "reward_score": "0.8140 -> 0.5693",
+      "ast_node_f1": "0.5437 -> 0.4770",
+      "ast_edge_f1": "0.3750 -> 0.2500",
+      "binding_aware_meaningful_v2_rate_strict": "0.0 -> 0.0"
+    }
+  },
+  "decision": "Real, honest, dose-dependent result on a real n=4 OOD replay against a freshly-trained scratch checkpoint that reproduces E620's exact recipe and treatment numbers. A moderate margin (2.0, matching the scale of the other margin_decode_weight levers already active in this recipe) raises every headline quality metric except AST edge F1 (fidelity +0.28, validity +0.17, structure +0.06, recall +0.08, reward +0.09, AST node F1 +0.07, meaningful v1 +0.25), and Dashboard/Auth both gain additional correctly-typed components/slots they previously omitted. A strong margin (6.0) instead regresses every headline metric well below control (fidelity -0.25, validity -0.25, reward -0.24), collapsing Dashboard to a single bare Button and leaving Gallery's typed array empty again -- evidence that an overly large floor can hijack early structural (component-choice) decisions away from correct component selection, not just fill slots. binding_aware_meaningful_v2_rate_strict (strict v2) stays 0.0 in all three arms: required_placeholder_missing and/or placeholder_semantic_role_mismatch still fire on at least one record in every arm, so this checkpoint does not yet clear strict meaning even at the best-performing margin. Retain required_slot_margin_decode_weight as a promising default-off lever at a moderate margin scale (~2.0, matching sibling margin weights); do NOT adopt margin=6 as a default. This is a single small (n=4) matched-pair replay on one scratch checkpoint, not a confirmatory suite -- not a ship claim. No checkpoint promoted or synced.",
+  "next_step": "Run a powered/confirmatory multi-seed replay (see H19's protocol, docs/design/quality-experiment-matrix.md) sweeping required_slot_margin_decode_weight across a small grid (e.g. 1, 2, 3, 4) on a full held-out/rico_held suite, not just n=4 OOD, before considering this margin for a default recipe change; also trace *why* margin=6 hijacks the Dashboard root-component choice (is the bias only supposed to fire on slot-token candidates, or is it interacting with another lever's flooring at the same position?) since a decode-time bias regressing structure by over-flooring a slot candidate above a correct component candidate is itself worth a root-cause iteration, analogous to E616/E617's upstream-gap chase.",
+  "ship_gate_result": "not_applicable",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a284d6ae9e874f17b66674cc2bc52eabf16834b1",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v60"
+    }
+  }
+}

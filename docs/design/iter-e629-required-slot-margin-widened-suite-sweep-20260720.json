@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "run_id": "e629-margin{0,1,2,3,4}",
+  "experiment_id": "E629",
+  "date_utc": "2026-07-20",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "claim_class": "exploratory",
+  "hypothesis": "E626/E627/E628's own deferred next step: a powered multi-seed replay (H19's protocol) sweeping required_slot_margin_decode_weight over {1,2,3,4} against a full held-out/rico_held suite, not just the n=4 ood suite used by E626-E628, before considering this margin for a default recipe change.",
+  "suite_choice": {
+    "considered": [
+      "the same n=4 ood suite E626-E628 used",
+      "a freshly built larger rico_held suite via slm data build-test --rico-hf-split test --rico-limit 2600 (would require live HF network access + a full new leakage-checked build, not tractable inside the 3-minute hard run cap alongside the sweep itself)",
+      "the union of every already-built, already leakage-checked immutable suite under src/slm_training/resources/data/eval/remediated (held_out=5, rico_held=3, adversarial=4, ood=4, smoke=3 = n=19)"
+    ],
+    "chosen": "union of all 5 committed remediated suites, n=19",
+    "why": "This is real, already leakage-checked (37 candidates rejected against the train manifest per stats.json), disjoint held-out data already committed to the repo -- not a fresh single-suite subset, and not a same-day HF re-fetch that could not be verified/leakage-checked within the run cap. It is roughly 5x E626-E628's n=4 and includes rico_held (the suite E626/E627/E628's own deferred-next-step language named explicitly), but is still far below DEFAULT_MIN_SUITE_N=20 per suite (ship_gates.py) -- explicitly not powered, not a ship-gate scoreboard.",
+    "not_done": "No fresh rico_held/HF build attempted. No retraining across multiple seeds -- E626's checkpoint was reused verbatim per the task's explicit apples-to-apples instruction, so this remains a single-checkpoint, single-seed (seed=0) result; H19's seed-variance/MDE machinery has nothing to estimate from one seed."
+  },
+  "checkpoint_reused": {
+    "note": "Reused E626's own scratch checkpoint verbatim, no retrain, sha256 verified to match E626/E628's JSON before running.",
+    "run_id": "e626-required-slot-margin-scratch800-20260720",
+    "location": "outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt",
+    "sha256": "c5b7c807988d100f32fc60877b6fec932b7ee1ad08345558ca26c3e3dd561221",
+    "sha256_verified_this_run": true,
+    "synced": false,
+    "promoted": false
+  },
+  "code_changes": "none -- pure sweep, working tree clean at HEAD 2caba9771422f32c0bb0b1623c2a8888f7cea7e9 for the entire run; no version bump required.",
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suites": "held_out,rico_held,adversarial,ood,smoke",
+    "n": 19,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 8.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "schema_value_decode_weight": 4.0,
+    "schema_opaque_close_decode_weight": 4.0,
+    "schema_role_slot_decode_weight": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_binding_decode_weight": 1.0,
+    "semantic_plan_root_decode_weight": 8.0,
+    "semantic_plan_root_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_array_close_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_nonempty_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "required_slot_margin_decode_weight_values_swept": [0.0, 1.0, 2.0, 3.0, 4.0],
+    "exact_command_template": "python -m scripts.evaluate_model --checkpoint outputs/runs/e626-required-slot-margin-scratch800-20260720/checkpoints/last.pt --model twotower --test-dir src/slm_training/resources/data/eval/remediated --suites held_out,rico_held,adversarial,ood,smoke --honest-slot-contract --slot-contract-constrained-decode --slot-contract-in-context --semantic-role-contract-in-context --semantic-role-decode-weight 8 --slot-coverage-close-decode-weight 2 --schema-value-decode-weight 4 --schema-opaque-close-decode-weight 4 --schema-role-slot-decode-weight 8 --semantic-plan-decode-weight 4 --semantic-plan-margin-decode-weight 2 --semantic-plan-binding-decode-weight 1 --semantic-plan-root-decode-weight 8 --semantic-plan-root-margin-decode-weight 2 --semantic-plan-repeated-array-close-margin-decode-weight 2 --semantic-plan-repeated-slot-margin-decode-weight 2 --semantic-plan-typed-array-nonempty-margin-decode-weight 2 --semantic-plan-typed-array-item-margin-decode-weight 2 --grammar-ltr-max-tokens 160 --required-slot-margin-decode-weight <X> --run-id e629-margin<X> --run-root outputs/runs",
+    "wall_times_seconds": {"margin0": 56.7, "margin1": 47.1, "margin2": 45.2, "margin3": 45.2, "margin4": 45.7},
+    "note": "margin0 control reproduces E626/E628's own control on the ood subset exactly (meaningful_program_rate 0.5, placeholder_fidelity 0.55, placeholder_validity 0.73, structural_similarity 0.48855, component_type_recall 0.47916666666666663, reward_score 0.814, ast_node_f1 0.5436507936507936, ast_edge_f1 0.375, checkpoint_sha256 matches) -- confirms a faithful replay before widening to the other 4 suites."
+  },
+  "per_suite_scoreboard": {
+    "held_out": {
+      "0": {"n": 5, "meaningful_program_rate": 0.6, "placeholder_fidelity": 0.47333333333333333, "placeholder_validity": 0.6839999999999999, "structural_similarity": 0.30124, "component_type_recall": 0.3833333333333333, "reward_score": 0.7682, "ast_node_f1": 0.3821428571428571, "ast_edge_f1": 0.1476190476190476},
+      "1": {"n": 5, "meaningful_program_rate": 0.6, "placeholder_fidelity": 0.8, "placeholder_validity": 0.8800000000000001, "structural_similarity": 0.3339, "component_type_recall": 0.3833333333333333, "reward_score": 0.877, "ast_node_f1": 0.4257142857142857, "ast_edge_f1": 0.25},
+      "2": "identical to margin=1 (0/5 differing predictions)",
+      "3": "identical to margin=1 (0/5 differing predictions)",
+      "4": "identical to margin=1 (0/5 differing predictions)"
+    },
+    "rico_held": {
+      "0": {"n": 3, "meaningful_program_rate": 1.0, "placeholder_fidelity": 0.6666666666666666, "placeholder_validity": 0.7999999999999999, "structural_similarity": 0.5026333333333334, "component_type_recall": 0.8888888888888888, "reward_score": 0.8969999999999999, "ast_node_f1": 0.525879917184265, "ast_edge_f1": 0.4778613199665831},
+      "1": {"n": 3, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 0.9166666666666666, "placeholder_validity": 0.9500000000000001, "structural_similarity": 0.6093666666666667, "component_type_recall": 1.0, "reward_score": 0.972, "ast_node_f1": 0.6742944317315027, "ast_edge_f1": 0.6405228758169934},
+      "2": "identical to margin=1 (0/3 differing predictions)",
+      "3": "1/3 records differs from margin=1 (rico_eval_test_25 -- cosmetic slot-position swap among structurally symmetric Card children; identical reward_score=0.997 and meaningful_program_v1=False in both variants; aggregate metrics unaffected)",
+      "4": "1/3 records differs from margin=1 (same record, same cosmetic swap as margin=3)"
+    },
+    "adversarial": {
+      "0": {"n": 4, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5833333333333334, "placeholder_validity": 0.65, "structural_similarity": 0.51015, "component_type_recall": 0.8333333333333334, "reward_score": 0.66775, "ast_node_f1": 0.654040404040404, "ast_edge_f1": 0.4861111111111111},
+      "1": {"n": 4, "meaningful_program_rate": 0.5, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.67145, "component_type_recall": 1.0, "reward_score": 0.964, "ast_node_f1": 0.8127705627705627, "ast_edge_f1": 0.6944444444444444},
+      "2": "identical to margin=1", "3": "identical to margin=1", "4": "identical to margin=1"
+    },
+    "ood": {
+      "0": {"n": 4, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.55, "placeholder_validity": 0.73, "structural_similarity": 0.48855, "component_type_recall": 0.47916666666666663, "reward_score": 0.814, "ast_node_f1": 0.5436507936507936, "ast_edge_f1": 0.375},
+      "1": {"n": 4, "meaningful_program_rate": 0.75, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.9, "structural_similarity": 0.5473, "component_type_recall": 0.5625, "reward_score": 0.9005, "ast_node_f1": 0.6137362637362638, "ast_edge_f1": 0.3484848484848485},
+      "2": "identical to margin=1", "3": "identical to margin=1", "4": "identical to margin=1",
+      "note": "matches E626/E628's own n=4 ood-only margin=2 result exactly; ood_dashboard_01 flips meaningful_program_v1 False->True at margin>=1, matching E626/E628's own reported Dashboard fix."
+    },
+    "smoke": {
+      "0": {"n": 3, "meaningful_program_rate": 1.0, "placeholder_fidelity": 0.6944444444444445, "placeholder_validity": 0.8166666666666668, "structural_similarity": 0.51, "component_type_recall": 0.5, "reward_score": 0.8433333333333333, "ast_node_f1": 0.5545454545454546, "ast_edge_f1": 0.06666666666666667, "binding_aware_meaningful_v2_rate_strict": 0.3333333333333333},
+      "1": {"n": 3, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "placeholder_validity": 1.0, "structural_similarity": 0.5628000000000001, "component_type_recall": 0.5, "reward_score": 0.945, "ast_node_f1": 0.6814814814814815, "ast_edge_f1": 0.31746031746031744, "binding_aware_meaningful_v2_rate_strict": 0.3333333333333333},
+      "2": "identical to margin=1", "3": "identical to margin=1", "4": "identical to margin=1"
+    }
+  },
+  "pooled_n19_record_level_means": {
+    "margin0": {"reward_score": 0.7889, "placeholder_fidelity": 0.5781, "placeholder_validity": 0.7258, "structural_similarity": 0.4494, "component_type_recall": 0.5965, "meaningful_program_v1_rate": 0.6842105263157895},
+    "margin1_2": {"reward_score": 0.926, "placeholder_fidelity": 0.8991, "placeholder_validity": 0.9395, "structural_similarity": 0.5295, "component_type_recall": 0.6667, "meaningful_program_v1_rate": 0.6842105263157895},
+    "margin3_4": {"reward_score": 0.926, "placeholder_fidelity": 0.8991, "placeholder_validity": 0.9395, "structural_similarity": 0.5295, "component_type_recall": 0.6667, "meaningful_program_v1_rate": 0.6842105263157895},
+    "note": "meaningful_program_v1_rate (the binary pass/fail gate) is EXACTLY 13/19=0.6842105263157895 in every arm (0,1,2,3,4) -- a real +1 (ood_dashboard_01) is exactly offset by a real -1 (rico_eval_test_25) at margin>=1, netting to zero movement on the binary gate at this suite/checkpoint, even though every continuous metric moves up."
+  },
+  "new_failure_mode_found": {
+    "record": "rico_held:rico_eval_test_25",
+    "margin0_prediction_meaningful": true,
+    "margin_ge1_prediction_meaningful": false,
+    "mechanism": "At margin0, five different components are correctly instantiated for five distinct role-appropriate placeholders. At margin>=1, the required_slot_margin floor (now correctly excluded from frame_depth==0 by E628, so this is a frame_depth>=1 argument-position competition, not the already-fixed root hijack) causes one Button to absorb 5 placeholders from what should have been distributed across 5 separate role-appropriate slots (':sliding_tabs.label', ':cardview.title', ':toolbar.text', ':cardview.body', ':cardview_1.title'), producing schema_value_role_mismatch failures on Button.size/type/variant and placeholder_semantic_role_mismatch on 6 placeholders. This exactly matches the failure mode E628's own 'Next step' #2 explicitly flagged as untested: 'a different checkpoint/seed could still surface a different failure mode once the floor is large enough to dominate a legitimate frame_depth>=1 argument-position competition' -- except here it surfaces on a different SUITE RECORD (rico_held) at the same checkpoint/seed, at margin=1 (not even a large margin), not merely at 'substantially larger' margins as E628 speculated.",
+    "significance": "This is a new, real, previously-unobserved failure mode for this lever, found only because the suite was widened beyond E626-E628's n=4 ood-only set. It was invisible in E626/E627/E628 because rico_held was never included in their replay."
+  },
+  "power_protocol_analysis": {
+    "cli_mode_used": "python -m scripts.run_flow_power_protocol --mode analyze-existing --iter-json outputs/runs/e629-outcomes/e629-margin<X>-outcomes.json --output-dir outputs/runs/e629-power-protocol-margin<X>",
+    "per_arm_wilson_and_exact_binomial_meaningful_v1": {
+      "n": 19,
+      "successes": 13,
+      "success_rate": 0.6842105263157895,
+      "wilson_interval": {"low": 0.46010407675327475, "high": 0.8463562091220773},
+      "exact_binomial_interval": {"low": 0.4344984311538491, "high": 0.8742393641270167},
+      "identical_in_every_arm_0_through_4": true
+    },
+    "seed_variance": 0.0,
+    "seed_variance_note": "Single checkpoint, single seed (seed=0) per the task's explicit instruction not to retrain -- H19's cluster-aware seed-variance/MDE-simulation machinery has nothing to estimate from one seed and was NOT meaningfully exercised here. Only the single-arm Wilson/exact-binomial interval part of the protocol applies at this n.",
+    "mde_applicable": false,
+    "supplementary_analysis_beyond_the_cli": {
+      "why": "analyze-existing operates on one iter JSON at a time and does not itself compute a two-arm delta; the underlying slm_training.evals.power_protocol library functions (bootstrap_paired_ci, cluster_bootstrap_ci, benjamini_hochberg) were invoked directly (same library, not a reimplementation) for a real matched control-vs-treatment comparison. Script: outputs/runs/e629-outcomes/paired_bootstrap_analysis.py; result: outputs/runs/e629-outcomes/paired_bootstrap_analysis.json (both untracked, outputs/ is gitignored).",
+      "meaningful_program_v1_paired_bootstrap_delta_margin1_minus_margin0": {"estimate": 0.0, "low": -0.1578947368421052, "high": 0.1578947368421053, "resamples": 2000},
+      "meaningful_program_v1_cluster_bootstrap_by_suite": {
+        "margin0": {"estimate": 0.6842105263157895, "low": 0.5238095238095238, "high": 0.8823529411764706},
+        "margin1": {"estimate": 0.6842105263157895, "low": 0.5714285714285714, "high": 0.8333333333333334},
+        "caveat": "only 5 clusters (suites) -- the cluster bootstrap distribution is coarse/discrete at this cluster count and should not be over-read"
+      },
+      "continuous_metrics_paired_bootstrap_and_bh": {
+        "reward_score": {"observed_delta": 0.13710526315789473, "ci_low": 0.05751447368421038, "ci_high": 0.25326710526315765, "raw_bootstrap_p": 0.01075, "bh_rejected_alpha05": true},
+        "placeholder_fidelity": {"observed_delta": 0.32105263157894726, "ci_low": 0.18815789473684197, "ci_high": 0.46141447368421074, "raw_bootstrap_p": 0.0, "bh_rejected_alpha05": true},
+        "structural_similarity": {"observed_delta": 0.08011052631578941, "ci_low": -0.0629818421052632, "ci_high": 0.22039315789473668, "raw_bootstrap_p": 0.25775, "bh_rejected_alpha05": false},
+        "component_type_recall": {"observed_delta": 0.07017543859649122, "ci_low": -0.03508771929824561, "ci_high": 0.18421052631578938, "raw_bootstrap_p": 0.224, "bh_rejected_alpha05": false},
+        "benjamini_hochberg_family": "4 tests (reward_score, placeholder_fidelity, structural_similarity, component_type_recall), alpha=0.05"
+      }
+    }
+  },
+  "decision": "Exploratory, not confirmatory. On the widened n=19 union-of-all-committed-suites replay (still well below the n>=20-per-suite ship floor), required_slot_margin_decode_weight in {1,2} produces a real, BH-significant improvement in reward_score (+0.137, CI [0.058,0.253]) and placeholder_fidelity (+0.321, CI [0.188,0.461]) pooled across suites, with directionally positive but not-yet-significant structural_similarity and component_type_recall deltas. The binary meaningful_program_v1 gate is EXACTLY flat (13/19 in every arm) because a genuine OOD gain (ood_dashboard_01) is exactly offset by a newly discovered rico_held regression (rico_eval_test_25) -- a frame_depth>=1 argument-position over-stuffing failure mode not seen in E626-E628's ood-only replay. Margins 1 and 2 are byte-identical (0/19 differing predictions); margins 3 and 4 differ from 1/2 by exactly one cosmetic, metric-neutral slot-position swap on one record. There is therefore no evidence favoring any specific value above 1 within {1,2,3,4} on this checkpoint/suite -- if this lever is adopted, margin~1-2 (not 3 or 4) is the reasonable range, matching E626's own original recommendation. Given (a) the newly discovered rico_held over-stuffing failure mode, which itself needs its own root-cause/mitigation pass before wider adoption (the same treatment E627/E628 gave the frame_depth==0 hijack), and (b) n=19 still far short of a powered/ship-grade suite, do NOT change the shipped default (required_slot_margin_decode_weight stays 0.0). Recommend margin~2 as the next iteration's default-recipe CANDIDATE only, contingent on root-causing the rico_held regression first.",
+  "next_step": "1) Root-cause the newly discovered rico_held argument-position over-stuffing failure mode (frame_depth>=1) the same way E627/E628 root-caused and fixed the frame_depth==0 root hijack -- likely another per-position bias-stack magnitude interaction, this time between required_slot_margin_bias and whichever bias is supposed to prevent one component absorbing multiple unrelated slots. 2) A genuinely powered confirmatory pass needs either a freshly built larger rico_held (slm data build-test --rico-hf-split test --rico-limit 2600, live HF network + leakage check, not attempted here) or multiple retrained seeds (intentionally not done this session per the task's apples-to-apples instruction) to give H19's seed-variance/MDE machinery something real to estimate -- this session's n=19/single-seed result is not that. 3) binding_aware_meaningful_v2_rate_strict remains 0.0 across held_out/rico_held/adversarial/ood at every margin (smoke alone shows 0.333, unchanged by margin) -- the coverage-aware component/property closure work E620 originally named is still the next lever after both (1) and (2) above.",
+  "ship_gate_result": "not_applicable",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caba9771422f32c0bb0b1623c2a8888f7cea7e9",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.1.0",
+      "evals.scoring": "v12",
+      "model.twotower": "v61",
+      "evals.power_protocol": "v1",
+      "harness.experiments": "v49"
+    }
+  }
+}

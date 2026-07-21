@@ -46,6 +46,11 @@ class DecodeStats:
     slot_component_choice_changes: int = 0
     slot_coverage_close_applications: int = 0
     slot_coverage_close_choice_changes: int = 0
+    # E627: root-cause instrumentation for required_slot_margin_decode_weight
+    # (E626) — counts how often the still-missing-required-slot floor fires
+    # and how often it actually flips the position's argmax candidate.
+    required_slot_margin_applications: int = 0
+    required_slot_margin_choice_changes: int = 0
     visible_reference_applications: int = 0
     visible_reference_choice_changes: int = 0
     root_reference_arity_applications: int = 0
@@ -236,6 +241,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "slot_component_choice_changes",
         "slot_coverage_close_applications",
         "slot_coverage_close_choice_changes",
+        "required_slot_margin_applications",
+        "required_slot_margin_choice_changes",
         "visible_reference_applications",
         "visible_reference_choice_changes",
         "root_reference_arity_applications",
