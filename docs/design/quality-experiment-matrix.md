@@ -5088,3 +5088,14 @@ not ship evidence. AgentV is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e694-open-enum-finalize-20260721.md) and
 [JSON](iter-e694-open-enum-finalize-20260721.json).
+
+## E695 role/property capacity
+
+E695 bounds planned-family role reuse by distinct public string-property
+capacity. Form only swaps two title roles; the same placeholder remains reused
+three times, strict stays 4/5, and every aggregate quality metric is identical.
+Reject v151 and restore v150 behavior as v152. AgentV is 0/1; no checkpoint was
+created or synced.
+
+Evidence: [narrative](iter-e695-role-property-capacity-20260721.md) and
+[JSON](iter-e695-role-property-capacity-20260721.json).
