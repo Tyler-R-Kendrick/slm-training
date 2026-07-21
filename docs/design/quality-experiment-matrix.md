@@ -5016,3 +5016,17 @@ Evidence:
 [iter-e645-root-sibling-coverage-20260720.md](iter-e645-root-sibling-coverage-20260720.md),
 [authoritative JSON](iter-e645-root-sibling-coverage-20260720.json), and
 [r1 recipe diagnostic](iter-e645-root-sibling-coverage-r1-20260720.json).
+
+## E646 root slot-bearing references
+
+E646 tracked visible slots per completed top-level section and allowed the
+verified semantic root to reference supplemental slot-bearing sections. The
+policy-matched OOD `n=4` output and every quality metric remained exactly at
+E637. Reject the treatment stamped v80. After rebasing onto E645 restoration
+v82, the append-only lineage records E646 as treatment v83 and restoration v84:
+Gallery's missing roles must be recovered inside its planned subtree. No
+checkpoint was created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e646-root-slot-references-20260720.md](iter-e646-root-slot-references-20260720.md)
+and [JSON](iter-e646-root-slot-references-20260720.json).
