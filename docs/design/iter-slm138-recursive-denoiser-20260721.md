@@ -30,6 +30,18 @@ Independently measured comparison dimensions -- never a single collapsed `parity
 - claim class: **wiring**
 - block evaluations per forward: `{'stacked': 2, 'recursive': 4}`
 
+## SLM-241 (RSC-A05) control arm table
+
+Real, measured resource accounting per built control arm -- never a raw loss or a winner (see `docs/design/iter-rsc-a05-*` for the full formulas/residuals). Built arms: A, B, C, D, G. Deferred: E, F, H.
+
+| arm | denoiser_arch | z_state_mode | params (Δ vs A) | block evals | matched? |
+| --- | --- | --- | --- | --- | --- |
+| A | `stacked` | `None` | 43040 (+0) | 2 | True |
+| B | `shared_recursive` | `full` | 52288 (+9248) | 4 | False |
+| C | `shared_recursive_y_only` | `y_only` | 43040 (+0) | 4 | True |
+| D | `shared_recursive_no_extra_capacity` | `parameter_free` | 43040 (+0) | 4 | True |
+| G | `shared_recursive` | `full` | 52288 (+9248) | 2 | False |
+
 ## Losses
 
 **Objective-decomposition warning:** the raw scalar losses below are *not* a quality/parameter-matched comparison -- the two architectures have different parameter counts (see 'Architecture comparison' above) and the recursive arm's loss includes deep-supervision terms whose exact weighting/mode is governed by SLM-238 (RSC-A02)'s `recursive_depth_aux_mode` (see `deep_supervision_metrics` below and `docs/design/iter-rsc-a02-*`); placing these two numbers side by side never implies one architecture is better.
@@ -68,7 +80,7 @@ Independently measured comparison dimensions -- never a single collapsed `parity
 - Base seed: `0`
 - Probe order: `stacked_first`
 - Training-corruption seed: `30000`
-- Namespace seeds: `{'control_only': 50000, 'model_initialization': 0, 'shape_probe_context': 20000, 'shape_probe_inputs': 10000, 'training_batch_order': 40000, 'training_corruption': 30000}`
+- Namespace seeds: `{'arch_specific:shared_recursive': 70000, 'arch_specific:shared_recursive_no_extra_capacity': 90000, 'arch_specific:shared_recursive_y_only': 80000, 'arch_specific:stacked': 60000, 'control_only': 50000, 'model_initialization': 0, 'shape_probe_context': 20000, 'shape_probe_inputs': 10000, 'training_batch_order': 40000, 'training_corruption': 30000}`
 
 ## Clean-tree evidence gate
 
