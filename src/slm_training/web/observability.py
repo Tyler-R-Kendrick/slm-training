@@ -1465,8 +1465,13 @@ class Readers:
                 continue
             summary = _read_json(run_dir / "train_summary.json") or {}
             bucket = _read_json(run_dir / "checkpoint_bucket.json") or {}
+            matrix = _read_json(run_dir / "matrix_result.json") or {}
             ckpt = run_dir / "last.pt"
-            if not summary and not bucket and not ckpt.exists():
+            if not ckpt.exists():
+                nested = run_dir / "checkpoints" / "last.pt"
+                if nested.exists():
+                    ckpt = nested
+            if not summary and not bucket and not matrix and not ckpt.exists():
                 continue
             location = (
                 bucket.get("remote_uri")
