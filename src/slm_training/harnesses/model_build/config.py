@@ -23,6 +23,16 @@ class ModelBuildConfig:
     max_wall_minutes: float | None = 3.0
     batch_size: int = 4
     lr: float = 3e-4
+    # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.
+    optimizer_name: str = "adamw"
+    # Per-family learning rates; None falls back to lr.
+    muon_lr: float | None = None
+    adamw_lr: float | None = None
+    weight_decay: float = 0.0
+    # Muon-specific knobs.
+    muon_momentum: float = 0.9
+    muon_nesterov: bool = False
+    muon_ns_steps: int = 5
     seed: int = 0
     device: str = "cpu"
     model_name: str = "twotower"  # twotower | grammar_diffusion | stub

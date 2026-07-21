@@ -198,6 +198,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=200)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument(
+        "--optimizer",
+        choices=("adamw", "muon_hybrid"),
+        default="adamw",
+        help="Optimizer family (default: adamw).",
+    )
+    parser.add_argument(
+        "--muon-lr", type=float, default=None, help="Muon learning rate (default: --lr)."
+    )
+    parser.add_argument(
+        "--adamw-lr", type=float, default=None, help="AdamW learning rate (default: --lr)."
+    )
+    parser.add_argument("--weight-decay", type=float, default=0.0)
+    parser.add_argument("--muon-momentum", type=float, default=0.9)
+    parser.add_argument("--muon-ns-steps", type=int, default=5)
+    parser.add_argument("--muon-nesterov", action="store_true")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(
         "--device",
@@ -1017,6 +1033,13 @@ def main(argv: list[str] | None = None) -> int:
         steps=args.steps,
         batch_size=args.batch_size,
         lr=args.lr,
+        optimizer_name=args.optimizer,
+        muon_lr=args.muon_lr,
+        adamw_lr=args.adamw_lr,
+        weight_decay=args.weight_decay,
+        muon_momentum=args.muon_momentum,
+        muon_ns_steps=args.muon_ns_steps,
+        muon_nesterov=args.muon_nesterov,
         seed=args.seed,
         device=device,
         model_name=args.model,
