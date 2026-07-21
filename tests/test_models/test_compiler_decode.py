@@ -627,6 +627,147 @@ def test_slot_coverage_close_bias_escapes_wrong_owner_before_nested_component(
     assert bias.tolist() == [0.0, 2.0]
 
 
+def _gallery_stack_frames():
+    from types import SimpleNamespace
+
+    return [
+        SimpleNamespace(kind="component", expr_type="element:Stack"),
+        SimpleNamespace(kind="variadic", expr_type="array", close="]"),
+    ]
+
+
+def test_gallery_role_select_bias_selects_missing_sibling_after_gallery_emitted() -> (
+    None
+):
+    """E639: once ImageGallery has been emitted as a Stack sibling, a missing
+    role-compatible sibling (TextContent for the hint slot) is positively
+    raised -- but the ImageGallery-family candidate itself is never targeted,
+    and the array's own close token is left untouched."""
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        gallery_role_select_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    gallery_id = tokenizer.token_to_id["+ImageGallery"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(frames=_gallery_stack_frames(), section_types=[])
+    slot_contract = [":gallery.img", ":gallery.alt", ":gallery.hint.title"]
+    prefix = [
+        tokenizer.bos_id,
+        gallery_id,
+        tokenizer.sym_id(0),
+        tokenizer.sym_id(1),
+    ]
+
+    bias = model._gallery_role_select_bias(
+        state,
+        prefix,
+        (gallery_id, text_id, close_id),
+        torch.tensor([5.0, 0.0, 3.0]),
+        slot_contract,
+        {
+            ":gallery.img": ("ImageGallery",),
+            ":gallery.alt": ("ImageGallery",),
+            ":gallery.hint.title": ("TextContent",),
+        },
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 9.0, 0.0]
+
+
+def test_gallery_role_select_bias_requires_gallery_family_already_emitted() -> None:
+    """Without an ImageGallery family in the prediction so far, the lever must
+    never fire -- it is not a generic sibling-selector."""
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        gallery_role_select_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    text_id = tokenizer.token_to_id["+TextContent"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(frames=_gallery_stack_frames(), section_types=[])
+    slot_contract = [":gallery.img", ":gallery.alt", ":gallery.hint.title"]
+    prefix = [tokenizer.bos_id]
+
+    bias = model._gallery_role_select_bias(
+        state,
+        prefix,
+        (text_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        slot_contract,
+        {":gallery.hint.title": ("TextContent",)},
+    )
+
+    assert bias is None
+
+
+def test_gallery_role_select_bias_never_fires_for_a_non_gallery_family() -> None:
+    """Structural incapability check: even when a *different* family (Modal)
+    has been emitted and a matching missing-slot candidate exists, the lever
+    stays off because it only ever looks for ImageGallery. This is the
+    property that makes it provably incapable of touching Modal/Auth/
+    Dashboard predictions."""
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        gallery_role_select_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    modal_id = tokenizer.token_to_id["+Modal"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(frames=_gallery_stack_frames(), section_types=[])
+    slot_contract = [":modal.title", ":modal.body"]
+    prefix = [tokenizer.bos_id, modal_id, tokenizer.sym_id(0)]
+
+    bias = model._gallery_role_select_bias(
+        state,
+        prefix,
+        (text_id, close_id),
+        torch.tensor([0.0, 3.0]),
+        slot_contract,
+        {":modal.body": ("TextContent",)},
+    )
+
+    assert bias is None
+
+
+def test_gallery_role_select_bias_defaults_off() -> None:
+    """Default weight is 0.0: the lever is fully inert unless explicitly
+    enabled, even with a satisfied gallery-emitted + missing-slot setup."""
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    gallery_id = tokenizer.token_to_id["+ImageGallery"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(frames=_gallery_stack_frames(), section_types=[])
+    slot_contract = [":gallery.img", ":gallery.hint.title"]
+    prefix = [tokenizer.bos_id, gallery_id, tokenizer.sym_id(0)]
+
+    assert (
+        model.config.gallery_role_select_decode_weight == 0.0
+    )
+    bias = model._gallery_role_select_bias(
+        state,
+        prefix,
+        (gallery_id, text_id, close_id),
+        torch.tensor([5.0, 0.0, 3.0]),
+        slot_contract,
+        {":gallery.hint.title": ("TextContent",)},
+    )
+
+    assert bias is None
+
+
 def test_slot_coverage_close_trace_records_owner_and_missing_slots() -> None:
     from types import SimpleNamespace
 

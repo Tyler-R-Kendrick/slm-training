@@ -272,6 +272,7 @@ class ModelBuildConfig:
     semantic_role_decode_weight: float | None = None
     semantic_role_schema_candidates: bool | None = None
     slot_coverage_close_decode_weight: float | None = None
+    gallery_role_select_decode_weight: float | None = None
     schema_value_decode_weight: float | None = None
     schema_enum_close_decode_weight: float | None = None
     schema_opaque_decode_weight: float | None = None

@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "run_id": "e639-gallery-role-select-treatment-r3",
+  "experiment_id": "E639",
+  "date_utc": "2026-07-21",
+  "status": "completed_inconclusive_checkpoint_divergence",
+  "run_class": "scratch_matrix",
+  "hypothesis": "A new, ImageGallery-only decode lever that positively selects a missing role-compatible sibling component (instead of E638's rejected blanket root-closure gate) will recover Gallery's missing required placeholder without disturbing Modal, Auth, or Dashboard.",
+  "checkpoint": {
+    "run_id": "e639-gallery-role-select-checkpoint-20260721",
+    "location": "outputs/runs/e639-gallery-role-select-checkpoint-20260721/checkpoints/last.pt",
+    "sha256": "0dc6a4c411e2dbc0d86c4391d8f2f64b6ef1cf3911a91acda8e42131f0ea3927",
+    "reused": false,
+    "created": true,
+    "synced": false,
+    "promoted": false,
+    "note": "Freshly retrained with E620's exact recipe (same train-dir, model, context-backend, output-tokenizer, device, steps, batch-size, seed) because the original E620 checkpoint (sha256 3ce5c9ef...) reused by E637/E638 is local-only and not present on disk or in git history in this session. sha256 intentionally does not byte-match E620; last_loss 4.068013 (vs E620's reported 4.068010) is effectively identical, but real-generation OOD behavior diverges substantially -- see control_sanity_check below."
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "device": "cpu",
+    "steps": 800,
+    "batch_size": 1,
+    "seed": 0,
+    "last_loss": 4.068013191223145,
+    "elapsed_wall_seconds": 44.757148852,
+    "max_wall_minutes": 3.0,
+    "no_sync_checkpoints": true
+  },
+  "evaluation_policy": {
+    "control_run_ids": [
+      "e639-gallery-role-select-control-r3",
+      "e639-gallery-role-select-control-r4"
+    ],
+    "treatment_run_ids": [
+      "e639-gallery-role-select-treatment-r1",
+      "e639-gallery-role-select-treatment-r2",
+      "e639-gallery-role-select-treatment-r3"
+    ],
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suite": "ood",
+    "n": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "grammar_ltr_primary": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 8.0,
+    "schema_opaque_decode_weight": 4.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "grammar_ltr_max_tokens": 160,
+    "gallery_role_select_decode_weight": {
+      "control": 0.0,
+      "treatment": 8.0
+    },
+    "recipe_reconstruction_note": "The compact evaluation_policy blocks recorded in iter-e619..iter-e637 JSON only list flags that changed relative to the previous experiment in the ladder, not the full CLI. This run's recipe was reconstructed by combining E637's recorded block with the fuller eval_recipe recorded in iter-e620 (which additionally shows semantic_role_decode_weight=8.0, slot_contract_in_context=true) plus context_backend=scratch and grammar_ltr_primary=true, both required for the scratch-trained checkpoint's compiler-LTR decode path (src/slm_training/models/twotower.py:_compiler_ltr_decode_batch) to engage at all -- confirmed via the effective evaluation_policy echoed back in each run's own eval_ood.json."
+  },
+  "control_sanity_check": {
+    "target": "E637 baseline OOD n=4: fidelity 0.675, validity 0.805, structural_similarity 0.581675, component_recall 0.625, reward 0.8545, ast_node_f1 0.6436507936507937, ast_edge_f1 0.4553571428571429, strict_v2 0.5, meaningful_v1 0.75, syntax_parse 1.0",
+    "measured": {
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.3833333333333333,
+      "placeholder_validity": 0.63,
+      "structural_similarity": 0.09,
+      "component_type_recall": 0.08333333333333333,
+      "reward_score": 0.722,
+      "ast_node_f1": 0.1,
+      "ast_edge_f1": 0.0,
+      "syntax_parse_rate": 1.0
+    },
+    "result": "MISMATCH -- does not reproduce E637's baseline",
+    "investigation": [
+      "Confirmed suite/test_dir/n/device match exactly (ood, remediated, n=4, cpu).",
+      "Confirmed the freshly trained checkpoint's sha256 (0dc6a4c4...) differs from E620's original (3ce5c9ef...), as expected -- that checkpoint is local-only and absent from this session's disk and from git history (docs/design/iter-e620...md explicitly records it as never synced/promoted).",
+      "Tried three progressively fuller recipes (default flags only; +grammar_ltr_primary +context_backend=scratch; +slot_contract_in_context +semantic_role_decode_weight=8.0) -- all three produced byte-identical, qualitatively broken predictions (e.g. `root = Image(...)` instead of a nested Dashboard/Gallery/Modal/Auth structure), ruling out a missing-flag explanation.",
+      "Confirmed full determinism: repeat runs of the same recipe (r3 vs r4 control, r1 vs r2 vs r3 treatment) produced byte-identical predictions and metrics every time.",
+      "Conclusion: the freshly retrained checkpoint is a materially different, weaker local optimum than E620's original -- plausibly CPU floating-point / BLAS-thread nondeterminism compounding over 800 gradient steps on a 1.6M-parameter model, even with an identical seed, train-dir, and near-identical final loss (4.068013 vs 4.068010). This is a checkpoint-reproducibility gap, not an eval-flag or code-wiring error."
+    ]
+  },
+  "baseline": {
+    "run_id": "e639-gallery-role-select-control-r3",
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.3833333333333333,
+    "placeholder_validity": 0.63,
+    "structural_similarity": 0.09,
+    "component_type_recall": 0.08333333333333333,
+    "reward_score": 0.722,
+    "ast_node_f1": 0.1,
+    "ast_edge_f1": 0.0,
+    "latency_ms_p50": 7766.93,
+    "latency_ms_p95": 15241.3,
+    "decode_timeout_count": 0,
+    "fallback_count": 0
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 0.3833333333333333,
+      "placeholder_validity": 0.63,
+      "structural_similarity": 0.09,
+      "component_type_recall": 0.08333333333333333,
+      "reward_score": 0.722,
+      "ast_node_f1": 0.1,
+      "ast_edge_f1": 0.0,
+      "latency_ms_p50": 7601.62,
+      "latency_ms_p95": 15139.76,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "gallery_role_select_telemetry": {
+    "applications_sum": 0,
+    "choice_changes_sum": 0,
+    "note": "src/slm_training/models/decode_stats.py aggregates gallery_role_select_applications/_choice_changes as measured-zero counters (present in decode_stats.counters_omitted_zero for every treatment run), confirming the lever's decode-time hook was reached and evaluated on every step but its structural precondition (an ImageGallery family already emitted in the current prediction) was never satisfied, because this checkpoint never chose ImageGallery for ood_gallery_01 in the first place (it emitted `Image(...)` instead)."
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "confirmation": {
+    "control_r3_vs_r4_byte_identical": true,
+    "treatment_r1_vs_r2_vs_r3_byte_identical": true,
+    "control_vs_treatment_byte_identical": true,
+    "note": "Control and treatment predictions are byte-identical for all 4 OOD records (dashboard, gallery, modal, auth) because gallery_role_select_decode_weight never fires on this checkpoint. This makes the lever provably unable to have touched Modal/Auth/Dashboard in this run, but also means Gallery itself was not exercised."
+  },
+  "per_record_control": {
+    "ood_dashboard_01": "root = Image(\":ood.dash.status.title\")",
+    "ood_gallery_01": "root = Image(\":ood.gallery.img\", \":ood.gallery.alt\")",
+    "ood_modal_01": "root = TextContent(\":ood.modal.title\", \":ood.modal.body\")",
+    "ood_auth_01": "root = TextContent(\":ood.auth.create\")"
+  },
+  "per_record_treatment": {
+    "ood_dashboard_01": "root = Image(\":ood.dash.status.title\")",
+    "ood_gallery_01": "root = Image(\":ood.gallery.img\", \":ood.gallery.alt\")",
+    "ood_modal_01": "root = TextContent(\":ood.modal.title\", \":ood.modal.body\")",
+    "ood_auth_01": "root = TextContent(\":ood.auth.create\")"
+  },
+  "e637_reference_per_record": {
+    "ood_dashboard_01": "root = Card([TextContent(\":ood.dash.status.body\")])",
+    "ood_gallery_01": "root = Stack([v0], \"column\")\nv0 = ImageGallery([{src: \":ood.gallery.img\", alt: \":ood.gallery.alt\", details: \":ood.gallery.caption\"}])",
+    "ood_modal_01": "root = Stack([v0], \"column\")\nv0 = Modal(\":ood.modal.title\", false, [TextContent(\":ood.modal.body\"), Buttons([Button(\":ood.modal.confirm\")])])",
+    "ood_auth_01": "root = Stack([v0, v1, v2], \"column\")\nv0 = Button(\":ood.auth.create\")\nv1 = Input(\"\", \":ood.auth.name\")\nv2 = Input(\"\", \":ood.auth.email\")"
+  },
+  "unit_test_evidence": {
+    "file": "tests/test_models/test_compiler_decode.py",
+    "tests": [
+      "test_gallery_role_select_bias_selects_missing_sibling_after_gallery_emitted",
+      "test_gallery_role_select_bias_requires_gallery_family_already_emitted",
+      "test_gallery_role_select_bias_never_fires_for_a_non_gallery_family",
+      "test_gallery_role_select_bias_defaults_off"
+    ],
+    "result": "4/4 passed; demonstrates the lever's gating and positive-selection mechanism function correctly in isolation even though this session's checkpoint never reached the state needed to exercise it end to end."
+  },
+  "decision": "Inconclusive, not accepted. The lever (src/slm_training/models/twotower.py::_gallery_role_select_bias, gated behind the new default-off gallery_role_select_decode_weight) is implemented, unit-tested, and structurally incapable of firing for any family other than ImageGallery -- but it could not be exercised on real generation in this session because the freshly retrained scratch checkpoint diverges from E637's reused checkpoint and never selects ImageGallery at all (root = Image(...) instead), so its precondition (an ImageGallery sibling already open) is never satisfied. Control and treatment are byte-identical across 3 treatment and 2 control runs. No positive or negative real-generation evidence was produced either way. Code is retained default-off (gallery_role_select_decode_weight=0.0), which the empirical run confirms is behaviorally inert -- v77's decode behavior is unchanged from v76/v75 at default. Re-attempting this experiment requires either the original E620 checkpoint (not available in this session) or a new scratch checkpoint that reliably selects ImageGallery for ood_gallery_01 before the lever can be judged.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e7e65c67389fb680e38aebb77416061a105995b9",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v33",
+      "evals.meaningful_program": "2.2.1",
+      "evals.scoring": "v12",
+      "model.twotower": "v77"
+    },
+    "stamped_at": "2026-07-21T04:04:30.552844+00:00"
+  }
+}

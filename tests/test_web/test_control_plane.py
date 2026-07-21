@@ -2052,6 +2052,34 @@ def test_e637_confirmed_runs_persist_without_new_checkpoints(tmp_path: Path) -> 
     assert checkpoints.isdisjoint(run_ids)
 
 
+def test_e639_inconclusive_run_persists_without_new_checkpoint(
+    tmp_path: Path,
+) -> None:
+    """E639's Gallery positive-role-select lever is default-off, unit-tested,
+    and structurally incapable of firing for non-ImageGallery families -- but
+    real-generation evidence was inconclusive because this session's freshly
+    retrained checkpoint never emitted ImageGallery, so control and treatment
+    are byte-identical. Both arms must still persist as committed evidence."""
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    expected = {
+        "e639-gallery-role-select-treatment-r3": 0.3833333333333333,
+        "e639-gallery-role-select-control-r3": 0.3833333333333333,
+    }
+    for run_id, fidelity in expected.items():
+        run = readers.run(run_id)
+        assert run["provenance"] == "committed"
+        suite = run["scoreboard"]["suites"]["ood"]
+        assert suite["placeholder_fidelity"] == fidelity
+        assert suite["structural_similarity"] == 0.09
+        assert run["scoreboard"]["agentv"]["passed"] == 0
+    checkpoints = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert checkpoints.isdisjoint(expected)
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

@@ -377,6 +377,9 @@ def _effective_evaluation_policy(
         "slot_coverage_close_decode_weight": float(
             value("slot_coverage_close_decode_weight") or 0.0
         ),
+        "gallery_role_select_decode_weight": float(
+            value("gallery_role_select_decode_weight") or 0.0
+        ),
         "schema_value_decode_weight": float(
             value("schema_value_decode_weight") or 0.0
         ),

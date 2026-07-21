@@ -4396,3 +4396,30 @@ Evidence:
 [iter-e637-nested-family-accounting-20260720.md](iter-e637-nested-family-accounting-20260720.md),
 [authoritative r2 JSON](iter-e637-nested-family-accounting-20260720.json), and
 [r1 JSON](iter-e637-nested-family-accounting-r1-20260720.json).
+
+## E639 Gallery positive role-select
+
+E639 adds `_gallery_role_select_bias`, a default-off, ImageGallery-only lever
+that positively raises a missing role-compatible sibling component instead of
+(as an unmerged E638 tried and rejected) blocking semantic-plan root closure
+until every visible slot is covered. It is structurally incapable of firing
+for any family other than ImageGallery. The original E620 checkpoint reused
+by E637/E638 was unavailable in this session, so E620's exact scratch recipe
+was retrained fresh (sha256 `0dc6a4c4...`, loss 4.068013, essentially matching
+E620's 4.068010). The fresh checkpoint's control arm does not reproduce
+E637's OOD baseline (fidelity 0.675 to 0.3833, structure 0.581675 to 0.09,
+strict v2 0.5 to 0.0) — it never selects `ImageGallery` for `ood_gallery_01`
+at all (`Image(...)` instead), across three progressively fuller eval-flag
+recipes, all deterministic and byte-identical. Because the lever's
+precondition (an ImageGallery sibling already open) is never satisfied,
+treatment is byte-identical to control across 3 treatment and 2 control
+repeat runs — `gallery_role_select_applications` is measured-zero on every
+run. Modal, Auth, and Dashboard are provably untouched, but Gallery itself
+was never exercised. Inconclusive; retain v77 default-off (confirmed
+behaviorally inert versus v76/v75); no checkpoint synced or promoted; four
+new unit tests cover the lever's gating in isolation.
+
+Evidence:
+[iter-e639-gallery-role-select-20260721.md](iter-e639-gallery-role-select-20260721.md),
+[authoritative treatment JSON](iter-e639-gallery-role-select-20260721.json), and
+[control JSON](iter-e639-gallery-role-select-control-20260721.json).

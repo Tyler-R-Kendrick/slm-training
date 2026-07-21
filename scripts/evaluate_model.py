@@ -212,6 +212,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Prefer role-compatible visible-slot coverage before legal frame closure.",
     )
     parser.add_argument(
+        "--gallery-role-select-decode-weight",
+        type=float,
+        default=None,
+        help=(
+            "E639: positively select a missing role-compatible sibling "
+            "component for ImageGallery only; never fires for other families."
+        ),
+    )
+    parser.add_argument(
         "--schema-value-decode-weight",
         type=float,
         default=None,
@@ -621,6 +630,7 @@ def main(argv: list[str] | None = None) -> int:
         semantic_role_decode_weight=args.semantic_role_decode_weight,
         semantic_role_schema_candidates=args.semantic_role_schema_candidates,
         slot_coverage_close_decode_weight=args.slot_coverage_close_decode_weight,
+        gallery_role_select_decode_weight=args.gallery_role_select_decode_weight,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,

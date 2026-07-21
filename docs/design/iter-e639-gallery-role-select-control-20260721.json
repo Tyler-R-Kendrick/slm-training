@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "e639-gallery-role-select-control-r3",
+  "experiment_id": "E639",
+  "date_utc": "2026-07-21",
+  "status": "completed_inconclusive_checkpoint_divergence",
+  "run_class": "scratch_matrix",
+  "checkpoint": {"run_id": "e639-gallery-role-select-checkpoint-20260721", "sha256": "0dc6a4c411e2dbc0d86c4391d8f2f64b6ef1cf3911a91acda8e42131f0ea3927", "reused": false, "created": true, "synced": false, "promoted": false},
+  "suites": {"ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "binding_aware_meaningful_v2_rate_strict": 0.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 0.3833333333333333, "placeholder_validity": 0.63, "structural_similarity": 0.09, "component_type_recall": 0.08333333333333333, "reward_score": 0.722, "ast_node_f1": 0.1, "ast_edge_f1": 0.0, "latency_ms_p50": 7766.93, "latency_ms_p95": 15241.3, "decode_timeout_count": 0, "fallback_count": 0}},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "decision": "Control arm (gallery_role_select_decode_weight=0.0, the default). Confirmed byte-identically by r4. Does NOT reproduce E637's OOD baseline (fidelity 0.675 -> 0.383, structural_similarity 0.581675 -> 0.09) because this session's freshly retrained checkpoint diverges from E620's original -- see docs/design/iter-e639-gallery-role-select-20260721.json#control_sanity_check.",
+  "ship_gate_result": "fail",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "e7e65c67389fb680e38aebb77416061a105995b9", "code_dirty": true, "components": {"harness.model_build.eval": "v33", "evals.meaningful_program": "2.2.1", "evals.scoring": "v12", "model.twotower": "v77"}, "stamped_at": "2026-07-21T03:57:52.885150+00:00"}
+}

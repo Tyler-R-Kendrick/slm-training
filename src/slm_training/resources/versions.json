@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v32",
+      "version": "v33",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v33",
+          "date": "2026-07-21",
+          "note": "E639: add --gallery-role-select-decode-weight CLI override and evaluation_policy field for the default-off ImageGallery-only sibling-selection lever"
+        },
         {
           "version": "v32",
           "date": "2026-07-20",
@@ -1512,7 +1517,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v76",
+      "version": "v77",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1527,6 +1532,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v77",
+          "date": "2026-07-21",
+          "note": "E639: add gallery_role_select_decode_weight, a default-off lever that positively selects a missing role-compatible ImageGallery sibling (never blocking closure, unlike E638's rejected blanket root-coverage gate) and is structurally gated to only fire once an ImageGallery family has already been emitted, so Modal/Auth/Dashboard cannot be touched; kept default-off and unverified on real generation after a freshly retrained scratch checkpoint diverged from E637's reused checkpoint and never selected ImageGallery, so the lever's precondition never fired (control and treatment predictions were byte-identical)"
+        },
         {
           "version": "v76",
           "date": "2026-07-21",

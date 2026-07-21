@@ -46,6 +46,8 @@ class DecodeStats:
     slot_component_choice_changes: int = 0
     slot_coverage_close_applications: int = 0
     slot_coverage_close_choice_changes: int = 0
+    gallery_role_select_applications: int = 0
+    gallery_role_select_choice_changes: int = 0
     visible_reference_applications: int = 0
     visible_reference_choice_changes: int = 0
     root_reference_arity_applications: int = 0
@@ -236,6 +238,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "slot_component_choice_changes",
         "slot_coverage_close_applications",
         "slot_coverage_close_choice_changes",
+        "gallery_role_select_applications",
+        "gallery_role_select_choice_changes",
         "visible_reference_applications",
         "visible_reference_choice_changes",
         "root_reference_arity_applications",

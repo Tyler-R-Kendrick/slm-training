@@ -254,6 +254,10 @@ class TwoTowerConfig:
     semantic_role_decode_weight: float = 0.0
     semantic_role_schema_candidates: bool = False
     slot_coverage_close_decode_weight: float = 0.0
+    # E639: positively select a missing role-compatible sibling component for
+    # ImageGallery only. Structurally incapable of firing for any other
+    # family (see `_gallery_role_select_bias`). Default 0.0 == off.
+    gallery_role_select_decode_weight: float = 0.0
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
     schema_opaque_decode_weight: float = 0.0
@@ -5234,6 +5238,100 @@ class TwoTowerModel(nn.Module):
         )
         return bias
 
+    def _gallery_role_select_bias(
+        self,
+        state: Any,
+        prefix: list[int] | None,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+        slot_contract: list[str] | None,
+        semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
+    ) -> torch.Tensor | None:
+        """E639: positively select a missing role-compatible ImageGallery sibling.
+
+        E638 found that a *blanket* gate forbidding semantic-plan root
+        closure until every visible slot is covered collapses Gallery
+        (ImageGallery's 3 slots disappear entirely) because refusing to
+        close does not supply a structurally compatible next family. This
+        lever does the opposite: it never touches the array's own close
+        bias, it only raises the score of a *specific* missing
+        role-compatible sibling component (e.g. the hint TextContent) when
+        one is legally available, so the array can still close normally if
+        no compatible sibling exists.
+
+        Narrowly scoped and structurally incapable of firing for any family
+        other than ImageGallery: it requires (a) the active frame to be the
+        array directly owned by the root Stack, and (b) an ImageGallery
+        component to have already been emitted in this prediction. Modal,
+        Auth, and Dashboard fixtures never emit ImageGallery, so this bias
+        is always ``None`` for them regardless of weight.
+        """
+        weight = float(
+            getattr(self.config, "gallery_role_select_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not slot_contract or not semantic_role_candidates:
+            return None
+        if len(frames) < 2:
+            return None
+        frame = frames[-1]
+        owner = frames[-2]
+        if (
+            getattr(frame, "kind", None) != "variadic"
+            or getattr(frame, "expr_type", None) != "array"
+            or getattr(owner, "kind", None) != "component"
+            or getattr(owner, "expr_type", None) != "element:Stack"
+        ):
+            return None
+        prefix = list(prefix) if prefix is not None else []
+        gallery_emitted = any(
+            str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            .removeprefix("COMP:")
+            .removeprefix("+")
+            == "ImageGallery"
+            for token_id in prefix
+        ) or any(
+            str(expr_type).removeprefix("element:") == "ImageGallery"
+            for expr_type in getattr(state, "section_types", ())
+        )
+        if not gallery_emitted:
+            return None
+        try:
+            missing = tuple(
+                (index, slot)
+                for index, slot in enumerate(slot_contract)
+                if int(self.tokenizer.sym_id(index)) not in prefix
+            )
+        except (AttributeError, KeyError, ValueError):
+            return None
+        if not missing:
+            return None
+
+        from slm_training.dsl.production_codec import OPEN_PREFIX
+
+        targets: list[int] = []
+        for position, token_id in enumerate(candidate_ids):
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            if not token.startswith(OPEN_PREFIX):
+                continue
+            family = token[len(OPEN_PREFIX) :]
+            if family == "ImageGallery":
+                continue
+            if any(
+                family in semantic_role_candidates.get(slot, ())
+                for _index, slot in missing
+            ):
+                targets.append(position)
+        if not targets:
+            return None
+        target = max(targets, key=lambda position: float(scores[position].item()))
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[target] = max(
+            0.0,
+            float(scores.max().item()) + weight - float(scores[target].item()),
+        )
+        return bias
+
     def _record_slot_coverage_close_trace(
         self,
         stats: DecodeStats,
@@ -7403,6 +7501,32 @@ class TwoTowerModel(nn.Module):
                                         else None
                                     ),
                                 )
+                            )
+                    gallery_role_select_bias = self._gallery_role_select_bias(
+                        states[row],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        scores,
+                        (
+                            self._slot_contracts[row]
+                            if self._slot_contracts and row < len(self._slot_contracts)
+                            else None
+                        ),
+                        (
+                            self._semantic_role_candidates[row]
+                            if self._semantic_role_candidates
+                            and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
+                    )
+                    if gallery_role_select_bias is not None:
+                        before_gallery_role_select = int(scores.argmax().item())
+                        scores = scores + gallery_role_select_bias
+                        if stats is not None:
+                            stats.gallery_role_select_applications += 1
+                            stats.gallery_role_select_choice_changes += int(
+                                int(scores.argmax().item())
+                                != before_gallery_role_select
                             )
                     repeated_array_close_bias = (
                         self._semantic_plan_repeated_array_close_bias(
