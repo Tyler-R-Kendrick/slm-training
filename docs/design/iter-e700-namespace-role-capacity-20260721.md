@@ -35,3 +35,8 @@ not merely assign another family in the plan. No checkpoint was created,
 synced, or promoted.
 
 Evidence: [JSON](iter-e700-namespace-role-capacity-20260721.json).
+
+Correction (E701): E700's focused test seeded Callout in the initial family
+counts, while production introduces it during joint-role planning and then takes
+the reachable-binding branch. E700 r3 was therefore a runtime no-op, not proof
+that the corrected carrier count reached decoding. E701 exercises that real path.

@@ -1836,6 +1836,68 @@ def test_role_obligations_disambiguate_visible_role_with_public_enum() -> None:
     }
 
 
+def test_role_obligations_replace_exhausted_joint_carrier() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Button": 1, "Stack": 1}),
+        {
+            ":held.form.title": (
+                "Callout", "CardHeader", "Label", "Modal", "StepsItem",
+                "Tag", "TextCallout", "TextContent",
+            ),
+            ":held.form.email": (
+                "CheckBoxGroup", "DatePicker", "Input", "RadioGroup",
+                "Select", "Slider", "TextArea",
+            ),
+            ":held.form.hint.title": (
+                "Callout", "CardHeader", "Label", "Modal", "StepsItem",
+                "Tag", "TextCallout", "TextContent",
+            ),
+            ":held.form.hint.body": (
+                "Callout", "CheckBoxItem", "Label", "RadioItem",
+                "SwitchItem", "Tag", "TextCallout", "TextContent",
+            ),
+            ":held.form.submit": (
+                "Button", "CheckBoxItem", "Col", "FormControl", "RadioItem",
+                "SelectItem", "Slider", "SwitchItem",
+            ),
+        },
+        {
+            ":held.form.title": ("Callout", "TextContent"),
+            ":held.form.email": (),
+            ":held.form.hint.title": ("Callout", "TextContent"),
+            ":held.form.hint.body": ("Callout", "TextContent"),
+            ":held.form.submit": ("Button",),
+        },
+    )
+
+    assert counts == Counter(
+        {"Button": 1, "Callout": 1, "Input": 1, "Stack": 1, "TextContent": 1}
+    )
+    assert bindings == {
+        "Button": (":held.form.submit",),
+        "Callout": (":held.form.hint.body", ":held.form.hint.title"),
+        "Input": (":held.form.email",),
+        "TextContent": (":held.form.title",),
+    }
+
+
+def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Button": 1, "Input": 2}),
+        {
+            ":auth.name": ("CheckBoxItem", "Input"),
+            ":auth.email": ("Input",),
+            ":auth.create": ("Button", "CheckBoxItem"),
+        },
+    )
+
+    assert counts == Counter({"Button": 1, "Input": 2, "CheckBoxItem": 1})
+    assert bindings == {
+        "CheckBoxItem": (":auth.create", ":auth.name"),
+        "Input": (":auth.email",),
+    }
+
+
 def test_role_obligations_disambiguate_children_from_planned_parent_schema() -> None:
     from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.lang_core import library_schema

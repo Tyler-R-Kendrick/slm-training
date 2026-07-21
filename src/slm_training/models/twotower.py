@@ -5153,6 +5153,46 @@ class TwoTowerModel(nn.Module):
         )
 
     @staticmethod
+    def _semantic_role_family_has_capacity(
+        family: str, slots: tuple[str, ...], instances: int
+    ) -> bool:
+        """Return whether instances have distinct compatible public strings."""
+        from slm_training.data.quality import semantic_role_properties
+        from slm_training.dsl.lang_core import library_schema
+
+        definition = library_schema().get("$defs", {}).get(family, {})
+        string_properties = {
+            name
+            for name, schema in (definition.get("properties") or {}).items()
+            if isinstance(schema, dict) and schema.get("type") == "string"
+        }
+        if not string_properties:
+            return True
+        properties_by_slot = semantic_role_properties(list(slots))
+        if any(
+            not string_properties.intersection(properties_by_slot.get(slot, ()))
+            for slot in slots
+        ):
+            return True
+        available = tuple(
+            property_name
+            for _instance in range(max(0, instances))
+            for property_name in sorted(string_properties)
+        )
+
+        def match(index: int, used: frozenset[int]) -> bool:
+            if index == len(slots):
+                return True
+            return any(
+                match(index + 1, used | {position})
+                for position, property_name in enumerate(available)
+                if position not in used
+                and property_name in properties_by_slot.get(slots[index], ())
+            )
+
+        return match(0, frozenset())
+
+    @staticmethod
     def _semantic_plan_role_obligations(
         family_counts: Counter[str],
         role_candidates: dict[str, tuple[str, ...]] | None,
@@ -5203,8 +5243,24 @@ class TwoTowerModel(nn.Module):
                     preferred
                     for preferred in DEFAULT_HOUSE_STYLE.preferred_components
                     if preferred in planned and preferred in candidates
+                    and TwoTowerModel._semantic_role_family_has_capacity(
+                        preferred,
+                        (*bindings[preferred], slot),
+                        completed[preferred],
+                    )
                 ),
-                next(iter(sorted(planned.intersection(candidates))), None),
+                next(
+                    (
+                        family
+                        for family in sorted(planned.intersection(candidates))
+                        if TwoTowerModel._semantic_role_family_has_capacity(
+                            family,
+                            (*bindings[family], slot),
+                            completed[family],
+                        )
+                    ),
+                    None,
+                ),
             )
             if planned_family is not None:
                 bindings[planned_family].append(slot)
@@ -5221,6 +5277,18 @@ class TwoTowerModel(nn.Module):
                     None,
                 )
                 if family is not None:
+                    exhausted_direct = any(
+                        direct in planned
+                        and not TwoTowerModel._semantic_role_family_has_capacity(
+                            direct,
+                            (*bindings[direct], slot),
+                            completed[direct],
+                        )
+                        for direct in candidates
+                    )
+                    if exhausted_direct and family not in schema_descendants:
+                        completed[family] += 1
+                        planned.add(family)
                     bindings[family].append(slot)
                     continue
             nested_candidates = tuple(

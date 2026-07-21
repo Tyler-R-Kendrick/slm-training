@@ -5193,3 +5193,18 @@ aggregation. AgentV is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e700-namespace-role-capacity-20260721.md) and
 [JSON](iter-e700-namespace-role-capacity-20260721.json).
+
+## E701 schema-aware role capacity
+
+E701 corrects E700's narrow-test/runtime gap and evaluates a matched five-suite
+v167 control against v171 (`n=19` each). V171 counts a replacement carrier only
+for an exhausted directly compatible planned carrier, abstains for roles without
+direct property matches, and preserves typed-container descendants. Held-out
+strict rises 0.80→1.00 and every tracked Held-out quality metric improves; all
+tracked quality metrics on Smoke, adversarial, OOD, and Rico are identical to
+control. Retain v171 as scratch quality evidence, not ship: AgentV is 0/5 and
+the Rico 190-token p95 requirement exceeds the 160-token canvas. No checkpoint
+was created or synced.
+
+Evidence: [narrative](iter-e701-schema-aware-role-capacity-20260721.md) and
+[JSON](iter-e701-schema-aware-role-capacity-20260721.json).

@@ -3493,7 +3493,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v167",
+      "version": "v171",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3512,6 +3512,26 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v171",
+          "date": "2026-07-21",
+          "note": "E701 r6: abstain from capacity when roles lack direct property matches and preserve carriers under explicitly typed container descendants"
+        },
+        {
+          "version": "v170",
+          "date": "2026-07-21",
+          "note": "E701 r5: materialize a replacement role carrier only when a directly compatible planned carrier is capacity-exhausted, preserving ordinary nested reachability"
+        },
+        {
+          "version": "v169",
+          "date": "2026-07-21",
+          "note": "E701 r2: materialize enough counted instances for reachable role carriers instead of leaving their bindings advisory"
+        },
+        {
+          "version": "v168",
+          "date": "2026-07-21",
+          "note": "E701: enforce distinct compatible string-property capacity for jointly introduced role carriers and cover the actual broad Form candidate set"
+        },
         {
           "version": "v167",
           "date": "2026-07-21",
