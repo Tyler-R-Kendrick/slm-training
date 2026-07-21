@@ -5316,3 +5316,17 @@ checkpoint was created or synced.
 
 Evidence: [narrative](iter-e709-final-schema-value-margin-20260721.md) and
 [JSON](iter-e709-final-schema-value-margin-20260721.json).
+
+## E710 role-binding negative margin
+
+E710 tested final typed role-binding negative margins. The first OOD diagnostic
+raised strict meaningfulness 0.50→0.75, but the five-suite guardrail regressed
+held-out strict 1.0→0.8 and fidelity 1.0→0.96. A narrower component-only replay
+kept the held-out loss, returned OOD to 0.5, and introduced duplicate-slot spam.
+Reject and fully revert the code lever. The evidence points upstream to semantic-
+plan component capacity: do not add a component whose required string properties
+cannot all be satisfied by its assigned roles. No checkpoint was created or
+synced.
+
+Evidence: [narrative](iter-e710-role-binding-negative-margin-20260721.md) and
+[JSON](iter-e710-role-binding-negative-margin-20260721.json).
