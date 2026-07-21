@@ -388,6 +388,15 @@ _LAZY_SLM191_EXPORTS = {
     "validate_slm191_manifest": "validate_manifest",
 }
 
+_LAZY_SLM262_EXPORTS = {
+    "SLM262_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM262_MATRIX_SET": "MATRIX_SET",
+    "SLM262_MATRIX_VERSION": "MATRIX_VERSION",
+    "AcceleratorRunManifestV1": "AcceleratorRunManifestV1",
+    "build_slm262_default_manifest": "build_default_manifest",
+    "run_slm262_local_smoke": "run_local_smoke",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -438,6 +447,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm191_termination_matrix
 
         value = getattr(slm191_termination_matrix, _LAZY_SLM191_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM262_EXPORTS:
+        from slm_training.harnesses.experiments import slm262_gpu_reference
+
+        value = getattr(slm262_gpu_reference, _LAZY_SLM262_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -563,6 +578,12 @@ __all__ = [
     "run_slm191_fixture",
     "render_slm191_markdown",
     "validate_slm191_manifest",
+    "SLM262_EXPERIMENT_ID",
+    "SLM262_MATRIX_SET",
+    "SLM262_MATRIX_VERSION",
+    "AcceleratorRunManifestV1",
+    "build_slm262_default_manifest",
+    "run_slm262_local_smoke",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
