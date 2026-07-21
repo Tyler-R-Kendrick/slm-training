@@ -19,6 +19,16 @@ def test_vercel_entrypoint_points_to_a_module_file() -> None:
     assert root.joinpath(*module.split(".")).with_suffix(".py").is_file()
 
 
+def test_vercel_entrypoint_dependencies_include_openfeature_runtime() -> None:
+    root = Path(__file__).parents[2]
+    config = tomllib.loads((root / "pyproject.toml").read_text())
+
+    assert any(
+        dependency.startswith("openfeature-sdk")
+        for dependency in config["project"]["dependencies"]
+    )
+
+
 def test_api_index_exports_fastapi_app() -> None:
     from slm_training.web.vercel import app
 
