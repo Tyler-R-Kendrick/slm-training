@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -22,6 +22,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-07-21",
+          "note": "E675: expose default-off schema open-property decode margin in evaluation policy and evidence"
+        },
         {
           "version": "v33",
           "date": "2026-07-21",
@@ -1544,7 +1549,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v131",
+      "version": "v132",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1559,6 +1564,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v132",
+          "date": "2026-07-21",
+          "note": "E675: prefer true at a boolean open property only for the actively authored component family"
+        },
         {
           "version": "v131",
           "date": "2026-07-21",

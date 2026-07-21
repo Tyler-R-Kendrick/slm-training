@@ -256,6 +256,7 @@ class TwoTowerConfig:
     slot_coverage_close_decode_weight: float = 0.0
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
+    schema_open_decode_weight: float = 0.0
     schema_opaque_decode_weight: float = 0.0
     schema_opaque_close_decode_weight: float = 0.0
     schema_role_slot_decode_weight: float = 0.0
@@ -5039,6 +5040,58 @@ class TwoTowerModel(nn.Module):
         bias[candidate_ids.index(close_id)] = weight
         return bias
 
+    def _schema_open_bias(
+        self,
+        row: int,
+        state: Any,
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+    ) -> torch.Tensor | None:
+        """Prefer a visible authored component's boolean ``open`` property."""
+        weight = float(
+            getattr(self.config, "schema_open_decode_weight", 0.0) or 0.0
+        )
+        frames = list(getattr(state, "frames", ()))
+        if weight <= 0.0 or not frames:
+            return None
+        frame = frames[-1]
+        schemas = tuple(getattr(frame, "schemas", ()))
+        property_names = tuple(getattr(frame, "property_names", ()))
+        index = int(getattr(frame, "arg_index", -1))
+        family = str(getattr(frame, "expr_type", "")).removeprefix("element:")
+        owner_id = self._semantic_plan_owner_id(row, state)
+        family_ids = {
+            token_id
+            for token_id in (
+                self.tokenizer.token_to_id.get(f"+{family}"),
+                self.tokenizer.token_to_id.get(f"COMP:{family}"),
+                self.tokenizer.token_to_id.get(family),
+            )
+            if token_id is not None
+        }
+        if (
+            getattr(frame, "kind", None) != "component"
+            or not (0 <= index < len(schemas) and index < len(property_names))
+            or property_names[index] != "open"
+            or schemas[index].get("type") != "boolean"
+            or owner_id not in family_ids
+        ):
+            return None
+        true_id = self.tokenizer.token_to_id.get("#true")
+        false_id = self.tokenizer.token_to_id.get("#false")
+        if true_id not in candidate_ids or false_id not in candidate_ids:
+            return None
+        true_position = candidate_ids.index(true_id)
+        false_position = candidate_ids.index(false_id)
+        bias = scores.new_zeros(len(candidate_ids))
+        bias[true_position] = max(
+            0.0,
+            float(scores[false_position].item())
+            + weight
+            - float(scores[true_position].item()),
+        )
+        return bias
+
     def _schema_opaque_close_bias(
         self,
         state: Any,
@@ -7585,6 +7638,11 @@ class TwoTowerModel(nn.Module):
                     )
                     if schema_enum_close_bias is not None:
                         scores = scores + schema_enum_close_bias
+                    schema_open_bias = self._schema_open_bias(
+                        row, states[row], candidate_ids, scores
+                    )
+                    if schema_open_bias is not None:
+                        scores = scores + schema_open_bias
                     schema_opaque_bias = self._schema_opaque_bias(
                         states[row], candidate_ids, scores
                     )

@@ -383,6 +383,9 @@ def _effective_evaluation_policy(
         "schema_enum_close_decode_weight": float(
             value("schema_enum_close_decode_weight") or 0.0
         ),
+        "schema_open_decode_weight": float(
+            value("schema_open_decode_weight") or 0.0
+        ),
         "schema_opaque_decode_weight": float(
             value("schema_opaque_decode_weight") or 0.0
         ),

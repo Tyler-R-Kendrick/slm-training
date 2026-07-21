@@ -771,6 +771,7 @@ class ChoiceDecodeState:
                     close=CLOSE,
                     schemas=schemas,
                     required_args=required_args,
+                    property_names=tuple(_prop_order().get(component, ())),
                 )
             )
             return True

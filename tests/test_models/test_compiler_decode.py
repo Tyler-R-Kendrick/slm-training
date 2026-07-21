@@ -432,7 +432,6 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
     assert bias is not None
     assert bias.tolist() == [7.0, 0.0]
 
-
 def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     from types import SimpleNamespace
 
@@ -463,7 +462,6 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
 
     assert bias is not None
     assert bias.tolist() == [7.0, 0.0]
-
 
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
     from types import SimpleNamespace
@@ -1098,6 +1096,49 @@ def test_schema_slot_reachability_resolves_public_component_refs() -> None:
     item_schema = carousel["properties"]["children"]["items"]["items"]
 
     assert TwoTowerModel._schema_can_reach_visible_slot(item_schema)
+
+
+def test_schema_open_bias_prefers_true_for_authored_visible_component() -> None:
+    from types import SimpleNamespace
+
+    model = _model(output_tokenizer="choice", schema_open_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    modal_id = tokenizer.token_to_id["+Modal"]
+    true_id = tokenizer.token_to_id["#true"]
+    false_id = tokenizer.token_to_id["#false"]
+    model._semantic_plan_action_counts = [{modal_id: 1}]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(
+                kind="component",
+                expr_type="element:Modal",
+                arg_index=1,
+                schemas=({"type": "string"}, {"type": "boolean"}),
+                property_names=("title", "open"),
+            )
+        ]
+    )
+
+    bias = model._schema_open_bias(
+        0,
+        state,
+        (true_id, false_id),
+        torch.tensor([1.0, 6.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [7.0, 0.0]
+
+    model._semantic_plan_action_counts = [{}]
+    assert (
+        model._schema_open_bias(
+            0,
+            state,
+            (true_id, false_id),
+            torch.tensor([1.0, 6.0]),
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize(

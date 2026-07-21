@@ -233,6 +233,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Prefer legal closure at optional enum-valued arguments.",
     )
     parser.add_argument(
+        "--schema-open-decode-weight",
+        type=float,
+        default=None,
+        help="Prefer true for a prompt-authored component's boolean open property.",
+    )
+    parser.add_argument(
         "--schema-opaque-close-decode-weight",
         type=float,
         default=None,
@@ -671,6 +677,7 @@ def main(argv: list[str] | None = None) -> int:
         slot_coverage_close_decode_weight=args.slot_coverage_close_decode_weight,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
+        schema_open_decode_weight=args.schema_open_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
         schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,

@@ -284,6 +284,7 @@ class ModelBuildConfig:
     slot_coverage_close_decode_weight: float | None = None
     schema_value_decode_weight: float | None = None
     schema_enum_close_decode_weight: float | None = None
+    schema_open_decode_weight: float | None = None
     schema_opaque_decode_weight: float | None = None
     schema_opaque_close_decode_weight: float | None = None
     schema_role_slot_decode_weight: float | None = None
