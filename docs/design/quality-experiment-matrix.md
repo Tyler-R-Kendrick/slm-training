@@ -5030,3 +5030,18 @@ checkpoint was created or synced; AgentV remained 0/1.
 Evidence:
 [iter-e646-root-slot-references-20260720.md](iter-e646-root-slot-references-20260720.md)
 and [JSON](iter-e646-root-slot-references-20260720.json).
+
+## E647 visible-role semantic-plan completion
+
+E647 added house-style-preferred schema-compatible families for visible roles
+that no prompt-planned family could own. Fidelity rose from 0.6750 to 0.7583 and
+reward from 0.8545 to 0.8840, but strict v2 fell from 2/4 to 1/4, structure
+regressed, and p95 more than doubled. Reject the treatment stamped v82. After
+rebasing onto E646 restoration v85, the append-only lineage records E647 as
+treatment v86 and restoration v87. Future inference must bind a family to a
+specific uncovered slot instead of adding family cardinality alone. No
+checkpoint was created or synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e647-role-plan-completion-20260720.md](iter-e647-role-plan-completion-20260720.md)
+and [JSON](iter-e647-role-plan-completion-20260720.json).
