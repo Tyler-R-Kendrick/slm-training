@@ -21,6 +21,8 @@ from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
 from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
+    migrate_recursive_depth_aux_config,
+    resolve_recursive_depth_aux_mode,
     validate_recursive_depth_supervision,
 )
 
@@ -446,7 +448,18 @@ def test_training_loss_fails_closed_on_length_mismatch() -> None:
 
 def test_empty_tuple_valid_on_every_architecture_no_aux_term() -> None:
     """Empty tuple stays feature-off on both stacked and shared_recursive,
-    adding no auxiliary term or per-depth telemetry."""
+    adding no per-depth telemetry.
+
+    SLM-238 (RSC-A02) changed the *disabled* aux term's telemetry contract:
+    ``recursive_depth_supervision_loss`` (and the sibling
+    ``recursive_intermediate_aux_loss`` /
+    ``recursive_final_depth_aux_contribution`` / ``combined_training_loss``
+    fields) are now always present with an explicit ``0.0`` rather than
+    omitted, so a disabled run is distinguishable from a missing-metrics bug
+    (test #4 of SLM-238's required tests). Per-depth keys
+    (``recursive_depth_loss_{d}`` etc.) remain absent -- no depths were ever
+    looped over.
+    """
     records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
 
     stacked = TwoTowerModel.from_records(
@@ -464,7 +477,7 @@ def test_empty_tuple_valid_on_every_architecture_no_aux_term() -> None:
     )
     stacked.training_loss(records)
     assert stacked.last_training_metrics["recursive_depth_supervision_enabled"] is False
-    assert "recursive_depth_supervision_loss" not in stacked.last_training_metrics
+    assert stacked.last_training_metrics["recursive_depth_supervision_loss"] == 0.0
     assert "recursive_depth_loss_0" not in stacked.last_training_metrics
 
     recursive, _ = _recursive_model_for_weights(())
@@ -472,7 +485,7 @@ def test_empty_tuple_valid_on_every_architecture_no_aux_term() -> None:
     assert (
         recursive.last_training_metrics["recursive_depth_supervision_enabled"] is False
     )
-    assert "recursive_depth_supervision_loss" not in recursive.last_training_metrics
+    assert recursive.last_training_metrics["recursive_depth_supervision_loss"] == 0.0
     assert "recursive_depth_loss_0" not in recursive.last_training_metrics
 
 
@@ -528,3 +541,295 @@ def test_fixture_metrics_agree_with_manual_calculation() -> None:
     assert metrics["recursive_depth_supervision_loss"] != pytest.approx(
         defective, rel=1e-9
     ) or math.isclose(metrics["recursive_depth_loss_0"], metrics["recursive_depth_loss_1"])
+
+
+# ---------------------------------------------------------------------------
+# SLM-238 (RSC-A02): explicit final-depth double-counting semantics --
+# recursive_depth_aux_mode / recursive_depth_aux_weight and the objective
+# decomposition (primary_final_reconstruction_loss,
+# recursive_intermediate_aux_loss, recursive_final_depth_aux_contribution,
+# combined_training_loss).
+# ---------------------------------------------------------------------------
+
+
+def _recursive_model_for_mode(
+    *,
+    mode: str | None,
+    weights: tuple[float, ...],
+    aux_weight: float = 1.0,
+    recursive_steps: int = 3,
+    seed: int = 0,
+) -> tuple[TwoTowerModel, list[ExampleRecord]]:
+    """Fresh shared_recursive model + fixed single-record batch for a given
+    ``recursive_depth_aux_mode``/``recursive_depth_aux_weight``. Same
+    same-seed-rebuild rationale as ``_recursive_model_for_weights``: the raw
+    per-depth losses are bit-identical across mode/weight configs of the same
+    ``recursive_steps``, so only the aggregation differs."""
+    records = [
+        ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train"),
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=2,
+            denoiser_arch="shared_recursive",
+            recursive_steps=recursive_steps,
+            recursive_transition_layers=2,
+            recursive_depth_supervision_weights=weights,
+            recursive_depth_aux_mode=mode,
+            recursive_depth_aux_weight=aux_weight,
+            grammar_constrained=False,
+            fidelity_loss_weight=0.0,
+            seed=seed,
+        ),
+        device="cpu",
+    )
+    return model, records
+
+
+def test_intermediate_only_never_reads_final_depth_aux_path() -> None:
+    """Test #1: intermediate_only never reads or differentiates through the
+    final depth's auxiliary path -- structurally, not just via a zero
+    weight."""
+    model, records = _recursive_model_for_mode(
+        mode="intermediate_only", weights=(0.5, 1.0), recursive_steps=3
+    )
+    model.training_loss(records)
+    metrics = model.last_training_metrics
+    assert metrics["recursive_depth_aux_mode"] == "intermediate_only"
+    # Depths 0 and 1 (0..R-2) are eligible and computed...
+    assert "recursive_depth_loss_0" in metrics
+    assert "recursive_depth_loss_1" in metrics
+    # ...but depth 2 (R-1, the final depth) is never indexed at all.
+    assert "recursive_depth_loss_2" not in metrics
+    assert "recursive_depth_weighted_contribution_2" not in metrics
+    assert metrics["recursive_final_depth_aux_contribution"] == 0.0
+
+
+def test_all_depths_includes_final_contribution_exactly_once() -> None:
+    """Test #2: all_depths includes the final depth's contribution exactly
+    once in the auxiliary term (on top of the primary term already reflecting
+    it once via depth_logits[-1] == logits)."""
+    model, records = _recursive_model_for_mode(
+        mode="all_depths", weights=(0.5, 1.0, 0.5), recursive_steps=3
+    )
+    model.training_loss(records)
+    metrics = model.last_training_metrics
+    assert metrics["recursive_depth_aux_mode"] == "all_depths"
+    assert "recursive_depth_loss_2" in metrics
+    final_contribution = metrics["recursive_depth_weighted_contribution_2"]
+    assert metrics["recursive_final_depth_aux_contribution"] == pytest.approx(
+        final_contribution, rel=1e-6
+    )
+    # Exactly once: intermediate + final reproduces the combined aux exactly.
+    assert metrics["recursive_intermediate_aux_loss"] + metrics[
+        "recursive_final_depth_aux_contribution"
+    ] == pytest.approx(metrics["recursive_depth_supervision_loss"], rel=1e-6)
+
+
+def test_primary_final_loss_identical_across_modes() -> None:
+    """Test #3: for fixed logits/targets (same seed/model config), the
+    primary final reconstruction loss does not depend on
+    recursive_depth_aux_mode."""
+    off_model, off_records = _recursive_model_for_mode(mode="off", weights=())
+    off_model.training_loss(off_records)
+    primary_off = off_model.last_training_metrics["primary_final_reconstruction_loss"]
+
+    inter_model, inter_records = _recursive_model_for_mode(
+        mode="intermediate_only", weights=(0.5, 1.0)
+    )
+    inter_model.training_loss(inter_records)
+    primary_inter = inter_model.last_training_metrics[
+        "primary_final_reconstruction_loss"
+    ]
+
+    all_model, all_records = _recursive_model_for_mode(
+        mode="all_depths", weights=(0.5, 1.0, 0.5)
+    )
+    all_model.training_loss(all_records)
+    primary_all = all_model.last_training_metrics["primary_final_reconstruction_loss"]
+
+    assert primary_off == pytest.approx(primary_inter, rel=1e-6)
+    assert primary_off == pytest.approx(primary_all, rel=1e-6)
+
+
+def test_aux_weight_zero_is_primary_only_with_explicit_zero_telemetry() -> None:
+    """Test #4: aux_weight=0 produces exact primary-only combined loss while
+    retaining an explicit zero telemetry record (not an omitted field)."""
+    model, records = _recursive_model_for_mode(
+        mode="all_depths", weights=(0.5, 1.0, 0.5), aux_weight=0.0
+    )
+    model.training_loss(records)
+    metrics = model.last_training_metrics
+    assert metrics["recursive_depth_aux_weight"] == 0.0
+    assert metrics["recursive_depth_supervision_loss"] == 0.0
+    assert metrics["recursive_intermediate_aux_loss"] == 0.0
+    assert metrics["recursive_final_depth_aux_contribution"] == 0.0
+    assert metrics["combined_training_loss"] == pytest.approx(
+        metrics["primary_final_reconstruction_loss"], rel=1e-6
+    )
+    # Explicit record, not an absent key.
+    assert "recursive_depth_supervision_loss" in metrics
+
+
+@pytest.mark.parametrize(
+    ("mode", "weights", "num_depths", "match"),
+    [
+        ("bogus_mode", (1.0,), 2, "not one of"),
+        ("off", (1.0,), 2, "requires an empty"),
+        ("intermediate_only", (1.0, 1.0), 2, "length"),
+        ("all_depths", (1.0,), 2, "length"),
+    ],
+)
+def test_invalid_mode_weight_combinations_raise(
+    mode: str, weights: tuple[float, ...], num_depths: int, match: str
+) -> None:
+    """Test #5: invalid mode/weight-length combinations raise."""
+    with pytest.raises(ValueError, match=match):
+        validate_recursive_depth_supervision(
+            weights=weights,
+            num_depths=num_depths,
+            supports_recursive_outputs=True,
+            mode=mode,
+        )
+
+
+def test_invalid_aux_weight_raises() -> None:
+    """Test #5 (coefficient half): non-finite/negative aux_weight raises."""
+    with pytest.raises(ValueError, match="not finite"):
+        validate_recursive_depth_supervision(
+            weights=(1.0, 1.0),
+            num_depths=2,
+            supports_recursive_outputs=True,
+            mode="all_depths",
+            aux_weight=float("nan"),
+        )
+    with pytest.raises(ValueError, match="negative"):
+        validate_recursive_depth_supervision(
+            weights=(1.0, 1.0),
+            num_depths=2,
+            supports_recursive_outputs=True,
+            mode="all_depths",
+            aux_weight=-0.5,
+        )
+
+
+def test_r1_intermediate_only_reduces_to_primary_only() -> None:
+    """Test #6: R=1 intermediate_only has no eligible depth (0..R-2 is
+    empty). Documented contract: an empty weights tuple reduces to
+    primary-only (rather than being rejected); a non-empty tuple still
+    raises the usual length-mismatch (0 expected, none eligible)."""
+    validated = validate_recursive_depth_supervision(
+        weights=(), num_depths=1, supports_recursive_outputs=True, mode="intermediate_only"
+    )
+    assert validated.enabled is False
+    assert validated.mode == "intermediate_only"
+
+    with pytest.raises(ValueError, match="length|requires 0"):
+        validate_recursive_depth_supervision(
+            weights=(1.0,),
+            num_depths=1,
+            supports_recursive_outputs=True,
+            mode="intermediate_only",
+        )
+
+    # End-to-end: R=1 shared_recursive model, intermediate_only, empty
+    # weights -- trains fine as primary-only, combined == primary.
+    model, records = _recursive_model_for_mode(
+        mode="intermediate_only", weights=(), recursive_steps=1
+    )
+    model.training_loss(records)
+    metrics = model.last_training_metrics
+    assert metrics["recursive_depth_supervision_enabled"] is False
+    assert metrics["combined_training_loss"] == pytest.approx(
+        metrics["primary_final_reconstruction_loss"], rel=1e-6
+    )
+
+
+def test_checkpoint_roundtrip_preserves_mode_and_coefficient(tmp_path: Path) -> None:
+    """Test #7: resume/checkpoint/config round-trip preserves
+    recursive_depth_aux_mode and recursive_depth_aux_weight."""
+    records = [ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=2,
+            denoiser_layers=2,
+            denoiser_arch="shared_recursive",
+            recursive_steps=3,
+            recursive_transition_layers=2,
+            recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_aux_mode="intermediate_only",
+            recursive_depth_aux_weight=0.3,
+            grammar_constrained=False,
+            seed=0,
+        ),
+        device="cpu",
+    )
+    ckpt = tmp_path / "rsc_a02.pt"
+    model.save(ckpt)
+    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    assert loaded.config.recursive_depth_aux_mode == "intermediate_only"
+    assert loaded.config.recursive_depth_aux_weight == pytest.approx(0.3)
+    assert loaded.config.recursive_depth_supervision_weights == (0.5, 1.0)
+
+
+def test_migrate_recursive_depth_aux_config_deterministic() -> None:
+    """Test #7 (migration half): a persisted config dict predating
+    recursive_depth_aux_mode migrates deterministically -- "off" when no
+    legacy weights were set, "legacy_all_depths" (reproduction-only) when
+    they were -- and is idempotent / non-mutating."""
+    empty_legacy = {"recursive_depth_supervision_weights": ()}
+    migrated_empty = migrate_recursive_depth_aux_config(empty_legacy)
+    assert migrated_empty["recursive_depth_aux_mode"] == "off"
+    assert migrated_empty["recursive_depth_aux_weight"] == 1.0
+    assert "recursive_depth_aux_mode" not in empty_legacy  # not mutated in place
+
+    nonempty_legacy = {"recursive_depth_supervision_weights": (0.5, 1.0)}
+    migrated_nonempty = migrate_recursive_depth_aux_config(nonempty_legacy)
+    assert migrated_nonempty["recursive_depth_aux_mode"] == "legacy_all_depths"
+    assert migrated_nonempty["recursive_depth_aux_weight"] == 1.0
+
+    already_migrated = {
+        "recursive_depth_supervision_weights": (1.0,),
+        "recursive_depth_aux_mode": "all_depths",
+        "recursive_depth_aux_weight": 0.7,
+    }
+    assert migrate_recursive_depth_aux_config(already_migrated) == already_migrated
+
+
+def test_resolve_recursive_depth_aux_mode_backward_compatible() -> None:
+    """``resolve_recursive_depth_aux_mode`` mirrors the migration policy for
+    in-memory (non-checkpoint) configs, e.g. TwoTowerConfig() built directly
+    in Python without ever touching the new field."""
+    assert resolve_recursive_depth_aux_mode(None, ()) == "off"
+    assert resolve_recursive_depth_aux_mode(None, (0.5, 1.0)) == "legacy_all_depths"
+    assert resolve_recursive_depth_aux_mode("all_depths", (0.5, 1.0)) == "all_depths"
+    assert resolve_recursive_depth_aux_mode("off", ()) == "off"
+
+
+def test_generated_decomposition_sums_reproduce_scalar_loss_exactly() -> None:
+    """Test #8: the objective decomposition's own fields sum exactly to the
+    combined loss actually added into the training objective."""
+    model, records = _recursive_model_for_mode(
+        mode="all_depths", weights=(0.5, 1.0, 0.5), aux_weight=0.3, recursive_steps=3
+    )
+    loss = model.training_loss(records)
+    metrics = model.last_training_metrics
+    assert float(loss.detach().cpu()) == pytest.approx(
+        metrics["combined_training_loss"], rel=1e-5
+    )
+    assert metrics["combined_training_loss"] == pytest.approx(
+        metrics["primary_final_reconstruction_loss"]
+        + metrics["recursive_depth_supervision_loss"],
+        rel=1e-6,
+    )
+    assert metrics["recursive_depth_supervision_loss"] == pytest.approx(
+        metrics["recursive_intermediate_aux_loss"]
+        + metrics["recursive_final_depth_aux_contribution"],
+        rel=1e-6,
+    )

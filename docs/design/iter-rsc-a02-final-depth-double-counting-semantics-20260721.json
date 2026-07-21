@@ -1,0 +1,179 @@
+{
+  "run_id": "iter_rsc_a02_final_depth_double_counting_semantics",
+  "issue": "SLM-238 (RSC-A02)",
+  "linear_context": "SLM-138 adversarial audit ledger; direct successor to SLM-237 (RSC-A01)",
+  "status": "semantics_and_calibration",
+  "claim_class": "semantics_calibration",
+  "quality_claim_made": false,
+  "note": "Makes the final recursion depth's inclusion in the deep-supervision auxiliary term an explicit, named, validated choice instead of an unstated accident. Bounded 5-arm factorial (deterministic fixture + bounded real-corpus smoke) validates semantics/scale/telemetry only -- no quality or LOTUS-transfer claim, no promotion, no GPU campaign. That is SLM-233's job.",
+  "verified_ambiguity": {
+    "claim": "rec_out['logits'] == rec_out['depth_logits'][-1] exactly",
+    "evidence": "SharedRecursiveDenoiserTower.recursive_outputs (src/slm_training/models/recursive_denoiser.py) sets final_logits = depth_logits[-1] and result['logits'] = final_logits -- the same tensor object, not a recomputation.",
+    "consequence": "The primary mask/reconstruction loss (computed from `logits`) and a historical all-depth auxiliary term (computed from every depth_logits[d] including d=-1) both differentiate through the identical final-depth forward pass. Pre-SLM-238, no config field, telemetry field, or documentation named this double path."
+  },
+  "implementation": {
+    "config_fields_added": [
+      "TwoTowerConfig.recursive_depth_aux_mode: str | None = None",
+      "TwoTowerConfig.recursive_depth_aux_weight: float = 1.0"
+    ],
+    "modes": {
+      "off": "primary final reconstruction only, no auxiliary term",
+      "intermediate_only": "auxiliary weights cover depths 0..R-2 exactly; the final depth is structurally never indexed by the auxiliary loop, let alone differentiated through",
+      "all_depths": "auxiliary weights cover depths 0..R-1 exactly; the final depth is deliberately counted in both the primary and auxiliary terms",
+      "legacy_all_depths": "identical math/length-rule to all_depths; a reproduction-only label reserved for configs/checkpoints that predate this field (never the recommended choice for a new config)"
+    },
+    "validator_reused_not_forked": "validate_recursive_depth_supervision (SLM-237, src/slm_training/models/twotower.py) was extended in place with mode/aux_weight parameters and an eligible-depth-range check; no second parser was added.",
+    "backward_compatibility": {
+      "mechanism": "resolve_recursive_depth_aux_mode(mode, weights): mode=None (the true dataclass default) resolves deterministically to 'off' when recursive_depth_supervision_weights is empty, or 'legacy_all_depths' when non-empty -- reproducing SLM-237's weighted-mean-over-every-depth objective byte-for-byte with the neutral aux_weight=1.0 default.",
+      "checkpoint_migration": "migrate_recursive_depth_aux_config(raw_cfg) makes this an explicit, persisted value at TwoTowerModel.from_checkpoint load time rather than perpetually relying on the None-resolution; idempotent, non-mutating, tested directly.",
+      "verified": "All 26 pre-existing SLM-237 tests in tests/test_models/test_recursive_denoiser.py pass unmodified except one telemetry-presence assertion (see tests_changed below), because the resolver reproduces identical math for every config that never touches the new fields."
+    },
+    "objective_decomposition_telemetry_added": [
+      "primary_final_reconstruction_loss",
+      "recursive_intermediate_aux_loss",
+      "recursive_final_depth_aux_contribution",
+      "recursive_depth_aux_weight",
+      "recursive_depth_aux_mode",
+      "combined_training_loss"
+    ],
+    "telemetry_contract": "All six fields are always populated (explicit 0.0/mode string when the aux term is off or disabled), never omitted -- a disabled run stays distinguishable from a missing-metrics bug. combined_training_loss = primary_final_reconstruction_loss + recursive_depth_supervision_loss exactly, by construction; recursive_intermediate_aux_loss + recursive_final_depth_aux_contribution == recursive_depth_supervision_loss exactly."
+  },
+  "tests_changed": {
+    "test_empty_tuple_valid_on_every_architecture_no_aux_term": "Updated (not removed) to assert recursive_depth_supervision_loss == 0.0 explicitly present, rather than absent -- this is SLM-238's deliberate telemetry-contract change (required test #4: an explicit zero record, never an omitted field), not a regression."
+  },
+  "tests_added": {
+    "file": "tests/test_models/test_recursive_denoiser.py",
+    "count": 14,
+    "total_after": 40,
+    "covering": [
+      "test #1: intermediate_only structurally never reads/differentiates the final depth's auxiliary path",
+      "test #2: all_depths includes the final contribution exactly once",
+      "test #3: primary final loss is numerically identical across modes for fixed logits/targets",
+      "test #4: aux_weight=0 is exact primary-only loss with an explicit zero telemetry record",
+      "test #5: invalid mode/weight-length/aux_weight combinations raise (parametrized + dedicated)",
+      "test #6: R=1 intermediate_only reduces to primary-only (empty weights) / raises on non-empty weights (documented contract)",
+      "test #7: checkpoint round-trip preserves mode+coefficient; migrate_recursive_depth_aux_config is deterministic and idempotent",
+      "test #8: generated decomposition sums reproduce the scalar training_loss return value exactly"
+    ]
+  },
+  "bounded_factorial": {
+    "script": "scripts/run_rsc_a02_depth_aux_mode_factorial.py",
+    "recipes": [
+      "deterministic 2-record synthetic fixture (HERO/CTA, shared with SLM-138/SLM-237)",
+      "bounded 6-record real-corpus smoke (train_seeds.jsonl prefix)"
+    ],
+    "training_steps_per_arm": 3,
+    "recursive_steps": 3,
+    "params_and_flops_unchanged_across_arms": true,
+    "preregistered_lambda": 0.3,
+    "preregistered_lambda_justification": "Chosen a priori (not tuned post-hoc): the final recursion depth already receives full weight once via the primary reconstruction term, so a partial (0.3x) extra credit in all_depths mode avoids letting the auxiliary term dominate or swamp the primary gradient signal while remaining large enough to matter; also a simple, easy-to-reproduce round number for a first calibration pass.",
+    "arms": [
+      {
+        "arm": "A",
+        "mode": "off",
+        "aux_weight": 0.0,
+        "fixture_final_step": {
+          "primary_final_reconstruction_loss": 23.041454315185547,
+          "recursive_intermediate_aux_loss": 0.0,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_depth_supervision_loss": 0.0,
+          "combined_training_loss": 23.041454315185547
+        }
+      },
+      {
+        "arm": "B",
+        "mode": "intermediate_only",
+        "aux_weight": 1.0,
+        "fixture_final_step": {
+          "primary_final_reconstruction_loss": 23.048303604125977,
+          "recursive_intermediate_aux_loss": 26.997310638427734,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_depth_supervision_loss": 26.997310638427734,
+          "combined_training_loss": 50.04561424255371
+        }
+      },
+      {
+        "arm": "C",
+        "mode": "all_depths",
+        "aux_weight": 1.0,
+        "fixture_final_step": {
+          "primary_final_reconstruction_loss": 23.044403076171875,
+          "recursive_intermediate_aux_loss": 17.99952507019043,
+          "recursive_final_depth_aux_contribution": 7.6814680099487305,
+          "recursive_depth_supervision_loss": 25.680992126464844,
+          "combined_training_loss": 48.72539520263672
+        }
+      },
+      {
+        "arm": "D",
+        "mode": "intermediate_only",
+        "aux_weight": 0.3,
+        "fixture_final_step": {
+          "primary_final_reconstruction_loss": 23.04363441467285,
+          "recursive_intermediate_aux_loss": 8.100473403930664,
+          "recursive_final_depth_aux_contribution": 0.0,
+          "recursive_depth_supervision_loss": 8.100473403930664,
+          "combined_training_loss": 31.144107818603516
+        }
+      },
+      {
+        "arm": "E",
+        "mode": "all_depths",
+        "aux_weight": 0.3,
+        "fixture_final_step": {
+          "primary_final_reconstruction_loss": 23.043045043945312,
+          "recursive_intermediate_aux_loss": 5.400579452514648,
+          "recursive_final_depth_aux_contribution": 2.304304599761963,
+          "recursive_depth_supervision_loss": 7.704884052276611,
+          "combined_training_loss": 30.747929096221924
+        }
+      }
+    ],
+    "observations": [
+      "combined_training_loss reproduces the actual training_loss() return value exactly (max diff < 1e-4) in every arm -- test #8's property holds live, not just under unit test.",
+      "recursive_final_depth_aux_contribution is exactly 0.0 in every intermediate_only arm (B, D) and structurally absent from the per-depth loop -- never merely zero-weighted.",
+      "For a fixed weights-shape family (uniform, all >0), first/last-depth contribution ratio is ~1.25 in both all_depths arms (C, E), stable under the lambda rescale (C: 1.2522, E: 1.2526) as expected since aux_weight scales the whole term.",
+      "Per-depth gradient-norm/cosine (measured on a freshly-initialized synthetic isolated-tower batch, independent of aux mode by construction since the mode only rescales the aggregated loss post-forward) shows cosine similarity with the final depth's gradient direction rising monotonically toward 1.0 with depth (0.973 / 0.996 / 1.0 for depths 0/1/2) -- an architecture-level property of the shared recursion, invariant across all 5 arms; this is a sanity check that recursive_depth_aux_mode does not secretly alter tower forward mechanics, only the loss aggregation.",
+      "params_and_flops_unchanged_across_arms verified structurally: every arm builds from the identical TwoTowerConfig module-construction fields (only recursive_depth_supervision_weights/recursive_depth_aux_mode/recursive_depth_aux_weight differ, none of which affect nn.Module construction)."
+    ],
+    "safety_smoke": {
+      "status": "vacuous_in_this_sandbox",
+      "reason": "The official @openuidev/lang-core Node bridge failed in this sandbox with a pre-existing, unrelated NODE_OPTIONS incompatibility ('--import tsx is not allowed in NODE_OPTIONS'), confirmed present identically on the pre-SLM-238 tree via git stash -- not introduced by this change. scripts/run_rsc_a02_depth_aux_mode_factorial.py detects this via the same _quality_pipeline_ok() pattern as scripts/run_perf_matrix.py and reports bridge_healthy=false explicitly per arm rather than fabricating pass/fail numbers.",
+      "not_a_quality_claim": "This smoke was always intended as a non-gating safety diagnostic only; its unavailability here does not affect any RSC-A02 acceptance criterion, all of which are semantics/telemetry/decomposition properties verified directly by the 40-test suite and the objective-decomposition numbers above."
+    }
+  },
+  "recommendation": {
+    "slm_233_default_candidate": "intermediate_only",
+    "rationale": "The final recursion depth's output IS the model's actual prediction; supervising it a second time through the auxiliary term (all_depths) rewards or penalizes the same forward computation twice per step for no architecturally distinct reason, and inflates its effective learning-rate contribution relative to the intermediate depths it was meant to help train. intermediate_only cleanly separates concerns -- the final depth's supervision comes solely from the primary reconstruction loss (as it should, since that is the actual output), while a coefficient-controlled auxiliary term (recursive_depth_aux_weight, preregistered lambda=0.3 as a starting point) supervises only the genuinely intermediate representations, matching the standard deep-supervision rationale (auxiliary heads on intermediate representations, not a second vote on the final one) used elsewhere in the literature. all_depths/legacy_all_depths remain explicit, fully-supported controls -- this factorial's bounded scale cannot rule out that the seemingly-redundant double count helps in practice (e.g. by acting like an implicit tower-strength-weighted final-depth boost); that question is exactly SLM-233's job, not decided here.",
+    "slm_233_control_matrix_paragraph": "A future SLM-233 GPU campaign should treat recursive_depth_aux_mode as a first-class matrix axis crossed with recursive_steps and recursive_depth_aux_weight (a small preregistered lambda grid, e.g. {0.1, 0.3, 0.5, 1.0}), evaluated under this repo's full honest ship gates (not the bounded smoke here) on real held-out OpenUI corpora at a training scale sufficient to move the ship-gate metrics outside noise. The control set should include off (no aux term at all) as the byte-identical baseline, intermediate_only at the recommended lambda as the primary candidate, and all_depths/legacy_all_depths as an explicit alternative-hypothesis arm -- explicitly to test whether double-counting the final depth is a net positive despite this doc's a priori architectural objection, rather than assuming the recommendation above without evidence."
+  },
+  "slm138_doc_annotation": {
+    "target": "docs/design/quality-experiment-matrix.md, ## RSC-A01 section (E303/V18 deep-supervision, the E303 row of the V18 SLM-138 table)",
+    "change": "Added a note (not a rewrite) that the pre-existing all-depth deep-supervision objective double-counts the final recursion depth (through both the primary reconstruction term and the auxiliary term) -- an ambiguity neither SLM-138 nor SLM-237 named -- and that SLM-238 (RSC-A02) makes this an explicit, versioned, tested choice. SLM-138's original wiring-only verdict and SLM-237's correctness-fix verdict are unchanged; this is an annotation, not a re-verdict."
+  },
+  "non_goals_honored": [
+    "No new latent slots or recurrence architecture.",
+    "No routing through a separate auxiliary decoder.",
+    "No production default change outside the versioned recursive path (recursive_depth_aux_mode defaults to off/legacy-preserving None, never a new always-on behavior).",
+    "No adoption decision -- that is SLM-233's job; this doc only recommends a default-candidate for that future campaign.",
+    "No quality or LOTUS-transfer claim from the bounded factorial -- calibration/semantics only."
+  ],
+  "version_bumps": {
+    "model.twotower": "v63 -> v64",
+    "model.recursive_denoiser": "v2 -> v3"
+  },
+  "deferred_to_follow_up": [
+    "SLM-233's full GPU control-matrix campaign (out of scope for SLM-238 by design).",
+    "A bridge-healthy rerun of the syntax/structure/strict-semantic safety smoke -- this session's sandbox has a pre-existing, unrelated Node bridge NODE_OPTIONS incompatibility (confirmed present on the pre-SLM-238 tree too)."
+  ],
+  "generated_at": "2026-07-21T01:02:47.815557+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "20d77a836018f450dd5779134c3ab71e2ee82f8f",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v3"
+    },
+    "stamped_at": "2026-07-21T01:02:47.876139+00:00"
+  }
+}

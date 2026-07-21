@@ -1,0 +1,68 @@
+{
+  "arms": [
+    {
+      "arm": "A",
+      "aux_weight": 0.0,
+      "mode": "off",
+      "schedule": "n/a",
+      "weights": []
+    },
+    {
+      "arm": "B",
+      "aux_weight": 1.0,
+      "mode": "intermediate_only",
+      "schedule": "uniform_normalized",
+      "weights": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "arm": "C",
+      "aux_weight": 1.0,
+      "mode": "all_depths",
+      "schedule": "uniform_normalized",
+      "weights": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "arm": "D",
+      "aux_weight": 0.3,
+      "mode": "intermediate_only",
+      "schedule": "uniform_normalized",
+      "weights": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "arm": "E",
+      "aux_weight": 0.3,
+      "mode": "all_depths",
+      "schedule": "uniform_normalized",
+      "weights": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "claim_class": "semantics_calibration",
+  "matrix_set": "rsc-a02-depth-aux-mode-factorial",
+  "matrix_version": "rsc-a02-v1",
+  "note": "plan-only: no models instantiated or trained",
+  "run_id": "rsc_a02_depth_aux_mode_plan",
+  "status": "plan_only",
+  "version_stamp": {
+    "code_commit": "20d77a836018f450dd5779134c3ab71e2ee82f8f",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T01:02:25.369283+00:00"
+  }
+}

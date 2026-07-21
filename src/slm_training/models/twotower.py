@@ -194,6 +194,23 @@ class TwoTowerConfig:
     recursive_transition_layers: int = 0
     # SLM-138: per-recursion CE weights for deep supervision (empty = off).
     recursive_depth_supervision_weights: tuple[float, ...] = ()
+    # SLM-238 (RSC-A02): explicit final-depth double-counting semantics.
+    # ``None`` (the true dataclass default) resolves deterministically at
+    # validation time -- see ``resolve_recursive_depth_aux_mode`` -- to "off"
+    # when ``recursive_depth_supervision_weights`` is empty, or to
+    # "legacy_all_depths" when it is non-empty (this reproduces SLM-237's
+    # weighted-mean-over-every-depth objective unchanged, so any config or
+    # checkpoint written before this field existed keeps its exact prior
+    # numeric behavior). New configs should set this explicitly to one of
+    # "off" | "intermediate_only" | "all_depths"; "legacy_all_depths" is a
+    # reproduction-only label, never the recommended choice for new runs --
+    # see docs/design/iter-rsc-a02-*.
+    recursive_depth_aux_mode: str | None = None
+    # SLM-238 (RSC-A02): overall coefficient scaling the whole recursive-depth
+    # auxiliary term, independent of the *relative* per-depth weighting in
+    # ``recursive_depth_supervision_weights``. Must be finite and >= 0;
+    # defaults to 1.0 (neutral -- unchanged scale relative to SLM-237).
+    recursive_depth_aux_weight: float = 1.0
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
@@ -614,19 +631,71 @@ def _load_checkpoint_state(
         )
 
 
+#: SLM-238 (RSC-A02): the recursive-depth auxiliary term's semantic modes.
+#: "off" = primary final reconstruction only, no auxiliary term at all.
+#: "intermediate_only" = auxiliary weights cover depths 0..R-2; the final
+#: depth (R-1, numerically identical to the primary reconstruction logits --
+#: see ``SharedRecursiveDenoiserTower.recursive_outputs``) is never read by
+#: the auxiliary loop, let alone differentiated through, in this mode.
+#: "all_depths" = auxiliary weights cover depths 0..R-1; the final depth is
+#: *intentionally* counted in both the primary and the auxiliary terms.
+#: "legacy_all_depths" is semantically identical to "all_depths" (same
+#: length rule, same math) but is a reproduction-only label reserved for
+#: configs/checkpoints migrated from before this field existed -- never the
+#: recommended choice for a new config. See ``resolve_recursive_depth_aux_mode``.
+RECURSIVE_DEPTH_AUX_MODES: tuple[str, ...] = (
+    "off",
+    "intermediate_only",
+    "all_depths",
+    "legacy_all_depths",
+)
+
+
+def resolve_recursive_depth_aux_mode(
+    mode: str | None, weights: tuple[float, ...]
+) -> str:
+    """SLM-238 (RSC-A02): deterministic backward-compatible mode resolution.
+
+    ``mode=None`` is the ``TwoTowerConfig.recursive_depth_aux_mode`` dataclass
+    default -- i.e. any config or checkpoint written before this field existed,
+    or any new config that has not opted into the versioned semantics. It
+    resolves deterministically so historical behavior never silently changes:
+
+    - empty ``weights`` -> ``"off"`` (matches the historical always-off
+      default when deep supervision was never configured).
+    - non-empty ``weights`` -> ``"legacy_all_depths"`` (reproduces SLM-237's
+      weighted-mean-over-every-depth objective byte-for-byte, since that mode
+      shares "all_depths"'s length rule and math, with
+      ``recursive_depth_aux_weight`` defaulting to the neutral ``1.0``).
+
+    An explicitly supplied ``mode`` (including a deliberate "legacy_all_depths"
+    for reproduction) always passes through unchanged.
+    """
+    if mode is not None:
+        return mode
+    return "legacy_all_depths" if weights else "off"
+
+
 @dataclass(frozen=True)
 class ValidatedDepthSupervision:
-    """SLM-237 (RSC-A01): validated ``recursive_depth_supervision_weights``.
+    """SLM-237/SLM-238 (RSC-A01/RSC-A02): validated deep-supervision config.
 
     ``weights`` is the exact, un-mutated tuple from the persisted config (a
     validator must never rewrite what gets checkpointed). ``enabled`` is
-    ``False`` only for the explicit backward-compatible empty-tuple case;
-    every other configuration either normalizes cleanly or raises during
-    :func:`validate_recursive_depth_supervision`.
+    ``False`` for the explicit off case and the documented R=1
+    ``intermediate_only`` reduce-to-primary-only case; every other
+    configuration either normalizes cleanly or raises during
+    :func:`validate_recursive_depth_supervision`. ``mode`` and ``aux_weight``
+    are always populated (even when ``enabled`` is ``False``) so telemetry can
+    always report the resolved, concrete objective semantics -- never
+    "unspecified".
     """
 
     weights: tuple[float, ...]
     enabled: bool
+    mode: str = "off"
+    aux_weight: float = 1.0
+    num_depths: int = 0
 
     @property
     def weight_sum(self) -> float:
@@ -639,6 +708,16 @@ class ValidatedDepthSupervision:
         total = self.weight_sum
         return tuple(float(w) / total for w in self.weights)
 
+    @property
+    def final_depth_included(self) -> bool:
+        """Whether the auxiliary term counts depth ``num_depths - 1``.
+
+        True only for "all_depths"/"legacy_all_depths" -- the deliberate
+        (or migrated-legacy) double-counting of the final recursion, which
+        is numerically identical to the primary reconstruction logits.
+        """
+        return self.enabled and self.mode in ("all_depths", "legacy_all_depths")
+
 
 def validate_recursive_depth_supervision(
     *,
@@ -646,8 +725,10 @@ def validate_recursive_depth_supervision(
     num_depths: int,
     supports_recursive_outputs: bool,
     architecture: str = "denoiser",
+    mode: str = "legacy_all_depths",
+    aux_weight: float = 1.0,
 ) -> ValidatedDepthSupervision:
-    """SLM-237 (RSC-A01): fail-closed validator for deep-supervision weights.
+    """SLM-237/SLM-238 (RSC-A01/RSC-A02): fail-closed deep-supervision validator.
 
     Historical defect (SLM-138 audit, see docs/design/iter-rsc-a01-*): the
     training loop computed ``sum(L_d) / sum(w_d)`` -- an unweighted mean that
@@ -655,16 +736,89 @@ def validate_recursive_depth_supervision(
     that should disable a depth, all-zero configs, negative/NaN/inf weights,
     length mismatches (silently truncated via ``min(...)``), or weights
     supplied to an architecture without ``recursive_outputs`` (silently
-    ignored). This validator makes every one of those fail closed instead.
+    ignored). SLM-237 made all of those fail closed.
 
-    An empty ``weights`` tuple means the feature is explicitly off -- this is
-    the only valid configuration for architectures (e.g. ``stacked``/HF
-    denoisers, or an un-migrated checkpoint) that do not support
-    ``recursive_outputs``, and it always returns ``enabled=False`` with no
-    mutation of the persisted config.
+    SLM-238 (RSC-A02) adds an explicit ``mode`` so the *final* recursion
+    depth's inclusion in the auxiliary term is a deliberate, named choice
+    rather than an unstated accident: ``rec_out["logits"] ==
+    rec_out["depth_logits"][-1]`` exactly, so "all_depths"/"legacy_all_depths"
+    intentionally count that depth in both the primary and auxiliary terms,
+    while "intermediate_only" excludes it. ``mode`` defaults to
+    "legacy_all_depths" here purely for this function's own direct-caller
+    backward compatibility (its length rule -- ``len(weights) == num_depths``
+    -- is byte-identical to the pre-SLM-238 validator); callers that care
+    about the new semantics (i.e. ``TwoTowerModel.training_loss``) always pass
+    an explicit, resolved ``mode`` via :func:`resolve_recursive_depth_aux_mode`.
+
+    An empty ``weights`` tuple with ``mode="off"`` means the feature is
+    explicitly off -- the only valid configuration for architectures (e.g.
+    ``stacked``/HF denoisers, or an un-migrated checkpoint) that do not
+    support ``recursive_outputs`` -- and always returns ``enabled=False`` with
+    no mutation of the persisted config. R=1 with ``mode="intermediate_only"``
+    has no eligible depth (0..R-2 is empty); per this validator's documented
+    contract, an empty ``weights`` tuple there also reduces to
+    ``enabled=False`` (primary-only), while a *non-empty* tuple still raises
+    the usual length-mismatch error (0 weights expected, none supplied).
     """
+    if mode not in RECURSIVE_DEPTH_AUX_MODES:
+        raise ValueError(
+            f"recursive_depth_aux_mode={mode!r} is not one of "
+            f"{RECURSIVE_DEPTH_AUX_MODES!r}."
+        )
+    if not math.isfinite(aux_weight):
+        raise ValueError(
+            f"recursive_depth_aux_weight={aux_weight!r} is not finite. "
+            "NaN/inf coefficients are rejected -- they would corrupt the "
+            "combined objective and its gradient."
+        )
+    if aux_weight < 0.0:
+        raise ValueError(
+            f"recursive_depth_aux_weight={aux_weight!r} is negative. The "
+            "coefficient must be >= 0; a negative value would anti-supervise "
+            "the whole auxiliary term instead of merely down-weighting it."
+        )
+
+    if mode == "off":
+        if weights:
+            raise ValueError(
+                "recursive_depth_aux_mode='off' requires an empty "
+                f"recursive_depth_supervision_weights tuple, got {weights!r}. "
+                "Choose mode='intermediate_only' or mode='all_depths' to "
+                "enable the auxiliary term, or clear the weights to keep it "
+                "off -- a non-empty tuple under mode='off' would silently "
+                "configure weights that are never applied."
+            )
+        return ValidatedDepthSupervision(
+            weights=(),
+            enabled=False,
+            mode="off",
+            aux_weight=float(aux_weight),
+            num_depths=num_depths,
+        )
+
+    # mode is intermediate_only / all_depths / legacy_all_depths: an
+    # auxiliary term is being requested, so eligible-depth length depends on
+    # whether the final depth (index num_depths - 1) is excluded.
+    expected_len = max(num_depths - 1, 0) if mode == "intermediate_only" else num_depths
+
     if not weights:
-        return ValidatedDepthSupervision(weights=(), enabled=False)
+        if expected_len == 0:
+            # R<=1 intermediate_only (or R=0 with no recursive outputs at
+            # all): no eligible depth exists. Documented contract: reduce to
+            # primary-only rather than reject an explicitly empty tuple.
+            return ValidatedDepthSupervision(
+                weights=(),
+                enabled=False,
+                mode=mode,
+                aux_weight=float(aux_weight),
+                num_depths=num_depths,
+            )
+        raise ValueError(
+            f"recursive_depth_aux_mode={mode!r} requires {expected_len} "
+            "depth weight(s) (recursive_depth_supervision_weights was an "
+            "empty tuple). Supply exactly that many weights, or switch "
+            "mode='off' to disable the auxiliary term."
+        )
 
     if not supports_recursive_outputs:
         raise ValueError(
@@ -677,14 +831,22 @@ def validate_recursive_depth_supervision(
             "keep the feature off for this architecture."
         )
 
-    if len(weights) != num_depths:
+    if len(weights) != expected_len:
         raise ValueError(
             "recursive_depth_supervision_weights has length "
-            f"{len(weights)} ({weights!r}) but the denoiser produced "
-            f"{num_depths} recursion depth(s). The length must match "
-            "exactly -- no truncation or padding via min(len(...), "
-            "len(...)) is performed; fix recursive_steps or the weights "
-            "tuple so they agree."
+            f"{len(weights)} ({weights!r}) but recursive_depth_aux_mode="
+            f"{mode!r} with {num_depths} recursion depth(s) requires exactly "
+            f"{expected_len} weight(s) "
+            + (
+                "(depths 0..R-2 -- the final depth is excluded from the "
+                "auxiliary term in intermediate_only mode)"
+                if mode == "intermediate_only"
+                else "(depths 0..R-1 -- every recursion depth, including the "
+                "final one)"
+            )
+            + ". No truncation or padding via min(len(...), len(...)) is "
+            "performed; fix recursive_steps or the weights tuple so they "
+            "agree."
         )
 
     for depth, w in enumerate(weights):
@@ -712,8 +874,37 @@ def validate_recursive_depth_supervision(
         )
 
     return ValidatedDepthSupervision(
-        weights=tuple(float(w) for w in weights), enabled=True
+        weights=tuple(float(w) for w in weights),
+        enabled=True,
+        mode=mode,
+        aux_weight=float(aux_weight),
+        num_depths=num_depths,
     )
+
+
+def migrate_recursive_depth_aux_config(raw_cfg: dict) -> dict:
+    """SLM-238 (RSC-A02): deterministic persisted-config/checkpoint migration.
+
+    Any checkpoint or config JSON written before ``recursive_depth_aux_mode``
+    existed is missing that key entirely (as opposed to a config that
+    explicitly chose one of the versioned modes). This makes that historical
+    state an explicit, persisted value instead of relying forever on
+    :func:`resolve_recursive_depth_aux_mode`'s ``None``-resolution at every
+    load: "off" when ``recursive_depth_supervision_weights`` was never set,
+    "legacy_all_depths" (reproduction-only -- never the recommended new
+    default) when it was. Returns a new dict; ``raw_cfg`` is never mutated in
+    place. Idempotent -- a config that already has the key is returned
+    unchanged (aside from the copy).
+    """
+    migrated = dict(raw_cfg)
+    if "recursive_depth_aux_mode" not in migrated:
+        legacy_weights = tuple(migrated.get("recursive_depth_supervision_weights") or ())
+        migrated["recursive_depth_aux_mode"] = (
+            "legacy_all_depths" if legacy_weights else "off"
+        )
+    if migrated.get("recursive_depth_aux_weight") is None:
+        migrated["recursive_depth_aux_weight"] = 1.0
+    return migrated
 
 
 class TwoTowerModel(nn.Module):
@@ -2108,20 +2299,37 @@ class TwoTowerModel(nn.Module):
                 # cleared here at the source.)
                 self.denoiser.set_runtime_symbol_features(None)
 
-        # SLM-237 (RSC-A01): validate/normalize before any loss term is
-        # computed from depth_logits. This runs unconditionally (not just
-        # when predict_mask has any masked tokens) so an invalid config --
-        # unsupported architecture, length mismatch, negative/NaN/inf, or
-        # all-zero -- fails closed before a training step, never emitting an
-        # apparently-valid run with missing telemetry.
+        # SLM-237/SLM-238 (RSC-A01/RSC-A02): validate/normalize before any loss
+        # term is computed from depth_logits. This runs unconditionally (not
+        # just when predict_mask has any masked tokens) so an invalid config
+        # -- unsupported architecture, length mismatch, negative/NaN/inf,
+        # all-zero, or an invalid mode/coefficient -- fails closed before a
+        # training step, never emitting an apparently-valid run with missing
+        # telemetry. ``resolve_recursive_depth_aux_mode`` keeps any config or
+        # checkpoint that predates recursive_depth_aux_mode byte-identical to
+        # its historical (SLM-237) behavior.
+        resolved_aux_mode = resolve_recursive_depth_aux_mode(
+            getattr(self.config, "recursive_depth_aux_mode", None), ds_weights_raw
+        )
+        resolved_aux_weight = float(
+            getattr(self.config, "recursive_depth_aux_weight", 1.0)
+            if getattr(self.config, "recursive_depth_aux_weight", None) is not None
+            else 1.0
+        )
         validated_ds = validate_recursive_depth_supervision(
             weights=ds_weights_raw,
             num_depths=len(depth_logits) if depth_logits is not None else 0,
             supports_recursive_outputs=has_recursive_outputs,
             architecture=str(getattr(self.config, "denoiser_arch", "stacked")),
+            mode=resolved_aux_mode,
+            aux_weight=resolved_aux_weight,
         )
         self.last_training_metrics["recursive_depth_supervision_enabled"] = (
             validated_ds.enabled
+        )
+        self.last_training_metrics["recursive_depth_aux_mode"] = validated_ds.mode
+        self.last_training_metrics["recursive_depth_aux_weight"] = (
+            validated_ds.aux_weight
         )
         if predict_mask.any():
             flat_logits = logits.reshape(-1, logits.size(-1))
@@ -2161,21 +2369,45 @@ class TwoTowerModel(nn.Module):
                 .tolist()
             )
 
+            # SLM-238 (RSC-A02): explicit objective decomposition. ``logits``
+            # (the primary reconstruction) and ``depth_logits[-1]`` (the last
+            # recursion) are numerically identical --
+            # ``SharedRecursiveDenoiserTower.recursive_outputs`` sets
+            # ``logits = depth_logits[-1]`` -- so
+            # ``primary_final_reconstruction_loss`` already reflects the final
+            # depth once, before any auxiliary term is added. Whether the
+            # auxiliary term counts it a *second* time is exactly what
+            # ``recursive_depth_aux_mode`` names: "all_depths"/
+            # "legacy_all_depths" deliberately double-count it,
+            # "intermediate_only"/"off" never do.
+            primary_final_reconstruction_loss = mask_loss
+            self.last_training_metrics["primary_final_reconstruction_loss"] = float(
+                primary_final_reconstruction_loss.detach().cpu()
+            )
+
             # SLM-237 (RSC-A01): deep supervision over per-recursion logits.
-            # Corrected weighted objective (the historical code computed
-            # sum(L_d) / sum(w_d) -- an unweighted mean that never actually
-            # multiplied by w_d):
+            # Corrected weighted objective:
             #   weighted_depth_contribution[d] = w[d] * raw_depth_loss[d] / sum(w)
-            #   recursive_depth_supervision_loss = sum(weighted_depth_contribution)
+            #   recursive_depth_supervision_loss =
+            #       recursive_depth_aux_weight * sum(weighted_depth_contribution)
+            intermediate_aux_sum = mask_loss.new_zeros(())
+            final_depth_aux_contribution = mask_loss.new_zeros(())
             if depth_logits is not None and validated_ds.enabled:
                 cfg_weights = validated_ds.weights
                 norm_weights = validated_ds.normalized()
                 total_w = validated_ds.weight_sum
+                final_depth_index = validated_ds.num_depths - 1
                 self.last_training_metrics[
                     "recursive_depth_supervision_weight_sum"
                 ] = total_w
                 contributions: list[torch.Tensor] = []
                 for d, (cfg_w, norm_w) in enumerate(zip(cfg_weights, norm_weights)):
+                    # SLM-238: `d` only ever ranges over
+                    # `range(len(validated_ds.weights))`, which the validator
+                    # sized to exactly depths 0..R-2 for "intermediate_only" --
+                    # so `depth_logits[final_depth_index]` is structurally
+                    # never indexed (let alone differentiated through) in
+                    # that mode, not merely zero-weighted.
                     d_logits = depth_logits[d]
                     d_flat = d_logits.reshape(-1, d_logits.size(-1))
                     d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
@@ -2191,14 +2423,50 @@ class TwoTowerModel(nn.Module):
                     self.last_training_metrics[
                         f"recursive_depth_weighted_contribution_{d}"
                     ] = float(weighted_contribution.detach().cpu())
-                recursive_depth_supervision_loss = torch.stack(contributions).sum()
+                    if validated_ds.final_depth_included and d == final_depth_index:
+                        final_depth_aux_contribution = weighted_contribution
+                    else:
+                        intermediate_aux_sum = (
+                            intermediate_aux_sum + weighted_contribution
+                        )
+                unweighted_aux = torch.stack(contributions).sum()
+                recursive_depth_supervision_loss = (
+                    validated_ds.aux_weight * unweighted_aux
+                )
                 mask_loss = mask_loss + recursive_depth_supervision_loss
                 self.last_training_metrics["recursive_depth_supervision_loss"] = (
                     float(recursive_depth_supervision_loss.detach().cpu())
                 )
+            else:
+                # SLM-238: explicit zero telemetry -- an off/disabled
+                # auxiliary term must still record a concrete 0.0, never omit
+                # the field, so a disabled run is distinguishable from a
+                # missing-metrics bug (same rationale as
+                # recursive_depth_supervision_enabled in SLM-237).
+                self.last_training_metrics["recursive_depth_supervision_loss"] = 0.0
+
+            # SLM-238: the two auxiliary components are scaled by the same
+            # coefficient as the combined term, so
+            # recursive_intermediate_aux_loss + recursive_final_depth_aux_contribution
+            # reproduces recursive_depth_supervision_loss exactly (test #2/#8).
+            self.last_training_metrics["recursive_intermediate_aux_loss"] = float(
+                (validated_ds.aux_weight * intermediate_aux_sum).detach().cpu()
+            )
+            self.last_training_metrics[
+                "recursive_final_depth_aux_contribution"
+            ] = float((validated_ds.aux_weight * final_depth_aux_contribution).detach().cpu())
+            self.last_training_metrics["combined_training_loss"] = (
+                self.last_training_metrics["primary_final_reconstruction_loss"]
+                + self.last_training_metrics["recursive_depth_supervision_loss"]
+            )
         else:
             mask_loss = logits.sum() * 0.0
             self._last_example_token_losses = [0.0] * len(batch)
+            self.last_training_metrics["primary_final_reconstruction_loss"] = 0.0
+            self.last_training_metrics["recursive_depth_supervision_loss"] = 0.0
+            self.last_training_metrics["recursive_intermediate_aux_loss"] = 0.0
+            self.last_training_metrics["recursive_final_depth_aux_contribution"] = 0.0
+            self.last_training_metrics["combined_training_loss"] = 0.0
 
         length_w = float(
             getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0
@@ -9927,10 +10195,17 @@ class TwoTowerModel(nn.Module):
         for key in ("diffusion_policies", "diffusion_length_buckets"):
             if isinstance(raw_cfg.get(key), list):
                 raw_cfg[key] = tuple(raw_cfg[key])
+        if isinstance(raw_cfg.get("recursive_depth_supervision_weights"), list):
+            raw_cfg["recursive_depth_supervision_weights"] = tuple(
+                raw_cfg["recursive_depth_supervision_weights"]
+            )
         if raw_cfg.get("grammar_ltr_stages") is None:
             raw_cfg["grammar_ltr_stages"] = (64, 128, 192, 256)
         if local_files_only is not None:
             raw_cfg["local_files_only"] = bool(local_files_only)
+        # SLM-238 (RSC-A02): make the historical recursive-depth-aux behavior
+        # of any pre-SLM-238 checkpoint an explicit, persisted value.
+        raw_cfg = migrate_recursive_depth_aux_config(raw_cfg)
         # Ignore unknown keys for forward/back compat
         valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
         cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})

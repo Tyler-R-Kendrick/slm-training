@@ -3342,6 +3342,13 @@ Primary metric: same honest `--ship-gates` as V4+.  Fixture output:
 `outputs/runs/slm138-recursive-denoiser-20260720/` with mirrored design artifacts
 `docs/design/iter-slm138-recursive-denoiser-20260720.json` and `.md`.
 
+**Annotation (SLM-237/SLM-238):** E303's deep-supervision auxiliary loss had
+a live weighting defect, fixed by SLM-237 (see `## RSC-A01` below), and its
+all-depth variant double-counts the final recursion depth against the
+primary term, made explicit and versioned by SLM-238 (see `## RSC-A02`
+below). Both are annotations layered on top of this section's original
+wiring-only landing — **V18's wiring-only verdict above is unchanged.**
+
 ## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
 
 E303/V18's deep-supervision auxiliary loss (`recursive_depth_supervision_weights`
@@ -3382,6 +3389,74 @@ every property required by SLM-237. Full before/after evidence:
 per SLM-237's own acceptance criteria. RSC-A02 (whether the final recursion
 depth belongs in the auxiliary term) is out of scope. Version bumps:
 `model.twotower` v62 → v63, `model.recursive_denoiser` v1 → v2.
+
+**RSC-A02 annotation (SLM-238, 2026-07-21):** the all-depth objective this
+section describes double-counts the final recursion depth —
+`rec_out["logits"] == rec_out["depth_logits"][-1]` exactly (see
+`SharedRecursiveDenoiserTower.recursive_outputs`), so the primary
+reconstruction term and the historical all-depth auxiliary term both
+differentiate through the identical final-depth forward pass. Neither this
+section's original SLM-138 wiring-only landing nor SLM-237's weighting fix
+named that ambiguity. SLM-238 makes it an explicit, versioned choice
+(`TwoTowerConfig.recursive_depth_aux_mode`: `off` | `intermediate_only` |
+`all_depths` | `legacy_all_depths`, with a dedicated
+`recursive_depth_aux_weight` coefficient) and runs a bounded 5-arm
+calibration factorial — **this is an annotation, not a re-verdict**: SLM-138's
+wiring-only status and SLM-237's correctness-fix verdict are unchanged. See
+`docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.md`
+and the `## RSC-A02` section below.
+
+## RSC-A02 final-depth double-counting semantics (SLM-238) — semantics + bounded calibration, no quality claim
+
+SLM-237 fixed the deep-supervision objective's *weighting* math; SLM-238
+fixes its *semantics*: whether the final recursion depth should count once
+(primary term only) or twice (primary + auxiliary) was never a stated
+choice, despite `rec_out["logits"] == rec_out["depth_logits"][-1]` holding
+exactly (same tensor, not a recomputation).
+
+`TwoTowerConfig` gains `recursive_depth_aux_mode` (`off` |
+`intermediate_only` | `all_depths` | `legacy_all_depths`) and
+`recursive_depth_aux_weight` (a coefficient scaling the whole auxiliary
+term, independent of the per-depth `recursive_depth_supervision_weights`).
+SLM-237's `validate_recursive_depth_supervision`/`ValidatedDepthSupervision`
+was extended in place (not forked) to validate mode/coefficient and the
+mode-dependent eligible-depth range: `intermediate_only` requires weights
+covering exactly depths `0..R-2` and structurally never indexes
+`depth_logits[R-1]`; `all_depths` requires exactly `0..R-1` and deliberately
+double-counts the final depth. `resolve_recursive_depth_aux_mode` and
+`migrate_recursive_depth_aux_config` keep every pre-existing config/checkpoint
+(`recursive_depth_aux_mode` absent) byte-identical to SLM-237's behavior via
+the `legacy_all_depths` reproduction-only label — `off` is the new default
+only when `recursive_depth_supervision_weights` was never set. New objective-
+decomposition telemetry (`primary_final_reconstruction_loss`,
+`recursive_intermediate_aux_loss`, `recursive_final_depth_aux_contribution`,
+`recursive_depth_aux_weight`, `combined_training_loss`) is always populated,
+never omitted, and reproduces the scalar training loss exactly.
+
+A bounded 5-arm factorial (`scripts/run_rsc_a02_depth_aux_mode_factorial.py`)
+compared A=off, B=intermediate_only(λ=1), C=all_depths(λ=1),
+D=intermediate_only(λ=0.3), E=all_depths(λ=0.3) on a deterministic 2-record
+fixture and a bounded 6-record real-corpus smoke, 3 training steps each.
+Real fixture-arm `combined_training_loss`: A=23.041, B=50.046, C=48.725,
+D=31.144, E=30.748 — `combined_training_loss` reproduced the live
+`training_loss()` return value exactly in every arm, and
+`recursive_final_depth_aux_contribution` was exactly `0.0` and structurally
+absent from the per-depth telemetry in both `intermediate_only` arms.
+**Calibration/semantics only — no quality or LOTUS-transfer claim, no
+promotion, no GPU campaign.** 40 tests in
+`tests/test_models/test_recursive_denoiser.py` (26 pre-existing + 14 new)
+cover every SLM-238 acceptance property. Full evidence:
+`docs/design/iter-rsc-a02-final-depth-double-counting-semantics-20260721.json`/`.md`
+and `docs/design/iter-rsc-a02-depth-aux-mode-factorial-20260721.json`/`.md`.
+
+Recommendation for the future SLM-233 control matrix: `intermediate_only` is
+the default-candidate (final-depth supervision should come solely from the
+primary reconstruction term, since that term already *is* the actual
+prediction); `all_depths`/`legacy_all_depths` remain explicit alternative-
+hypothesis controls, since this bounded factorial cannot rule out that the
+double count helps in practice — that adoption decision is SLM-233's job, not
+decided here. Version bumps: `model.twotower` v63 → v64,
+`model.recursive_denoiser` v2 → v3.
 
 ## V19 stochastic recursive width (SLM-139) — closed
 

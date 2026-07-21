@@ -1387,7 +1387,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1402,6 +1402,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-07-21",
+          "note": "SLM-238 (RSC-A02): added recursive_depth_aux_mode (off | intermediate_only | all_depths | legacy_all_depths) and recursive_depth_aux_weight to TwoTowerConfig, extending validate_recursive_depth_supervision/ValidatedDepthSupervision (not forking it) to accept mode/expected-depth-range. Makes the final recursion depth's double-counting (rec_out['logits'] == rec_out['depth_logits'][-1], so the primary term already reflects it once) an explicit, named choice: 'intermediate_only' structurally never indexes depth_logits[-1]; 'all_depths' counts it exactly once more in the auxiliary term. Added exact objective-decomposition telemetry (primary_final_reconstruction_loss, recursive_intermediate_aux_loss, recursive_final_depth_aux_contribution, recursive_depth_aux_weight, combined_training_loss), always populated (explicit 0.0 when disabled, never omitted). resolve_recursive_depth_aux_mode/migrate_recursive_depth_aux_config give any pre-existing config or checkpoint (recursive_depth_aux_mode absent) byte-identical 'legacy_all_depths' behavior -- 'off' is the new default only when recursive_depth_supervision_weights was never set. No production default changed; no adoption decision (deferred to SLM-233)."
+        },
         {
           "version": "v63",
           "date": "2026-07-21",
@@ -1735,16 +1740,22 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
         "scripts/run_slm138_recursive_denoiser_fixture.py",
+        "scripts/run_rsc_a02_depth_aux_mode_factorial.py",
         "tests/test_models/test_recursive_denoiser.py",
         "docs/design/iter-slm138-recursive-denoiser-20260720.json",
         "docs/design/iter-slm138-recursive-denoiser-20260720.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-21",
+          "note": "SLM-238 (RSC-A02): added 14 deterministic regression tests for recursive_depth_aux_mode/recursive_depth_aux_weight and the new objective-decomposition telemetry (tests/test_models/test_recursive_denoiser.py, 40 total, all passing). Added scripts/run_rsc_a02_depth_aux_mode_factorial.py -- a bounded 5-arm (A off / B intermediate_only+uniform / C all_depths+uniform / D intermediate_only+lambda=0.3 / E all_depths+lambda=0.3) deterministic-fixture + bounded real-corpus-smoke comparison; calibration/semantics only, no quality or promotion claim."
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
