@@ -134,6 +134,29 @@ def test_v2_accepts_schema_declared_modal_title_role() -> None:
     assert report.verdict is True
 
 
+def test_v2_accepts_display_body_and_value_aliases_from_dashboard_gold() -> None:
+    source = (
+        'status = Callout("info", ":dash.status.title", ":dash.status.body")\n'
+        'm1 = Card([TextContent(":dash.m1.value")])\n'
+        'm2 = Card([TextContent(":dash.m2.value")])\n'
+        'root = Stack([status, m1, m2], "column")'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="dashboard-display-aliases",
+            prompt=(
+                "Build a status Callout and two Cards. "
+                "Placeholders: :dash.status.title :dash.status.body "
+                ":dash.m1.value :dash.m2.value"
+            ),
+            openui=source,
+        ),
+    )
+
+    assert report.verdict is True
+
+
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:
     source = (
         'root = Stack([name, email], "column")\n'

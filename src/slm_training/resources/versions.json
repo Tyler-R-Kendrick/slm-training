@@ -402,12 +402,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.2.1",
+      "version": "2.3.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.3.0",
+          "date": "2026-07-21",
+          "note": "E674: accept public-schema aliases used by canonical fixtures: action may occupy Button.label, body may occupy description, and display value may occupy TextContent.text"
+        },
         {
           "version": "2.2.1",
           "date": "2026-07-20",
@@ -584,6 +589,11 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.2.1 to 2.3.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -1534,7 +1544,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v130",
+      "version": "v131",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1559,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v131",
+          "date": "2026-07-21",
+          "note": "E674: align visible semantic-role candidates with canonical action and dashboard display aliases for Button.label, Callout.description, and TextContent.text"
+        },
         {
           "version": "v130",
           "date": "2026-07-21",

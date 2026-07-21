@@ -21,11 +21,13 @@ _QUOTED_RE = re.compile(r'"(?:\\.|[^"\\])*"')
 _COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
 _CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
 _SEMANTIC_ROLE_PROPERTY_ALIASES = {
-    "body": {"text"},
+    "action": {"label"},
+    "body": {"description", "text"},
     "caption": {"details", "text"},
     "copy": {"text"},
     "description": {"details", "text"},
     "title": {"text"},
+    "value": {"text"},
     "img": {"image", "src"},
     "image": {"src"},
     "confirm": {"action", "label"},
