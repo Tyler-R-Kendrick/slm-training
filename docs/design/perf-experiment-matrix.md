@@ -339,3 +339,50 @@ legal sets using the deterministic `FixtureDescriptionEncoder`.
 - Query vectors are derived from the decoded prefix as a wiring placeholder.
 - A promotion rerun must show parse/fidelity within five absolute points of the
   off baseline while reducing forwards or projection cost.
+
+## E648 running C5-C8 for the first time (and a composition gap they expose)
+
+The "C5-C8 constraint-system definitions (proposed, unrun)" section above
+stated "No C5-C8 latency or quality result exists" — this session ran them.
+Before trusting the numbers, a real methodology gap surfaced: unlike C1-C4
+(where `compiler_decode_mode` substitutes for the R9 overlay flags, keeping
+`forwards_count_mean` close to C0's 13.5), C5-C8 leave `compiler_decode_mode`
+at its default `off` and don't carry `grammar_verify_chosen_only`/`grammar_
+multitoken_accept`/`grammar_canvas_lookahead=32`, so they fall back to the
+full per-token grammar path: `forwards_count_mean` jumps to 103.25-114.0 (8-
+9x C0's 13.5). A raw C5-C8-vs-C0 comparison would conflate "R9 absent" with
+"the lever itself does something" — flagged, not fixed (a harness-design
+call for `improve-openui-harnesses`).
+
+Official run (`--only C0,C5,C6,C7,C8 --limit 4 --warmup 1`, committed
+`playground_demo/last.pt`, smoke prompts via `test_seeds.jsonl` fallback):
+
+| ID | lever | mean ms | forwards/call | parse | raw_syntax |
+| --- | --- | ---: | ---: | ---: | ---: |
+| C0 | R9 control | 809.65 | 13.5 | 0.0 | 0.0 |
+| C5 | equivalence cache | 1295.78 | 114.0 | 0.0 | 0.0 |
+| C6 | C5 + active-symbol bitsets | 1339.61 | 114.0 | 0.0 | 0.0 |
+| C7 | completion bounds + compact canvas (MaskGIT) | 2374.36 | 103.25 | 0.25 | 0.5 |
+| C8 | C5+C6+C7 combined (MaskGIT) | 2344.58 | 103.25 | 0.25 | 0.5 |
+
+All five fail guardrails: C0's own `parse_rate=0.0` zero-quality anchor is
+the same pre-existing compositional-tokenizer limitation already documented
+for C1-C4, not new. To isolate each lever from the R9-composition gap, two
+matched same-recipe controls (target lever off, identical prompts via the
+canonical `_load_prompts`) were built ad hoc from the unmodified
+`scripts.run_perf_matrix` functions. Result: **none of C5, C6, or C7 show a
+measurable change in `forwards_count_mean` or quality versus their matched
+control at n=4** (latency deltas +0.7%/+3.4%/-3.2%, all within CPU-timing
+noise and inconsistent in sign across p50/p95); C8 does not improve on C7
+alone either. Negative but genuine — distinct from the pre-existing
+zero-quality-anchor blocker. No default change, no checkpoint trained or
+promoted, no source touched (no `version_stamp` bump). Incidentally,
+attempting a combined C0-C8 re-run surfaced a real, previously-undocumented
+crash (`AttributeError: 'OpenUITokenizer' object has no attribute
+'kind_ids'`) in the batched `model.generate()` warmup path with
+`compiler_decode_mode="forced"` (C1) — flagged, not fixed, out of this
+session's scope; `perf-matrix-results.json`'s existing C0-C4 evidence
+(`--warmup 0`, which doesn't hit this path) is untouched and still valid.
+Full evidence:
+[E648](iter-e648-perf-c5-c8-execution-20260721.md) and
+[JSON](iter-e648-perf-c5-c8-execution-20260721.json).
