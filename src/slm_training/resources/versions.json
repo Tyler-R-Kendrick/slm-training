@@ -3601,6 +3601,25 @@
         }
       ]
     },
+    "harness.experiments.slm229_rl_readiness_declared_suite_size_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm229_rl_readiness_declared_suite_size_gate.py",
+        "scripts/run_slm229_rl_readiness_declared_suite_size_gate.py",
+        "tests/test_harnesses/experiments/test_slm229_rl_readiness_declared_suite_size_gate.py",
+        "tests/test_scripts/test_run_slm229_rl_readiness_declared_suite_size_gate.py",
+        "docs/design/iter-slm229-rl-readiness-declared-suite-size-gate-20260721.json",
+        "docs/design/iter-slm229-rl-readiness-declared-suite-size-gate-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-229 RLRG0-02 RL-readiness declared-vs-actual suite-size gate stress test: exercises the real assess_rl_readiness / assert_rl_ready functions against a battery of declared-vs-actual rico_held suite-size arms to check whether the mechanical max(actual, declared) computation is gameable by a self-reported suite_sizes metadata claim decoupled from the actually-evaluated suite"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",

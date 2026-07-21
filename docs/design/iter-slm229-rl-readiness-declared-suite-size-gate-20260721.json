@@ -1,0 +1,135 @@
+{
+  "claim_class": "wiring",
+  "disposition": "gap_confirmed",
+  "disposition_rationale": "3/4 non-control arms (declared_only_ship_gate_floor_n20, declared_only_smoke_scale_n25, declared_far_exceeds_actual_n100) were approved by the real assess_rl_readiness and assert_rl_ready while their actual rico_held record count fell below the illustrative candidate floor (actual n>=1500, ignoring declared metadata). The declared-vs-actual suite-size requirement is confirmed gameable by a self-reported suite_sizes claim decoupled from the evaluated data.",
+  "experiment_id": "slm229-rl-readiness-declared-suite-size-gate",
+  "falsifier": "Every arm whose actual rico_held n is below 1500 is rejected by assess_rl_readiness / assert_rl_ready regardless of what the declared metadata suite_sizes field claims -- i.e., the check already ties its size floor to the actually-evaluated suite, or the mechanism cannot be exercised at all.",
+  "gate_hash": "95c605c47c435cb679376e573b12eff248203dc426ac85b592af25fbbfba4f93",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no checkpoint, GPU run, RL train step, or ship-gate claim is made or implied.",
+    "This exercises the real, unmodified assess_rl_readiness and assert_rl_ready functions against constructed evaluation payloads; the reward/AgentV/frozen-snapshot fields are fixture data built to satisfy every non-suite-size requirement, not a real production evaluation.",
+    "The candidate check (actual suite n alone, ignoring declared metadata, must clear 1500) is an illustrative diagnostic only. It is not implemented in rl_gate.py, not proposed as the correct fix, and passing/failing it makes no gate or promotion claim.",
+    "Whether a smaller-than-1500 rico_held suite actually harms RL training (as opposed to only being a weak proxy in the readiness report) is not measured here; this harness is about the readiness *gate*, not RL training dynamics.",
+    "Arms use hand-picked suite metrics and metadata, not a real evaluation run against a real checkpoint."
+  ],
+  "hypothesis": "The real assess_rl_readiness rico_held>=1500 requirement -- computed as max(actual suites['rico_held']['n'], declared evaluation_snapshot.metadata.suite_sizes['rico_held']) -- is satisfied by a self-reported declared suite_sizes claim alone, decoupled from the actually-evaluated rico_held record count, whenever the actual count independently clears the unrelated, much lower honest-ship-gate n floor (DEFAULT_MIN_SUITE_N=20, no rico_held override).",
+  "matrix_set": "slm229_rl_readiness_declared_suite_size_gate",
+  "matrix_version": "rlrg0-02-v1",
+  "required_rico_held_n": 1500,
+  "results": [
+    {
+      "approved": true,
+      "arm": {
+        "actual_n": 1500,
+        "declared_n": 1500,
+        "description": "Actual rico_held n=1500, declared metadata matches. The shape a genuine production-scale evaluation should have.",
+        "is_negative_control": false,
+        "name": "matched_actual_1500"
+      },
+      "assert_rl_ready_error": null,
+      "assert_rl_ready_raised": false,
+      "candidate_would_pass": true,
+      "failures": [],
+      "gameable": false,
+      "reported_rico_held_n": 1500
+    },
+    {
+      "approved": true,
+      "arm": {
+        "actual_n": 20,
+        "declared_n": 1500,
+        "description": "Actual rico_held n=20 -- exactly the honest-ship-gate DEFAULT_MIN_SUITE_N floor and nothing more -- with declared metadata claiming 1500. Tests whether the 1500 floor is satisfiable at the smallest actual size that independently clears the (unrelated, much lower) ship-gate n check.",
+        "is_negative_control": false,
+        "name": "declared_only_ship_gate_floor_n20"
+      },
+      "assert_rl_ready_error": null,
+      "assert_rl_ready_raised": false,
+      "candidate_would_pass": false,
+      "failures": [],
+      "gameable": true,
+      "reported_rico_held_n": 1500
+    },
+    {
+      "approved": true,
+      "arm": {
+        "actual_n": 25,
+        "declared_n": 1500,
+        "description": "Actual rico_held n=25 -- a smoke/dev-scale suite -- with declared metadata claiming 1500.",
+        "is_negative_control": false,
+        "name": "declared_only_smoke_scale_n25"
+      },
+      "assert_rl_ready_error": null,
+      "assert_rl_ready_raised": false,
+      "candidate_would_pass": false,
+      "failures": [],
+      "gameable": true,
+      "reported_rico_held_n": 1500
+    },
+    {
+      "approved": true,
+      "arm": {
+        "actual_n": 100,
+        "declared_n": 5000,
+        "description": "Actual rico_held n=100 with declared metadata claiming 5000 -- an order-of-magnitude over-claim -- to check whether the gap widens without limit.",
+        "is_negative_control": false,
+        "name": "declared_far_exceeds_actual_n100"
+      },
+      "assert_rl_ready_error": null,
+      "assert_rl_ready_raised": false,
+      "candidate_would_pass": false,
+      "failures": [],
+      "gameable": true,
+      "reported_rico_held_n": 5000
+    },
+    {
+      "approved": false,
+      "arm": {
+        "actual_n": 20,
+        "declared_n": null,
+        "description": "Actual rico_held n=20 (still clears the ship-gate floor) with no declared suite_sizes metadata at all. Negative control -- without a declared-size claim to inflate the reported size, the current gate must still reject this.",
+        "is_negative_control": true,
+        "name": "no_declared_field_small_actual_control"
+      },
+      "assert_rl_ready_error": "RL is locked: rico_held requires n>=1500",
+      "assert_rl_ready_raised": true,
+      "candidate_would_pass": false,
+      "failures": [
+        "rico_held requires n>=1500"
+      ],
+      "gameable": false,
+      "reported_rico_held_n": 20
+    },
+    {
+      "approved": false,
+      "arm": {
+        "actual_n": 20,
+        "declared_n": 50,
+        "description": "Actual rico_held n=20 with declared metadata honestly claiming 50 (also below 1500, no inflation attempted). Negative control -- the current gate must still reject this.",
+        "is_negative_control": true,
+        "name": "declared_below_floor_control"
+      },
+      "assert_rl_ready_error": "RL is locked: rico_held requires n>=1500",
+      "assert_rl_ready_raised": true,
+      "candidate_would_pass": false,
+      "failures": [
+        "rico_held requires n>=1500"
+      ],
+      "gameable": false,
+      "reported_rico_held_n": 50
+    }
+  ],
+  "run_id": "slm229-rl-readiness-declared-suite-size-gate-20260721",
+  "schema": "RlReadinessSuiteSizeGateReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T05:38:44.386837Z",
+  "version_stamp": {
+    "code_commit": "f1d32cf39c8ecd48baa7e8749f0d48cc993868ce",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm229_rl_readiness_declared_suite_size_gate": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:38:44.386800+00:00"
+  }
+}
