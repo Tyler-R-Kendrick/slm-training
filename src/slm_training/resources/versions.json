@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v85",
+      "version": "v86",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v86",
+          "date": "2026-07-20",
+          "note": "E641 rejection: restore v84 prompt-only semantic plans after visible-role completion cut strict v2, structure, and latency despite fidelity and reward gains"
+        },
         {
           "version": "v85",
           "date": "2026-07-20",
