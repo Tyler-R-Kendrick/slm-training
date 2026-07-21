@@ -1467,7 +1467,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v70",
+      "version": "v71",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1482,6 +1482,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v71",
+          "date": "2026-07-21",
+          "note": "E634: compose the schema-opaque pre-content floor with the repeated-instance margin by retargeting the margin at the legal empty literal (instead of a visible slot) at the pre-content argument, so every repeated instance of the owning family is corrected, not just the last"
+        },
         {
           "version": "v70",
           "date": "2026-07-20",
