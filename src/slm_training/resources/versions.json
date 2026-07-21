@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v87",
+      "version": "v88",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v88",
+          "date": "2026-07-20",
+          "note": "E648: constrain visible-role-inferred semantic-plan families to completed root-section boundaries to prevent nested family spam; renumbered from the originally launched E642 arm after rebase"
+        },
         {
           "version": "v87",
           "date": "2026-07-21",

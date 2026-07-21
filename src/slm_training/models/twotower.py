@@ -1540,6 +1540,7 @@ class TwoTowerModel(nn.Module):
         self._semantic_role_candidates: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._semantic_plan_action_counts: list[dict[int, int]] | None = None
+        self._semantic_plan_root_only_ids: list[set[int]] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -5009,6 +5010,35 @@ class TwoTowerModel(nn.Module):
             if str(expr_type).startswith("element:")
         )
 
+    @staticmethod
+    def _semantic_plan_role_family_counts(
+        family_counts: Counter[str],
+        role_candidates: dict[str, tuple[str, ...]] | None,
+    ) -> tuple[Counter[str], set[str]]:
+        """Fill uncovered roles with preferred leaves, marked root-only."""
+        if not role_candidates:
+            return family_counts, set()
+        from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
+
+        completed = family_counts.copy()
+        planned = set(family_counts)
+        inferred: set[str] = set()
+        for candidates in role_candidates.values():
+            if planned.intersection(candidates):
+                continue
+            family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in candidates
+                ),
+                None,
+            )
+            if family is not None:
+                completed[family] += 1
+                inferred.add(family)
+        return completed, inferred
+
     def _semantic_plan_bias(
         self,
         row: int,
@@ -5070,6 +5100,17 @@ class TwoTowerModel(nn.Module):
             "component_bound",
             "component_root_or_bound",
         }
+        root_only_ids = (
+            self._semantic_plan_root_only_ids[row]
+            if self._semantic_plan_root_only_ids
+            and row < len(self._semantic_plan_root_only_ids)
+            else set()
+        )
+        at_root_boundary = bool(
+            state is not None
+            and getattr(state, "mode", None) == "structural"
+            and not tuple(getattr(state, "frames", ()))
+        )
         component_score_ceiling = (
             max(
                 float(candidate_scores[position].item())
@@ -5084,6 +5125,8 @@ class TwoTowerModel(nn.Module):
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
+            if token_id in root_only_ids and not at_root_boundary:
+                continue
             score = scores.get(token_id, 0.0)
             still_required = (
                 remaining_counts is None or remaining_counts.get(token_id, 0) > 0
@@ -9520,23 +9563,52 @@ class TwoTowerModel(nn.Module):
             compiler = OpenUISemanticPlanCompiler(honesty_mode="production")
             self._semantic_plan_action_scores = []
             self._semantic_plan_action_counts = []
-            for prompt in prompts:
+            self._semantic_plan_root_only_ids = []
+            for row, prompt in enumerate(prompts):
                 plan = prompt_semantic_plan(prompt)
                 features = compiler.annotate_actions(None, action_ids, plan)
-                self._semantic_plan_action_scores.append(
-                    {
-                        token_id: feature.plan_confidence
-                        for token_id, feature in zip(
-                            component_ids, features, strict=True
-                        )
-                        if feature.component_family_compatible
-                        and not feature.conflict_or_unknown
-                    }
-                )
                 family_counts = Counter(
                     slot.component_family
                     for slot in (plan.role_slots if plan is not None else ())
                     if slot.component_family
+                )
+                family_counts, inferred_families = (
+                    self._semantic_plan_role_family_counts(
+                        family_counts,
+                        (
+                            self._semantic_role_candidates[row]
+                            if self._semantic_role_candidates
+                            and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
+                    )
+                )
+                action_scores = {
+                    token_id: feature.plan_confidence
+                    for token_id, feature in zip(
+                        component_ids, features, strict=True
+                    )
+                    if feature.component_family_compatible
+                    and not feature.conflict_or_unknown
+                }
+                action_scores.update(
+                    {
+                        token_id: 1.0
+                        for token_id, action_id in zip(
+                            component_ids, action_ids, strict=True
+                        )
+                        if family_counts[action_id] > 0
+                    }
+                )
+                self._semantic_plan_action_scores.append(action_scores)
+                self._semantic_plan_root_only_ids.append(
+                    {
+                        token_id
+                        for token_id, action_id in zip(
+                            component_ids, action_ids, strict=True
+                        )
+                        if action_id in inferred_families
+                    }
                 )
                 self._semantic_plan_action_counts.append(
                     {
@@ -9550,6 +9622,7 @@ class TwoTowerModel(nn.Module):
         else:
             self._semantic_plan_action_scores = None
             self._semantic_plan_action_counts = None
+            self._semantic_plan_root_only_ids = None
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
