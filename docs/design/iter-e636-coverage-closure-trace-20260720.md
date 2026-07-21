@@ -1,9 +1,9 @@
-# E622 — coverage-closure intervention trace
+# E636 — coverage-closure intervention trace
 
 Date: 2026-07-20
 Status: completed diagnostic; no behavior change; not ship
 
-E622 adds bounded score traces and aggregate counters to the E621
+E636 adds bounded score traces and aggregate counters to the E635
 `slot_coverage_close_decode_weight` policy. It records the open owner/frame,
 missing visible slots, choice before and immediately after the policy, and the
 final choice after downstream decoder policies. Decode scores are unchanged.
@@ -11,9 +11,9 @@ final choice after downstream decoder policies. Decode scores are unchanged.
 ## Reused checkpoint and recipe
 
 No training ran and no checkpoint was created. The clean CPU eval reused
-E620's rejected local-only checkpoint, SHA-256
+E634's rejected local-only checkpoint, SHA-256
 `3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f`.
-It used the exact E621 r2 OOD `n=4` recipe: honest slot contract, slot contract
+It used the exact E635 r2 OOD `n=4` recipe: honest slot contract, slot contract
 in context and constrained decode, public-schema role candidates, coverage
 weight 2, role-slot weight 8, the retained semantic-plan weights, and a
 160-token canvas. The run completed under the three-minute cap with no timeout
@@ -22,10 +22,10 @@ execution errors.
 
 ## Reproduction check
 
-All semantic outputs and metrics exactly reproduce E621 r2. Timing is reported
+All semantic outputs and metrics exactly reproduce E635 r2. Timing is reported
 as observational noise, not a performance claim.
 
-| OOD `n=4` | E621 r2 | E622 trace |
+| OOD `n=4` | E635 r2 | E636 trace |
 | --- | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 |
 | meaningful v1 | 0.7500 | 0.7500 |
@@ -66,7 +66,7 @@ the only observed late overrides.
 
 ## Decision
 
-Keep the telemetry and retain E621 default-off. Do not promote or claim ship
+Keep the telemetry and retain E635 default-off. Do not promote or claim ship
 readiness: strict v2 remains zero, AgentV fails, and no checkpoint was created.
 The next lever should make closure continuation ranking prefer explicit
 prompt-owned component mentions (for example, `name input` and `email input`)
@@ -74,4 +74,4 @@ over broad schema-only role matches. Dashboard needs a separate upstream
 inventory/owner correction; increasing the closure weight cannot create a
 missing root inventory.
 
-Evidence: [JSON](iter-e622-coverage-closure-trace-20260720.json).
+Evidence: [JSON](iter-e636-coverage-closure-trace-20260720.json).

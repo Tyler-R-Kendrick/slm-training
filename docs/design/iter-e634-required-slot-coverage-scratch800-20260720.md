@@ -1,11 +1,11 @@
-# E620 — required-slot coverage on an 800-step scratch checkpoint
+# E634 — required-slot coverage on an 800-step scratch checkpoint
 
 Date: 2026-07-20  
 Status: completed negative; checkpoint rejected; not ship
 
 E619 removed the last evaluator ambiguity from this lineage: coverage was fully
 judged, binding correctness passed, and strict meaning-v2 remained zero because
-the model did not emit the complete visible placeholder inventory. E620 tests
+the model did not emit the complete visible placeholder inventory. E634 tests
 the simplest remaining capacity hypothesis by training the same scratch
 TwoTower recipe for 800 steps instead of 80, then replaying E619's matched OOD
 `n=4` control/treatment recipe.
@@ -48,7 +48,7 @@ AgentV SDK bundle.
 | latency p95 | 14562.73 ms | 13704.44 ms | -858.29 ms |
 | AgentV | 0/1 | 0/1 | 0 |
 
-There were no decode timeouts or fallbacks. The E615 object-property role bias
+There were no decode timeouts or fallbacks. The E633 object-property role bias
 still produces a real matched improvement in fidelity, validity, structure,
 reward, and latency, but it does not increase strict meaning or required-slot
 coverage.
@@ -73,9 +73,9 @@ The per-record failures are now concrete:
 
 ## Decision
 
-Reject and do not sync or promote the E620 checkpoint. Retain E615's generalized
+Reject and do not sync or promote the E634 checkpoint. Retain E633's generalized
 typed-object role bias. The next useful lever is coverage-aware closure across
 component and property boundaries, with role-correctness preserved; another
 duration-only scratch train is not justified by this result.
 
-Raw evidence: [JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+Raw evidence: [JSON](iter-e634-required-slot-coverage-scratch800-20260720.json).

@@ -1,9 +1,9 @@
-# E633 — active Input role routing
+# E637 — active Input role routing
 
 Date: 2026-07-20
 Status: completed neutral partial; r2 rejected; default-off; not ship
 
-E633 narrows E632's failed global penalty to the active schema boundary. When
+E637 narrows E632's failed global penalty to the active schema boundary. When
 a required operational string is immediately followed by a public
 `x-openui-placeholder` property, the schema-opaque treatment floors the legal
 empty literal above visible slots. This targets `Input.name` without changing
@@ -21,7 +21,7 @@ bundle without execution errors.
 
 ## Measured result
 
-| OOD `n=4` | E631 baseline | E633 r1 | E633 r2 rejected | E633 r3 retained |
+| OOD `n=4` | E631 baseline | E637 r1 | E637 r2 rejected | E637 r3 retained |
 | --- | ---: | ---: | ---: | ---: |
 | meaningful v1 | 0.7500 | 0.7500 | 0.5000 | 0.7500 |
 | strict meaning v2 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |

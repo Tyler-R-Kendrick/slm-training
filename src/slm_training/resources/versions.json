@@ -565,6 +565,11 @@
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-20",
+          "note": "no-bump: E616-E624 consolidation pass \u2014 correct MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] from a stale '2.0.0' to '2.1.0' to mirror evals.meaningful_program's E618 bump; this field is a provenance/reporting label only (thresholds stay None/candidate_pending_calibration), never read by any gate decision, so no threshold or gate behavior changes. Caught by tests/test_versioning/test_mirrors.py::test_meaningful_program_version_is_mirrored during the consolidation pass's full verification re-run; E618's own commit updated evals.meaningful_program's registry entry but missed this mirrored constant."
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-20",
           "note": "no-bump: align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.0.0 to 2.1.0 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation"
         },
         {
@@ -1472,7 +1477,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v72",
+      "version": "v76",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1487,6 +1492,31 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v76",
+          "date": "2026-07-20",
+          "note": "no-bump: this branch's merge of origin/main -- _schema_role_slot_bias's object-property branch now runs main's validated, owner-role-compatible design (main's r2, which its own E621 write-up shows was corrected after an r1 attempt was rejected for letting an unrelated component's same-named property steal another component's slot) combined with this branch's v58 slot_role/slot_compatible_property_names/object_property_matches_slot_role helpers and phase==\"value\" guard, plus main's _inline_schema_property_names fix (finds schema properties nested in items/anyOf, not just top-level $ref); this is the actual code now in the repo as of this merge, not a threshold or gate-behavior change"
+        },
+        {
+          "version": "v76",
+          "date": "2026-07-20",
+          "note": "E623: expose the semantic_role_contract_in_context / semantic_role_*, schema_*, schema_role_slot_decode_weight, semantic_plan_*_decode_weight, and visible_reference_decode_weight CLI flags in scripts/train_model.py, mirroring scripts/evaluate_model.py's existing flag names and ModelBuildConfig wiring exactly; these levers (all already-present ModelBuildConfig/TwoTowerConfig fields, E617/E620) could previously only be exercised via standalone evaluate_model.py replay, never during a real slm sft train run (E622 finding)"
+        },
+        {
+          "version": "v75",
+          "date": "2026-07-20",
+          "note": "E620: derive plan_weight in _generate_batch_once from the new module-level SEMANTIC_PLAN_DECODE_WEIGHT_NAMES tuple (all 11 semantic_plan_*_decode_weight config fields) instead of a 9-item hand-enumerated literal that omitted semantic_plan_inline_decode_weight and semantic_plan_repeated_array_close_margin_decode_weight, silently no-opping _semantic_plan_inline_bias/_semantic_plan_repeated_array_close_bias whenever no other semantic_plan_* weight was also set (masked-not-live in E610-E619 recipes, which always also set semantic_plan_decode_weight)"
+        },
+        {
+          "version": "v74",
+          "date": "2026-07-20",
+          "note": "E617: raise ValueError in _generate_batch_once when schema_role_slot_decode_weight / slot_coverage_close_decode_weight / semantic_plan_typed_array_nonempty_margin_decode_weight / semantic_plan_typed_array_item_margin_decode_weight / semantic_plan_repeated_slot_margin_decode_weight is set without slot_contract_constrained_decode or template_fill_decode, since self._slot_contracts silently stays None otherwise and these biases no-op every step"
+        },
+        {
+          "version": "v73",
+          "date": "2026-07-20",
+          "note": "E615: expose the active typed-object declared property to schema_role_slot_decode_weight so src/alt/details each prefer their own matching visible-slot role instead of converging on one slot"
+        },
         {
           "version": "v72",
           "date": "2026-07-20",

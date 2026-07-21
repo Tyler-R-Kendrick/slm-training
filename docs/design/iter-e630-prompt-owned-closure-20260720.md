@@ -3,7 +3,7 @@
 Date: 2026-07-20
 Status: completed negative; implementation reverted; not ship
 
-E622 traced Auth's wrong `SwitchGroup` to broad public-schema role matching
+E636 traced Auth's wrong `SwitchGroup` to broad public-schema role matching
 inside `Button`. E630 tested the smallest apparent correction: when an
 uncovered slot has a compatible component explicitly mentioned in the prompt,
 restrict closure-continuation components to that prompt-mentioned subset and
@@ -12,15 +12,15 @@ otherwise retain broad schema fallback.
 ## Reused checkpoint and recipe
 
 No training ran and no checkpoint was created. The clean CPU eval reused
-E620's rejected local-only checkpoint, SHA-256
+E634's rejected local-only checkpoint, SHA-256
 `3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f`,
-with the exact E622/E621 r2 OOD `n=4` recipe. The run completed under the
+with the exact E636/E635 r2 OOD `n=4` recipe. The run completed under the
 three-minute cap with no timeout or fallback and emitted AgentEvals JSONL plus
 an AgentV SDK bundle without execution errors.
 
 ## Measured result
 
-| OOD `n=4` | E622 baseline | E630 treatment |
+| OOD `n=4` | E636 baseline | E630 treatment |
 | --- | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 |
 | meaningful v1 | 0.7500 | 0.5000 |

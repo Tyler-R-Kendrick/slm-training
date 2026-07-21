@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E615",
+  "experiment_id": "E633",
   "run_id": "e615-e614-objectslotrole8-r1",
   "date_utc": "2026-07-20",
   "status": "completed",
@@ -93,7 +93,7 @@
       "reference_graph_invalid"
     ]
   },
-  "decision": "Retain the generalized inline-object role rule and carry E615 as the next scratch research baseline; it improves slot fidelity and reward without changing structure, recall, AST scores, or output length.",
+  "decision": "Retain the generalized inline-object role rule and carry E633 as the next scratch research baseline; it improves slot fidelity and reward without changing structure, recall, AST scores, or output length.",
   "next": "Repair the binding-aware evaluator so inline object property keys are not treated as unresolved references, then use corrected strict-v2 evidence to target omitted prompt requirements.",
   "ship_gates": {
     "pass": false,

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E622",
+  "run_id": "e622-training-time-decode-gate-scratch40-20260720",
+  "date_utc": "2026-07-20",
+  "status": "completed_mixed",
+  "run_class": "scratch_matrix",
+  "hypothesis": "E616-E621 audited and fixed decode-time bias gaps (self._slot_contracts, SEMANTIC_PLAN_DECODE_WEIGHT_NAMES) exclusively via standalone post-hoc eval replays (evaluate_model.py control/treatment pairs against an already-trained checkpoint). This iteration pivots from that closed audit thread to a literal training run: does an actual `slm sft train` invocation ever exercise the E617-fixed self._slot_contracts gate live, as a side effect of its own periodic in-training eval (train_loop.py's _maybe_eval -> eval_runner.evaluate_suites), rather than only through the separate evaluate_model.py CLI E616-E621 always used? If so, is this the first training run in the lineage where that gate is genuinely populated during training itself, and does any weighted decode lever it guards actually fire at a nonzero weight?",
+  "method": {
+    "call_path_check": "Traced generate_batch_requests/_generate_batch_once (src/slm_training/models/twotower.py) as invoked from src/slm_training/harnesses/model_build/train_loop.py:753 _maybe_eval -> eval_runner.evaluate_suites, confirmed to be a real decode call inside the training process itself (not confined to scripts/evaluate_model.py). Confirmed via source read that plain SFT's forward/loss step never decodes (teacher-forced CE only); the only training-time path that reaches generate_batch_requests is periodic ship-eval (--test-dir/--eval-every) and loss-suite eval, and that GRPO-lite RL's on-policy rollout would also reach it, but RL is fail-closed on an approved RLReadinessReport (none exists on disk) so was out of scope this iteration.",
+    "cli_surface_check": "grep of scripts/train_model.py confirmed --slot-contract-constrained-decode and --honest-slot-contract are exposed (train_model.py:707-724), and that both flow into TwoTowerConfig via src/slm_training/harnesses/model_build/factory.py:341-342 (the same object used for training's own periodic eval, not a separate copy). grep also confirmed scripts/train_model.py has zero occurrences of 'semantic_plan' anywhere -- none of the semantic_plan_*_decode_weight/schema_*_decode_weight/slot_coverage_close_decode_weight levers E617/E620 fixed are settable from the SFT training CLI (they are only settable from scripts/evaluate_model.py, which E616-E621 always used instead). src/slm_training/harnesses/model_build/config.py confirms these fields default to None (inert) on ModelBuildConfig.",
+    "run_attempt_1_over_cap": "First attempt: `--steps 80 --eval-every 40` (two periodic-eval passes over the 4-record ood suite) on the same corpus/seed/architecture as E616/E617 (src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719). Ran past the repo's 3-minute hard run cap (AGENTS.md); killed via SIGKILL at wall 3m18.134s (`time` output: real 3m18.134s, user 3m54.745s, sys 2.093s) after the harness's own 170s agent-command timeout had already silently moved it to a background job. Per the iron law a timed-out/killed run is never evidence: its outputs/runs/ directory was deleted before the retry and no metric from it is reported.",
+    "run_attempt_2_scaled_down": "Scaled down to `--steps 40 --eval-every 40` (single periodic-eval pass, fired once at the final step) to fit the cap, run under `timeout 165`. Command: `python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 0 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --no-sync-checkpoints --run-id e622-training-time-decode-gate-scratch40-20260720`. Completed cleanly: real 0m51.285s (train_summary.json's own elapsed_wall_seconds: 48.68114771500041), well inside the 3-minute cap. Internal telemetry (train_telemetry.json) attributes 88.78% of wall time to the single eval_suites span (39.326s) versus 1.41%/1.64%/1.21% for forward/backward/optim_step across the 40 training steps -- the periodic eval, not training itself, is what pushed the first (80-step, 2-pass) attempt over the cap."
+  },
+  "finding": "outputs/runs/e622-training-time-decode-gate-scratch40-20260720/scoreboard.json's evaluation_policy for the in-training periodic eval shows slot_contract_constrained_decode: true and honest_slot_contract: true -- confirming self._slot_contracts is genuinely populated during this training run's own periodic eval call, the first time in the E610-E621 lineage this has happened inside an actual `slm sft train` process rather than only in a standalone evaluate_model.py replay. However every weighted decode lever the E617/E620 fixes gate on -- schema_role_slot_decode_weight, semantic_role_decode_weight, slot_coverage_close_decode_weight, schema_value_decode_weight, schema_opaque_close_decode_weight, and all nine semantic_plan_*_decode_weight fields -- is 0.0 in that same evaluation_policy block, because scripts/train_model.py's CLI (unlike scripts/evaluate_model.py's) never exposes flags to set them nonzero; ModelBuildConfig defaults them to None/0.0. So the E617 gate is open for the first time during live training, but nothing behind it fires: this training run's periodic-eval decode is mechanically no different from a pre-E617-fix training run would have been, for a different and still-live reason (CLI surface gap, not the E617/E618/E620 bugs already fixed). Real numbers for this 40-step scratch checkpoint's single periodic eval (ood suite, n=4, not a ship claim): parse_rate 1.0, meaningful_program_rate 0.0, structural_similarity 0.190625, placeholder_fidelity 0.0, reward_score 0.0, ship_score 0.03465909090909091.",
+  "decision": "No code change this iteration -- the finding is about training-time CLI flag coverage, not a decode-logic bug, and is reported rather than silently patched so it can be triaged deliberately. If a future iteration wants training-time (not just standalone-eval) exercise of the E617/E620-fixed weighted biases, scripts/train_model.py needs either the missing --semantic-plan-*/--schema-*/--slot-coverage-close-decode-weight flags added, or an --eval-policy-preset flag that applies src/slm_training/harnesses/model_build/eval_policy.py's STRICT_COMPILER_TREE_POLICY (which already sets slot_contract_constrained_decode/honest_slot_contract/slot_contract_in_context together) to the live training config, not just to periodic-eval calls. Not filed as a bug fix this iteration to avoid re-opening the just-closed E617/E618/E620/E621 audit thread with a new, different-shaped gap under time pressure; flagging honestly for a dedicated follow-up instead.",
+  "not_a_ship_claim": true,
+  "checkpoint": {
+    "run_id": "e622-training-time-decode-gate-scratch40-20260720",
+    "location": "outputs/runs/e622-training-time-decode-gate-scratch40-20260720/checkpoints/last.pt",
+    "sha256": "6b7aaf2bdd4deaa2b9f54f8ff2fae75d36c8dc847e2d49ba11f5c4f9037bf00a",
+    "created": true,
+    "sync": false,
+    "sync_reason": "Local-only 40-step scratch diagnostic checkpoint (--no-sync-checkpoints); not promotable, quality-neutral placeholder-fidelity/reward metrics on a heavily undertrained model."
+  },
+  "training": {
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "model": "twotower",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "steps": 40,
+    "batch_size": 1,
+    "seed": 0,
+    "no_sync_checkpoints": true,
+    "elapsed_wall_seconds": 48.68114771500041,
+    "shell_real_seconds": 51.285,
+    "last_loss": 15.396740913391113
+  },
+  "eval": {
+    "suite": "ood",
+    "n": 4,
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "eval_every": 40,
+    "fired_at_step": 40,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "meaningful_program_v1_rate": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "placeholder_fidelity": 0.0,
+    "structural_similarity": 0.190625,
+    "reward_score": 0.0,
+    "ship_score": 0.03465909090909091,
+    "ship_best": true,
+    "evaluation_policy_slot_contract_constrained_decode": true,
+    "evaluation_policy_honest_slot_contract": true,
+    "evaluation_policy_all_decode_weight_levers_zero": true
+  },
+  "no_metric_changes": "No previously reported ship-gate or matrix metric changes; this is a fresh standalone checkpoint's own numbers, not a comparison claim.",
+  "next": [
+    "If training-time exercise of the E617/E620-fixed weighted biases is wanted, add the missing semantic_plan_*/schema_*/slot_coverage_close_decode_weight flags to scripts/train_model.py (or wire an --eval-policy-preset that applies eval_policy.STRICT_COMPILER_TREE_POLICY to the live training config), then re-run this same recipe and diff evaluation_policy before/after.",
+    "GRPO-lite RL (slm rl train) is the training loop most directly motivated to exercise these biases live every step (on-policy rollout generation, not just periodic eval), but is fail-closed on an approved RLReadinessReport; none exists in this repo snapshot. Producing one requires the full autoresearch validate-rl gate (frozen five-suite eval, full rico_held, honest ship gates, AgentV pass, nonzero reward variance) -- out of scope for a single 3-minute-capped iteration, left as a distinct future phase.",
+    "The first (80-step, 2-pass) attempt's near-40s-per-periodic-eval-pass cost on a 4-record suite is itself worth remembering when sizing any future --eval-every schedule against the 3-minute cap: at this record count/backend, budget roughly 40s per fired eval pass, not per step."
+  ],
+  "verification": {
+    "commands": [
+      "python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --device cpu --context-backend scratch --output-tokenizer choice --steps 40 --batch-size 1 --seed 0 --test-dir src/slm_training/resources/data/eval/remediated --eval-every 40 --eval-suites ood --honest-slot-contract --slot-contract-constrained-decode --no-sync-checkpoints --run-id e622-training-time-decode-gate-scratch40-20260720",
+      "python -m scripts.repo_policy",
+      "python -m scripts.verify_version_stamps --check"
+    ],
+    "notes": "No pytest run added or required: no source file changed, this iteration is a real train+eval invocation of existing harness code plus an honest report of what it did and did not exercise."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "dfb6a782ee057a98a14c8f2e7797b84e0623409b",
+    "code_dirty": false,
+    "components_touched": 0
+  }
+}

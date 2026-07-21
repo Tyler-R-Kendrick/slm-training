@@ -1,19 +1,19 @@
-# E634 — final-boundary pre-content routing
+# E638 — final-boundary pre-content routing
 
 Date: 2026-07-20
 Status: completed negative; rejected and reverted; not ship
 
-E634 split E633's pre-content literal score from optional opaque handling and
+E638 split E637's pre-content literal score from optional opaque handling and
 applied it after the repeated-slot margin. This tested whether the remaining
 Auth role mismatch was only an ordering conflict at the final local choice.
 
 No training ran and no checkpoint was created. The clean CPU OOD `n=4` eval
 reused E620's rejected local checkpoint (SHA-256
 `3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f`)
-with the exact E633 recipe. It completed under the three-minute cap with no
+with the exact E637 recipe. It completed under the three-minute cap with no
 timeout/fallback and emitted AgentEvals plus AgentV evidence.
 
-| OOD `n=4` | E633 r3 | E634 |
+| OOD `n=4` | E637 r3 | E638 |
 | --- | ---: | ---: |
 | meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.5000 / 0.0000 |
 | fidelity / validity | 0.6750 / 0.8050 | 0.5083 / 0.7050 |
@@ -25,10 +25,10 @@ timeout/fallback and emitted AgentEvals plus AgentV evidence.
 
 Auth collapsed from the complete Stack/Button/two-Input inventory to
 `TextContent(email)`, while the other three records stayed unchanged. This
-matches E633 r2 and disproves the local-ordering hypothesis: forcing both
+matches E637 r2 and disproves the local-ordering hypothesis: forcing both
 operational literals changes downstream section/root selection.
 
-Reject v71 and restore E633's non-regressing behavior as v72. Do not sync,
+Reject v71 and restore E637's non-regressing behavior as v72. Do not sync,
 promote, or make a ship claim. The next attempt must score Input property roles
 together with section retention/root reachability, not impose another local
 argmax override.

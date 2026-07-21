@@ -8,20 +8,20 @@ depth can be worse than broad schema matching. E631 changes the existing
 default-off slot-coverage closure policy only when the active component owner
 cannot own any missing visible role: it prefers legal closure instead of
 nesting a different role-compatible component. Structural child lists and
-object-property continuation retain E621 behavior.
+object-property continuation retain E635 behavior.
 
 ## Reused checkpoint and recipe
 
 No training ran and no checkpoint was created. The clean CPU eval reused
-E620's rejected local-only checkpoint, SHA-256
+E634's rejected local-only checkpoint, SHA-256
 `3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f`,
-with the exact E622/E621 r2 OOD `n=4` recipe. It completed under the
+with the exact E636/E635 r2 OOD `n=4` recipe. It completed under the
 three-minute cap with no timeout or fallback and emitted AgentEvals JSONL plus
 an AgentV SDK bundle without execution errors.
 
 ## Measured result
 
-| OOD `n=4` | E622 baseline | E631 treatment |
+| OOD `n=4` | E636 baseline | E631 treatment |
 | --- | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 |
 | meaningful v1 | 0.7500 | 0.7500 |

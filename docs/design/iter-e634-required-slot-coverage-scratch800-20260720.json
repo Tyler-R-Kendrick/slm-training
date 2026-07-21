@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "run_id": "e620-required-slot-coverage-scratch800-20260720",
-  "experiment_id": "E620",
+  "experiment_id": "E634",
   "date_utc": "2026-07-20",
   "status": "completed_negative",
   "run_class": "scratch_matrix",
@@ -161,7 +161,7 @@
     "binding_aware_meaningful_v2_rate_strict": "0.0 -> 0.0",
     "required_placeholder_missing_records": "4 -> 3"
   },
-  "decision": "Reject the 800-step checkpoint for promotion. Longer scratch training sharply lowers train loss but does not clear strict meaning-v2 and regresses E619 fidelity, validity, and structure. Retain E615's object-property role bias, but move the next iteration from duration scaling to coverage-aware component/property closure.",
+  "decision": "Reject the 800-step checkpoint for promotion. Longer scratch training sharply lowers train loss but does not clear strict meaning-v2 and regresses E619 fidelity, validity, and structure. Retain E633's object-property role bias, but move the next iteration from duration scaling to coverage-aware component/property closure.",
   "ship_gate_result": "fail",
   "ship_gates": false,
   "version_stamp": {

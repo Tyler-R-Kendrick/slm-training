@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import pytest
@@ -26,7 +27,11 @@ from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 from slm_training.models.grammar import make_grammar_state
-from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+from slm_training.models.twotower import (
+    SEMANTIC_PLAN_DECODE_WEIGHT_NAMES,
+    TwoTowerConfig,
+    TwoTowerModel,
+)
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
 
@@ -958,6 +963,59 @@ def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
     model.generate_batch_requests([request])  # must not raise ValueError
 
 
+def test_semantic_plan_decode_weight_names_cover_all_config_fields() -> None:
+    """E620 drift guard.
+
+    ``_generate_batch_once`` populates ``self._semantic_plan_action_scores`` /
+    ``self._semantic_plan_action_counts`` from
+    ``plan_weight = max(SEMANTIC_PLAN_DECODE_WEIGHT_NAMES)``. Before E620, the
+    equivalent hand-enumerated list omitted
+    ``semantic_plan_inline_decode_weight`` and
+    ``semantic_plan_repeated_array_close_margin_decode_weight`` even though
+    ``_semantic_plan_inline_bias`` and ``_semantic_plan_repeated_array_close_bias``
+    read that same state -- both biases silently no-opped whenever no other
+    ``semantic_plan_*`` weight was also set. Fail the build instead of letting a
+    future ``semantic_plan_*_decode_weight``/``semantic_plan_*_margin_decode_weight``
+    config field go unlisted the same way.
+    """
+    config_fields = {
+        field.name
+        for field in dataclasses.fields(TwoTowerConfig)
+        if field.name.startswith("semantic_plan_")
+        and field.name.endswith("_decode_weight")
+    }
+    assert config_fields == set(SEMANTIC_PLAN_DECODE_WEIGHT_NAMES)
+
+
+@pytest.mark.parametrize(
+    "weight_name",
+    [
+        "semantic_plan_inline_decode_weight",
+        "semantic_plan_repeated_array_close_margin_decode_weight",
+    ],
+)
+def test_semantic_plan_only_weight_still_populates_plan_state(
+    weight_name: str,
+) -> None:
+    """E620: these two biases read ``self._semantic_plan_action_scores``/
+
+    ``self._semantic_plan_action_counts``, populated only when
+    ``plan_weight = max(SEMANTIC_PLAN_DECODE_WEIGHT_NAMES) > 0``. Before E620 the
+    literal ``max(...)`` omitted both weight names, so setting either one alone
+    (no other ``semantic_plan_*`` weight active) left ``plan_weight <= 0`` and the
+    state stayed ``None`` -- the bias silently no-opped every decode step
+    regardless of weight. Every E610-E619 recipe happened to also set
+    ``semantic_plan_decode_weight`` nonzero, which masked the gap by coincidence.
+    """
+    model = _model(output_tokenizer="choice", **{weight_name: 8.0})
+    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+
+    model.generate_batch_requests([request])
+
+    assert model._semantic_plan_action_scores is not None
+    assert model._semantic_plan_action_counts is not None
+
+
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
@@ -1097,40 +1155,89 @@ def test_schema_role_slot_bias_prefers_active_content_property_owner() -> None:
     assert bias.tolist() == [4.0, 4.0, 0.0]
 
 
-def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
+def test_schema_role_slot_bias_distinguishes_typed_object_properties_by_role() -> None:
+    """E615 (generalized): sibling properties of an active typed-object
+    literal (e.g. an ``ImageGallery`` item's ``src``/``alt``/``details``)
+    must each prefer their own matching visible slot instead of converging
+    on the same one -- but only once the *owning* component is itself a
+    ``semantic_role_candidates`` match for the slot (the same owner-role
+    compatibility gate E621's ``_slot_coverage_close_bias`` correction
+    validated elsewhere in this file)."""
     from slm_training.data.quality import semantic_role_candidates
-    from slm_training.dsl.production_codec import NAME_PREFIX, OPEN_PREFIX
+    from slm_training.dsl.production_codec import (
+        LIST_OPEN,
+        NAME_PREFIX,
+        OBJ_OPEN,
+        OPEN_PREFIX,
+    )
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 
     model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
     tokenizer = model.tokenizer
-    state = ChoiceDecodeState(tokenizer, slot_count=3)
-    for token in (
-        f"{OPEN_PREFIX}ImageGallery",
-        "[",
-        "{",
-        f"{NAME_PREFIX}src",
-    ):
-        assert state.advance_id(tokenizer.token_to_id[token])
-    slots = [":gallery.img", ":gallery.alt", ":gallery.caption"]
-    candidates = semantic_role_candidates(slots, ["ImageGallery"])
-    slot_ids = tuple(tokenizer.sym_id(index) for index in range(3))
+    slot_contract = [":ood.gallery.img", ":ood.gallery.alt", ":ood.gallery.caption"]
+    img_id, alt_id, caption_id = (
+        tokenizer.sym_id(0),
+        tokenizer.sym_id(1),
+        tokenizer.sym_id(2),
+    )
+    candidates = semantic_role_candidates(slot_contract, ["ImageGallery"])
+    assert candidates == {
+        ":ood.gallery.alt": ("ImageGallery",),
+        ":ood.gallery.caption": ("ImageGallery",),
+        ":ood.gallery.img": ("ImageGallery",),
+    }
+
+    def _bias_for_property(name: str) -> list[float]:
+        state = ChoiceDecodeState(tokenizer, slot_count=3)
+        assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}ImageGallery"])
+        assert state.advance_id(tokenizer.token_to_id[LIST_OPEN])
+        assert state.advance_id(tokenizer.token_to_id[OBJ_OPEN])
+        assert state.advance_id(tokenizer.token_to_id[f"{NAME_PREFIX}{name}"])
+        assert state.frames[-1].kind == "object"
+        assert state.frames[-1].active_property == name
+        bias = model._schema_role_slot_bias(
+            state,
+            (img_id, alt_id, caption_id),
+            torch.zeros(3),
+            slot_contract,
+            candidates,
+        )
+        assert bias is not None
+        return bias.tolist()
+
+    # src has no literal ":...src" slot; it must still resolve via the
+    # img/image role alias, and each property owns a distinct slot.
+    assert _bias_for_property("src") == [4.0, 0.0, 0.0]
+    assert _bias_for_property("alt") == [0.0, 4.0, 0.0]
+    assert _bias_for_property("details") == [0.0, 0.0, 4.0]
+
+
+def test_schema_role_slot_bias_abstains_when_owner_is_not_a_role_candidate() -> None:
+    """The owner-role compatibility gate must reject an active property whose
+    enclosing component never matched ``semantic_role_candidates`` for any
+    slot -- an empty candidates map for the owner means no slot can be
+    "stolen" by an unrelated component's same-named property."""
+    from slm_training.dsl.production_codec import LIST_OPEN, NAME_PREFIX, OBJ_OPEN, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_role_slot_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    slot_contract = [":ood.gallery.img"]
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}ImageGallery"])
+    assert state.advance_id(tokenizer.token_to_id[LIST_OPEN])
+    assert state.advance_id(tokenizer.token_to_id[OBJ_OPEN])
+    assert state.advance_id(tokenizer.token_to_id[f"{NAME_PREFIX}src"])
 
     bias = model._schema_role_slot_bias(
         state,
-        slot_ids,
-        torch.zeros(3),
-        slots,
-        candidates,
+        (tokenizer.sym_id(0),),
+        torch.zeros(1),
+        slot_contract,
+        {":ood.gallery.img": ("SomeUnrelatedComponent",)},
     )
 
-    assert candidates == {
-        ":gallery.alt": ("ImageGallery",),
-        ":gallery.caption": ("ImageGallery",),
-        ":gallery.img": ("ImageGallery",),
-    }
-    assert bias is not None
-    assert bias.tolist() == [4.0, 0.0, 0.0]
+    assert bias is None
 
 
 def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> None:
@@ -1146,6 +1253,16 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
         ":modal.confirm": ("Button",),
         ":modal.title": ("Modal",),
     }
+
+
+def test_object_property_matches_slot_role_resolves_image_and_caption_aliases() -> None:
+    from slm_training.data.quality import object_property_matches_slot_role
+
+    assert object_property_matches_slot_role("src", ":ood.gallery.img")
+    assert object_property_matches_slot_role("alt", ":ood.gallery.alt")
+    assert object_property_matches_slot_role("details", ":ood.gallery.caption")
+    assert not object_property_matches_slot_role("src", ":ood.gallery.alt")
+    assert not object_property_matches_slot_role("details", ":ood.gallery.alt")
 
 
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:

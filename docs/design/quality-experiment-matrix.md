@@ -3908,18 +3908,55 @@ created or synced. Evidence:
 [narrative](iter-e614-typed-object-state-20260720.md) and
 [JSON](iter-e614-typed-object-state-20260720.json).
 
-## E615 typed-object slot roles
+## E615 object-frame schema-role slot bias
 
-E615 extends public-schema role matching through inline object/array-item
+E615 extends `schema_role_slot_decode_weight` from top-level component
+arguments to declared properties inside an active typed-object literal, so
+`ImageGallery` item properties (`src`, `alt`, `details`) each score against
+their own matching visible-slot role instead of E614's unscored object-frame
+gap. E614's own checkpoint (`e569-e561-matched-cont48-r1-48s`) is
+local-scratch-only and unrecoverable in a fresh container, so — following the
+E540-E548/E544-E545 fallback pattern — this experiment trained one fresh
+8-step CPU scratch checkpoint and ran the matched E614 OOD `n=4` recipe
+twice against it: control (`schema_role_slot_decode_weight=0`) vs treatment
+(`=8.0`, E614's value). Both arms are byte-identical, 0/4 parseable
+predictions, every headline metric `0.0`; the checkpoint is too undertrained
+for constrained decode to reach a legal full parse on any OOD record, so the
+Gallery `src`/`alt`/`details` fix cannot be observed end-to-end on it. The
+fix mechanism is verified separately at the unit level (two new passing
+tests constructing the `ImageGallery` object frame directly). Retain the code
+change as the current scratch policy; reject this session's checkpoint for
+promotion; the end-to-end demonstration is deferred to the next real trained
+successor checkpoint. Strict v2 remains 0, AgentV is 0/1 for both arms, and
+no checkpoint was synced. Evidence:
+[narrative](iter-e615-object-frame-schema-role-slot-20260720.md) and
+[JSON](iter-e615-object-frame-schema-role-slot-20260720.json).
+
+## E633 typed-object slot roles
+
+*Numbering note: this session originally landed on `main` as "E615"
+(`docs/design/iter-e615-typed-object-slot-role-20260720.{md,json}`), a
+number `claude/great-dirac-nucd4x` had already used for different,
+independently-verified work (the "E615 object-frame schema-role slot bias"
+section above). Merging both into one branch without renumbering would have
+made "E615" ambiguous. Following this repo's established precedent for this
+exact situation (see PR #620's "Numbering note"), the already-landed number
+on the branch performing the merge (`claude/great-dirac-nucd4x`'s own E615)
+was kept, and this incoming session's work was renumbered to the next free
+number, E633 (E632 is reserved by the unmerged `agent/e632-input-role-assignment`
+branch, so numbering resumes at E633). Its own doc files and every reference
+to "E615" inside them were renamed accordingly; no content changed.*
+
+E633 extends public-schema role matching through inline object/array-item
 fields and requires the active property to match before applying slot bias.
 Gallery now binds `src`, `alt`, and `details` to the public `img`, `alt`, and
 `caption` slots. Against E614, aggregate fidelity rises 0.7833→0.8250,
 validity 0.8700→0.8950, and reward 0.9020→0.9145; structure, recall, AST F1,
 and 93 emitted tokens are unchanged, while p95 falls 12.60→10.22 s. Retain
-E615 as the next scratch research baseline. Strict v2 remains 0, AgentV is
+E633 as the next scratch research baseline. Strict v2 remains 0, AgentV is
 0/1, and no checkpoint was created or synced. Evidence:
-[narrative](iter-e615-typed-object-slot-role-20260720.md) and
-[JSON](iter-e615-typed-object-slot-role-20260720.json).
+[narrative](iter-e633-typed-object-slot-role-20260720.md) and
+[JSON](iter-e633-typed-object-slot-role-20260720.json).
 
 ## E616 object-frame slot-bias replay on an 80-step scratch checkpoint
 
@@ -4065,6 +4102,248 @@ checkpoint trained, promoted, or synced. Not a ship claim. Recommend adding
 Evidence: [narrative](iter-e619-slot-contract-in-context-gap-20260720.md)
 and [JSON](iter-e619-slot-contract-in-context-gap-20260720.json).
 
+## E620 the E617 bug class had a second, still-live instance
+
+E620 is a systematic audit for more instances of E617's silently-gated-state
+bug class (in `twotower.py`/`choice_tokenizer.py`) and E618's
+regex-misclassifies-valid-DSL-output bug class (in
+`evals/meaningful_program.py`), rather than another scratch-checkpoint
+attempt to flip strict v2. Traced every `self._*` attribute in
+`TwoTowerModel` populated conditionally and read by a silently-no-opping
+decode-time bias: `self._slot_contracts` (E617-fixed, re-verified all 5
+readers are covered, no 6th found), `self._semantic_role_candidates`
+(self-guarding, already raises), and
+`self._semantic_plan_action_scores`/`self._semantic_plan_action_counts`,
+populated by `plan_weight = max(...)` over a **hand-enumerated 9-name list**.
+**Finding:** `TwoTowerConfig` actually declares 11
+`semantic_plan_*_decode_weight` fields; the list omitted
+`semantic_plan_inline_decode_weight` (gates `_semantic_plan_inline_bias`) and
+`semantic_plan_repeated_array_close_margin_decode_weight` (gates
+`_semantic_plan_repeated_array_close_bias`), both of which read exactly the
+state the list should have gated — the same failure shape as E617's
+`self._slot_contracts` gap, one level removed (a drifted hand-maintained list
+instead of a missing companion flag). **Currently masked, not live-broken:**
+every E610-E619 recipe also sets `semantic_plan_decode_weight=4.0` (already
+listed) alongside `semantic_plan_repeated_array_close_margin_decode_weight=2.0`,
+so `plan_weight` was positive by coincidence in every real eval to date;
+`semantic_plan_inline_decode_weight` has never been set nonzero in any
+committed recipe (dormant, same landmine). `choice_tokenizer.py` has no
+conditional per-row state at all — ruled out clean.
+**Fix:** replaced the 9-item literal with `max(...)` over a new module-level
+`SEMANTIC_PLAN_DECODE_WEIGHT_NAMES` tuple (all 11 names),
+`src/slm_training/models/twotower.py` (`model.twotower` v59→v60). Two new
+regression tests in `tests/test_models/test_compiler_decode.py`: a
+`dataclasses.fields(TwoTowerConfig)` drift guard
+(`test_semantic_plan_decode_weight_names_cover_all_config_fields`) that fails
+the build if a future `semantic_plan_*` weight field is added without being
+added to the tuple, and a real end-to-end functional test
+(`test_semantic_plan_only_weight_still_populates_plan_state`, parametrized
+over both previously-missing names) calling
+`model.generate_batch_requests(...)` with only that one weight set and
+asserting the state populates. `pytest tests/test_models/test_compiler_decode.py`:
+100 passed (97 pre-existing + 3 new).
+**Real before/after confirmation:** no retraining — loaded the real, on-disk
+E617 checkpoint (sha256 `119dd41a…8898a854`, re-verified) via
+`TwoTowerModel.from_checkpoint`, applied E617's exact real
+`evaluation_policy` with every `semantic_plan_*` weight zeroed except one
+target weight = 8.0, and called `generate_batch_requests` on the real
+`ood_gallery_01` OOD record, before the fix (`git stash` of only
+`twotower.py`) and after. For both previously-missing weights,
+`self._semantic_plan_action_scores`/`_action_counts` are `None`/`None`
+pre-fix (bug reproduced) and populated/populated post-fix — root cause
+confirmed and repaired. The raw prediction text is byte-identical
+pre/post-fix in both cases on this specific 80-step scratch checkpoint and
+record (the same malformed self-nested tree E618 already characterized as
+decode-level instability) — an honest, checkpoint-quality-dominated null
+result at the prediction level, not evidence against the fix.
+**Class-B audit:** traced every check in `binding_aware_meaningful_v2()` for
+an E618-shaped regex/heuristic misclassifying valid current-grammar output;
+the E618 fix is confirmed intact, `duplicate_binding`'s `_ASSIGNMENT_RE`
+regex is checked against current object-frame syntax (`key:` not `key =`,
+no live false-positive path found, flagged latent-only), and every other
+check (`schema_value_role_correctness`, `anti_gaming`) is already fully
+AST-based. `data/quality.py`'s `semantic_contract_for_openui` (outside
+`evals/`, legacy admission-gate track) has the same regex-mini-parser shape
+as E618's bug but wasn't verified as live; flagged as a scoped-out follow-up.
+No new Class-B bug found. No checkpoint trained, promoted, or synced this
+iteration; no previously reported metric in this lineage changes (the gap
+was masked, not live); not a ship claim.
+Evidence: [narrative](iter-e620-semantic-plan-weight-gate-gap-20260720.md)
+and [JSON](iter-e620-semantic-plan-weight-gate-gap-20260720.json).
+
+## E621 auditing `semantic_contract_for_openui` for E617/E618-shape bugs (clean)
+
+E620 explicitly scoped out `data/quality.py`'s `semantic_contract_for_openui`
+(a regex-based mini-parser: `_ASSIGNMENT_RE`/`_DECLARATION_COMPONENT_RE`/
+`_IDENTIFIER_RE`/`_QUOTED_RE`, the same *shape* as E618's bug) as unverified,
+and named its own next step: confirm whether any current train-data builder
+populates `record.meta["semantic_contract"]` together with E613+-era
+typed-array/nested-object output. This iteration traces every real caller
+(`teacher_paraphrase_activation.py:573`'s `render_canonical_request` — the
+consequential one, since its output becomes the literal GENERATE-mode
+training prompt text; `train_data/pipeline.py:303`; `data/edits/__init__.py:502`;
+`data/quality.py:348`'s `_semantic_contract_reasons` admission-gate
+re-derivation) and confirms **no caller in `twotower.py`, `choice_tokenizer.py`,
+or `meaningful_program.py`** — unlike E617/E618/E620's targets, this is a
+data-build-time / admission-gate-only path over synthesizer-controlled
+input, never a decode-time bias or a scorer of free model output.
+**Three concrete E618-shape failure modes checked, all clean:** (1) the
+`_ASSIGNMENT_RE`'s lack of `DOTALL` really does truncate references to a
+statement's first line when hand-fed a multi-line example (bug reproduces
+in isolation) — but the entire on-disk training corpus confirms the real
+canonical serializer always emits one physical line per statement, so this
+is unreachable via any current builder; (2) object-literal property
+key/binder-name collision (e.g. `ImageGallery`'s `src`/`alt`/`details` keys
+colliding with a same-named declared variable, spuriously adding a false
+reference) is **structurally prevented**: schema-wide scan confirms
+`ImageGallery` is the only object-literal component and its key set is
+`{src, alt, details}`; corpus-wide scan of all 473 real binder names finds
+none of those three; and the binder-name generator itself
+(`_TypedBuilder._binder`, `data/progspec/generate.py:287-290`) is traced to
+stem names only from schema component-type names, never property keys —
+disjoint by construction, not by luck; (3) `ImageGallery` item values are
+schema-typed as strings only, so there is no cross-statement reference to
+miss inside an object literal in the current grammar. **Directly closes
+E620's own next-step question:** scanning every `records.jsonl` for
+`meta.semantic_contract` populated together with `ImageGallery` object-frame
+syntax (`{src`/`{alt`) returns **zero matches** anywhere in the on-disk
+corpus. **E617-shape check:** the one `data/quality.py` helper consumed at
+decode time, `object_property_matches_slot_role`, is called from
+`twotower.py`'s `_schema_role_slot_bias` only inside the branch already
+gated on `self._slot_contracts` (E617-fixed, E620-reverified); no new gap.
+No code change, no regression test needed (no reachable bug to guard
+against), no checkpoint trained/promoted/synced, no metric changes, not a
+ship claim. Closes the "audit for E617/E618-class bugs" thread opened by
+E617/E618/E620.
+Evidence: [narrative](iter-e621-semantic-contract-audit-20260720.md) and
+[JSON](iter-e621-semantic-contract-audit-20260720.json).
+
+## E622 the E617 decode gate can now go live during training, but nothing behind it fires yet
+
+E616-E621 always exercised the E617/E620 decode-bias fixes through standalone
+`evaluate_model.py` replays against an already-trained checkpoint, never
+through a live `slm sft train` process. This iteration pivots to a real
+training run: does `self._slot_contracts` (E617's gate) ever get populated
+as a side effect of training's own periodic eval
+(`train_loop.py:753 _maybe_eval` -> `eval_runner.evaluate_suites`)? Plain
+SFT's forward/loss step never decodes; GRPO-lite RL's on-policy rollout
+would exercise it every step, but `slm rl train` is fail-closed on an
+approved `RLReadinessReport` and none exists in this repo, so periodic eval
+was the only reachable path this session.
+
+**First attempt over the cap, discarded.** 80 steps + two periodic-eval
+passes (`--eval-every 40`) on the same E616/E617 corpus ran past the 3-minute
+hard cap — killed at real wall 3m18.134s. Per the iron law, discarded as
+non-evidence; its `outputs/runs/` directory was deleted before retrying.
+
+**Second attempt, scaled to fit, completed honestly.** `--steps 40
+--eval-every 40` (single periodic-eval pass) completed in 51.285s real
+(`elapsed_wall_seconds` 48.681), with 88.78% of wall time in the single
+`eval_suites` span — periodic eval, not training, is the cap-relevant cost
+(~40s/pass on this suite/backend, not per-step).
+
+**Finding:** `scoreboard.json`'s in-training `evaluation_policy` shows
+`slot_contract_constrained_decode: true` — the first time in this lineage
+`self._slot_contracts` is populated inside a live `slm sft train` process
+rather than only a standalone eval replay. But every weighted lever E617/E620
+gate on it (`schema_role_slot_decode_weight`, `semantic_role_decode_weight`,
+all nine `semantic_plan_*_decode_weight` fields, etc.) is `0.0` in that same
+policy block: `scripts/train_model.py`'s CLI has zero `semantic_plan` flags
+(confirmed by grep) and `ModelBuildConfig` defaults them to `None`. The gate
+opens for the first time during live training; nothing behind it fires — a
+different, still-live CLI-surface gap between `train_model.py` and
+`evaluate_model.py`, not the bugs E617/E618/E620 already fixed. Real numbers
+(ood suite, n=4, 40-step checkpoint, not a ship claim): `parse_rate` 1.0,
+`meaningful_program_rate` 0.0, `structural_similarity` 0.190625,
+`placeholder_fidelity` 0.0, `reward_score` 0.0, `ship_score` 0.0347.
+
+No code change this iteration (reported, not silently patched, to avoid
+re-opening the just-closed E617-E621 audit thread under time pressure). No
+checkpoint promoted or synced; no previously reported metric changes.
+Evidence: [narrative](iter-e622-training-time-decode-gate-scratch40-20260720.md)
+and [JSON](iter-e622-training-time-decode-gate-scratch40-20260720.json).
+
+## E623 — close the train_model.py decode-weight CLI gap, then exercise it (2026-07-20)
+
+Verified E622's finding directly (`grep -c semantic_plan
+scripts/train_model.py scripts/evaluate_model.py` -> `0` vs `18`) and traced
+that every target field already exists in `ModelBuildConfig`/`TwoTowerConfig`
+and is already read generically by `factory.py` -- the gap was exclusively
+`train_model.py`'s argparse surface. Added the 21 missing flags
+(`--semantic-role-contract-in-context`, `--semantic-role-decode-weight`,
+`--semantic-role-schema-candidates`, `--slot-coverage-close-decode-weight`,
+`--schema-value-decode-weight`, `--schema-opaque-decode-weight`,
+`--schema-enum-close-decode-weight`, `--schema-opaque-close-decode-weight`,
+`--schema-role-slot-decode-weight`, all nine `--semantic-plan-*-decode-weight`
+flags, `--visible-reference-decode-weight`) to `scripts/train_model.py`,
+mirroring `scripts/evaluate_model.py`'s exact flag names and config wiring,
+plus a new CLI-wiring test.
+
+Reran E622's exact 40-step scratch recipe as a fresh paired control/treatment:
+control byte-reproduced E622's own checkpoint (`last.pt` sha256
+`6b7aaf2b...`) and eval numbers exactly, confirming a true paired rerun.
+Training loss is identical between arms (`last_loss` 15.396740913391113 in
+both -- expected, these levers are decode-only). The `ood`-suite periodic
+eval (n=4) differs sharply once the newly-wired levers are set to E617's own
+treatment values: `meaningful_program_rate` 0.0->0.75,
+`placeholder_fidelity` 0.0->0.5667, `structural_similarity`
+0.190625->0.6439, `reward_score` 0.0->0.67475, `ship_score`
+0.03465909090909091->0.657201515151515. `scoreboard.json`'s
+`evaluation_policy` confirms every treatment weight landed exactly as
+passed -- the first time in the E610-E623 lineage these decode-time levers
+have been exercised inside a real `slm sft train` process's own periodic
+eval rather than only via standalone `evaluate_model.py` replay.
+
+Honest caveats: `n=4`, single seed, both checkpoints far too undertrained to
+promote or sync (`--no-sync-checkpoints`); the large delta vs. E617's own
++0.042 effect is most plausibly a floor effect (this checkpoint's unbiased
+decode is near-degenerate, so legal-candidate biasing has more room to help)
+rather than evidence the effect scales with checkpoint quality -- not
+established either way by this run. Not a ship claim.
+
+Evidence: [narrative](iter-e623-decode-weight-cli-gap-closed-scratch40-20260720.md)
+and [JSON](iter-e623-decode-weight-cli-gap-closed-scratch40-20260720.json).
+
+## E624 — multi-seed replication of E623's decode-weight finding (2026-07-20)
+
+E623's positive control/treatment eval delta rested on a single seed
+(`seed=0`). Reran the identical paired 40-step scratch recipe at `seed=1` and
+`seed=2` (no code changes) to test whether the direction holds.
+
+Result is genuinely mixed, not a clean replication: `seed=2` reproduces
+`seed=0`'s pattern -- control near-degenerate (`reward_score=0.0`,
+`ship_score=0.043`), treatment large positive delta (`reward_score` +0.825,
+`ship_score` +0.529, `meaningful_program_rate` 0.0->0.5). But `seed=1`'s
+control arm already produces strong *unbiased* decode with zero
+decode-time biasing (`meaningful_program_rate=0.75`, `reward_score=0.8475`,
+`ship_score=0.6725`), and adding the treatment weights there is roughly flat
+to slightly negative on `reward_score`/`ship_score` (`-0.0255`, `-0.0291`)
+while trading `placeholder_fidelity` (-0.275) for `structural_similarity`
+(+0.403). Training loss is identical between arms at each seed, reconfirming
+these levers are decode-only.
+
+Honest reading: the effect's sign/size looks contingent on whether the
+control checkpoint's own unbiased decode is already near-degenerate at that
+seed -- when it is (seed 0, seed 2), decode-time biasing has room to help and
+does, by a large margin; when it isn't (seed 1), the same biasing is roughly
+a wash on `reward_score`/`ship_score`. This strengthens E623's own
+floor-effect hypothesis but falsifies the naive unconditional reading of its
+single-seed result: 2/3 seeds show a large positive `reward_score`/
+`ship_score` delta, 1/3 shows a small negative one. Not averaged away here;
+reported per-seed as the honest finding. An unrelated environment quirk was
+also found and worked around: the session's ambient
+`NODE_OPTIONS="--import tsx" ...` breaks the OpenUI bridge subprocess
+`train_model.py` invokes internally (`node: --import tsx is not allowed in
+NODE_OPTIONS`); overriding `NODE_OPTIONS` to drop `--import tsx` for the
+`train_model` command fixed it, no repo code touched.
+
+All four new checkpoints remain far too undertrained to promote or sync
+(`--no-sync-checkpoints`); this iteration made no code changes and is not a
+ship claim.
+
+Evidence: [narrative](iter-e624-multiseed-replication-decode-weight-20260720.md)
+and [JSON](iter-e624-multiseed-replication-decode-weight-20260720.json).
+
 ## H4 exposure-targeted rare-action sampling (SLM-170, SDE2-03)
 
 H4 wires the `exposure_targeted` mixture sampling policy and its bounded
@@ -4151,9 +4430,21 @@ Honest caveats:
 - No model was trained; the protocol must be validated on actual suite results
   before it can size a confirmatory experiment.
 
-## E620 required-slot coverage on an 800-step scratch checkpoint
+*Numbering note: the four sections below (E634-E636, plus the E633 section
+above) landed on `main` as "E620"-"E622" -- numbers `claude/great-dirac-nucd4x`
+had already used for different, independently-verified work (the "E620"/
+"E621"/"E622" sections earlier in this file). Following this repo's
+established precedent for this exact situation (PR #620's "Numbering note"),
+the already-landed numbers on the branch performing the merge were kept and
+this incoming work was renumbered to the next free numbers (E633, E634,
+E635, E636 -- E632 is reserved by the unmerged
+`agent/e632-input-role-assignment` branch). E630 and E631 did not collide
+and keep their original numbers. Only the numbers and cross-references
+changed; no measured result changed.*
 
-E620 tests E619's explicit next hypothesis with a real train and matched eval:
+## E634 required-slot coverage on an 800-step scratch checkpoint
+
+E634 tests E619's explicit next hypothesis with a real train and matched eval:
 does scaling the same scratch recipe from 80 to 800 steps make fully judged
 required-slot coverage pass?
 
@@ -4177,7 +4468,7 @@ attempted.
 | latency p50 / p95 | 3366.95 / 14562.73 ms | 3116.67 / 13704.44 ms |
 | AgentV | 0/1 | 0/1 |
 
-No run timed out or fell back. Treatment retains E615's matched fidelity,
+No run timed out or fell back. Treatment retains E633's matched fidelity,
 validity, structure, reward, and latency benefit, but strict meaning stays 0.0.
 Three records still miss required placeholders; Auth covers all visible slots
 but assigns Input roles incorrectly. Compared with E619's 80-step treatment,
@@ -4187,20 +4478,20 @@ target coverage-aware component/property closure, not another longer scratch
 train.
 
 Evidence:
-[iter-e620-required-slot-coverage-scratch800-20260720.md](iter-e620-required-slot-coverage-scratch800-20260720.md)
+[iter-e634-required-slot-coverage-scratch800-20260720.md](iter-e634-required-slot-coverage-scratch800-20260720.md)
 and
-[JSON](iter-e620-required-slot-coverage-scratch800-20260720.json).
+[JSON](iter-e634-required-slot-coverage-scratch800-20260720.json).
 
-## E621 role-compatible coverage before frame closure
+## E635 role-compatible coverage before frame closure
 
-E621 reuses E620's rejected local checkpoint and exact OOD `n=4` treatment
+E635 reuses E634's rejected local checkpoint and exact OOD `n=4` treatment
 recipe. Model v60 generalized `slot_coverage_close_decode_weight` beyond typed
 arrays, but its first real run exposed a wrong-owner bug: any schema-legal
 direct slot could outrank closure, so Button/TextContent absorbed incompatible
 email/name/confirm roles. That clean r1 is retained as rejected evidence.
 Model v61 requires public-schema owner compatibility for direct slots.
 
-| OOD `n=4` | E620 baseline | E621 r1 | E621 r2 |
+| OOD `n=4` | E634 baseline | E635 r1 | E635 r2 |
 | --- | ---: | ---: | ---: |
 | syntax parse | 1.0000 | 1.0000 | 1.0000 |
 | meaningful v1 | 0.5000 | 0.5000 | 0.7500 |
@@ -4223,18 +4514,18 @@ created or synced. Next diagnose root-level inventory termination and Auth
 owner selection instead of increasing the closure weight.
 
 Evidence:
-[iter-e621-coverage-aware-closure-20260720.md](iter-e621-coverage-aware-closure-20260720.md),
-[r2 JSON](iter-e621-coverage-aware-closure-20260720.json), and
-[rejected r1 JSON](iter-e621-coverage-aware-closure-r1-20260720.json).
+[iter-e635-coverage-aware-closure-20260720.md](iter-e635-coverage-aware-closure-20260720.md),
+[r2 JSON](iter-e635-coverage-aware-closure-20260720.json), and
+[rejected r1 JSON](iter-e635-coverage-aware-closure-r1-20260720.json).
 
-## E622 coverage-closure intervention trace
+## E636 coverage-closure intervention trace
 
-E622 adds bounded, behavior-neutral traces around E621's closure policy and
-replays the exact E621 r2 OOD `n=4` recipe on the byte-identical rejected E620
+E636 adds bounded, behavior-neutral traces around E635's closure policy and
+replays the exact E635 r2 OOD `n=4` recipe on the byte-identical rejected E634
 checkpoint. All outputs and semantic metrics reproduce exactly; no training or
 checkpoint creation occurred.
 
-| OOD `n=4` | E621 r2 | E622 trace |
+| OOD `n=4` | E635 r2 | E636 trace |
 | --- | ---: | ---: |
 | meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
 | fidelity / validity | 0.5917 / 0.7550 | 0.5917 / 0.7550 |
@@ -4253,17 +4544,17 @@ Next prefer prompt-owned component mentions in coverage continuation ranking;
 handle Dashboard's upstream inventory error separately. No ship claim.
 
 Evidence:
-[iter-e622-coverage-closure-trace-20260720.md](iter-e622-coverage-closure-trace-20260720.md)
-and [JSON](iter-e622-coverage-closure-trace-20260720.json).
+[iter-e636-coverage-closure-trace-20260720.md](iter-e636-coverage-closure-trace-20260720.md)
+and [JSON](iter-e636-coverage-closure-trace-20260720.json).
 
 ## E630 prompt-owned closure filtering
 
-E630 tested E622's Auth diagnosis by preferring prompt-mentioned compatible
+E630 tested E636's Auth diagnosis by preferring prompt-mentioned compatible
 components over broad schema-role matches during closure continuation. It
-reused the exact E622 checkpoint and OOD `n=4` recipe; no training or new
+reused the exact E636 checkpoint and OOD `n=4` recipe; no training or new
 checkpoint occurred.
 
-| OOD `n=4` | E622 baseline | E630 treatment |
+| OOD `n=4` | E636 baseline | E630 treatment |
 | --- | ---: | ---: |
 | meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.5000 / 0.0000 |
 | fidelity / validity | 0.5917 / 0.7550 | 0.5083 / 0.7050 |
@@ -4289,10 +4580,10 @@ and [JSON](iter-e630-prompt-owned-closure-20260720.json).
 
 E631 replaces E630's harmful nested-family preference with a structural rule:
 when the active component owner cannot own any missing role, close it and let
-outer inventory planning place required families as siblings. The exact E622
+outer inventory planning place required families as siblings. The exact E636
 checkpoint and OOD `n=4` recipe were reused; no training/checkpoint occurred.
 
-| OOD `n=4` | E622 baseline | E631 treatment |
+| OOD `n=4` | E636 baseline | E631 treatment |
 | --- | ---: | ---: |
 | meaningful v1 / strict v2 | 0.7500 / 0.0000 | 0.7500 / 0.0000 |
 | fidelity / validity | 0.5917 / 0.7550 | 0.6750 / 0.8050 |
@@ -4327,9 +4618,15 @@ Evidence:
 [iter-e632-input-role-assignment-20260720.md](iter-e632-input-role-assignment-20260720.md)
 and [JSON](iter-e632-input-role-assignment-20260720.json).
 
-## E633 active Input role routing
+## E637 active Input role routing
 
-E633 floors a legal literal only when a required operational string directly
+Numbering note: this was main's own "E633" before this branch's second
+post-merge renumbering pass — it collided with this branch's own, different
+E633 ("typed-object slot roles", above), which was already itself a renumbered
+entry from the first merge pass. Renumbered to the next free slot (E637) rather
+than overwriting either prior E633; no content changed.
+
+E637 floors a legal literal only when a required operational string directly
 precedes a placeholder-annotated content property. The authoritative r3 exactly
 preserves E631's OOD `n=4` aggregate scoreboard and changes one bad Input-name
 slot to an empty literal, but another Input-name mismatch remains and strict v2
@@ -4338,16 +4635,21 @@ Auth to TextContent and was reverted. Retain v70 default-off as partial evidence
 no checkpoint, promotion, or ship claim.
 
 Evidence:
-[iter-e633-input-active-role-routing-20260720.md](iter-e633-input-active-role-routing-20260720.md)
-and [authoritative JSON](iter-e633-input-active-role-routing-20260720.json).
+[iter-e637-input-active-role-routing-20260720.md](iter-e637-input-active-role-routing-20260720.md)
+and [authoritative JSON](iter-e637-input-active-role-routing-20260720.json).
 
-## E634 final-boundary pre-content routing
+## E638 final-boundary pre-content routing
 
-E634 moved E633's pre-content literal score after repeated-slot margins. Auth
+Numbering note: this was main's own "E634" before this branch's second
+post-merge renumbering pass — it collided with this branch's own, different
+E634 ("required-slot coverage on an 800-step scratch checkpoint", above).
+Renumbered to the next free slot (E638); no content changed.
+
+E638 moved E637's pre-content literal score after repeated-slot margins. Auth
 collapsed to TextContent, meaningful v1 fell from 0.75 to 0.50, every continuous
 aggregate metric regressed, and p95 rose to 16254.73 ms. Reject v71 and restore
 v70 behavior as v72. No checkpoint or ship claim.
 
 Evidence:
-[iter-e634-final-precontent-routing-20260720.md](iter-e634-final-precontent-routing-20260720.md)
-and [JSON](iter-e634-final-precontent-routing-20260720.json).
+[iter-e638-final-precontent-routing-20260720.md](iter-e638-final-precontent-routing-20260720.md)
+and [JSON](iter-e638-final-precontent-routing-20260720.json).

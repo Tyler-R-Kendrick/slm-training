@@ -124,21 +124,62 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     return frozenset(found)
 
 
-def semantic_role_properties(
-    placeholders: list[str],
-) -> dict[str, tuple[str, ...]]:
-    """Map visible slots to public-schema property names implied by their role."""
-    result: dict[str, tuple[str, ...]] = {}
-    for placeholder in sorted(set(placeholders)):
-        role = placeholder.removeprefix(":").split(".")[-1]
-        result[placeholder] = tuple(
-            sorted({role, *_SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, ())})
-        )
-    return result
+# Slot-role -> schema-property-name aliases shared by every visible-role match:
+# top-level component/slot compatibility (semantic_role_candidates) and, since
+# E615, declared typed-object property/slot compatibility
+# (object_property_matches_slot_role) for object literals filled during
+# grammar-guided decode (e.g. ImageGallery.images[].src/alt/details).
+# "caption"/"description"/"img" were independently generalized (on main) to
+# also accept "text"/"image" respectively, so inline object schemas that
+# spell a property either way still resolve to the same visible slot.
+_SEMANTIC_ROLE_PROPERTY_ALIASES: dict[str, frozenset[str]] = {
+    "body": frozenset({"text"}),
+    "copy": frozenset({"text"}),
+    "description": frozenset({"details", "text"}),
+    "confirm": frozenset({"label", "action"}),
+    "create": frozenset({"label", "action"}),
+    "save": frozenset({"label", "action"}),
+    "submit": frozenset({"label", "action"}),
+    "continue": frozenset({"label", "action"}),
+    "cta": frozenset({"label", "action"}),
+    "img": frozenset({"src", "image"}),
+    "image": frozenset({"src"}),
+    "caption": frozenset({"details", "text"}),
+}
+
+
+def slot_role(placeholder: str) -> str:
+    """Return the trailing dotted segment naming a visible slot's semantic role."""
+    return placeholder.removeprefix(":").split(".")[-1]
+
+
+def slot_compatible_property_names(placeholder: str) -> frozenset[str]:
+    """Return schema property names an honest visible slot's role is compatible with."""
+    role = slot_role(placeholder)
+    return frozenset({role}) | _SEMANTIC_ROLE_PROPERTY_ALIASES.get(role, frozenset())
+
+
+def object_property_matches_slot_role(property_name: str, placeholder: str) -> bool:
+    """Return True if a declared typed-object property name matches a visible slot's role.
+
+    Used at decode time (schema_role_slot_decode_weight) to bias which visible
+    slot fills an active typed-object property (e.g. an ``alt`` property
+    prefers a slot whose role is ``alt``; a ``src`` property prefers an
+    ``img``/``image`` role slot) instead of any legal string-typed slot.
+    """
+    return str(property_name) in slot_compatible_property_names(placeholder)
 
 
 def _inline_schema_property_names(schema: dict[str, Any]) -> frozenset[str]:
-    """Collect inline record fields without traversing component references."""
+    """Collect inline record fields without traversing component references.
+
+    ``semantic_role_candidates`` previously only looked at a component
+    definition's direct ``properties`` mapping, so properties nested inside
+    an ``items``/``anyOf`` sub-schema (e.g. object-array item shapes such as
+    ``ImageGallery.images[]``) were invisible to slot/component
+    compatibility. This traverses inline (non-``$ref``) sub-schemas so those
+    fields are found too.
+    """
     names: set[str] = set()
     properties = schema.get("properties")
     if isinstance(properties, dict):
@@ -166,10 +207,9 @@ def semantic_role_candidates(
         name: _inline_schema_property_names(definitions.get(name, {}))
         for name in sorted(set(component_names))
     }
-    properties_by_slot = semantic_role_properties(placeholders)
     result: dict[str, tuple[str, ...]] = {}
     for placeholder in sorted(set(placeholders)):
-        compatible_properties = set(properties_by_slot[placeholder])
+        compatible_properties = slot_compatible_property_names(placeholder)
         result[placeholder] = tuple(
             name
             for name in sorted(set(component_names))

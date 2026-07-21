@@ -533,6 +533,39 @@ class TwoTowerConfig:
     speculative_overlap: bool = False
 
 
+# E620: every TwoTowerConfig field matching `semantic_plan_*_decode_weight` (or
+# `semantic_plan_*_margin_decode_weight`) gates population of
+# `self._semantic_plan_action_scores` / `self._semantic_plan_action_counts` in
+# `_generate_batch_once` via `plan_weight = max(...)` over exactly this list. Before
+# E620, two real decode-time biases read that same state but their weight names were
+# missing from the list: `_semantic_plan_inline_bias`
+# (`semantic_plan_inline_decode_weight`) and `_semantic_plan_repeated_array_close_bias`
+# (`semantic_plan_repeated_array_close_margin_decode_weight`). Setting either one alone
+# (every other `semantic_plan_*` weight at 0) left `plan_weight <= 0`, so
+# `self._semantic_plan_action_scores`/`_action_counts` stayed `None` and both biases
+# silently no-opped on every decode step -- the same failure shape as E617's
+# `self._slot_contracts` gap, one level removed. Every E610-E619 recipe happened to
+# also set `semantic_plan_decode_weight` nonzero, which masked the gap by coincidence
+# rather than by design.
+# `test_semantic_plan_decode_weight_names_cover_all_config_fields`
+# (tests/test_models/test_compiler_decode.py) fails the build if a future
+# `semantic_plan_*_decode_weight`/`semantic_plan_*_margin_decode_weight` config field
+# is added without being added here.
+SEMANTIC_PLAN_DECODE_WEIGHT_NAMES: tuple[str, ...] = (
+    "semantic_plan_decode_weight",
+    "semantic_plan_margin_decode_weight",
+    "semantic_plan_seed_decode_weight",
+    "semantic_plan_inline_decode_weight",
+    "semantic_plan_binding_decode_weight",
+    "semantic_plan_root_decode_weight",
+    "semantic_plan_root_margin_decode_weight",
+    "semantic_plan_repeated_array_close_margin_decode_weight",
+    "semantic_plan_repeated_slot_margin_decode_weight",
+    "semantic_plan_typed_array_nonempty_margin_decode_weight",
+    "semantic_plan_typed_array_item_margin_decode_weight",
+)
+
+
 def _pad_batch(
     seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None
 ) -> torch.Tensor:
@@ -4887,7 +4920,28 @@ class TwoTowerModel(nn.Module):
         slot_contract: list[str] | None,
         semantic_role_candidates: dict[str, tuple[str, ...]] | None,
     ) -> torch.Tensor | None:
-        """Prefer visible slots compatible with the active content property owner."""
+        """Prefer visible slots compatible with the active content property owner.
+
+        Two owners are scored, both gated by the same
+        ``schema_role_slot_decode_weight`` knob, and both require the *owning*
+        component to itself be a ``semantic_role_candidates`` match for the
+        slot before a direct-slot bias is applied -- the same owner-role
+        compatibility gate E621's ``_slot_coverage_close_bias`` correction
+        validated (an unrelated component's same-named property must not be
+        able to steal another component's slot):
+
+        * a top-level component argument (``frame.kind == "component"``);
+          unchanged since E591.
+        * (E615, generalized) a declared property inside an active
+          typed-object literal (``frame.kind == "object"``,
+          ``frame.phase == "value"``), additionally matched by the property's
+          own key/schema role (``frame.active_property``, e.g.
+          ``alt``/``src``/``details``) against each candidate slot's role via
+          ``slot_compatible_property_names``, so sibling properties of the
+          same object (e.g. an ``ImageGallery`` item) can each prefer their
+          own matching public slot instead of all converging on the
+          highest-scoring one.
+        """
         weight = float(
             getattr(self.config, "schema_role_slot_decode_weight", 0.0) or 0.0
         )
@@ -4912,6 +4966,8 @@ class TwoTowerModel(nn.Module):
                 and bool(schemas[index].get("x-openui-placeholder"))
             )
         elif getattr(frame, "kind", None) == "object":
+            if getattr(frame, "phase", None) != "value":
+                return None
             active_property = getattr(frame, "active_property", None)
             component = next(
                 (
@@ -4932,10 +4988,9 @@ class TwoTowerModel(nn.Module):
             return None
         if not component or not accepts_slot:
             return None
-        from slm_training.data.quality import semantic_role_properties
+        from slm_training.data.quality import slot_compatible_property_names
         from slm_training.dsl.production_codec import SLOT_PREFIX
 
-        properties_by_slot = semantic_role_properties(slot_contract)
         bias = scores.new_zeros(len(candidate_ids))
         applied = False
         for position, token_id in enumerate(candidate_ids):
@@ -4951,7 +5006,7 @@ class TwoTowerModel(nn.Module):
                 component in semantic_role_candidates.get(slot, ())
                 and (
                     active_property is None
-                    or active_property in properties_by_slot.get(slot, ())
+                    or active_property in slot_compatible_property_names(slot)
                 )
             ):
                 bias[position] = weight
@@ -5002,7 +5057,7 @@ class TwoTowerModel(nn.Module):
             bias[candidate_ids.index(close_id)] = weight
             return bias
 
-        from slm_training.data.quality import semantic_role_properties
+        from slm_training.data.quality import slot_compatible_property_names
         from slm_training.dsl.production_codec import (
             LIST_OPEN,
             NAME_PREFIX,
@@ -5013,9 +5068,9 @@ class TwoTowerModel(nn.Module):
         missing_slots_by_id = {
             int(self.tokenizer.sym_id(index)): slot for index, slot in missing
         }
-        properties_by_slot = semantic_role_properties(
-            [slot for _index, slot in missing]
-        )
+        properties_by_slot = {
+            slot: slot_compatible_property_names(slot) for _index, slot in missing
+        }
         owner_component = next(
             (
                 str(getattr(owner, "expr_type", "")).removeprefix("element:")
@@ -8430,41 +8485,14 @@ class TwoTowerModel(nn.Module):
             ]
         else:
             self._semantic_role_candidates = None
+        # E620: iterate SEMANTIC_PLAN_DECODE_WEIGHT_NAMES (module-level, see comment
+        # there) rather than a hand-enumerated literal -- a hand-enumerated list
+        # previously omitted semantic_plan_inline_decode_weight and
+        # semantic_plan_repeated_array_close_margin_decode_weight, silently no-opping
+        # their biases whenever no other semantic_plan_* weight was also set.
         plan_weight = max(
-            getattr(self.config, "semantic_plan_decode_weight", 0.0) or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(self.config, "semantic_plan_seed_decode_weight", 0.0) or 0.0,
-            getattr(self.config, "semantic_plan_binding_decode_weight", 0.0) or 0.0,
-            getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_root_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_repeated_slot_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_typed_array_nonempty_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
-            getattr(
-                self.config,
-                "semantic_plan_typed_array_item_margin_decode_weight",
-                0.0,
-            )
-            or 0.0,
+            float(getattr(self.config, name, 0.0) or 0.0)
+            for name in SEMANTIC_PLAN_DECODE_WEIGHT_NAMES
         )
         if plan_weight > 0.0:
             if not choice_constrained:
