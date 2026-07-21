@@ -162,12 +162,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-07-21",
+          "note": "add SLM-261 VSD0-02 memorization probe fixture harness lazy re-exports"
+        },
         {
           "version": "v61",
           "date": "2026-07-21",
@@ -497,6 +502,27 @@
           "version": "v1",
           "date": "2026-07-18",
           "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"
+        }
+      ]
+    },
+    "harness.experiments.slm261_memorization_probe": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm261_memorization_probe.py",
+        "scripts/run_memorization_probe.py",
+        "tests/test_harnesses/experiments/test_slm261_memorization_probe.py",
+        "tests/test_models/test_loss_ledger.py",
+        "src/slm_training/models/loss_ledger.py",
+        "docs/design/memorization-and-loss-accounting.md",
+        "docs/design/iter-slm261-memorization-probe-20260721.json",
+        "docs/design/iter-slm261-memorization-probe-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-261 VSD0-02 bounded memorization probe fixture harness and LossLedgerV1"
         }
       ]
     },
@@ -2138,7 +2164,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v83",
+      "version": "v84",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2157,6 +2183,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v84",
+          "date": "2026-07-21",
+          "note": "SLM-261: emit LossLedgerV1 from training_loss; log raw/weight/contribution for every auxiliary term; preserve compiler_alignment metrics via update instead of overwrite"
+        },
         {
           "version": "v83",
           "date": "2026-07-21",

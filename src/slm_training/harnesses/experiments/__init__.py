@@ -417,6 +417,22 @@ _LAZY_SLM193_EXPORTS = {
     "validate_slm193_manifest": "validate_manifest",
 }
 
+_LAZY_SLM261_EXPORTS = {
+    "SLM261_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM261_MATRIX_SET": "MATRIX_SET",
+    "SLM261_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM261_ARM_NAMES": "ARM_NAMES",
+    "MemorizationCorruptionCaseV1": "MemorizationCorruptionCaseV1",
+    "MemorizationCorruptionSuiteV1": "MemorizationCorruptionSuiteV1",
+    "MemorizationArmResultV1": "MemorizationArmResultV1",
+    "MemorizationProbeManifestV1": "MemorizationProbeManifestV1",
+    "select_corpus_fixture": "select_corpus_fixture",
+    "build_corruption_suite": "build_corruption_suite",
+    "run_slm261_fixture": "run_memorization_probe_fixture",
+    "render_slm261_markdown": "render_markdown",
+    "validate_slm261_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -479,6 +495,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm193_flow_caches
 
         value = getattr(slm193_flow_caches, _LAZY_SLM193_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM261_EXPORTS:
+        from slm_training.harnesses.experiments import slm261_memorization_probe
+
+        value = getattr(slm261_memorization_probe, _LAZY_SLM261_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -627,6 +649,19 @@ __all__ = [
     "run_slm193_fixture",
     "render_slm193_markdown",
     "validate_slm193_manifest",
+    "SLM261_EXPERIMENT_ID",
+    "SLM261_MATRIX_SET",
+    "SLM261_MATRIX_VERSION",
+    "SLM261_ARM_NAMES",
+    "MemorizationCorruptionCaseV1",
+    "MemorizationCorruptionSuiteV1",
+    "MemorizationArmResultV1",
+    "MemorizationProbeManifestV1",
+    "select_corpus_fixture",
+    "build_corruption_suite",
+    "run_slm261_fixture",
+    "render_slm261_markdown",
+    "validate_slm261_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",

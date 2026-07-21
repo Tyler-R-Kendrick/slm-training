@@ -29,6 +29,10 @@ from slm_training.models.recursive_denoiser import (
     SharedRecursiveDenoiserTower,
     StackedMatchedStateDenoiserTower,
 )
+from slm_training.models.loss_ledger import (
+    LOSS_LEDGER_SCHEMA_VERSION,
+    LossLedgerV1,
+)
 from slm_training.models.context import (
     HFContextEncoder,
     ScratchContextEncoder,
@@ -1671,6 +1675,24 @@ class TwoTowerModel(nn.Module):
         self._detached_auxiliary_loss = None
         return loss
 
+    def _log_auxiliary_term(
+        self,
+        metrics: dict[str, Any],
+        name: str,
+        raw: torch.Tensor,
+        weight: float,
+    ) -> torch.Tensor:
+        """Record raw loss, coefficient, and weighted contribution.
+
+        Returns the weighted contribution so callers can add it to ``mask_loss``
+        and log it as a single scalar.
+        """
+        contribution = weight * raw
+        metrics[f"{name}_loss"] = float(raw.detach().cpu())
+        metrics[f"{name}_loss_weight"] = float(weight)
+        metrics[f"{name}_loss_contribution"] = float(contribution.detach().cpu())
+        return contribution
+
     def optimizer_parameter_groups(self) -> list[dict[str, list[nn.Parameter]]]:
         """Keep shared-model optimizer grouping invariant across aux heads."""
         auxiliary = (
@@ -2688,6 +2710,10 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics["primary_final_reconstruction_loss"] = float(
                 primary_final_reconstruction_loss.detach().cpu()
             )
+            self.last_training_metrics["primary_final_reconstruction_loss_weight"] = 1.0
+            self.last_training_metrics["primary_final_reconstruction_loss_contribution"] = float(
+                primary_final_reconstruction_loss.detach().cpu()
+            )
 
             # SLM-237 (RSC-A01): deep supervision over per-recursion logits.
             # Corrected weighted objective:
@@ -2741,6 +2767,15 @@ class TwoTowerModel(nn.Module):
                 self.last_training_metrics["recursive_depth_supervision_loss"] = (
                     float(recursive_depth_supervision_loss.detach().cpu())
                 )
+                self.last_training_metrics[
+                    "recursive_depth_supervision_unweighted_loss"
+                ] = float(unweighted_aux.detach().cpu())
+                self.last_training_metrics[
+                    "recursive_depth_supervision_loss_weight"
+                ] = float(validated_ds.aux_weight)
+                self.last_training_metrics[
+                    "recursive_depth_supervision_loss_contribution"
+                ] = float(recursive_depth_supervision_loss.detach().cpu())
             else:
                 # SLM-238: explicit zero telemetry -- an off/disabled
                 # auxiliary term must still record a concrete 0.0, never omit
@@ -2748,6 +2783,15 @@ class TwoTowerModel(nn.Module):
                 # missing-metrics bug (same rationale as
                 # recursive_depth_supervision_enabled in SLM-237).
                 self.last_training_metrics["recursive_depth_supervision_loss"] = 0.0
+                self.last_training_metrics[
+                    "recursive_depth_supervision_unweighted_loss"
+                ] = 0.0
+                self.last_training_metrics[
+                    "recursive_depth_supervision_loss_weight"
+                ] = float(validated_ds.aux_weight)
+                self.last_training_metrics[
+                    "recursive_depth_supervision_loss_contribution"
+                ] = 0.0
 
             # SLM-238: the two auxiliary components are scaled by the same
             # coefficient as the combined term, so
@@ -2787,8 +2831,12 @@ class TwoTowerModel(nn.Module):
         )
         if self.length_head is not None and bucket_targets is not None and length_w > 0:
             length_logits = self.length_head(self._pool_context(ctx, ctx_pad))
-            mask_loss = mask_loss + length_w * F.cross_entropy(
-                length_logits, bucket_targets
+            length_loss = F.cross_entropy(length_logits, bucket_targets)
+            mask_loss = mask_loss + self._log_auxiliary_term(
+                self.last_training_metrics,
+                "diffusion_length",
+                length_loss,
+                length_w,
             )
 
         fid_w = float(getattr(self.config, "fidelity_loss_weight", 0.0) or 0.0)
@@ -2835,7 +2883,12 @@ class TwoTowerModel(nn.Module):
                 ph_mask &= torch.isin(target_ids, ph_tensor)
                 if ph_mask.any():
                     fid_loss = F.cross_entropy(logits[ph_mask], target_ids[ph_mask])
-                    mask_loss = mask_loss + fid_w * fid_loss
+                    mask_loss = mask_loss + self._log_auxiliary_term(
+                        self.last_training_metrics,
+                        "fidelity",
+                        fid_loss,
+                        fid_w,
+                    )
                     boundary_w = float(
                         getattr(self.config, "symbol_boundary_loss_weight", 0.0) or 0.0
                     )
@@ -2844,8 +2897,14 @@ class TwoTowerModel(nn.Module):
                         boundary[:, 1:] |= ph_mask[:, :-1]
                         boundary[:, :-1] |= ph_mask[:, 1:]
                         boundary &= predict_mask
-                        mask_loss = mask_loss + boundary_w * F.cross_entropy(
+                        boundary_loss = F.cross_entropy(
                             logits[boundary], target_ids[boundary]
+                        )
+                        mask_loss = mask_loss + self._log_auxiliary_term(
+                            self.last_training_metrics,
+                            "symbol_boundary",
+                            boundary_loss,
+                            boundary_w,
                         )
 
         # Legacy second-forward LTR when fuse disabled.
@@ -2870,7 +2929,12 @@ class TwoTowerModel(nn.Module):
                 ltr_loss = F.cross_entropy(ltr_logits[ltr_mask], target_ids[ltr_mask])
             else:
                 ltr_loss = mask_loss * 0.0
-            mask_loss = mask_loss + ltr_w * ltr_loss
+            mask_loss = mask_loss + self._log_auxiliary_term(
+                self.last_training_metrics,
+                "ltr",
+                ltr_loss,
+                ltr_w,
+            )
 
         alignment_w = float(
             getattr(self.config, "compiler_alignment_loss_weight", 0.0) or 0.0
@@ -3024,43 +3088,51 @@ class TwoTowerModel(nn.Module):
                 }
             else:
                 kind_losses = {}
-            self.last_training_metrics = {
-                "compiler_alignment_rows": aligned_rows,
-                "compiler_alignment_loss": (
-                    float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0
-                ),
-                "compiler_alignment_candidate_count_mean": (
-                    sum(map(len, aligned_candidate_ids)) / aligned_rows
-                    if aligned_rows
-                    else 0.0
-                ),
-                "compiler_alignment_candidate_count_max": max(
-                    map(len, aligned_candidate_ids), default=0
-                ),
-                "compiler_alignment_cross_entropy": (
-                    float(cross_entropy_tensor.mean().detach().cpu())
-                    if aligned_canvases
-                    else 0.0
-                ),
-                "compiler_alignment_margin_loss": (
-                    float(margin_tensor.mean().detach().cpu())
-                    if aligned_canvases
-                    else 0.0
-                ),
-                "compiler_alignment_margin_violation_rate": (
-                    float(margin_tensor.gt(0).float().mean().detach().cpu())
-                    if aligned_canvases
-                    else 0.0
-                ),
-                **{
-                    f"compiler_alignment_{kind}_rows": count
-                    for kind, count in sorted(kind_rows.items())
-                },
-                **{
-                    f"compiler_alignment_{kind}_loss": loss
-                    for kind, loss in sorted(kind_losses.items())
-                },
-            }
+            self.last_training_metrics.update(
+                {
+                    "compiler_alignment_rows": aligned_rows,
+                    "compiler_alignment_loss": (
+                        float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0
+                    ),
+                    "compiler_alignment_loss_weight": alignment_w,
+                    "compiler_alignment_loss_contribution": (
+                        float((alignment_w * alignment_loss).detach().cpu())
+                        if aligned_canvases
+                        else 0.0
+                    ),
+                    "compiler_alignment_candidate_count_mean": (
+                        sum(map(len, aligned_candidate_ids)) / aligned_rows
+                        if aligned_rows
+                        else 0.0
+                    ),
+                    "compiler_alignment_candidate_count_max": max(
+                        map(len, aligned_candidate_ids), default=0
+                    ),
+                    "compiler_alignment_cross_entropy": (
+                        float(cross_entropy_tensor.mean().detach().cpu())
+                        if aligned_canvases
+                        else 0.0
+                    ),
+                    "compiler_alignment_margin_loss": (
+                        float(margin_tensor.mean().detach().cpu())
+                        if aligned_canvases
+                        else 0.0
+                    ),
+                    "compiler_alignment_margin_violation_rate": (
+                        float(margin_tensor.gt(0).float().mean().detach().cpu())
+                        if aligned_canvases
+                        else 0.0
+                    ),
+                    **{
+                        f"compiler_alignment_{kind}_rows": count
+                        for kind, count in sorted(kind_rows.items())
+                    },
+                    **{
+                        f"compiler_alignment_{kind}_loss": loss
+                        for kind, loss in sorted(kind_losses.items())
+                    },
+                }
+            )
 
         inventory_w = float(
             getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0
@@ -3111,6 +3183,10 @@ class TwoTowerModel(nn.Module):
                     {
                         "component_inventory_loss": float(
                             inventory_loss.detach().cpu()
+                        ),
+                        "component_inventory_loss_weight": inventory_w,
+                        "component_inventory_loss_contribution": float(
+                            (inventory_w * inventory_loss).detach().cpu()
                         ),
                         "component_inventory_topk_recall": float(
                             torch.stack(recalls).mean().detach().cpu()
@@ -3196,7 +3272,12 @@ class TwoTowerModel(nn.Module):
                 negative_loss = bound_raw[bound_negative].mean()
                 bound_loss = positive_loss + negative_loss
                 plan_loss = root_loss + bound_loss
-                mask_loss = mask_loss + plan_w * plan_loss
+                mask_loss = mask_loss + self._log_auxiliary_term(
+                    self.last_training_metrics,
+                    "component_plan",
+                    plan_loss,
+                    plan_w,
+                )
                 root_accuracy = (
                     root_logits[root_mask]
                     .argmax(dim=1)
@@ -3222,6 +3303,10 @@ class TwoTowerModel(nn.Module):
                 self.last_training_metrics.update(
                     {
                         "component_plan_loss": float(plan_loss.detach().cpu()),
+                        "component_plan_loss_weight": plan_w,
+                        "component_plan_loss_contribution": float(
+                            (plan_w * plan_loss).detach().cpu()
+                        ),
                         "component_plan_root_loss": float(root_loss.detach().cpu()),
                         "component_plan_bound_loss": float(bound_loss.detach().cpu()),
                         "component_plan_root_accuracy": float(
@@ -3298,11 +3383,20 @@ class TwoTowerModel(nn.Module):
                     if focal_gamma > 0.0
                     else slot_raw.mean()
                 )
-                mask_loss = mask_loss + slot_component_w * slot_loss
+                mask_loss = mask_loss + self._log_auxiliary_term(
+                    self.last_training_metrics,
+                    "slot_component",
+                    slot_loss,
+                    slot_component_w,
+                )
                 target_counts = torch.bincount(targets_tensor)
                 self.last_training_metrics.update(
                     {
                         "slot_component_loss": float(slot_loss.detach().cpu()),
+                        "slot_component_loss_weight": slot_component_w,
+                        "slot_component_loss_contribution": float(
+                            (slot_component_w * slot_loss).detach().cpu()
+                        ),
                         "slot_component_accuracy": float(
                             slot_logits.argmax(dim=1)
                             .eq(targets_tensor)
@@ -3363,7 +3457,12 @@ class TwoTowerModel(nn.Module):
             )
             negative_loss = raw_edge_loss[negative].mean()
             edge_loss = positive_loss + negative_loss
-            mask_loss = mask_loss + edge_w * edge_loss
+            mask_loss = mask_loss + self._log_auxiliary_term(
+                self.last_training_metrics,
+                "component_edge",
+                edge_loss,
+                edge_w,
+            )
             recalls: list[torch.Tensor] = []
             flat_logits = edge_logits.flatten(1)
             flat_targets = edge_targets.flatten(1)
@@ -3378,6 +3477,10 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics.update(
                 {
                     "component_edge_loss": float(edge_loss.detach().cpu()),
+                    "component_edge_loss_weight": edge_w,
+                    "component_edge_loss_contribution": float(
+                        (edge_w * edge_loss).detach().cpu()
+                    ),
                     "component_edge_topk_recall": float(edge_recall.detach().cpu()),
                     "component_edge_positive_count_mean": float(
                         edge_targets.sum(dim=(1, 2)).mean().detach().cpu()
@@ -3426,6 +3529,10 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics.update(
                 {
                     "binder_arity_loss": float(arity_loss.detach().cpu()),
+                    "binder_arity_loss_weight": binder_arity_w,
+                    "binder_arity_loss_contribution": float(
+                        (binder_arity_w * arity_loss).detach().cpu()
+                    ),
                     "binder_arity_accuracy": float(
                         torch.stack(arity_hits).mean().detach().cpu()
                         if arity_hits
@@ -3481,6 +3588,10 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics.update(
                 {
                     "root_reference_arity_loss": float(root_loss.detach().cpu()),
+                    "root_reference_arity_loss_weight": root_arity_w,
+                    "root_reference_arity_loss_contribution": float(
+                        (root_arity_w * root_loss).detach().cpu()
+                    ),
                     "root_reference_arity_accuracy": float(
                         torch.stack(root_hits).mean().detach().cpu()
                         if root_hits
@@ -3571,6 +3682,10 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics.update(
                 {
                     "root_reference_identity_loss": float(identity_loss.detach().cpu()),
+                    "root_reference_identity_loss_weight": root_identity_w,
+                    "root_reference_identity_loss_contribution": float(
+                        (root_identity_w * identity_loss).detach().cpu()
+                    ),
                     "root_reference_identity_exact_accuracy": float(
                         torch.stack(identity_exact_hits).mean().detach().cpu()
                         if identity_exact_hits
@@ -3674,11 +3789,20 @@ class TwoTowerModel(nn.Module):
                 if alignment_losses
                 else edge_logits.sum() * 0.0
             )
-            mask_loss = mask_loss + edge_alignment_w * edge_alignment_loss
+            mask_loss = mask_loss + self._log_auxiliary_term(
+                self.last_training_metrics,
+                "component_edge_alignment",
+                edge_alignment_loss,
+                edge_alignment_w,
+            )
             self.last_training_metrics.update(
                 {
                     "component_edge_alignment_loss": float(
                         edge_alignment_loss.detach().cpu()
+                    ),
+                    "component_edge_alignment_loss_weight": edge_alignment_w,
+                    "component_edge_alignment_loss_contribution": float(
+                        (edge_alignment_w * edge_alignment_loss).detach().cpu()
                     ),
                     "component_edge_alignment_accuracy": float(
                         torch.stack(alignment_hits).mean().detach().cpu()
@@ -3761,11 +3885,20 @@ class TwoTowerModel(nn.Module):
                 if plan_losses
                 else plan_logits.sum() * 0.0
             )
-            mask_loss = mask_loss + binder_plan_w * binder_plan_loss
+            mask_loss = mask_loss + self._log_auxiliary_term(
+                self.last_training_metrics,
+                "binder_component_plan",
+                binder_plan_loss,
+                binder_plan_w,
+            )
             self.last_training_metrics.update(
                 {
                     "binder_component_plan_loss": float(
                         binder_plan_loss.detach().cpu()
+                    ),
+                    "binder_component_plan_loss_weight": binder_plan_w,
+                    "binder_component_plan_loss_contribution": float(
+                        (binder_plan_w * binder_plan_loss).detach().cpu()
                     ),
                     "binder_component_plan_accuracy": float(
                         torch.stack(plan_hits).mean().detach().cpu()
@@ -3847,10 +3980,19 @@ class TwoTowerModel(nn.Module):
                 if topology_losses
                 else topology_logits.sum() * 0.0
             )
-            mask_loss = mask_loss + binder_topology_w * topology_loss
+            mask_loss = mask_loss + self._log_auxiliary_term(
+                self.last_training_metrics,
+                "binder_topology",
+                topology_loss,
+                binder_topology_w,
+            )
             self.last_training_metrics.update(
                 {
                     "binder_topology_loss": float(topology_loss.detach().cpu()),
+                    "binder_topology_loss_weight": binder_topology_w,
+                    "binder_topology_loss_contribution": float(
+                        (binder_topology_w * topology_loss).detach().cpu()
+                    ),
                     "binder_topology_accuracy": float(
                         torch.stack(topology_hits).mean().detach().cpu()
                         if topology_hits
@@ -3875,7 +4017,50 @@ class TwoTowerModel(nn.Module):
                 aux = force_align_loss(
                     logits, target_ids, self.tokenizer, pad_id=self.tokenizer.pad_id
                 )
-                mask_loss = mask_loss + aux_w * aux
+                mask_loss = mask_loss + self._log_auxiliary_term(
+                    self.last_training_metrics,
+                    "fastpath_aux",
+                    aux,
+                    aux_w,
+                )
+
+        # SLM-261: record the final scalar objective before the training loop
+        # adds any detached auxiliary loss, then build a typed ledger from the
+        # flat metrics already accumulated.  Inactive terms are present with
+        # zero raw/weight/contribution so every arm has a stable shape.
+        self.last_training_metrics["reported_total_loss"] = float(
+            mask_loss.detach().cpu()
+        )
+        detached_aux = getattr(self, "_detached_auxiliary_loss", None)
+        if detached_aux is not None:
+            self.last_training_metrics["detached_auxiliary_loss"] = float(
+                detached_aux.detach().cpu()
+            )
+        else:
+            self.last_training_metrics["detached_auxiliary_loss"] = 0.0
+
+        active_example_count = len(batch)
+        active_token_count = int(predict_mask.sum().cpu())
+        try:
+            self.last_training_metrics["loss_ledger"] = LossLedgerV1.from_metrics(
+                self.last_training_metrics,
+                vocab_size=int(self.tokenizer.vocab_size),
+                active_example_count=active_example_count,
+                active_token_count=active_token_count,
+                trainable_parameter_count=sum(
+                    p.numel() for p in self.trainable_parameters()
+                ),
+            ).to_dict()
+        except Exception as exc:  # noqa: BLE001
+            # Never let ledger bookkeeping abort a training step; surface the
+            # failure in telemetry so the probe/unit test can catch it.
+            self.last_training_metrics["loss_ledger_error"] = str(exc)
+            self.last_training_metrics["loss_ledger"] = {
+                "schema_version": LOSS_LEDGER_SCHEMA_VERSION,
+                "error": str(exc),
+                "reported_total": float(mask_loss.detach().cpu())
+                + float(detached_aux.detach().cpu() if detached_aux is not None else 0.0),
+            }
 
         return mask_loss
 
