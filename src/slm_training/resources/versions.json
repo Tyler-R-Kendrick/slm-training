@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v123",
+      "version": "v124",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v124",
+          "date": "2026-07-21",
+          "note": "E670: combine nested array schema propagation with schema-allowed semantic-role wrapper selection"
+        },
         {
           "version": "v123",
           "date": "2026-07-21",

@@ -780,14 +780,9 @@ class ChoiceDecodeState:
         if token == LIST_OPEN:
             item_schema: dict[str, Any] | None = None
             if self.frames:
-                parent = self.frames[-1]
-                if (
-                    parent.kind == "component"
-                    and parent.arg_index < len(parent.schemas)
-                ):
-                    active_schema = parent.schemas[parent.arg_index]
-                    if active_schema.get("type") == "array":
-                        item_schema = dict(active_schema.get("items") or {})
+                active_schema = self._active_schema()
+                if active_schema.get("type") == "array":
+                    item_schema = dict(active_schema.get("items") or {})
             if item_schema is None:
                 self.frames.append(
                     _ChoiceFrame("variadic", "array", close=LIST_CLOSE)
