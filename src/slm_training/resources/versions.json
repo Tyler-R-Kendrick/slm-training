@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v122",
+      "version": "v121",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,11 +1549,6 @@
         "scripts/train_model.py"
       ],
       "history": [
-        {
-          "version": "v122",
-          "date": "2026-07-21",
-          "note": "E669: propagate active array item schemas through nested list frames so inner values remain schema-constrained"
-        },
         {
           "version": "v121",
           "date": "2026-07-21",

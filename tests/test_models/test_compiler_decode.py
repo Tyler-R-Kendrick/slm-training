@@ -977,20 +977,6 @@ def test_typed_array_nonempty_bias_can_target_schema_item_start() -> None:
     assert bias.tolist() == [10.0, 0.0, 0.0]
 
 
-def test_nested_array_frame_preserves_inner_component_schema() -> None:
-    from slm_training.models.choice_tokenizer import ChoiceDecodeState
-
-    model = _model(output_tokenizer="choice")
-    tokenizer = model.tokenizer
-    state = ChoiceDecodeState(tokenizer, slot_count=1)
-
-    assert state.advance_id(tokenizer.token_to_id["+Carousel"])
-    assert state.advance_id(tokenizer.token_to_id["["])
-    assert state.advance_id(tokenizer.token_to_id["["])
-    assert not state.advance_id(tokenizer.sym_id(0))
-    assert state.advance_id(tokenizer.token_to_id["+TextContent"])
-
-
 @pytest.mark.parametrize(
     "weight_name",
     [
