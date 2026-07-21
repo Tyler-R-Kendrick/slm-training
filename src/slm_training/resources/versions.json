@@ -1549,7 +1549,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v132",
+      "version": "v133",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1564,6 +1564,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v133",
+          "date": "2026-07-21",
+          "note": "E676: plan one schema component for same-namespace roles only when distinct direct string properties jointly cover them"
+        },
         {
           "version": "v132",
           "date": "2026-07-21",

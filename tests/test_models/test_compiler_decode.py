@@ -1450,6 +1450,33 @@ def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
     assert candidates == {":dashboard.refresh": ("Button",)}
 
 
+def test_joint_role_candidates_require_distinct_schema_properties() -> None:
+    from slm_training.data.quality import semantic_role_joint_candidates
+
+    slots = [":gallery.hint.title", ":gallery.hint.body"]
+    candidates = semantic_role_joint_candidates(
+        slots, ["Callout", "TextCallout", "TextContent"]
+    )
+
+    assert candidates[tuple(sorted(slots))] == ("Callout", "TextCallout")
+
+
+def test_role_obligations_use_one_joint_schema_carrier() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"ImageGallery": 1}),
+        {
+            ":gallery.hint.title": ("Callout", "TextContent"),
+            ":gallery.hint.body": ("Callout", "TextContent"),
+        },
+    )
+
+    assert counts == Counter({"ImageGallery": 1, "Callout": 1})
+    assert bindings["Callout"] == (
+        ":gallery.hint.body",
+        ":gallery.hint.title",
+    )
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

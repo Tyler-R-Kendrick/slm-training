@@ -4353,11 +4353,42 @@ class TwoTowerModel(nn.Module):
         if not role_candidates:
             return family_counts, {}
         from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
+        from slm_training.data.quality import semantic_role_joint_candidates
 
         completed = family_counts.copy()
         planned = set(family_counts)
         bindings: dict[str, list[str]] = defaultdict(list)
+        bound_slots: set[str] = set()
+        component_names = sorted(
+            {component for candidates in role_candidates.values() for component in candidates}
+        )
+        for slots, candidates in semantic_role_joint_candidates(
+            list(role_candidates), component_names
+        ).items():
+            candidates = tuple(
+                family
+                for family in candidates
+                if all(family in role_candidates[slot] for slot in slots)
+            )
+            if not candidates:
+                continue
+            family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in planned and preferred in candidates
+                ),
+                next(iter(sorted(planned.intersection(candidates))), None),
+            )
+            if family is None:
+                family = next(iter(candidates))
+                completed[family] += 1
+                planned.add(family)
+            bindings[family].extend(slots)
+            bound_slots.update(slots)
         for slot, candidates in role_candidates.items():
+            if slot in bound_slots:
+                continue
             planned_family = next(
                 (
                     preferred
