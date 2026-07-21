@@ -327,6 +327,17 @@ _LAZY_SLM222_EXPORTS = {
     "run_slm222_fixture": "run_muon_baseline_fixture",
 }
 
+_LAZY_SLM227_EXPORTS = {
+    "SLM227_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM227_MATRIX_SET": "MATRIX_SET",
+    "SLM227_MATRIX_VERSION": "MATRIX_VERSION",
+    "SeedArmResult": "SeedArmResult",
+    "SeedComparison": "SeedComparison",
+    "MuonConvergenceReport": "MuonConvergenceReport",
+    "render_slm227_markdown": "render_markdown",
+    "run_slm227_fixture": "run_muon_convergence_sweep",
+}
+
 _LAZY_SLM212_EXPORTS = {
     "SLM212_EXPERIMENT_ID": "EXPERIMENT_ID",
     "SLM212_MATRIX_SET": "MATRIX_SET",
@@ -368,6 +379,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm222_muon_baseline
 
         value = getattr(slm222_muon_baseline, _LAZY_SLM222_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM227_EXPORTS:
+        from slm_training.harnesses.experiments import slm227_muon_convergence
+
+        value = getattr(slm227_muon_convergence, _LAZY_SLM227_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_SLM212_EXPORTS:
@@ -450,6 +467,14 @@ __all__ = [
     "MuonBaselineReport",
     "render_slm222_markdown",
     "run_slm222_fixture",
+    "SLM227_EXPERIMENT_ID",
+    "SLM227_MATRIX_SET",
+    "SLM227_MATRIX_VERSION",
+    "SeedArmResult",
+    "SeedComparison",
+    "MuonConvergenceReport",
+    "render_slm227_markdown",
+    "run_slm227_fixture",
     "SLM212_EXPERIMENT_ID",
     "SLM212_MATRIX_SET",
     "SLM212_MATRIX_VERSION",

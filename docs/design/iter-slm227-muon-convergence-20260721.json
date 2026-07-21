@@ -1,0 +1,156 @@
+{
+  "adamw_wins": 5,
+  "all_finite": true,
+  "claim_class": "wiring",
+  "comparisons": [
+    {
+      "adamw": {
+        "finite_throughout": true,
+        "first_loss": 45.578975677490234,
+        "last_loss": 20.919654846191406,
+        "optimizer_name": "adamw",
+        "seed": 0,
+        "steps_completed": 40
+      },
+      "muon": {
+        "finite_throughout": true,
+        "first_loss": 45.578975677490234,
+        "last_loss": 45.77975845336914,
+        "optimizer_name": "muon_hybrid",
+        "seed": 0,
+        "steps_completed": 40
+      },
+      "muon_minus_adamw_last_loss": 24.860103607177734,
+      "seed": 0,
+      "winner": "adamw"
+    },
+    {
+      "adamw": {
+        "finite_throughout": true,
+        "first_loss": 39.73407745361328,
+        "last_loss": 19.424564361572266,
+        "optimizer_name": "adamw",
+        "seed": 1,
+        "steps_completed": 40
+      },
+      "muon": {
+        "finite_throughout": true,
+        "first_loss": 39.73407745361328,
+        "last_loss": 34.9696044921875,
+        "optimizer_name": "muon_hybrid",
+        "seed": 1,
+        "steps_completed": 40
+      },
+      "muon_minus_adamw_last_loss": 15.545040130615234,
+      "seed": 1,
+      "winner": "adamw"
+    },
+    {
+      "adamw": {
+        "finite_throughout": true,
+        "first_loss": 39.67699432373047,
+        "last_loss": 20.510814666748047,
+        "optimizer_name": "adamw",
+        "seed": 2,
+        "steps_completed": 40
+      },
+      "muon": {
+        "finite_throughout": true,
+        "first_loss": 39.67699432373047,
+        "last_loss": 41.14820098876953,
+        "optimizer_name": "muon_hybrid",
+        "seed": 2,
+        "steps_completed": 40
+      },
+      "muon_minus_adamw_last_loss": 20.637386322021484,
+      "seed": 2,
+      "winner": "adamw"
+    },
+    {
+      "adamw": {
+        "finite_throughout": true,
+        "first_loss": 51.391380310058594,
+        "last_loss": 22.24855613708496,
+        "optimizer_name": "adamw",
+        "seed": 3,
+        "steps_completed": 40
+      },
+      "muon": {
+        "finite_throughout": true,
+        "first_loss": 51.391380310058594,
+        "last_loss": 45.3956298828125,
+        "optimizer_name": "muon_hybrid",
+        "seed": 3,
+        "steps_completed": 40
+      },
+      "muon_minus_adamw_last_loss": 23.14707374572754,
+      "seed": 3,
+      "winner": "adamw"
+    },
+    {
+      "adamw": {
+        "finite_throughout": true,
+        "first_loss": 60.287330627441406,
+        "last_loss": 25.9423885345459,
+        "optimizer_name": "adamw",
+        "seed": 4,
+        "steps_completed": 40
+      },
+      "muon": {
+        "finite_throughout": true,
+        "first_loss": 60.287330627441406,
+        "last_loss": 56.73335266113281,
+        "optimizer_name": "muon_hybrid",
+        "seed": 4,
+        "steps_completed": 40
+      },
+      "muon_minus_adamw_last_loss": 30.790964126586914,
+      "seed": 4,
+      "winner": "adamw"
+    }
+  ],
+  "disposition": "consistent_adamw_lower_loss",
+  "disposition_rationale": "AdamW's final loss was lower than Muon's in all 5/5 decided seeds (mean delta +22.9961).",
+  "experiment_id": "slm227-muon-convergence",
+  "falsifier": "The Muon arm's final loss is not consistently lower (or higher) than AdamW's across the swept seeds (no seed-majority direction), or either arm produces a non-finite loss or non-finite parameters at any seed.",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no trained model, checkpoint promotion, GPU run, or ship-gate claim.",
+    "The full O0-O4 matched AdamW-vs-Muon campaign (capacity- and data-matched, with spectral LR control) still requires local E224+ checkpoints and dedicated GPU time and remains future work.",
+    "The fixture uses a tiny scratch-context model overfitting a handful of synthetic records; a consistent direction here is evidence about this optimizer pair's fixture-scale dynamics, not about downstream OpenUI quality, generalization, or which optimizer to ship.",
+    "Learning rate is matched but not tuned per optimizer; a real campaign would sweep LR separately for each arm before comparing convergence."
+  ],
+  "hypothesis": "At matched initialization, learning rate, data, and step budget, the Muon/AdamW hybrid optimizer's final training loss moves in a consistent direction relative to plain AdamW across seeds, once run long enough (more steps and records than SLM-222's 2-step single-record smoke test) for the orthogonalized-momentum update to diverge from AdamW.",
+  "matrix_set": "slm227_muon_convergence",
+  "matrix_version": "ncs2-04-v1",
+  "mean_delta": 22.996113586425782,
+  "muon_wins": 0,
+  "n_records": 4,
+  "run_id": "slm227-muon-convergence-20260721",
+  "schema": "MuonConvergenceReportV1",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "status": "fixture",
+  "stdev_delta": 5.006776061745488,
+  "steps": 40,
+  "ties": 0,
+  "timestamp": "2026-07-21T05:22:46.497155Z",
+  "unstable_seeds": 0,
+  "version_stamp": {
+    "code_commit": "942a63fbe36654806369accab62fe5051863ecf0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm222_muon_baseline": "v1",
+      "harness.experiments.slm227_muon_convergence": "v1",
+      "harness.model_build.train": "v17",
+      "model.twotower": "v78"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:22:46.497120+00:00"
+  }
+}

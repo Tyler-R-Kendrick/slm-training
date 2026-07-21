@@ -164,6 +164,21 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Fixture** | `scripts/run_slm138_recursive_denoiser_fixture.py` |
 | **SLM-139 follow-up** | Closed as `no_supported_probabilistic_regime`: SLM-138 delivered only wiring-only fixture evidence, so the stochastic high-level width campaign did not run. See `docs/design/iter-slm139-stochastic-recursive-width-20260720.md`. |
 
+### Muon/AdamW hybrid optimizer (NCS2-03/04, SLM-222/227)
+
+| | |
+| --- | --- |
+| **Paper** | Keller Jordan, *Muon: An optimizer for hidden layers in neural networks*, 2024. [Blog/README](https://github.com/KellerJordan/Muon) |
+| **Fidelity** | **Adapted** — self-contained PyTorch reimplementation of the Newton–Schulz orthogonalized-momentum update for eligible dense 2-D matrices, with embeddings/output heads/norms/biases/auxiliary heads routed to AdamW; no external optimizer dependency, no distributed/DDP-specific bucketing from the reference implementation |
+| **Code** | [`optimizers/muon.py`](../../src/slm_training/optimizers/muon.py) (`MuonHybrid`, `newton_schulz_orthogonalize`, `build_muon_hybrid`); plumbing in [`harnesses/model_build/config.py`](../../src/slm_training/harnesses/model_build/config.py), `train_loop.py`, `full_state.py` |
+| **Config** | `optimizer_name` ∈ `{adamw, muon_hybrid}`, `muon_lr`, `adamw_lr`, `muon_momentum`, `muon_nesterov`, `muon_ns_steps` |
+| **Fixture (SLM-222)** | `harnesses/experiments/slm222_muon_baseline.py` — verifies the hybrid partition (Muon owns dense 2-D matrices only), a 2-step single-record smoke train for both arms without NaN/Inf, and a persisted `optimizer_fingerprint` that makes cross-optimizer full-state resume fail closed. Evidence: [`iter-slm222-muon-baseline-20260721.md`](iter-slm222-muon-baseline-20260721.md). |
+| **SLM-227 follow-up** | SLM-222's own honest caveats said its 2-step, single-record, single-seed smoke test could draw "no convergence, final loss, or downstream eval metrics" conclusion. SLM-227 (`harnesses/experiments/slm227_muon_convergence.py`) reruns the same wiring at 40 steps, 4 records, and 5 seeds, holding init/LR/data matched between arms, and asks only whether the two arms' final training loss moves in a *consistent direction* across seeds. Result: **`consistent_adamw_lower_loss`** — AdamW's final loss was lower than Muon's in all 5/5 seeds (mean delta +23.0, loss ~46→~21 for AdamW vs. ~46→~45 flat for Muon). This is a real, reproducible fixture-scale measurement, not a promotion or ship claim: learning rate was matched, not tuned per optimizer, and Muon is known in the wider literature to need different effective LR than AdamW; the honest reading is "naively reusing an AdamW-tuned LR for Muon does not help at this fixture scale," not "AdamW beats Muon." Evidence: [`iter-slm227-muon-convergence-20260721.md`](iter-slm227-muon-convergence-20260721.md). |
+
+**What we took:** the core Newton–Schulz orthogonalization move (drive the momentum-buffer polar factor toward an orthonormal matrix) applied only to eligible dense 2-D weights, mirroring the reference implementation's split between "hidden matrix" and "everything else" parameter groups.
+
+**What we did not take:** the reference implementation's distributed all-gather/bucketing strategy, its specific default hyperparameter schedule, or any claim (from the paper, blog, or elsewhere) that Muon outperforms AdamW for this repo's TwoTower architecture — SLM-227's matched-LR fixture result points the other way at this scale and step budget, and neither result generalizes to a real training run.
+
 ### Preference / “DPO”
 
 | | |

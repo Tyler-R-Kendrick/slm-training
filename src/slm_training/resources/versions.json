@@ -736,6 +736,11 @@
         {
           "version": "v57",
           "date": "2026-07-21",
+          "note": "no-bump: re-export SLM-227 SeedArmResult/SeedComparison/MuonConvergenceReport/run_muon_convergence_sweep from experiments package; existing experiment harnesses unchanged"
+        },
+        {
+          "version": "v57",
+          "date": "2026-07-21",
           "note": "add SLM-223 NCS0-03 SemanticFloorGateV1 wiring/fixture harness over SLM-215 SpectralAtlasV1"
         },
         {
@@ -3555,6 +3560,25 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-222 NCS2-03 Muon/AdamW hybrid optimizer baseline fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.slm227_muon_convergence": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm227_muon_convergence.py",
+        "scripts/run_slm227_muon_convergence.py",
+        "tests/test_harnesses/experiments/test_slm227_muon_convergence.py",
+        "tests/test_scripts/test_run_slm227_muon_convergence.py",
+        "docs/design/iter-slm227-muon-convergence-20260721.json",
+        "docs/design/iter-slm227-muon-convergence-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-227 NCS2-04 Muon/AdamW hybrid convergence-direction sweep: extends SLM-222's 2-step single-record wiring smoke test to a multi-seed, multi-step, multi-record CPU-only comparison of final training loss direction"
         }
       ]
     },
