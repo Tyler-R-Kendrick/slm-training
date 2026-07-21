@@ -3791,6 +3791,25 @@
         }
       ]
     },
+    "harness.experiments.slm240_lr_schedule_gap": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm240_lr_schedule_gap.py",
+        "scripts/run_slm240_lr_schedule_gap.py",
+        "tests/test_harnesses/experiments/test_slm240_lr_schedule_gap.py",
+        "tests/test_scripts/test_run_slm240_lr_schedule_gap.py",
+        "docs/design/iter-slm240-lrs0-01-lr-schedule-gap-20260721.json",
+        "docs/design/iter-slm240-lrs0-01-lr-schedule-gap-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-240 LRS0-01 learning-rate schedule gap probe: instruments the real model_build train loop's live optimizer.step() calls (monkeypatch spy on torch.optim.AdamW.step / MuonHybrid.step, restore-after, never altering control flow) across adamw and muon_hybrid arms and multiple seeds to confirm that ModelBuildConfig exposes no warmup/decay knob and train_loop.py never adjusts the optimizer's parameter-group lr after construction, and that per-step metrics.jsonl rows never log the applied lr either; gap-finding probe over real production code, not a metric/gate change and no line of train_loop.py, config.py, or muon.py is modified"
+        }
+      ]
+    },
     "harness.experiments.slm239_checkpoint_migrate_tied_head_corruption": {
       "version": "v1",
       "kind": "harness",

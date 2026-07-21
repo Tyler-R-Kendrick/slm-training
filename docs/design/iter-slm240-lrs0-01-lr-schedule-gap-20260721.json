@@ -1,0 +1,196 @@
+{
+  "all_finite": true,
+  "all_lr_constant": true,
+  "all_lr_matches_config": true,
+  "any_metrics_log_lr": false,
+  "arms": [
+    {
+      "configured_lrs": {
+        "adamw": 0.0003
+      },
+      "finite_throughout": true,
+      "first_snapshot": [
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        },
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        },
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        }
+      ],
+      "lr_constant": true,
+      "lr_matches_config": true,
+      "metrics_logs_lr": false,
+      "optimizer_name": "adamw",
+      "seed": 0,
+      "steps_recorded": 20
+    },
+    {
+      "configured_lrs": {
+        "adamw": 0.0003
+      },
+      "finite_throughout": true,
+      "first_snapshot": [
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        },
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        },
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        }
+      ],
+      "lr_constant": true,
+      "lr_matches_config": true,
+      "metrics_logs_lr": false,
+      "optimizer_name": "adamw",
+      "seed": 1,
+      "steps_recorded": 20
+    },
+    {
+      "configured_lrs": {
+        "adamw": 0.0003
+      },
+      "finite_throughout": true,
+      "first_snapshot": [
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        },
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        },
+        {
+          "lr": 0.0003,
+          "optimizer": "adamw"
+        }
+      ],
+      "lr_constant": true,
+      "lr_matches_config": true,
+      "metrics_logs_lr": false,
+      "optimizer_name": "adamw",
+      "seed": 2,
+      "steps_recorded": 20
+    },
+    {
+      "configured_lrs": {
+        "adamw": 0.0001,
+        "muon": 0.0005
+      },
+      "finite_throughout": true,
+      "first_snapshot": [
+        {
+          "lr": 0.0005,
+          "optimizer": "muon"
+        },
+        {
+          "lr": 0.0001,
+          "optimizer": "adamw"
+        }
+      ],
+      "lr_constant": true,
+      "lr_matches_config": true,
+      "metrics_logs_lr": false,
+      "optimizer_name": "muon_hybrid",
+      "seed": 0,
+      "steps_recorded": 20
+    },
+    {
+      "configured_lrs": {
+        "adamw": 0.0001,
+        "muon": 0.0005
+      },
+      "finite_throughout": true,
+      "first_snapshot": [
+        {
+          "lr": 0.0005,
+          "optimizer": "muon"
+        },
+        {
+          "lr": 0.0001,
+          "optimizer": "adamw"
+        }
+      ],
+      "lr_constant": true,
+      "lr_matches_config": true,
+      "metrics_logs_lr": false,
+      "optimizer_name": "muon_hybrid",
+      "seed": 1,
+      "steps_recorded": 20
+    },
+    {
+      "configured_lrs": {
+        "adamw": 0.0001,
+        "muon": 0.0005
+      },
+      "finite_throughout": true,
+      "first_snapshot": [
+        {
+          "lr": 0.0005,
+          "optimizer": "muon"
+        },
+        {
+          "lr": 0.0001,
+          "optimizer": "adamw"
+        }
+      ],
+      "lr_constant": true,
+      "lr_matches_config": true,
+      "metrics_logs_lr": false,
+      "optimizer_name": "muon_hybrid",
+      "seed": 2,
+      "steps_recorded": 20
+    }
+  ],
+  "claim_class": "wiring",
+  "disposition": "gap_confirmed",
+  "disposition_rationale": "Every arm's live optimizer.step() lr was bit-identical across all recorded steps and matched the configured lr/muon_lr/adamw_lr value, for both adamw and muon_hybrid, across all seeds -- the model_build train loop applies no learning-rate schedule (no warmup ramp, no decay) today. No metrics.jsonl row in any arm logged an lr/learning_rate field, so this would be invisible to existing per-step telemetry even if a bug caused the lr to drift.",
+  "experiment_id": "slm240-lrs0-01-lr-schedule-gap",
+  "falsifier": "Any optimizer.step() call recorded during a >=10-step training run reports a parameter-group lr that differs from the group's first recorded lr (i.e. some schedule already governs it in this code path), or a first recorded lr does not match the configured lr/muon_lr/adamw_lr value, or any metrics.jsonl row for the run contains an 'lr' or 'learning_rate' key.",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: a tiny scratch-backend TwoTower model training on 4 synthetic records for 20 optimizer steps says nothing about whether a schedule *should* exist or what it would do to real convergence -- this probe only asks whether one exists today.",
+    "Instrumentation is a monkeypatch spy on torch.optim.AdamW.step and MuonHybrid.step, scoped to a try/finally around a single train() call and always delegating to the original method; no production file is edited and no optimizer behavior is altered, but a spy is still an external observation mechanism rather than a first-class API, so it would need to be re-verified if either optimizer's step() signature changes.",
+    "This finding is about the current absence of a mechanism, not a claim that a schedule would help or hurt convergence at any scale; it also does not cover the causal-LM/HF Trainer track (models/causal_lm_openui.py), which does configure lr_scheduler_type and warmup_ratio through the standard HF Trainer.",
+    "Only two optimizer configurations (adamw, muon_hybrid) and three seeds were probed; this does not rule out a schedule being applied only under some other config combination this probe did not exercise."
+  ],
+  "hypothesis": "The real model_build train loop (harnesses/model_build/train_loop.py::train) applies a bit-identical, constant learning rate to every optimizer parameter group for the entire duration of a run, for both supported optimizers (adamw, muon_hybrid), with no warmup ramp-up and no decay -- and the per-step metrics.jsonl row never records the applied learning rate, so no existing telemetry could detect a schedule even if one existed.",
+  "matrix_set": "slm240_lr_schedule_gap",
+  "matrix_version": "lrs0-01-v1",
+  "n_records": 4,
+  "optimizers": [
+    "adamw",
+    "muon_hybrid"
+  ],
+  "run_id": "slm240-lrs0-01-lr-schedule-gap-20260721",
+  "schema": "LrScheduleGapReportV1",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "status": "fixture",
+  "steps": 20,
+  "timestamp": "2026-07-21T07:40:22.836101Z",
+  "version_stamp": {
+    "code_commit": "61f39321c167d95bdc89b073a83ec634be3ec416",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm240_lr_schedule_gap": "v1",
+      "harness.model_build.train": "v17",
+      "model.twotower": "v78"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T07:40:22.836073+00:00"
+  }
+}
