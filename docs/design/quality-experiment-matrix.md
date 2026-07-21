@@ -4649,3 +4649,15 @@ E653 behavior as v106. No checkpoint was created or synced; AgentV was 0/1.
 
 Evidence: [narrative](iter-e654-nested-role-enum-20260721.md) and
 [JSON](iter-e654-nested-role-enum-20260721.json).
+
+## E655 direct role ownership before raw slots
+
+E655 distinguishes direct semantic-role owners from transitively reachable
+containers before forcing raw visible slots. The focused invariant passes, but
+the matched OOD `n=4` run exactly reproduces E653's predictions, quality metrics,
+AST scores, and strict failures. Reject neutral v107 and restore retained E653
+behavior as v108; the surviving Carousel failure is decided earlier in decode.
+No checkpoint was created or synced; AgentV was 0/1.
+
+Evidence: [narrative](iter-e655-direct-role-slot-ownership-20260721.md) and
+[JSON](iter-e655-direct-role-slot-ownership-20260721.json).
