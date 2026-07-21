@@ -162,12 +162,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-21",
+          "note": "add SLM-192 FFE3-01 flow-pipeline cost-profile fixture harness lazy re-exports"
+        },
         {
           "version": "v59",
           "date": "2026-07-21",
@@ -3921,6 +3926,38 @@
           "version": "ffe2-03-v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-191 FFE2-03 termination-policy fixture matrix"
+        }
+      ]
+    },
+    "harness.experiments.slm192_profile_flow_pipeline": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm192_profile_flow_pipeline.py",
+        "tests/test_harnesses/experiments/test_slm192_profile_flow_pipeline.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 stage-accurate cost profiler for valid-edit bridge/training/decode/closure/verification fixture harness"
+        }
+      ]
+    },
+    "matrix.slm192_profile_flow_pipeline": {
+      "version": "ffe3-01-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/profile_flow_pipeline.py",
+        "tests/test_scripts/test_profile_flow_pipeline.py",
+        "docs/design/iter-slm192-profile-flow-pipeline-20260721.json",
+        "docs/design/iter-slm192-profile-flow-pipeline-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-01-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 flow-pipeline cost-profile fixture matrix CLI"
         }
       ]
     }
