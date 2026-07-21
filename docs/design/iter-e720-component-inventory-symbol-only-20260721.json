@@ -1,12 +1,27 @@
 {
-  "schema_version": "openui.experiment_result/v1",
+  "schema_version": 1,
+  "run_id": "e720-symbol-only-component-inventory600-r1",
   "experiment_id": "E720",
-  "date": "2026-07-21",
-  "decision": "rejected",
+  "date_utc": "2026-07-21",
+  "status": "completed_scratch_diagnostic_not_promotable",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "path": "outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt",
+    "sha256": "842a1a21fb9897fe5ee594d9c9d2835315d63d4a12905e3c3640eec348f91a11",
+    "created": true,
+    "synced": false,
+    "sync_reason": "explicit --no-sync-checkpoints local scratch diagnostic",
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "path": "outputs/data/train/symbol-only-integrated-smoke-20260721",
+    "records": 141,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45"
+  },
   "hypothesis": "A learned component-inventory objective can correct requested-component omissions in the symbol-only baseline.",
-  "train": {
-    "run_id": "e720-symbol-only-component-inventory600-r1",
-    "run_class": "scratch_matrix",
+  "training": {
     "device": "cpu",
     "context_backend": "scratch",
     "records": 141,
@@ -27,7 +42,7 @@
     "component_inventory_positive_count_mean": 1.75,
     "checkpoint": "outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt",
     "checkpoint_sha256": "842a1a21fb9897fe5ee594d9c9d2835315d63d4a12905e3c3640eec348f91a11",
-    "checkpoint_sync": "disabled-explicitly",
+    "checkpoint_synced": false,
     "version_stamp": {
       "stamp_schema": "version_stamp/v1",
       "code_commit": "9640f7befe5e7739b2373cb495104ce12c137f0d",
@@ -38,10 +53,37 @@
       "stamped_at": "2026-07-21T23:42:06.865320+00:00"
     }
   },
-  "evaluations": [
-    {
+  "evaluation_policy": {
+    "suites": ["smoke"],
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "suites": {
+    "smoke": {
+      "run_id": "e720-component-inventory-tree-bias0-smoke-r2",
+      "n": 3,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "meaningful_program_v1_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.8055555555555555,
+      "structural_similarity": 0.2902666666666667,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.0,
+      "timeouts": 0,
+      "empty_predictions": 0,
+      "p50_ms": 3465.93,
+      "p95_ms": 6258.84
+    }
+  },
+  "decode_bias_comparison": {
+    "weight_4": {
       "run_id": "e720-component-inventory-tree-smoke-r1",
-      "suite": "smoke",
       "n": 3,
       "component_inventory_decode_weight": 4.0,
       "parse_rate": 0.0,
@@ -55,28 +97,18 @@
       "latency_ms_p50": 8000.83,
       "latency_ms_p95": 8000.98,
       "agentv_passed": 0,
-      "agentv_total": 1
-    },
-    {
-      "run_id": "e720-component-inventory-tree-bias0-smoke-r2",
-      "suite": "smoke",
-      "n": 3,
-      "component_inventory_decode_weight": 0.0,
-      "parse_rate": 0.0,
-      "meaningful_program_rate": 0.0,
-      "placeholder_fidelity": 0.8055555555555555,
-      "structural_similarity": 0.2902666666666667,
-      "component_type_recall": 0.3333333333333333,
-      "reward_score": 0.0,
-      "decode_timeout_count": 0,
-      "empty_prediction_count": 0,
-      "latency_ms_p50": 3465.93,
-      "latency_ms_p95": 6258.84,
       "agentv_passed": 0,
       "agentv_total": 1
     }
-  ],
-  "conclusion": "The inventory target learned, but neither arm produced a valid or meaningful program; decode weight 4 caused 3/3 timeouts. Reject checkpoint and bias.",
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 2,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": false,
+  "decision": "The inventory target learned, but neither arm produced a valid or meaningful program; decode weight 4 caused 3/3 timeouts. Reject checkpoint and bias.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
     "code_commit": "9640f7befe5e7739b2373cb495104ce12c137f0d",

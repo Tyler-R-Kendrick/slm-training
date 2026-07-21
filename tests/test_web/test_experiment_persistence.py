@@ -311,3 +311,26 @@ def test_e712_retained_runs_persist_without_new_checkpoint(tmp_path: Path) -> No
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
     assert run_ids.isdisjoint(checkpoint_ids)
+
+
+def test_e720_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e720-symbol-only-component-inventory600-r1"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    smoke = run["scoreboard"]["suites"]["smoke"]
+    assert smoke["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert smoke["placeholder_fidelity"] == 0.8055555555555555
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "842a1a21fb9897fe5ee594d9c9d2835315d63d4a12905e3c3640eec348f91a11"
+    )
+    assert run["train_summary"]["checkpoint_synced"] is False
+    checkpoint = next(
+        row for row in readers.checkpoints()["checkpoints"]
+        if row.get("run_id") == run_id
+    )
+    assert "842a1a21" in checkpoint["status"]
