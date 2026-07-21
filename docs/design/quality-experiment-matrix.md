@@ -4470,3 +4470,19 @@ synced; AgentV remained 0/1.
 Evidence:
 [iter-e642-root-only-role-plans-20260720.md](iter-e642-root-only-role-plans-20260720.md)
 and [JSON](iter-e642-root-only-role-plans-20260720.json).
+
+## E643 required-string role binding
+
+E643 combined visible-role-inferred families with direct role-compatible slot
+bias at required plain-string content arguments. It exactly reproduced E641's
+quality profile apart from runtime noise: fidelity and reward rose, but strict
+v2 fell to 1/4, structure regressed, and p95 more than doubled. Reject the
+treatment stamped v86. After rebasing onto E642 restoration v88, the append-only
+lineage records E643 as treatment v89 and restoration v90. Family cardinality
+and role binding must be one
+concrete obligation, not independent biases. No checkpoint was created or
+synced; AgentV remained 0/1.
+
+Evidence:
+[iter-e643-bound-role-plans-20260720.md](iter-e643-bound-role-plans-20260720.md)
+and [JSON](iter-e643-bound-role-plans-20260720.json).
