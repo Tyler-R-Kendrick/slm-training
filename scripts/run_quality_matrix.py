@@ -25,6 +25,10 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
+from slm_training.harnesses.experiments.slm209_debt_targeted_curriculum import (
+    render_sde5_floor_escape_markdown,
+    run_sde5_floor_escape_fixture,
+)
 
 # SLM-185: optional semantic-resolution annotation (default-off, no gate weakening).
 from slm_training.evals.judge_resolution import (
@@ -2578,6 +2582,66 @@ def _run_external_ceiling(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_sde5_floor_escape(args: argparse.Namespace) -> int:
+    """SLM-210: dispatch the ``sde5-floor-escape`` matrix set.
+
+    Fixture mode runs a CPU-only wiring check over the preregistered C0-C8 cells.
+    A real floor-escape train/eval requires managed GPU orchestration and is left
+    as a documented next step.
+    """
+    seeds = (args.seed, args.seed + 1, args.seed + 2)
+    matrix = run_sde5_floor_escape_fixture(
+        output_dir=None if args.describe else args.run_root,
+        seeds=seeds,
+        n_states=200,
+        total_decision_budget=120,
+        per_group_cap=6,
+        seed=args.seed,
+        write_design_docs=not args.describe,
+    )
+
+    if args.describe:
+        print(json.dumps(matrix.to_dict(), indent=2))
+        return 0
+
+    args.run_root.mkdir(parents=True, exist_ok=True)
+    json_path = args.run_root / "sde5_floor_escape_matrix_report.json"
+    matrix.to_json(json_path)
+    md_path = args.run_root / "sde5_floor_escape_matrix_results.md"
+    md_path.write_text(
+        render_sde5_floor_escape_markdown(matrix) + "\n", encoding="utf-8"
+    )
+
+    docs_out = args.docs_out or (
+        Path("docs/design/sde5-floor-escape-matrix-results.json")
+        if args.run_root == Path("outputs/runs")
+        else args.run_root / "sde5_floor_escape_matrix_report.json"
+    )
+    if args.docs_out or args.run_root == Path("outputs/runs"):
+        docs_out.parent.mkdir(parents=True, exist_ok=True)
+        docs_out.write_text(
+            json.dumps(matrix.to_dict(), indent=2) + "\n", encoding="utf-8"
+        )
+        docs_md = docs_out.with_suffix(".md")
+        docs_md.write_text(
+            render_sde5_floor_escape_markdown(matrix) + "\n", encoding="utf-8"
+        )
+
+    print(
+        json.dumps(
+            {
+                "summary": str(json_path),
+                "matrix_set": matrix.matrix_set,
+                "status": matrix.status,
+                "cells": len(matrix.cells),
+                "disposition": matrix.disposition,
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
@@ -2753,7 +2817,9 @@ def main(argv: list[str] | None = None) -> int:
             "Named matrix set outside the E-series. 'verified-solver' runs the "
             "VSS4-02 matched R0-R6 verified-scope-solver rows and hard gates. "
             "'external-ceiling' runs the SLM-108 fixture/frontier external-model "
-            "constrained-decoding ceiling matrix."
+            "constrained-decoding ceiling matrix. "
+            "'sde5-floor-escape' runs the SLM-210 preregistered C0-C8 "
+            "prompt-plan × grammar-mass × high-debt exposure wiring fixture."
         ),
     )
     parser.add_argument(
@@ -2806,6 +2872,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_verified_solver(args)
     if args.matrix_set == "external-ceiling":
         return _run_external_ceiling(args)
+    if args.matrix_set == "sde5-floor-escape":
+        return _run_sde5_floor_escape(args)
     # Modern curriculum rows (notably E53) use ``curriculum_dir`` as their
     # actual training input.  If a caller explicitly supplies a different
     # train corpus, do not silently substitute the stale default curriculum

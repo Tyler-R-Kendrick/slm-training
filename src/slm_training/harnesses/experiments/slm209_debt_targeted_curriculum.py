@@ -20,6 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from slm_training.harness_core.score_policy import (
+    CandidatePath,
+    GrammarAlignedMassPolicy,
+)
 from slm_training.harnesses.preference.constraint_debt import ConstraintDebtV1
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
@@ -42,6 +46,15 @@ __all__ = [
     "run_fixture_campaign",
     "render_markdown",
     "validate_manifest",
+    "SDE5_MATRIX_SET",
+    "SDE5_MATRIX_VERSION",
+    "SDE5_EXPERIMENT_ID",
+    "SDE5FloorEscapeCellV1",
+    "SDE5FloorEscapeMatrixV1",
+    "build_sde5_floor_escape_matrix",
+    "run_sde5_floor_escape_fixture",
+    "render_sde5_floor_escape_markdown",
+    "validate_sde5_floor_escape_matrix",
 ]
 
 MATRIX_VERSION = "sde5-02-v1"
@@ -1021,3 +1034,648 @@ def render_markdown(manifest: DebtCurriculumManifestV1) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# SDE5-03 (SLM-210): prompt-plan × grammar-mass × high-debt exposure floor-escape matrix
+# --------------------------------------------------------------------------- #
+
+SDE5_MATRIX_VERSION = "sde5-03-v1"
+SDE5_MATRIX_SET = "sde5_floor_escape_matrix"
+SDE5_EXPERIMENT_ID = "slm210-sde5-floor-escape-matrix"
+
+_SDE5_HYPOTHESIS = (
+    "Combining prompt-derived plan/semantic soft features, GrammarAlignedMassPolicy / "
+    "ASAp-compatible legal-mass scoring, and fixed-budget high-debt exposure produces a "
+    "reproducible strict meaning-v2 > 0 signal without repeated-subtree or inventory-coverage "
+    "gaming, relative to matched controls."
+)
+_SDE5_FALSIFIER = (
+    "No cell exceeds strict meaning-v2 zero with clean evidence, or an apparent gain "
+    "disappears under anti-gaming, inventory-removal, retry, or seed controls."
+)
+
+_SDE5_CELL_DEFS = (
+    # (cell_id, prompt_plan_soft_features, grammar_aligned_mass, exposure_policy)
+    ("C0", False, False, "uniform"),
+    ("C1", True, False, "uniform"),
+    ("C2", False, True, "uniform"),
+    ("C3", False, False, "preregistered_composite"),
+    ("C4", True, True, "uniform"),
+    ("C5", True, False, "preregistered_composite"),
+    ("C6", False, True, "preregistered_composite"),
+    ("C7", True, True, "preregistered_composite"),
+    ("C8", True, True, "debt_weight_permuted"),
+)
+
+_SDE5_RETRY_BUDGET = 1
+_SDE5_CANVAS_CAP = 128
+
+
+def _build_plan_features(enabled: bool) -> tuple[dict[str, Any], ...]:
+    """Predicted prompt-derived plan features; no gold AST/placeholder/plan fields."""
+    if not enabled:
+        return ()
+    return (
+        {
+            "role_id": "prompt_component_0",
+            "component_family": "Header",
+            "matches_predicted_role": True,
+            "provenance": "predicted",
+        },
+        {
+            "role_id": "prompt_component_1",
+            "component_family": "Stack",
+            "component_family_compatible": True,
+            "provenance": "predicted",
+        },
+    )
+
+
+def _build_mass_audit(enabled: bool) -> dict[str, Any]:
+    """Exercise GrammarAlignedMassPolicy on a synthetic path when the lever is on."""
+    path = CandidatePath(
+        candidate_id="synthetic_fixture_path",
+        token_ids=(100, 200, 300),
+        log_probs=(-0.5, -0.8, -1.2),
+        removed_mass=(0.1, 0.05, 0.2),
+        semantic_mask=(1.0, 1.0, 0.0),
+    )
+    if enabled:
+        policy = GrammarAlignedMassPolicy(beta=1.0)
+        return {
+            "policy": policy.name,
+            "beta": policy.beta,
+            "score": policy.score(path),
+            "candidate_id": path.candidate_id,
+        }
+    raw = sum(path.log_probs)
+    return {
+        "policy": "raw_cumulative",
+        "score": raw,
+        "candidate_id": path.candidate_id,
+    }
+
+
+def _compute_permuted_score(
+    debt: ConstraintDebtV1,
+    event: DecisionEventV1,
+    rarity_counter: Counter[str],
+) -> dict[str, float]:
+    """Composite score with permuted weights for C8 control."""
+    kind = event.decision_kind
+    kind_freq = rarity_counter.get(kind, 1)
+    inverse_kind_frequency = 1.0 / math.sqrt(max(1, kind_freq))
+
+    good_debt = debt.good_debt if debt.good_debt is not None else 0.0
+    legal_debt = debt.legal_debt if debt.legal_debt is not None else 0.0
+    effective_debt = good_debt if good_debt > 0 else legal_debt
+
+    legal_support = max(1, debt.legal_support_count)
+    entropy = math.log(legal_support)
+    normalized_entropy = entropy / math.log(20.0)
+
+    # Permuted weights: rarity dominates, then entropy, then debt.
+    weight_debt = 0.25
+    weight_rarity = 0.5
+    weight_entropy = 0.25
+    score = (
+        weight_debt * effective_debt
+        + weight_rarity * inverse_kind_frequency
+        + weight_entropy * normalized_entropy
+    )
+    return {
+        "score": score,
+        "effective_debt": effective_debt,
+        "inverse_kind_frequency": inverse_kind_frequency,
+        "normalized_entropy": normalized_entropy,
+        "weight_debt": weight_debt,
+        "weight_rarity": weight_rarity,
+        "weight_entropy": weight_entropy,
+    }
+
+
+def _select_weight_permuted(
+    debts: list[ConstraintDebtV1],
+    events: list[DecisionEventV1],
+    total_decision_budget: int,
+    per_group_cap: int,
+    seed: int,
+) -> tuple[tuple[DebtCurriculumSelectionV1, ...], dict[str, Any]]:
+    """Debt-targeted selection with permuted composite weights (C8 control)."""
+    rng = random.Random(seed)
+
+    debt_by_state = {debt.state_id: debt for debt in debts}
+    event_by_state = {event.event_id: event for event in events}
+    state_ids = sorted(set(debt_by_state) & set(event_by_state))
+
+    rarity_counter = _kind_frequencies(events)
+
+    scored: list[tuple[float, str, ConstraintDebtV1, DecisionEventV1]] = []
+    for state_id in state_ids:
+        debt = debt_by_state[state_id]
+        event = event_by_state[state_id]
+        result = _compute_permuted_score(debt, event, rarity_counter)
+        jitter = rng.random() * 1e-9
+        scored.append((result["score"] + jitter, state_id, debt, event))
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
+
+    group_counts: Counter[str] = Counter()
+    selections: list[DebtCurriculumSelectionV1] = []
+    group_cap = max(1, int(per_group_cap))
+
+    for _score, state_id, debt, event in scored:
+        if len(selections) >= total_decision_budget:
+            break
+        if group_counts[event.group_id] >= group_cap:
+            continue
+        result = _compute_permuted_score(debt, event, rarity_counter)
+        selections.append(
+            DebtCurriculumSelectionV1(
+                state_id=state_id,
+                group_id=event.group_id,
+                decision_kind=event.decision_kind,
+                split=event.split,
+                selected_by_policy="debt_weight_permuted",
+                score_components=result,
+                debt_row_digest=_debt_digest(debt),
+                source_event_digest=_digest(event.to_dict()),
+            )
+        )
+        group_counts[event.group_id] += 1
+
+    return tuple(selections), _build_exposure_audit(selections)
+
+
+def _select_for_sde5_cell(
+    debts: list[ConstraintDebtV1],
+    events: list[DecisionEventV1],
+    exposure_policy: str,
+    total_decision_budget: int,
+    per_group_cap: int,
+    seed: int,
+) -> tuple[tuple[DebtCurriculumSelectionV1, ...], dict[str, Any]]:
+    """Dispatch to existing SLM-209 selection or the permuted control."""
+    if exposure_policy in POLICY_NAMES:
+        return select_states_for_cell(
+            debts, events, exposure_policy, total_decision_budget, per_group_cap, seed
+        )
+    if exposure_policy == "debt_weight_permuted":
+        return _select_weight_permuted(
+            debts, events, total_decision_budget, per_group_cap, seed
+        )
+    raise ValueError(f"unsupported SDE5 exposure policy: {exposure_policy!r}")
+
+
+@dataclass(frozen=True)
+class SDE5FloorEscapeCellV1:
+    """One preregistered cell of the SDE5 floor-escape matrix."""
+
+    cell_id: str
+    prompt_plan_soft_features: bool
+    grammar_aligned_mass: bool
+    asap_decode: bool
+    exposure_policy: str
+    plan_features: tuple[dict[str, Any], ...]
+    mass_audit: dict[str, Any]
+    selection_cell: DebtCurriculumCellV1
+    runs_anti_gaming_suite: bool
+    checkpoint_selection_rule: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cell_id": self.cell_id,
+            "prompt_plan_soft_features": self.prompt_plan_soft_features,
+            "grammar_aligned_mass": self.grammar_aligned_mass,
+            "asap_decode": self.asap_decode,
+            "exposure_policy": self.exposure_policy,
+            "plan_features": [dict(f) for f in self.plan_features],
+            "mass_audit": dict(self.mass_audit),
+            "selection_cell": self.selection_cell.to_dict(),
+            "runs_anti_gaming_suite": self.runs_anti_gaming_suite,
+            "checkpoint_selection_rule": self.checkpoint_selection_rule,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "SDE5FloorEscapeCellV1":
+        fields = set(cls.__dataclass_fields__)
+        unknown = set(data) - fields
+        if unknown:
+            raise ValueError(f"unknown SDE5 cell fields: {sorted(unknown)}")
+        return cls(
+            cell_id=str(data["cell_id"]),
+            prompt_plan_soft_features=bool(data["prompt_plan_soft_features"]),
+            grammar_aligned_mass=bool(data["grammar_aligned_mass"]),
+            asap_decode=bool(data["asap_decode"]),
+            exposure_policy=str(data["exposure_policy"]),
+            plan_features=tuple(dict(f) for f in data.get("plan_features", ())),
+            mass_audit=dict(data.get("mass_audit", {})),
+            selection_cell=DebtCurriculumCellV1.from_dict(data["selection_cell"]),
+            runs_anti_gaming_suite=bool(data.get("runs_anti_gaming_suite", False)),
+            checkpoint_selection_rule=str(data["checkpoint_selection_rule"]),
+        )
+
+
+@dataclass(frozen=True)
+class SDE5FloorEscapeMatrixV1:
+    """Preregistered floor-escape matrix for SLM-210."""
+
+    schema: str
+    matrix_set: str
+    matrix_version: str
+    experiment_id: str
+    run_id: str
+    status: str
+    claim_class: str
+    hypothesis: str
+    falsifier: str
+    cells: tuple[SDE5FloorEscapeCellV1, ...]
+    total_decision_budget: int
+    per_group_cap: int
+    retry_budget: int
+    canvas_cap: int
+    lineage: dict[str, Any]
+    version_stamp: dict[str, Any]
+    timestamp: str
+    disposition: str = "inconclusive"
+    disposition_rationale: str = ""
+    honest_caveats: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "matrix_set": self.matrix_set,
+            "matrix_version": self.matrix_version,
+            "experiment_id": self.experiment_id,
+            "run_id": self.run_id,
+            "status": self.status,
+            "claim_class": self.claim_class,
+            "hypothesis": self.hypothesis,
+            "falsifier": self.falsifier,
+            "cells": [c.to_dict() for c in self.cells],
+            "total_decision_budget": self.total_decision_budget,
+            "per_group_cap": self.per_group_cap,
+            "retry_budget": self.retry_budget,
+            "canvas_cap": self.canvas_cap,
+            "lineage": dict(self.lineage),
+            "version_stamp": dict(self.version_stamp),
+            "timestamp": self.timestamp,
+            "disposition": self.disposition,
+            "disposition_rationale": self.disposition_rationale,
+            "honest_caveats": list(self.honest_caveats),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "SDE5FloorEscapeMatrixV1":
+        fields = set(cls.__dataclass_fields__)
+        unknown = set(data) - fields
+        if unknown:
+            raise ValueError(f"unknown SDE5 matrix fields: {sorted(unknown)}")
+        return cls(
+            schema=str(data.get("schema", "SDE5FloorEscapeMatrixV1")),
+            matrix_set=str(data.get("matrix_set", SDE5_MATRIX_SET)),
+            matrix_version=str(data.get("matrix_version", SDE5_MATRIX_VERSION)),
+            experiment_id=str(data.get("experiment_id", SDE5_EXPERIMENT_ID)),
+            run_id=str(data.get("run_id", "slm210-sde5-floor-escape")),
+            status=str(data.get("status", "fixture")),
+            claim_class=str(data.get("claim_class", "wiring")),
+            hypothesis=str(data.get("hypothesis", _SDE5_HYPOTHESIS)),
+            falsifier=str(data.get("falsifier", _SDE5_FALSIFIER)),
+            cells=tuple(
+                SDE5FloorEscapeCellV1.from_dict(c) for c in data.get("cells", ())
+            ),
+            total_decision_budget=int(data["total_decision_budget"]),
+            per_group_cap=int(data["per_group_cap"]),
+            retry_budget=int(data.get("retry_budget", _SDE5_RETRY_BUDGET)),
+            canvas_cap=int(data.get("canvas_cap", _SDE5_CANVAS_CAP)),
+            lineage=dict(data.get("lineage", {})),
+            version_stamp=dict(data.get("version_stamp", {})),
+            timestamp=str(data.get("timestamp", _now())),
+            disposition=str(data.get("disposition", "inconclusive")),
+            disposition_rationale=str(data.get("disposition_rationale", "")),
+            honest_caveats=tuple(data.get("honest_caveats", ())),
+        )
+
+    def to_json(self, path: Path) -> None:
+        path.write_text(
+            json.dumps(self.to_dict(), indent=2, sort_keys=True, default=str) + "\n",
+            encoding="utf-8",
+        )
+
+
+def _sde5_disposition(
+    cells: tuple[SDE5FloorEscapeCellV1, ...],
+) -> tuple[str, str]:
+    """Fixture-only disposition: structural checks, no real meaning-v2."""
+    for cell in cells:
+        audit = cell.selection_cell.exposure_audit
+        if audit.get("max_group_count", 0) > cell.selection_cell.per_group_cap:
+            return (
+                "inconclusive",
+                "At least one cell exceeded its per-group cap; the selection wiring "
+                "needs tightening before claiming a floor escape.",
+            )
+        if len(cell.selection_cell.selections) > cell.selection_cell.decision_budget:
+            return (
+                "inconclusive",
+                "At least one cell exceeded its total decision budget.",
+            )
+    if not cells:
+        return ("inconclusive", "No cells to evaluate.")
+    return (
+        "inconclusive",
+        "Fixture wiring only: selection, exposure equality, and anti-gaming scheduling "
+        "are exercised, but no model was trained or evaluated on strict meaning-v2.",
+    )
+
+
+def build_sde5_floor_escape_matrix(
+    debts: list[ConstraintDebtV1],
+    events: list[DecisionEventV1],
+    *,
+    seeds: tuple[int, ...] = _DEFAULT_SEEDS,
+    total_decision_budget: int = _DEFAULT_TOTAL_DECISION_BUDGET,
+    per_group_cap: int = _DEFAULT_PER_GROUP_CAP,
+    run_id: str = "slm210-sde5-floor-escape",
+) -> SDE5FloorEscapeMatrixV1:
+    """Build the preregistered C0–C8 floor-escape matrix over synthetic or real debts."""
+    filled_cells: list[SDE5FloorEscapeCellV1] = []
+    for seed in seeds:
+        for cell_id, plan_on, mass_on, exposure_policy in _SDE5_CELL_DEFS:
+            selections, audit = _select_for_sde5_cell(
+                debts,
+                events,
+                exposure_policy,
+                total_decision_budget,
+                per_group_cap,
+                seed,
+            )
+            plan_features = _build_plan_features(plan_on)
+            mass_audit = _build_mass_audit(mass_on)
+            weight_config = _build_weight_config(exposure_policy) or {
+                "debt": 0.25,
+                "rarity": 0.5,
+                "entropy": 0.25,
+            }
+            selection_cell = DebtCurriculumCellV1(
+                policy_name=exposure_policy,
+                weight_config=weight_config,
+                selections=selections,
+                exposure_audit=audit,
+                decision_budget=total_decision_budget,
+                per_group_cap=per_group_cap,
+                seed=seed,
+            )
+            filled_cells.append(
+                SDE5FloorEscapeCellV1(
+                    cell_id=cell_id,
+                    prompt_plan_soft_features=plan_on,
+                    grammar_aligned_mass=mass_on,
+                    asap_decode=mass_on,
+                    exposure_policy=exposure_policy,
+                    plan_features=plan_features,
+                    mass_audit=mass_audit,
+                    selection_cell=selection_cell,
+                    runs_anti_gaming_suite=(
+                        plan_on or mass_on or exposure_policy != "uniform"
+                    ),
+                    checkpoint_selection_rule="held_out_nll_or_ship_score",
+                )
+            )
+
+    disposition, rationale = _sde5_disposition(tuple(filled_cells))
+    debt_digest = _digest([_debt_digest(d) for d in debts])
+    event_digest = _digest([e.to_dict() for e in events])
+
+    return SDE5FloorEscapeMatrixV1(
+        schema="SDE5FloorEscapeMatrixV1",
+        matrix_set=SDE5_MATRIX_SET,
+        matrix_version=SDE5_MATRIX_VERSION,
+        experiment_id=SDE5_EXPERIMENT_ID,
+        run_id=run_id,
+        status="fixture",
+        claim_class="wiring",
+        hypothesis=_SDE5_HYPOTHESIS,
+        falsifier=_SDE5_FALSIFIER,
+        cells=tuple(filled_cells),
+        total_decision_budget=total_decision_budget,
+        per_group_cap=per_group_cap,
+        retry_budget=_SDE5_RETRY_BUDGET,
+        canvas_cap=_SDE5_CANVAS_CAP,
+        lineage={
+            "debt_artifact_digest": debt_digest,
+            "source_event_digest": event_digest,
+            "synthetic_state_count": len(debts),
+            "synthetic_event_count": len(events),
+            "seeds": list(seeds),
+            "exposure_policy_axis": sorted(
+                {p for _, _, _, p in _SDE5_CELL_DEFS}
+            ),
+        },
+        version_stamp=build_version_stamp(
+            "harness.experiments",
+            "harness.experiments.slm209_debt_targeted_curriculum",
+            "harness.experiments.sde5_floor_escape_matrix",
+            "harness.preference.constraint_debt",
+            "harness.train_data",
+        ),
+        timestamp=_now(),
+        disposition=disposition,
+        disposition_rationale=rationale,
+        honest_caveats=(
+            "Synthetic fixture: no model, checkpoint, verifier labels, or AgentV evaluation were used.",
+            "GrammarAlignedMassPolicy and ASAP decode are recorded as config levers and exercised on a "
+            "synthetic candidate path only; live decode wiring is unchanged.",
+            "Prompt-derived plan soft features are mocked as predicted provenance; production arms must "
+            "use prompt_semantic_plan() and never gold AST/placeholder/plan fields.",
+            "Strict meaning-v2 was not measured; this is a wiring/preregistration artifact, not a ship claim.",
+            "Real floor-escape evaluation requires managed GPU orchestration and durable checkpoints.",
+        ),
+    )
+
+
+def validate_sde5_floor_escape_matrix(
+    matrix: SDE5FloorEscapeMatrixV1,
+) -> list[str]:
+    """Validate the SDE5 floor-escape matrix invariants."""
+    errors: list[str] = []
+    if not matrix.cells:
+        errors.append("cells must not be empty")
+
+    seen: set[str] = set()
+    expected_cells = {
+        f"{cell_id}__s{seed}"
+        for seed in matrix.lineage.get("seeds", [])
+        for cell_id, _, _, _ in _SDE5_CELL_DEFS
+    }
+    for cell in matrix.cells:
+        key = f"{cell.cell_id}__s{cell.selection_cell.seed}"
+        if key in seen:
+            errors.append(f"duplicate cell: {key}")
+        seen.add(key)
+        if cell.exposure_policy not in {
+            "uniform",
+            "preregistered_composite",
+            "debt_weight_permuted",
+        }:
+            errors.append(f"{key}: invalid exposure policy {cell.exposure_policy!r}")
+        if cell.selection_cell.decision_budget != matrix.total_decision_budget:
+            errors.append(f"{key}: decision_budget mismatch")
+        if cell.selection_cell.per_group_cap != matrix.per_group_cap:
+            errors.append(f"{key}: per_group_cap mismatch")
+        if cell.runs_anti_gaming_suite and cell.cell_id == "C0":
+            errors.append(f"{key}: C0 must not run anti-gaming suite")
+        if not cell.runs_anti_gaming_suite and cell.cell_id != "C0":
+            errors.append(f"{key}: non-control cell must run anti-gaming suite")
+        for feature in cell.plan_features:
+            if feature.get("provenance") == "gold":
+                errors.append(f"{key}: gold plan feature in production arm")
+        if "final_suite" in cell.checkpoint_selection_rule:
+            errors.append(f"{key}: checkpoint selection must not use final suite")
+
+    missing = expected_cells - seen
+    if missing:
+        errors.append(f"missing cells: {sorted(missing)}")
+    return errors
+
+
+def render_sde5_floor_escape_markdown(matrix: SDE5FloorEscapeMatrixV1) -> str:
+    """Render a fixture-caveat markdown summary."""
+    lines = [
+        f"# SLM-210 (SDE5-03): prompt-plan × grammar-mass × high-debt floor-escape matrix ({matrix.run_id})",
+        "",
+        f"Matrix set: `{matrix.matrix_set}`",
+        "",
+        f"Version: `{matrix.matrix_version}`",
+        "",
+        f"Status: **{matrix.status}**",
+        "",
+        "**Claim class:** wiring / fixture only. No GPU was used, no trainable weights "
+        "were updated, and no ship-gate claim is made.",
+        "",
+        "## Hypothesis",
+        "",
+        matrix.hypothesis,
+        "",
+        "## Falsifier",
+        "",
+        matrix.falsifier,
+        "",
+        "## Cells",
+        "",
+        "| cell | plan_soft | grammar_mass | asap | exposure | seed | selected | unique_groups | max_group | mean_debt | anti_gaming |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for cell in matrix.cells:
+        audit = cell.selection_cell.exposure_audit
+        lines.append(
+            f"| {cell.cell_id} | {cell.prompt_plan_soft_features} | "
+            f"{cell.grammar_aligned_mass} | {cell.asap_decode} | "
+            f"{cell.exposure_policy} | {cell.selection_cell.seed} | "
+            f"{len(cell.selection_cell.selections)} | "
+            f"{audit.get('unique_groups', 0)} | {audit.get('max_group_count', 0)} | "
+            f"{audit.get('mean_effective_debt', 0.0):.4f} | "
+            f"{cell.runs_anti_gaming_suite} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Disposition",
+            "",
+            f"**{matrix.disposition}**",
+            "",
+            matrix.disposition_rationale,
+            "",
+            "## Honest caveats",
+            "",
+        ]
+    )
+    for caveat in matrix.honest_caveats:
+        lines.append(f"- {caveat}")
+
+    lines.extend(
+        [
+            "",
+            "## Reproducibility",
+            "",
+            "```bash",
+            "python -m scripts.run_quality_matrix --matrix-set sde5-floor-escape --mode fixture",
+            "```",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def run_sde5_floor_escape_fixture(
+    output_dir: Path | None = None,
+    *,
+    seeds: tuple[int, ...] = _DEFAULT_SEEDS,
+    n_states: int = 200,
+    total_decision_budget: int = _DEFAULT_TOTAL_DECISION_BUDGET,
+    per_group_cap: int = _DEFAULT_PER_GROUP_CAP,
+    seed: int = 0,
+    write_design_docs: bool = True,
+    design_json: Path | None = None,
+    design_md: Path | None = None,
+) -> SDE5FloorEscapeMatrixV1:
+    """Run the SLM-210 SDE5 floor-escape matrix fixture."""
+    start = time.perf_counter()
+    debts, events = build_synthetic_debt_and_events(n_states=n_states, seed=seed)
+    matrix = build_sde5_floor_escape_matrix(
+        debts,
+        events,
+        seeds=seeds,
+        total_decision_budget=total_decision_budget,
+        per_group_cap=per_group_cap,
+        run_id=f"{SDE5_EXPERIMENT_ID}-{_today_yyyymmdd()}",
+    )
+    errors = validate_sde5_floor_escape_matrix(matrix)
+    if errors:
+        raise ValueError("SDE5 matrix validation failed: " + "; ".join(errors))
+
+    elapsed = time.perf_counter() - start
+    lineage = dict(matrix.lineage)
+    lineage["wall_seconds"] = _clamp(elapsed, low=0.001, high=10.0)
+    matrix = SDE5FloorEscapeMatrixV1(
+        schema=matrix.schema,
+        matrix_set=matrix.matrix_set,
+        matrix_version=matrix.matrix_version,
+        experiment_id=matrix.experiment_id,
+        run_id=matrix.run_id,
+        status=matrix.status,
+        claim_class=matrix.claim_class,
+        hypothesis=matrix.hypothesis,
+        falsifier=matrix.falsifier,
+        cells=matrix.cells,
+        total_decision_budget=matrix.total_decision_budget,
+        per_group_cap=matrix.per_group_cap,
+        retry_budget=matrix.retry_budget,
+        canvas_cap=matrix.canvas_cap,
+        lineage=lineage,
+        version_stamp=matrix.version_stamp,
+        timestamp=matrix.timestamp,
+        disposition=matrix.disposition,
+        disposition_rationale=matrix.disposition_rationale,
+        honest_caveats=matrix.honest_caveats,
+    )
+
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        matrix.to_json(output_dir / "sde5_floor_escape_matrix_report.json")
+
+        if write_design_docs:
+            if design_json is None or design_md is None:
+                root = _project_root()
+                design_json = root / f"docs/design/iter-sde5-floor-escape-{_today_yyyymmdd()}.json"
+                design_md = root / f"docs/design/iter-sde5-floor-escape-{_today_yyyymmdd()}.md"
+            design_json.parent.mkdir(parents=True, exist_ok=True)
+            design_md.parent.mkdir(parents=True, exist_ok=True)
+            matrix.to_json(design_json)
+            design_md.write_text(
+                render_sde5_floor_escape_markdown(matrix), encoding="utf-8"
+            )
+
+    return matrix

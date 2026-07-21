@@ -595,12 +595,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v3",
+      "version": "v4",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-21",
+          "note": "add SLM-210 --matrix-set sde5-floor-escape dispatch for preregistered floor-escape wiring fixture"
+        },
         {
           "version": "v3",
           "date": "2026-07-20",
@@ -710,12 +715,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v54",
+      "version": "v55",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v55",
+          "date": "2026-07-21",
+          "note": "add SLM-210 SDE5-03 floor-escape matrix wiring/fixture harness extending SLM-209 debt-targeted curriculum owner"
+        },
         {
           "version": "v54",
           "date": "2026-07-21",
@@ -3184,7 +3194,7 @@
       ]
     },
     "harness.experiments.slm209_debt_targeted_curriculum": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm209_debt_targeted_curriculum.py",
@@ -3196,6 +3206,11 @@
       ],
       "history": [
         {
+          "version": "v3",
+          "date": "2026-07-21",
+          "note": "extend owner with SLM-210 SDE5FloorEscapeMatrixV1, weight-permuted exposure control, and plan/mass axis audit"
+        },
+        {
           "version": "v2",
           "date": "2026-07-20",
           "note": "SLM-209 make debt digests deterministic (drop timestamp); add --design-json/--design-md overrides"
@@ -3204,6 +3219,22 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-209 SDE5-02 debt-targeted semantic exposure curriculum wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.sde5_floor_escape_matrix": {
+      "version": "sde5-03-v1",
+      "kind": "harness",
+      "paths": [
+        "tests/test_harnesses/experiments/test_sde5_floor_escape_matrix.py",
+        "docs/design/sde5-floor-escape-matrix-results.json",
+        "docs/design/sde5-floor-escape-matrix-results.md"
+      ],
+      "history": [
+        {
+          "version": "sde5-03-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-210 SDE5-03 prompt-plan × grammar-mass × high-debt exposure floor-escape matrix wiring/fixture harness"
         }
       ]
     },
