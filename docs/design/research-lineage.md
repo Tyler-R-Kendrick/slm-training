@@ -163,6 +163,7 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Config** | `denoiser_arch`, `recursive_steps`, `recursive_transition_layers`, `recursive_depth_supervision_weights` |
 | **Fixture** | `scripts/run_slm138_recursive_denoiser_fixture.py` |
 | **SLM-139 follow-up** | Closed as `no_supported_probabilistic_regime`: SLM-138 delivered only wiring-only fixture evidence, so the stochastic high-level width campaign did not run. See `docs/design/iter-slm139-stochastic-recursive-width-20260720.md`. |
+| **RSC-A04 correction (SLM-240)** | The module docstring previously overstated interface compatibility as a "same parameter count and layer names" claim. Corrected: R=1 preserves the public interface/tensor shapes only, never output/parameter equivalence — V1 always adds `z_latent` + `ctx_proj` (exact formula in `recursive_zstate_parameter_delta`; +9,248 params / +14.23% for this fixture's config). See `docs/design/iter-rsc-a04-*` and `ArchitectureComparisonReportV1`. This is an annotation, not a re-verdict — SLM-138's wiring-only landing is unchanged. |
 
 ### Preference / “DPO”
 

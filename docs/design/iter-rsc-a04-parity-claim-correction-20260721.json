@@ -1,0 +1,337 @@
+{
+  "architecture_comparison_report_instance": {
+    "report": {
+      "active_parameter_count": {
+        "recursive": 36283,
+        "stacked": 35035
+      },
+      "architecture_specific_parameter_names_and_shapes": {
+        "recursive_only": {
+          "ctx_proj.bias": [
+            32
+          ],
+          "ctx_proj.weight": [
+            32,
+            32
+          ],
+          "z_latent": [
+            256,
+            32
+          ]
+        },
+        "stacked_only": {}
+      },
+      "behaviorally_equivalent_under_declared_degeneracy": false,
+      "block_evaluations_per_forward": {
+        "recursive": 4,
+        "stacked": 2
+      },
+      "checkpoint_bytes": {
+        "recursive": 233018,
+        "stacked": 188419
+      },
+      "claim_class": "wiring",
+      "common_parameter_names_and_shapes": {
+        "layers.0.cross_attn.k_proj.bias": [
+          32
+        ],
+        "layers.0.cross_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.cross_attn.out_proj.bias": [
+          32
+        ],
+        "layers.0.cross_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.cross_attn.q_proj.bias": [
+          32
+        ],
+        "layers.0.cross_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.cross_attn.v_proj.bias": [
+          32
+        ],
+        "layers.0.cross_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.mlp.0.bias": [
+          128
+        ],
+        "layers.0.mlp.0.weight": [
+          128,
+          32
+        ],
+        "layers.0.mlp.2.bias": [
+          32
+        ],
+        "layers.0.mlp.2.weight": [
+          32,
+          128
+        ],
+        "layers.0.norm1.weight": [
+          32
+        ],
+        "layers.0.norm2.weight": [
+          32
+        ],
+        "layers.0.norm_cross.weight": [
+          32
+        ],
+        "layers.0.self_attn.k_proj.bias": [
+          32
+        ],
+        "layers.0.self_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.self_attn.out_proj.bias": [
+          32
+        ],
+        "layers.0.self_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.self_attn.q_proj.bias": [
+          32
+        ],
+        "layers.0.self_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.0.self_attn.v_proj.bias": [
+          32
+        ],
+        "layers.0.self_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.cross_attn.k_proj.bias": [
+          32
+        ],
+        "layers.1.cross_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.cross_attn.out_proj.bias": [
+          32
+        ],
+        "layers.1.cross_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.cross_attn.q_proj.bias": [
+          32
+        ],
+        "layers.1.cross_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.cross_attn.v_proj.bias": [
+          32
+        ],
+        "layers.1.cross_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.mlp.0.bias": [
+          128
+        ],
+        "layers.1.mlp.0.weight": [
+          128,
+          32
+        ],
+        "layers.1.mlp.2.bias": [
+          32
+        ],
+        "layers.1.mlp.2.weight": [
+          32,
+          128
+        ],
+        "layers.1.norm1.weight": [
+          32
+        ],
+        "layers.1.norm2.weight": [
+          32
+        ],
+        "layers.1.norm_cross.weight": [
+          32
+        ],
+        "layers.1.self_attn.k_proj.bias": [
+          32
+        ],
+        "layers.1.self_attn.k_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.self_attn.out_proj.bias": [
+          32
+        ],
+        "layers.1.self_attn.out_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.self_attn.q_proj.bias": [
+          32
+        ],
+        "layers.1.self_attn.q_proj.weight": [
+          32,
+          32
+        ],
+        "layers.1.self_attn.v_proj.bias": [
+          32
+        ],
+        "layers.1.self_attn.v_proj.weight": [
+          32,
+          32
+        ],
+        "norm.weight": [
+          32
+        ],
+        "pos.weight": [
+          256,
+          32
+        ],
+        "tok.weight": [
+          32,
+          32
+        ]
+      },
+      "contract_version": "ArchitectureComparisonReportV1",
+      "d_model": 32,
+      "estimated_forward_flops": {
+        "recursive": 608256.0,
+        "stacked": 304128.0
+      },
+      "interface_compatible": true,
+      "max_len": 256,
+      "output_shape_compatible": true,
+      "parameter_count_delta": 9248,
+      "parameter_count_delta_matches_formula": true,
+      "parameter_count_delta_pct": 21.486988847583643,
+      "parameter_count_denoiser": {
+        "recursive": 33792,
+        "stacked": 33792
+      },
+      "parameter_count_total": {
+        "recursive": 52288,
+        "stacked": 43040
+      },
+      "recursive_steps": 2,
+      "recursive_transition_layers": 2
+    },
+    "source": "Real output of scripts.run_slm138_recursive_denoiser_fixture._run_fixture()['architecture_comparison'] against the committed SLM-138 fixture config (d_model=32, max_len=256, recursive_transition_layers=2, recursive_steps=2, real fixture tokenizer). Captured on 2026-07-21."
+  },
+  "architecture_comparison_report_schema": {
+    "active_parameter_count_definition": "Elements receiving nonzero gradient from one concrete forward pass (measured via backward + grad!=0 count), distinct from parameter_count_total's full declared tensor sizes -- e.g. z_latent/pos/tok rows outside the indexed sequence positions contribute zero gradient and are excluded.",
+    "block_evaluations_verified_against": "Real forward-hook invocation counts on TransformerBlock instances (see test_architecture_comparison_report_block_evaluations_match_real_hook_counts), not merely the recursive_steps * recursive_transition_layers formula.",
+    "builder": "compare_denoiser_architectures(stacked, recursive, *, noisy_ids, context, pad_id)",
+    "contract_version": "ArchitectureComparisonReportV1",
+    "deliberately_absent_field": "parity",
+    "fields": [
+      "contract_version",
+      "claim_class",
+      "d_model",
+      "max_len",
+      "recursive_steps",
+      "recursive_transition_layers",
+      "interface_compatible",
+      "output_shape_compatible",
+      "parameter_count_total",
+      "parameter_count_denoiser",
+      "active_parameter_count",
+      "checkpoint_bytes",
+      "common_parameter_names_and_shapes",
+      "architecture_specific_parameter_names_and_shapes",
+      "parameter_count_delta",
+      "parameter_count_delta_pct",
+      "parameter_count_delta_matches_formula",
+      "block_evaluations_per_forward",
+      "estimated_forward_flops",
+      "behaviorally_equivalent_under_declared_degeneracy"
+    ],
+    "formula_helper": "recursive_zstate_parameter_delta(*, d_model, max_len)",
+    "module": "src/slm_training/models/recursive_denoiser.py",
+    "validation": "__post_init__ raises ValueError if contract_version mismatches, claim_class != 'wiring', parameter_count_delta is inconsistent with parameter_count_total, parameter_count_delta_matches_formula is mislabeled relative to recursive_zstate_parameter_delta, or a 'parity' key is ever present in as_dict()."
+  },
+  "claim_class": "wiring",
+  "correction": {
+    "docs_annotated": [
+      "docs/design/quality-experiment-matrix.md (V18 section: new 'Annotation (SLM-240 / RSC-A04)' paragraph; SLM-138's wiring-only verdict is unchanged)",
+      "docs/design/research-lineage.md (SLM-138 row: new 'RSC-A04 correction (SLM-240)' row)"
+    ],
+    "docstring": "src/slm_training/models/recursive_denoiser.py module docstring rewritten to state precisely: shared-transition parameter count is independent of recursive_steps (compute changes, not parameter count); R=1 preserves the public interface and compatible tensor shapes, NOT output equivalence; V1 always adds z_latent + ctx_proj relative to DenoiserTower with an exact formula; checkpoint layer-name compatibility applies only to the mapped/common transition layers (z-state keys require explicit initialization/migration, already true of migrate_to_shared_recursive_denoiser); no parameter-efficiency or quality claim exists until a matched control campaign runs (separate, later, out-of-scope issue).",
+    "model_card_or_readme": "Checked docs/MODEL_CARD.md and README.md for the same wording -- neither mentions SLM-138/SharedRecursiveDenoiserTower parity at all, so no correction was needed there (no new checkpoint is introduced by this issue, so no new model-card row was added either, per the issue's own instruction)."
+  },
+  "fixture_reporting": {
+    "added_helper": "_architecture_comparison(stacked, recursive, base_seed) -- reuses the shape_probe_inputs/shape_probe_context RNG namespaces (SLM-239/RSC-A03), harmless per isolated_draw's fork_rng guarantee",
+    "file": "scripts/run_slm138_recursive_denoiser_fixture.py",
+    "markdown_additions": [
+      "'Architecture comparison (SLM-240 / RSC-A04)' section: interface-compatible, output-shape-compatible, parameter-matched, parameter delta (+pct, whole-model-normalized), parameter_count_denoiser, behavioral parity, claim class, block evaluations per forward",
+      "Objective-decomposition warning inserted immediately above the raw stacked/recursive losses, referencing SLM-238's recursive_depth_aux_mode work"
+    ],
+    "new_report_field": "architecture_comparison (ArchitectureComparisonReportV1.as_dict())"
+  },
+  "generated_at": "2026-07-21T01:50:23.629704+00:00",
+  "issue": "SLM-240 / RSC-A04",
+  "linear_context": "Corrects a false parameter-parity claim in the SLM-138 shared recursive denoiser tower's docstring; replaces the misnamed test_recursive_steps_one_parity_with_denoiser_tower with explicit, independently-tested comparison dimensions. Comment on SLM-138 and link from SLM-233 (note only -- SLM-233 implementation out of scope).",
+  "note": "This is a documentation/testing/reporting correction, not a new model or a training-objective change. SLM-138's wiring-only verdict is unchanged -- this only retracts an unsupported parity claim and adds machine-checked contracts. No parameter-matched architecture is implemented here (a separate, later, out-of-scope issue).",
+  "quality_claim_made": false,
+  "run_id": "iter_rsc_a04_parity_claim_correction",
+  "status": "documentation_and_test_correction",
+  "tests": {
+    "added": [
+      "test_recursive_r1_output_not_behaviorally_equivalent_to_stacked",
+      "test_recursive_parameter_delta_formula_matches_constructed_towers (parametrized, 5 (d_model,max_len) pairs incl. the fixture's own 32/256)",
+      "test_recursive_parameter_count_independent_of_recursive_steps",
+      "test_transition_layer_names_and_shapes_map_onto_stacked_1to1",
+      "test_architecture_comparison_report_block_evaluations_match_real_hook_counts",
+      "test_architecture_comparison_report_consistent_with_measured_counts",
+      "test_architecture_comparison_report_rejects_bad_contract_version",
+      "test_architecture_comparison_report_rejects_non_wiring_claim_class",
+      "test_architecture_comparison_report_rejects_inconsistent_delta",
+      "test_architecture_comparison_report_rejects_mislabeled_formula_match",
+      "test_fixture_architecture_comparison_delta_reproduced_from_formula"
+    ],
+    "all_passing": true,
+    "file": "tests/test_models/test_recursive_denoiser.py",
+    "renamed": {
+      "from": "test_recursive_steps_one_parity_with_denoiser_tower",
+      "to": "test_recursive_r1_preserves_denoiser_interface_and_finite_shapes"
+    },
+    "strengthened": [
+      "test_checkpoint_migration_to_shared_recursive now asserts the exact set {denoiser.z_latent, denoiser.ctx_proj.weight, denoiser.ctx_proj.bias} is a subset of initialized_keys"
+    ],
+    "total_count_after": 70
+  },
+  "verified_false_claim": {
+    "location": "src/slm_training/models/recursive_denoiser.py module docstring (pre-fix)",
+    "measured_delta": {
+      "delta": 9248,
+      "delta_is_exactly": "z_latent[max_len=256, d_model=32] + ctx_proj Linear(32, 32)",
+      "delta_pct": 14.232914977321936,
+      "recursive_params_whole_model": 74242,
+      "stacked_params_whole_model": 64994
+    },
+    "quoted_text": "With recursive_steps=1 and recursive_transition_layers equal to the old stacked layer count the tower has the same parameter count and layer names as DenoiserTower (the extra z-state path is new, so it is not byte-identical, but the public contract is preserved).",
+    "repo_wide_grep": "grep -rn 'same parameter count' (and layer-name variants) across *.py/*.md (excluding node_modules/.venv) found exactly one occurrence: this docstring. No other design doc, model card, README, or generated fixture prose carried the same wording.",
+    "why_false": "The same paragraph already acknowledged the new z-state path (z_latent, ctx_proj), which necessarily changes the parameter count -- the 'same parameter count' clause directly contradicts the sentence's own premise."
+  },
+  "version_bumps": {
+    "model.recursive_denoiser": "v5 -> v6"
+  },
+  "version_stamp": {
+    "code_commit": "3015146bdea3f34574cffc6e080d817c2cc6f640",
+    "code_dirty": true,
+    "components": {
+      "model.recursive_denoiser": "v6"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T01:50:23.629704+00:00"
+  }
+}

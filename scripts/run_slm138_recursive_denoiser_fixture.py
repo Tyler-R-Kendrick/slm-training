@@ -32,7 +32,11 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
+from slm_training.models.recursive_denoiser import (
+    ArchitectureComparisonReportV1,
+    SharedRecursiveDenoiserTower,
+    compare_denoiser_architectures,
+)
 from slm_training.models.rng_contract import (
     RNG_CONTRACT_VERSION,
     isolated_draw,
@@ -148,6 +152,41 @@ def _extra_harmless_probe(base_seed: int) -> None:
     isolated_draw(base_seed, "control_only", lambda: torch.randn(4, 4))
 
 
+def _architecture_comparison(
+    stacked: TwoTowerModel, recursive: TwoTowerModel, base_seed: int
+) -> ArchitectureComparisonReportV1:
+    """Real, measured ``ArchitectureComparisonReportV1`` for this fixture's
+    stacked vs shared_recursive denoiser towers (SLM-240/RSC-A04).
+
+    Replaces the retracted single "same parameter count / layer names" claim
+    with independently named, independently falsifiable fields -- see
+    ``slm_training.models.recursive_denoiser`` module docstring. Reuses the
+    same deterministic ``shape_probe_inputs``/``shape_probe_context``
+    namespaces as ``_shape_probe`` above: ``isolated_draw``'s ``fork_rng``
+    guarantee (SLM-239/RSC-A03) means calling it again here is harmless to
+    the outer RNG stream and reproduces a byte-identical input batch.
+    """
+    import torch
+
+    noisy = isolated_draw(
+        base_seed,
+        "shape_probe_inputs",
+        lambda: torch.randint(1, stacked.tokenizer.vocab_size, (2, 6)),
+    )
+    ctx = isolated_draw(
+        base_seed,
+        "shape_probe_context",
+        lambda: torch.randn(2, 3, stacked.config.d_model),
+    )
+    return compare_denoiser_architectures(
+        stacked.denoiser,
+        recursive.denoiser,
+        noisy_ids=noisy,
+        context=ctx,
+        pad_id=stacked.tokenizer.pad_id,
+    )
+
+
 def _clean_tree_gate(*, code_dirty: bool | None, allow_dirty: bool) -> dict[str, Any]:
     """Pure clean-tree evidence classification (SLM-239 requirement #3).
 
@@ -231,6 +270,12 @@ def _run_fixture(
         stacked_forward = _probe_stacked()
     if insert_extra_probe:
         _extra_harmless_probe(base_seed)
+
+    # SLM-240 (RSC-A04): real, measured architecture comparison report --
+    # deterministic, RNG-isolated (see _architecture_comparison docstring),
+    # so its placement here (between the shape probes and the pre-update
+    # objective decomposition) does not perturb SLM-239's guarantees.
+    architecture_comparison = _architecture_comparison(stacked, recursive, base_seed)
 
     # (3) Deterministic pre-update objective decomposition. Explicit
     # named-namespace seed immediately before each training_loss call --
@@ -335,6 +380,7 @@ def _run_fixture(
             "g_layer_object_count": len(g_ids),
             "total_shared_layers": len(rec_tower.layers),
         },
+        "architecture_comparison": architecture_comparison.as_dict(),
         "deep_supervision_metrics": deep_metrics,
         "checkpoint_roundtrip_ok": loaded_ok,
         "rng_contract": {
@@ -568,7 +614,9 @@ def _render_markdown(report: dict[str, Any]) -> str:
         "training_loss, verifies shapes/gradients, confirms object-identity weight "
         "sharing across recursions, and round-trips a recursive checkpoint. SLM-239 "
         "(RSC-A03): RNG usage now follows an explicit, disjoint namespace contract -- "
-        "see the ``rng_contract`` field below.",
+        "see the ``rng_contract`` field below. SLM-240 (RSC-A04): the retracted "
+        "same-parameter-count/layer-names claim is replaced by a real, measured "
+        "``ArchitectureComparisonReportV1`` -- see 'Architecture comparison' below.",
         "",
         "## Architectures",
         "",
@@ -587,10 +635,73 @@ def _render_markdown(report: dict[str, Any]) -> str:
             ]
         )
 
+    comparison = report.get("architecture_comparison")
+    if comparison:
+        param_matched = (
+            comparison["parameter_count_total"]["stacked"]
+            == comparison["parameter_count_total"]["recursive"]
+        )
+        delta = comparison["parameter_count_delta"]
+        # Percentage against the *whole TwoTowerModel* (stacked_params/
+        # recursive_params below), matching how this delta is normally cited
+        # (e.g. "+14.23% over a 64,994-parameter stacked model") -- the delta
+        # itself is identical whether measured at the tower level
+        # (comparison['parameter_count_total'], context-tower-free) or the
+        # whole-model level, since the context tower/tokenizer embeddings are
+        # identical between the two configs and cancel out of the subtraction.
+        whole_model_stacked = report.get("stacked_params")
+        whole_model_recursive = report.get("recursive_params")
+        if whole_model_stacked and whole_model_recursive:
+            assert whole_model_recursive - whole_model_stacked == delta, (
+                "whole-model parameter delta must equal the tower-level "
+                "architecture_comparison delta (context tower is identical "
+                "across both configs)"
+            )
+            delta_pct = (delta / whole_model_stacked) * 100.0
+        else:
+            delta_pct = comparison["parameter_count_delta_pct"]
+        behavioral_parity = (
+            "not claimed"
+            if not comparison["behaviorally_equivalent_under_declared_degeneracy"]
+            else "claimed (measured equivalent under this exact input)"
+        )
+        lines.extend(
+            [
+                "## Architecture comparison (SLM-240 / RSC-A04)",
+                "",
+                "Independently measured comparison dimensions -- never a single "
+                "collapsed `parity` claim (see `ArchitectureComparisonReportV1`).",
+                "",
+                f"- interface-compatible: **{str(comparison['interface_compatible']).lower()}**",
+                f"- output-shape-compatible: **{str(comparison['output_shape_compatible']).lower()}**",
+                f"- parameter-matched: **{str(param_matched).lower()}**",
+                f"- parameter delta: `{delta:+d}` ({delta_pct:+.2f}%) -- "
+                f"reproduced from `recursive_zstate_parameter_delta(d_model="
+                f"{comparison['d_model']}, max_len={comparison['max_len']})`, "
+                "exactly `z_latent` + `ctx_proj`",
+                f"- parameter_count_denoiser (transition layers only, "
+                f"architecture-independent): `{comparison['parameter_count_denoiser']}`",
+                f"- behavioral parity: **{behavioral_parity}**",
+                f"- claim class: **{comparison['claim_class']}**",
+                f"- block evaluations per forward: `{comparison['block_evaluations_per_forward']}`",
+                "",
+            ]
+        )
+
     if "losses" in report:
         lines.extend(
             [
                 "## Losses",
+                "",
+                "**Objective-decomposition warning:** the raw scalar losses below "
+                "are *not* a quality/parameter-matched comparison -- the two "
+                "architectures have different parameter counts (see "
+                "'Architecture comparison' above) and the recursive arm's loss "
+                "includes deep-supervision terms whose exact weighting/mode is "
+                "governed by SLM-238 (RSC-A02)'s `recursive_depth_aux_mode` "
+                "(see `deep_supervision_metrics` below and "
+                "`docs/design/iter-rsc-a02-*`); placing these two numbers "
+                "side by side never implies one architecture is better.",
                 "",
                 f"- stacked: `{report['losses']['stacked']:.6f}`",
                 f"- recursive: `{report['losses']['recursive']:.6f}`",

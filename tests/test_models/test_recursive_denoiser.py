@@ -17,7 +17,12 @@ import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.blocks import DenoiserTower
-from slm_training.models.recursive_denoiser import SharedRecursiveDenoiserTower
+from slm_training.models.recursive_denoiser import (
+    ArchitectureComparisonReportV1,
+    SharedRecursiveDenoiserTower,
+    compare_denoiser_architectures,
+    recursive_zstate_parameter_delta,
+)
 from slm_training.models.twotower import (
     RECURSIVE_OBJECTIVE_CONTRACT_VERSION,
     RecursiveObjectiveContractV2,
@@ -101,8 +106,20 @@ def test_recursive_encode_project_matches_forward() -> None:
     torch.testing.assert_close(gathered, full.index_select(-1, candidates))
 
 
-def test_recursive_steps_one_parity_with_denoiser_tower() -> None:
-    """R=1 with L transition blocks matches the stacked DenoiserTower contract."""
+def test_recursive_r1_preserves_denoiser_interface_and_finite_shapes() -> None:
+    """R=1 with L transition blocks preserves the ``DenoiserTower`` public
+    interface (matching forward shape, finite outputs) -- NOT output
+    equivalence.
+
+    SLM-240 (RSC-A04): renamed from the misleadingly-named
+    ``test_recursive_steps_one_parity_with_denoiser_tower``, which asserted
+    only shape/finiteness while its own comment already noted the outputs
+    differ -- i.e. it tested interface compatibility, not parity. See
+    ``test_recursive_r1_output_not_behaviorally_equivalent_to_stacked``
+    below for the independently-tested non-equivalence claim, and
+    ``ArchitectureComparisonReportV1`` for the full multi-dimensional
+    comparison this issue requires in place of a single ``parity`` claim.
+    """
     vocab, d_model, tgt, ctx_len = 23, 16, 6, 3
     torch.manual_seed(0)
     stacked = DenoiserTower(
@@ -126,9 +143,306 @@ def test_recursive_steps_one_parity_with_denoiser_tower() -> None:
         s_logits = stacked(noisy, ctx, pad_id=0)
         r_logits = recursive(noisy, ctx, pad_id=0)
     assert s_logits.shape == r_logits.shape == (2, tgt, vocab)
-    # The recursive tower adds a z-state path, so the outputs differ, but both
-    # must be deterministic and finite with the same interface shape.
     assert torch.isfinite(r_logits).all()
+
+
+def test_recursive_r1_output_not_behaviorally_equivalent_to_stacked() -> None:
+    """R=1 never reproduces ``DenoiserTower``'s outputs: the z-state path
+    (``z_latent``/``ctx_proj``) is active at every ``R``, including 1.
+
+    SLM-240 (RSC-A04): no true-degeneracy mode exists today (a documented
+    non-goal); this pins that fact so a future "R=1 reduces exactly to
+    DenoiserTower" claim must land its own passing test rather than being
+    silently assumed from interface compatibility.
+    """
+    vocab, d_model, tgt, ctx_len = 23, 16, 6, 3
+    torch.manual_seed(0)
+    stacked = DenoiserTower(
+        vocab_size=vocab, d_model=d_model, n_layers=2, n_heads=2, max_len=32
+    )
+    torch.manual_seed(0)
+    recursive = SharedRecursiveDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=2,
+        n_heads=2,
+        max_len=32,
+        recursive_steps=1,
+        recursive_transition_layers=2,
+    )
+    noisy = torch.randint(1, vocab, (2, tgt))
+    ctx = torch.randn(2, ctx_len, d_model)
+    stacked.eval()
+    recursive.eval()
+    with torch.no_grad():
+        s_logits = stacked(noisy, ctx, pad_id=0)
+        r_logits = recursive(noisy, ctx, pad_id=0)
+    assert not torch.allclose(s_logits, r_logits)
+
+
+@pytest.mark.parametrize(
+    "d_model,max_len",
+    [(16, 32), (16, 256), (32, 32), (32, 256), (64, 128)],
+)
+def test_recursive_parameter_delta_formula_matches_constructed_towers(
+    d_model: int, max_len: int
+) -> None:
+    """``recursive_zstate_parameter_delta`` matches the real measured
+    parameter-count delta between constructed towers, for several
+    ``(d_model, max_len)`` pairs -- the delta is a function of those two
+    values only (independent of ``vocab_size``/``n_layers``/``recursive_steps``).
+
+    ``(d_model=32, max_len=256)`` is the SLM-138 fixture's own denoiser
+    config (``TwoTowerConfig`` defaults ``max_target_len=256``,
+    ``scripts/run_slm138_recursive_denoiser_fixture.py`` uses ``d_model=32``):
+    the formula reproduces the checked-in fixture's 9,248-parameter delta
+    exactly, from the formula -- never hard-coded.
+    """
+    vocab = 23
+    stacked = DenoiserTower(
+        vocab_size=vocab, d_model=d_model, n_layers=2, n_heads=2, max_len=max_len
+    )
+    recursive = SharedRecursiveDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=2,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=1,
+        recursive_transition_layers=2,
+    )
+    measured_delta = sum(p.numel() for p in recursive.parameters()) - sum(
+        p.numel() for p in stacked.parameters()
+    )
+    assert measured_delta == recursive_zstate_parameter_delta(
+        d_model=d_model, max_len=max_len
+    )
+    if d_model == 32 and max_len == 256:
+        assert measured_delta == 9248
+
+
+def test_recursive_parameter_count_independent_of_recursive_steps() -> None:
+    """Shared-transition parameters are reused by object identity every
+    recursion, so total parameter count does not scale with
+    ``recursive_steps`` -- only per-forward compute (block evaluations) does."""
+    vocab, d_model, max_len = 23, 16, 32
+    counts = {
+        steps: sum(
+            p.numel()
+            for p in SharedRecursiveDenoiserTower(
+                vocab_size=vocab,
+                d_model=d_model,
+                n_layers=2,
+                n_heads=2,
+                max_len=max_len,
+                recursive_steps=steps,
+                recursive_transition_layers=2,
+            ).parameters()
+        )
+        for steps in (1, 2, 5)
+    }
+    assert len(set(counts.values())) == 1, counts
+
+
+def test_transition_layer_names_and_shapes_map_onto_stacked_1to1() -> None:
+    """When ``recursive_transition_layers == stacked.n_layers``, every stacked
+    transition-layer parameter name/shape has an exact recursive counterpart,
+    and the only recursive-specific parameters are ``z_latent``/``ctx_proj``."""
+    vocab, d_model, max_len = 23, 16, 32
+    stacked = DenoiserTower(
+        vocab_size=vocab, d_model=d_model, n_layers=2, n_heads=2, max_len=max_len
+    )
+    recursive = SharedRecursiveDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=2,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=2,
+        recursive_transition_layers=2,
+    )
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+    report = compare_denoiser_architectures(
+        stacked, recursive, noisy_ids=noisy, context=ctx, pad_id=0
+    )
+
+    stacked_layer_names = {
+        name: list(p.shape)
+        for name, p in stacked.named_parameters()
+        if name.startswith("layers.")
+    }
+    assert stacked_layer_names  # sanity: stacked actually has transition layers
+    for name, shape in stacked_layer_names.items():
+        assert report.common_parameter_names_and_shapes.get(name) == shape
+
+    specific = report.architecture_specific_parameter_names_and_shapes
+    assert specific["stacked_only"] == {}
+    assert set(specific["recursive_only"]) == {
+        "z_latent",
+        "ctx_proj.weight",
+        "ctx_proj.bias",
+    }
+
+
+def test_architecture_comparison_report_block_evaluations_match_real_hook_counts() -> (
+    None
+):
+    """``block_evaluations_per_forward`` must equal real ``TransformerBlock``
+    invocation counts (measured via forward hooks), not an assumed formula."""
+    vocab, d_model, max_len = 23, 16, 32
+    stacked = DenoiserTower(
+        vocab_size=vocab, d_model=d_model, n_layers=2, n_heads=2, max_len=max_len
+    )
+    recursive = SharedRecursiveDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=2,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=3,
+        recursive_transition_layers=2,
+    )
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+
+    counts = {"stacked": 0, "recursive": 0}
+
+    def _make_hook(key: str):
+        def _hook(module, inp, out):
+            counts[key] += 1
+
+        return _hook
+
+    handles = [
+        layer.register_forward_hook(_make_hook("stacked")) for layer in stacked.layers
+    ] + [
+        layer.register_forward_hook(_make_hook("recursive"))
+        for layer in recursive.layers
+    ]
+    try:
+        report = compare_denoiser_architectures(
+            stacked, recursive, noisy_ids=noisy, context=ctx, pad_id=0
+        )
+    finally:
+        for handle in handles:
+            handle.remove()
+
+    # compare_denoiser_architectures runs two forwards per tower (one
+    # no_grad shape/equivalence check, one grad-enabled active-parameter
+    # measurement), so real hook counts are 2x the per-forward figure.
+    assert counts["stacked"] == 2 * report.block_evaluations_per_forward["stacked"]
+    assert counts["recursive"] == 2 * report.block_evaluations_per_forward["recursive"]
+
+
+def test_architecture_comparison_report_consistent_with_measured_counts() -> None:
+    """Delta/formula/checkpoint fields are internally consistent and derived
+    from real measurements -- and no field anywhere collapses into a single
+    ``parity`` boolean."""
+    vocab, d_model, max_len = 23, 32, 256
+    stacked = DenoiserTower(
+        vocab_size=vocab, d_model=d_model, n_layers=2, n_heads=2, max_len=max_len
+    )
+    recursive = SharedRecursiveDenoiserTower(
+        vocab_size=vocab,
+        d_model=d_model,
+        n_layers=2,
+        n_heads=2,
+        max_len=max_len,
+        recursive_steps=2,
+        recursive_transition_layers=2,
+    )
+    noisy = torch.randint(1, vocab, (2, 6))
+    ctx = torch.randn(2, 3, d_model)
+    report = compare_denoiser_architectures(
+        stacked, recursive, noisy_ids=noisy, context=ctx, pad_id=0
+    )
+
+    def _all_keys(obj: object) -> set[str]:
+        if isinstance(obj, dict):
+            keys = set(obj.keys())
+            for value in obj.values():
+                keys |= _all_keys(value)
+            return keys
+        return set()
+
+    assert "parity" not in _all_keys(report.as_dict())
+    assert report.parameter_count_delta == 9248
+    assert report.parameter_count_delta_matches_formula is True
+    assert (
+        report.parameter_count_total["recursive"]
+        - report.parameter_count_total["stacked"]
+        == report.parameter_count_delta
+    )
+    assert (
+        report.parameter_count_denoiser["stacked"]
+        == report.parameter_count_denoiser["recursive"]
+    )
+    assert report.checkpoint_bytes["recursive"] > report.checkpoint_bytes["stacked"]
+    assert report.interface_compatible is True
+    assert report.output_shape_compatible is True
+    assert report.behaviorally_equivalent_under_declared_degeneracy is False
+    assert report.claim_class == "wiring"
+
+
+def _base_report_kwargs() -> dict:
+    return dict(
+        contract_version="ArchitectureComparisonReportV1",
+        claim_class="wiring",
+        d_model=16,
+        max_len=32,
+        recursive_steps=1,
+        recursive_transition_layers=2,
+        interface_compatible=True,
+        output_shape_compatible=True,
+        parameter_count_total={"stacked": 100, "recursive": 200},
+        parameter_count_denoiser={"stacked": 50, "recursive": 50},
+        active_parameter_count={"stacked": 80, "recursive": 150},
+        checkpoint_bytes={"stacked": 400, "recursive": 800},
+        common_parameter_names_and_shapes={},
+        architecture_specific_parameter_names_and_shapes={
+            "stacked_only": {},
+            "recursive_only": {},
+        },
+        parameter_count_delta=100,
+        parameter_count_delta_pct=100.0,
+        parameter_count_delta_matches_formula=(
+            recursive_zstate_parameter_delta(d_model=16, max_len=32) == 100
+        ),
+        block_evaluations_per_forward={"stacked": 2, "recursive": 2},
+        estimated_forward_flops={"stacked": 1.0, "recursive": 1.0},
+        behaviorally_equivalent_under_declared_degeneracy=False,
+    )
+
+
+def test_architecture_comparison_report_rejects_bad_contract_version() -> None:
+    kwargs = _base_report_kwargs()
+    kwargs["contract_version"] = "bogus"
+    with pytest.raises(ValueError, match="contract_version"):
+        ArchitectureComparisonReportV1(**kwargs)
+
+
+def test_architecture_comparison_report_rejects_non_wiring_claim_class() -> None:
+    kwargs = _base_report_kwargs()
+    kwargs["claim_class"] = "quality"
+    with pytest.raises(ValueError, match="wiring-only"):
+        ArchitectureComparisonReportV1(**kwargs)
+
+
+def test_architecture_comparison_report_rejects_inconsistent_delta() -> None:
+    kwargs = _base_report_kwargs()
+    kwargs["parameter_count_delta"] = 999
+    with pytest.raises(ValueError, match="parameter_count_delta"):
+        ArchitectureComparisonReportV1(**kwargs)
+
+
+def test_architecture_comparison_report_rejects_mislabeled_formula_match() -> None:
+    kwargs = _base_report_kwargs()
+    kwargs["parameter_count_delta_matches_formula"] = not kwargs[
+        "parameter_count_delta_matches_formula"
+    ]
+    with pytest.raises(ValueError, match="parameter_count_delta_matches_formula"):
+        ArchitectureComparisonReportV1(**kwargs)
 
 
 def test_weight_sharing_across_recursions() -> None:
@@ -261,8 +575,16 @@ def test_checkpoint_migration_to_shared_recursive(tmp_path: Path) -> None:
     )
     assert dst.exists()
     assert report["denoiser_arch"] == "shared_recursive"
-    assert any("z_latent" in k for k in report["initialized_keys"])
-    assert any("ctx_proj" in k for k in report["initialized_keys"])
+    # SLM-240 (RSC-A04): the migration report must list *every* new z-state
+    # key explicitly -- these have no DenoiserTower counterpart, so
+    # checkpoint layer-name compatibility applies only to the mapped/common
+    # transition-layer keys, never to these.
+    expected_new_keys = {
+        "denoiser.z_latent",
+        "denoiser.ctx_proj.weight",
+        "denoiser.ctx_proj.bias",
+    }
+    assert expected_new_keys.issubset(set(report["initialized_keys"]))
 
     loaded = TwoTowerModel.from_checkpoint(dst, device="cpu")
     assert loaded.config.denoiser_arch == "shared_recursive"
@@ -518,6 +840,29 @@ def test_gradient_reaches_only_positive_weight_depths() -> None:
     assert not torch.allclose(
         logits_positive_weighted.grad, torch.zeros_like(logits_positive_weighted.grad)
     )
+
+
+def test_fixture_architecture_comparison_delta_reproduced_from_formula() -> None:
+    """SLM-240 (RSC-A04): the committed fixture's whole-model parameter delta
+    (74,242 - 64,994 = 9,248) equals both the tower-level
+    ``ArchitectureComparisonReportV1.parameter_count_delta`` and the pure
+    ``recursive_zstate_parameter_delta`` formula -- reproduced, never
+    hard-coded, and never collapsed into a single ``parity`` field."""
+    from scripts.run_slm138_recursive_denoiser_fixture import _run_fixture
+
+    report = _run_fixture()
+    comparison = report["architecture_comparison"]
+    whole_model_delta = report["recursive_params"] - report["stacked_params"]
+
+    assert whole_model_delta == comparison["parameter_count_delta"]
+    assert comparison["parameter_count_delta_matches_formula"] is True
+    assert comparison["parameter_count_delta"] == recursive_zstate_parameter_delta(
+        d_model=comparison["d_model"], max_len=comparison["max_len"]
+    )
+    assert comparison["interface_compatible"] is True
+    assert comparison["behaviorally_equivalent_under_declared_degeneracy"] is False
+    assert comparison["claim_class"] == "wiring"
+    assert "parity" not in comparison
 
 
 def test_fixture_metrics_agree_with_manual_calculation() -> None:

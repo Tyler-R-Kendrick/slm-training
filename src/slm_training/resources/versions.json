@@ -1745,7 +1745,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -1758,9 +1758,16 @@
         "docs/design/iter-slm138-recursive-denoiser-20260721.json",
         "docs/design/iter-slm138-recursive-denoiser-20260721.md",
         "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.json",
-        "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.md"
+        "docs/design/iter-rsc-a03-rng-determinism-contract-20260721.md",
+        "docs/design/iter-rsc-a04-parity-claim-correction-20260721.json",
+        "docs/design/iter-rsc-a04-parity-claim-correction-20260721.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-21",
+          "note": "SLM-240 (RSC-A04): retracted recursive_denoiser.py's false 'same parameter count and layer names as DenoiserTower' docstring claim (grepped repo-wide -- only that docstring carried it) and rewrote the module docstring to state precisely what R=1 preserves (public interface / compatible tensor shapes) vs what it never claims (output/parameter equivalence, checkpoint layer-name compatibility for the new z-state keys, any parameter-efficiency claim). Added recursive_zstate_parameter_delta(d_model, max_len) -- the exact formula (z_latent + ctx_proj) reproducing the SLM-138 fixture's 9,248-parameter / +14.23% delta from real constructed towers, never hard-coded -- plus ArchitectureComparisonReportV1/compare_denoiser_architectures (interface_compatible, output_shape_compatible, parameter_count_total/_denoiser, active_parameter_count (grad-based, measured), checkpoint_bytes, common/architecture-specific parameter names+shapes, parameter_count_delta(+formula-match flag), block_evaluations_per_forward (verified against real forward-hook counts), estimated_forward_flops, behaviorally_equivalent_under_declared_degeneracy -- deliberately no single 'parity' field, enforced by __post_init__). Renamed the misnamed test_recursive_steps_one_parity_with_denoiser_tower to test_recursive_r1_preserves_denoiser_interface_and_finite_shapes and added 13 new tests (70 total, all passing) covering the delta formula across (d_model, max_len) pairs, parameter-count independence from recursive_steps, transition-layer name/shape 1:1 mapping, explicit R=1 non-equivalence, checkpoint-migration z-state key coverage, and the comparison report's internal consistency/validation. Wired a real ArchitectureComparisonReportV1 into scripts/run_slm138_recursive_denoiser_fixture.py's report + markdown (interface-compatible/parameter-matched/parameter delta/behavioral parity/claim class fields) and added an objective-decomposition warning (referencing SLM-238's recursive_depth_aux_mode) next to the raw stacked/recursive losses. Annotated docs/design/quality-experiment-matrix.md's V18 section and docs/design/research-lineage.md's SLM-138 row -- SLM-138's wiring-only verdict is unchanged, this is a correction/annotation only. See docs/design/iter-rsc-a04-parity-claim-correction-20260721.{json,md}."
+        },
         {
           "version": "v5",
           "date": "2026-07-21",

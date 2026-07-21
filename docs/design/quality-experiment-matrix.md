@@ -3349,6 +3349,21 @@ primary term, made explicit and versioned by SLM-238 (see `## RSC-A02`
 below). Both are annotations layered on top of this section's original
 wiring-only landing — **V18's wiring-only verdict above is unchanged.**
 
+**Annotation (SLM-240 / RSC-A04):** the "same public contract" wording above
+is about the interface only. A separate false claim in
+``recursive_denoiser.py``'s docstring additionally asserted the R=1 tower
+had the "same parameter count and layer names" as ``DenoiserTower`` — untrue:
+V1 always adds `z_latent`/`ctx_proj` (exact delta 9,248 params / +14.23% for
+this fixture's config, reproduced from `recursive_zstate_parameter_delta`,
+never hard-coded). Corrected in the docstring, this doc, and the fixture's own rendered
+prose (README carried no such wording — checked, nothing to correct there);
+replaced the single retracted claim with
+`ArchitectureComparisonReportV1`'s independently-named, independently-tested
+fields (interface/output-shape/parameter-count/checkpoint-bytes/block-eval/
+FLOPs/behavioral-equivalence — never a collapsed `parity` boolean). See
+`docs/design/iter-rsc-a04-*`. Another annotation, not a re-verdict — **V18's
+wiring-only verdict above is unchanged.**
+
 ## RSC-A01 recursive deep-supervision weighting fix (SLM-237) — correctness fix, no quality claim
 
 E303/V18's deep-supervision auxiliary loss (`recursive_depth_supervision_weights`
