@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "run_id": "e705-schema5-root-margin0-r1",
+  "experiment_id": "E705",
+  "date_utc": "2026-07-21",
+  "status": "completed_partial_suite_negative_rejected_not_ship",
+  "run_class": "scratch_matrix",
+  "hypothesis": "With schema-value weight 5 rejecting enum-role misuse, removing the semantic-plan root margin may let missing placeholders route into another compatible carrier.",
+  "checkpoint": {"run_id": "e620-required-slot-coverage-scratch800-20260720", "sha256": "3ce5c9efc70ed69c7a6680129018ec0aa2061f56020ff42301faf144363ecc5f", "reused": true, "created": false, "synced": false, "promoted": false},
+  "evaluation_policy": {"treatment_run_id": "e705-schema5-root-margin0-r1", "suites": ["rico_held"], "n": 3, "device": "cpu", "steps": 0, "context_backend": "scratch", "full_suites": false, "honest_slot_contract": true, "allow_unconstrained_fallback": false, "grammar_ltr_max_tokens": 160, "max_wall_minutes": 3, "schema_value_decode_weight": 5.0, "semantic_plan_root_margin_decode_weight": 0.0},
+  "suites": {
+    "rico_held": {"n": 3, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 0.0, "binding_aware_meaningful_v2_coverage": 1.0, "placeholder_fidelity": 0.8333333333333334, "placeholder_validity": 0.9, "structural_similarity": 0.5098333333333334, "component_type_recall": 1.0, "reward_score": 0.9169999999999999, "ast_node_f1": 0.6926100628930819, "ast_edge_f1": 0.46013071895424834, "latency_ms_p50": 11993.49, "latency_ms_p95": 24647.08, "decode_timeout_count": 0, "fallback_count": 0}
+  },
+  "comparison_to_e704_weight5": {"strict": [0.0, 0.0], "fidelity": [0.875, 0.8333333333333334], "validity": [0.9250000000000002, 0.9], "structure": [0.7611333333333334, 0.5098333333333334], "reward": [0.9625, 0.9169999999999999]},
+  "failure_analysis": "Without the root margin, decoding continues into long duplicate TextContent, Tag, Modal, and AccordionItem subtrees instead of routing the single missing slot into a bounded compatible carrier.",
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "length_budget": {"ok": false, "effective_budget": 160, "failures": ["rico_held:p95=190 exceeds effective_budget=160"]},
+  "decision": "Reject the partial-suite arm and retain semantic-plan root margin 2. The Rico regression and 24.6-second p95 make a full-suite replay unnecessary and would not support a ship claim.",
+  "ship_gate_result": "not_run_partial_suite",
+  "ship_gates": false,
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "27fe791c843204d644758590bcf794faa0252cd4", "code_dirty": false, "components": {"harness.model_build.eval": "v36", "evals.meaningful_program": "2.9.0", "evals.scoring": "v13", "model.twotower": "v175"}, "stamped_at": "2026-07-21T18:04:12.209622+00:00"}
+}
