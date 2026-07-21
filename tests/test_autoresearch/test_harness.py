@@ -19,6 +19,7 @@ from slm_training.autoresearch.engine import (
 )
 from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
+from slm_training.levers import MAX_RUN_MINUTES, MAX_RUN_SECONDS
 from slm_training.autoresearch.providers import (
     OpenAIHypothesizer,
     OpenAIProposalCompiler,
@@ -1121,7 +1122,7 @@ def test_researcher_config_and_timeout_fail_closed(tmp_path: Path) -> None:
     checkout.mkdir()
     (checkout / "README.md").write_text("fixture")
     revision = _commit_fixture_repo(checkout)
-    with pytest.raises(ValueError, match=r"\(0, 180\]"):
+    with pytest.raises(ValueError, match=rf"\(0, {MAX_RUN_SECONDS}\]"):
         IsolatedResearcher(
             ResearcherSpec(
                 "open-deep-research",
@@ -1132,7 +1133,7 @@ def test_researcher_config_and_timeout_fail_closed(tmp_path: Path) -> None:
             checkout=checkout,
             python=sys.executable,
             worker=tmp_path / "unused.py",
-            timeout_seconds=180.01,
+            timeout_seconds=MAX_RUN_SECONDS + 0.01,
         )
     worker = tmp_path / "sleeping_worker.py"
     worker.write_text("import time\ntime.sleep(1)\n")
@@ -1288,11 +1289,13 @@ def test_execute_records_process_launch_failure() -> None:
     assert outcome.stage_telemetry[0]["launch_error"]
 
 
-def test_experiment_wall_budget_defaults_to_three_minutes_and_is_capped() -> None:
-    assert CampaignBudget().max_wall_minutes == 3.0
+def test_experiment_wall_budget_defaults_to_two_minutes_and_is_capped() -> None:
+    assert CampaignBudget().max_wall_minutes == float(MAX_RUN_MINUTES)
     assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25
-    with pytest.raises(ValidationError, match="less than or equal to 3"):
-        CampaignBudget(max_wall_minutes=3.01)
+    with pytest.raises(
+        ValidationError, match=f"less than or equal to {MAX_RUN_MINUTES}"
+    ):
+        CampaignBudget(max_wall_minutes=MAX_RUN_MINUTES + 0.01)
 
 
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:

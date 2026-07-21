@@ -22,6 +22,7 @@ from slm_training.harnesses.experiments.ladder import (
     model_build_config_for_point,
 )
 from scripts.run_scaling_ladder import _wall_minutes
+from slm_training.levers import MAX_RUN_MINUTES
 
 # Non-tokenizer ModelBuildConfig fields that must be identical across the two
 # arms for the comparison to isolate the representation. output_tokenizer is the
@@ -85,6 +86,8 @@ def test_capacity_ladder_single_arm_is_scratch_track() -> None:
 
 def test_ladder_wall_budget_is_configurable_but_capped() -> None:
     assert _wall_minutes("0.25") == 0.25
-    assert _wall_minutes("3") == 3.0
-    with pytest.raises(argparse.ArgumentTypeError, match="at most 3"):
-        _wall_minutes("3.1")
+    assert _wall_minutes(str(MAX_RUN_MINUTES)) == float(MAX_RUN_MINUTES)
+    with pytest.raises(
+        argparse.ArgumentTypeError, match=f"at most {MAX_RUN_MINUTES}"
+    ):
+        _wall_minutes(str(MAX_RUN_MINUTES + 0.1))

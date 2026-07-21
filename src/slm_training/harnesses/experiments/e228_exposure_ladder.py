@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
@@ -234,7 +235,7 @@ def build_e228_recipe_config(manifest: E228ExposureLadderManifest) -> ModelBuild
         ),
         grammar_constrained=True,
         grammar_ltr_primary=True,
-        max_wall_minutes=3.0,
+        max_wall_minutes=float(MAX_RUN_MINUTES),
     )
 
 

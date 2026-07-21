@@ -30,6 +30,7 @@ import torch
 import torch.nn.functional as F
 
 from slm_training.harnesses.preference.local_decisions import DecisionEventV1
+from slm_training.levers import MAX_RUN_SECONDS
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _fresh_adamw_direction,
@@ -312,7 +313,7 @@ def profile_rank_matrix(
     objective: str = "ftpo_single",
     epsilon: float = 2.0,
     tau: float = 1.0,
-    max_wall_seconds: float = 180.0,
+    max_wall_seconds: float = float(MAX_RUN_SECONDS),
 ) -> dict[str, object]:
     """Profile the adapter subspace across ranks under one cumulative wall deadline.
 
@@ -323,8 +324,8 @@ def profile_rank_matrix(
     with **no** geometry result — an incomplete diagnostic is never reported as
     valid. This mirrors the diagnostic's all-or-nothing wall policy.
     """
-    if max_wall_seconds > 180.0:
-        raise ValueError("max_wall_seconds must be at most 180")
+    if max_wall_seconds > MAX_RUN_SECONDS:
+        raise ValueError(f"max_wall_seconds must be at most {MAX_RUN_SECONDS}")
     start = time.monotonic()
     results: dict[int, dict[str, object]] = {}
     expired = False

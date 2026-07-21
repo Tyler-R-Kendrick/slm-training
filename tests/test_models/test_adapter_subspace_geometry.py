@@ -18,6 +18,7 @@ from slm_training.harnesses.preference.adapter_subspace_geometry import (  # noq
     profile_corpus_cell,
 )
 from slm_training.harnesses.preference.decision_diagnostics import DiagnosticBudget  # noqa: E402
+from slm_training.levers import MAX_RUN_MINUTES  # noqa: E402
 from slm_training.harnesses.preference.decision_events_v2 import (  # noqa: E402
     DecisionStateV2,
     ObjectiveView,
@@ -280,7 +281,11 @@ def test_matrix_profiles_complete_and_carry_telemetry() -> None:
         {"rank": 8, "target_modules": _BROADER},
     ]
     report = profile_adapter_subspace_geometry(
-        _model, _corpus(), _spec_factory, matrix, budget=DiagnosticBudget(max_wall_minutes=3.0)
+        _model,
+        _corpus(),
+        _spec_factory,
+        matrix,
+        budget=DiagnosticBudget(max_wall_minutes=float(MAX_RUN_MINUTES)),
     )
     assert report["status"] == "completed"
     assert report["kind"] == "adapter_subspace_geometry"

@@ -30,9 +30,11 @@ Experiment-first OpenUI layout SLMs:
 ## Hard run cap
 
 Every train, eval, benchmark, profile, telemetry, matrix, reproduction, and
-supporting shell command must finish within three minutes total. Agent commands
-interrupt at 170 seconds and force-kill ten seconds later. Training and campaign
-harnesses must use a cumulative `max_wall_minutes` no greater than 3. A timed
+supporting shell command must obey the canonical cap in
+`src/slm_training/levers.py`. Use its derived interrupt and kill-grace values;
+training and campaign harnesses must not exceed its `MAX_RUN_MINUTES`. Change
+that one constant to update local experiment execution. Prefer local compute;
+remote CI and managed jobs are last-resort convenience surfaces. A timed
 out, interrupted, or killed run is never evidence.
 
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,

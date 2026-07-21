@@ -6,6 +6,7 @@ import asyncio
 import sys
 
 from slm_training.web import jobs
+from slm_training.levers import MAX_RUN_MINUTES
 
 
 def test_job_hard_cap_interrupts_and_fails(tmp_path, monkeypatch) -> None:
@@ -21,7 +22,10 @@ def test_job_hard_cap_interrupts_and_fails(tmp_path, monkeypatch) -> None:
     asyncio.run(registry._run(job))
 
     assert job.status == "failed"
-    assert any("three-minute hard cap" in line for line in registry.tail(job.id))
+    assert any(
+        f"{MAX_RUN_MINUTES}-minute hard cap" in line
+        for line in registry.tail(job.id)
+    )
 
 
 def test_remote_dispatches_are_labeled_as_bounded_smokes() -> None:

@@ -26,6 +26,21 @@
         }
       ]
     },
+    "config.levers": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/levers.py",
+        "tests/test_levers.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "centralize run policy and expose the complete ModelBuildConfig lever catalog with context-specific defaults"
+        }
+      ]
+    },
     "data.corrupt.trace": {
       "version": "v1",
       "kind": "data_builder",
@@ -618,12 +633,22 @@
       ]
     },
     "harness.experiments": {
-      "version": "v59",
+      "version": "v60",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v60",
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v60 two-minute fixture budget from the canonical lever registry; emitted behavior is unchanged"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-21",
+          "note": "hard-cap all experiment fixture wall-budget metadata at two minutes"
+        },
         {
           "version": "v59",
           "date": "2026-07-21",
@@ -947,7 +972,7 @@
       ]
     },
     "harness.experiments.ast_sketch_retrieval": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/ast_sketch_retrieval_factorial.py",
@@ -956,6 +981,16 @@
         "tests/test_scripts/test_run_ast_sketch_retrieval_factorial.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v2 wall budget from the canonical lever registry; emitted behavior is unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "hard-cap AST-sketch retrieval fixture wall-budget metadata at two minutes"
+        },
         {
           "version": "v1",
           "date": "2026-07-19",
@@ -1048,7 +1083,7 @@
       ]
     },
     "harness.experiments.sde4_02_min_controller_capacity": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/sde4_02_min_controller_capacity.py",
@@ -1059,6 +1094,16 @@
         "docs/design/iter-sde4-02-min-controller-capacity-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v2 wall budget from the canonical lever registry; emitted behavior is unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "hard-cap minimum-controller fixture wall-budget metadata at two minutes"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2774,13 +2819,23 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v18 two-minute training cap from the canonical lever registry; runtime behavior is unchanged"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-21",
+          "note": "reduce the cumulative training deadline default and maximum from three minutes to two"
+        },
         {
           "version": "v17",
           "date": "2026-07-21",
@@ -2922,7 +2977,7 @@
       ]
     },
     "harness.preference.remine_campaign": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/preference/remine_campaign.py",
@@ -2934,6 +2989,16 @@
         "docs/design/ldi3-04-remine-intervene-campaign-report-20260718.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "no-bump: source the already-v2 remine and autoresearch cap from the canonical lever registry; runtime behavior is unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
+          "note": "reduce remine and autoresearch campaign wall-budget default and maximum to two minutes"
+        },
         {
           "version": "v1",
           "date": "2026-07-19",
@@ -3584,7 +3649,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v186",
+      "version": "v187",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3604,6 +3669,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v187",
+          "date": "2026-07-21",
+          "note": "centralize model and training levers while reducing the canonical wall-budget default and maximum to two minutes"
+        },
         {
           "version": "v186",
           "date": "2026-07-21",

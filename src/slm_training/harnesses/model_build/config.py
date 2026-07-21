@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
     validate_model_build_config,
@@ -24,8 +25,8 @@ class ModelBuildConfig:
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
-    # Cumulative training-harness deadline; all runs are hard-capped at 3 minutes.
-    max_wall_minutes: float | None = 3.0
+    # Cumulative deadline; canonical run policy lives in slm_training.levers.
+    max_wall_minutes: float | None = float(MAX_RUN_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4
     # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.

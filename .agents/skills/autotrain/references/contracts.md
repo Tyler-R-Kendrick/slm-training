@@ -15,12 +15,14 @@ when a run is launched through wrapper commands. REQUIRED SKILL:
 ## Hard run cap (every command in every phase)
 
 Every train / eval / bench / profile / telemetry / matrix / reproduction and
-supporting shell command must finish within **three minutes** total (AGENTS.md
-"Hard run cap"): agent commands interrupt at 170 s and force-kill 10 s later.
+supporting shell command must obey `slm_training.levers` (AGENTS.md "Hard run
+cap"). Use its derived interrupt and kill-grace values rather than restating
+numeric literals.
 The command examples below are shown at fixture / smoke scale for this reason —
 scale `--steps` / `--rico-limit` / sizes to fit the cap. Where a harness exposes
 it (e.g. `scripts.autoresearch`, `scripts.run_scaling_ladder`), pass
-`--max-wall-minutes 3` (the field defaults to 3 and rejects any larger value).
+`--max-wall-minutes` defaults to and rejects values above
+`slm_training.levers.MAX_RUN_MINUTES`.
 A timed-out, interrupted, or killed run is never evidence.
 
 ## Model-card duty
