@@ -5077,3 +5077,14 @@ tradeoff, not ship evidence. AgentV is 0/1; no checkpoint was created or synced.
 
 Evidence: [narrative](iter-e693-unique-group-plan-20260721.md) and
 [JSON](iter-e693-unique-group-plan-20260721.json).
+
+## E694 open-vocabulary enum finalization
+
+E694 lets the retained post-decode enum finalizer emit a framed public-schema
+enum when no fixed vocabulary token exists and row capacity permits. Settings'
+Slider variant becomes `continuous`, strict rises 3/5→4/5, and all continuous
+quality metrics remain exactly flat. Retain v150 as a fail-closed schema fix,
+not ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e694-open-enum-finalize-20260721.md) and
+[JSON](iter-e694-open-enum-finalize-20260721.json).
