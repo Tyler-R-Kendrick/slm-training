@@ -1922,43 +1922,6 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
     ) is None
 
 
-def test_prompt_semantic_plan_root_bias_waits_for_visible_slot_coverage() -> None:
-    from types import SimpleNamespace
-
-    model = _model(output_tokenizer="choice", semantic_plan_root_decode_weight=2.0)
-    tokenizer = model.tokenizer
-    gallery_id = tokenizer.token_to_id["+ImageGallery"]
-    model._semantic_plan_action_scores = [{gallery_id: 1.0}]
-    model._semantic_plan_action_counts = [{gallery_id: 1}]
-    model._slot_contracts = [[
-        ":gallery.img",
-        ":gallery.alt",
-        ":gallery.caption",
-        ":gallery.hint.title",
-        ":gallery.hint.body",
-        ":gallery.cta",
-    ]]
-    state = SimpleNamespace(
-        mode="structural",
-        frames=[],
-        section_types=["element:ImageGallery"],
-    )
-    prefix = [
-        tokenizer.bos_id,
-        gallery_id,
-        tokenizer.sym_id(0),
-        tokenizer.sym_id(1),
-        tokenizer.sym_id(2),
-    ]
-
-    assert model._semantic_plan_root_bias(
-        0,
-        state,
-        prefix,
-        (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
-    ) is None
-
-
 def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> None:
     from types import SimpleNamespace
 

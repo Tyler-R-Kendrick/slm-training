@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v79",
+      "version": "v80",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v80",
+          "date": "2026-07-20",
+          "note": "E638 rejection: restore v78 behavior after requiring complete slot coverage collapsed Gallery and regressed fidelity, validity, structure, reward, and latency"
+        },
         {
           "version": "v79",
           "date": "2026-07-20",
