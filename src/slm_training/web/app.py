@@ -202,6 +202,15 @@ def create_app(
     if registry is not None:
         app.state.jobs = registry
 
+    # OpenFeature-compatible experiment levers (in-process ruleset).
+    from slm_training.flags import FlagClient, InMemoryProvider
+    from slm_training.flags.bootstrap import client_from_environ
+    from slm_training.flags.in_memory import ruleset_from_defaults
+
+    app.state.flag_client = client_from_environ() or FlagClient(
+        InMemoryProvider(ruleset_from_defaults())
+    )
+
     @app.middleware("http")
     async def _browser_acceleration_headers(request, call_next):
         response = await call_next(request)

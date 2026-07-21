@@ -520,6 +520,23 @@
         }
       ]
     },
+    "harness.flags": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flags/",
+        "src/slm_training/harnesses/model_build/experiment_flags.py",
+        "docs/design/openfeature-experiments.md",
+        "tests/test_flags/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "SLM-342: OpenFeature-compatible experiment lever evaluation (in-memory provider, OFREP evaluate, ModelBuildConfig overlay)"
+        }
+      ]
+    },
     "harness.distill": {
       "version": "v2",
       "kind": "harness",
@@ -2465,7 +2482,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v36",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2475,6 +2492,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-07-21",
+          "note": "SLM-342: OpenFeature-compatible lever overlay on evaluate_model (--flags-json / OPENUI_FLAGS_*); CLI overrides win; defaults unchanged when unset"
+        },
         {
           "version": "v36",
           "date": "2026-07-21",
