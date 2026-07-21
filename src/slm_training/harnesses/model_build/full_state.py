@@ -144,6 +144,9 @@ def save_full_state(
         "mixture_hash": mixture_hash,
         "code_git_sha": _git_sha(),
         "config": _jsonable_config(config),
+        "optimizer_fingerprint": (
+            optimizer.fingerprint if hasattr(optimizer, "fingerprint") else None
+        ),
         "best_weighted_nll": best_weighted_nll,
         "best_ship_score": best_ship_score,
         "saved_at": datetime.now(timezone.utc).isoformat(),

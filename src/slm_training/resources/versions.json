@@ -209,12 +209,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
-        "src/slm_training/harnesses/model_build/train_loop.py"
+        "src/slm_training/harnesses/model_build/train_loop.py",
+        "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-07-21",
+          "note": "SLM-222: add Muon/AdamW hybrid optimizer support with optimizer-family fingerprint and fail-closed resume guard; default AdamW path preserved"
+        },
         {
           "version": "v16",
           "date": "2026-07-20",
@@ -721,6 +727,11 @@
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v55",
+          "date": "2026-07-21",
+          "note": "no-bump: re-export SLM-222 MuonBaselineArm/MuonBaselineReport/run_muon_baseline_fixture from experiments package; existing experiment harnesses unchanged"
+        },
         {
           "version": "v55",
           "date": "2026-07-21",
@@ -1512,7 +1523,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v76",
+      "version": "v77",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1527,6 +1538,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v77",
+          "date": "2026-07-21",
+          "note": "SLM-222: add optimizer_name, muon_lr, adamw_lr, weight_decay, muon_momentum, muon_nesterov, and muon_ns_steps fields to ModelBuildConfig"
+        },
         {
           "version": "v76",
           "date": "2026-07-21",
@@ -3356,6 +3372,11 @@
         {
           "version": "v2",
           "date": "2026-07-21",
+          "note": "no-bump: update test_inspect_spectral literal to match current component version v2; fixture/report semantics unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-21",
           "note": "SLM-211: record tie_output_embedding in SpectralSnapshotV1"
         },
         {
@@ -3401,6 +3422,22 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins"
+        }
+      ]
+    },
+    "harness.experiments.slm222_muon_baseline": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm222_muon_baseline.py",
+        "docs/design/iter-slm222-muon-baseline-20260721.json",
+        "docs/design/iter-slm222-muon-baseline-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-222 NCS2-03 Muon/AdamW hybrid optimizer baseline fixture harness"
         }
       ]
     },

@@ -317,6 +317,16 @@ _LAZY_SLM135_EXPORTS = {
     "run_slm135_fixture_matrix": "run_fixture_matrix",
 }
 
+_LAZY_SLM222_EXPORTS = {
+    "SLM222_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM222_MATRIX_SET": "MATRIX_SET",
+    "SLM222_MATRIX_VERSION": "MATRIX_VERSION",
+    "MuonBaselineArm": "MuonBaselineArm",
+    "MuonBaselineReport": "MuonBaselineReport",
+    "render_slm222_markdown": "render_markdown",
+    "run_slm222_fixture": "run_muon_baseline_fixture",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -337,6 +347,12 @@ def __getattr__(name: str):
         value = getattr(
             slm135_trailed_assumptions_ablation, _LAZY_SLM135_EXPORTS[name]
         )
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM222_EXPORTS:
+        from slm_training.harnesses.experiments import slm222_muon_baseline
+
+        value = getattr(slm222_muon_baseline, _LAZY_SLM222_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -406,6 +422,13 @@ __all__ = [
     "render_slm148_markdown",
     "run_slm148_fixture_matrix",
     "validate_slm148_manifest",
+    "SLM222_EXPERIMENT_ID",
+    "SLM222_MATRIX_SET",
+    "SLM222_MATRIX_VERSION",
+    "MuonBaselineArm",
+    "MuonBaselineReport",
+    "render_slm222_markdown",
+    "run_slm222_fixture",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",

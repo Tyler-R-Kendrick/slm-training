@@ -56,7 +56,7 @@ def test_fixture_writes_report_and_design_docs(tmp_path: Path) -> None:
     data = json.loads(run_json.read_text())
     assert data["status"] == "fixture"
     assert data["n_matrices"] > 0
-    assert data["version_stamp"]["components"]["harness.experiments.slm214_spectral_snapshot"] == "v1"
+    assert data["version_stamp"]["components"]["harness.experiments.slm214_spectral_snapshot"] == "v2"
     assert design_json.is_file()
     assert design_md.is_file()
     assert "Honest caveats" in design_md.read_text()

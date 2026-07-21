@@ -543,12 +543,32 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if is_twotower:
         import torch
 
-        parameters = (
-            plugin.optimizer_parameter_groups()
-            if hasattr(plugin, "optimizer_parameter_groups")
-            else plugin.trainable_parameters()
-        )
-        optimizer = torch.optim.AdamW(parameters, lr=config.lr)
+        optimizer_name = str(getattr(config, "optimizer_name", "adamw") or "adamw").lower()
+        if optimizer_name == "muon_hybrid":
+            from slm_training.optimizers.muon import build_muon_hybrid
+
+            # Muon uses deterministic parameter ownership by canonical name.
+            optimizer = build_muon_hybrid(
+                plugin.named_parameters(),
+                lr=float(config.lr),
+                muon_lr=getattr(config, "muon_lr", None),
+                adamw_lr=getattr(config, "adamw_lr", None),
+                weight_decay=float(getattr(config, "weight_decay", 0.0) or 0.0),
+                muon_momentum=float(getattr(config, "muon_momentum", 0.9) or 0.9),
+                muon_nesterov=bool(getattr(config, "muon_nesterov", False)),
+                muon_ns_steps=int(getattr(config, "muon_ns_steps", 5) or 5),
+            )
+        else:
+            parameters = (
+                plugin.optimizer_parameter_groups()
+                if hasattr(plugin, "optimizer_parameter_groups")
+                else plugin.trainable_parameters()
+            )
+            optimizer = torch.optim.AdamW(
+                parameters,
+                lr=float(config.lr),
+                weight_decay=float(getattr(config, "weight_decay", 0.0) or 0.0),
+            )
         scaler = grad_scaler(config.device, enabled=use_amp)
         if initialize_path:
             initialized_weight_anchor = [
@@ -636,6 +656,20 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             else:
                 plugin.load_state_dict(payload["model"], strict=False)
         if optimizer is not None and payload.get("optimizer") is not None:
+            saved_fp = payload.get("optimizer_fingerprint")
+            current_fp = (
+                optimizer.fingerprint if hasattr(optimizer, "fingerprint") else None
+            )
+            if saved_fp is not None and saved_fp != current_fp:
+                raise ValueError(
+                    "optimizer fingerprint mismatch: "
+                    f"checkpoint={saved_fp}, current={current_fp}"
+                )
+            if saved_fp is None and current_fp is not None:
+                raise ValueError(
+                    "checkpoint has no optimizer fingerprint but current optimizer "
+                    f"is {current_fp}; resume across optimizer families is not allowed"
+                )
             optimizer.load_state_dict(payload["optimizer"])
         if (
             scaler is not None
@@ -1177,6 +1211,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         },
         "recipe": {
             "learning_rate": config.lr,
+            "optimizer_name": getattr(config, "optimizer_name", "adamw"),
+            "muon_lr": getattr(config, "muon_lr", None),
+            "adamw_lr": getattr(config, "adamw_lr", None),
+            "weight_decay": getattr(config, "weight_decay", 0.0),
+            "muon_momentum": getattr(config, "muon_momentum", 0.9),
+            "muon_nesterov": getattr(config, "muon_nesterov", False),
+            "muon_ns_steps": getattr(config, "muon_ns_steps", 5),
             "replay_fraction": replay_fraction,
             "initialization_weight_retention": initialization_weight_retention,
             "seed": config.seed,
