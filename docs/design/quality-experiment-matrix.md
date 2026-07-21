@@ -4861,3 +4861,14 @@ independently. No checkpoint was created or synced.
 
 Evidence: [narrative](iter-e677-joint-role-all-suites-20260721.md) and
 [JSON](iter-e677-joint-role-all-suites-20260721.json).
+
+## E678 joint-role provenance correction
+
+E678 relocates E676's model-only helper out of the module hashed by
+binding-aware meaningful v2. The matched OOD `n=4` replay is prediction- and
+metric-identical to E676, while v2.3.0's implementation hash is restored to
+`8253…89b55`. Retain v134 as a behavior-neutral provenance correction, not new
+quality or ship evidence. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e678-joint-role-provenance-20260721.md) and
+[JSON](iter-e678-joint-role-provenance-20260721.json).
