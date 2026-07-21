@@ -4351,3 +4351,17 @@ v70 behavior as v72. No checkpoint or ship claim.
 Evidence:
 [iter-e634-final-precontent-routing-20260720.md](iter-e634-final-precontent-routing-20260720.md)
 and [JSON](iter-e634-final-precontent-routing-20260720.json).
+
+## E635 property-compatible slot coverage
+
+E635 composes final pre-content literal routing with the public-schema rule
+that direct coverage slots are eligible only at placeholder-annotated active
+component properties. Two byte-identical OOD `n=4` runs lift strict v2 from
+0/4 to 1/4 by fixing Auth, while preserving every aggregate continuous quality
+metric. Retain v73 default-off; AgentV remains 0/1 and three records still fail,
+so this is not a promotion or ship result. No checkpoint was created or synced.
+
+Evidence:
+[iter-e635-property-compatible-coverage-20260720.md](iter-e635-property-compatible-coverage-20260720.md),
+[authoritative r2 JSON](iter-e635-property-compatible-coverage-20260720.json),
+and [r1 JSON](iter-e635-property-compatible-coverage-r1-20260720.json).
