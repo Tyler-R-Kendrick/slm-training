@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_id": "e719-e714-ltr-canvas128-smoke-r1",
+  "experiment_id": "E719",
+  "date_utc": "2026-07-21",
+  "status": "completed_rejected_runtime_midpoint",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "run_id": "e714-symbol-only-scratch600-r1",
+    "sha256": "71ef1d25efb5186b885e8ee9e1370002f419bf42ea53985111734c49cfd2b49e",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "evaluation_policy": {
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "compiler_decode_mode": "off",
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_max_tokens": 128,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "allow_unconstrained_fallback": false,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "treatment_e719": {
+    "parse": 0.3333333333333333,
+    "meaningful_program_rate": 0.0,
+    "meaningful_v1": 0.0,
+    "strict_v2": 0.0,
+    "placeholder_fidelity": 0.3333333333333333,
+    "structure": 0.0359,
+    "component_recall": 0.16666666666666666,
+    "reward": 0.0,
+    "ast_node_f1": 0.26666666666666666,
+    "ast_edge_f1": 0.15384615384615385,
+    "empty_predictions": 2,
+    "fallback_count": 0,
+    "timeouts": 2,
+    "p50_ms": 8000.41,
+    "p95_ms": 8001.31
+  },
+  "comparison_to_e718": {
+    "placeholder_fidelity_delta": -0.6666666666666667,
+    "structure_delta": -0.06040000000000001,
+    "component_recall_delta": -0.08333333333333334,
+    "timeouts_delta": 2,
+    "p50_ms_delta": 2709.04
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Reject 128 symbols and close the canvas interpolation; retain 96 only as a local runtime Pareto lever.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7e9f118b280ed619b65d5f2a6bf1e76c01901b78",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v38",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v188"
+    },
+    "stamped_at": "2026-07-21T23:33:35.917975+00:00"
+  }
+}

@@ -5421,3 +5421,14 @@ Pareto lever; do not treat it as model-quality progress or change the default.
 
 Evidence: [narrative](iter-e718-ltr-canvas96-20260721.md) and
 [JSON](iter-e718-ltr-canvas96-20260721.json).
+
+## E719 128-symbol LTR midpoint
+
+E719 tests the only midpoint between the E718 96-symbol arm and E714 160-symbol
+control. It is dominated: two of three records time out, fidelity falls
+1.0→0.3333, structure 0.0963→0.0359, recall 0.25→0.1667, and AgentV remains
+0/1. Reject 128 and close the canvas interpolation; 96 remains a runtime-only
+Pareto lever with no default change.
+
+Evidence: [narrative](iter-e719-ltr-canvas128-20260721.md) and
+[JSON](iter-e719-ltr-canvas128-20260721.json).
