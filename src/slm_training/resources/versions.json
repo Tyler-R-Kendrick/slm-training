@@ -2100,10 +2100,11 @@
       ]
     },
     "model.twotower": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/twotower_numeric_gates.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
@@ -2112,9 +2113,22 @@
         "src/slm_training/models/adapters/",
         "src/slm_training/harnesses/model_build/config.py",
         "src/slm_training/harnesses/model_build/factory.py",
-        "scripts/train_model.py"
+        "scripts/train_model.py",
+        "tests/test_models/test_twotower_numeric_gates.py",
+        "docs/design/iter-slm242-twotower-numeric-gates-20260721.json",
+        "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-07-21",
+          "note": "no-bump: validator refinements after broader test run -- allow steps=0, decode_min_content=-1, finite (not non-negative) slot_component_lexeme/span priors, and a human-readable max_wall_minutes message; no change to the fail-closed intent or to successfully validated configs"
+        },
+        {
+          "version": "v81",
+          "date": "2026-07-21",
+          "note": "SLM-242 (RSC-A06): fail-closed numeric/schedule validation gate for every TwoTower weight and schedule vector; adds src/slm_training/models/twotower_numeric_gates.py, ModelBuildConfig.__post_init__ numeric gate, TwoTowerConfig.__post_init__ numeric gate, CLI --recursive-depth-aux-mode/--recursive-depth-aux-weight in scripts/train_model.py"
+        },
         {
           "version": "v80",
           "date": "2026-07-21",
@@ -3037,6 +3051,11 @@
         "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-21",
+          "note": "no-bump: updated tests/test_models/test_recursive_denoiser.py to expect the SLM-242 construction-time validation raise instead of a training_loss-time raise; the fail-closed invariant and error message content are unchanged, only the call site that triggers the error moved earlier"
+        },
         {
           "version": "v10",
           "date": "2026-07-21",
