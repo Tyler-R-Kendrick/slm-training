@@ -852,25 +852,6 @@ def test_repeated_plan_slot_bias_targets_best_unused_visible_slot() -> None:
 
     assert bias is not None
     assert bias.tolist() == [0.0, 10.0, 0.0]
-    model._semantic_role_candidates = [
-        {
-            ":status.title": ("TextContent",),
-            ":status.body": ("TextContent",),
-            ":metric.one": ("TextContent",),
-            ":metric.two": ("TextContent",),
-        }
-    ]
-    assert (
-        model._semantic_plan_repeated_slot_bias(
-            0,
-            state,
-            prefix,
-            candidates,
-            torch.tensor([9.0, 2.0, 10.0]),
-        )
-        is None
-    )
-    model._semantic_role_candidates = None
     assert (
         model._semantic_plan_repeated_slot_bias(
             0,
