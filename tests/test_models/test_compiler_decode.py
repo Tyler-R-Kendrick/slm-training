@@ -1473,6 +1473,22 @@ def test_joint_role_candidates_require_distinct_schema_properties() -> None:
     assert candidates[tuple(sorted(slots))] == ("Callout", "TextCallout")
 
 
+def test_joint_role_candidates_partition_larger_namespace_by_specificity() -> None:
+    slots = [
+        ":hero.body",
+        ":hero.kicker",
+        ":hero.subtitle",
+        ":hero.title",
+    ]
+    candidates = TwoTowerModel._semantic_role_joint_candidates(
+        slots, ["Callout", "CardHeader", "TextContent"]
+    )
+
+    assert candidates == {
+        (":hero.subtitle", ":hero.title"): ("CardHeader",),
+    }
+
+
 def test_role_obligations_use_one_joint_schema_carrier() -> None:
     counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
         Counter({"ImageGallery": 1}),
@@ -1487,6 +1503,26 @@ def test_role_obligations_use_one_joint_schema_carrier() -> None:
         ":gallery.hint.body",
         ":gallery.hint.title",
     )
+
+
+def test_role_obligations_partition_hero_roles_into_schema_carriers() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 1, "Stack": 1}),
+        {
+            ":hero.body": ("Callout", "TextContent"),
+            ":hero.kicker": ("TextContent",),
+            ":hero.subtitle": ("CardHeader",),
+            ":hero.title": ("Callout", "CardHeader", "TextContent"),
+        },
+    )
+
+    assert counts == Counter(
+        {"TextContent": 2, "Card": 1, "Stack": 1, "CardHeader": 1}
+    )
+    assert bindings == {
+        "CardHeader": (":hero.subtitle", ":hero.title"),
+        "TextContent": (":hero.body", ":hero.kicker"),
+    }
 
 
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:

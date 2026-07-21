@@ -1559,7 +1559,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v135",
+      "version": "v136",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1574,6 +1574,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v136",
+          "date": "2026-07-21",
+          "note": "E681: partition larger visible-role namespaces into maximal disjoint groups covered by specific direct-schema carriers"
+        },
         {
           "version": "v135",
           "date": "2026-07-21",

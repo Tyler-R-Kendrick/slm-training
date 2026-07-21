@@ -4347,7 +4347,9 @@ class TwoTowerModel(nn.Module):
     def _semantic_role_joint_candidates(
         placeholders: list[str], component_names: list[str]
     ) -> dict[tuple[str, ...], tuple[str, ...]]:
-        """Find components with distinct direct string properties for a role group."""
+        """Partition namespaces into jointly coverable direct-string role groups."""
+        from itertools import combinations
+
         from slm_training.data.quality import semantic_role_properties
         from slm_training.dsl.lang_core import library_schema
 
@@ -4358,6 +4360,22 @@ class TwoTowerModel(nn.Module):
                 groups.setdefault(".".join(parts[:-1]), []).append(placeholder)
         definitions = library_schema().get("$defs", {})
         properties_by_slot = semantic_role_properties(placeholders)
+        direct_string_properties = {
+            name: {
+                property_name
+                for property_name, schema in (definition.get("properties") or {}).items()
+                if isinstance(schema, dict) and schema.get("type") == "string"
+            }
+            for name in sorted(set(component_names))
+            if isinstance((definition := definitions.get(name)), dict)
+        }
+        slot_candidate_counts = {
+            slot: sum(
+                bool(set(properties).intersection(component_properties))
+                for component_properties in direct_string_properties.values()
+            )
+            for slot, properties in properties_by_slot.items()
+        }
 
         def covers(slots: tuple[str, ...], properties: dict[str, Any]) -> bool:
             string_properties = {
@@ -4379,17 +4397,31 @@ class TwoTowerModel(nn.Module):
 
         result: dict[tuple[str, ...], tuple[str, ...]] = {}
         for slots_list in groups.values():
-            slots = tuple(slots_list)
-            if len(slots) < 2:
-                continue
-            compatible = tuple(
-                name
-                for name in sorted(set(component_names))
-                if isinstance((definition := definitions.get(name)), dict)
-                and covers(slots, definition.get("properties") or {})
-            )
-            if compatible:
+            candidates: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+            for size in range(len(slots_list), 1, -1):
+                for slots in combinations(slots_list, size):
+                    compatible = tuple(
+                        name
+                        for name in sorted(set(component_names))
+                        if isinstance((definition := definitions.get(name)), dict)
+                        and covers(slots, definition.get("properties") or {})
+                    )
+                    if compatible:
+                        candidates.append((slots, compatible))
+            used: set[str] = set()
+            for slots, compatible in sorted(
+                candidates,
+                key=lambda item: (
+                    -len(item[0]),
+                    sum(slot_candidate_counts[slot] for slot in item[0]),
+                    len(item[1]),
+                    item[0],
+                ),
+            ):
+                if used.intersection(slots):
+                    continue
                 result[slots] = compatible
+                used.update(slots)
         return result
 
     @staticmethod
