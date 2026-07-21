@@ -179,9 +179,14 @@ def _allowed_id_set_dsl(tokenizer: Any, terminals: frozenset[str]) -> set[int] |
         elif term == "STRING":
             broad = True
             ids |= tokenizer.kind_ids(TokenKind.SYM)
-            ids |= tokenizer.kind_ids(TokenKind.LIT)
-            # Fixed strings + LIT_STR opener + bool/null are LIT; also allow
-            # byte channel only after LIT_STR (caller handles framing).
+            ids |= {
+                token_id
+                for token_id in tokenizer.kind_ids(TokenKind.LIT)
+                if str(tokenizer.id_to_token.get(token_id, "")).startswith("STR:")
+            }
+            # Fixed string symbols and placeholders are valid STRING starts.
+            # Booleans, null, LIT_NUM, and LIT_END share the broad LIT kind but
+            # belong to other grammar terminals and must not leak into STRING.
             lit_str = tokenizer.token_to_id.get("LIT_STR")
             if lit_str is not None:
                 ids.add(lit_str)

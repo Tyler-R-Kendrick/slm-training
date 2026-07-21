@@ -225,7 +225,7 @@ def test_native_slot_contract_preserves_assignment_and_component() -> None:
     )
 
 
-def test_lexer_literal_bytes_are_grammar_admitted() -> None:
+def test_lexer_literal_bytes_are_not_grammar_admitted() -> None:
     import torch
 
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -236,7 +236,8 @@ def test_lexer_literal_bytes_are_grammar_admitted() -> None:
     logits = torch.full((tok.vocab_size,), -20.0)
     logits[byte] = 50.0
     choice = pick_constrained_token(logits, tok, prefix, top_k=8)
-    assert choice == byte
+    assert choice != byte
+    assert tok.id_to_token[choice].startswith(("STR:", "<SYM_"))
 
 
 def test_structural_preference_does_not_override_confident_binder() -> None:
@@ -374,6 +375,20 @@ def test_cached_native_masks_intersect_active_symbols() -> None:
     assert tok.sym_id(1) in cached
     assert tok.sym_id(0) not in cached
     assert cached - tok.kind_ids("sym") == uncached - tok.kind_ids("sym")
+
+
+def test_native_string_terminal_excludes_non_string_literal_markers() -> None:
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    allowed = allowed_id_set(tok, frozenset({"STRING"}))
+
+    assert allowed is not None
+    assert tok.token_to_id["STR:email"] in allowed
+    assert tok.sym_id(0) in allowed
+    for token in ("true", "false", "null", "LIT_NUM", "LIT_END"):
+        assert tok.token_to_id[token] not in allowed
 
 
 def test_completion_bound_is_conservative() -> None:

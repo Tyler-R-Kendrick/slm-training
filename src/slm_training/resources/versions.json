@@ -3649,7 +3649,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v187",
+      "version": "v188",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3657,6 +3657,7 @@
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/template_fill.py",
+        "src/slm_training/dsl/grammar/fastpath/token_map.py",
         "src/slm_training/data/quality.py",
         "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
@@ -3669,6 +3670,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v188",
+          "date": "2026-07-21",
+          "note": "E716: keep non-string literal markers out of schema-typed STRING compiler candidates"
+        },
         {
           "version": "v187",
           "date": "2026-07-21",
