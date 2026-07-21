@@ -87,9 +87,11 @@ flags JSON.
 
 ## Evidence
 
-`tests/test_autoresearch/test_openfeature.py` (10 tests): flagd document
+`tests/test_autoresearch/test_openfeature.py` (9 tests): flagd document
 shape and targeting rule, duplicate/empty rejection, matrix export, CLI
 export round-trip (store artifact + event + `--output` file), and — through
 the real OpenFeature client — targeting match for all five flag types,
 code-default fallback, targeting-key selection, and every fail-closed error
-code. `pytest tests/test_autoresearch/test_openfeature.py` → 10 passed.
+code. `pytest tests/test_autoresearch/test_openfeature.py` → 9 passed.
+The repo-wide suite shows no regression: 183 pre-existing failures + 5
+errors are identical on `main` and this branch (verified side by side).
