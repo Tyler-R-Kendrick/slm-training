@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v86",
+      "version": "v87",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v87",
+          "date": "2026-07-20",
+          "note": "E647 rejection: restore v85 prompt-only semantic plans after visible-role completion cut strict v2, structure, and latency despite fidelity and reward gains; renumbered from the originally launched E641 arm after rebase"
+        },
         {
           "version": "v86",
           "date": "2026-07-20",
