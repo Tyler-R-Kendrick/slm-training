@@ -205,12 +205,22 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.10.0",
+      "version": "2.12.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.12.0",
+          "date": "2026-07-21",
+          "note": "Reject every meaningfulness candidate containing a free-form output string under the symbol-only output contract"
+        },
+        {
+          "version": "2.11.0",
+          "date": "2026-07-21",
+          "note": "E713: apply mechanical text-only routing rejection only when an explicitly requested component can directly own a required semantic role"
+        },
         {
           "version": "2.10.0",
           "date": "2026-07-21",
@@ -495,6 +505,16 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.11.0 to 2.12.0; thresholds remain disabled and ship policy is unchanged"
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.10.0 to 2.11.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -2516,7 +2536,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v37",
+      "version": "v38",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2526,6 +2546,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v38",
+          "date": "2026-07-21",
+          "note": "Make free-form output strings an explicit meaningful_program_v1 failure"
+        },
         {
           "version": "v37",
           "date": "2026-07-21",
@@ -3034,7 +3059,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3044,6 +3069,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-21",
+          "note": "Fail closed unless sanitization has templatized every non-grammar string, including arrays and operational string fields"
+        },
         {
           "version": "v9",
           "date": "2026-07-20",
@@ -3554,7 +3584,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v184",
+      "version": "v186",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3574,6 +3604,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v186",
+          "date": "2026-07-21",
+          "note": "Enforce symbol-only output tokenization, remove the free-form LIT_STR channel, and invalidate pre-v2 output-contract checkpoints"
+        },
+        {
+          "version": "v185",
+          "date": "2026-07-21",
+          "note": "E713: compile explicit group-inside-outer-component prompt topology into a verified nested root plan"
+        },
         {
           "version": "v184",
           "date": "2026-07-21",

@@ -42,11 +42,6 @@ from slm_training.dsl.schema import ExampleRecord
 
 SANITIZE_MODES = ("off", "audit", "enforce")
 
-# Tasks whose prompts embed the target bytes (identity echo, repair input,
-# edit transitions) — sanitizing the target would break the prompt contract.
-_SKIP_TASKS = frozenset({"identity", "repair", "edit"})
-
-
 @dataclass(frozen=True)
 class SanitizeOptions:
     mode: str = "off"
@@ -98,22 +93,11 @@ class SanitizeOutcome:
 def should_sanitize(record: ExampleRecord) -> tuple[bool, str]:
     """Whether the pass may touch this record's target, with the skip reason.
 
-    Verbatim-critical corpora pass through untouched: identity anchors and
-    scope-corpus rows depend on exact target bytes (identity-echo judging,
-    canonical/decanonicalize preference pairing), and repair/edit tasks embed
-    the target in their prompts. Repair/edit-*derived* generation rows are
-    sanitized — their prompts re-derive from the sanitized AST downstream.
+    Every document target is eligible. Symbol-only output is stronger than
+    historical verbatim, repair, edit, and scope-pair byte identity.
     """
     if record.target_kind != "document":
         return False, "non_document"
-    meta = record.meta or {}
-    if meta.get("preserve_verbatim"):
-        return False, "preserve_verbatim"
-    if meta.get("scope_slice") is not None:
-        return False, "scope_slice"
-    task = str(meta.get("task") or "generation")
-    if task in _SKIP_TASKS:
-        return False, f"task_{task}"
     return True, ""
 
 
@@ -151,11 +135,13 @@ def _sanitize_cached(
         # re-checks grammar, schema, and the placeholder content policy, and
         # its serializer output is the stored fixed point (G8-compatible).
         from slm_training.dsl.parser import validate
+        from slm_training.dsl.language_contract import assert_symbol_only_output
 
         program = validate(source)
         final = strip_style_literals(program.serialized or source).strip()
         if not final:
             raise ValueError("sanitized program serialized to empty source")
+        assert_symbol_only_output(final)
     except Exception as exc:  # noqa: BLE001 - fallback must never drop a record
         reason = f"{type(exc).__name__}: {exc}"
         return SanitizeOutcome(

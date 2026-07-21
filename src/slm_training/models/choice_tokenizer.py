@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
 from slm_training.dsl.lang_core import ParseError
+from slm_training.dsl.language_contract import grammar_string_literals
 from slm_training.dsl.production_codec import (
     BUILTIN_PREFIX,
     CHOICE_STMT_MARKERS,
@@ -56,8 +57,8 @@ from slm_training.dsl.production_codec import (
 if TYPE_CHECKING:  # pragma: no cover - typing-only import
     from slm_training.dsl.grammar.fastpath.compiler_draft import ConstraintEvidence
 
-# Bump when vocab layout / serialization changes.
-CHOICE_TOKENIZER_VERSION = 1
+# v2 removes the free-form string opener from new vocabularies.
+CHOICE_TOKENIZER_VERSION = 2
 CHOICE_TOKENIZER_KIND = "choice_codec"
 
 PAD = "<pad>"
@@ -67,10 +68,9 @@ MASK = "<mask>"
 UNK = "<unk>"
 SPECIAL = (PAD, BOS, EOS, MASK, UNK)
 
-# Framed open-vocabulary channels (byte-spelled; grammar-closed alphabet).
-# A literal's / key's CONTENT is a genuine semantic decision, so free-form
-# strings, numbers, object keys, and member names outside the fixed pools are
-# byte-spelled instead of collapsing to <unk>. Components stay fail-closed.
+# Framed open-vocabulary channels for numeric and identifier AST symbols.
+# ``LIT_STR`` remains as a legacy spelling only so old sidecars fail cleanly;
+# it is absent from v2 vocabularies and is never admitted or encoded.
 LIT_STR = "LIT_STR"
 LIT_NUM = "LIT_NUM"
 NAME_STR = "NAME_STR"
@@ -121,35 +121,8 @@ _BUILTIN_NAMES: tuple[str, ...] = (
     "Each",
 )
 
-# Common closed string atoms (layout / size / tone enums) — grammar-derived.
-_FIXED_STRING_BODIES: tuple[str, ...] = (
-    "",
-    "2xl",
-    "all",
-    "column",
-    "date",
-    "default",
-    "email",
-    "info",
-    "l",
-    "large",
-    "large-heavy",
-    "m",
-    "none",
-    "number",
-    "password",
-    "primary",
-    "row",
-    "s",
-    "secondary",
-    "small",
-    "small-heavy",
-    "tertiary",
-    "text",
-    "warning",
-    "xl",
-    "xs",
-)
+# One schema-derived closed set shared by validation and both output tokenizers.
+_FIXED_STRING_BODIES: tuple[str, ...] = tuple(sorted(grammar_string_literals()))
 
 
 def _grammar_names() -> tuple[str, ...]:
@@ -397,8 +370,8 @@ class ChoiceTokenizer:
             _add(f"{NAME_PREFIX}{name}", "lit")
             _add(f"{MEMBER_PREFIX}{name}", "lit")
 
-        # Framed open-vocabulary channels + printable-ASCII byte alphabet.
-        for marker in (LIT_STR, LIT_NUM, NAME_STR, MEMBER_STR, LIT_END):
+        # Framed numeric/identifier channels + printable-ASCII byte alphabet.
+        for marker in (LIT_NUM, NAME_STR, MEMBER_STR, LIT_END):
             _add(marker, "lit")
         for code in range(32, 127):
             _add(_byte_token(chr(code)), "byte")
@@ -453,6 +426,9 @@ class ChoiceTokenizer:
         positional, not named). Placeholders discovered during encoding are
         appended to the table so decode can share the same contract.
         """
+        from slm_training.dsl.language_contract import assert_symbol_only_output
+
+        assert_symbol_only_output(text)
         declared = self._contract_from(table, placeholders)
         program = encode_choices(text, slot_contract=declared)
         ensure = getattr(table, "ensure_placeholder", None)
@@ -480,11 +456,7 @@ class ChoiceTokenizer:
         if token.startswith(LIT_PREFIX):
             payload = token[len(LIT_PREFIX) :]
             if payload.startswith('"'):
-                try:
-                    body = json.loads(payload)
-                except json.JSONDecodeError:
-                    return None
-                return self._frame(LIT_STR, str(body))
+                return None
             return self._frame(LIT_NUM, payload)
         if token.startswith(NAME_PREFIX):
             return self._frame(NAME_STR, token[len(NAME_PREFIX) :])
@@ -539,6 +511,8 @@ class ChoiceTokenizer:
             token = self.id_to_token.get(token_id, UNK)
             build = frame_markers.get(token)
             if build is not None:
+                if token == LIT_STR:
+                    return ""
                 chars: list[str] = []
                 i += 1
                 while i < n:
@@ -592,6 +566,12 @@ class ChoiceTokenizer:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         if data.get("kind") != CHOICE_TOKENIZER_KIND:
             raise ValueError(f"not a {CHOICE_TOKENIZER_KIND} tokenizer: {path}")
+        version = int(data.get("version") or 0)
+        if version != CHOICE_TOKENIZER_VERSION:
+            raise ValueError(
+                f"choice tokenizer v{version} is incompatible with required "
+                f"symbol-only v{CHOICE_TOKENIZER_VERSION}"
+            )
         token_to_id = {str(k): int(v) for k, v in data["token_to_id"].items()}
         return cls(
             token_to_id=token_to_id,
@@ -599,7 +579,7 @@ class ChoiceTokenizer:
             id_to_kind={
                 int(k): str(v) for k, v in (data.get("id_to_kind") or {}).items()
             },
-            version=int(data.get("version") or CHOICE_TOKENIZER_VERSION),
+            version=version,
             sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
             ref_slots=int(data.get("ref_slots") or DEFAULT_REF_SLOTS),
             state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
@@ -678,6 +658,17 @@ class ChoiceDecodeState:
                 ChoiceDecodeState._schema_accepts(dict(option), expr_type)
                 for option in schema["anyOf"]
             )
+        enum_values = tuple(schema.get("enum") or ())
+        if enum_values:
+            allowed_types = {
+                "boolean" if isinstance(value, bool) else
+                "number" if isinstance(value, (int, float)) else
+                "string" if isinstance(value, str) else
+                "null" if value is None else
+                "other"
+                for value in enum_values
+            }
+            return expr_type in allowed_types
         ref = str(schema.get("$ref") or "")
         if ref.startswith("#/$defs/"):
             return expr_type == f"element:{ref.rsplit('/', 1)[-1]}"
@@ -689,8 +680,8 @@ class ChoiceDecodeState:
             )
         if expected == "integer":
             expected = "number"
-        if expected == "string" and expr_type == "placeholder":
-            return True
+        if expected == "string":
+            return expr_type == "placeholder"
         return expected is None or expr_type in {str(expected), "any"}
 
     def _active_schema(self) -> dict[str, Any]:
@@ -881,7 +872,7 @@ class ChoiceDecodeState:
             else:
                 expr_type = "number"
             return self._complete_expr(expr_type)
-        if token in {LIT_STR, LIT_NUM, MEMBER_STR}:
+        if token in {LIT_NUM, MEMBER_STR}:
             self.literal_frame = token
             self.literal_size = 0
             self.literal_is_object_key = False
@@ -1029,6 +1020,13 @@ class ChoiceDecodeState:
             return tok.token_to_id[f"{SLOT_PREFIX}0"]
         if "anyOf" in schema:
             return self._minimal_schema_id(dict(schema["anyOf"][0]))
+        enum_values = tuple(schema.get("enum") or ())
+        if enum_values:
+            value = enum_values[0]
+            spelling = f"{LIT_PREFIX}{json.dumps(value)}"
+            token_id = tok.token_to_id.get(spelling)
+            if token_id is not None:
+                return token_id
         expected = schema.get("type")
         if isinstance(expected, list):
             expected = expected[0] if expected else None
@@ -1037,7 +1035,7 @@ class ChoiceDecodeState:
         if expected == "object":
             return tok.token_to_id[OBJ_OPEN]
         if expected == "string":
-            return tok.token_to_id[f'{LIT_PREFIX}""']
+            return tok.token_to_id[f"{SLOT_PREFIX}0"]
         if expected in {"number", "integer"}:
             return tok.token_to_id[f"{LIT_PREFIX}0"]
         if expected == "boolean":

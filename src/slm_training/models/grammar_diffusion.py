@@ -16,6 +16,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.placeholders import extract_placeholders
+from slm_training.dsl.language_contract import (
+    OUTPUT_CONTRACT_VERSION,
+    assert_symbol_only_output,
+    require_current_output_contract,
+)
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import RMSNorm, TransformerBlock
@@ -1018,7 +1023,7 @@ class GrammarDiffusionModel(nn.Module):
         self.tokenizer = tokenizer
         self.codec = codec
         self.config = config or GrammarDiffusionConfig()
-        self.output_contract_version = 1
+        self.output_contract_version = OUTPUT_CONTRACT_VERSION
         self.device_name = str(device)
         backend = (self.config.context_backend or "scratch").lower()
         self.context = build_context_encoder(
@@ -1134,6 +1139,8 @@ class GrammarDiffusionModel(nn.Module):
         return prompts, rows
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        for record in batch:
+            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
         self.train()
         prompts, rows = self._state_rows(batch)
         ctx, ctx_pad = self._encode_context(prompts)
@@ -2227,6 +2234,7 @@ class GrammarDiffusionModel(nn.Module):
             raise ValueError(
                 f"checkpoint kind {payload.get('kind')!r} is not grammar_diffusion"
             )
+        require_current_output_contract(payload)
         if int(payload.get("format_version") or 1) < cls.CHECKPOINT_FORMAT:
             raise ValueError(
                 "fixed-canvas grammar checkpoint requires: "
@@ -2256,6 +2264,8 @@ class GrammarDiffusionModel(nn.Module):
         config: GrammarDiffusionConfig | None = None,
         device: str | torch.device = "cpu",
     ) -> GrammarDiffusionModel:
+        for record in records:
+            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
         codec = _load_production_codec(
             [record.openui for record in records],
             [record.target_kind for record in records],

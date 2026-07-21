@@ -8,13 +8,15 @@ import pytest
 
 from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.lang_core import bridge_available
+from slm_training.dsl.analysis.templatize import templatize
+from slm_training.dsl.language_contract import OutputContractError
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
     DIR_PREFIX,
     LIT_PREFIX,
-    LIT_STR,
+    LIT_NUM,
     NAME_PREFIX,
     NAME_STR,
     TERNARY_OP,
@@ -99,28 +101,28 @@ def test_fixture_corpus_ids_are_decode_fixed_points(tok: ChoiceTokenizer) -> Non
     ):
         records.extend(load_jsonl(path))
     for record in records:
+        target = templatize(record.openui)
         table = SymbolTable.from_placeholders(
-            list(record.placeholders or []), max_slots=tok.sym_slots
+            list(target.placeholders), max_slots=tok.sym_slots
         )
-        ids = tok.encode(record.openui, add_special=True, table=table)
+        ids = tok.encode(target.source, add_special=True, table=table)
         assert tok.unk_id not in ids, record.id
         decoded = tok.decode(ids, table=table)
         assert decoded, record.id
         assert validate(decoded).serialized == decoded, record.id
         fresh = SymbolTable.from_placeholders(
-            list(record.placeholders or []), max_slots=tok.sym_slots
+            list(target.placeholders), max_slots=tok.sym_slots
         )
         assert tok.encode(decoded, add_special=True, table=fresh) == ids, record.id
 
 
 @needs_bridge
-def test_free_literals_use_byte_channel_not_unk(tok: ChoiceTokenizer) -> None:
+def test_free_literals_are_rejected_instead_of_byte_spelled(tok: ChoiceTokenizer) -> None:
     source = 'root = Tabs([tab])\ntab = TabItem("one", ":tabs.one", [c])\nc = TextContent(":tabs.body")'
     table = SymbolTable.from_placeholders([":tabs.one", ":tabs.body"], max_slots=64)
-    ids = tok.encode(source, add_special=False, table=table)
-    assert tok.unk_id not in ids
-    decoded = tok.decode(ids, table=table)
-    assert '"one"' in decoded
+    with pytest.raises(OutputContractError, match="free-form strings"):
+        tok.encode(source, add_special=False, table=table)
+    assert "LIT_STR" not in tok.token_to_id
 
 
 @needs_bridge
@@ -251,7 +253,7 @@ def test_choice_state_does_not_collapse_content_array_to_placeholder(
 ) -> None:
     state = ChoiceDecodeState(tok, slot_count=3)
     assert state.advance_id(tok.token_to_id["+TabItem"])
-    assert state.advance_id(tok.token_to_id[f'{LIT_PREFIX}""'])
+    assert state.advance_id(tok.token_to_id["@0"])
     assert state.advance_id(tok.token_to_id["@0"])
 
     assert tok.token_to_id["@1"] not in state.allowed_ids(12)
@@ -341,7 +343,7 @@ def test_direct_candidates_match_exhaustive_oracle_on_reachable_states(
         advanced("["),
         object_state,
         advanced(NAME_STR, object_state),
-        advanced(LIT_STR),
+        advanced(LIT_NUM),
         advanced(TERNARY_OP),
     ]
     for state in states:
@@ -368,7 +370,7 @@ def test_direct_candidates_avoid_most_vocabulary_ids(tok: ChoiceTokenizer) -> No
     assert tok.vocab_candidates_avoided > 0
 
     literal = initial.clone()
-    assert literal.advance_id(tok.token_to_id[LIT_STR])
+    assert literal.advance_id(tok.token_to_id[LIT_NUM])
     literal_candidates = literal._candidate_ids()
     assert len(literal_candidates) < tok.vocab_size // 2
 

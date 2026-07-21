@@ -21,11 +21,14 @@ import json
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 # Language spec the repo currently targets (see module docstring).
 LANG_SPEC = "openui-lang-0.2.x"
-OUTPUT_CONTRACT_VERSION = 1
+# v2 is intentionally checkpoint-incompatible: output targets may contain only
+# grammar/AST literals and placeholder symbols, never open-vocabulary strings.
+OUTPUT_CONTRACT_VERSION = 2
+OUTPUT_CONTRACT_NAME = "symbol_only"
 
 # src/slm_training/dsl/language_contract.py -> repo root is parents[3].
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -122,3 +125,118 @@ def current_contract() -> LanguageContract:
 def contract_id() -> str:
     """Stable 16-hex identity of the current language contract."""
     return current_contract().contract_id
+
+
+class OutputContractError(ValueError):
+    """An OpenUI target contains text outside the symbol-only language."""
+
+
+@lru_cache(maxsize=1)
+def grammar_string_literals() -> frozenset[str]:
+    """Closed string atoms declared by the pinned component schema."""
+    from slm_training.dsl.lang_core import library_schema
+
+    values: set[str] = set()
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            enum = value.get("enum")
+            if isinstance(enum, list):
+                values.update(item for item in enum if isinstance(item, str))
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(library_schema())
+    # Structural spellings accepted by the parser but not consistently
+    # represented as machine-readable schema enums.
+    values.update({"column", "row", "horizontal", "vertical"})
+    return frozenset(values)
+
+
+def output_contract_violations(
+    source: str, *, output_kind: str | None = None
+) -> tuple[str, ...]:
+    """Return free-form string values in an OpenUI program, fail closed."""
+    from slm_training.dsl.placeholders import is_placeholder
+    from slm_training.dsl.production_codec import (
+        LIT_PREFIX,
+        encode_output,
+        parse_statement_bindings,
+    )
+
+    kinds = (
+        (output_kind,)
+        if output_kind is not None
+        else ("document", "statement", "expression", "lexical", "typed_node")
+    )
+    for kind in kinds:
+        try:
+            program = encode_output(source, output_kind=str(kind))
+        except Exception:  # noqa: BLE001 - try the remaining validated surfaces
+            continue
+        violations: list[str] = []
+        for token in program.tokens:
+            if not token.startswith(f'{LIT_PREFIX}"'):
+                continue
+            value = json.loads(token[len(LIT_PREFIX) :])
+            if not is_placeholder(value) and value not in grammar_string_literals():
+                violations.append(value)
+        return tuple(dict.fromkeys(violations))
+
+    # Official document validation rejects content literals before encoding;
+    # inspect that repairable AST to report the contract violation itself.
+    bindings = parse_statement_bindings(source, validate=False)
+    allowed = grammar_string_literals()
+    violations: list[str] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, str):
+            if not is_placeholder(value) and value not in allowed:
+                violations.append(value)
+            return
+        if isinstance(value, list):
+            for child in value:
+                walk(child)
+            return
+        if not isinstance(value, dict):
+            return
+        kind = value.get("type")
+        if kind == "element":
+            for child in (value.get("props") or {}).values():
+                walk(child)
+        elif kind == "call":
+            for child in value.get("args") or ():
+                walk(child)
+        elif kind in {"array", "object", "literal"}:
+            for key, child in value.items():
+                if key not in {"type", "name", "typeName"}:
+                    walk(child)
+
+    for node in bindings.values():
+        walk(node)
+    return tuple(dict.fromkeys(violations))
+
+
+def assert_symbol_only_output(source: str, *, output_kind: str | None = None) -> None:
+    """Reject targets that would make the model predict free-form text."""
+    violations = output_contract_violations(source, output_kind=output_kind)
+    if violations:
+        preview = ", ".join(repr(value) for value in violations[:3])
+        raise OutputContractError(
+            f"output contract {OUTPUT_CONTRACT_NAME}/v{OUTPUT_CONTRACT_VERSION} "
+            f"forbids free-form strings: {preview}"
+        )
+
+
+def require_current_output_contract(payload: dict[str, Any]) -> None:
+    """Reject every pre-symbol-only checkpoint, without migration guesses."""
+    found = int(payload.get("output_contract_version", 0))
+    if found != OUTPUT_CONTRACT_VERSION:
+        raise OutputContractError(
+            f"checkpoint output contract v{found} is incompatible with required "
+            f"{OUTPUT_CONTRACT_NAME}/v{OUTPUT_CONTRACT_VERSION}; retrain from "
+            "symbol-only targets"
+        )

@@ -19,6 +19,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.dsl.language_contract import (
+    OUTPUT_CONTRACT_VERSION,
+    assert_symbol_only_output,
+    require_current_output_contract,
+)
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
@@ -143,7 +148,7 @@ KNOWN_DENOISER_ARCHES: tuple[str, ...] = (
 def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
     if config is None:
         return False
-    return str(getattr(config, "output_tokenizer", "compositional") or "").lower() in {
+    return str(getattr(config, "output_tokenizer", "lexer") or "").lower() in {
         "lexer",
         "dsl",
         "dsl_native",
@@ -154,7 +159,7 @@ def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
 def _is_choice_output(config: "TwoTowerConfig | None") -> bool:
     if config is None:
         return False
-    return str(getattr(config, "output_tokenizer", "compositional") or "").lower() in {
+    return str(getattr(config, "output_tokenizer", "lexer") or "").lower() in {
         "choice",
         "choices",
         "choice_codec",
@@ -174,6 +179,16 @@ def _load_any_tokenizer(path: Path | str):
 
         return DSLNativeTokenizer.load(path)
     return OpenUITokenizer.load(path)
+
+
+def _require_symbol_only_tokenizer(tokenizer: object) -> None:
+    from slm_training.models.choice_tokenizer import is_choice_tokenizer
+    from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+    if not (is_choice_tokenizer(tokenizer) or is_dsl_native_tokenizer(tokenizer)):
+        raise ValueError(
+            "free-form-capable output tokenizer is forbidden; use 'choice' or 'lexer'"
+        )
 
 
 def format_context_text(
@@ -483,7 +498,7 @@ class TwoTowerConfig:
     # V5: output-side representation
     # compositional = legacy OpenUITokenizer v2; lexer = DSLNativeTokenizer
     # compositional | lexer | choice (B1 pure grammar-choice stream)
-    output_tokenizer: str = "compositional"
+    output_tokenizer: str = "lexer"
     # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
     use_symbol_table: bool = True
     # C1: absolute (<BIND_j>) | relative (<BINDDEF>/<BINDREL_±k> De Bruijn refs).
@@ -1170,7 +1185,7 @@ class TwoTowerModel(nn.Module):
         self.config = config or TwoTowerConfig()
         if not 0.0 <= float(self.config.design_md_dropout) <= 1.0:
             raise ValueError("design_md_dropout must be between 0 and 1")
-        self.output_contract_version = 1
+        self.output_contract_version = OUTPUT_CONTRACT_VERSION
         self.device_name = str(device)
         # Seed before module construction so a configured run is reproducible.
         torch.manual_seed(self.config.seed)
@@ -1559,6 +1574,10 @@ class TwoTowerModel(nn.Module):
             dict[str, tuple[str, ...]]
         ] | None = None
         self._semantic_plan_required_root_references: list[dict[int, str]] | None = None
+        self._semantic_plan_outer_groups: list[dict[str, object] | None] | None = None
+        self._semantic_plan_root_token_plans: list[
+            tuple[tuple[str, ...], tuple[str, ...]] | None
+        ] | None = None
         self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
@@ -2553,6 +2572,9 @@ class TwoTowerModel(nn.Module):
         return float(loss.detach().cpu())
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        _require_symbol_only_tokenizer(self.tokenizer)
+        for record in batch:
+            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -7382,6 +7404,115 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _semantic_plan_outer_group_target(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+    ) -> int | None:
+        """Return the next verified token for an explicit outer-group topology."""
+        if (
+            not self._semantic_plan_outer_groups
+            or row >= len(self._semantic_plan_outer_groups)
+            or not self._semantic_plan_root_token_plans
+            or row >= len(self._semantic_plan_root_token_plans)
+        ):
+            return None
+        relation = self._semantic_plan_outer_groups[row]
+        if relation is None:
+            return None
+        tokens = tuple(
+            str(self.tokenizer.id_to_token.get(int(token_id), ""))
+            for token_id in prefix
+            if int(token_id)
+            not in {
+                self.tokenizer.bos_id,
+                self.tokenizer.eos_id,
+                self.tokenizer.pad_id,
+            }
+        )
+        cached = self._semantic_plan_root_token_plans[row]
+        if cached is None:
+            if tuple(getattr(state, "frames", ())):
+                return None
+            section_types = tuple(getattr(state, "section_types", ()))
+            references_by_family: dict[str, list[str]] = {}
+            for index, expr_type in enumerate(section_types):
+                family = str(expr_type).removeprefix("element:")
+                if str(expr_type).startswith("element:"):
+                    references_by_family.setdefault(family, []).append(f"&{index}")
+            sibling_references: list[str] = []
+            for family in relation.get("sibling_families", ()):
+                candidates = references_by_family.get(str(family), [])
+                if not candidates:
+                    return None
+                sibling_references.append(candidates.pop(0))
+            group_index = len(section_types)
+            outer_index = group_index + 1
+            group_family = str(relation.get("group_family", "Stack"))
+            parent_family = str(relation.get("parent_family", ""))
+            direction = str(relation.get("direction", "column"))
+            closure = (
+                f"+{group_family}",
+                "[",
+                *sibling_references,
+                "]",
+                f"^{direction}",
+                "-",
+                f"+{parent_family}",
+                "[",
+                f"&{group_index}",
+                "]",
+                "-",
+                "+Stack",
+                "[",
+                f"&{outer_index}",
+                "]",
+                "^column",
+                "-",
+            )
+            cached = (tokens, closure)
+            self._semantic_plan_root_token_plans[row] = cached
+        base, closure = cached
+        if tokens[: len(base)] != base:
+            return None
+        consumed = tokens[len(base) :]
+        if consumed != closure[: len(consumed)] or len(consumed) > len(closure):
+            return None
+        planned = [*base, *closure]
+        target_id = (
+            self.tokenizer.eos_id
+            if len(consumed) == len(closure)
+            else self.tokenizer.token_to_id.get(closure[len(consumed)])
+        )
+        if target_id is None:
+            return None
+        try:
+            from slm_training.dsl.parser import validate
+
+            slot_contract = (
+                self._slot_contracts[row]
+                if self._slot_contracts and row < len(self._slot_contracts)
+                else ()
+            )
+            decoded = self.tokenizer.decode(
+                [int(self.tokenizer.token_to_id[token]) for token in planned],
+                placeholders=slot_contract or (),
+            )
+            if not decoded:
+                raise ValueError("choice tokenizer rejected topology closure")
+            validate(decoded)
+        except Exception as exc:  # noqa: BLE001 - predicted plans fail closed
+            self._semantic_plan_root_last_abstention = {
+                "reason": "topology_verifier_rejected",
+                "error_type": type(exc).__name__,
+                "error": str(exc)[:160],
+                "planned_token_count": len(planned),
+                "section_count": len(getattr(state, "section_types", ())),
+            }
+            return None
+        return int(target_id)
+
     def _semantic_plan_root_bias(
         self,
         row: int,
@@ -7439,6 +7570,29 @@ class TwoTowerModel(nn.Module):
             for token_id, required_count in required_counts.items()
         ):
             return None
+
+        topology_target = (
+            self._semantic_plan_outer_group_target(row, state, prefix)
+            if prefix is not None
+            else None
+        )
+        if topology_target is not None:
+            target_id = topology_target
+            if target_id not in candidate_ids:
+                return None
+            bias = torch.zeros(
+                len(candidate_ids), dtype=torch.float32, device=self.device_name
+            )
+            target_position = candidate_ids.index(target_id)
+            bias[target_position] = weight
+            if margin > 0.0 and candidate_scores is not None:
+                bias[target_position] = max(
+                    float(bias[target_position].item()),
+                    float(candidate_scores.max().item())
+                    + margin
+                    - float(candidate_scores[target_position].item()),
+                )
+            return bias
 
         frames = tuple(getattr(state, "frames", ()))
         if (
@@ -10316,6 +10470,7 @@ class TwoTowerModel(nn.Module):
         _opaque_slot_projection: bool = False,
     ) -> list[str]:
         """Generate while scoping opaque codec identity to this call only."""
+        _require_symbol_only_tokenizer(self.tokenizer)
         active = set(_OPAQUE_PROJECTION_MODELS.get())
         if _opaque_slot_projection:
             active.add(id(self))
@@ -10991,8 +11146,24 @@ class TwoTowerModel(nn.Module):
             self._semantic_plan_required_root_references = [
                 {} for _prompt in prompts
             ]
+            self._semantic_plan_outer_groups = []
+            self._semantic_plan_root_token_plans = [None for _prompt in prompts]
             for row, prompt in enumerate(prompts):
                 plan = prompt_semantic_plan(prompt)
+                outer_group = next(
+                    (
+                        dict(candidate)
+                        for candidate in (
+                            plan.topology.parent_relation_candidates
+                            if plan is not None
+                            and plan.topology.parent_relation_candidates
+                            else ()
+                        )
+                        if candidate.get("relation") == "outer_group"
+                    ),
+                    None,
+                )
+                self._semantic_plan_outer_groups.append(outer_group)
                 features = compiler.annotate_actions(None, action_ids, plan)
                 family_counts = Counter(
                     slot.component_family
@@ -11013,6 +11184,12 @@ class TwoTowerModel(nn.Module):
                     if self._slot_contracts and row < len(self._slot_contracts)
                     else None,
                 )
+                if outer_group is not None:
+                    outer_family = str(outer_group.get("parent_family", ""))
+                    if family_counts.get(outer_family, 0) > 0:
+                        family_counts[outer_family] -= 1
+                        if family_counts[outer_family] <= 0:
+                            del family_counts[outer_family]
                 action_scores = {
                     token_id: feature.plan_confidence
                     for token_id, feature in zip(component_ids, features, strict=True)
@@ -11044,6 +11221,8 @@ class TwoTowerModel(nn.Module):
             self._semantic_plan_action_counts = None
             self._semantic_plan_role_bindings = None
             self._semantic_plan_required_root_references = None
+            self._semantic_plan_outer_groups = None
+            self._semantic_plan_root_token_plans = None
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
@@ -12403,6 +12582,7 @@ class TwoTowerModel(nn.Module):
         payload = torch.load(path, map_location=self.device_name, weights_only=True)
         if payload.get("kind") != "twotower":
             raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
+        require_current_output_contract(payload)
         _check_output_head_tie_migration(
             self,
             payload.get("config") or {},
@@ -12458,6 +12638,7 @@ class TwoTowerModel(nn.Module):
                 else type(payload).__name__
             )
             raise ValueError(f"checkpoint kind {kind!r} is not twotower")
+        require_current_output_contract(payload)
         tok_path = path.with_suffix(".tokenizer.json")
         if not tok_path.exists():
             raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tok_path}")
@@ -12511,6 +12692,13 @@ class TwoTowerModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
+        for record in records:
+            assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+        if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
+            raise ValueError(
+                "free-form-capable output_tokenizer is forbidden; use 'choice' "
+                "or 'lexer'"
+            )
         if _is_choice_output(cfg):
             from slm_training.models.choice_tokenizer import ChoiceTokenizer
 

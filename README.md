@@ -34,6 +34,12 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
 summary and the full card whenever a checkpoint is created or promoted.
 
+**Current compatibility:** output contract v2 is symbol-only. All existing
+checkpoints predate it and are provenance-only; current code refuses to load,
+serve, resume, promote, or evaluate them. A new checkpoint must be trained from
+fully templatized targets. See
+[the contract](docs/design/symbol-only-output-contract.md).
+
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
 | Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5; wiring only |

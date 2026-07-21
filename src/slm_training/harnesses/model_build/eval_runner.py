@@ -532,6 +532,10 @@ def _is_meaningful_program(
     except ParseError as exc:
         return False, str(exc), None
     serialized = (program.serialized or pred).strip()
+    from slm_training.dsl.language_contract import output_contract_violations
+
+    if output_contract_violations(serialized):
+        return False, "free_form_output_string", serialized
     compact = serialized.replace(" ", "")
     if "Stack([])" in compact or "Stack([]," in compact:
         return False, "empty_root_stack", serialized

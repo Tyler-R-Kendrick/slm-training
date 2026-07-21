@@ -1484,20 +1484,15 @@ def test_schema_value_bias_floors_enum_slot_below_best_non_slot() -> None:
     assert bias.tolist() == [-23.0, 0.0]
 
 
-def test_schema_enum_finalize_preserves_choices_after_dynamic_literal() -> None:
+def test_choice_tokenizer_rejects_unknown_enum_literal() -> None:
+    from slm_training.dsl.language_contract import OutputContractError
+
     model = _model(output_tokenizer="choice")
     tokenizer = model.tokenizer
     source = 'root = Callout("invalid", ":title", ":body")'
-    ids = torch.tensor(
-        [tokenizer.encode(source, placeholders=[":title", ":body"])],
-        dtype=torch.long,
-    )
 
-    finalized = model._finalize_schema_enum_choices(ids, [[":title", ":body"]])
-
-    assert model._decode_openui(
-        finalized[0], placeholders=[":title", ":body"]
-    ) == 'root = Callout("info", ":title", ":body")'
+    with pytest.raises(OutputContractError, match="forbids free-form strings"):
+        tokenizer.encode(source, placeholders=[":title", ":body"])
 
 
 def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
@@ -1548,22 +1543,16 @@ def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
     assert torch.equal(finalized_compact_valid, compact_valid)
 
 
-def test_schema_enum_finalize_spells_open_vocabulary_enum_with_capacity() -> None:
+def test_choice_tokenizer_rejects_open_vocabulary_enum_literal() -> None:
+    from slm_training.dsl.language_contract import OutputContractError
+
     model = _model(output_tokenizer="choice")
     tokenizer = model.tokenizer
-    encoded = tokenizer.encode(
-        'root = Slider(":notify", "tet", 1, 1)', placeholders=[":notify"]
-    )
-    ids = torch.tensor(
-        [[*encoded, *([tokenizer.pad_id] * 16)]],
-        dtype=torch.long,
-    )
 
-    finalized = model._finalize_schema_enum_choices(ids, [[":notify"]])
-
-    assert model._decode_openui(
-        finalized[0], placeholders=[":notify"]
-    ) == 'root = Slider(":notify", "continuous", 1, 1)'
+    with pytest.raises(OutputContractError, match="forbids free-form strings"):
+        tokenizer.encode(
+            'root = Slider(":notify", "tet", 1, 1)', placeholders=[":notify"]
+        )
 
 
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
@@ -1586,25 +1575,11 @@ def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> 
     assert bias.tolist() == [-4.0, 0.0]
 
 
-def test_schema_precontent_literal_bias_routes_after_other_scores() -> None:
-    from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
-    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+def test_choice_tokenizer_has_no_dynamic_string_tokens() -> None:
+    tokenizer = _model(output_tokenizer="choice").tokenizer
 
-    model = _model(output_tokenizer="choice", schema_opaque_decode_weight=4.0)
-    tokenizer = model.tokenizer
-    state = ChoiceDecodeState(tokenizer, slot_count=1)
-    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
-    slot_id = tokenizer.sym_id(0)
-    literal_id = tokenizer.token_to_id[f'{LIT_PREFIX}""']
-    scores = torch.tensor([9.0, 1.0])
-
-    assert model._schema_opaque_bias(state, (slot_id, literal_id), scores) is None
-    bias = model._schema_precontent_literal_bias(
-        state, (slot_id, literal_id), scores
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [0.0, 12.0]
+    assert "LIT_STR" not in tokenizer.token_to_id
+    assert '#""' not in tokenizer.token_to_id
 
 
 def test_schema_enum_close_bias_rewards_only_optional_enum_close() -> None:
@@ -2187,6 +2162,32 @@ def test_prompt_semantic_plan_does_not_cross_component_conjunction() -> None:
         "Card",
         "Card",
     ]
+
+
+def test_prompt_semantic_plan_extracts_explicit_outer_group_topology() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Place two cards around a separator, then put the group inside an outer card."
+    )
+
+    assert plan is not None
+    assert plan.topology.parent_relation_candidates == (
+        {
+            "relation": "outer_group",
+            "parent_role_id": "prompt_component_2",
+            "parent_family": "Card",
+            "group_family": "Stack",
+            "sibling_role_ids": [
+                "prompt_component_0",
+                "prompt_component_3",
+                "prompt_component_1",
+            ],
+            "sibling_families": ["Card", "Separator", "Card"],
+            "direction": "column",
+            "evidence": "group inside an outer card",
+        },
+    )
 
 
 def test_prompt_semantic_plan_infers_button_from_action_semantics() -> None:
@@ -2910,7 +2911,7 @@ def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> No
     assert stats.constrained_selection_traces[0]["evidence"] == first_evidence
 
 
-def test_semantic_plan_root_probe_decodes_dynamic_literal_frames() -> None:
+def test_semantic_plan_root_probe_decodes_fixed_grammar_literal() -> None:
     from types import SimpleNamespace
 
     model = _model(
@@ -2924,8 +2925,7 @@ def test_semantic_plan_root_probe_decodes_dynamic_literal_frames() -> None:
     model._slot_contracts = [[":status.title", ":status.body"]]
     prefix = [
         callout_id,
-        tokenizer.token_to_id["LIT_STR"],
-        tokenizer.token_to_id["LIT_END"],
+        tokenizer.token_to_id['#"info"'],
         tokenizer.sym_id(0),
         tokenizer.sym_id(1),
         tokenizer.token_to_id["-"],
@@ -3854,44 +3854,21 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
-def test_completion_forest_enforces_lexer_literal_frame() -> None:
+def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
+    from slm_training.models.dsl_tokenizer import TokenKind
+
     tokenizer = DSLNativeTokenizer.build()
     contract = [":value", ":label"]
     prefix = tokenizer.encode(
         'root=RadioItem(":value",":label",', add_special=False
     )
-    outside = build_completion_forest(tokenizer, prefix, slot_contract=contract)
-    assert tokenizer.token_to_id["LIT_STR"] in outside.candidate_ids
-    assert tokenizer.token_to_id["LIT_END"] not in outside.candidate_ids
+    forest = build_completion_forest(tokenizer, prefix, slot_contract=contract)
 
-    inside = build_completion_forest(
-        tokenizer,
-        [*prefix, tokenizer.token_to_id["LIT_STR"]],
-        slot_contract=contract,
-    )
-    from slm_training.models.dsl_tokenizer import TokenKind
-
-    expected = tokenizer.kind_ids(TokenKind.BYTE) | {
-        tokenizer.token_to_id["LIT_END"]
-    }
-    assert set(inside.candidate_ids) <= expected
-    assert tokenizer.token_to_id["LIT_END"] in inside.candidate_ids
-    assert set(inside.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE)
-    assert not (set(inside.candidate_ids) & tokenizer.kind_ids(TokenKind.SYM))
-
-    closed = build_completion_forest(
-        tokenizer,
-        [
-            *prefix,
-            tokenizer.token_to_id["LIT_STR"],
-            tokenizer.token_to_id["LIT_END"],
-        ],
-        slot_contract=contract,
-    )
-    assert set(closed.candidate_ids) == {tokenizer.token_to_id[")"]}
+    assert "LIT_STR" not in tokenizer.token_to_id
+    assert not (set(forest.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE))
 
 
-def test_completion_forest_encodes_generated_enum_with_literal_channel(
+def test_completion_forest_rejects_enum_absent_from_fixed_schema_vocabulary(
     monkeypatch,
 ) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
@@ -3914,9 +3891,8 @@ def test_completion_forest_encodes_generated_enum_with_literal_channel(
         tokenizer.bos_id,
         *tokenizer.encode("root=Stack([] ,", add_special=False),
     ]
-    forest = build_completion_forest(tokenizer, prefix)
-    expected = tuple(tokenizer.encode('"schema-only"', add_special=False))
-    assert [path.token_ids[: len(expected)] for path in forest.paths] == [expected]
+    with pytest.raises(ValueError, match="free-form output string is forbidden"):
+        build_completion_forest(tokenizer, prefix)
 
 
 def test_active_call_ignores_nested_array_and_call_commas() -> None:

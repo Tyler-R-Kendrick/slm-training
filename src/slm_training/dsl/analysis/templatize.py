@@ -14,41 +14,27 @@ surface names), the slot is the prop name, and repeated ``(binder, prop)``
 occurrences get ``_2, _3, …`` ordinals in traversal order. Alpha-equivalent
 inputs therefore templatize to byte-identical canonical output.
 
-Replacement scope (v1) is the dual of the two gates that reject literals:
-
-- every scalar string literal in a ``CONTENT_PROPS`` position (the official
-  parser's placeholder policy rejects these outright), and
-- free-form scalar strings in other props — exactly the strings the quality
-  gate hard-rejects as ``non_placeholder_string`` (``assess_record``); its
-  enum-like ``[a-z0-9_-]+`` and numeric exemptions are mirrored here, so
-  machine-ish tokens (``"submit"``, ``"email"``, ``"python"``) survive.
-
-Enum-admissible values, style/structural tokens, and strings inside arrays
-are counted but never rewritten.
+Every string outside the schema-derived closed grammar literal set is
+rewritten, including machine-ish values, array members, and extra arguments.
 """
 
 from __future__ import annotations
 
+import ast
+import json
 import re
 from dataclasses import dataclass
 
 from typing import Any
 
-from slm_training.data.structure import STYLE_STRING_TOKENS
-from slm_training.dsl.analysis.optimize import STRUCTURAL_LITERALS
+from slm_training.dsl.language_contract import grammar_string_literals
 from slm_training.dsl.lang_core import library_schema
-from slm_training.dsl.placeholders import CONTENT_PROPS, extract_placeholders, is_placeholder
+from slm_training.dsl.placeholders import extract_placeholders, is_placeholder
 from slm_training.dsl.production_codec import (
     emit_statement_bindings,
     parse_statement_bindings,
     statement_binding_order,
 )
-
-
-# Mirror assess_record's non_placeholder_string exemptions (data/quality.py):
-# lowercase enum/field-name tokens and numeric strings are not "content".
-_ENUM_LIKE_RE = re.compile(r"[a-z0-9_\-]+")
-_NUMERIC_RE = re.compile(r"[0-9]+(\.[0-9]+)?")
 
 
 @dataclass(frozen=True)
@@ -119,19 +105,11 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
         if isinstance(value, str):
             if is_placeholder(value):
                 return value
-            if in_array:
-                skipped["array_string"] += 1
-                return value
-            if value in STYLE_STRING_TOKENS or value.lower() in STRUCTURAL_LITERALS:
-                skipped["structural_literal"] += 1
-                return value
             if value in _prop_enum(defs, component, prop):
                 skipped["enum_value"] += 1
                 return value
-            if prop not in CONTENT_PROPS and (
-                _ENUM_LIKE_RE.fullmatch(value) or _NUMERIC_RE.fullmatch(value)
-            ):
-                skipped["enum_like"] += 1
+            if value in grammar_string_literals():
+                skipped["structural_literal"] += 1
                 return value
             token = next_token(namespace, prop)
             replacements[token] = value
@@ -157,12 +135,12 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
             for key, value in props.items():
                 if key == "_args":
                     counted = []
-                    for item in value or []:
-                        if isinstance(item, str) and not is_placeholder(item):
-                            skipped["extra_arg"] += 1
-                            counted.append(item)
-                        else:
-                            counted.append(rewrite_node(item, namespace))
+                    for index, item in enumerate(value or []):
+                        counted.append(
+                            rewrite_value(
+                                item, namespace, type_name, f"arg_{index + 1}", False
+                            )
+                        )
                     new_props[key] = counted
                     continue
                 new_props[key] = rewrite_value(
@@ -170,7 +148,10 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
                 )
             return {**node, "props": new_props}
         if node.get("type") == "call":
-            args = [rewrite_node(item, namespace) for item in node.get("args") or []]
+            args = [
+                rewrite_value(item, namespace, "Call", f"arg_{index + 1}", False)
+                for index, item in enumerate(node.get("args") or [])
+            ]
             return {**node, "args": args}
         return node
 
@@ -186,6 +167,45 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
         placeholders=tuple(extract_placeholders(emitted)),
         replacements=replacements,
         skipped=skipped,
+    )
+
+
+_QUOTED_LITERAL_RE = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
+
+
+def templatize_fragment(source: str) -> TemplatizeResult:
+    """Templatize free-form strings in a non-document output surface."""
+    allowed = grammar_string_literals()
+    used_tokens = set(extract_placeholders(source))
+    replacements: dict[str, str] = {}
+    ordinal = 0
+
+    def replace_literal(match: re.Match[str]) -> str:
+        nonlocal ordinal
+        value = ast.literal_eval(match.group(0))
+        if not isinstance(value, str) or is_placeholder(value) or value in allowed:
+            return match.group(0)
+        ordinal += 1
+        token = f":fragment.string_{ordinal}"
+        while token in used_tokens:
+            ordinal += 1
+            token = f":fragment.string_{ordinal}"
+        used_tokens.add(token)
+        replacements[token] = value
+        return json.dumps(token)
+
+    output = _QUOTED_LITERAL_RE.sub(replace_literal, source)
+    return TemplatizeResult(
+        source=output,
+        placeholders=tuple(extract_placeholders(output)),
+        replacements=replacements,
+        skipped={
+            "enum_value": 0,
+            "structural_literal": 0,
+            "enum_like": 0,
+            "array_string": 0,
+            "extra_arg": 0,
+        },
     )
 
 
