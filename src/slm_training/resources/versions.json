@@ -3658,6 +3658,25 @@
         }
       ]
     },
+    "harness.experiments.slm232_preference_eval_leakage_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm232_preference_eval_leakage_gate.py",
+        "scripts/run_slm232_preference_eval_leakage_gate.py",
+        "tests/test_harnesses/experiments/test_slm232_preference_eval_leakage_gate.py",
+        "tests/test_scripts/test_run_slm232_preference_eval_leakage_gate.py",
+        "docs/design/iter-slm232-pel0-01-preference-eval-leakage-gate-20260721.json",
+        "docs/design/iter-slm232-pel0-01-preference-eval-leakage-gate-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-232 PEL0-01 preference build-pairs eval-holdout leakage gate stress test: exercises the real build_test_data / collect_pairs_with_generator / write_pairs / find_leakage / load_train_fingerprints functions to test whether the preference phase enforces the documented 'never train on eval-feedback holdouts' invariant the way test-data enforces train/eval disjointness"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",

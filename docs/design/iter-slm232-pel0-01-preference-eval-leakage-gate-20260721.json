@@ -1,0 +1,120 @@
+{
+  "claim_class": "wiring",
+  "disposition": "gap_confirmed",
+  "disposition_rationale": "4/4 eval-suite arms (held_out_as_train_records, adversarial_as_train_records, ood_as_train_records, smoke_as_train_records) were accepted by the real collect_pairs_with_generator / write_pairs pipeline and produced valid preference pairs while 100% fingerprint-identical to the eval suite they were drawn from, and a static audit confirms the preference build-pairs code path never references the leakage/disjointness module test-data already trusts for the opposite direction. The documented 'never train on eval-feedback holdouts' invariant has no enforcement in build-pairs.",
+  "experiment_id": "slm232-preference-eval-leakage-gate",
+  "falsifier": "collect_pairs_with_generator / write_pairs (or scripts/train_preference.py build-pairs around them) reject, warn on, or otherwise flag eval-suite-sourced records differently from ordinary train records; or the preference package already imports/calls the leakage/disjointness module.",
+  "fixture_suites": [
+    "smoke",
+    "held_out",
+    "adversarial",
+    "ood"
+  ],
+  "gate_hash": "2e7b684810ad90787d3b74e0868c6752b440f2dd540ec82abb0f0664ca55acf7",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no checkpoint, GPU run, preference training step, or ship-gate claim is made or implied.",
+    "This exercises the real, unmodified build_test_data, collect_pairs_with_generator, write_pairs, find_leakage, and load_train_fingerprints functions against a tiny (16-record) committed fixture corpus, not a production-scale evaluation or training run.",
+    "The fingerprint-match candidate check (reusing load_train_fingerprints / find_leakage, pointed at the eval suite instead of a train manifest) is an illustrative diagnostic only. It is not implemented in the preference harness or scripts/train_preference.py, not proposed as the correct fix, and passing/failing it makes no gate or promotion claim.",
+    "Whether training a real preference model on eval-suite-identical pairs actually harms downstream ship-gate scores (as opposed to only being an unenforced provenance gap) is not measured here; this harness is about the build-pairs *pipeline*, not preference training dynamics.",
+    "The default (no --from-checkpoint) build-pairs candidate generator is reproduced inline (gold + soft-corrupt reject) to match the CLI exactly; it is not imported from scripts/train_preference.py because that module is a __main__ script, not an importable library function.",
+    "The static source-audit only inspects the preference package modules reachable from build-pairs' default path; it does not prove the absence of leakage checks anywhere else in the repository."
+  ],
+  "hypothesis": "The real collect_pairs_with_generator / write_pairs pipeline, exercised exactly as scripts/train_preference.py build-pairs calls them with no --from-checkpoint, has no leakage/disjointness enforcement against eval suites: it accepts records drawn verbatim from a freshly-built, genuine held_out/adversarial/ood/smoke eval suite (built by the real, unmodified build_test_data pipeline) and emits valid preference pairs with no error, no warning, and no eval-provenance flag -- exactly as if those records were ordinary train data -- while the equivalent train-side disjointness check (find_leakage / load_train_fingerprints) that build_test_data already enforces would flag every one of those records as 100% fingerprint-identical to the eval suite it came from.",
+  "matrix_set": "slm232_preference_eval_leakage_gate",
+  "matrix_version": "pel0-01-v1",
+  "results": [
+    {
+      "arm": {
+        "description": "Ordinary train records (src/slm_training/resources/train_seeds.jsonl) fed to build-pairs as intended. Negative control: should build successfully and NOT fingerprint-match the held_out eval suite.",
+        "is_negative_control": true,
+        "name": "train_seeds_control",
+        "records_source": "train_seeds"
+      },
+      "build_pairs_error": null,
+      "build_pairs_succeeded": true,
+      "gameable": false,
+      "match_rate_against_source_suite_fingerprints": 0.0,
+      "n_fingerprint_reasons_total": 0,
+      "n_records": 20,
+      "pairs_written": 20
+    },
+    {
+      "arm": {
+        "description": "The real, freshly-built held_out eval suite fed to build-pairs as --train-records.",
+        "is_negative_control": false,
+        "name": "held_out_as_train_records",
+        "records_source": "held_out"
+      },
+      "build_pairs_error": null,
+      "build_pairs_succeeded": true,
+      "gameable": true,
+      "match_rate_against_source_suite_fingerprints": 1.0,
+      "n_fingerprint_reasons_total": 25,
+      "n_records": 5,
+      "pairs_written": 5
+    },
+    {
+      "arm": {
+        "description": "The real, freshly-built adversarial eval suite fed to build-pairs as --train-records.",
+        "is_negative_control": false,
+        "name": "adversarial_as_train_records",
+        "records_source": "adversarial"
+      },
+      "build_pairs_error": null,
+      "build_pairs_succeeded": true,
+      "gameable": true,
+      "match_rate_against_source_suite_fingerprints": 1.0,
+      "n_fingerprint_reasons_total": 20,
+      "n_records": 4,
+      "pairs_written": 4
+    },
+    {
+      "arm": {
+        "description": "The real, freshly-built ood eval suite fed to build-pairs as --train-records.",
+        "is_negative_control": false,
+        "name": "ood_as_train_records",
+        "records_source": "ood"
+      },
+      "build_pairs_error": null,
+      "build_pairs_succeeded": true,
+      "gameable": true,
+      "match_rate_against_source_suite_fingerprints": 1.0,
+      "n_fingerprint_reasons_total": 20,
+      "n_records": 4,
+      "pairs_written": 4
+    },
+    {
+      "arm": {
+        "description": "The real, freshly-built smoke eval suite fed to build-pairs as --train-records.",
+        "is_negative_control": false,
+        "name": "smoke_as_train_records",
+        "records_source": "smoke"
+      },
+      "build_pairs_error": null,
+      "build_pairs_succeeded": true,
+      "gameable": true,
+      "match_rate_against_source_suite_fingerprints": 1.0,
+      "n_fingerprint_reasons_total": 15,
+      "n_records": 3,
+      "pairs_written": 3
+    }
+  ],
+  "run_id": "slm232-preference-eval-leakage-gate-20260721",
+  "schema": "PreferenceEvalLeakageGateReportV1",
+  "static_leakage_import_audit": {
+    "slm_training.harnesses.preference (__init__)": false,
+    "slm_training.harnesses.preference.train": false
+  },
+  "status": "fixture",
+  "timestamp": "2026-07-21T06:13:18.854489Z",
+  "version_stamp": {
+    "code_commit": "b2db12b0e5b59d6f6a6d57f852d1e4a0f806a130",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm232_preference_eval_leakage_gate": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T06:13:18.854438+00:00"
+  }
+}
