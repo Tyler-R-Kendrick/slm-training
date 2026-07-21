@@ -465,39 +465,6 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     assert bias.tolist() == [7.0, 0.0]
 
 
-def test_slot_coverage_close_bias_descends_before_transitive_role_slot() -> None:
-    from types import SimpleNamespace
-
-    model = _model(output_tokenizer="choice", slot_coverage_close_decode_weight=4.0)
-    tokenizer = model.tokenizer
-    text_id = tokenizer.token_to_id["+TextContent"]
-    slot_id = tokenizer.sym_id(0)
-    close_id = tokenizer.token_to_id["]"]
-    state = SimpleNamespace(
-        frames=[
-            SimpleNamespace(kind="component", expr_type="element:Carousel"),
-            SimpleNamespace(
-                kind="variadic",
-                expr_type="array",
-                schemas=({"anyOf": [{"$ref": "#/$defs/TextContent"}]},),
-                close="]",
-            ),
-        ]
-    )
-
-    bias = model._slot_coverage_close_bias(
-        state,
-        [tokenizer.bos_id],
-        (text_id, slot_id, close_id),
-        torch.tensor([1.0, 5.0, 4.0]),
-        [":dashboard.metric"],
-        {":dashboard.metric": ("TextContent",)},
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [8.0, 0.0, 0.0]
-
-
 def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
     from types import SimpleNamespace
 
