@@ -248,7 +248,7 @@ class ModelBuildConfig:
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers
-    output_tokenizer: str = "compositional"  # compositional | lexer | choice
+    output_tokenizer: str = "lexer"  # symbol-only grammar/AST tokens
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"

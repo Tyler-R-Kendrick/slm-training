@@ -289,6 +289,7 @@ def test_normalized_record_stamps_independent_judge_gate() -> None:
 
 def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
     from slm_training.harnesses.train_data.pipeline import _normalize_record
+    from slm_training.harnesses.train_data.sanitize import SanitizeOptions
 
     record = ExampleRecord(
         id="normalize-slider-schema",
@@ -297,8 +298,8 @@ def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
         placeholders=[":label"],
         design_md="# Design\n",
     )
-    normalized = _normalize_record(record)
-    assert 'Slider("volume", "continuous", 0, 100, 1, [40], ":label")' in (
+    normalized = _normalize_record(record, sanitize=SanitizeOptions(mode="enforce"))
+    assert 'Slider(":root.name", "continuous", 0, 100, 1, [40], ":label")' in (
         normalized.openui
     )
     assert independent_judge(normalized)["ok"]

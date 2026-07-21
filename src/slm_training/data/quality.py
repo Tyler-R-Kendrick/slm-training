@@ -829,20 +829,12 @@ def assess_record(
         reasons.append("too_few_placeholders")
         score -= 0.35
 
-    # Free-form quoted strings that are not placeholders are a smell
-    # (except enum-like tokens handled by the bridge policy already).
-    for match in re.finditer(r'"([^"]+)"', openui):
-        val = match.group(1)
-        if val.startswith(":"):
-            continue
-        if re.fullmatch(r"[a-z0-9_\-]+", val):
-            # enum / field name
-            continue
-        if re.fullmatch(r"[0-9]+(\.[0-9]+)?", val):
-            continue
+    # The output language is closed: schema/AST literals and placeholders only.
+    from slm_training.dsl.language_contract import output_contract_violations
+
+    if output_contract_violations(openui):
         reasons.append("non_placeholder_string")
         score -= 0.2
-        break
 
     counts = component_counts(openui)
     n_comp = sum(counts.values())

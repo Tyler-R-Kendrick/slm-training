@@ -26,7 +26,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 METRIC_NAME = "binding_aware_meaningful_v2"
-METRIC_VERSION = "2.10.0"
+METRIC_VERSION = "2.12.0"
 _ASSIGNMENT_RE = re.compile(
     r"(?m)^\s*(\$?[A-Za-z_][A-Za-z0-9_]*)\s*="
 )
@@ -119,6 +119,7 @@ def _implementation_hash() -> str:
         root / "data" / "verify" / "stack.py",
         root / "dsl" / "parser.py",
         root / "dsl" / "placeholders.py",
+        root / "dsl" / "language_contract.py",
     )
     digest = hashlib.sha256()
     for path in dependencies:
@@ -680,14 +681,39 @@ def _gaming_check(
         str(row["component"])
         for row in placeholders
         if row.get("component") is not None
+        and str(row.get("placeholder")) in contract.required_placeholders
     }
     requested_non_text = set(contract.required_components) - _TEXT_COMPONENTS - {
         "Stack",
         "Card",
     }
+    from slm_training.data.quality import semantic_role_properties
+    from slm_training.dsl.lang_core import library_schema
+
+    required_role_properties = {
+        prop
+        for properties in semantic_role_properties(
+            list(contract.required_placeholders)
+        ).values()
+        for prop in properties
+    }
+    definitions = library_schema().get("$defs", {})
+    requested_direct_owners = {
+        family
+        for family in requested_non_text
+        if required_role_properties.intersection(
+            {
+                name
+                for name, schema in (
+                    definitions.get(family, {}).get("properties", {}) or {}
+                ).items()
+                if isinstance(schema, dict) and schema.get("type") == "string"
+            }
+        )
+    }
     if (
         len(contract.required_placeholders) >= 2
-        and requested_non_text
+        and requested_direct_owners
         and owners
         and owners <= _TEXT_COMPONENTS
     ):
@@ -720,9 +746,19 @@ def binding_aware_meaningful_v2(
         pred, program.root if program is not None else None, program
     )
     bindings = _binding_inventory(pred, program)
+    from slm_training.dsl.language_contract import output_contract_violations
+
+    free_form = output_contract_violations(pred) if program is not None else ()
+    output_contract_check = SemanticCheckV2(
+        "symbol_only_output",
+        CheckStatus.FAIL if free_form else CheckStatus.PASS,
+        ("free_form_output_string",) if free_form else (),
+        tuple(_evidence("root", repr(value)) for value in free_form),
+    )
     checks = (
         parse_check,
         canonical_check,
+        output_contract_check,
         _semantic_content_check(components, contract),
         _inventory_check(placeholders, components, contract),
         _binding_check(pred, program, record),

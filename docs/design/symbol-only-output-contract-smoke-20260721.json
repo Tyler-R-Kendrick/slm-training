@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_id": "symbol-only-contract-smoke-20260721",
+  "date_utc": "2026-07-21",
+  "run_class": "data_build_smoke",
+  "profile": "strict",
+  "source": "fixture",
+  "synthesizer": "none",
+  "sanitize_mode": "enforce",
+  "max_wall_minutes": 2,
+  "seed_count": 20,
+  "candidate_count": 28,
+  "admitted_count": 24,
+  "rejected_count": 4,
+  "parse_rate": 1.0,
+  "judge_pass_rate": 1.0,
+  "placeholder_contract_violations": 0,
+  "output_contract_violations": 0,
+  "choice_tokenizer_unk_records": 0,
+  "lexer_tokenizer_unk_records": 0,
+  "choice_has_lit_str": false,
+  "lexer_has_lit_str": false,
+  "sanitization": {
+    "records_processed": 28,
+    "records_changed": 28,
+    "literals_templatized": 6,
+    "records_templatized": 4,
+    "fallbacks": 0
+  },
+  "rejections": {
+    "decontamination": 1,
+    "max_records_per_parent": 3
+  },
+  "feedback": {
+    "recommendation": "audit human_curated producer inputs for the reserved train_text_only_01 structure",
+    "gate_action": "retained unchanged",
+    "experiment_candidate": "remove or structurally replace the eval-adjacent producer input, then require decontamination drops to reach zero"
+  },
+  "integrated_smoke": {
+    "run_id": "symbol-only-integrated-smoke-20260721",
+    "source": "all",
+    "programspec_count": 1,
+    "rico_limit": 1,
+    "candidate_count": 189,
+    "collected_count": 186,
+    "admitted_count": 141,
+    "rejected_count": 48,
+    "parse_rate": 0.9841,
+    "placeholder_contract_violations": 0,
+    "output_contract_violations": 0,
+    "literals_templatized": 78,
+    "records_templatized": 65,
+    "sanitization_fallbacks": 0,
+    "corruption_repair_admitted": 1,
+    "warnings": [],
+    "content_fingerprint": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45",
+    "feedback_candidates": [
+      "repair quarantined Awwwards producer provenance before expecting yield",
+      "remove or structurally replace the eval-adjacent human-curated seed",
+      "prevent design-md contrastive expansion of reserved structures"
+    ]
+  },
+  "content_fingerprint": "a1fa4427cb426825abf06589ec54f8ff834a4d8aadd495711c66f7186fde233d",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "417cec09823ddb1e86044a6c925e97a0d7edc365",
+    "code_dirty": true,
+    "components": {"harness.train_data": "v10"},
+    "stamped_at": "2026-07-21T21:27:14.344410+00:00"
+  },
+  "status": "passed_symbol_only_contract_smoke_no_training_no_checkpoint"
+}

@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Iterable
 
 from slm_training.data.contract import RuntimeSymbol
+from slm_training.dsl.language_contract import grammar_string_literals
 from slm_training.dsl.openui_tokens import (
     STRUCTURAL_TOKENS as _FALLBACK_STRUCTURAL_TOKENS,
 )
@@ -52,8 +53,8 @@ def _active_structural_tokens() -> frozenset[str]:
 STRUCTURAL_TOKENS = _active_structural_tokens()
 
 # Bump when serialization / vocab layout changes.
-# v3: appended <MACRO_i> rows (C3/SLM-27); all prior ids unchanged.
-DSL_TOKENIZER_VERSION = 3
+# v4: removed the free-form string literal opener.
+DSL_TOKENIZER_VERSION = 4
 SYMBOL_TABLE_VERSION = 3
 
 PAD = "<pad>"
@@ -108,40 +109,8 @@ MACRO_EXPANDABLE_KINDS = frozenset(
 )
 
 
-# Common closed string atoms that appear as OpenUI props (layout / size / tone).
-_FIXED_STRING_BODIES: tuple[str, ...] = tuple(
-    sorted(
-        {
-            s
-            for s in STRUCTURAL_TOKENS
-            if s
-            and s[0].islower()
-            and s.isidentifier()
-            or s
-            in {
-                "2xl",
-                "small",
-                "default",
-                "large",
-                "small-heavy",
-                "large-heavy",
-                "column",
-                "row",
-                "none",
-                "xs",
-                "s",
-                "m",
-                "l",
-                "xl",
-                "primary",
-                "secondary",
-                "tertiary",
-                "text",
-                "info",
-            }
-        }
-    )
-)
+# One schema-derived closed set shared by validation and both output tokenizers.
+_FIXED_STRING_BODIES: tuple[str, ...] = tuple(sorted(grammar_string_literals()))
 
 _COMPONENT_NAMES: tuple[str, ...] = tuple(
     sorted(
@@ -739,7 +708,6 @@ class DSLNativeTokenizer:
         for b in _BOOLS:
             _add(b, TokenKind.LIT)
 
-        _add(LIT_STR, TokenKind.LIT)
         _add(LIT_NUM, TokenKind.LIT)
         _add(LIT_END, TokenKind.LIT)
 
@@ -1015,12 +983,7 @@ class DSLNativeTokenizer:
         if fixed in self.token_to_id:
             return [self.token_to_id[fixed]]
 
-        # Typed literal channel: LIT_STR + bytes + LIT_END
-        return [
-            self.token_to_id[LIT_STR],
-            *self._encode_bytes(body),
-            self.token_to_id[LIT_END],
-        ]
+        raise ValueError(f"free-form output string is forbidden: {body!r}")
 
     def _encode_number(self, text: str) -> list[int]:
         return [self.token_to_id[LIT_NUM], *self._encode_bytes(text), self.token_to_id[LIT_END]]
@@ -1115,9 +1078,7 @@ class DSLNativeTokenizer:
                 continue
 
             if tok == LIT_STR:
-                body, i = self._consume_literal_body(ids, i + 1)
-                pieces.append(json.dumps(body, ensure_ascii=False))
-                continue
+                return ""
 
             if tok == LIT_NUM:
                 body, i = self._consume_literal_body(ids, i + 1)
@@ -1305,6 +1266,12 @@ class DSLNativeTokenizer:
             # Accept missing kind for forward compat only when version present.
             if "id_to_kind" not in data:
                 raise ValueError(f"not a dsl_native tokenizer: {path}")
+        version = int(data.get("version") or 0)
+        if version != DSL_TOKENIZER_VERSION:
+            raise ValueError(
+                f"dsl tokenizer v{version} is incompatible with required "
+                f"symbol-only v{DSL_TOKENIZER_VERSION}"
+            )
         token_to_id = {str(k): int(v) for k, v in data["token_to_id"].items()}
         id_to_token = {i: t for t, i in token_to_id.items()}
         raw_kinds = data.get("id_to_kind") or {}
@@ -1324,7 +1291,7 @@ class DSLNativeTokenizer:
             token_to_id=token_to_id,
             id_to_token=id_to_token,
             id_to_kind=id_to_kind,
-            version=int(data.get("version") or DSL_TOKENIZER_VERSION),
+            version=version,
             sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
             bind_slots=int(data.get("bind_slots") or DEFAULT_BIND_SLOTS),
             state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),

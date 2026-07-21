@@ -199,15 +199,37 @@ def _normalize_record(
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
-    if record.target_kind == "document" and record.meta.get("preserve_verbatim"):
-        return _normalize_verbatim_document(record)
     record = normalize_example_record(record)
     if record.target_kind != "document":
-        primary = validate_output(
-            record.openui, record.target_kind, record.target_category
-        )
-        for target in record.accepted_outputs:
+        from slm_training.dsl.analysis.templatize import templatize_fragment
+        from slm_training.dsl.language_contract import assert_symbol_only_output
+        from slm_training.dsl.schema import OutputTarget
+
+        primary_source = record.openui
+        accepted_outputs = list(record.accepted_outputs)
+        fragment_replacements: dict[str, str] = {}
+        if sanitize is not None and sanitize.enabled and sanitize.templatize:
+            primary_result = templatize_fragment(primary_source)
+            fragment_replacements.update(primary_result.replacements)
+            if sanitize.mode == "enforce":
+                primary_source = primary_result.source
+            rewritten_outputs: list[OutputTarget] = []
+            for target in accepted_outputs:
+                result = templatize_fragment(target.text)
+                fragment_replacements.update(result.replacements)
+                rewritten_outputs.append(
+                    OutputTarget(
+                        text=result.source if sanitize.mode == "enforce" else target.text,
+                        kind=target.kind,
+                        category=target.category,
+                    )
+                )
+            accepted_outputs = rewritten_outputs
+        primary = validate_output(primary_source, record.target_kind, record.target_category)
+        assert_symbol_only_output(primary, output_kind=record.target_kind)
+        for target in accepted_outputs:
             validate_output(target.text, target.kind, target.category)
+            assert_symbol_only_output(target.text, output_kind=target.kind)
         meta = dict(record.meta)
         meta.setdefault("task", "generation")
         meta.setdefault("determinacy", "deterministic")
@@ -231,7 +253,20 @@ def _normalize_record(
                 },
             ],
         }
-        surfaces = [primary, *(target.text for target in record.accepted_outputs)]
+        if sanitize is not None and sanitize.enabled:
+            meta["sanitize"] = {
+                "mode": sanitize.mode,
+                "applied": True,
+                "changed": bool(fragment_replacements),
+                "fallback": False,
+                "reasons": [],
+                "rewrites": {},
+                "flatten_opportunities": 0,
+                "literals_templatized": len(fragment_replacements),
+                "template_fills": fragment_replacements,
+                "templatize_skipped": {},
+            }
+        surfaces = [primary, *(target.text for target in accepted_outputs)]
         return ExampleRecord(
             id=record.id,
             prompt=record.prompt.strip(),
@@ -245,7 +280,7 @@ def _normalize_record(
             design_md=record.design_md,
             target_kind=record.target_kind,
             target_category=record.target_category,
-            accepted_outputs=list(record.accepted_outputs),
+            accepted_outputs=accepted_outputs,
         )
 
     scrubbed = strip_style_literals(record.openui)
@@ -274,6 +309,30 @@ def _normalize_record(
     program = validate(scrubbed)
     placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
     openui = strip_style_literals(program.serialized or scrubbed.strip())
+    from slm_training.dsl.analysis.templatize import templatize, templatize_fragment
+    from slm_training.dsl.language_contract import assert_symbol_only_output
+    from slm_training.dsl.schema import OutputTarget
+
+    assert_symbol_only_output(openui, output_kind="document")
+    accepted_outputs: list[OutputTarget] = []
+    for target in record.accepted_outputs:
+        target_text = target.text
+        if sanitize is not None and sanitize.enabled and sanitize.templatize:
+            result = (
+                templatize(target_text)
+                if target.kind == "document"
+                else templatize_fragment(target_text)
+            )
+            if sanitize.mode == "enforce":
+                target_text = result.source
+        assert_symbol_only_output(target_text, output_kind=target.kind)
+        accepted_outputs.append(
+            OutputTarget(
+                text=target_text,
+                kind=target.kind,
+                category=target.category,
+            )
+        )
     meta = dict(record.meta)
     if sanitize_meta is not None:
         meta["sanitize"] = sanitize_meta
@@ -353,7 +412,7 @@ def _normalize_record(
         design_md=record.design_md,
         target_kind=record.target_kind,
         target_category=record.target_category,
-        accepted_outputs=list(record.accepted_outputs),
+        accepted_outputs=accepted_outputs,
     )
     try:
         from slm_training.dsl.design_md import attach_default_design_md

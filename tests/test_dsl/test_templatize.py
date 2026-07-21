@@ -5,7 +5,7 @@ from __future__ import annotations
 from slm_training.dsl import validate
 from slm_training.dsl.placeholders import PLACEHOLDER_RE
 from slm_training.dsl.production_codec import encode_openui
-from slm_training.dsl.analysis.templatize import templatize
+from slm_training.dsl.analysis.templatize import templatize, templatize_fragment
 
 LOGIN = (
     "hero = Card([hdr, msg])\n"
@@ -33,9 +33,8 @@ def test_content_literals_become_positional_placeholders() -> None:
     assert result.replacements[":v0.subtitle"] == "Good to see you"
     assert result.replacements[":v1.text"] == "Sign in to continue"
     assert result.replacements[":v3.label"] == "Log in"
-    # Machine-ish enum-like tokens survive untouched.
-    assert '"submit"' in result.source
-    assert result.skipped["enum_like"] == 1
+    assert '"submit"' not in result.source
+    assert result.replacements[":v3.action"] == "submit"
     validate(result.source)
 
 
@@ -83,7 +82,7 @@ def test_repeated_binder_prop_pairs_get_ordinals() -> None:
     assert r2.replacements == {":v0.text": "One", ":v1.text": "Two"}
 
 
-def test_enum_style_and_array_strings_are_skipped() -> None:
+def test_enum_is_preserved_and_array_strings_are_templatized() -> None:
     src = (
         "root = Stack([c, tags])\n"
         'c = Callout("info", ":c.title", "Longer description text")\n'
@@ -91,7 +90,14 @@ def test_enum_style_and_array_strings_are_skipped() -> None:
     )
     result = templatize(src)
     assert result.skipped["enum_value"] == 1
-    assert result.skipped["array_string"] == 1
+    assert result.skipped["array_string"] == 0
     assert '"info"' in result.source
-    assert '"New Item Alpha"' in result.source
+    assert '"New Item Alpha"' not in result.source
+    assert result.replacements[":v1.tags"] == "New Item Alpha"
     assert result.replacements[":v0.description"] == "Longer description text"
+
+
+def test_fragment_strings_are_templatized_without_touching_grammar_enums() -> None:
+    result = templatize_fragment('Button("Save", "primary")')
+    assert result.source == 'Button(":fragment.string_1", "primary")'
+    assert result.replacements == {":fragment.string_1": "Save"}

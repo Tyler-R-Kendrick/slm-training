@@ -428,7 +428,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_sample_temperature=getattr(config, "grammar_sample_temperature", 0.8),
         grammar_block_decode=getattr(config, "grammar_block_decode", False),
         grammar_block_size=getattr(config, "grammar_block_size", 32),
-        output_tokenizer=getattr(config, "output_tokenizer", "compositional"),
+        output_tokenizer=getattr(config, "output_tokenizer", "lexer"),
         use_symbol_table=getattr(config, "use_symbol_table", True),
         bind_encoding=str(getattr(config, "bind_encoding", "absolute") or "absolute"),
         macro_tokens=bool(getattr(config, "macro_tokens", False)),

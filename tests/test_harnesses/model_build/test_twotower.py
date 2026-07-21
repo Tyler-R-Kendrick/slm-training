@@ -182,6 +182,22 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
         TwoTowerModel.from_checkpoint(path, device="cpu")
 
 
+def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+    )
+    path = tmp_path / "legacy.pt"
+    model.save(path)
+    payload = torch.load(path, map_location="cpu", weights_only=True)
+    payload["output_contract_version"] = 1
+    torch.save(payload, path)
+    with pytest.raises(ValueError, match="retrain from symbol-only targets"):
+        TwoTowerModel.from_checkpoint(path, device="cpu")
+
+
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
     records = [
         ExampleRecord(

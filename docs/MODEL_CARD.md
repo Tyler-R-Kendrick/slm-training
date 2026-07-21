@@ -26,6 +26,12 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 
 ## Current checkpoint roster
 
+**Compatibility notice (2026-07-21):** output contract v2 permits only
+grammar/AST symbols and template placeholders. Every checkpoint listed below was
+created under an earlier free-form-capable output contract and is intentionally
+incompatible with current loading, serving, resume, promotion, and evaluation
+paths. The rows remain provenance only until a symbol-only checkpoint is trained.
+
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Playground demo | `playground_demo` | Fixture wiring | `src/slm_training/resources/checkpoints/playground_demo/last.pt` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5, one timeout. Demo only — **not** a quality or ship claim |

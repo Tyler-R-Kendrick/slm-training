@@ -5356,3 +5356,18 @@ synced.
 
 Evidence: [narrative](iter-e712-component-count-phrases-20260721.md) and
 [JSON](iter-e712-component-count-phrases-20260721.json).
+
+## E713 explicit outer-group topology
+
+E713 compiles explicit “group inside outer component” prose into a verified
+nested root plan. On the historical E620 checkpoint, adversarial strict rises
+0.50→0.75, structure 0.88325→0.916675, node F1 0.9152→0.9318, and edge F1
+0.8419→0.8611; the other suites match E712. AgentV remains 0/5 and Rico still
+fails the 160-symbol length budget. Output contract v2 subsequently invalidates
+the pre-v2 checkpoint, so retain only the generalized topology implementation and
+treat these results as historical diagnostic evidence. No checkpoint was created
+or synced.
+
+Evidence: [narrative](iter-e713-outer-group-topology-20260721.md),
+[JSON](iter-e713-outer-group-topology-20260721.json), and
+[symbol-only output contract](symbol-only-output-contract.md).
