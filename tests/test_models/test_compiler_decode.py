@@ -1259,6 +1259,17 @@ def test_semantic_role_candidates_map_visible_content_aliases_to_schema() -> Non
     }
 
 
+def test_semantic_role_candidates_map_refresh_action_to_button_label() -> None:
+    from slm_training.data.quality import semantic_role_candidates
+
+    candidates = semantic_role_candidates(
+        [":dashboard.refresh"],
+        ["Button", "TextContent"],
+    )
+
+    assert candidates == {":dashboard.refresh": ("Button",)}
+
+
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
@@ -1877,8 +1888,25 @@ def test_semantic_plan_role_obligations_pair_uncovered_roles() -> None:
 
     assert counts == Counter({"TextContent": 2, "ImageGallery": 1, "Button": 1})
     assert bindings == {
+        "ImageGallery": (":gallery.img", ":gallery.caption"),
         "TextContent": (":gallery.hint.title", ":gallery.hint.body"),
         "Button": (":gallery.cta",),
+    }
+
+
+def test_semantic_plan_role_obligations_bind_existing_action_family() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Callout": 1, "Button": 1}),
+        {
+            ":dashboard.title": ("Callout", "TextContent"),
+            ":dashboard.refresh": ("Button",),
+        },
+    )
+
+    assert counts == Counter({"Callout": 1, "Button": 1})
+    assert bindings == {
+        "Callout": (":dashboard.title",),
+        "Button": (":dashboard.refresh",),
     }
 
 

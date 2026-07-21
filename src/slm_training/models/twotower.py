@@ -4356,7 +4356,16 @@ class TwoTowerModel(nn.Module):
         planned = set(family_counts)
         bindings: dict[str, list[str]] = defaultdict(list)
         for slot, candidates in role_candidates.items():
-            if planned.intersection(candidates):
+            planned_family = next(
+                (
+                    preferred
+                    for preferred in DEFAULT_HOUSE_STYLE.preferred_components
+                    if preferred in planned and preferred in candidates
+                ),
+                next(iter(sorted(planned.intersection(candidates))), None),
+            )
+            if planned_family is not None:
+                bindings[planned_family].append(slot)
                 continue
             family = next(
                 (

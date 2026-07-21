@@ -35,6 +35,7 @@ _SEMANTIC_ROLE_PROPERTY_ALIASES = {
     "submit": {"action", "label"},
     "continue": {"action", "label"},
     "cta": {"action", "label"},
+    "refresh": {"action", "label"},
 }
 
 # Preferred structural vocabulary for high-signal layouts.
