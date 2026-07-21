@@ -66,6 +66,24 @@ def test_single_family_is_inconclusive() -> None:
         assert row.gate_flag is None
 
 
+def test_n_families_default_preserves_two_families() -> None:
+    # Backward compatibility: omitting n_families still yields exactly 2
+    # families, matching the original hardcoded behavior.
+    report = run_semantic_floor_gate_fixture(synthetic_runs=8)
+    assert report.n_families == 2
+
+
+def test_n_families_parameter_controls_family_count() -> None:
+    report = run_semantic_floor_gate_fixture(synthetic_runs=8, n_families=4)
+    assert report.n_families == 4
+    assert {row.family for row in report.rows} == {
+        "family_0",
+        "family_1",
+        "family_2",
+        "family_3",
+    }
+
+
 def test_floor_threshold_changes_labels() -> None:
     low = run_semantic_floor_gate_fixture(synthetic_runs=4, floor_threshold=0.0)
     high = run_semantic_floor_gate_fixture(synthetic_runs=4, floor_threshold=2.0)

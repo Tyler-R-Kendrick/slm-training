@@ -426,11 +426,19 @@ def run_semantic_floor_gate_fixture(
     reports_dir: Path | None = None,
     *,
     synthetic_runs: int = 4,
+    n_families: int = 2,
     floor_threshold: float = DEFAULT_FLOOR_THRESHOLD,
     run_id: str | None = None,
 ) -> "SemanticFloorGateReport":
-    """Build a SemanticFloorGateV1 fixture report from a SpectralAtlasV1 source."""
-    atlas = run_spectral_atlas_fixture(reports_dir=reports_dir, synthetic_runs=synthetic_runs)
+    """Build a SemanticFloorGateV1 fixture report from a SpectralAtlasV1 source.
+
+    ``n_families`` (default 2, backward-compatible) is forwarded to the
+    SLM-215 synthetic generator via ``run_spectral_atlas_fixture``; added for
+    SLM-225's family-count power sweep.
+    """
+    atlas = run_spectral_atlas_fixture(
+        reports_dir=reports_dir, synthetic_runs=synthetic_runs, n_families=n_families
+    )
     matrix_rows_by_run = _group_by_run(list(atlas.rows))
     families = {r: rows[0].family for r, rows in matrix_rows_by_run.items()}
     parse_rate_by_run = {r: _mean_run_parse_rate(rows) for r, rows in matrix_rows_by_run.items()}
