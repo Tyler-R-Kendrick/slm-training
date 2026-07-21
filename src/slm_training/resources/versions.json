@@ -1534,7 +1534,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v100",
+      "version": "v101",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1549,6 +1549,11 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v101",
+          "date": "2026-07-21",
+          "note": "Restore v96 behavior after E651 enum flooring reduced meaningful output and produced an empty planned Card."
+        },
         {
           "version": "v100",
           "date": "2026-07-21",
