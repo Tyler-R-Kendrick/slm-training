@@ -5244,3 +5244,14 @@ checkpoint was created or synced.
 
 Evidence: [narrative](iter-e704-schema-value-weight-sweep-20260721.md) and
 [JSON](iter-e704-schema-value-weight-sweep-20260721.json).
+
+## E705 root-margin slot routing
+
+E705 combines schema-value weight 5 with semantic-plan root margin 0. The
+Rico-only `n=3` diagnostic leaves strict at 0.0, lowers fidelity
+0.8750→0.8333 and structure 0.7611→0.5098, and raises p95 latency to 24.6s by
+continuing into duplicate component spam. Reject without a full-suite replay
+and retain root margin 2. AgentV is 0/1; no checkpoint was created or synced.
+
+Evidence: [narrative](iter-e705-root-margin-routing-20260721.md) and
+[JSON](iter-e705-root-margin-routing-20260721.json).
