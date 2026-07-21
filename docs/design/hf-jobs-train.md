@@ -5,7 +5,7 @@ or multi-farm pods — **not** on Spaces [ZeroGPU](https://huggingface.co/docs/h
 
 | Surface | Best for | Why |
 | --- | --- | --- |
-| **HF Jobs** (`scripts.hf_jobs_train`) | Managed A10G / A100 / RTX PRO checkpoint smoke | Paid flavors, hard three-minute timeout, `torch.compile`, bucket volumes |
+| **HF Jobs** (`scripts.hf_jobs_train`) | Managed A10G / A100 / RTX PRO checkpoint smoke | Paid flavors, canonical `slm_training.levers` timeout, `torch.compile`, bucket volumes |
 | **Pods** (`scripts.remote_train` + multi-farm MCP) | Bring-your-own GPU / cheapest spot | Same `--fast-train` knobs over SSH |
 | **ZeroGPU** Gradio Spaces | Short **demo inference** only | `@spaces.GPU` minutes of quota; **no** `torch.compile`; process isolation |
 
@@ -84,7 +84,7 @@ Pick with `hf jobs hardware`. Common choices:
 - `a100-large` variants — maximize work completed inside the fixed run cap
 - `rtx-pro-6000` family — when available on Jobs (same generation as ZeroGPU backing)
 
-The timeout is fixed at three minutes. Size the recipe so checkpoint sync finishes
+The timeout is fixed by `slm_training.levers.HF_JOB_TIMEOUT`. Size the recipe so checkpoint sync finishes
 inside that envelope; an interrupted or platform-timed-out Job is not evidence.
 
 ## Related

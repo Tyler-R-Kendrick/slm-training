@@ -23,7 +23,9 @@ SAMPLE = 'root = Card(":t.x")\n'
 
 
 def _tok() -> OpenUITokenizer:
-    return OpenUITokenizer.build([SAMPLE, 'root = Row(":j")\n', "root = Stack([hero])\n"])
+    return OpenUITokenizer.build(
+        [SAMPLE, 'root = Row(":j")\n', "root = Stack([hero])\n"]
+    )
 
 
 def test_engine_force_equal_after_name() -> None:
@@ -64,9 +66,10 @@ def test_exact_force_requires_full_token_singleton() -> None:
     prefix = native.encode("root = Card", add_special=False)
     state = make_grammar_state()
     forced = force_emit_token_id(native, prefix, state=state)
-    assert exact_forced_token_id(
-        native, prefix, forced_token_id=forced, state=state
-    ) == native.token_to_id["("]
+    assert (
+        exact_forced_token_id(native, prefix, forced_token_id=forced, state=state)
+        == native.token_to_id["("]
+    )
 
     # The compositional tokenizer can still emit insignificant whitespace, so
     # its significant-lexeme force is not an exact tokenizer-token decision.
@@ -74,9 +77,12 @@ def test_exact_force_requires_full_token_singleton() -> None:
     prefix = compositional.encode("root", add_special=False)
     state = make_grammar_state()
     forced = force_emit_token_id(compositional, prefix, state=state)
-    assert exact_forced_token_id(
-        compositional, prefix, forced_token_id=forced, state=state
-    ) is None
+    assert (
+        exact_forced_token_id(
+            compositional, prefix, forced_token_id=forced, state=state
+        )
+        is None
+    )
 
 
 def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
@@ -93,12 +99,15 @@ def test_exact_force_rejects_complete_forest_with_second_candidate() -> None:
     assert forced in forest.candidate_ids
     assert any(candidate != forced for candidate in forest.candidate_ids)
 
-    assert exact_forced_token_id(
-        tokenizer,
-        prefix,
-        forced_token_id=forced,
-        state=state,
-    ) is None
+    assert (
+        exact_forced_token_id(
+            tokenizer,
+            prefix,
+            forced_token_id=forced,
+            state=state,
+        )
+        is None
+    )
 
 
 def test_pick_constrained_honors_forced_id() -> None:
@@ -112,9 +121,7 @@ def test_pick_constrained_honors_forced_id() -> None:
     wrong = tok.token_to_id.get("]", equal_id)
     logits[wrong] = 10.0
     prefix = tok.encode("root", add_special=False)
-    choice = pick_constrained_token(
-        logits, tok, prefix, forced_token_id=equal_id
-    )
+    choice = pick_constrained_token(logits, tok, prefix, forced_token_id=equal_id)
     assert choice == equal_id
 
 
@@ -186,15 +193,18 @@ def test_native_slot_contract_preserves_assignment_and_component() -> None:
     forced = force_emit_token_id(tok, prefix, state=state)
     logits = torch.full((tok.vocab_size,), -20.0)
     logits[tok.sym_id(0)] = 50.0
-    assert pick_constrained_token(
-        logits,
-        tok,
-        prefix,
-        top_k=8,
-        forced_token_id=forced,
-        slot_contract=[":only.slot"],
-        state=state,
-    ) == tok.token_to_id["="]
+    assert (
+        pick_constrained_token(
+            logits,
+            tok,
+            prefix,
+            top_k=8,
+            forced_token_id=forced,
+            slot_contract=[":only.slot"],
+            state=state,
+        )
+        == tok.token_to_id["="]
+    )
 
     prefix = [tok.bos_id, tok.bind_id(0), tok.token_to_id["="]]
     state = make_grammar_state()
@@ -202,17 +212,20 @@ def test_native_slot_contract_preserves_assignment_and_component() -> None:
         state.advance_token(tok, tid)
     logits[tok.token_to_id["B:6d"]] = 60.0
     logits[tok.token_to_id["TextArea"]] = 1.0
-    assert pick_constrained_token(
-        logits,
-        tok,
-        prefix,
-        top_k=8,
-        slot_contract=[":only.slot"],
-        state=state,
-    ) == tok.token_to_id["TextArea"]
+    assert (
+        pick_constrained_token(
+            logits,
+            tok,
+            prefix,
+            top_k=8,
+            slot_contract=[":only.slot"],
+            state=state,
+        )
+        == tok.token_to_id["TextArea"]
+    )
 
 
-def test_lexer_literal_bytes_are_grammar_admitted() -> None:
+def test_lexer_literal_bytes_are_not_grammar_admitted() -> None:
     import torch
 
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -223,7 +236,8 @@ def test_lexer_literal_bytes_are_grammar_admitted() -> None:
     logits = torch.full((tok.vocab_size,), -20.0)
     logits[byte] = 50.0
     choice = pick_constrained_token(logits, tok, prefix, top_k=8)
-    assert choice == byte
+    assert choice != byte
+    assert tok.id_to_token[choice].startswith(("STR:", "<SYM_"))
 
 
 def test_structural_preference_does_not_override_confident_binder() -> None:
@@ -271,7 +285,9 @@ def test_singleton_admission_bypasses_probe(monkeypatch) -> None:
         ),
     )
     with collect_decode_stats() as stats:
-        assert pick_constrained_token(logits, tok, prefix, top_k=8) == tok.token_to_id["="]
+        assert (
+            pick_constrained_token(logits, tok, prefix, top_k=8) == tok.token_to_id["="]
+        )
     assert stats.constrained_last_legal_candidates == 1
 
 
@@ -318,6 +334,16 @@ def test_admit_fill_accepts_partial_with_holes() -> None:
     assert admit_fill(eng, tok, ids) is True
 
 
+def test_admit_fill_decodes_lexer_native_source_not_vocab_labels() -> None:
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    eng = OpenUIIncrementalEngine()
+    ids = tok.encode('root = TextContent(":hero.title")', add_special=True)
+    assert "<SYM_" in "".join(tok.id_to_token.get(token_id, "") for token_id in ids)
+    assert admit_fill(eng, tok, ids) is True
+
+
 def test_allowed_id_set_expands_components() -> None:
     from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
@@ -349,6 +375,20 @@ def test_cached_native_masks_intersect_active_symbols() -> None:
     assert tok.sym_id(1) in cached
     assert tok.sym_id(0) not in cached
     assert cached - tok.kind_ids("sym") == uncached - tok.kind_ids("sym")
+
+
+def test_native_string_terminal_excludes_non_string_literal_markers() -> None:
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    allowed = allowed_id_set(tok, frozenset({"STRING"}))
+
+    assert allowed is not None
+    assert tok.token_to_id["STR:email"] in allowed
+    assert tok.sym_id(0) in allowed
+    for token in ("true", "false", "null", "LIT_NUM", "LIT_END"):
+        assert tok.token_to_id[token] not in allowed
 
 
 def test_completion_bound_is_conservative() -> None:

@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 
 import pytest
+from openfeature import api
+from openfeature.evaluation_context import EvaluationContext
+from openfeature.flag_evaluation import ErrorCode, Reason
 
 from slm_training.autoresearch.openfeature import (
     EXPERIMENT_CONTEXT_ATTRIBUTE,
@@ -117,13 +120,6 @@ def test_export_openfeature_cli(tmp_path, capsys) -> None:
         .glob("*.json")
     )
     assert len(artifacts) == 1
-
-
-openfeature = pytest.importorskip("openfeature")
-
-from openfeature import api  # noqa: E402
-from openfeature.evaluation_context import EvaluationContext  # noqa: E402
-from openfeature.flag_evaluation import ErrorCode, Reason  # noqa: E402
 
 
 @pytest.fixture()

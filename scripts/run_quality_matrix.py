@@ -1268,8 +1268,8 @@ def _v8_experiments(
     return [
         Experiment("E200", "qx_e200_symbol_control", "Current fixed-row DSL symbol control", train_dir, **base),
         Experiment("E201", "qx_e201_alpha_shuffle", "Slot permutation and alpha-renaming augmentation", train_dir, symbol_slot_augmentation=True, **base),
-        Experiment("E202", "qx_e202_surface_symbols", "Request-conditioned surface features for all symbol roles", train_dir, runtime_symbol_features="surface", **base),
-        Experiment("E203", "qx_e203_role_gated", "Binder-invariant, entity/state-aware symbol features", train_dir, runtime_symbol_features="role_gated", **base),
+        Experiment("E202", "qx_e202_surface_symbols", "Surface-compositional features for all symbol roles", train_dir, runtime_symbol_features="surface", **base),
+        Experiment("E203", "qx_e203_role_gated", "Surface features gated off for binder roles", train_dir, runtime_symbol_features="role_gated", **base),
         Experiment("E204", "qx_e204_semantic_masks", "Role-gated features plus active semantic candidate masks", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, **base),
         Experiment("E205", "qx_e205_constraint_graph", "Hybrid grammar/attention constraint graph scheduling", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, constraint_graph_mode="hybrid", **base),
         Experiment("E206", "qx_e206_fixed_canvas", "Complete V8 stack on fixed padded canvases", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, constraint_graph_mode="hybrid", grammar_completion_bounds=True, grammar_equivalence_cache=True, grammar_active_symbol_bitsets=True, compact_active_canvas=False, **base),
@@ -1536,7 +1536,7 @@ def _v15_experiments(train_dir: Path) -> list[Experiment]:
     """E278 (C2): dynamic pseudo-embeddings for symbol tokens (SLM-26).
 
     ``runtime_symbol_features="replace"`` cancels the learned symbol-pool row
-    with a deterministic byte-compositional vector (DyVo-style; weight tying
+    with a deterministic surface-compositional vector (DyVo-style; weight tying
     and batching untouched). Matched against E255 on everything but the mode.
     """
     base = dict(

@@ -45,6 +45,16 @@ def test_legacy_parse_fallback_is_guarded_and_tagged() -> None:
     assert "meaningful_source" not in modern
 
 
+@pytest.mark.parametrize("key", ["meaningful_v1", "meaningful_program_v1_rate"])
+def test_explicit_v1_meaningful_precedes_legacy_parse_fallback(key: str) -> None:
+    metrics = normalize_suite_metrics(
+        {"n": 3, "parse_rate": 0.5, key: 0.0, "strict_v2": 0.0}
+    )
+
+    assert metrics["meaningful_program_rate"] == 0.0
+    assert "meaningful_source" not in metrics
+
+
 def test_suites_dialects_normalize() -> None:
     honest = {
         "run_id": "e295-r1",

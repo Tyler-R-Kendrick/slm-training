@@ -33,9 +33,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, AsyncIterator
 
+from slm_training.levers import (
+    INTERRUPT_AFTER_SECONDS,
+    KILL_GRACE_SECONDS,
+    MAX_RUN_MINUTES,
+)
+
 TERMINAL = {"succeeded", "failed", "cancelled"}
-INTERRUPT_AFTER_SECONDS = 170.0
-KILL_GRACE_SECONDS = 10.0
 
 
 # --------------------------------------------------------------------------- #
@@ -429,7 +433,8 @@ class JobRegistry:
                 except TimeoutError:
                     self._append_log(
                         log_path,
-                        "[job runner error] three-minute hard cap reached; interrupting\n",
+                        f"[job runner error] {MAX_RUN_MINUTES}-minute hard cap "
+                        "reached; interrupting\n",
                     )
                     self._interrupt(proc)
                     try:

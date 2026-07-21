@@ -16,6 +16,7 @@ from slm_training.harnesses.eval.ablate_decode_scaffolding import (
     stage_a_needs_stage_b,
 )
 from slm_training.harnesses.model_build.config import ModelBuildConfig
+from slm_training.levers import INTERRUPT_AFTER_SECONDS
 
 
 @pytest.fixture
@@ -218,7 +219,7 @@ def test_cli_enforces_fixed_run_deadline(monkeypatch: pytest.MonkeyPatch) -> Non
         (cli.signal.ITIMER_REAL, cli.MAX_RUN_SECONDS),
         (cli.signal.ITIMER_REAL, 0),
     ]
-    assert cli.MAX_RUN_SECONDS == 170
+    assert cli.MAX_RUN_SECONDS == INTERRUPT_AFTER_SECONDS
 
 
 def test_cli_timeout_exits_124(monkeypatch: pytest.MonkeyPatch) -> None:

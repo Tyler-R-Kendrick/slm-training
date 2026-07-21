@@ -7,7 +7,10 @@ import pytest
 from slm_training.dsl import lang_core
 from slm_training.dsl.language_contract import (
     LANG_SPEC,
+    OUTPUT_CONTRACT_VERSION,
     LanguageContract,
+    OutputContractError,
+    assert_symbol_only_output,
     contract_id,
     current_contract,
 )
@@ -47,7 +50,15 @@ def test_to_dict_round_trips_fields() -> None:
     assert data["contract_id"] == contract.contract_id
     assert data["lang_spec"] == contract.lang_spec
     assert set(data["openui_versions"]) == {name for name, _ in contract.openui_versions}
-    assert data["output_contract_version"] == 1
+    assert data["output_contract_version"] == OUTPUT_CONTRACT_VERSION == 2
+
+
+def test_symbol_only_output_contract_rejects_free_form_text() -> None:
+    assert_symbol_only_output('root = Stack([TextContent(":hero.title")], "column")')
+    with pytest.raises(OutputContractError, match="free-form strings"):
+        assert_symbol_only_output('root = TextContent("Welcome back")')
+    with pytest.raises(OutputContractError, match="free-form strings"):
+        assert_symbol_only_output('root = TagBlock(["New Item Alpha"])')
 
 
 def test_library_schema_falls_back_to_committed_snapshot(monkeypatch) -> None:

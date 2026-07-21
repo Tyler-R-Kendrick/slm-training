@@ -34,19 +34,19 @@ def _record(openui: str, **kwargs: object) -> ExampleRecord:
     )
 
 
-def test_should_sanitize_skip_matrix() -> None:
+def test_should_sanitize_has_no_document_exceptions() -> None:
     plain = _record("root = Stack([])")
     assert should_sanitize(plain) == (True, "")
 
     verbatim = _record("root = Stack([])", meta={"preserve_verbatim": True})
-    assert should_sanitize(verbatim) == (False, "preserve_verbatim")
+    assert should_sanitize(verbatim) == (True, "")
 
     scoped = _record("root = Stack([])", meta={"scope_slice": {"scope": "document"}})
-    assert should_sanitize(scoped) == (False, "scope_slice")
+    assert should_sanitize(scoped) == (True, "")
 
     for task in ("identity", "repair", "edit"):
         record = _record("root = Stack([])", meta={"task": task})
-        assert should_sanitize(record) == (False, f"task_{task}")
+        assert should_sanitize(record) == (True, "")
 
     # Edit/repair-*derived* generation rows are eligible.
     derived = _record(
@@ -136,7 +136,7 @@ def test_normalize_record_audit_mode_keeps_bytes() -> None:
     assert block["rewrites"]["defaults_elided"] == 1
 
 
-def test_normalize_record_skips_scope_slices_byte_identically() -> None:
+def test_normalize_record_sanitizes_scope_slices() -> None:
     scoped = _record(
         'root = Stack([t])\nt = TextContent(":a.b")',
         placeholders=[":a.b"],
@@ -144,8 +144,8 @@ def test_normalize_record_skips_scope_slices_byte_identically() -> None:
     )
     sanitized = _normalize_record(scoped, sanitize=ENFORCE)
     plain = _normalize_record(scoped, sanitize=None)
-    assert sanitized.openui == plain.openui
-    assert sanitized.meta["sanitize"] == {"mode": "enforce", "skip_reason": "scope_slice"}
+    assert sanitized.openui != plain.openui
+    assert sanitized.meta["sanitize"]["applied"] is True
 
 
 def test_aggregate_sanitization_shape() -> None:
@@ -162,7 +162,7 @@ def test_aggregate_sanitization_shape() -> None:
     assert section["mode"] == "enforce"
     assert section["sanitized"] == 1
     assert section["changed"] == 1
-    assert section["skipped"] == {"preserve_verbatim": 1, "scope_slice": 1}
+    assert section["skipped"] == {"scope_slice": 1, "unprocessed": 1}
     assert section["rewrites"]["dead_bindings_removed"] == 1
     assert section["literals_templatized"] == 2
     assert section["records_templatized"] == 1

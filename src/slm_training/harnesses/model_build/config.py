@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
     validate_model_build_config,
@@ -24,8 +25,8 @@ class ModelBuildConfig:
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
-    # Cumulative training-harness deadline; all runs are hard-capped at 3 minutes.
-    max_wall_minutes: float | None = 3.0
+    # Cumulative deadline; canonical run policy lives in slm_training.levers.
+    max_wall_minutes: float | None = float(MAX_RUN_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4
     # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.
@@ -248,7 +249,7 @@ class ModelBuildConfig:
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers
-    output_tokenizer: str = "compositional"  # compositional | lexer | choice
+    output_tokenizer: str = "lexer"  # symbol-only grammar/AST tokens
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"
@@ -374,7 +375,9 @@ class ModelBuildConfig:
     pointer_heads: int = 4
     pointer_temperature: float = 1.0
     pointer_dropout: float = 0.0
-    runtime_symbol_features: str = "none"  # none | surface | role_gated | replace (C2)
+    # Historical default-off name-derived experiment modes; opaque generation
+    # projects independently so old checkpoint semantics remain stable.
+    runtime_symbol_features: str = "none"  # none | surface | role_gated | replace
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
     constraint_graph_mode: str = "off"  # off | grammar | hybrid

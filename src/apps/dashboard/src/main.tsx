@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
-import { getJSON } from "./api";
+import { getJSON, usePoll } from "./api";
 import { CapsContext, type Caps } from "./caps";
 import { Overview } from "./pages/Overview";
 import { Data } from "./pages/Data";
@@ -11,6 +11,11 @@ import { Checkpoints } from "./pages/Checkpoints";
 import { Playground } from "./pages/Playground";
 import { RunDetail } from "./pages/RunDetail";
 import { DslView } from "./interpret/DslView";
+import {
+  defaultDashboardRenderer,
+  initFeatureRuntime,
+  trackFeatureExposure,
+} from "./features/runtime";
 
 type Nav = (to: string) => void;
 
@@ -74,32 +79,78 @@ function useTheme(): [string, () => void] {
 }
 
 type Mode = "interpreted" | "compiled";
+const MODE_KEY = "slm-mode";
 
-function useMode(): [Mode, (m: Mode) => void] {
-  const [mode, setMode] = useState<Mode>(() =>
-    localStorage.getItem("slm-mode") === "compiled" ? "compiled" : "interpreted",
-  );
-  useEffect(() => {
-    document.documentElement.dataset.mode = mode;
-    localStorage.setItem("slm-mode", mode);
-  }, [mode]);
-  return [mode, setMode];
+function readStoredMode(): Mode | null {
+  const stored = localStorage.getItem(MODE_KEY);
+  return stored === "compiled" || stored === "interpreted" ? stored : null;
 }
 
-/** Amber shell banner when every read is committed-snapshot fallback. */
-function FreshnessBanner() {
-  const [outputsPresent, setOutputsPresent] = useState<boolean | null>(null);
+function useMode(featuresReady: boolean): [Mode, (m: Mode) => void] {
+  const [mode, setMode] = useState<Mode>(() => readStoredMode() ?? "interpreted");
+
   useEffect(() => {
-    getJSON<{ outputs_present?: boolean }>("/api/system")
-      .then((sys) => setOutputsPresent(sys.outputs_present !== false))
-      .catch(() => setOutputsPresent(null));
-  }, []);
-  if (outputsPresent !== false) return null;
+    if (!featuresReady) return;
+    const stored = readStoredMode();
+    if (stored) {
+      setMode(stored);
+      return;
+    }
+    setMode(defaultDashboardRenderer());
+  }, [featuresReady]);
+
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode;
+    localStorage.setItem(MODE_KEY, mode);
+  }, [mode]);
+
+  const setModeTracked = (next: Mode) => {
+    setMode(next);
+    if (featuresReady) {
+      trackFeatureExposure("dashboard-renderer-selected", { mode: next });
+    }
+  };
+  return [mode, setModeTracked];
+}
+
+/** Shell strip: experiment / bucket / jobs freshness (always), cold-start callout when needed. */
+function FreshnessBanner() {
+  const { data } = usePoll<{
+    outputs_present?: boolean;
+    freshness?: {
+      newest_experiment_date?: string | null;
+      experiment_count?: number;
+      local_run_count?: number;
+      bucket?: { ok?: boolean; count?: number; updated_at?: string | null; error?: string | null };
+      hf_jobs?: { ok?: boolean; auth?: boolean; count?: number; error?: string | null };
+    };
+  }>("/api/system", 30000);
+  if (!data) return null;
+  const f = data.freshness ?? {};
+  const cold = data.outputs_present === false;
+  const bucket = f.bucket?.ok
+    ? `${f.bucket.count ?? 0} remote${f.bucket.updated_at ? `, updated ${String(f.bucket.updated_at).slice(0, 10)}` : ""}`
+    : f.bucket?.error
+      ? "unavailable"
+      : "—";
+  const jobs = f.hf_jobs?.ok
+    ? String(f.hf_jobs.count ?? 0)
+    : f.hf_jobs?.auth === false
+      ? "auth needed"
+      : "—";
   return (
     <div className="freshness-banner" role="status">
-      <span className="prov prov-committed">snapshot</span>
-      Committed snapshot data — no live <span className="mono">outputs/</span> on this host. Run{" "}
-      <span className="mono">serve_playground</span> locally for live evidence.
+      <span className={`prov ${cold ? "prov-committed" : "prov-live"}`}>{cold ? "snapshot" : "live"}</span>
+      Experiments newest {f.newest_experiment_date ?? "—"}
+      {" · "}
+      Bucket {bucket}
+      {" · "}
+      HF Jobs {jobs}
+      {cold ? (
+        <>
+          {" — "}no local <span className="mono">outputs/</span>; remote inventory still listed when available.
+        </>
+      ) : null}
     </div>
   );
 }
@@ -107,10 +158,17 @@ function FreshnessBanner() {
 function App() {
   const [path, navigate] = useRouter();
   const [theme, toggleTheme] = useTheme();
-  const [mode, setMode] = useMode();
+  const [featuresReady, setFeaturesReady] = useState(false);
+  const [mode, setMode] = useMode(featuresReady);
   const [caps, setCaps] = useState<Caps>({ execution: false, read_only: true, jobs: [] });
 
   useEffect(() => {
+    initFeatureRuntime()
+      .then(() => setFeaturesReady(true))
+      .catch((err) => {
+        console.warn("OpenFeature bootstrap failed; using local defaults", err);
+        setFeaturesReady(true);
+      });
     getJSON<Caps>("/api/capabilities")
       .then(setCaps)
       .catch(() => setCaps({ execution: false, read_only: true, jobs: [] }));

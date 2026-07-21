@@ -19,6 +19,7 @@ from typing import Any
 from slm_training.data.leakage import norm_text
 from slm_training.dsl.canonicalize import canonical_fingerprint
 from slm_training.dsl.grammar.backends.ast_utils import ast_fingerprint, component_multiset
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.dsl.parser import validate
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.production_codec import ProductionProgram, encode_choices
@@ -278,7 +279,7 @@ class AstSketchRetrievalManifest:
             "eval_version": "remediated",
             "eval_suites": "smoke,held_out,adversarial,ood,rico_held",
             "base_token_budget": 50000,
-            "max_wall_minutes": 3.0,
+            "max_wall_minutes": float(MAX_RUN_MINUTES),
             "checkpoint_sync": False,
             "retrieval_k": 4,
             "retrieval_context_budget": 400,

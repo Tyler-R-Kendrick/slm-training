@@ -14,13 +14,15 @@ import os
 import shlex
 import subprocess
 
+from slm_training.levers import HF_JOB_TIMEOUT, MAX_RUN_MINUTES, MAX_RUN_SECONDS
+
 DEFAULT_IMAGE = "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime"
 DEFAULT_FLAVOR = "a10g-large"
 DEFAULT_BUCKET = "hf://buckets/TKendrick/OpenUI"
 DEFAULT_REPO = "https://github.com/Tyler-R-Kendrick/slm-training.git"
 # Mount point for the durable checkpoint bucket inside the Job container.
 BUCKET_MOUNT = "/mnt/openui-bucket"
-JOB_TIMEOUT = "3m"
+JOB_TIMEOUT = HF_JOB_TIMEOUT
 
 
 def build_entrypoint_script(
@@ -59,6 +61,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 export SLM_FAST_TRAIN=1
 export HF_JOBS_FAST_TRAIN=1
+export SLM_MAX_WALL_MINUTES={MAX_RUN_MINUTES}
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF="${{PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}}"
 
@@ -251,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     try:
-        proc = subprocess.run(cmd, check=False, timeout=180)
+        proc = subprocess.run(cmd, check=False, timeout=MAX_RUN_SECONDS)
     except subprocess.TimeoutExpired:
         return 124
     return int(proc.returncode)

@@ -168,6 +168,20 @@ keys such as `hero.title` to model-facing placeholders `:slot_0`, `:slot_1`, ...
 the result preserves the explicit bijection and external role/type metadata.
 The model is never required to emit the external key spelling.
 
+Opaque marker spelling is a production-codec detail, not semantic evidence. The
+bound path suppresses name-derived inventory, role-candidate, lexeme, span, and
+component scoring for projected `:slot_N` markers. Declared typed role/type data
+may condition the model through a separate channel; absent such authority the
+scorer abstains. Renaming an external key therefore cannot change model decisions.
+
+For an actual choice-codec checkpoint, the opt-in
+`generate_batch_choice_requests` boundary additionally returns the exact choice
+IDs/tokens that the deterministic production codec materialized, along with the
+opaque contract, canonical pack-verified source, and deterministic fingerprints.
+It fails closed for non-choice tokenizers, fragments, best-of-N ambiguity, missing
+stream evidence, or any ID/token/source mismatch. This does not change the default
+compositional tokenizer and is not checkpoint-readiness evidence.
+
 The current OpenUI pack rejects arbitrary quoted user-facing content. A focused
 literal probe using `Welcome "back"\nToday` therefore selects the honest
 template-plus-bindings outcome: `materialized_source` is absent and only the

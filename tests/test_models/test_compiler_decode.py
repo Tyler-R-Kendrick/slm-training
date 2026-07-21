@@ -23,7 +23,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -91,6 +91,20 @@ def test_choice_decode_all_singletons_skips_denoiser(monkeypatch) -> None:
             AssertionError("all-singleton choice step must not run the denoiser")
         ),
     )
+    def forbidden_scoring(*_args, **_kwargs):
+        raise AssertionError("exact singleton must commit before semantic scoring")
+
+    for helper in (
+        "_component_inventory_bias",
+        "_component_plan_bias",
+        "_slot_component_bias",
+        "_schema_role_slot_bias",
+        "_slot_coverage_close_bias",
+        "_semantic_plan_bias",
+        "_semantic_plan_inline_bias",
+        "_semantic_plan_root_bias",
+    ):
+        monkeypatch.setattr(model, helper, forbidden_scoring)
     ctx, ctx_pad = model._encode_context(["one", "two"])
     with collect_decode_stats() as stats:
         ids = model._choice_ltr_decode_batch(ctx, ctx_pad, 8, [None, None])
@@ -497,6 +511,40 @@ def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     assert structural_bias is not None and structural_bias.tolist() == [0.0, 4.0]
 
 
+def test_slot_coverage_close_bias_floors_covered_terminal_stack_close() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        slot_coverage_close_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    slot_id = tokenizer.sym_id(0)
+    close_id = tokenizer.token_to_id["]"]
+    state = SimpleNamespace(
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(
+                kind="variadic",
+                expr_type="array",
+                schemas=(),
+                close="]",
+            ),
+        ]
+    )
+
+    bias = model._slot_coverage_close_bias(
+        state,
+        [tokenizer.bos_id, slot_id],
+        (slot_id, close_id),
+        torch.tensor([20.0, 1.0]),
+        [":body"],
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 23.0]
+
+
 def test_slot_coverage_close_bias_continues_through_compatible_component() -> None:
     from types import SimpleNamespace
 
@@ -533,9 +581,12 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
         state,
         [tokenizer.bos_id],
         (button_id, close_id),
-        torch.tensor([0.0, 3.0]),
-        [":dialog.confirm"],
-        {":dialog.confirm": ("Button",)},
+            torch.tensor([0.0, 3.0]),
+            [":dialog.confirm"],
+            {":dialog.confirm": ("Button",)},
+            semantic_role_properties={
+                ":dialog.confirm": ("action", "confirm", "label")
+            },
     )
 
     assert bias is not None
@@ -567,6 +618,9 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
         torch.tensor([0.0, 3.0]),
         [":dialog.confirm"],
         {":dialog.confirm": ("Button",)},
+        semantic_role_properties={
+            ":dialog.confirm": ("action", "confirm", "label")
+        },
     )
 
     assert bias is not None
@@ -657,6 +711,9 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("ImageGallery",)},
+        semantic_role_properties={
+            ":gallery.caption": ("caption", "details", "text")
+        },
     )
 
     assert bias is not None
@@ -668,6 +725,9 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("TextContent",)},
+        semantic_role_properties={
+            ":gallery.caption": ("caption", "details", "text")
+        },
     )
     assert schema_bias is not None and schema_bias.tolist() == [8.0, 0.0]
 
@@ -1346,9 +1406,34 @@ def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
         schema_role_slot_decode_weight=8.0,
         **{enabling_flag: True},
     )
-    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
+    request = GenerationRequest(
+        prompt="Gallery block.",
+        slot_contract=[":gallery.image"],
+        runtime_symbols=(
+            RuntimeSymbol(
+                surface=":gallery.image",
+                role="external_entity",
+                semantic_role="image",
+            ),
+        ),
+    )
 
     model.generate_batch_requests([request])  # must not raise ValueError
+
+
+def test_marker_name_cannot_activate_semantic_role_scoring() -> None:
+    model = _model(
+        output_tokenizer="choice",
+        schema_role_slot_decode_weight=8.0,
+        slot_contract_constrained_decode=True,
+    )
+    request = GenerationRequest(
+        prompt="Gallery block.",
+        slot_contract=[":gallery.image"],
+    )
+
+    with pytest.raises(ValueError, match="RuntimeSymbol.semantic_role"):
+        model.generate_batch_requests([request])
 
 
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
@@ -1373,20 +1458,41 @@ def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
     assert bias.tolist() == [-4.0, 0.0]
 
 
-def test_schema_enum_finalize_preserves_choices_after_dynamic_literal() -> None:
+def test_schema_value_bias_floors_enum_slot_below_best_non_slot() -> None:
+    from slm_training.dsl.production_codec import CLOSE, LIT_PREFIX, OPEN_PREFIX
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice", schema_value_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    for token_id in (
+        tokenizer.token_to_id[f"{OPEN_PREFIX}Button"],
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id[f"{LIT_PREFIX}null"],
+    ):
+        assert state.advance_id(token_id)
+    slot_id = tokenizer.sym_id(1)
+    close_id = tokenizer.token_to_id[CLOSE]
+
+    bias = model._schema_value_bias(
+        state,
+        (slot_id, close_id),
+        torch.tensor([20.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [-23.0, 0.0]
+
+
+def test_choice_tokenizer_rejects_unknown_enum_literal() -> None:
+    from slm_training.dsl.language_contract import OutputContractError
+
     model = _model(output_tokenizer="choice")
     tokenizer = model.tokenizer
     source = 'root = Callout("invalid", ":title", ":body")'
-    ids = torch.tensor(
-        [tokenizer.encode(source, placeholders=[":title", ":body"])],
-        dtype=torch.long,
-    )
 
-    finalized = model._finalize_schema_enum_choices(ids, [[":title", ":body"]])
-
-    assert model._decode_openui(
-        finalized[0], placeholders=[":title", ":body"]
-    ) == 'root = Callout("info", ":title", ":body")'
+    with pytest.raises(OutputContractError, match="forbids free-form strings"):
+        tokenizer.encode(source, placeholders=[":title", ":body"])
 
 
 def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
@@ -1437,22 +1543,16 @@ def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
     assert torch.equal(finalized_compact_valid, compact_valid)
 
 
-def test_schema_enum_finalize_spells_open_vocabulary_enum_with_capacity() -> None:
+def test_choice_tokenizer_rejects_open_vocabulary_enum_literal() -> None:
+    from slm_training.dsl.language_contract import OutputContractError
+
     model = _model(output_tokenizer="choice")
     tokenizer = model.tokenizer
-    encoded = tokenizer.encode(
-        'root = Slider(":notify", "tet", 1, 1)', placeholders=[":notify"]
-    )
-    ids = torch.tensor(
-        [[*encoded, *([tokenizer.pad_id] * 16)]],
-        dtype=torch.long,
-    )
 
-    finalized = model._finalize_schema_enum_choices(ids, [[":notify"]])
-
-    assert model._decode_openui(
-        finalized[0], placeholders=[":notify"]
-    ) == 'root = Slider(":notify", "continuous", 1, 1)'
+    with pytest.raises(OutputContractError, match="forbids free-form strings"):
+        tokenizer.encode(
+            'root = Slider(":notify", "tet", 1, 1)', placeholders=[":notify"]
+        )
 
 
 def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> None:
@@ -1475,25 +1575,11 @@ def test_schema_opaque_bias_penalizes_slots_only_for_optional_empty_schema() -> 
     assert bias.tolist() == [-4.0, 0.0]
 
 
-def test_schema_precontent_literal_bias_routes_after_other_scores() -> None:
-    from slm_training.dsl.production_codec import LIT_PREFIX, OPEN_PREFIX
-    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+def test_choice_tokenizer_has_no_dynamic_string_tokens() -> None:
+    tokenizer = _model(output_tokenizer="choice").tokenizer
 
-    model = _model(output_tokenizer="choice", schema_opaque_decode_weight=4.0)
-    tokenizer = model.tokenizer
-    state = ChoiceDecodeState(tokenizer, slot_count=1)
-    assert state.advance_id(tokenizer.token_to_id[f"{OPEN_PREFIX}Input"])
-    slot_id = tokenizer.sym_id(0)
-    literal_id = tokenizer.token_to_id[f'{LIT_PREFIX}""']
-    scores = torch.tensor([9.0, 1.0])
-
-    assert model._schema_opaque_bias(state, (slot_id, literal_id), scores) is None
-    bias = model._schema_precontent_literal_bias(
-        state, (slot_id, literal_id), scores
-    )
-
-    assert bias is not None
-    assert bias.tolist() == [0.0, 12.0]
+    assert "LIT_STR" not in tokenizer.token_to_id
+    assert '#""' not in tokenizer.token_to_id
 
 
 def test_schema_enum_close_bias_rewards_only_optional_enum_close() -> None:
@@ -1678,6 +1764,11 @@ def test_schema_role_slot_bias_prefers_active_typed_object_property() -> None:
         torch.zeros(3),
         slots,
         candidates,
+        semantic_role_properties={
+            ":gallery.img": ("img", "src"),
+            ":gallery.alt": ("alt",),
+            ":gallery.caption": ("caption",),
+        },
     )
 
     assert candidates == {
@@ -1882,6 +1973,9 @@ def test_role_obligations_replace_exhausted_joint_carrier() -> None:
 
 
 def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
+    assert isinstance(
+        TwoTowerModel.__dict__["_semantic_plan_role_obligations"], staticmethod
+    )
     counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
         Counter({"Button": 1, "Input": 2}),
         {
@@ -1891,10 +1985,10 @@ def test_role_obligations_abstain_when_capacity_has_no_property_match() -> None:
         },
     )
 
-    assert counts == Counter({"Button": 1, "Input": 2, "CheckBoxItem": 1})
+    assert counts == Counter({"Button": 1, "Input": 2})
     assert bindings == {
-        "CheckBoxItem": (":auth.create", ":auth.name"),
-        "Input": (":auth.email",),
+        "Button": (":auth.create",),
+        "Input": (":auth.name", ":auth.email"),
     }
 
 
@@ -2041,6 +2135,59 @@ def test_prompt_semantic_plan_preserves_modified_component_count() -> None:
         "Card",
         "Button",
     ]
+
+
+def test_prompt_semantic_plan_preserves_count_across_multiple_modifiers() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Row of three equally important action buttons.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Button",
+        "Button",
+        "Button",
+    ]
+
+
+def test_prompt_semantic_plan_does_not_cross_component_conjunction() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Place three cards and a button in a row.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Button",
+        "Card",
+        "Card",
+        "Card",
+    ]
+
+
+def test_prompt_semantic_plan_extracts_explicit_outer_group_topology() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Place two cards around a separator, then put the group inside an outer card."
+    )
+
+    assert plan is not None
+    assert plan.topology.parent_relation_candidates == (
+        {
+            "relation": "outer_group",
+            "parent_role_id": "prompt_component_2",
+            "parent_family": "Card",
+            "group_family": "Stack",
+            "sibling_role_ids": [
+                "prompt_component_0",
+                "prompt_component_3",
+                "prompt_component_1",
+            ],
+            "sibling_families": ["Card", "Separator", "Card"],
+            "direction": "column",
+            "evidence": "group inside an outer card",
+        },
+    )
 
 
 def test_prompt_semantic_plan_infers_button_from_action_semantics() -> None:
@@ -2764,7 +2911,7 @@ def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> No
     assert stats.constrained_selection_traces[0]["evidence"] == first_evidence
 
 
-def test_semantic_plan_root_probe_decodes_dynamic_literal_frames() -> None:
+def test_semantic_plan_root_probe_decodes_fixed_grammar_literal() -> None:
     from types import SimpleNamespace
 
     model = _model(
@@ -2778,8 +2925,7 @@ def test_semantic_plan_root_probe_decodes_dynamic_literal_frames() -> None:
     model._slot_contracts = [[":status.title", ":status.body"]]
     prefix = [
         callout_id,
-        tokenizer.token_to_id["LIT_STR"],
-        tokenizer.token_to_id["LIT_END"],
+        tokenizer.token_to_id['#"info"'],
         tokenizer.sym_id(0),
         tokenizer.sym_id(1),
         tokenizer.token_to_id["-"],
@@ -2828,6 +2974,114 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
         None,
         (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
     ) is None
+
+
+def test_prompt_semantic_plan_root_bias_records_missing_slot_carrier_reference() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["+Input"]
+    button_id = tokenizer.token_to_id["+Button"]
+    text_id = tokenizer.token_to_id["+TextContent"]
+    stack_id = tokenizer.token_to_id["+Stack"]
+    model._semantic_plan_action_scores = [{input_id: 1.0, button_id: 1.0}]
+    model._semantic_plan_action_counts = [{input_id: 1, button_id: 1}]
+    model._slot_contracts = [[":auth.email", ":auth.submit", ":auth.body"]]
+    model._semantic_role_candidates = [
+        {
+            ":auth.email": ("Input",),
+            ":auth.submit": ("Button",),
+            ":auth.body": ("Callout", "TextContent"),
+        }
+    ]
+    model._semantic_plan_role_bindings = [
+        {"Input": (":auth.email",), "Button": (":auth.submit",)}
+    ]
+    model._semantic_plan_required_root_references = [{}]
+    prefix = [
+        tokenizer.bos_id,
+        input_id,
+        tokenizer.sym_id(0),
+        tokenizer.token_to_id["-"],
+        button_id,
+        tokenizer.sym_id(1),
+        tokenizer.token_to_id["-"],
+    ]
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:Input", "element:Button"],
+    )
+    candidates = (stack_id, text_id, tokenizer.eos_id)
+
+    bias = model._semantic_plan_root_bias(
+        0, state, prefix, candidates, torch.tensor([12.0, 1.0, 0.0])
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 13.0, 0.0]
+    assert model._semantic_plan_required_root_references == [
+        {2: "element:TextContent"}
+    ]
+
+
+def test_semantic_plan_required_reference_bias_targets_only_carrier() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        output_tokenizer="choice",
+        semantic_plan_root_decode_weight=8.0,
+        semantic_plan_root_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    ref1 = tokenizer.token_to_id["&1"]
+    ref2 = tokenizer.token_to_id["&2"]
+    close = tokenizer.token_to_id["]"]
+    model._semantic_plan_required_root_references = [{2: "element:TextContent"}]
+    state = SimpleNamespace(
+        section_types=[
+            "element:Input",
+            "element:Callout",
+            "element:TextContent",
+        ],
+        frames=[
+            SimpleNamespace(kind="component", expr_type="element:Stack"),
+            SimpleNamespace(kind="variadic", expr_type="array", close="]"),
+        ]
+    )
+    candidates = (ref1, ref2, close)
+
+    bias = model._semantic_plan_required_reference_bias(
+        0, state, [tokenizer.bos_id], candidates, torch.tensor([15.0, 1.0, 20.0])
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 21.0, 0.0]
+    assert (
+        model._semantic_plan_required_reference_bias(
+            0,
+            state,
+            [tokenizer.bos_id],
+            candidates,
+            torch.tensor([20.0, 1.0, 15.0]),
+        )
+        is None
+    )
+    assert (
+        model._semantic_plan_required_reference_bias(
+            0,
+            state,
+            [tokenizer.bos_id, ref2],
+            candidates,
+            torch.zeros(3),
+        )
+        is None
+    )
 
 
 def test_prompt_semantic_plan_root_bias_waits_for_required_family_count() -> None:
@@ -3417,6 +3671,15 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     )
     assert not (set(nested_children.candidate_ids) & set(tokenizer.kind_ids("lit")))
 
+    typed_string = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=TextArea(", add_special=False),
+        slot_contract=[":hero.title"],
+    )
+    assert tokenizer.sym_id(0) in typed_string.candidate_ids
+    for token in ("true", "false", "null", "LIT_NUM", "LIT_END"):
+        assert tokenizer.token_to_id[token] not in typed_string.candidate_ids
+
     monkeypatch.setattr(
         compiler_draft,
         "_official_schema",
@@ -3600,44 +3863,21 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
-def test_completion_forest_enforces_lexer_literal_frame() -> None:
+def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
+    from slm_training.models.dsl_tokenizer import TokenKind
+
     tokenizer = DSLNativeTokenizer.build()
     contract = [":value", ":label"]
     prefix = tokenizer.encode(
         'root=RadioItem(":value",":label",', add_special=False
     )
-    outside = build_completion_forest(tokenizer, prefix, slot_contract=contract)
-    assert tokenizer.token_to_id["LIT_STR"] in outside.candidate_ids
-    assert tokenizer.token_to_id["LIT_END"] not in outside.candidate_ids
+    forest = build_completion_forest(tokenizer, prefix, slot_contract=contract)
 
-    inside = build_completion_forest(
-        tokenizer,
-        [*prefix, tokenizer.token_to_id["LIT_STR"]],
-        slot_contract=contract,
-    )
-    from slm_training.models.dsl_tokenizer import TokenKind
-
-    expected = tokenizer.kind_ids(TokenKind.BYTE) | {
-        tokenizer.token_to_id["LIT_END"]
-    }
-    assert set(inside.candidate_ids) <= expected
-    assert tokenizer.token_to_id["LIT_END"] in inside.candidate_ids
-    assert set(inside.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE)
-    assert not (set(inside.candidate_ids) & tokenizer.kind_ids(TokenKind.SYM))
-
-    closed = build_completion_forest(
-        tokenizer,
-        [
-            *prefix,
-            tokenizer.token_to_id["LIT_STR"],
-            tokenizer.token_to_id["LIT_END"],
-        ],
-        slot_contract=contract,
-    )
-    assert set(closed.candidate_ids) == {tokenizer.token_to_id[")"]}
+    assert "LIT_STR" not in tokenizer.token_to_id
+    assert not (set(forest.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE))
 
 
-def test_completion_forest_encodes_generated_enum_with_literal_channel(
+def test_completion_forest_rejects_enum_absent_from_fixed_schema_vocabulary(
     monkeypatch,
 ) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
@@ -3660,9 +3900,8 @@ def test_completion_forest_encodes_generated_enum_with_literal_channel(
         tokenizer.bos_id,
         *tokenizer.encode("root=Stack([] ,", add_special=False),
     ]
-    forest = build_completion_forest(tokenizer, prefix)
-    expected = tuple(tokenizer.encode('"schema-only"', add_special=False))
-    assert [path.token_ids[: len(expected)] for path in forest.paths] == [expected]
+    with pytest.raises(ValueError, match="free-form output string is forbidden"):
+        build_completion_forest(tokenizer, prefix)
 
 
 def test_active_call_ignores_nested_array_and_call_commas() -> None:

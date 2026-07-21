@@ -26,8 +26,16 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 
 ## Current checkpoint roster
 
+**Compatibility notice (2026-07-21):** output contract v2 permits only
+grammar/AST symbols and template placeholders. All pre-E714 checkpoints below
+were created under an earlier free-form-capable output contract and are
+intentionally incompatible with current loading, serving, resume, promotion,
+and evaluation paths. They remain provenance only; E714 is the first compatible
+scratch baseline.
+
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1` | CPU scratch output-contract-v2 baseline | `outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 48.72s, SHA `71ef1d25…2b49e`; all predictions satisfy symbol-only v2, but five-suite strict meaning is 0.0 and AgentV 0/5 — **compatible diagnostic, not promotable or ship** ([results](design/iter-e714-symbol-only-baseline-20260721.md)) |
 | Playground demo | `playground_demo` | Fixture wiring | `src/slm_training/resources/checkpoints/playground_demo/last.pt` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5, one timeout. Demo only — **not** a quality or ship claim |
 | Restructure CPU verify | `restructure_cpu_scratch_v0` | Fixture scratch train | `outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local) | Train OK; smoke parse **0.0** @ 80 steps — **not** a ship claim ([results](design/restructure-cpu-train-results.json)) |
 | Local DirectML verify | `local_directml_adreno_20260714` | Local GPU scratch train | `outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt` (local) | Adreno DirectML train/checkpoint OK @ 5 steps; not evaluated — **not** a ship claim ([results](design/local-directml-train-results.json)) |
@@ -252,6 +260,11 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| smoke (`e714-symbol-only-scratch600-r1`) | 3 | 0.3333 | 1.0 | 0.0880 | 0.0 | No — strict-v2 0.0, AgentV 0/1; compatible diagnostic subset |
+| held_out (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 0.5 | 0.1638 | 0.0 | No — strict-v2 0.0, two timeouts, AgentV 0/1 |
+| adversarial (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 1.0 | 0.1221 | 0.0 | No — strict-v2 0.0, AgentV 0/1 |
+| ood (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 0.5 | 0.0483 | 0.0 | No — strict-v2 0.0, two timeouts, AgentV 0/1 |
+| rico_held (`e714-symbol-only-scratch600-r1`) | 3 | 0.0 | 0.5 | 0.2248 | 0.0 | No — strict-v2 0.0, one timeout, AgentV 0/1 |
 | smoke (`restructure_cpu_scratch_v0`) | 3 | 0.0 | 0.0 | 0.31 | 0.0 | No — fixture scratch wiring |
 | not run (`local_directml_adreno_20260714`) | 0 | — | — | — | — | No — hardware/checkpoint validation only |
 | held_out | | | | | | |
@@ -860,6 +873,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-21 | `e714-symbol-only-scratch600-r1` | `outputs/runs/e714-symbol-only-scratch600-r1/` (local) | Five-suite strict-v2 0.0, AgentV 0/5; all outputs symbol-only | First compatible v2 checkpoint; 600-step / 48.72s no-sync CPU scratch baseline, rejected for promotion |
 | 2026-07-20 | `e620-required-slot-coverage-scratch800-20260720` | `outputs/runs/e620-required-slot-coverage-scratch800-20260720/` (local) | OOD treatment fidelity 0.5500, structure 0.4886, reward 0.8140, strict-v2 0.0, AgentV 0/1 | 800-step no-sync scratch; lower loss regresses E619 generalization; rejected |
 | 2026-07-20 | `e574-e569-slotloss2-r1-48s` | `outputs/runs/e574-e569-slotloss2-r1-48s/` (local) | OOD aggregates equal E573; meaning-v2 0, AgentV 0/1 | No-sync scratch; no-effect negative evidence |
 | 2026-07-20 | `e573-e569-fidelity1-r1-48s` | `outputs/runs/e573-e569-fidelity1-r1-48s/` (local) | OOD meaning-v1 0.25, fidelity 0.4750, reward 0.7570, AgentV 0/1 | No-sync scratch; fidelity/coverage Pareto, not ship |
@@ -1020,7 +1034,9 @@ checkpoint is rejected.
 | 2026-07-19 | `e546-e544-strict-subset5-r2-24s` | `outputs/runs/e546-e544-strict-subset5-r2-24s/` (local) | 24 CPU HF-context steps / 1,318 target tokens in 30.50s from clean commit `4e66e46`; loss 26.4735; SHA `a1a6bfc94108a8bba9aac18e5570d70e317cdec5bb706f126bf47e67e2b4efe2` | Explicit no-sync matched scratch treatment; mixed fidelity/topology gain with severe recall regression, meaning 0.0 and AgentV 0/1; checkpoint not promoted |
 | 2026-07-19 | `e547-e544-strict-subset2-r1-24s` | `outputs/runs/e547-e544-strict-subset2-r1-24s/` (local) | 24 CPU HF-context steps / 1,304 target tokens in 36.48s from clean commit `bad2f230`; loss 12.4980; SHA `37002bfd3c63d1ac58f5fc505bf034805b57eee2415d9e15ec1acbb81620fc57` | Explicit no-sync scratch diagnostic; preferred exposure setting for topology, but fidelity and semantic gates fail; checkpoint not promoted |
 
-Append a row for every new or replaced checkpoint. Do not delete history.
+Add a row for every new or replaced checkpoint **at the top of the table**
+(newest first — the dashboard and readers select the newest row by the
+Date (UTC) column). Do not delete history.
 
 ---
 

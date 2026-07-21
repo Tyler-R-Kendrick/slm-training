@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "run_id": "e718-e714-ltr-canvas96-smoke-r1",
+  "experiment_id": "E718",
+  "date_utc": "2026-07-21",
+  "status": "completed_runtime_pareto_quality_incomplete",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "run_id": "e714-symbol-only-scratch600-r1",
+    "sha256": "71ef1d25efb5186b885e8ee9e1370002f419bf42ea53985111734c49cfd2b49e",
+    "reused": true,
+    "created": false,
+    "synced": false,
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "evaluation_policy": {
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "compiler_decode_mode": "off",
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_max_tokens": 96,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "allow_unconstrained_fallback": false,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "control_e714": {
+    "parse": 0.3333333333333333,
+    "meaningful_v1": 0.0,
+    "strict_v2": 0.0,
+    "placeholder_fidelity": 1.0,
+    "structure": 0.0880333,
+    "component_recall": 0.416667,
+    "timeouts": 0,
+    "p50_ms": 14055.4,
+    "p95_ms": 14272.41
+  },
+  "treatment_e718": {
+    "parse": 0.3333333333333333,
+    "meaningful_program_rate": 0.0,
+    "meaningful_v1": 0.0,
+    "strict_v2": 0.0,
+    "placeholder_fidelity": 1.0,
+    "structure": 0.09630000000000001,
+    "component_recall": 0.25,
+    "reward": 0.0,
+    "ast_node_f1": 0.26666666666666666,
+    "ast_edge_f1": 0.15384615384615385,
+    "empty_predictions": 0,
+    "fallback_count": 0,
+    "timeouts": 0,
+    "p50_ms": 5291.37,
+    "p95_ms": 6802.94
+  },
+  "comparison": {
+    "p50_reduction": 0.6235,
+    "p95_reduction": 0.5233,
+    "structure_delta": 0.0082667,
+    "component_recall_delta": -0.166667
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Retain as a local smoke/performance Pareto lever only; do not change defaults or claim quality progress.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f1a54ff563c16ea3550911c793422ac3485a2c56",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v38",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v188"
+    },
+    "stamped_at": "2026-07-21T23:28:41.524690+00:00"
+  }
+}

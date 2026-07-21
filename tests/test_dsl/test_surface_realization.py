@@ -318,6 +318,23 @@ def test_verified_template_binding_validation_fails_closed(
     assert any(message in error for error in result.errors)
 
 
+def test_verified_template_binding_requires_explicit_oracle_success() -> None:
+    pack = SimpleNamespace(
+        pack_id="openui",
+        canonicalize=lambda source: source,
+        oracle=lambda _source: {},
+    )
+    result = resolve_verified_template_bindings(
+        BOUND_HERO,
+        GenerationRequest(prompt="hero", slot_contract=(":hero.title",)),
+        (CallerContentBinding("hero.title", "value"),),
+        pack=pack,
+    )
+    assert result.status == "error"
+    assert result.template_verification == "rejected"
+    assert result.diagnostics["failure_category"] == "oracle_unverified"
+
+
 def test_verified_template_binding_rejects_alias_and_invalid_template() -> None:
     with pytest.raises(ValueError, match="unprefixed"):
         CallerContentBinding(":hero.title", "x")

@@ -7,6 +7,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.autoresearch.engine import (
     compile_commands,
     create_hypothesis_feedback,
@@ -864,8 +866,11 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument(
         "--max-wall-minutes",
         type=float,
-        default=3.0,
-        help="Cumulative per-experiment wall budget (default and maximum: 3 minutes).",
+        default=float(MAX_RUN_MINUTES),
+        help=(
+            "Cumulative per-experiment wall budget "
+            f"(default and maximum: {MAX_RUN_MINUTES} minutes)."
+        ),
     )
     init.add_argument("--notes", default="")
     init.set_defaults(func=cmd_init)

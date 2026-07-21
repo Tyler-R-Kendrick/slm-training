@@ -2782,6 +2782,71 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
     assert current["metrics"]["meaningful_program_rate"] == 0.25
 
 
+def test_live_matrix_result_merges_into_scoreboards_and_runs(tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "runs" / "qx_e999_live_matrix"
+    run_dir.mkdir(parents=True)
+    suites = {
+        "smoke": {
+            "n": 8,
+            "parse_rate": 0.8,
+            "meaningful_program_rate": 0.4,
+            "structural_similarity": 0.35,
+            "placeholder_fidelity": 0.3,
+            "reward_score": 0.45,
+        }
+    }
+    (run_dir / "matrix_result.json").write_text(
+        json.dumps(
+            {
+                "id": "E999",
+                "run_id": "qx_e999_live_matrix",
+                "description": "live-only matrix row",
+                "pass": False,
+                "suites": suites,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "checkpoints" / "last.pt").parent.mkdir(parents=True)
+    (run_dir / "checkpoints" / "last.pt").write_bytes(b"ckpt")
+
+    readers = Readers(tmp_path)
+    quality = readers.scoreboard("quality")
+    assert quality["provenance"] == "live"
+    row = next(r for r in quality["results"] if r["run_id"] == "qx_e999_live_matrix")
+    assert row["suites"]["smoke"]["meaningful_program_rate"] == 0.4
+
+    runs = readers.runs()["runs"]
+    assert any(r["run_id"] == "qx_e999_live_matrix" for r in runs)
+    assert runs[0]["run_id"] == "qx_e999_live_matrix"
+
+    checkpoints = readers.checkpoints()["checkpoints"]
+    assert any(c["run_id"] == "qx_e999_live_matrix" for c in checkpoints)
+
+
+def test_live_training_without_matrix_surfaces_on_research_board(tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "runs" / "twotower_live_train"
+    run_dir.mkdir(parents=True)
+    (run_dir / "train_summary.json").write_text(
+        json.dumps(
+            {
+                "run_id": "twotower_live_train",
+                "steps": 42,
+                "recipe": "hf fast train",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    readers = Readers(tmp_path)
+    research = readers.scoreboard("research")
+    assert research["provenance"] == "live"
+    assert any(r["run_id"] == "twotower_live_train" for r in research["results"])
+    detail = readers.run("twotower_live_train")
+    assert detail["provenance"] == "live"
+    assert detail["train_summary"]["steps"] == 42
+
+
 def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None:
     design = tmp_path / "docs" / "design"
     design.mkdir(parents=True)
@@ -2913,6 +2978,21 @@ def test_read_only_reports_capabilities(ro_client: TestClient) -> None:
     assert caps["execution"] is False
     assert caps["read_only"] is True
     assert len(caps["jobs"]) >= 5
+    assert caps["features"]["openfeature"] is True
+    assert caps["features"]["provider"] == "in_memory"
+
+
+def test_features_bootstrap_returns_evaluated_defaults(ro_client: TestClient) -> None:
+    payload = ro_client.get("/api/features/bootstrap?targeting_key=test").json()
+    assert payload["provider"] == "in_memory"
+    assert payload["evaluated"]["dashboard.default-renderer"] == "interpreted"
+    assert payload["targeting_key"] == "test"
+    assert any(row["lever_id"] == "dashboard-renderer" for row in payload["levers"])
+
+
+def test_features_levers_registry(ro_client: TestClient) -> None:
+    payload = ro_client.get("/api/features/levers").json()
+    assert any(row["flag_key"] == "dashboard.default-renderer" for row in payload["levers"])
 
 
 def test_read_only_blocks_execution(ro_client: TestClient) -> None:

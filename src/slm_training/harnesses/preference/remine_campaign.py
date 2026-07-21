@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
 
+from slm_training.levers import MAX_RUN_MINUTES
+
 from slm_training.autoresearch.schemas import CampaignBudget, CampaignSpec
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.lineage.records import content_sha
@@ -120,7 +122,7 @@ class RemineCampaignConfig:
     end_to_end_threshold: float = 0.0
     min_new_evidence: int = 1
     max_iterations: int = 2
-    max_wall_minutes: float = 3.0
+    max_wall_minutes: float = float(MAX_RUN_MINUTES)
     max_cost_units: float = 0.0
     max_tokens: int = 0
     notes: str = ""
@@ -131,8 +133,10 @@ class RemineCampaignConfig:
         if self.max_iterations < 0 or self.max_iterations > 3:
             # Default max is two trained iterations; a third needs explicit justification.
             raise RemineConfigError("max_iterations must be in [0, 3]")
-        if not 0.0 < self.max_wall_minutes <= 3.0:
-            raise RemineConfigError("max_wall_minutes must be in (0, 3]")
+        if not 0.0 < self.max_wall_minutes <= MAX_RUN_MINUTES:
+            raise RemineConfigError(
+                f"max_wall_minutes must be in (0, {MAX_RUN_MINUTES}]"
+            )
         if not self.prompt_group_ids:
             raise RemineConfigError("prompt_group_ids must be non-empty (frozen set)")
 

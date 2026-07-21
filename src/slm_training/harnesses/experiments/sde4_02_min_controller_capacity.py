@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
@@ -106,7 +107,7 @@ class ControllerCapacityManifest:
             "batch_mode": "cyclic",
             "loss": "cross_entropy",
             "eval_split": "holdout_25_percent_states",
-            "max_wall_minutes": 3.0,
+            "max_wall_minutes": float(MAX_RUN_MINUTES),
         }
     )
     claim_class: str = "wiring"

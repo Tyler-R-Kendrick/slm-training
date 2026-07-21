@@ -277,7 +277,7 @@ function LiveTelemetry({ runId, entry }: { runId: string; entry: any }) {
 }
 
 export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: string) => void }) {
-  const { data, error, reload } = usePoll<any>(`/api/runs/${encodeURIComponent(runId)}`, 0);
+  const { data, error, reload } = usePoll<any>(`/api/runs/${encodeURIComponent(runId)}`, 10000);
   const { data: otelData } = usePoll<any>("/api/otel/runs", 10000);
   const traceLimit = 20;
   const [traceOffset, setTraceOffset] = React.useState(0);

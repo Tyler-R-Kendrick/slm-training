@@ -1,6 +1,6 @@
 $kind = "research"
 
-board = Query("scoreboard", { kind: $kind }, { columns: [], rows: [], meta: { count: 0, passed: "0/0", matrix: "quality", steps: "—", all_pass: false }, reference: "" }, 0)
+board = Query("scoreboard", { kind: $kind }, { columns: [], rows: [], meta: { count: 0, passed: "0/0", matrix: "quality", steps: "—", all_pass: false }, reference: "", provenance: "committed" }, 30)
 
 head = PageHead("Experiments", "Ablation matrices — each row is one lever with a stable id. Cells are per-suite metrics against ship gates. Rows are evidence, not deployable models. Values marked * come from legacy pre-split boards where parse_rate stood in for meaningful.")
 

@@ -10,11 +10,15 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slm_training.levers import MAX_RUN_MINUTES
+
 
 def _wall_minutes(value: str) -> float:
     minutes = float(value)
-    if not 0 < minutes <= 3:
-        raise argparse.ArgumentTypeError("must be positive and at most 3")
+    if not 0 < minutes <= MAX_RUN_MINUTES:
+        raise argparse.ArgumentTypeError(
+            f"must be positive and at most {MAX_RUN_MINUTES}"
+        )
     return minutes
 
 
@@ -77,8 +81,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--max-wall-minutes",
         type=_wall_minutes,
-        default=3.0,
-        help="Cumulative ladder-arm wall budget (default and maximum: 3).",
+        default=float(MAX_RUN_MINUTES),
+        help=(
+            "Cumulative ladder-arm wall budget "
+            f"(default and maximum: {MAX_RUN_MINUTES})."
+        ),
     )
     parser.add_argument(
         "--capacity-arm",
