@@ -1784,6 +1784,11 @@
         {
           "version": "v9",
           "date": "2026-07-21",
+          "note": "no-bump: regenerated iter-slm138-recursive-denoiser-20260721.{json,md} on the clean committed v9 revision (d6cf67c8, code_dirty=false) to embed arm E (control_arm_table row). Content-only refresh -- E's row: 52288 total parameters (+9248 vs A, matching recursive_zstate_parameter_delta(d_model=32, max_len=256)), block_evaluations_per_forward=2 (same as A). No code change; arm_f_dual_view section and every other arm's row unchanged from the prior v8 no-bump regeneration."
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-21",
           "note": "SLM-241 (RSC-A05) follow-up: built control arm E (stacked + matched state capacity) -- new StackedMatchedStateDenoiserTower class (src/slm_training/models/recursive_denoiser.py): an unshared, non-recursive DenoiserTower subclass (same block-evaluation count as arm A) plus a learned state[max_len,d_model] + state_ctx_proj Linear(d_model,d_model) pair shape-matched to arm B's z_latent/ctx_proj, injected once into the initial hidden state before any transition block runs (never recurrently re-applied). Parameter delta over a same-n_layers arm A equals recursive_zstate_parameter_delta(d_model, max_len) exactly (verified against real constructed towers). recursive_control_arms.py: E moved from DEFERRED_ARM_IDS to BUILT_ARM_IDS (only H remains deferred), construct_arm_tower/build_arm_report/ARM_* registries extended. rng_contract.py: added the arch_specific:stacked_matched_state reserved namespace (offset 110_000), same reserved/not-yet-consumed convention as every other arch_specific:* entry. tests/test_models/test_recursive_denoiser.py: +9 tests (arm E structure/block-eval-count/parameter-formula/gradient-consumption/config-roundtrip/init-fairness, plus one amended table assertion and one deferred-arm-set assertion), net 100 passing (was 94 + 6 new, none removed). Docs: docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.{json,md} extended with arm E's formula/verification/gradient-consumption-test evidence."
         },
         {

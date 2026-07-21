@@ -230,7 +230,7 @@
       "n_layers": 4,
       "parameter_count_delta_vs_target_arm_b": 24544,
       "report": {
-        "active_parameter_count": 68811,
+        "active_parameter_count": 68812,
         "arm_id": "F",
         "block_evaluations_per_forward": 4,
         "checkpoint_bytes": 339065,
@@ -268,7 +268,7 @@
       "n_layers": 3,
       "parameter_count_delta_vs_target_arm_b": 7648,
       "report": {
-        "active_parameter_count": 51917,
+        "active_parameter_count": 51922,
         "arm_id": "F",
         "block_evaluations_per_forward": 3,
         "checkpoint_bytes": 263742,
@@ -437,7 +437,38 @@
       "z_state_mode": "parameter_free"
     },
     {
-      "active_parameter_count": 68807,
+      "active_parameter_count": 36281,
+      "arm_id": "E",
+      "block_evaluations_per_forward": 2,
+      "checkpoint_bytes": 226298,
+      "claim_class": "wiring",
+      "contract_version": "RecursiveControlArmReportV1",
+      "cross_attn_calls_per_forward": 2,
+      "d_model": 32,
+      "denoiser_arch": "stacked_matched_state",
+      "estimated_forward_flops": 304128.0,
+      "label": "stacked + matched state capacity (unshared, non-recursive blocks; same-shaped state/state_ctx_proj as B's z_latent/ctx_proj injected once before the blocks run -- mirror image of D)",
+      "matching_target": "matches arm B's total parameter DELTA over a same-n_layers arm A exactly -- recursive_zstate_parameter_delta(d_model, max_len) -- via same-shaped state+state_ctx_proj injected once; NOT intended to match A's raw total parameter count (that is C's/D's kind of target, not E's -- E is the mirror image of D)",
+      "matching_tolerance_params": 0,
+      "max_len": 256,
+      "mlp_calls_per_forward": 2,
+      "notes": [
+        "unshared, non-recursive tower (mirror image of D); parameter_count_delta_vs_baseline=9248 vs recursive_zstate_parameter_delta(d_model=32, max_len=256)=9248 -- matches_formula=True; state/state_ctx_proj consumed once before the transition blocks run, never recurrently re-applied."
+      ],
+      "parameter_count_delta_vs_baseline": 9248,
+      "parameter_count_delta_vs_baseline_pct": 21.486988847583643,
+      "parameter_count_denoiser": 33792,
+      "parameter_count_total": 52288,
+      "recursive_steps": 0,
+      "recursive_transition_layers": 2,
+      "residual_matching_error_params": 9248,
+      "self_attn_calls_per_forward": 2,
+      "undeclared_zstate_parameter_names": [],
+      "within_matching_tolerance": false,
+      "z_state_mode": null
+    },
+    {
+      "active_parameter_count": 68810,
       "arm_id": "F",
       "block_evaluations_per_forward": 4,
       "checkpoint_bytes": 339065,
@@ -468,7 +499,7 @@
       "z_state_mode": null
     },
     {
-      "active_parameter_count": 36284,
+      "active_parameter_count": 36277,
       "arm_id": "G",
       "block_evaluations_per_forward": 2,
       "checkpoint_bytes": 233018,
@@ -508,11 +539,11 @@
     "B",
     "C",
     "D",
+    "E",
     "F",
     "G"
   ],
   "control_arms_deferred": [
-    "E",
     "H"
   ],
   "deep_supervision_metrics": {
@@ -584,6 +615,7 @@
       "arch_specific:shared_recursive_y_only": 80000,
       "arch_specific:stacked": 60000,
       "arch_specific:stacked_depth_matched": 100000,
+      "arch_specific:stacked_matched_state": 110000,
       "control_only": 50000,
       "model_initialization": 0,
       "shape_probe_context": 20000,
@@ -600,12 +632,12 @@
   "stacked_params": 64994,
   "status": "wiring_only",
   "version_stamp": {
-    "code_commit": "f800cccb11c25058d858ded55682286688ceace0",
+    "code_commit": "d6cf67c8adb7a969d7fb4f0cbf37ef4d9fe297f9",
     "code_dirty": false,
     "components": {
-      "model.recursive_denoiser": "v8"
+      "model.recursive_denoiser": "v9"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T02:41:20.470161+00:00"
+    "stamped_at": "2026-07-21T03:02:53.482607+00:00"
   }
 }
