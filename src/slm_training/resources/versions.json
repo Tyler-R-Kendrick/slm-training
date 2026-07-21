@@ -24,7 +24,7 @@
         {
           "version": "v32",
           "date": "2026-07-20",
-          "note": "no-bump: describe E637's model-side pre-content string routing (briefly labeled E633, renumbered -- see docs/design/quality-experiment-matrix.md numbering note) in existing schema-opaque CLI help without changing evaluation plumbing"
+          "note": "no-bump: describe E633's model-side pre-content string routing in existing schema-opaque CLI help without changing evaluation plumbing"
         },
         {
           "version": "v32",
@@ -565,12 +565,12 @@
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-20",
-          "note": "no-bump: this branch's merge with main found the exact same MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] mirror gap independently fixed on both sides (main's note: \"align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.0.0 to 2.1.0 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation\"); both land on the same '2.1.0' value, so no further change was needed beyond keeping this branch's own entry below"
+          "note": "no-bump: E616-E624 consolidation pass \u2014 correct MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] from a stale '2.0.0' to '2.1.0' to mirror evals.meaningful_program's E618 bump; this field is a provenance/reporting label only (thresholds stay None/candidate_pending_calibration), never read by any gate decision, so no threshold or gate behavior changes. Caught by tests/test_versioning/test_mirrors.py::test_meaningful_program_version_is_mirrored during the consolidation pass's full verification re-run; E618's own commit updated evals.meaningful_program's registry entry but missed this mirrored constant."
         },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-20",
-          "note": "no-bump: E616-E624 consolidation pass — correct MEANINGFUL_METRIC_POLICY['binding_aware_meaningful_v2']['version'] from a stale '2.0.0' to '2.1.0' to mirror evals.meaningful_program's E618 bump; this field is a provenance/reporting label only (thresholds stay None/candidate_pending_calibration), never read by any gate decision, so no threshold or gate behavior changes. Caught by tests/test_versioning/test_mirrors.py::test_meaningful_program_version_is_mirrored during the consolidation pass's full verification re-run; E618's own commit updated evals.meaningful_program's registry entry but missed this mirrored constant."
+          "note": "no-bump: align MEANINGFUL_METRIC_POLICY binding_aware_meaningful_v2 provenance descriptor version from 2.0.0 to 2.1.0 to match evals.meaningful_program/METRIC_VERSION; thresholds remain None (candidate_pending_calibration), no gate relaxation"
         },
         {
           "version": "openui_ship_gates_v1",
@@ -1477,7 +1477,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v75",
+      "version": "v76",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1493,84 +1493,94 @@
       ],
       "history": [
         {
-          "version": "v75",
+          "version": "v76",
           "date": "2026-07-20",
-          "note": "E638 rejection (was main's v72, and briefly labeled E634 before this branch's second post-merge renumbering pass -- collided with this branch's own, different E634 above): restore v73 early pre-content routing after final-boundary enforcement collapsed Auth to TextContent and regressed every aggregate quality metric"
+          "note": "no-bump: this branch's merge of origin/main -- _schema_role_slot_bias's object-property branch now runs main's validated, owner-role-compatible design (main's r2, which its own E621 write-up shows was corrected after an r1 attempt was rejected for letting an unrelated component's same-named property steal another component's slot) combined with this branch's v58 slot_role/slot_compatible_property_names/object_property_matches_slot_role helpers and phase==\"value\" guard, plus main's _inline_schema_property_names fix (finds schema properties nested in items/anyOf, not just top-level $ref); this is the actual code now in the repo as of this merge, not a threshold or gate-behavior change"
         },
         {
-          "version": "v74",
-          "date": "2026-07-20",
-          "note": "E638 (was main's v71, briefly E634): split pre-content literal routing from optional opaque penalties and apply it after repeated-slot margins at the final active-property decision boundary"
-        },
-        {
-          "version": "v73",
-          "date": "2026-07-20",
-          "note": "E637 r2 rejection (was main's v70, briefly E633 r2 rejection -- collided with this branch's own, different E633 above): restore v71 repeated-slot behavior after property-level restriction collapsed Auth to TextContent and regressed every aggregate quality metric"
-        },
-        {
-          "version": "v72",
-          "date": "2026-07-20",
-          "note": "E637 r2 (was main's v69, briefly E633 r2): apply repeated-instance distinct-slot margin only at direct placeholder-annotated component properties so it cannot override pre-content operational string routing"
-        },
-        {
-          "version": "v71",
-          "date": "2026-07-20",
-          "note": "E637 (was main's v68, briefly E633 -- collided with this branch's own, different E633 above; see docs/design/quality-experiment-matrix.md numbering note): when a required operational string is immediately followed by a visible-content property, floor the legal empty literal above visible slots at only that active property boundary"
-        },
-        {
-          "version": "v70",
-          "date": "2026-07-20",
-          "note": "E632 rejection (was main's v67): restore v68 optional-empty-only schema opaque behavior after required non-content string penalties removed Input inventory and regressed every continuous aggregate metric"
-        },
-        {
-          "version": "v69",
-          "date": "2026-07-20",
-          "note": "E632 (was main's v66): extend schema_opaque_decode_weight to penalize visible slots in required or optional non-content string arguments while preserving content-annotated properties"
-        },
-        {
-          "version": "v68",
-          "date": "2026-07-20",
-          "note": "E631: when a component owner cannot own any missing visible role, prefer closing it instead of nesting a different role-compatible component at the wrong structural depth"
-        },
-        {
-          "version": "v67",
-          "date": "2026-07-20",
-          "note": "E630 rejection: restore v65 broad schema-role closure behavior after prompt-owned filtering nested Input inside Button and regressed every aggregate quality metric"
-        },
-        {
-          "version": "v66",
-          "date": "2026-07-20",
-          "note": "E630: prefer explicit prompt-owned component candidates over broad schema-only role matches when preventing premature slot-coverage closure"
-        },
-        {
-          "version": "v65",
-          "date": "2026-07-20",
-          "note": "E636 (was main's E622 before this branch's merge renumbering, since this branch's own E622 is different, independently-verified work; see docs/design/quality-experiment-matrix.md numbering note): emit bounded slot-coverage closure score traces plus application and immediate-choice-change counters without changing decode scores"
-        },
-        {
-          "version": "v64",
-          "date": "2026-07-20",
-          "note": "E635 r2 (was main's E621 r2, since this branch's own E621 is different, independently-verified work): require public-schema owner compatibility before a direct visible-slot continuation can outrank frame closure -- also generalized into _schema_role_slot_bias's object-property branch during this branch's merge so an unrelated component's same-named property cannot steal another component's slot there either"
-        },
-        {
-          "version": "v63",
-          "date": "2026-07-20",
-          "note": "E635 r1 (was main's E621 r1, retained as rejected/superseded evidence): extend slot_coverage_close_decode_weight to floor a compiler-legal role-compatible component or object-property continuation above premature frame closure while abstaining when compatibility cannot be proven; missed owner-role compatibility, corrected by v64"
-        },
-        {
-          "version": "v62",
-          "date": "2026-07-20",
-          "note": "E633 (was main's E615 before this branch's merge renumbering, since this branch's own E615 -- v58 below -- is different, independently-verified work; see docs/design/quality-experiment-matrix.md numbering note): generalize schema_role_slot_decode_weight's owner matching to traverse inline (non-$ref) schema properties (semantic_role_candidates) and require the active typed-object property's owning component to itself be a semantic-role candidate for the slot before applying the object-property bias; combined during this branch's merge with v58's slot_role/slot_compatible_property_names/object_property_matches_slot_role helpers rather than duplicating an equivalent semantic_role_properties() helper"
-        },
-        {
-          "version": "v61",
+          "version": "v76",
           "date": "2026-07-20",
           "note": "E623: expose the semantic_role_contract_in_context / semantic_role_*, schema_*, schema_role_slot_decode_weight, semantic_plan_*_decode_weight, and visible_reference_decode_weight CLI flags in scripts/train_model.py, mirroring scripts/evaluate_model.py's existing flag names and ModelBuildConfig wiring exactly; these levers (all already-present ModelBuildConfig/TwoTowerConfig fields, E617/E620) could previously only be exercised via standalone evaluate_model.py replay, never during a real slm sft train run (E622 finding)"
         },
         {
-          "version": "v60",
+          "version": "v75",
           "date": "2026-07-20",
           "note": "E620: derive plan_weight in _generate_batch_once from the new module-level SEMANTIC_PLAN_DECODE_WEIGHT_NAMES tuple (all 11 semantic_plan_*_decode_weight config fields) instead of a 9-item hand-enumerated literal that omitted semantic_plan_inline_decode_weight and semantic_plan_repeated_array_close_margin_decode_weight, silently no-opping _semantic_plan_inline_bias/_semantic_plan_repeated_array_close_bias whenever no other semantic_plan_* weight was also set (masked-not-live in E610-E619 recipes, which always also set semantic_plan_decode_weight)"
+        },
+        {
+          "version": "v74",
+          "date": "2026-07-20",
+          "note": "E617: raise ValueError in _generate_batch_once when schema_role_slot_decode_weight / slot_coverage_close_decode_weight / semantic_plan_typed_array_nonempty_margin_decode_weight / semantic_plan_typed_array_item_margin_decode_weight / semantic_plan_repeated_slot_margin_decode_weight is set without slot_contract_constrained_decode or template_fill_decode, since self._slot_contracts silently stays None otherwise and these biases no-op every step"
+        },
+        {
+          "version": "v73",
+          "date": "2026-07-20",
+          "note": "E615: expose the active typed-object declared property to schema_role_slot_decode_weight so src/alt/details each prefer their own matching visible-slot role instead of converging on one slot"
+        },
+        {
+          "version": "v72",
+          "date": "2026-07-20",
+          "note": "E634 rejection: restore v70 early pre-content routing after final-boundary enforcement collapsed Auth to TextContent and regressed every aggregate quality metric"
+        },
+        {
+          "version": "v71",
+          "date": "2026-07-20",
+          "note": "E634: split pre-content literal routing from optional opaque penalties and apply it after repeated-slot margins at the final active-property decision boundary"
+        },
+        {
+          "version": "v70",
+          "date": "2026-07-20",
+          "note": "E633 r2 rejection: restore v68 repeated-slot behavior after property-level restriction collapsed Auth to TextContent and regressed every aggregate quality metric"
+        },
+        {
+          "version": "v69",
+          "date": "2026-07-20",
+          "note": "E633 r2: apply repeated-instance distinct-slot margin only at direct placeholder-annotated component properties so it cannot override pre-content operational string routing"
+        },
+        {
+          "version": "v68",
+          "date": "2026-07-20",
+          "note": "E633: when a required operational string is immediately followed by a visible-content property, floor the legal empty literal above visible slots at only that active property boundary"
+        },
+        {
+          "version": "v67",
+          "date": "2026-07-20",
+          "note": "E632 rejection: restore v65 optional-empty-only schema opaque behavior after required non-content string penalties removed Input inventory and regressed every continuous aggregate metric"
+        },
+        {
+          "version": "v66",
+          "date": "2026-07-20",
+          "note": "E632: extend schema_opaque_decode_weight to penalize visible slots in required or optional non-content string arguments while preserving content-annotated properties"
+        },
+        {
+          "version": "v65",
+          "date": "2026-07-20",
+          "note": "E631: when a component owner cannot own any missing visible role, prefer closing it instead of nesting a different role-compatible component at the wrong structural depth"
+        },
+        {
+          "version": "v64",
+          "date": "2026-07-20",
+          "note": "E630 rejection: restore v62 broad schema-role closure behavior after prompt-owned filtering nested Input inside Button and regressed every aggregate quality metric"
+        },
+        {
+          "version": "v63",
+          "date": "2026-07-20",
+          "note": "E630: prefer explicit prompt-owned component candidates over broad schema-only role matches when preventing premature slot-coverage closure"
+        },
+        {
+          "version": "v62",
+          "date": "2026-07-20",
+          "note": "E622: emit bounded slot-coverage closure score traces plus application and immediate-choice-change counters without changing decode scores"
+        },
+        {
+          "version": "v61",
+          "date": "2026-07-20",
+          "note": "E621: require public-schema owner compatibility before a direct visible-slot continuation can outrank frame closure"
+        },
+        {
+          "version": "v60",
+          "date": "2026-07-20",
+          "note": "E621: extend slot_coverage_close_decode_weight to floor a compiler-legal role-compatible component or object-property continuation above premature frame closure while abstaining when compatibility cannot be proven"
         },
         {
           "version": "v59",
@@ -1580,7 +1590,7 @@
         {
           "version": "v58",
           "date": "2026-07-20",
-          "note": "E615: expose the active typed-object declared property to schema_role_slot_decode_weight so src/alt/details each prefer their own matching visible-slot role instead of converging on one slot"
+          "note": "score visible slots against active inline object properties derived from the public schema"
         },
         {
           "version": "v57",
