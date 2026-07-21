@@ -3461,7 +3461,31 @@
         {
           "version": "v1",
           "date": "2026-07-21",
+          "note": "no-bump: exposed the existing 0.15 signal margin as public SIGNAL_MARGIN (alias _SIGNAL_MARGIN retained) so SLM-224's power-sweep harness can import it instead of a private name; no calibration or disposition logic changed"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
           "note": "initial registration; SLM-223 NCS0-03 SemanticFloorGateV1 wiring/fixture harness: role-weighted alpha_z aggregate over SpectralAtlasV1 rows, calibrated out-of-fold (leave-one-family-out), evaluated against a label-permutation-null baseline"
+        }
+      ]
+    },
+    "harness.experiments.slm224_floor_gate_power_sweep": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm224_floor_gate_power_sweep.py",
+        "scripts/build_floor_gate_power_sweep.py",
+        "tests/test_harnesses/experiments/test_slm224_floor_gate_power_sweep.py",
+        "tests/test_scripts/test_build_floor_gate_power_sweep.py",
+        "docs/design/iter-slm224-floor-gate-power-sweep-20260721.json",
+        "docs/design/iter-slm224-floor-gate-power-sweep-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-224 NCS0-04 SemanticFloorGateV1 statistical-power sweep: reruns the unmodified SLM-223 gate pipeline at increasing synthetic_runs values to test whether SLM-223's no-signal disposition was a fixture-size power artifact"
         }
       ]
     },

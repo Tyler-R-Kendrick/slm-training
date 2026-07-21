@@ -1098,7 +1098,7 @@ is ready for production until it clears its activation gate and produces a
 `POSITIVE` result under ship-gates with durable checkpoints. The synthesis
 renderer labels the report as wiring-grade and does not promote a champion.
 
-## Heavy-tailed spectral checkpoint diagnostics (NCS0-01/02/03 / SLM-214/215/223)
+## Heavy-tailed spectral checkpoint diagnostics (NCS0-01/02/03/04 / SLM-214/215/223/224)
 
 **Fidelity label: adapted / surrogate.** The NCS0 line borrows the Heavy-Tailed
 Self-Regularization (HTSR) framing — fitting a power-law exponent (`alpha`) to
@@ -1108,33 +1108,43 @@ research program, but narrows it to a **native-PyTorch, CPU-only, fixture-scale*
 implementation: SpectralSnapshotV1 (SLM-214) computes per-matrix Hill-estimator
 alpha, a z-score against a per-shape randomized-ESD null, and role
 classification; SpectralAtlasV1 (SLM-215) joins those snapshots to training/eval
-outcomes with leave-one-family-out and permutation-null controls; and
-SemanticFloorGateV1 (SLM-223) is a first wiring pass at the pre-eval gate that
-SLM-215 named as a prerequisite for production-quality atlas claims — a
-role-weighted `alpha_z` aggregate, calibrated strictly out-of-fold, that flags
-checkpoints likely under a parse-rate floor.
+outcomes with leave-one-family-out and permutation-null controls; SemanticFloorGateV1
+(SLM-223) is a first wiring pass at the pre-eval gate that SLM-215 named as a
+prerequisite for production-quality atlas claims — a role-weighted `alpha_z`
+aggregate, calibrated strictly out-of-fold, that flags checkpoints likely under a
+parse-rate floor; and the SLM-224 power sweep asks a follow-up statistical
+question SLM-223's own honest caveats raised — is its `no_signal` result a
+fixture-size power artifact — by rerunning the unmodified SLM-223 gate pipeline
+across a `synthetic_runs` grid from 4 to 128.
 
 | | |
 | --- | --- |
-| **Lineage** | Heavy-Tailed Self-Regularization / WeightWatcher (Martin, Peng, Mahoney, *Predicting trends in the quality of state-of-the-art neural networks without access to training or testing data*, Nature Communications 2021, [arXiv:2002.06716](https://arxiv.org/abs/2002.06716)); permutation testing for classifier significance |
-| **Fidelity** | **Surrogate** — native-PyTorch SVD + Hill alpha stand in for the full WeightWatcher toolchain; SLM-223's gate is fixture-only, calibrated on synthetic or small local rows, and is a diagnostic pre-screen candidate, not a promotion gate |
-| **Code** | `src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py`, `src/slm_training/harnesses/experiments/slm215_spectral_atlas.py`, `src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py` |
-| **Config** | `scripts/inspect_spectral.py`, `scripts/build_spectral_atlas.py`, `scripts/build_semantic_floor_gate.py --floor-threshold` |
+| **Lineage** | Heavy-Tailed Self-Regularization / WeightWatcher (Martin, Peng, Mahoney, *Predicting trends in the quality of state-of-the-art neural networks without access to training or testing data*, Nature Communications 2021, [arXiv:2002.06716](https://arxiv.org/abs/2002.06716)); permutation testing for classifier significance; statistical power analysis |
+| **Fidelity** | **Surrogate** — native-PyTorch SVD + Hill alpha stand in for the full WeightWatcher toolchain; SLM-223's gate and the SLM-224 sweep are fixture-only, calibrated on synthetic or small local rows, and are diagnostic pre-screen artifacts, not a promotion gate |
+| **Code** | `src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py`, `src/slm_training/harnesses/experiments/slm215_spectral_atlas.py`, `src/slm_training/harnesses/experiments/slm223_semantic_floor_gate.py`, `src/slm_training/harnesses/experiments/slm224_floor_gate_power_sweep.py` |
+| **Config** | `scripts/inspect_spectral.py`, `scripts/build_spectral_atlas.py`, `scripts/build_semantic_floor_gate.py --floor-threshold`, `scripts/build_floor_gate_power_sweep.py --sweep-grid` |
 
 **What we took:** per-matrix Hill-estimator alpha and a per-shape randomized-ESD
 null (SLM-214); a leaky-safe atlas join with leave-one-family-out correlation
-and permutation-null controls (SLM-215); and, for SLM-223, the same
+and permutation-null controls (SLM-215); for SLM-223, the same
 leave-one-family-out + permutation-null discipline applied to a binary
 "floor-risk" gate, with role weights and the flag threshold/direction learned
 only from training-fold data so the reported balanced accuracy is genuinely
-out-of-fold.
+out-of-fold; and for SLM-224, a straightforward statistical-power sweep that
+reruns SLM-223's unmodified pipeline at larger fixture sizes and asks whether
+the LOFO-vs-permutation-null margin ever clears the same 0.15 threshold SLM-223
+used.
 
 **What we did not take:** optional WeightWatcher-parity statistics, any claim
 that a real checkpoint is at risk until run against trained-model telemetry,
-and any promotion or ship-gate use of the gate output. Evidence:
+and any promotion or ship-gate use of the gate output. SLM-224 did not take a
+family-count sweep (the SLM-215 synthetic generator fixes 2 families regardless
+of `synthetic_runs`), so it can only speak to runs-per-family power, not
+family-count power. Evidence:
 [`iter-slm214-spectral-snapshot-20260721.md`](iter-slm214-spectral-snapshot-20260721.md),
 [`iter-slm215-spectral-atlas-20260721.md`](iter-slm215-spectral-atlas-20260721.md),
-[`iter-slm223-semantic-floor-gate-20260721.md`](iter-slm223-semantic-floor-gate-20260721.md).
+[`iter-slm223-semantic-floor-gate-20260721.md`](iter-slm223-semantic-floor-gate-20260721.md),
+[`iter-slm224-floor-gate-power-sweep-20260721.md`](iter-slm224-floor-gate-power-sweep-20260721.md).
 
 ## Honesty rules (for docs & claims)
 

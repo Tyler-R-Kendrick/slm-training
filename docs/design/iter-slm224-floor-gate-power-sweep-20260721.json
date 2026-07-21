@@ -1,0 +1,106 @@
+{
+  "claim_class": "wiring",
+  "disposition": "genuinely_no_signal_in_range",
+  "disposition_rationale": "No swept point (up to synthetic_runs=128) reached the 0.15 margin; within this range, more fixture size did not recover signal for this LOFO/permutation-null protocol.",
+  "experiment_id": "slm224-floor-gate-power-sweep",
+  "falsifier": "The LOFO-vs-permutation-null margin stays below 0.15 across the full swept grid up to 128 synthetic runs, i.e. more fixture size within the swept range never recovers signal -- suggesting SLM-223's no-signal result was not (only) a power problem.",
+  "floor_threshold": 0.5,
+  "honest_caveats": [
+    "Fixture/wiring evidence only: no trained model, checkpoint promotion, or GPU run.",
+    "Reuses the unmodified SLM-223 gate pipeline and the unmodified SLM-215 synthetic generator at each grid point; no new calibration or statistical method is added.",
+    "The synthetic generator always splits runs into exactly 2 families (run_idx % 2), so scaling synthetic_runs increases runs-per-family, not the number of families; this sweep cannot speak to whether more *families* would help, only whether more *runs per family* helps.",
+    "The synthetic per-matrix signal (0.1 * alpha_z coefficient vs 0.05 noise sd) is a fixture design choice, not a measurement from a real checkpoint; a positive result here shows the gate mechanism *can* detect a real embedded signal given enough samples, not that any actual checkpoint atlas has this signal strength.",
+    "No causal conclusion is drawn and no promotion or ship-gate claim is made; this is a diagnostic follow-up to SLM-223's own honest caveats."
+  ],
+  "hypothesis": "SLM-223's SemanticFloorGateV1 'no_signal' disposition on the default 4-run/2-family fixture is a statistical-power artifact, not evidence that the underlying alpha_z-vs-parse_rate relationship fails to generalize across families: sweeping the same SLM-215 synthetic generator (which bakes in a real per-matrix parse_rate = 0.4 + 0.1*alpha_z + noise relationship) to larger synthetic_runs values will produce a leave-one-family-out balanced accuracy that clears the permutation-null mean by the required 0.15 margin at some larger sample size.",
+  "matrix_set": "slm224_floor_gate_power_sweep",
+  "matrix_version": "ncs0-04-v1",
+  "points": [
+    {
+      "disposition": "no_signal",
+      "gate_hash": "d74e00dbdefab284dbb41de0ce1bd4a7501050835747c30181be584171a8cffc",
+      "margin": 0.0,
+      "n_families": 2,
+      "n_runs": 4,
+      "permutation_null_mean": 0.5,
+      "real_balanced_accuracy": 0.5,
+      "synthetic_runs": 4
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "3e18986ae2ddb73e660c04b448aaf2848c7abceb9c9b9d5c6488797be3ee06ac",
+      "margin": 0.125,
+      "n_families": 2,
+      "n_runs": 8,
+      "permutation_null_mean": 0.625,
+      "real_balanced_accuracy": 0.75,
+      "synthetic_runs": 8
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "b57ba5e8e44d292b18e2e703a4411bf1393b851b18d513a6f44ebababa064686",
+      "margin": -0.125,
+      "n_families": 2,
+      "n_runs": 16,
+      "permutation_null_mean": 0.5,
+      "real_balanced_accuracy": 0.375,
+      "synthetic_runs": 16
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "bdb89594d2d92a7ca0692c9fa908a3ba513fc530eae2b686e9d0b31203e4eadc",
+      "margin": 0.0625,
+      "n_families": 2,
+      "n_runs": 32,
+      "permutation_null_mean": 0.5,
+      "real_balanced_accuracy": 0.5625,
+      "synthetic_runs": 32
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "132725a9fcfe4df7abf0be589fb70699c169839ab589c4fa435396d4ed79fe9f",
+      "margin": 0.015625,
+      "n_families": 2,
+      "n_runs": 64,
+      "permutation_null_mean": 0.515625,
+      "real_balanced_accuracy": 0.53125,
+      "synthetic_runs": 64
+    },
+    {
+      "disposition": "no_signal",
+      "gate_hash": "d145dfd7464f1e3e4fcb007bddb4c62aae48551dd210509209f0b4111b4f0f8e",
+      "margin": -0.24586666666666662,
+      "n_families": 2,
+      "n_runs": 128,
+      "permutation_null_mean": 0.4818666666666666,
+      "real_balanced_accuracy": 0.236,
+      "synthetic_runs": 128
+    }
+  ],
+  "run_id": "slm224-floor-gate-power-sweep-20260721",
+  "schema": "PowerSweepReportV1",
+  "status": "fixture",
+  "sweep_grid": [
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "sweep_hash": "ce03c7711dd43b78c077b5d85b33445e5e1e6572faba8829a4601a2390cb9dd5",
+  "timestamp": "2026-07-21T04:47:54.217912Z",
+  "version_stamp": {
+    "code_commit": "7c59a43651e1dfa3633ff1e6b3331fb84f6d4817",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm214_spectral_snapshot": "v2",
+      "harness.experiments.slm215_spectral_atlas": "v1",
+      "harness.experiments.slm223_semantic_floor_gate": "v1",
+      "harness.experiments.slm224_floor_gate_power_sweep": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T04:47:54.217888+00:00"
+  }
+}

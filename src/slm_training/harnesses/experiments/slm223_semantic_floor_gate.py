@@ -35,6 +35,7 @@ __all__ = [
     "MATRIX_SET",
     "MATRIX_VERSION",
     "DEFAULT_FLOOR_THRESHOLD",
+    "SIGNAL_MARGIN",
     "FloorGateRunRow",
     "SemanticFloorGateReport",
     "render_markdown",
@@ -47,7 +48,8 @@ EXPERIMENT_ID = "slm223-semantic-floor-gate"
 
 DEFAULT_FLOOR_THRESHOLD = 0.5
 _PERMUTATION_DRAWS = 20
-_SIGNAL_MARGIN = 0.15
+SIGNAL_MARGIN = 0.15
+_SIGNAL_MARGIN = SIGNAL_MARGIN  # backward-compatible alias for existing internal references
 
 _HYPOTHESIS = (
     "A role-weighted aggregate of SpectralAtlasV1 alpha_z, calibrated on "
