@@ -1,0 +1,291 @@
+{
+  "allowed_implementation_scope": "None yet. If differentiator 7's floor and recurrence gates later clear, the allowed scope is narrowly: an internal, default-off K in {1,2} slot extension of SharedRecursiveDenoiserTower's existing z-stream, supervised only on root_contract archetype and component_inventory targets, decoded through the existing shared lm_head/project() output geometry, read every recursion step by y through the existing G_theta cross-attention/gating path, with gold/zero/swap/wrong/detached interventions in the first fixture, and no authority over compiler legality, verifier truth, certified restrictions, or UNKNOWN handling.",
+  "claim_class": "wiring",
+  "contract_hash": null,
+  "differentiators": [
+    {
+      "contract_field": "slot_kinds",
+      "differentiator_id": 1,
+      "evidence": "Specifiable and consistent with existing architecture: SharedRecursiveDenoiserTower's z-stream is already an internal, non-serialized channel (recursive_outputs() does not export it as an artifact); the contract must require slot state to live there, never in a serialized SemanticPlanV1 object.",
+      "name": "internal_workspace",
+      "satisfied": true,
+      "test_ref": "test_differentiator_1_maps_to_slot_kinds_and_rejects_spv_export"
+    },
+    {
+      "contract_field": "shared_readout_ids",
+      "differentiator_id": 2,
+      "evidence": "Specifiable, not automatic: SLM-138 already decodes every recursion depth through the single shared lm_head/project() (depth_logits.append(self.project(h))); the contract must require slot targets to use that SAME projection, explicitly forbidding SLM-144/145's separate ArchetypeClassifierHead / SerializedInventoryHead pattern.",
+      "name": "shared_decision_output_geometry",
+      "satisfied": true,
+      "test_ref": "test_differentiator_2_rejects_separate_auxiliary_head_proposal"
+    },
+    {
+      "contract_field": "surface_consumer_mechanism",
+      "differentiator_id": 3,
+      "evidence": "Specifiable and architecturally natural: z_r already feeds y_r every recursion step via G_theta's cross-attention/gating path by construction, so a slot-carrying z is a direct consumer, not a side channel logged beside generation.",
+      "name": "direct_consumer",
+      "satisfied": true,
+      "test_ref": "test_differentiator_3_requires_surface_consumer_mechanism_field"
+    },
+    {
+      "contract_field": "slot_kinds",
+      "differentiator_id": 4,
+      "evidence": "Specifiable: restricting slot_kinds to {root_contract, component_inventory} avoids SLM-145's blocked topology/cardinality/pointer scope (topology_head, cardinality_head, live_symbol_pointer_head were never implemented and remain closed pending SPV0-02 ceiling evidence) and avoids SLM-146's plan-compiler/seed machinery entirely.",
+      "name": "minimal_scope",
+      "satisfied": true,
+      "test_ref": "test_differentiator_4_rejects_topology_binding_pointer_scope_creep"
+    },
+    {
+      "contract_field": "interventions",
+      "differentiator_id": 5,
+      "evidence": "Specifiable: the contract's interventions field is required to enumerate gold/zero/swap/wrong/detached from the first fixture, unlike SLM-138 (no ablation ever run on z) and unlike SLM-146 (whose oracle arms test the external consumer only).",
+      "name": "builtin_interventions",
+      "satisfied": true,
+      "test_ref": "test_differentiator_5_rejects_proposal_missing_interventions"
+    },
+    {
+      "contract_field": "compiler_verifier_authority_boundary",
+      "differentiator_id": 6,
+      "evidence": "Specifiable: the contract's authority-boundary field must forbid altering compiler legal membership, verifier truth, certified restrictions, or UNKNOWN handling \u2014 mirroring SLM-146's own EvidenceKind.COMPILER_AUTHORED_CERTIFIED fail-closed pattern (allow_unsafe_predicted_hard_control=False by default), reused conceptually for the internal path.",
+      "name": "no_hard_authority",
+      "satisfied": true,
+      "test_ref": "test_differentiator_6_rejects_proposal_that_can_prune_legal_actions"
+    },
+    {
+      "contract_field": "required_recurrence_gate",
+      "differentiator_id": 7,
+      "evidence": "UNMET today on both prerequisites: (a) recursive regime \u2014 SLM-139 explicitly closed gate_1_recursive_base as failed ('no_supported_probabilistic_regime'; no recursive_core_positive verdict); (b) semantic floor \u2014 no 'semantic floor' gate is defined anywhere in docs/design (zero grep hits), so there is no threshold to escape yet. This is the differentiator that blocks the overall verdict.",
+      "name": "conditional_execution",
+      "satisfied": false,
+      "test_ref": "test_differentiator_7_gates_are_mandatory_and_currently_unmet"
+    }
+  ],
+  "evidence_cutoff": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+  "experiment_id": "slm229-looped-latent-differentiation",
+  "forbidden_duplicate_scope": "Do not duplicate: SemanticPlanV1 export/serialization (src/slm_training/data/progspec/semantic_plan.py), the archetype/role-set/topology/cardinality/pointer predictor heads (src/slm_training/models/semantic_plan_predictor.py), the plan compiler / seed builder / soft-action-feature / certified-restriction machinery (src/slm_training/data/semantic_plan/compiler.py, seed.py), or any topology/binding/pointer/cardinality target (SLM-145's blocked scope).",
+  "generated_at": "2026-07-21T02:45:52.530264Z",
+  "matrix_set": "slm229_looped_latent_differentiation",
+  "matrix_version": "rsc0-01-v1",
+  "mechanism_comparison": [
+    {
+      "causal_intervention_evidence": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "compiler_verifier_authority": "No compiler/verifier authority concept is expected to apply; LOTUS targets natural-language reasoning, not a grammar-constrained DSL decoder.",
+      "downstream_consumption": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "evidence_verdict": "External paper reference only; no code in this repo. Zero repo-wide hits for '2606.31779' or 'LOTUS' outside this memo at audit time (grep of docs/ and src/).",
+      "inference_inputs_leakage": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "mechanism_id": "lotus_arxiv_2606_31779",
+      "param_flop_byte_impact": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "readout_head_sharing": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "state_location_shape": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "structure_handling": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "supervision_target_vocab": "Not independently verified in this environment (no live web access); based only on the title/framing given in the SLM-229 issue text ('looped transformer reasoning', arXiv:2606.31779) and the Universal Transformer lineage (arXiv:1807.03819) already cited for SLM-138. No specific quantitative claim from the LOTUS paper is asserted here.",
+      "weight_sharing_recurrence": "Presumed recurrent/looped application of shared transformer weights over reasoning depth, by analogy to Universal Transformer weight-tying (arXiv:1807.03819). Exact recurrence operator not independently verified in this environment."
+    },
+    {
+      "causal_intervention_evidence": "None run \u2014 SLM-138 is wiring-only (forward pass + checkpoint round-trip). No gold/zero/swap ablation on z exists.",
+      "compiler_verifier_authority": "None \u2014 architecture-only; no legal-action interaction.",
+      "downstream_consumption": "z is read by y every recursion step through the existing G_theta cross-attention/gating path; only the final-step y/logits are exposed by forward()/encode() \u2014 recursive_outputs() exposes per-depth hiddens/logits internally but no plan-like artifact is exported.",
+      "evidence_verdict": "status: wiring_only (iter-slm138 json/md). SLM-139 closed the follow-on stochastic-width campaign as 'no_supported_probabilistic_regime' because gate_1_recursive_base failed: no recursive_core_positive verdict was ever produced.",
+      "inference_inputs_leakage": "Same prompt/context inputs at train and eval; no additional inference-only channel.",
+      "mechanism_id": "slm138_shared_recursive_denoiser",
+      "param_flop_byte_impact": "stacked_params=64994 vs recursive_params=74242 on the toy fixture (json); no GPU or production-scale measurement.",
+      "readout_head_sharing": "Same lm_head/project() used at every depth (depth_logits.append(self.project(h))) \u2014 a single shared vocab projection tied to token embeddings, not a separate per-depth head.",
+      "state_location_shape": "y (token/decoding stream) and z (auxiliary latent stream) both live per-position inside SharedRecursiveDenoiserTower (src/slm_training/models/recursive_denoiser.py); toy fixture forward shape [batch=2, seq=6, d_model=32]. z_0 = learned nn.Parameter(max_len, d_model) + projected pooled context + position.",
+      "structure_handling": "N/A \u2014 no explicit ordered/set/partial-order/UNKNOWN target representation; deep supervision is per-token CE only.",
+      "supervision_target_vocab": "Per-depth surface-token deep-supervision CE only (recursive_depth_loss_0=26.038, recursive_depth_loss_1=23.954, recursive_depth_supervision_loss=33.328 in the toy fixture). z itself carries no defined target vocabulary.",
+      "weight_sharing_recurrence": "Single shared TransformerBlock pool (recursive_transition_layers) split by index into F_theta/G_theta, reused by object identity every recursion step; SLM-138 fixture confirms f_layer_object_count=1, g_layer_object_count=1, total_shared_layers=2. Recurrence: z_r = z_{r-1} + F_theta(norm(z_{r-1}+y_{r-1}), context); y_r = y_{r-1} + G_theta(norm(y_{r-1}+z_r), context); depth R = recursive_steps."
+    },
+    {
+      "causal_intervention_evidence": "Oracle arms are gold-substitution ceilings on the predictor's own accuracy metric, not on downstream free-running generation quality.",
+      "compiler_verifier_authority": "None directly \u2014 the plan stays soft per semantic-planning-valid-state.md, but the whole predictor pipeline lives outside the denoiser.",
+      "downstream_consumption": "Predicted factors are serialized as SemanticPlanV1 and (per SLM-146) compiled into a seed / soft action features by a downstream compiler \u2014 an external artifact, not an in-recursion read.",
+      "evidence_verdict": "status: plan_only/fixture (iter-slm144 docs); claim_class wiring.",
+      "inference_inputs_leakage": "Prompt-only component-family counts at inference; oracle arms (gold_archetype/gold_role_set/gold_both) intentionally leak gold labels for ceiling measurement only.",
+      "mechanism_id": "slm144_plan_predictor_archetype_roleset",
+      "param_flop_byte_impact": "Not measured beyond the toy fixture; no production integration.",
+      "readout_head_sharing": "Separate heads with their own parameters, not the shared lm_head/token vocab \u2014 the exact configuration candidate differentiator 2 rules out for the new probe.",
+      "state_location_shape": "External \u2014 a component-family count vector is fed to standalone heads outside the denoiser (src/slm_training/models/semantic_plan_predictor.py); output is a predicted PlanArchetype/RoleSlot object, not an internal per-step latent.",
+      "structure_handling": "Role-set predicted via bipartite matching (set-valued); no topology/partial-order prediction (that scope is SLM-145, blocked).",
+      "supervision_target_vocab": "Archetype-id classification (5 archetypes) + role-set multi-label over 4 roles on a toy fixture corpus (families=8, train=51, val=13).",
+      "weight_sharing_recurrence": "Independent ArchetypeClassifierHead (MLP) and RoleSetPredictorHead (bipartite-matching) modules; no shared transition with the denoiser recursion."
+    },
+    {
+      "causal_intervention_evidence": "None \u2014 SLM-145's own closeout states SPV0-02/SLM-142 never ran the factor-wise gold-substitution ceiling experiments needed to justify these heads; justified_factors=[] for all 5 factors (archetype, role_set, topology, cardinality, bindings_pointers).",
+      "compiler_verifier_authority": "N/A.",
+      "downstream_consumption": "N/A \u2014 closeout decision: blocked_pending_spv0_02_ceiling_evidence.",
+      "evidence_verdict": "closeout decision: blocked_pending_spv0_02_ceiling_evidence; claim_class wiring.",
+      "inference_inputs_leakage": "N/A.",
+      "mechanism_id": "slm145_plan_predictor_topology_cardinality_pointer",
+      "param_flop_byte_impact": "N/A \u2014 nothing implemented.",
+      "readout_head_sharing": "N/A.",
+      "state_location_shape": "External and never implemented \u2014 topology_head, cardinality_head, live_symbol_pointer_head are named in the plan but a repo-wide grep for these class names returns zero hits in src/.",
+      "structure_handling": "Partial-order/topology and pointer/binding representation was the explicit target of this blocked work; never resolved.",
+      "supervision_target_vocab": "Would have been topology/cardinality/binding factors; RoleSlot.min/max_cardinality is not even populated by the extractor, so no oracle arm was possible.",
+      "weight_sharing_recurrence": "N/A \u2014 blocked before implementation."
+    },
+    {
+      "causal_intervention_evidence": "Arms B/C/E provide gold-substitution and certified-restriction ceiling evidence for the EXTERNAL seed/feature pipeline (see the oracle-ceiling section below) \u2014 this does not test an internal shared-output latent consumer.",
+      "compiler_verifier_authority": "This IS the compiler/verifier boundary \u2014 EvidenceKind.COMPILER_AUTHORED_CERTIFIED is the only class allowed to hard-restrict; arm F (unsafe predicted-hard) is explicitly non-promotable.",
+      "downstream_consumption": "Seed initializes the decode canvas; soft features bias scoring without changing legal membership (arm C, total_soft_features=32, total_hard_removals=0); certified restrictions may hard-prune (arm E, 13 hard removals, 0 false_hard_prunes measured).",
+      "evidence_verdict": "status: fixture; claim_class wiring; SLM-160 disposition: retain_diagnostic, default_state off.",
+      "inference_inputs_leakage": "Gold-seed arms (B/C) leak gold structure for ceiling measurement only; production honesty_mode strips gold/oracle fields via to_production_dict().",
+      "mechanism_id": "slm146_semantic_plan_compiler",
+      "param_flop_byte_impact": "Fixture-only synthetic n=13 records per arm; no production decoder integration.",
+      "readout_head_sharing": "PlanActionFeatures are soft action features attached post-hoc to the legal action set; EvidenceKind gates whether restrictions may go hard (COMPILER_AUTHORED_CERTIFIED only) \u2014 a different sharing mechanism from an in-recursion readout head entirely.",
+      "state_location_shape": "External \u2014 SemanticPlanCompiler/OpenUISemanticPlanCompiler (src/slm_training/data/semantic_plan/compiler.py) consumes a serialized SemanticPlanV1 object; PlanSeedBuilder (seed.py) builds a decoder seed. No in-model latent state.",
+      "structure_handling": "Explicit accepted-set representation via role/topology coverage metrics; UNKNOWN handled via honesty_mode + fail-closed default (allow_unsafe_predicted_hard_control=False).",
+      "supervision_target_vocab": "Seed tokens use the same OpenUI action/token vocabulary as generation (mean seed-to-gold token ratio 0.4106 in the gold-seed arm B), but this is symbolic seed construction, not a supervised internal slot.",
+      "weight_sharing_recurrence": "N/A \u2014 deterministic compiler code, not a trained shared transition."
+    },
+    {
+      "causal_intervention_evidence": "None newly produced; audit-only.",
+      "compiler_verifier_authority": "Canonical recommendation: the existing honest-slot-contract TwoTower decoder remains canonical; semantic_plan_v1_ir, gold_oracle_factor_heads, and plan_seed_builder_soft_restrictions are ALL retained as default-off diagnostics \u2014 none promoted to adopt_primary or adopt_optional.",
+      "downstream_consumption": "N/A.",
+      "evidence_verdict": "No mechanism satisfies adopt_primary/adopt_optional. Per the SLM-229 issue text, none of SLM-138/144/145/146/160 may be relabeled 'latent reasoning' by this memo.",
+      "inference_inputs_leakage": "N/A.",
+      "mechanism_id": "slm160_spv_disposition",
+      "param_flop_byte_impact": "N/A.",
+      "readout_head_sharing": "N/A.",
+      "state_location_shape": "N/A \u2014 disposition audit only; aggregates SLM-138/144/145/146 and others.",
+      "structure_handling": "N/A.",
+      "supervision_target_vocab": "N/A.",
+      "weight_sharing_recurrence": "N/A."
+    },
+    {
+      "causal_intervention_evidence": "None yet \u2014 required as a day-one fixture per differentiator 5, but not run; SLM-146's oracle arms test the external-seed consumer, not this internal-slot consumer (see the oracle ceiling gap below).",
+      "compiler_verifier_authority": "Explicitly forbidden from altering compiler legal membership, verifier truth, certified restrictions, or UNKNOWN handling (differentiator 6) \u2014 the same authority boundary SLM-146's EvidenceKind.COMPILER_AUTHORED_CERTIFIED enforces for the external pipeline, reused conceptually for the internal path.",
+      "downstream_consumption": "Contractually required: y reads z every recursion step through the existing G_theta cross-attention/gating path (already present in SLM-138's architecture) \u2014 not merely logged beside generation.",
+      "evidence_verdict": "NOT AUTHORIZED this round \u2014 blocked_by_recurrence (differentiator 7 unmet): SLM-139 explicitly closed the prerequisite non-vacuous recursive regime as failed, and no 'semantic floor' gate is defined anywhere in docs/design (zero grep hits) for the required floor-escape condition either.",
+      "inference_inputs_leakage": "Same prompt/context inputs as generation; built-in gold/zero/swap/wrong-target interventions are ablations on a frozen or in-training checkpoint, never a silent gold channel (mirrors the honest_slot_contract=True policy).",
+      "mechanism_id": "proposed_minimal_compiler_latent_probe",
+      "param_flop_byte_impact": "K in {1,2} slot read/write projections on top of SLM-138's existing 74242-param toy fixture \u2014 expected negligible incremental parameter count at this scale, but no measurement exists because differentiator 7's floor/recurrence prerequisites are unmet, so no run has produced a number.",
+      "readout_head_sharing": "Contractually required to decode slot targets through the same lm_head/project() vocab used by legal decisions \u2014 NOT a separate ArchetypeClassifierHead/SerializedInventoryHead as SLM-144/145 used.",
+      "state_location_shape": "Would reuse SharedRecursiveDenoiserTower's existing internal z-stream (or a small K-slot extension of it) \u2014 internal, not serialized; K in {1, 2} slots at d_model, scoped to root_contract + component_inventory only.",
+      "structure_handling": "Accepted-set/multi-label root_contract + component_inventory targets with an explicit UNKNOWN/ambiguous representation (contract field); no partial-order/topology claim.",
+      "supervision_target_vocab": "root_contract (archetype id \u2014 deterministically extractable today per semantic-planning-valid-state.md, no learned predictor needed) + component_inventory (component-family counts, the same deterministic vector SLM-144's fixture already used). Explicitly NOT topology/cardinality/binding/pointer (that scope stays blocked per SLM-145).",
+      "weight_sharing_recurrence": "Would reuse the existing shared F_theta/G_theta transition pool (recursive_transition_layers) \u2014 no new per-depth transformer parameters beyond slot read/write projections."
+    }
+  ],
+  "minimal_contract": null,
+  "oracle_intervention_ceiling": {
+    "gap_description": "SLM-146 arms B (gold_seed) / C (gold_seed_soft) / E (certified_restrictions) show that gold-substituted plan structure materially changes the EXTERNAL seed/soft-feature consumer (seed-to-gold token ratio 0.4106; 32 soft features attached in arm C; 0 false_hard_prunes across the certified-only arm E). That evidence answers 'does gold plan info change the seed-builder/compiler consumer' but does NOT test whether gold-substituting a shared-output-geometry INTERNAL latent slot (read every recursion step by y via G_theta) changes free-running token choices, because no such internal supervised channel exists in any implemented mechanism today \u2014 SLM-138's z stream carries no defined target vocabulary and was never gold/zero/swap ablated.",
+    "reused_evidence_applicable": true,
+    "reused_evidence_paths": [
+      "docs/design/iter-slm146-semantic-plan-compiler-20260720.json",
+      "docs/design/iter-slm146-semantic-plan-compiler-20260720.md"
+    ],
+    "smallest_fixture_spec": "NOT RUN (spec only, for a future RSC3 issue, conditional on differentiator 7's gates clearing first): on a frozen or lightly-trained SharedRecursiveDenoiserTower checkpoint, force z_1 (or a designated K-slot subset of z) to a fixed embedding derived from the gold root_contract archetype id / component-inventory set (reusing the shared lm_head/project() embedding table per differentiator 2), leaving all other inputs and weights unchanged; measure the free-running argmax token flip-rate and downstream parse/meaningful-program rate versus the same checkpoint with z_1 zeroed and with z_1 swapped to a mismatched record's gold value. No training step is required \u2014 this is a forward-pass-only oracle-injection ablation."
+  },
+  "prior_art_audit": [
+    {
+      "external_verification_note": "Not independently verified in this environment (no live web access); reasoning limited to the paper titles/arXiv ids given in the issue text.",
+      "internal_hits": "Zero hits repo-wide for '2606.31779', 'LOTUS', '1807.03819', or 'Universal Transformer' in docs/ or src/ (grep at audit time) outside this memo. SLM-138's research-lineage.md row (lines 155-165) cites 'Deep equilibrium / weight-tied recurrent transitions' and explicitly disclaims reproducing any cited DEQ training recipe, but does not name LOTUS or Universal Transformer directly.",
+      "novelty_notes": "SLM-138's shared y/z recursion is the closest internal analogue and already covers the weight-tied-recurrence lineage under a DEQ framing; explicitly naming LOTUS/Universal Transformer in research-lineage.md is a documentation-only follow-up, not performed by this memo to avoid an unrelated drive-by edit.",
+      "novelty_scope": "repository",
+      "topic": "looped/recurrent transformers (LOTUS, Universal Transformer)"
+    },
+    {
+      "external_verification_note": "research-lineage.md's 'Latent falsification MoE' entry cites Coconut (arXiv:2412.06769) and related continuous-latent-reasoning papers as Adjacent, long-horizon design only (E34), deferred until residual failures after E33+E35 \u2014 the closest existing repo acknowledgment of this literature cluster.",
+      "internal_hits": "src/slm_training/models/continuous_latent.py (ContinuousLatentCodec) is an existing, DIFFERENT 'latent' mechanism: a CAP2 rate-controlled communication bottleneck with an explicit noise/rate penalty, not an internal workspace slot read by cross-attention/gating and not supervised against root_contract/component_inventory targets through the shared output head. Not a naming collision with the proposed probe, but flagged to disambiguate.",
+      "novelty_notes": "No internal implementation of direct-output-head-supervised latent slots exists.",
+      "novelty_scope": "repository",
+      "topic": "latent/continuous reasoning with direct output-head supervision"
+    },
+    {
+      "external_verification_note": "PLR parallel latent streams (arXiv:2601.03153) and MIRAGE continuous agent latent CoT (arXiv:2606.04627) are already catalogued as Adjacent in the 'Latent falsification MoE' research-lineage.md row; not independently re-verified here.",
+      "internal_hits": "No 'MinimalCompilerLatentContract' or equivalent slot-schema name exists anywhere in the repo prior to this memo (grep for 'latent slot' / 'compiler latent' returns no matching prior art).",
+      "novelty_notes": "The proposed schema name and internal-slot design are new to this repo.",
+      "novelty_scope": "repository",
+      "topic": "parallel latent tokens/slots"
+    },
+    {
+      "external_verification_note": "N/A \u2014 internal audit only.",
+      "internal_hits": "Extensive and directly on point: SemanticPlanV1 (src/slm_training/data/progspec/semantic_plan.py), predictor heads (src/slm_training/models/semantic_plan_predictor.py), and the plan compiler / seed builder (src/slm_training/data/semantic_plan/compiler.py, seed.py) \u2014 this is the SPV lineage the issue explicitly forbids duplicating.",
+      "novelty_notes": "Any proposal that exports a plan, uses separate heads with soft features, constructs a plan seed, or predicts topology/bindings externally belongs to this completed lineage and is not authorized as new.",
+      "novelty_scope": "none_claimed",
+      "topic": "compiler/AST semantic planning"
+    },
+    {
+      "external_verification_note": "N/A \u2014 internal audit only.",
+      "internal_hits": "SLM-146 arms B/C/E (gold-substitution, soft-feature, certified-restriction) are the only implemented causal-intervention evidence adjacent to this proposal, and they test the EXTERNAL seed/compiler consumer, not an internal shared-output slot (see the oracle-ceiling gap above).",
+      "novelty_notes": "No internal gold/zero/swap/wrong intervention exists for any in-recursion latent state.",
+      "novelty_scope": "repository",
+      "topic": "causal representation interventions"
+    }
+  ],
+  "resolving_evidence": "docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. No resolving evidence exists yet for the floor half because no 'semantic floor' gate has been defined in this repo; defining that gate is a prerequisite for any future re-audit of this proposal.",
+  "reviewed_refs": [
+    "SLM-138",
+    "SLM-139",
+    "SLM-144",
+    "SLM-145",
+    "SLM-146",
+    "SLM-160",
+    "docs/design/research-lineage.md",
+    "docs/design/iter-slm138-recursive-denoiser-20260720.md",
+    "docs/design/iter-slm138-recursive-denoiser-20260720.json",
+    "docs/design/iter-slm139-stochastic-recursive-width-20260720.md",
+    "docs/design/iter-slm139-stochastic-recursive-width-20260720.json",
+    "docs/design/iter-slm144-plan-predictor-20260720.md",
+    "docs/design/iter-slm144-plan-predictor-20260720.json",
+    "docs/design/iter-slm145-plan-predictor-factors-20260720.md",
+    "docs/design/iter-slm145-plan-predictor-factors-20260720.json",
+    "docs/design/iter-slm146-semantic-plan-compiler-20260720.md",
+    "docs/design/iter-slm146-semantic-plan-compiler-20260720.json",
+    "docs/design/iter-slm160-spv-disposition-20260720.md",
+    "docs/design/iter-slm160-spv-disposition-20260720.json",
+    "docs/design/semantic-planning-valid-state.md",
+    "docs/design/semantic-planning-valid-state-disposition.md",
+    "src/slm_training/models/recursive_denoiser.py",
+    "src/slm_training/data/progspec/semantic_plan.py",
+    "src/slm_training/models/semantic_plan_predictor.py",
+    "src/slm_training/data/semantic_plan/compiler.py",
+    "src/slm_training/data/semantic_plan/seed.py"
+  ],
+  "run_id": "slm229_differentiation_fixture",
+  "scale_regime_audit": {
+    "current_model_params_notes": "SLM-138 toy fixture: stacked_params=64994 vs recursive_params=74242 at d_model=32, [batch=2, seq=6]. No production-scale (non-fixture) recursive-denoiser parameter count exists in the reviewed evidence.",
+    "expected_extra_cost_notes": "If built on top of the existing SharedRecursiveDenoiserTower, the incremental cost is expected to be small (a few slot read/write linear projections at d_model, no new recursion depth, no new transformer blocks) \u2014 but this is an expectation, not a measurement: no implementation exists and none should be built before differentiator 7 clears.",
+    "identifiability_verdict": "NOT EVALUABLE from current evidence: no non-toy recursive training run exists to assess whether 1-2 slots plus the proposed root_contract/component_inventory supervision would be statistically identifiable. This question is moot until the recurrence and floor prerequisites in differentiator 7 clear; it is not being asserted as scale_not_identifiable in its own right, only as unresolved.",
+    "lotus_scale_notes": "Not independently verified in this environment (no live web access). LOTUS ('looped transformer reasoning', arXiv:2606.31779) is presumed, from title framing only, to operate at a materially larger parameter/data/task scale than this repo's scratch TwoTower models; no specific number is asserted.",
+    "recursive_regime_status": "FAILED (documented) \u2014 SLM-139's closeout explicitly states gate_1_recursive_base (issue SLM-138) failed: 'wiring_only fixture; no GPU matched-block evaluation or recursive_core_positive verdict.' No non-vacuous recursive regime has been established for SharedRecursiveDenoiserTower.",
+    "semantic_floor_status": "UNDEFINED IN REPO \u2014 a repo-wide grep of docs/design/*.md for 'semantic floor' / 'semantic_floor' returns zero hits. No canonical threshold or gate named 'semantic floor' exists today for this memo to check against; the floor-escape prerequisite named in differentiator 7 has no resolved status because the gate itself has not yet been defined elsewhere in the repo.",
+    "target_tokens_decisions_notes": "No real-corpus target-token or decision counts exist for root_contract/component_inventory supervision; SLM-144's fixture corpus is the only reviewed sizing evidence.",
+    "unique_records_steps_notes": "SLM-144 fixture: train=51, val=13 unique records (archetypes=5, families=8, roles=4); SLM-146 fixture: n=13 synthetic records per arm. Both are toy-scale; no non-fixture step count exists."
+  },
+  "schema": "LoopedLatentDifferentiationV1",
+  "source_commit": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+  "status": "fixture",
+  "target_support_audit": [
+    {
+      "accepted_set_multi_label": "PlanArchetype carries a soft distribution plus a discrete id with confidence \u2014 single-label id with confidence, not inherently multi-label.",
+      "ambiguous_unknown_handling": "SemanticPlanV1.PlanConfidenceCalibration.abstention_reason already exists in the schema for low-confidence/ambiguous cases; a probe supervision target must reuse this representation rather than silently coercing ambiguous archetypes to a negative class.",
+      "counts_by_family": "SLM-144 fixture only: archetypes=5, families=8, roles=4, train=51, val=13. No real-corpus counts by root family / source / suite / rare tail were found in the reviewed docs.",
+      "deterministic_extraction": "Yes \u2014 semantic-planning-valid-state.md states archetype inference is deterministic and pack-derived today (no learned predictor exists); the existing extractor is reusable and must not be reimplemented.",
+      "id_mapping": "Must reuse the SAME action/token/component ID mapping as lm_head/project() (shared output geometry, differentiator 2) \u2014 not the separate ArchetypeClassifierHead's own class-id space used by SLM-144.",
+      "split_leakage_fingerprint": "Not established for a real (non-fixture) corpus in the reviewed docs \u2014 SLM-144's fixture corpus (train=51, val=13, archetypes=5, families=8) is toy-scale only; no production train/held-out group split or leakage fingerprint audit for archetype targets was found in the reviewed evidence.",
+      "target_id": "root_contract_archetype"
+    },
+    {
+      "accepted_set_multi_label": "Multi-label / set-valued by nature (an inventory is a set of present component families). RoleSetPredictorHead already models a related set as bipartite matching in the existing EXTERNAL pipeline; an internal probe needs its own accepted-set representation and must not reuse that external head (differentiator 2).",
+      "ambiguous_unknown_handling": "GAP: not explicitly audited in the reviewed docs for inventory targets specifically. SPV0-02/SLM-142 extraction work covers archetype/role/topology broadly, but the reviewed evidence does not show a dedicated inventory-target ambiguity table. This is an open gap the probe's first fixture must close before target support can be called adequate; it must not be silently coerced to a negative label.",
+      "counts_by_family": "SLM-144 fixture: families=8 (component-family count vector dimensionality). No rare-tail or per-suite counts were found in the reviewed docs.",
+      "deterministic_extraction": "Yes in the fixture \u2014 SLM-144's frequency baseline already used a deterministic component-family count vector as its predictor input; the same deterministic extraction is reusable as a supervision target.",
+      "id_mapping": "Must reuse the shared component/token vocabulary already used by legal decisions (differentiator 2), not SerializedInventoryHead's own GRU-decoder vocabulary.",
+      "split_leakage_fingerprint": "Same gap as root_contract_archetype \u2014 no production-scale held-out split / leakage fingerprint was found in the reviewed evidence for inventory targets.",
+      "target_id": "component_inventory"
+    }
+  ],
+  "timestamp": "2026-07-21T02:45:52.530933Z",
+  "verdict": "blocked_by_recurrence",
+  "version_stamp": {
+    "code_commit": "42d31f1dd9fee295324d5d39bbc48c53dd87cb96",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v54",
+      "harness.experiments.slm229_looped_latent_differentiation": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T02:45:52.530309+00:00"
+  }
+}
