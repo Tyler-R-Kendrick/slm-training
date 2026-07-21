@@ -358,6 +358,112 @@ def force_emit_token_id(
     return tid
 
 
+def exact_forced_token_id(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+    *,
+    forced_token_id: int | None = None,
+    slot_contract: list[str] | None = None,
+    state: GrammarDecodeState | None = None,
+) -> int | None:
+    """Return a force-emit id only when it is the sole legal tokenizer token.
+
+    ``force_emit_token_id`` proves the next significant structural lexeme, but
+    compositional tokenizers may still legally emit insignificant whitespace.
+    This stricter helper enumerates the tokenizer vocabulary and fails closed
+    unless the same incremental DFA admits exactly one policy-legal token.
+    """
+    if state is None or state.engine is None:
+        return None
+    prefix_text = state.sync_ids(tokenizer, prefix_ids)
+    engine = state.engine
+    if not bool(getattr(engine, "terminals_are_exact", lambda: False)()):
+        return None
+    forced = (
+        int(forced_token_id)
+        if forced_token_id is not None
+        else force_emit_token_id(tokenizer, prefix_ids, state=state)
+    )
+    if forced is None:
+        return None
+
+    try:
+        from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+
+        dfa_allowed = allowed_id_set(tokenizer, engine.next_terminals())
+    except Exception:  # noqa: BLE001 - incomplete proof must fail closed
+        return None
+    if dfa_allowed != {forced}:
+        return None
+
+    compiler_candidates: set[int] | None = None
+    try:
+        from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+        if is_dsl_native_tokenizer(tokenizer):
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                build_completion_forest,
+            )
+
+            forest = build_completion_forest(
+                tokenizer,
+                prefix_ids,
+                state=state,
+                slot_contract=slot_contract,
+            )
+            if forest.coverage != "complete":
+                return None
+            compiler_candidates = set(forest.candidate_ids)
+            if compiler_candidates != {forced}:
+                return None
+    except Exception:  # noqa: BLE001 - incomplete proof must fail closed
+        return None
+
+    if not dfa_admits_token(
+        tokenizer,
+        prefix_ids,
+        forced,
+        engine=engine,
+        prefix_text=prefix_text,
+        state=state,
+    ):
+        return None
+
+    # The picker honors a structural force ahead of every non-whitespace
+    # candidate. Its one deliberate exception is a legal whitespace argmax,
+    # so prove that no such tokenizer token can compete.
+    current_line = prefix_text.rstrip().split("\n")[-1].strip()
+    excluded = {
+        tokenizer.pad_id,
+        tokenizer.mask_id,
+        tokenizer.bos_id,
+        tokenizer.unk_id,
+    }
+    for token_id in range(int(tokenizer.vocab_size)):
+        if token_id in excluded:
+            continue
+        token = tokenizer.id_to_token.get(token_id, "")
+        if not _token_surface_piece(tokenizer, token_id).isspace():
+            continue
+        if token == "NL" and (
+            re.fullmatch(r"(?:[A-Za-z_]\w*|b\d+)", current_line)
+            or (current_line == "root" and "=" not in prefix_text)
+        ):
+            continue
+        if compiler_candidates is not None and token_id not in compiler_candidates:
+            continue
+        if dfa_admits_token(
+            tokenizer,
+            prefix_ids,
+            token_id,
+            engine=engine,
+            prefix_text=prefix_text,
+            state=state,
+        ):
+            return None
+    return forced
+
+
 def _incomplete_quoted_string(prefix_text: str) -> bool:
     """True when the prefix ends inside an unclosed double-quoted string."""
     return prefix_text.count('"') % 2 == 1
@@ -1235,6 +1341,7 @@ __all__ = [
     "contract_allowed_token_ids",
     "dfa_admits_token",
     "filter_ids_by_stream",
+    "exact_forced_token_id",
     "force_emit_token_id",
     "make_grammar_state",
     "pick_constrained_token",

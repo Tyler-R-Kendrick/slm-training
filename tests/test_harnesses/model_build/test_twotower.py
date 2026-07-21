@@ -10,7 +10,7 @@ torch = pytest.importorskip("torch")
 
 from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import CallerContentBinding, GenerationRequest
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
 from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
@@ -565,6 +565,48 @@ def test_legacy_twotower_rejects_fragment_request() -> None:
         model.generate_batch_requests(
             [GenerationRequest(prompt="Boolean", output_kind="lexical")]
         )
+
+
+@pytestmark_bridge
+def test_opt_in_binding_runs_only_after_legacy_generation(
+    monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+    template = 'root = TextContent(":slot_0")'
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="doc", prompt="Hero", openui=template)],
+        config=TwoTowerConfig(d_model=32, n_heads=4, context_layers=1, denoiser_layers=1),
+        device="cpu",
+    )
+    calls = 0
+
+    def fake_generate(
+        self: TwoTowerModel,
+        requests: list[GenerationRequest],
+        **_kwargs: object,
+    ) -> list[str]:
+        nonlocal calls
+        calls += 1
+        assert requests[0].slot_contract == (":slot_0",)
+        self._last_generation_evidence = [{"decode": "complete"}]
+        return [template for _ in requests]
+
+    def forbidden_forward(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("post-decode binding must not call the denoiser")
+
+    monkeypatch.setattr(TwoTowerModel, "generate_batch_requests", fake_generate)
+    monkeypatch.setattr(model, "_denoiser_forward", forbidden_forward)
+    value = 'Welcome "back"\\\nToday ☃'
+    result = model.generate_batch_bound_requests(
+        [GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))],
+        [(CallerContentBinding("hero.title", value),)],
+    )[0]
+
+    assert calls == 1
+    assert result.status == "resolved"
+    assert result.materialized_source is None
+    evidence = model.consume_generation_evidence()
+    assert evidence[0]["decode"] == "complete"
+    assert value not in str(evidence)
 
 
 def test_twotower_save_load_generate(tmp_path: Path) -> None:

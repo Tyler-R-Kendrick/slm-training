@@ -157,3 +157,23 @@ v0 = TextContent(":user.title")
   substitution, VSS2-04 splicing, `pack.canonicalize`, and `pack.oracle`.
 - No model, checkpoint, or ship gate is claimed; this is fixture wiring for the
   VSS3 solver stack.
+
+## Production generation boundary
+
+`generate_batch_requests(...) -> list[str]` remains unchanged. The opt-in
+`generate_batch_bound_requests` path first generates and pack-verifies the exact
+canonical template, then returns a `BoundGenerationResult` containing an ordered
+typed binding envelope. Declared contract order deterministically maps external
+keys such as `hero.title` to model-facing placeholders `:slot_0`, `:slot_1`, ...;
+the result preserves the explicit bijection and external role/type metadata.
+The model is never required to emit the external key spelling.
+
+The current OpenUI pack rejects arbitrary quoted user-facing content. A focused
+literal probe using `Welcome "back"\nToday` therefore selects the honest
+template-plus-bindings outcome: `materialized_source` is absent and only the
+template is labeled `pack_verified`. Missing, unknown, duplicate, or prefixed
+alias bindings fail closed. One binding covers every occurrence of its declared
+placeholder. Values remain typed transport data, so quotes, slashes, backslashes,
+newlines, Unicode, and empty strings cannot inject structure. Result fingerprints
+bind the template fingerprint and ordered value digests; generation evidence
+never contains raw values.

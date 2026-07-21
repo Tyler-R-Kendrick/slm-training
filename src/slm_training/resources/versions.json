@@ -3493,7 +3493,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v164",
+      "version": "v165",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3512,6 +3512,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v165",
+          "date": "2026-07-21",
+          "note": "Merge deterministic active-runtime completion from v94 with the retained E698 likeness abstention and role-planning behavior"
+        },
         {
           "version": "v164",
           "date": "2026-07-21",
@@ -3931,6 +3936,11 @@
           "version": "v81",
           "date": "2026-07-20",
           "note": "E639: continue from completed root sections with the best legal role-compatible component while visible slots remain"
+        },
+        {
+          "version": "v94",
+          "date": "2026-07-21",
+          "note": "make exact LTR, repair, choice, and complete-compiler singleton decisions bypass neural rows; add honest verified template-plus-bindings generation boundary"
         },
         {
           "version": "v93",

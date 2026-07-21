@@ -28,6 +28,20 @@ def test_decode_stats_merge_counts_unconstrained_retries() -> None:
     assert total.unconstrained_retries == 3
 
 
+def test_decode_stats_aggregates_row_bypass_counts() -> None:
+    stats = DecodeStats(
+        denoiser_rows_evaluated=2,
+        ambiguous_rows_forwarded=2,
+        forced_row_tokens_without_forward=3,
+        all_forced_steps_without_forward=1,
+    )
+    summary = aggregate_stats([stats])
+    assert summary["denoiser_rows_evaluated_sum"] == 2.0
+    assert summary["ambiguous_rows_forwarded_sum"] == 2.0
+    assert summary["forced_row_tokens_without_forward_sum"] == 3.0
+    assert summary["all_forced_steps_without_forward_sum"] == 1.0
+
+
 def test_decode_stats_tracks_constrained_dead_ends() -> None:
     stats = DecodeStats(constrained_dead_ends=2)
     assert stats.as_dict()["constrained_dead_ends"] == 2

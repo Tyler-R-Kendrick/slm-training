@@ -131,7 +131,174 @@ def test_ltr_incremental_generates() -> None:
     text, stats = model.generate_with_stats("hero card")
     assert isinstance(text, str)
     assert stats.forwards_count >= 1
+    assert stats.denoiser_rows_evaluated >= stats.forwards_count
     assert stats.total_ms > 0
+
+
+def test_greedy_ltr_all_exact_rows_skip_denoiser(monkeypatch) -> None:
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            grammar_ltr_stages=(2,),
+            max_target_len=8,
+            max_prompt_len=16,
+        ),
+        device="cpu",
+    )
+    monkeypatch.setattr(
+        "slm_training.models.twotower.force_emit_token_id",
+        lambda *_args, **_kwargs: model.tokenizer.eos_id,
+    )
+    monkeypatch.setattr(
+        "slm_training.models.twotower.exact_forced_token_id",
+        lambda *_args, **_kwargs: model.tokenizer.eos_id,
+    )
+    monkeypatch.setattr(
+        model,
+        "_denoiser_forward",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("forwarded")),
+    )
+    ctx, ctx_pad = model._encode_context(["a", "b"])
+    with collect_decode_stats() as stats:
+        ids = model._greedy_ltr_decode_batch(ctx, ctx_pad, 2)
+    assert ids[:, 1].tolist() == [model.tokenizer.eos_id] * 2
+    assert stats.forwards_count == 0
+    assert stats.forced_row_tokens_without_forward == 2
+    assert stats.all_forced_steps_without_forward == 1
+
+
+def test_greedy_ltr_exact_bypass_matches_model_ranked_output(monkeypatch) -> None:
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            grammar_ltr_stages=(2,),
+            max_target_len=8,
+            max_prompt_len=16,
+        ),
+        device="cpu",
+    )
+    root_id = model.tokenizer.token_to_id["root"]
+    forward_batches: list[int] = []
+
+    def forward(ids, *_args):
+        forward_batches.append(int(ids.size(0)))
+        logits = torch.full(
+            (ids.size(0), ids.size(1), model.tokenizer.vocab_size),
+            -10.0,
+            device=ids.device,
+        )
+        logits[..., root_id] = 10.0
+        return logits
+
+    monkeypatch.setattr(
+        "slm_training.models.twotower.force_emit_token_id",
+        lambda *_args, **_kwargs: root_id,
+    )
+    monkeypatch.setattr(
+        "slm_training.models.twotower.exact_forced_token_id",
+        lambda *_args, **_kwargs: root_id,
+    )
+    monkeypatch.setattr(model, "_denoiser_forward", forward)
+    ctx, ctx_pad = model._encode_context(["hero card"])
+    with collect_decode_stats() as bypass_stats:
+        bypass = model._greedy_ltr_decode_batch(ctx, ctx_pad, 2)
+    assert forward_batches == []
+
+    model.config.grammar_fastpath = False
+    with collect_decode_stats():
+        ranked = model._greedy_ltr_decode_batch(ctx, ctx_pad, 2)
+
+    assert torch.equal(bypass, ranked)
+    assert bypass_stats.forwards_count == 0
+    assert forward_batches == [1]
+
+
+def test_greedy_ltr_mixed_rows_compact_denoiser(monkeypatch) -> None:
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            grammar_ltr_stages=(2,),
+            max_target_len=8,
+            max_prompt_len=16,
+        ),
+        device="cpu",
+    )
+    calls = 0
+
+    def exact(*_args, **_kwargs):
+        nonlocal calls
+        calls += 1
+        return model.tokenizer.eos_id if calls == 1 else None
+
+    batch_sizes: list[int] = []
+
+    def forward(ids, *_args):
+        batch_sizes.append(int(ids.size(0)))
+        logits = torch.zeros(
+            ids.size(0), ids.size(1), model.tokenizer.vocab_size, device=ids.device
+        )
+        logits[..., model.tokenizer.eos_id] = 10.0
+        return logits
+
+    monkeypatch.setattr(
+        "slm_training.models.twotower.force_emit_token_id",
+        lambda *_args, **_kwargs: model.tokenizer.eos_id,
+    )
+    monkeypatch.setattr("slm_training.models.twotower.exact_forced_token_id", exact)
+    monkeypatch.setattr(model, "_denoiser_forward", forward)
+    ctx, ctx_pad = model._encode_context(["a", "b"])
+    with collect_decode_stats() as stats:
+        ids = model._greedy_ltr_decode_batch(ctx, ctx_pad, 2)
+    assert batch_sizes == [1]
+    assert ids[0, 1].item() == model.tokenizer.eos_id
+    assert ids[1, 1].item() != model.tokenizer.eos_id
+    assert stats.forced_row_tokens_without_forward == 1
+    assert stats.ambiguous_rows_forwarded == 1
 
 
 def test_multitoken_and_lookahead_flags_smoke() -> None:
@@ -426,3 +593,62 @@ def test_r4_repair_uses_multitoken_fewer_forwards() -> None:
     # Multitoken should keep forwards well below one-per-position.
     assert stats.forwards_count < length
     assert stats.forwards_count >= 1
+
+
+def test_repair_exact_token_skips_forward_and_records_authority(monkeypatch) -> None:
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            output_tokenizer="lexer",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            max_target_len=8,
+            max_prompt_len=16,
+        ),
+        device="cpu",
+    )
+    prefix = [model.tokenizer.bos_id, *model.tokenizer.encode("root", add_special=False)]
+    ids = torch.tensor(
+        [[*prefix, model.tokenizer.mask_id]], dtype=torch.long, device=model.device_name
+    )
+    unknown = ids.eq(model.tokenizer.mask_id)
+    ctx, ctx_pad = model._encode_context(["hero card"])
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.steps: list[dict] = []
+
+        def event(self, *_args, **_kwargs) -> None:
+            pass
+
+        def step(self, _name, **kwargs) -> None:
+            self.steps.append(kwargs)
+
+    recorder = Recorder()
+    model.trace_recorder = recorder
+    monkeypatch.setattr(
+        model,
+        "_denoiser_forward",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("forwarded")),
+    )
+    with collect_decode_stats() as stats:
+        filled = model._constrained_ltr_repair(ids, unknown, ctx, ctx_pad)
+    assert filled[0, -1].item() == model.tokenizer.token_to_id["="]
+    assert stats.forwards_count == 0
+    assert stats.forced_row_tokens_without_forward == 1
+    commit = recorder.steps[0]["commits"][0]
+    assert commit["decision_source"] == "dfa_singleton"
+    assert "lp" not in commit

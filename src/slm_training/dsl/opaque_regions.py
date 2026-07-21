@@ -361,9 +361,14 @@ def realize_opaque_regions(
                 errors=(f"verification failed: {exc}",),
             )
 
-    failing_gate = (
-        verifier_report.get("failing_gate") if isinstance(verifier_report, dict) else None
-    )
+    if isinstance(verifier_report, Mapping):
+        failing_gate = verifier_report.get("failing_gate")
+        oracle_ok = verifier_report.get("ok")
+    else:
+        failing_gate = getattr(verifier_report, "failing_gate", None)
+        oracle_ok = getattr(verifier_report, "ok", None)
+    if failing_gate is None and oracle_ok is False:
+        failing_gate = "oracle_rejected"
     if failing_gate is not None:
         status = "rejected"
     elif verifier_report is not None:
