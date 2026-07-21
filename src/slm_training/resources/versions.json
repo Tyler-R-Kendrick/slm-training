@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v92",
+      "version": "v94",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,26 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v94",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber deterministic completion evidence from v92 to v94 after merging the independently landed E650 v92/v93 history; no additional behavior change"
+        },
+        {
+          "version": "v93",
+          "date": "2026-07-21",
+          "note": "Skip role-obligation margin flooring for candidates already blocked to a non-finite score by semantic candidate masks"
+        },
+        {
+          "version": "v92",
+          "date": "2026-07-21",
+          "note": "no-bump: renumber E644 role-obligation evidence to E650 after rebase incorporated the independently landed E639-E644 sequence; no model behavior change"
+        },
+        {
+          "version": "v92",
+          "date": "2026-07-20",
+          "note": "E650: pair visible-role-inferred families with concrete unused slots and margin-floor only the assigned role at compatible schema positions; renumbered from the originally launched E644 arm after rebase"
+        },
         {
           "version": "v92",
           "date": "2026-07-21",
