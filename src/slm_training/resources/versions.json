@@ -3620,6 +3620,25 @@
         }
       ]
     },
+    "harness.experiments.slm230_plan_factor_ceiling_matrix": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm230_plan_factor_ceiling_matrix.py",
+        "scripts/run_slm230_plan_factor_ceiling_matrix.py",
+        "tests/test_harnesses/experiments/test_slm230_plan_factor_ceiling_matrix.py",
+        "tests/test_scripts/test_run_slm230_plan_factor_ceiling_matrix.py",
+        "docs/design/iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.json",
+        "docs/design/iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-230 SPV0-04 plan-factor oracle-substitution ceiling matrix: exercises the real PlanOracleSubstitutor / PlanSeedBuilder / OpenUISemanticPlanCompiler against factor-subset (roles/topology/bindings) oracle arms on the SLM-144 fixture corpus, supplying the factor-wise downstream-ceiling evidence SLM-145's authorization gate and the SLM-160 SPV program disposition both named as the missing next step"
+        }
+      ]
+    },
     "harness.experiments.slm212_debt_routing": {
       "version": "v1",
       "kind": "harness",

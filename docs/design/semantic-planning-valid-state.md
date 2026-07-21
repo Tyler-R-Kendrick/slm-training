@@ -216,3 +216,24 @@ This contract consumes the existing exact-state and evidence owners rather than 
 - Factor-wise oracle substitution is implemented only for the four factors listed above; `symbols` and `coverage` are carried implicitly through the baseline plan. A future issue can add explicit symbol/coverage oracle arms if diagnostics require them.
 - Archetype inference is deterministic and pack-derived (root component + optional `direction`); no learned archetype predictor exists yet.
 - Full plan-bearing eval matrix (gold seed, oracle factors, predicted-plan surrogate) remains blocked until frontier checkpoints and GPU compute are available.
+
+## Factor-wise ceiling matrix (SPV0-04, SLM-230)
+
+**Status:** wiring/fixture matrix run and unit-tested. No predictor, no decode-path integration, no training run, and no ship claim is made; the SLM-160 `gold_oracle_factor_heads` disposition (`retain_diagnostic`, default off) is unchanged.
+
+SLM-142's own honesty caveats above said factor-wise oracle substitution had never been exercised end-to-end for `topology`/`bindings`, and SLM-145's authorization gate for `topology_head` / `cardinality_head` / `live_symbol_pointer_head` closed `blocked_pending_spv0_02_ceiling_evidence` with an explicit recommended next step: "Run a factor-wise oracle-substitution matrix on a real or fixture completion corpus." The program-wide SLM-160 (SPV4-02) disposition audit independently named the same thing as the single "next high-leverage step" for the whole SPV program. SLM-230 (SPV0-04) is that step.
+
+**Code:** `src/slm_training/harnesses/experiments/slm230_plan_factor_ceiling_matrix.py` (`run_fixture_matrix`, `build_default_arms`, `render_markdown`); CLI `scripts/run_slm230_plan_factor_ceiling_matrix.py`.
+
+**Method:** seven arms on the deterministic SLM-144 fixture corpus (`build_fixture_plan_corpus`, n=19 train records at the default `--corpus-size 24`), each starting from an empty baseline `SemanticPlanV1` and using `PlanOracleSubstitutor(plan_source="gold", honesty_mode="oracle_diagnostic")` to substitute only the named factor subset from the gold-extracted plan, then compiling with the real, unmodified `OpenUISemanticPlanCompiler.build_valid_seed`: `C0_no_plan` (baseline), `C1_roles_only`, `C2_topology_only`, `C3_bindings_only` (isolated single factors), `C4_roles_topology`, `C5_roles_topology_bindings` (cumulative), and `C6_full_gold_oracle` (upper bound, all four factors).
+
+**Result (`iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md`/`.json`, disposition `ceiling_confirmed_joint_requirement`):** `C1`/`C2`/`C3` each produced **zero** valid seeds on all 19 records (`C1`/`C2` fail `PlanSeedBuilder`'s single-root-role check; `C3` is a no-op because `PlanSeedBuilder.build`'s own `has_actionable` gate does not look at `bindings` in isolation). `C4` (roles+topology) reaches **1.00 seed-valid rate and 1.00 mean component coverage** with zero content attachment; `C5` (+bindings) keeps 1.00/1.00 and raises the new `mean_placeholder_attachment_ratio` metric from **0.00 to 1.00**; `C6` (+archetype) is numerically identical to `C5`, confirming archetype has no effect on `PlanSeedBuilder`'s output. This is the requested factor-wise ceiling evidence: `roles`+`topology` are *jointly* (not individually) sufficient for the structural ceiling, and `bindings` is jointly sufficient for the content ceiling on top of that.
+
+**Honesty caveats:**
+
+- All non-baseline arms inject the *true* gold-extracted factor value (`honesty_mode="oracle_diagnostic"`); this is an upper-bound ceiling given perfect factor knowledge, never a predictor accuracy measurement, and none of these arms are promotable.
+- This run empirically reconfirms SLM-145's cardinality caveat: `RoleSlot.min_cardinality`/`max_cardinality` are `None` for every role slot in the fixture corpus (`cardinality_populated=false` in the report), so no cardinality-specific arm distinct from `roles` exists yet.
+- The `mean_seed_to_gold_ratio` token-overlap metric reused from SLM-146/147/148 stays flat at ~0.215 across `C4`/`C5`/`C6` — it is dominated by `PlanSeedBuilder`'s own statement-naming/ordering convention (`node_N`, root-last) diverging from the fixture renderer's convention (`nN`, root-first), independent of binding content, and does **not** detect the bindings factor's marginal contribution. `mean_placeholder_attachment_ratio` (introduced by this harness, robust to naming/ordering) is the metric that does.
+- Fixture-corpus evidence only (`build_fixture_plan_corpus`), not a real or held-out completion corpus.
+
+Evidence: [`iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md`](iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md).

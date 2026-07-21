@@ -1,0 +1,152 @@
+{
+  "cardinality_populated": false,
+  "claim_class": "wiring",
+  "corpus_seed": 0,
+  "corpus_size": 19,
+  "disposition": "ceiling_confirmed_joint_requirement",
+  "disposition_rationale": "roles-only, topology-only, and bindings-only arms each stayed at or below the no-plan baseline seed-valid rate (0.00), while roles+topology raised seed-valid rate to 1.00 and adding bindings raised mean placeholder-attachment ratio from 0.00 to 1.00 (full-oracle arm: 1.00 valid rate, 1.00 attachment). This supplies the factor-wise downstream-ceiling evidence SLM-145 and SLM-160 found missing: roles and topology are jointly (not individually) sufficient to reach the structural ceiling, and bindings is jointly sufficient to reach the content ceiling on top of that -- still wiring/fixture evidence, not a learned-head promotion.",
+  "experiment_id": "slm230-spv0-04-plan-factor-ceiling-matrix",
+  "falsifier": "Any single-factor arm (roles-only, topology-only, or bindings-only) produces a valid, non-trivial seed on a meaningful fraction of records; or the combined roles+topology arm fails to raise seed validity above the no-plan baseline; or adding the bindings factor on top of roles+topology fails to raise the placeholder-attachment ratio above the roles+topology-only arm.",
+  "gate_hash": "4e1111bab2b085a6f1ec14639939a34799549be7ef253b8f52bce59baf8ce8ca",
+  "honest_caveats": [
+    "Fixture/wiring evidence only: the deterministic SLM-144 fixture corpus (`build_fixture_plan_corpus`), not a real or held-out completion corpus. No checkpoint, learned predictor, GPU run, or ship-gate claim is made or implied.",
+    "Every oracle arm here (all but `C0_no_plan`) injects the true gold-extracted plan factor(s) directly -- this measures an upper-bound ceiling given perfect factor knowledge, not the accuracy of any predictor (none exists). `honesty_mode=oracle_diagnostic` is used throughout; none of these arms are promotable per the SemanticPlanV1 contract.",
+    "RoleSlot.min_cardinality / max_cardinality are never populated by OpenUISemanticPlanExtractor (verified directly against the fixture corpus by this harness's `cardinality_populated` field) -- SLM-145's documented cardinality-extraction gap is confirmed still open, so no cardinality-specific arm distinct from `roles` can be measured yet.",
+    "The `mean_seed_to_gold_ratio` token-overlap metric (reused from the sibling SLM-146/147/148 harnesses) is measured here to be dominated by PlanSeedBuilder's own statement-naming/ordering convention (`node_N`, root-last) diverging from the fixture gold renderer's convention (`nN`, root-first), independent of binding content -- it does not detect the bindings factor's marginal contribution. It is reported for continuity with those harnesses but `mean_placeholder_attachment_ratio` is the primary bindings-ceiling signal in this report.",
+    "`mean_component_coverage` saturates at 1.0 once `roles`+`topology` are supplied, because oracle substitution injects the exact true role/component set by construction; this is expected for an oracle ceiling and is not evidence a learned predictor would reach the same coverage."
+  ],
+  "hypothesis": "Oracle-substituting the `roles` and `topology` SemanticPlanV1 factors together (holding bindings/archetype at the empty no-plan baseline) raises PlanSeedBuilder/OpenUISemanticPlanCompiler seed validity from 0% (no-plan baseline) to a high rate on the SLM-144 fixture corpus, and additionally oracle-substituting `bindings` raises the measured content-placeholder attachment ratio from 0.0 to a high value -- supplying the factor-wise downstream-ceiling evidence SLM-145's authorization gate and the SLM-160 program disposition both found missing. Individually oracle-substituting only `roles`, only `topology`, or only `bindings` (holding the other factors at baseline) does not produce a valid seed / does not change the compiled output on any record, showing the current PlanSeedBuilder mechanism needs these factors jointly rather than accepting them as independently sufficient.",
+  "matrix_set": "slm230_plan_factor_ceiling_matrix",
+  "matrix_version": "spv0-04-v1",
+  "rows": [
+    {
+      "arm_id": "C0_no_plan",
+      "mean_component_coverage": null,
+      "mean_placeholder_attachment_ratio": null,
+      "mean_seed_to_gold_ratio": null,
+      "n_records": 19,
+      "notes": [],
+      "oracle_factors": [],
+      "promotable": true,
+      "seed_ok_count": 19,
+      "seed_valid_count": 0,
+      "seed_valid_rate": 0.0
+    },
+    {
+      "arm_id": "C1_roles_only",
+      "mean_component_coverage": null,
+      "mean_placeholder_attachment_ratio": null,
+      "mean_seed_to_gold_ratio": null,
+      "n_records": 19,
+      "notes": [
+        "no valid seed on any record; reasons: expected exactly one root role, got 2, expected exactly one root role, got 3, expected exactly one root role, got 4"
+      ],
+      "oracle_factors": [
+        "roles"
+      ],
+      "promotable": false,
+      "seed_ok_count": 0,
+      "seed_valid_count": 0,
+      "seed_valid_rate": 0.0
+    },
+    {
+      "arm_id": "C2_topology_only",
+      "mean_component_coverage": null,
+      "mean_placeholder_attachment_ratio": null,
+      "mean_seed_to_gold_ratio": null,
+      "n_records": 19,
+      "notes": [
+        "no valid seed on any record; reasons: expected exactly one root role, got 0"
+      ],
+      "oracle_factors": [
+        "topology"
+      ],
+      "promotable": false,
+      "seed_ok_count": 0,
+      "seed_valid_count": 0,
+      "seed_valid_rate": 0.0
+    },
+    {
+      "arm_id": "C3_bindings_only",
+      "mean_component_coverage": null,
+      "mean_placeholder_attachment_ratio": null,
+      "mean_seed_to_gold_ratio": null,
+      "n_records": 19,
+      "notes": [
+        "no valid seed on any record; reasons: baseline: no actionable plan"
+      ],
+      "oracle_factors": [
+        "bindings"
+      ],
+      "promotable": false,
+      "seed_ok_count": 19,
+      "seed_valid_count": 0,
+      "seed_valid_rate": 0.0
+    },
+    {
+      "arm_id": "C4_roles_topology",
+      "mean_component_coverage": 1.0,
+      "mean_placeholder_attachment_ratio": 0.0,
+      "mean_seed_to_gold_ratio": 0.21463473006122735,
+      "n_records": 19,
+      "notes": [],
+      "oracle_factors": [
+        "roles",
+        "topology"
+      ],
+      "promotable": false,
+      "seed_ok_count": 19,
+      "seed_valid_count": 19,
+      "seed_valid_rate": 1.0
+    },
+    {
+      "arm_id": "C5_roles_topology_bindings",
+      "mean_component_coverage": 1.0,
+      "mean_placeholder_attachment_ratio": 1.0,
+      "mean_seed_to_gold_ratio": 0.21463473006122735,
+      "n_records": 19,
+      "notes": [],
+      "oracle_factors": [
+        "roles",
+        "topology",
+        "bindings"
+      ],
+      "promotable": false,
+      "seed_ok_count": 19,
+      "seed_valid_count": 19,
+      "seed_valid_rate": 1.0
+    },
+    {
+      "arm_id": "C6_full_gold_oracle",
+      "mean_component_coverage": 1.0,
+      "mean_placeholder_attachment_ratio": 1.0,
+      "mean_seed_to_gold_ratio": 0.21463473006122735,
+      "n_records": 19,
+      "notes": [],
+      "oracle_factors": [
+        "archetype",
+        "roles",
+        "topology",
+        "bindings"
+      ],
+      "promotable": false,
+      "seed_ok_count": 19,
+      "seed_valid_count": 19,
+      "seed_valid_rate": 1.0
+    }
+  ],
+  "run_id": "slm230-spv0-04-plan-factor-ceiling-matrix-20260721",
+  "schema": "Slm230PlanFactorCeilingMatrixReportV1",
+  "status": "fixture",
+  "timestamp": "2026-07-21T05:51:49.846314Z",
+  "version_stamp": {
+    "code_commit": "55d702ec24ba3e8b5426e871baafaf384c1ca524",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v57",
+      "harness.experiments.slm230_plan_factor_ceiling_matrix": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:51:49.846277+00:00"
+  }
+}

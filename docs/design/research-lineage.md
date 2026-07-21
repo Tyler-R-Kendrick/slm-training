@@ -855,6 +855,27 @@ The closeout report is at
 artifacts `docs/design/iter-slm145-plan-predictor-factors-20260720.json` and
 `.md`.
 
+**SLM-230 (SPV0-04) follow-up.** SLM-145's own recommended next step, and the
+SLM-160 (SPV4-02) program disposition's independently-named single "next
+high-leverage step", was: "Run a factor-wise oracle-substitution matrix on a
+real or fixture completion corpus." SLM-230 runs that matrix at fixture scale
+(`harnesses/experiments/slm230_plan_factor_ceiling_matrix.py`): seven arms
+substituting `roles`/`topology`/`bindings` individually and cumulatively from
+the gold-extracted plan into an otherwise-empty baseline, through the real,
+unmodified `PlanOracleSubstitutor` / `PlanSeedBuilder` /
+`OpenUISemanticPlanCompiler`. Result (`ceiling_confirmed_joint_requirement`):
+isolated `roles`-only, `topology`-only, and `bindings`-only arms produce zero
+valid seeds on the 19-record SLM-144 fixture corpus, while the combined
+`roles`+`topology` arm reaches a 1.00 seed-valid rate and 1.00 mean component
+coverage, and adding `bindings` raises a new placeholder-attachment metric
+from 0.00 to 1.00. This is wiring/fixture ceiling evidence only — it does not
+reopen SLM-145 or change the SLM-160 `gold_oracle_factor_heads` disposition
+(`retain_diagnostic`, default off); it supplies the input evidence both of
+those closures said was missing, for a human maintainer to weigh. See
+[`semantic-planning-valid-state.md`](semantic-planning-valid-state.md#factor-wise-ceiling-matrix-spv0-04-slm-230)
+and
+[`iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md`](iter-slm230-spv0-04-plan-factor-ceiling-matrix-20260721.md).
+
 ## SPV4-02 causal architecture disposition (SLM-160)
 
 **Fidelity label: disposition audit / no new experiment.** SLM-160 closes the
