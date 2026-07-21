@@ -1,0 +1,51 @@
+{
+  "allowed_arms": [
+    "none",
+    "low_inference_only"
+  ],
+  "blocked_arms": [
+    "high_trained",
+    "low_trained",
+    "high_plus_low"
+  ],
+  "claim_class": "wiring",
+  "decision": "no_supported_probabilistic_regime",
+  "failed_gates": [
+    "gate_1_recursive_base"
+  ],
+  "gates": {
+    "gate_1_recursive_base": {
+      "issue": "SLM-138",
+      "observed_outcome": "wiring_only fixture; no GPU matched-block evaluation or recursive_core_positive verdict",
+      "passed": false,
+      "required_outcome": "recursive_core_positive | weight_sharing_only with usable checkpoint | other explicit supporting result"
+    },
+    "gate_2_multimodal_regime": {
+      "issue": "SLM-130",
+      "observed_outcome": "merged; fixture evidence exists, but the recursive-base gate already failed",
+      "passed": "deferred_to_recursive_base",
+      "required_outcome": "frozen ambiguity set with >=30 prompts having >=2 hard-valid canonical AST modes"
+    },
+    "gate_3_selector": {
+      "issue": "SLM-127",
+      "observed_outcome": "merged; selector available, but the recursive-base gate already failed",
+      "passed": "deferred_to_recursive_base",
+      "required_outcome": "selector selected-pass@K above simple likelihood with calibrated risk/coverage"
+    }
+  },
+  "matrix_set": "slm139-stochastic-recursive-width",
+  "matrix_version": "slm139-v1",
+  "note": "No stochastic production code added. If SLM-138 later produces a positive recursive verdict, this issue can be reopened or superseded.",
+  "reason": "SLM-138 activation gate not satisfied: only wiring-only fixture evidence exists; no recursive_core_positive or weight_sharing_only verdict from matched-block evaluation.",
+  "run_id": "slm139_gate_closeout",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "d5a65d03102f79521ac0d94a0e3c4fcc29c3d186",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v58"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T05:48:25.547553+00:00"
+  }
+}
