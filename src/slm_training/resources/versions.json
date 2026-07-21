@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v91",
+      "version": "v92",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v92",
+          "date": "2026-07-20",
+          "note": "E650: pair visible-role-inferred families with concrete unused slots and margin-floor only the assigned role at compatible schema positions; renumbered from the originally launched E644 arm after rebase"
+        },
         {
           "version": "v91",
           "date": "2026-07-21",
