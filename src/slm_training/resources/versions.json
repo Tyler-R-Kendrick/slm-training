@@ -2128,7 +2128,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v93",
+      "version": "v94",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -2147,6 +2147,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v94",
+          "date": "2026-07-21",
+          "note": "make exact LTR, repair, choice, and complete-compiler singleton decisions bypass neural rows; add honest verified template-plus-bindings generation boundary"
+        },
         {
           "version": "v93",
           "date": "2026-07-21",

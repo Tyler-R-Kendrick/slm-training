@@ -22,6 +22,10 @@ class DecodeStats:
     pick_ms: float = 0.0
     total_ms: float = 0.0
     forwards_count: int = 0
+    denoiser_rows_evaluated: int = 0
+    ambiguous_rows_forwarded: int = 0
+    forced_row_tokens_without_forward: int = 0
+    all_forced_steps_without_forward: int = 0
     probes_count: int = 0
     dfa_sync_count: int = 0
     tokens_emitted: int = 0
@@ -218,6 +222,10 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "pick_ms",
         "total_ms",
         "forwards_count",
+        "denoiser_rows_evaluated",
+        "ambiguous_rows_forwarded",
+        "forced_row_tokens_without_forward",
+        "all_forced_steps_without_forward",
         "probes_count",
         "dfa_sync_count",
         "tokens_emitted",

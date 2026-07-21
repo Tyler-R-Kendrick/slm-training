@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -171,6 +172,116 @@ class GenerationRequest:
             output_kind=str(data.get("output_kind") or "document"),  # type: ignore[arg-type]
             output_category=_optional_str(data.get("output_category")),
         )
+
+
+@dataclass(frozen=True)
+class CallerContentBinding:
+    """One caller-owned value keyed by its external, non-model identity."""
+
+    external_key: str
+    value: str
+
+    def __post_init__(self) -> None:
+        if not self.external_key or self.external_key.startswith(":"):
+            raise ValueError("external_key must be an unprefixed declared key")
+        if not re.fullmatch(
+            r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*",
+            self.external_key,
+        ):
+            raise ValueError(f"invalid external_key {self.external_key!r}")
+        if not isinstance(self.value, str):
+            raise TypeError("binding value must be a string")
+
+
+@dataclass(frozen=True)
+class ResolvedContentBinding:
+    """Deterministic request-local slot assignment for one caller binding."""
+
+    external_key: str
+    internal_slot: int
+    opaque_slot_id: str
+    value: str
+    value_digest: str
+    value_bytes: int
+    occurrence_count: int
+    semantic_type: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "external_key": self.external_key,
+            "internal_slot": self.internal_slot,
+            "opaque_slot_id": self.opaque_slot_id,
+            "value": self.value,
+            "value_digest": self.value_digest,
+            "value_bytes": self.value_bytes,
+            "occurrence_count": self.occurrence_count,
+            "semantic_type": self.semantic_type,
+        }
+
+    def evidence_dict(self) -> dict[str, Any]:
+        """Sanitized metadata safe for telemetry and generation evidence."""
+        return {
+            key: value
+            for key, value in self.to_dict().items()
+            if key != "value"
+        }
+
+
+@dataclass(frozen=True)
+class BoundGenerationResult:
+    """Verified template plus separately transported caller-owned values."""
+
+    status: str
+    canonical_template: str | None
+    template_verification: str
+    template_fingerprint: str | None
+    bindings: tuple[ResolvedContentBinding, ...]
+    materialized_source: None
+    materialized_verification: str
+    realization_mode: str
+    fingerprint: str
+    diagnostics: dict[str, Any]
+    errors: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "canonical_template": self.canonical_template,
+            "template_verification": self.template_verification,
+            "template_fingerprint": self.template_fingerprint,
+            "bindings": [binding.to_dict() for binding in self.bindings],
+            "materialized_source": self.materialized_source,
+            "materialized_verification": self.materialized_verification,
+            "realization_mode": self.realization_mode,
+            "fingerprint": self.fingerprint,
+            "diagnostics": dict(self.diagnostics),
+            "errors": list(self.errors),
+        }
+
+    def evidence_dict(self) -> dict[str, Any]:
+        """Return result evidence without raw caller content or template bytes."""
+        return {
+            "status": self.status,
+            "template_verification": self.template_verification,
+            "template_fingerprint": self.template_fingerprint,
+            "bindings": [binding.evidence_dict() for binding in self.bindings],
+            "materialized_verification": self.materialized_verification,
+            "realization_mode": self.realization_mode,
+            "fingerprint": self.fingerprint,
+            "diagnostics": dict(self.diagnostics),
+            "error_count": len(self.errors),
+        }
+
+
+def bound_generation_fingerprint(payload: dict[str, Any]) -> str:
+    """Full deterministic fingerprint for a terminal binding result."""
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def canonical_slot_contract(
@@ -381,7 +492,11 @@ def load_generation_requests(
 
 
 __all__ = [
+    "BoundGenerationResult",
+    "CallerContentBinding",
     "GenerationRequest",
+    "ResolvedContentBinding",
+    "bound_generation_fingerprint",
     "binders_in_source",
     "canonical_slot_contract",
     "load_generation_requests",

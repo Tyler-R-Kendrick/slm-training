@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Mapping, Protocol, runtime_checkable
@@ -508,6 +509,212 @@ def resolve_surface_slot_extractor(pack: Any) -> Any | None:
     return _SURFACE_SLOT_EXTRACTORS.get(getattr(pack, "pack_id", None))
 
 
+def _oracle_failure(verifier_report: Any) -> str | None:
+    """Return the authoritative failure marker for dict or typed reports."""
+    if verifier_report is None:
+        return "missing_oracle_report"
+    if isinstance(verifier_report, Mapping):
+        failing_gate = verifier_report.get("failing_gate")
+        ok = verifier_report.get("ok")
+    else:
+        failing_gate = getattr(verifier_report, "failing_gate", None)
+        ok = getattr(verifier_report, "ok", None)
+    if failing_gate is not None:
+        return getattr(failing_gate, "value", str(failing_gate))
+    if ok is False:
+        return "oracle_rejected"
+    return None
+
+
+def resolve_verified_template_bindings(
+    template: str,
+    request: Any,
+    caller_bindings: tuple[Any, ...],
+    *,
+    pack: Any,
+) -> Any:
+    """Verify a canonical template and bind content out of band.
+
+    OpenUI's content policy requires placeholders, so caller values remain in a
+    typed envelope and are never spliced into source by this boundary.
+    """
+    from slm_training.data.contract import (
+        BoundGenerationResult,
+        ResolvedContentBinding,
+        bound_generation_fingerprint,
+    )
+    from slm_training.dsl.placeholders import PLACEHOLDER_RE
+
+    mode = "template_plus_bindings"
+    materialized_verification = "not_materialized_placeholder_policy"
+
+    def finish(
+        *,
+        status: str,
+        canonical: str | None,
+        template_verification: str,
+        template_fingerprint: str | None,
+        resolved: tuple[Any, ...] = (),
+        diagnostics: dict[str, Any] | None = None,
+        errors: tuple[str, ...] = (),
+    ) -> Any:
+        safe_payload = {
+            "status": status,
+            "template_verification": template_verification,
+            "template_fingerprint": template_fingerprint,
+            "bindings": [binding.evidence_dict() for binding in resolved],
+            "materialized_verification": materialized_verification,
+            "realization_mode": mode,
+            "diagnostics": diagnostics or {},
+            "errors": list(errors),
+        }
+        return BoundGenerationResult(
+            status=status,
+            canonical_template=canonical,
+            template_verification=template_verification,
+            template_fingerprint=template_fingerprint,
+            bindings=resolved,
+            materialized_source=None,
+            materialized_verification=materialized_verification,
+            realization_mode=mode,
+            fingerprint=bound_generation_fingerprint(safe_payload),
+            diagnostics=diagnostics or {},
+            errors=errors,
+        )
+
+    try:
+        canonical = pack.canonicalize(template) if pack.canonicalize is not None else template
+    except Exception:  # noqa: BLE001 - diagnostics must not echo generated/user text
+        return finish(
+            status="error",
+            canonical=None,
+            template_verification="canonicalization_failed",
+            template_fingerprint=None,
+            errors=("generated template failed canonicalization",),
+        )
+    template_fingerprint = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    if pack.oracle is None:
+        return finish(
+            status="error",
+            canonical=canonical,
+            template_verification="oracle_unavailable",
+            template_fingerprint=template_fingerprint,
+            errors=("pack oracle unavailable",),
+        )
+    try:
+        verifier_report = pack.oracle(canonical)
+    except Exception:  # noqa: BLE001 - diagnostics must not echo generated/user text
+        return finish(
+            status="error",
+            canonical=canonical,
+            template_verification="oracle_error",
+            template_fingerprint=template_fingerprint,
+            errors=("pack oracle failed",),
+        )
+    failure = _oracle_failure(verifier_report)
+    if failure is not None:
+        return finish(
+            status="error",
+            canonical=canonical,
+            template_verification="rejected",
+            template_fingerprint=template_fingerprint,
+            diagnostics={"failure_category": failure},
+            errors=("generated template was rejected by the pack oracle",),
+        )
+
+    occurrences = Counter(PLACEHOLDER_RE.findall(canonical))
+    opaque_by_placeholder = {
+        placeholder: f"openui:content:{placeholder}" for placeholder in occurrences
+    }
+
+    declared: dict[str, tuple[int, str, str]] = {}
+    declaration_errors: list[str] = []
+    for index, placeholder in enumerate(request.slot_contract):
+        external_key = placeholder[1:]
+        if external_key in declared:
+            declaration_errors.append(f"duplicate declared key {external_key}")
+        declared[external_key] = (index, placeholder, f":slot_{index}")
+    internal_to_external = {
+        internal: external_key
+        for external_key, (_index, _external, internal) in declared.items()
+    }
+    for placeholder in opaque_by_placeholder:
+        if placeholder not in internal_to_external:
+            declaration_errors.append(f"undeclared model slot {placeholder}")
+    if declaration_errors:
+        return finish(
+            status="error",
+            canonical=canonical,
+            template_verification="pack_verified",
+            template_fingerprint=template_fingerprint,
+            errors=tuple(declaration_errors),
+        )
+
+    supplied: dict[str, Any] = {}
+    binding_errors: list[str] = []
+    template_keys = {
+        internal_to_external[placeholder]
+        for placeholder in opaque_by_placeholder
+    }
+    for binding in caller_bindings:
+        key = binding.external_key
+        if key in supplied:
+            binding_errors.append(f"duplicate binding for {key}")
+        supplied[key] = binding
+        if key not in template_keys:
+            binding_errors.append(f"unknown binding {key}")
+    for key in sorted(template_keys - supplied.keys()):
+        binding_errors.append(f"missing required binding {key}")
+    if binding_errors:
+        return finish(
+            status="error",
+            canonical=canonical,
+            template_verification="pack_verified",
+            template_fingerprint=template_fingerprint,
+            errors=tuple(binding_errors),
+        )
+
+    runtime_symbols = {
+        symbol.surface: symbol for symbol in request.effective_runtime_symbols()
+    }
+    resolved: list[Any] = []
+    for key, (internal_slot, external_placeholder, placeholder) in sorted(
+        declared.items(), key=lambda item: item[1][0]
+    ):
+        opaque_slot_id = opaque_by_placeholder.get(placeholder)
+        binding = supplied.get(key)
+        if opaque_slot_id is None or binding is None:
+            continue
+        value_bytes = binding.value.encode("utf-8")
+        symbol = runtime_symbols.get(external_placeholder)
+        resolved.append(
+            ResolvedContentBinding(
+                external_key=key,
+                internal_slot=internal_slot,
+                opaque_slot_id=opaque_slot_id,
+                value=binding.value,
+                value_digest=hashlib.sha256(value_bytes).hexdigest(),
+                value_bytes=len(value_bytes),
+                occurrence_count=occurrences[placeholder],
+                semantic_type=getattr(symbol, "semantic_type", None),
+            )
+        )
+    diagnostics = {
+        "binding_count": len(resolved),
+        "declared_slot_count": len(declared),
+        "literal_materialization_supported": False,
+        "repeated_occurrences": sum(max(0, binding.occurrence_count - 1) for binding in resolved),
+    }
+    return finish(
+        status="resolved",
+        canonical=canonical,
+        template_verification="pack_verified",
+        template_fingerprint=template_fingerprint,
+        resolved=tuple(resolved),
+        diagnostics=diagnostics,
+    )
+
+
 def realize_surface_and_verify(
     solved_program: Any,
     *,
@@ -775,9 +982,7 @@ def realize_surface_and_verify(
                 errors=(f"verification failed: {exc}",),
             )
 
-    failing_gate = (
-        verifier_report.get("failing_gate") if isinstance(verifier_report, dict) else None
-    )
+    failing_gate = _oracle_failure(verifier_report) if verifier_report is not None else None
     if failing_gate is not None:
         status = "rejected"
     elif verifier_report is not None:
@@ -857,5 +1062,6 @@ __all__ = [
     "SurfaceSlotKind",
     "canonicalize_input",
     "realize_surface_and_verify",
+    "resolve_verified_template_bindings",
     "resolve_surface_slot_extractor",
 ]
