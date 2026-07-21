@@ -1387,12 +1387,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v72",
+      "version": "v73",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v73",
+          "date": "2026-07-23",
+          "note": "integrate SLM-192 FFE3-01 flow-pipeline cost-profile fixture harness on current main"
+        },
         {
           "version": "v72",
           "date": "2026-07-23",
@@ -7072,6 +7077,38 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"
+        }
+      ]
+    },
+    "harness.experiments.slm192_profile_flow_pipeline": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm192_profile_flow_pipeline.py",
+        "tests/test_harnesses/experiments/test_slm192_profile_flow_pipeline.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 stage-accurate cost profiler for valid-edit bridge, training, decode, closure, and verification"
+        }
+      ]
+    },
+    "matrix.slm192_profile_flow_pipeline": {
+      "version": "ffe3-01-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/profile_flow_pipeline.py",
+        "tests/test_scripts/test_profile_flow_pipeline.py",
+        "docs/design/iter-slm192-profile-flow-pipeline-20260721.json",
+        "docs/design/iter-slm192-profile-flow-pipeline-20260721.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-01-v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-192 FFE3-01 flow-pipeline cost-profile fixture matrix CLI"
         }
       ]
     }
