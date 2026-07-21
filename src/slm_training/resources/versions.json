@@ -412,12 +412,27 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.6.0",
+      "version": "2.9.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.9.0",
+          "date": "2026-07-21",
+          "note": "E699 rejection: restore pre-alias role semantics after generic placeholder/value aliases collapsed unrelated email and submit roles into RadioItem"
+        },
+        {
+          "version": "2.8.0",
+          "date": "2026-07-21",
+          "note": "E699: align form-role schema aliases with the metric's accepted Input, TextArea, and Select placeholder/value properties"
+        },
+        {
+          "version": "2.7.0",
+          "date": "2026-07-21",
+          "note": "E698: treat component-like adjectives as descriptive prose rather than explicit component requirements"
+        },
         {
           "version": "2.6.0",
           "date": "2026-07-21",
@@ -614,6 +629,21 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.8.0 to 2.9.0; thresholds remain disabled and ship policy is unchanged"
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.7.0 to 2.8.0; thresholds remain disabled and ship policy is unchanged"
+        },
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-21",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.6.0 to 2.7.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -1584,7 +1614,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v157",
+      "version": "v163",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -1599,6 +1629,36 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {
+          "version": "v163",
+          "date": "2026-07-21",
+          "note": "E699 rejection: restore v159 role candidates after form aliases destabilized joint role planning"
+        },
+        {
+          "version": "v162",
+          "date": "2026-07-21",
+          "note": "E699 rejection: restore pre-capacity role planning after the revisit destabilized Form role ownership; retain only explicit form-role alias alignment"
+        },
+        {
+          "version": "v161",
+          "date": "2026-07-21",
+          "note": "E699 correction: align form-role aliases so capacity planning recognizes placeholder/value string properties on public input controls"
+        },
+        {
+          "version": "v160",
+          "date": "2026-07-21",
+          "note": "E699: bound planned-family role reuse by distinct public string-property capacity after likeness abstention removes the false Form owner"
+        },
+        {
+          "version": "v159",
+          "date": "2026-07-21",
+          "note": "E698 r2 correction: disambiguate a visible semantic role when exactly one compatible family names it in a public enum"
+        },
+        {
+          "version": "v158",
+          "date": "2026-07-21",
+          "note": "E698: exclude adjectival component-like mentions from the shared prompt semantic plan"
+        },
         {
           "version": "v157",
           "date": "2026-07-21",

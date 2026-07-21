@@ -131,6 +131,8 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
                 continue
+            if re.match(r"\s+like\b", normalized[span[1] :]):
+                continue
             occupied.append(span)
             found.add(name)
     return frozenset(found)
@@ -307,6 +309,8 @@ def _prompt_component_requirements(
         for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
+                continue
+            if re.match(r"\s+like\b", normalized[span[1] :]):
                 continue
             occupied.append(span)
             before = normalized[max(0, span[0] - 48) : span[0]]

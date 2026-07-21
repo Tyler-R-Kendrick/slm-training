@@ -1711,6 +1711,22 @@ def test_role_obligations_plan_unique_non_house_style_carriers() -> None:
     }
 
 
+def test_role_obligations_disambiguate_visible_role_with_public_enum() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Button": 1, "Stack": 1}),
+        {
+            ":form.email": ("DatePicker", "Input", "Select", "TextArea"),
+            ":form.submit": ("Button",),
+        },
+    )
+
+    assert counts == Counter({"Button": 1, "Stack": 1, "Input": 1})
+    assert bindings == {
+        "Button": (":form.submit",),
+        "Input": (":form.email",),
+    }
+
+
 def test_role_obligations_disambiguate_children_from_planned_parent_schema() -> None:
     from slm_training.data.quality import semantic_role_candidates
     from slm_training.dsl.lang_core import library_schema
@@ -1755,6 +1771,15 @@ def test_prompt_semantic_plan_recognizes_public_group_from_unique_base() -> None
         "Slider",
         "SwitchGroup",
     ]
+
+
+def test_prompt_semantic_plan_does_not_require_likeness_modifier() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan("Form-like stack with title text and submit button.")
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == ["Button", "Stack"]
 
 
 def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:

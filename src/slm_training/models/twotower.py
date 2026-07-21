@@ -4425,6 +4425,32 @@ class TwoTowerModel(nn.Module):
         return result
 
     @staticmethod
+    def _semantic_role_enum_candidates(
+        slot: str, candidates: tuple[str, ...]
+    ) -> tuple[str, ...]:
+        """Return candidate families whose public enum names the visible role."""
+        from slm_training.dsl.lang_core import library_schema
+
+        role = re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
+        definitions = library_schema().get("$defs", {})
+
+        def enum_values(value: object) -> set[str]:
+            if isinstance(value, dict):
+                return {
+                    str(item).lower()
+                    for item in value.get("enum", ())
+                } | set().union(*(enum_values(child) for child in value.values()))
+            if isinstance(value, list):
+                return set().union(*(enum_values(child) for child in value), set())
+            return set()
+
+        return tuple(
+            family
+            for family in candidates
+            if role.lower() in enum_values(definitions.get(family, {}))
+        )
+
+    @staticmethod
     def _semantic_plan_role_obligations(
         family_counts: Counter[str],
         role_candidates: dict[str, tuple[str, ...]] | None,
@@ -4434,6 +4460,7 @@ class TwoTowerModel(nn.Module):
         if not role_candidates:
             return family_counts, {}
         from slm_training.data.house_style.policy import DEFAULT_HOUSE_STYLE
+
         completed = family_counts.copy()
         planned = set(family_counts)
         schema_descendants = TwoTowerModel._schema_descendant_families(planned)
@@ -4508,8 +4535,15 @@ class TwoTowerModel(nn.Module):
                     for preferred in DEFAULT_HOUSE_STYLE.preferred_components
                     if preferred in candidates
                 ),
-                candidates[0] if len(candidates) == 1 else None,
+                None,
             )
+            enum_candidates = TwoTowerModel._semantic_role_enum_candidates(
+                slot, candidates
+            )
+            if family is None and len(enum_candidates) == 1:
+                family = enum_candidates[0]
+            if family is None and len(candidates) == 1:
+                family = candidates[0]
             if family is not None:
                 completed[family] += 1
                 bindings[family].append(slot)

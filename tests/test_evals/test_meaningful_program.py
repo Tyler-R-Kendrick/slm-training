@@ -350,6 +350,21 @@ def test_v2_excludes_replaced_or_negated_components(prompt: str) -> None:
     assert report.verdict is True
 
 
+def test_v2_does_not_require_likeness_modifier() -> None:
+    source = 'root = Stack([submit], "column")\nsubmit = Button(":form.submit")'
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="likeness",
+            prompt="Form-like stack with submit button. Placeholders: :form.submit",
+            openui=source,
+        ),
+    )
+
+    assert report.prompt_contract.required_components == ("Button", "Stack")
+    assert report.verdict is True
+
+
 def test_v2_enforces_explicit_component_multiplicity() -> None:
     source = 'root = Button(":cta.first")'
     report = binding_aware_meaningful_v2(
