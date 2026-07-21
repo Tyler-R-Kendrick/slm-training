@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "run_id": "e647-required-slot-margin-multiseed-sweep-20260721",
+  "experiment_id": "E647",
+  "date_utc": "2026-07-21",
+  "status": "completed",
+  "run_class": "scratch_matrix",
+  "claim_class": "multi_seed_replay_negative_mixed",
+  "quality_claim_made": false,
+  "issue": null,
+  "hypothesis": "E639-E646's shared next_step field repeats a copy-pasted claim: 'E620's coverage-aware component/property closure recommendation remains the next untried lever.' Reading E620's own entry and the full E621-E638 matrix history first falsifies this: slot_coverage_close_decode_weight (TwoTowerModel._slot_coverage_close_bias) IS that recommendation, built and iterated on across eighteen prior sessions (E621-E638) before the lineage deliberately pivoted to a different, PR#625-inspired lever (required_slot_margin_decode_weight, E639) which E639 itself frames as 'a more concrete framing' of the same E620 idea. Filing another closure-mechanism experiment would duplicate E621-E638. Instead this session picks the other item flagged as open across the same six iterations: 'a genuinely powered multi-seed/retrained comparison of required_slot_margin_decode_weight remains open (E626/E639's own deferral, still not picked up by E627-E646).' Hypothesis under test: does required_slot_margin_decode_weight=2's previously-reported net-positive effect (E639, E641, E645, E646, all on the same seed-0 checkpoint) replicate across independently-trained same-recipe checkpoints (different seeds)?",
+  "prior_lever_status_confirmed": {
+    "e620_recommendation": "coverage-aware closure across component and property boundaries, with role-correctness preserved",
+    "mechanism_confirmed_already_built": "slot_coverage_close_decode_weight, TwoTowerModel._slot_coverage_close_bias / _record_slot_coverage_close_trace, src/slm_training/models/twotower.py",
+    "iterations_that_directly_pursued_it": ["E621", "E622", "E630", "E631", "E632", "E633", "E634", "E635", "E636", "E637", "E638"],
+    "outcome": "partially retained default-off (v73-v75, E635-E637 positive mixed evidence: first strict-v2 fix, Modal reachability, nested family accounting), then E638's root-slot-coverage gate rejected as a capacity-limited dead end; lineage pivoted to required_slot_margin_decode_weight (E639) as an explicit reframing of the same recommendation, not an alternative to it",
+    "conclusion": "the next_step boilerplate in E639/E640/E641/E642/E643/E644/E645/E646 is stale copy-paste, not an accurate description of an untried lever; corrected here"
+  },
+  "checkpoints": {
+    "seed0_reused": {
+      "run_id": "e645-smoke-hero-trace-scratch800-20260721",
+      "location": "outputs/runs/e645-smoke-hero-trace-scratch800-20260721/checkpoints/last.pt",
+      "sha256": "a4c24987d1cf3dca97f84fd19e64cfc94210de27b75dc27cc4f7eb5f2041b7e7",
+      "last_loss": 4.062225341796875,
+      "seed": 0,
+      "synced": false,
+      "promoted": false,
+      "note": "reused verbatim from E645/E646, byte-identical, no retrain"
+    },
+    "seed1": {
+      "run_id": "e647-multiseed-s1-scratch800-20260721",
+      "location": "outputs/runs/e647-multiseed-s1-scratch800-20260721/checkpoints/last.pt",
+      "sha256": "6fe9c20bb191b264862ca2f70245119fbf6b2b024f9e39673c33d4b25afeaf32",
+      "last_loss": 4.603209018707275,
+      "seed": 1,
+      "elapsed_wall_seconds": 54.84761003099993,
+      "synced": false,
+      "promoted": false
+    },
+    "seed2": {
+      "run_id": "e647-multiseed-s2-scratch800-20260721",
+      "location": "outputs/runs/e647-multiseed-s2-scratch800-20260721/checkpoints/last.pt",
+      "sha256": "1162ae5178ccd6b0b3f7dd7e81b32942606db0d326a760fa6d4abedb3db86eaf",
+      "last_loss": 3.3955960273742676,
+      "seed": 2,
+      "elapsed_wall_seconds": 57.27963937200002,
+      "synced": false,
+      "promoted": false
+    },
+    "recipe": {
+      "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+      "model": "twotower",
+      "context_backend": "scratch",
+      "output_tokenizer": "choice",
+      "batch_size": 1,
+      "steps": 800,
+      "no_sync_checkpoints": true
+    }
+  },
+  "eval_recipe": {
+    "test_dir": "src/slm_training/resources/data/eval/remediated",
+    "suites": ["held_out", "rico_held", "adversarial", "ood", "smoke"],
+    "n": 19,
+    "flags": "honest_slot_contract, slot_contract_constrained_decode, slot_contract_in_context, semantic_role_contract_in_context, semantic_role_decode_weight=8, slot_coverage_close_decode_weight=2, schema_value_decode_weight=4, schema_opaque_close_decode_weight=4, schema_role_slot_decode_weight=8, semantic_plan_decode_weight=4, semantic_plan_margin_decode_weight=2, semantic_plan_binding_decode_weight=1, semantic_plan_root_decode_weight=8, semantic_plan_root_margin_decode_weight=2, semantic_plan_repeated_array_close_margin_decode_weight=2, semantic_plan_repeated_slot_margin_decode_weight=2, semantic_plan_typed_array_nonempty_margin_decode_weight=2, semantic_plan_typed_array_item_margin_decode_weight=2, grammar_ltr_max_tokens=160",
+    "swept_flag": "required_slot_margin_decode_weight",
+    "swept_values": [0, 2],
+    "run_ids": {
+      "seed0_margin0": "e645-fix-suite19-margin0-20260721 (reused verbatim from E645)",
+      "seed0_margin2": "e645-fix-suite19-margin2-20260721 (reused verbatim from E645)",
+      "seed1_margin0": "e647-suite19-s1-margin0-20260721",
+      "seed1_margin2": "e647-suite19-s1-margin2-20260721",
+      "seed2_margin0": "e647-suite19-s2-margin0-20260721",
+      "seed2_margin2": "e647-suite19-s2-margin2-20260721"
+    },
+    "discarded_interrupted_attempts": "seed1 margin2 and seed2 margin0 each had one initial attempt cut off mid-suite by an unrelated shell/tool timeout (missing eval_smoke.json); both were deleted (rm -rf) and re-run to full completion inside the 3-minute cap before being used as evidence, per this repo's 'a timed-out, interrupted, or killed run is never evidence' rule"
+  },
+  "pooled_per_seed_n19": {
+    "seed0_margin0": {"meaningful_program_v1_rate": 0.7895, "reward_score": 0.7990, "placeholder_fidelity": 0.6232, "structural_similarity": 0.4521, "component_type_recall": 0.6842},
+    "seed0_margin2": {"meaningful_program_v1_rate": 0.8421, "reward_score": 0.8107, "placeholder_fidelity": 0.6645, "structural_similarity": 0.5001, "component_type_recall": 0.6579},
+    "seed1_margin0": {"meaningful_program_v1_rate": 0.7895, "reward_score": 0.8617, "placeholder_fidelity": 0.6996, "structural_similarity": 0.5273, "component_type_recall": 0.7061},
+    "seed1_margin2": {"meaningful_program_v1_rate": 0.7368, "reward_score": 0.8739, "placeholder_fidelity": 0.7276, "structural_similarity": 0.6193, "component_type_recall": 0.7167},
+    "seed2_margin0": {"meaningful_program_v1_rate": 0.6842, "reward_score": 0.7700, "placeholder_fidelity": 0.6794, "structural_similarity": 0.4791, "component_type_recall": 0.6904},
+    "seed2_margin2": {"meaningful_program_v1_rate": 0.6316, "reward_score": 0.7002, "placeholder_fidelity": 0.5987, "structural_similarity": 0.5531, "component_type_recall": 0.6140}
+  },
+  "per_seed_net_binary_delta_margin2_minus_margin0_out_of_19": {
+    "seed0": 1,
+    "seed1": -1,
+    "seed2": -1
+  },
+  "pooled_3seed_statistics_n57": {
+    "method": "slm_training.evals.power_protocol.bootstrap_paired_ci (57 records treated i.i.d., replicating E642's own method) and cluster_bootstrap_ci (57 records resampled by seed-cluster, k=3 clusters of 19), 2000 resamples, seed=0, alpha=0.05",
+    "meaningful_program_v1": {"ctrl_mean": 0.7544, "treat_mean": 0.7368, "delta": -0.0175, "naive_ci95": [-0.0702, 0.0351], "cluster_ci95_by_seed": [-0.0526, 0.0526], "bh_significant": false},
+    "reward_score": {"ctrl_mean": 0.8102, "treat_mean": 0.7949, "delta": -0.0153, "naive_ci95": [-0.0635, 0.0191], "cluster_ci95_by_seed": [-0.0698, 0.0122], "bh_significant": false},
+    "placeholder_fidelity": {"ctrl_mean": 0.6674, "treat_mean": 0.6636, "delta": -0.0038, "naive_ci95": [-0.0623, 0.0471], "cluster_ci95_by_seed": [-0.0807, 0.0412], "bh_significant": false},
+    "structural_similarity": {"ctrl_mean": 0.4862, "treat_mean": 0.5575, "delta": 0.0713, "naive_ci95": [0.0184, 0.1264], "cluster_ci95_by_seed": [0.0480, 0.0920], "bh_significant": true},
+    "component_type_recall": {"ctrl_mean": 0.6936, "treat_mean": 0.6629, "delta": -0.0307, "naive_ci95": [-0.0728, 0.0000], "cluster_ci95_by_seed": [-0.0763, 0.0105], "bh_significant": false}
+  },
+  "verdict": "The previously-reported single-checkpoint net-positive effect of required_slot_margin_decode_weight=2 (E639, E641, E645, E646, all on the same seed-0 checkpoint) does not replicate across two independently-trained same-recipe checkpoints. Per-seed binary meaningful_program_v1 delta flips sign between seeds (+1/-1/-1 out of 19); pooled 3-seed statistics show no seed-cluster-robust effect on meaningful_program_v1, reward_score, placeholder_fidelity, or component_type_recall (all CIs cross zero). structural_similarity is the one metric with a seed-cluster-robust positive delta (CI excludes zero in both naive and cluster bootstrap), a real but narrow finding. Three seeds is still thin (not DEFAULT_MIN_SUITE_N-powered), but is enough to overturn the accumulated single-checkpoint 'consistent gain' narrative. Not a ship claim; no checkpoint trained, promoted, or synced; default required_slot_margin_decode_weight (0.0) unchanged; no source code touched this session (clean tree throughout), so no version_stamp component bump applies.",
+  "decision": "Do not promote or recommend enabling required_slot_margin_decode_weight based on prior single-checkpoint evidence. Keep it default-off (unchanged). Correct the lineage's own next_step boilerplate: E620's coverage-aware component/property closure recommendation is the already-explored E621-E638 arc, not an untried lever -- this should stop being repeated verbatim in future next_step fields. If required_slot_margin_decode_weight is pursued further, use 5+ seeds and/or a genuinely powered n>=20-per-suite sample before any promotion claim; structural_similarity's seed-robust gain is worth an isolated follow-up.",
+  "next_step": "1) required_slot_margin_decode_weight's apparent single-checkpoint benefit does not replicate across seeds on meaningful_program_v1/reward/fidelity/component_recall; a promotion case for it needs 5+ seeds or a >=20-per-suite powered sample, not more single-checkpoint traces. 2) structural_similarity's seed-cluster-robust positive delta (+0.0713, CI [0.0480, 0.0920]) is unexplained and worth a dedicated trace: is this a real structural benefit, or an artifact correlated with the same over-stuffing/padding behavior E643/E644 found gaming meaningful_program_v1's literal empty-children check? 3) The residual variadic-frame bind-reference class E646 found benign should still be watched if the lever's default is ever revisited. 4) Stop repeating 'E620's coverage-aware component/property closure recommendation remains the next untried lever' in future next_step fields -- it is factually established as already-tried (E621-E638) by this entry.",
+  "commands_run": [
+    "git fetch origin",
+    "PYTHONPATH=src python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --context-backend scratch --output-tokenizer choice --seed 1 --batch-size 1 --steps 800 --run-id e647-multiseed-s1-scratch800-20260721 --run-root outputs/runs --no-sync-checkpoints",
+    "PYTHONPATH=src python -m scripts.train_model --train-dir src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719 --model twotower --context-backend scratch --output-tokenizer choice --seed 2 --batch-size 1 --steps 800 --run-id e647-multiseed-s2-scratch800-20260721 --run-root outputs/runs --no-sync-checkpoints",
+    "PYTHONPATH=src python -m scripts.evaluate_model --checkpoint outputs/runs/e647-multiseed-s{1,2}-scratch800-20260721/checkpoints/last.pt --model twotower --test-dir src/slm_training/resources/data/eval/remediated --suites held_out,rico_held,adversarial,ood,smoke ... --required-slot-margin-decode-weight {0,2} --run-id e647-suite19-s{1,2}-margin{0,2}-20260721",
+    "python (ad hoc) using slm_training.evals.power_protocol.bootstrap_paired_ci / cluster_bootstrap_ci over the 6 eval runs' per-record details[] arrays",
+    "PYTHONPATH=src NODE_OPTIONS=\"--max-old-space-size=8192\" python -m pytest tests/test_models/test_compiler_decode.py tests/test_models/test_choice_tokenizer.py tests/test_models/test_decode_stats.py -q",
+    "python -m scripts.verify_version_stamps --check"
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1c188405515b0e7e90ff2571346e503b4e67a1b9",
+    "code_dirty": false,
+    "components": {}
+  }
+}
