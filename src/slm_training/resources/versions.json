@@ -7152,6 +7152,11 @@
         {
           "version": "ffe3-02-v1",
           "date": "2026-07-21",
+          "note": "no-bump: regenerate SLM-193 design artifact timings after githook fixture run; matrix CLI behavior unchanged"
+        },
+        {
+          "version": "ffe3-02-v1",
+          "date": "2026-07-21",
           "note": "initial registration; SLM-193 FFE3-02 bit-exact flow-cache fixture matrix CLI"
         }
       ]

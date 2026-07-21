@@ -1,4 +1,4 @@
-# SLM-193 (FFE3-02): bit-exact flow caches (slm193-flow-caches-20260721-280641cd)
+# SLM-193 (FFE3-02): bit-exact flow caches (slm193-flow-caches-20260721-f1bb3bc3)
 
 Matrix set: `slm193_flow_caches`
 
@@ -20,13 +20,13 @@ Cache hit rates stay below 20% on warm repeated requests, or lookup/serializatio
 
 | arm_name | total_ms | hit_rate | n_entries | bytes_stored | speedup |
 | --- | --- | --- | --- | --- | --- |
-| exact_closure_cold | 0.611 | 0.00 | 6 | 4364 | 1.00 |
-| exact_closure_warm | 0.789 | 0.67 | 6 | 4364 | 0.77 |
-| exact_closure_cross_request | 0.756 | 0.50 | 12 | 8728 | 1.00 |
-| bridge_plan_cold | 7.454 | 0.00 | 1 | 9031 | 1.00 |
-| bridge_plan_warm | 0.016 | 1.00 | 1 | 24 | 1.00 |
-| disk_restart | 1.615 | 1.00 | 6 | 0 | 1.00 |
-| version_invalidation | 0.555 | 0.00 | 12 | 8728 | 1.00 |
+| exact_closure_cold | 1.049 | 0.00 | 6 | 4364 | 1.00 |
+| exact_closure_warm | 1.301 | 0.67 | 6 | 4364 | 0.81 |
+| exact_closure_cross_request | 1.212 | 0.50 | 12 | 8728 | 1.00 |
+| bridge_plan_cold | 7.600 | 0.00 | 1 | 9031 | 1.00 |
+| bridge_plan_warm | 0.015 | 1.00 | 1 | 24 | 1.00 |
+| disk_restart | 1.523 | 1.00 | 6 | 0 | 1.00 |
+| version_invalidation | 0.553 | 0.00 | 12 | 8728 | 1.00 |
 
 ## Disposition
 
