@@ -405,6 +405,9 @@ def _effective_evaluation_policy(
             if value("compiler_decode_mode") is None
             else str(value("compiler_decode_mode"))
         ),
+        "compiler_schema_component_types": bool(
+            value("compiler_schema_component_types")
+        ),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
         "semantic_role_contract_in_context": bool(

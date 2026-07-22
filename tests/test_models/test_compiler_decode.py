@@ -4899,6 +4899,84 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
     assert tokenizer.eos_id in forest.candidate_ids
 
 
+def test_completion_forest_propagates_typed_array_use_to_forward_declaration() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Tabs([b1])\nb1=',
+        add_special=True,
+    )[:-1]
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert tokenizer.token_to_id["Separator"] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+
+    assert tokenizer.token_to_id["TabItem"] in forest.candidate_ids
+    assert tokenizer.token_to_id["Separator"] not in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_forward_binder_component_type"
+        and evidence.candidate_id == tokenizer.token_to_id["Separator"]
+        for evidence in forest.evidence
+    )
+
+
+def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Stack([b1])\nb1=',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(tokenizer, prefix)
+
+    assert tokenizer.token_to_id["TextContent"] in forest.candidate_ids
+    assert tokenizer.token_to_id["Separator"] in forest.candidate_ids
+
+
+@pytest.mark.parametrize(
+    ("prefix_text", "allowed", "rejected"),
+    [
+        ('root=Form(":name",', "Buttons", "Button"),
+        (
+            'root=Form(":name",Buttons([]),[FormControl(":label",',
+            "Input",
+            "TextContent",
+        ),
+    ],
+)
+def test_completion_forest_enforces_direct_component_property_schema(
+    prefix_text: str,
+    allowed: str,
+    rejected: str,
+) -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(prefix_text, add_special=True)[:-1]
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert tokenizer.token_to_id[rejected] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+    assert tokenizer.token_to_id[allowed] in forest.candidate_ids
+    assert tokenizer.token_to_id[rejected] not in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_slot_component_type"
+        and evidence.candidate_id == tokenizer.token_to_id[rejected]
+        for evidence in forest.evidence
+    )
+
+
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(

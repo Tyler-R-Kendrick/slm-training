@@ -184,6 +184,7 @@ class ModelBuildConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_schema_component_types: bool = False
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
     compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always

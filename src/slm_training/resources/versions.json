@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v30",
+      "version": "v31",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v31",
+          "date": "2026-07-22",
+          "note": "Advertise the opt-in lexer compiler path that enforces official component-valued property and forward-binder typed-array schemas"
+        },
         {
           "version": "v30",
           "date": "2026-07-22",
@@ -2825,7 +2830,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v51",
+      "version": "v52",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2836,6 +2841,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v52",
+          "date": "2026-07-22",
+          "note": "Expose and record the opt-in official component-schema compiler evaluation switch"
+        },
         {
           "version": "v51",
           "date": "2026-07-22",
@@ -4096,7 +4106,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v242",
+      "version": "v243",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4120,6 +4130,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v243",
+          "date": "2026-07-22",
+          "note": "Add opt-in official component-valued property enforcement and propagate typed-array requirements from forward use sites to later declarations"
+        },
         {
           "version": "v242",
           "date": "2026-07-22",

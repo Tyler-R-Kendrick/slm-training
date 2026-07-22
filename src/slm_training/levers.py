@@ -138,6 +138,7 @@ _DUAL_PATH_DECODE_LEVERS: Final = (
     "root_reference_arity_decode_weight",
 )
 _COMPILER_PATH_DECODE_LEVERS: Final = (
+    "compiler_schema_component_types",
     "component_edge_decode_weight",
     "binder_component_plan_decode_weight",
     "binder_topology_decode_weight",

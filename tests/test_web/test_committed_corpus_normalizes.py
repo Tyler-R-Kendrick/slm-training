@@ -59,5 +59,6 @@ def test_newest_honest_boards_are_visible() -> None:
         "iter-e902-e903-focused-role-retention-20260722.json",
         "iter-e904-e907-e891-canvas-cap-20260722.json",
         "iter-e908-e915-typed-array-item-margin-20260722.json",
+        "iter-e916-e920-schema-component-types-20260722.json",
     ):
         assert f"docs/design/{name}" in sources, name

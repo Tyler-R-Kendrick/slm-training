@@ -313,6 +313,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Floor the schema-derived item start inside authored typed arrays.",
     )
     parser.add_argument(
+        "--compiler-schema-component-types",
+        action="store_true",
+        help="Constrain forward binder declarations from official typed-array use sites.",
+    )
+    parser.add_argument(
         "--visible-reference-decode-weight",
         type=float,
         default=None,
@@ -692,6 +697,9 @@ def main(argv: list[str] | None = None) -> int:
         ),
         semantic_plan_typed_array_item_margin_decode_weight=(
             args.semantic_plan_typed_array_item_margin_decode_weight
+        ),
+        compiler_schema_component_types=(
+            args.compiler_schema_component_types
         ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,

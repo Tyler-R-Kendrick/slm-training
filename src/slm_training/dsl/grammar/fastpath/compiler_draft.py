@@ -297,6 +297,36 @@ def _binder_component_types(tokenizer: Any, prefix_ids: list[int]) -> dict[int, 
     }
 
 
+def _forward_binder_component_requirements(
+    tokenizer: Any,
+    prefix_ids: list[int],
+    schema: dict[str, Any],
+) -> dict[int, frozenset[str]]:
+    """Propagate typed-array use-site constraints to later declarations."""
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    equal_id = int(tokenizer.token_to_id["="])
+    engine = OpenUIIncrementalEngine()
+    requirements: dict[int, frozenset[str]] = {}
+    for index, raw_token_id in enumerate(prefix_ids):
+        token_id = int(raw_token_id)
+        is_declaration = (
+            token_id in bind_ids
+            and index + 1 < len(prefix_ids)
+            and int(prefix_ids[index + 1]) == equal_id
+        )
+        if token_id in bind_ids and not is_declaration:
+            allowed = _schema_array_item_components(engine, schema)
+            if allowed and _active_array_position(engine) == "item_start":
+                prior = requirements.get(token_id)
+                requirements[token_id] = (
+                    allowed if prior is None else frozenset(prior & allowed)
+                )
+        piece = _token_piece(tokenizer, token_id)
+        if piece and not engine.advance(piece):
+            break
+    return requirements
+
+
 def _binder_dependencies(tokenizer: Any, prefix_ids: list[int]) -> dict[int, set[int]]:
     """Return declaration-reference edges present in the generated prefix."""
     bind_ids = set(tokenizer.kind_ids("bind"))
@@ -903,6 +933,25 @@ def _schema_array_item_components(
     return _schema_component_refs(items, schema)
 
 
+def _schema_slot_components(
+    state: Any, schema: dict[str, Any]
+) -> frozenset[str]:
+    """Component types admitted directly by the active positional property."""
+    active = _active_call(state)
+    if active is None:
+        return frozenset()
+    component, index, _ = active
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    properties = definition.get("properties") or {}
+    names = list(properties)
+    if index >= len(names):
+        return frozenset()
+    value = properties.get(names[index]) or {}
+    if value.get("type") == "array":
+        return frozenset()
+    return _schema_component_refs(value, schema)
+
+
 def _active_array_is_empty(state: Any) -> bool:
     parser = getattr(state, "_ip", None)
     parser_state = getattr(parser, "parser_state", None)
@@ -1012,6 +1061,7 @@ def build_completion_forest(
     slot_contract: list[str] | None = None,
     max_path_tokens: int = 8,
     min_content: int = 0,
+    enforce_schema_component_types: bool = False,
     explain: bool = False,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
@@ -1026,6 +1076,10 @@ def build_completion_forest(
     grammatically valid but empty/underfull layout is not a legal completion
     while the grammar still offers a way to add content. The gate never creates
     a dead end — it only withholds EOS when a non-EOS continuation remains.
+
+    ``enforce_schema_component_types`` restricts singular component properties
+    and propagates typed-array use-site requirements to later binder
+    declarations. It is opt-in while the decode lever is evaluated.
 
     ``explain`` (VSS0-02): when True the returned forest also carries reason-coded
     :class:`ConstraintEvidence` for every considered action plus a
@@ -1166,6 +1220,46 @@ def build_completion_forest(
             or _token_piece(tokenizer, token_id) in component_names
         }
     _record_excluded(ConstraintStage.SCHEMA, "schema_component_not_in_library", before_stage)
+    if enforce_schema_component_types and schema is not None and "COMPONENT" in terminals:
+        slot_components = _schema_slot_components(engine, schema)
+        if slot_components:
+            before_stage = _snapshot()
+            candidates = {
+                token_id
+                for token_id in candidates
+                if _semantic_kind(tokenizer, token_id) != "component"
+                or _token_piece(tokenizer, token_id) in slot_components
+            }
+            _record_excluded(
+                ConstraintStage.SCHEMA,
+                "schema_slot_component_type",
+                before_stage,
+            )
+    _declarations, _references, active_declaration = _binder_scope(
+        tokenizer, prefix_ids
+    )
+    if (
+        enforce_schema_component_types
+        and schema is not None
+        and "COMPONENT" in terminals
+        and active_declaration is not None
+    ):
+        required_components = _forward_binder_component_requirements(
+            tokenizer, prefix_ids, schema
+        ).get(active_declaration)
+        if required_components is not None:
+            before_stage = _snapshot()
+            candidates = {
+                token_id
+                for token_id in candidates
+                if _semantic_kind(tokenizer, token_id) != "component"
+                or _token_piece(tokenizer, token_id) in required_components
+            }
+            _record_excluded(
+                ConstraintStage.SCHEMA,
+                "schema_forward_binder_component_type",
+                before_stage,
+            )
     if schema is not None and slot_contract and "COMPONENT" in terminals:
         from slm_training.models.grammar import contract_allowed_token_ids
 

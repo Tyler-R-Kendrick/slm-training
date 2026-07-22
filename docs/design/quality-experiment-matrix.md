@@ -6401,3 +6401,16 @@ placeholders/components, not minification. Retain the lexer capability default
 off, reject the E891 treatment, and keep E906 as the best diagnostic recipe.
 AgentV is 0/8. Full evidence:
 [typed-item results](iter-e908-e915-typed-array-item-margin-20260722.md).
+
+# E916-E920 — official component-schema constraints (2026-07-22)
+
+The default-off v243 lexer path propagates typed-array use-site requirements to
+forward binder declarations and optionally enforces singular component-valued
+properties. Against same-revision E918, E919 improves meaning-v1 0.4→0.6,
+strict-v2 0.2→0.4, slot fidelity 0.5133→0.6333, gold structure
+0.2945→0.4452, and gold type recall 0.4476→0.5810, but a dual-card timeout drops
+parse 1.0→0.8 and reward 0.7826→0.6960. Extending the constraint to direct
+properties in E920 causes two timeouts and reward 0.5086. Retain the generalized
+capability default off, reject the E891 treatments, and target typed declaration
+resource planning next. AgentV is 0/5; no ship gates or checkpoint changes.
+Full evidence: [schema-component results](iter-e916-e920-schema-component-types-20260722.md).

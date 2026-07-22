@@ -130,6 +130,15 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
         ]
         == catalog["semantic_plan_decode_weight"]["supported_configurations"]
     )
+    assert catalog["compiler_schema_component_types"][
+        "supported_configurations"
+    ] == [
+        {
+            "model_name": "twotower",
+            "output_tokenizer": "lexer",
+            "compiler_decode_mode": ["restricted", "tree"],
+        }
+    ]
     assert catalog["schema_role_slot_decode_weight"]["prohibited"] is True
     assert "supported_configurations" not in catalog["schema_role_slot_decode_weight"]
     assert catalog["slot_coverage_close_decode_weight"]["prohibited"] is True

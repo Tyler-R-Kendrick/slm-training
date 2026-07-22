@@ -439,6 +439,7 @@ class TwoTowerConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_schema_component_types: bool = False
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
@@ -9573,6 +9574,13 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "grammar_draft_window", 8) or 8
                     ),
                     min_content=self._effective_min_content(slot_contract),
+                    enforce_schema_component_types=bool(
+                        getattr(
+                            self.config,
+                            "compiler_schema_component_types",
+                            False,
+                        )
+                    ),
                 )
             if getattr(self.config, "verified_solver_decode", False):
                 # VSS1-03: certified exact closure prunes the forest to the live
