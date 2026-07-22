@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "run_id": "e723-symbol-only-slot-owner140-r1",
+  "experiment_id": "E723",
+  "date_utc": "2026-07-21",
+  "status": "completed_scratch_diagnostic_not_promotable",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "path": "outputs/runs/e723-symbol-only-slot-owner140-r1/checkpoints/last.pt",
+    "sha256": "787d2d21d7c29d56637355fd364f16a0d67b1f452fc0f4ce3a7d486b2bd62795",
+    "created": true,
+    "synced": false,
+    "sync_reason": "explicit --no-sync-checkpoints local scratch diagnostic",
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "path": "outputs/data/train/symbol-only-integrated-smoke-20260721",
+    "records": 141,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "records": 141,
+    "data_manifest_sha": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45",
+    "steps": 140,
+    "batch_size": 4,
+    "max_wall_minutes": 2,
+    "elapsed_wall_seconds": 77.15756170201348,
+    "seen_prompt_tokens": 72021,
+    "seen_target_tokens": 14976,
+    "trainable_parameters": 1913056,
+    "component_plan_loss_weight": 1.0,
+    "component_edge_loss_weight": 1.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_decode_weight": 1.0,
+    "last_loss": 9.176352500915527,
+    "primary_final_reconstruction_loss": 5.075340747833252,
+    "slot_component_loss": 1.4251515865325928,
+    "slot_component_accuracy": 0.5,
+    "slot_component_majority_baseline": 0.75,
+    "checkpoint": "outputs/runs/e723-symbol-only-slot-owner140-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "787d2d21d7c29d56637355fd364f16a0d67b1f452fc0f4ce3a7d486b2bd62795",
+    "checkpoint_synced": false,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "988a824f8b08065946c17c3602a7ca74565fe605",
+      "code_dirty": false,
+      "components": {"harness.model_build.train": "v18"},
+      "stamped_at": "2026-07-22T00:24:35.747707+00:00"
+    }
+  },
+  "evaluation_policy": {
+    "suites": ["smoke", "held_out"],
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "suites": {
+    "smoke": {
+      "run_id": "e723-slot-owner-tree-smoke-r1",
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1108.4,
+      "latency_ms_p95": 1538.18
+    },
+    "held_out": {
+      "run_id": "e723-slot-owner-tree-heldout-r3",
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "meaningful_program_v1_rate": 0.25,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.26666666666666666,
+      "structural_similarity": 0.394,
+      "component_type_recall": 0.3208333333333333,
+      "reward_score": 0.729,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 860.16,
+      "latency_ms_p95": 1382.49
+    }
+  },
+  "matched_controls": {
+    "smoke": {"run_id": "e723-slot-owner-tree-bias0-smoke-r2", "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.3283333333333333, "component_type_recall": 0.16666666666666666, "reward_score": 0.3203333333333333},
+    "held_out": {"run_id": "e723-slot-owner-tree-heldout-bias0-r4", "meaningful_program_rate": 0.0, "structural_similarity": 0.2988, "component_type_recall": 0.0, "reward_score": 0.0}
+  },
+  "decode_effect": {"applications": 7, "choice_changes": 7, "retained": true},
+  "agentv": {"passed": 0, "total": 4, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Retain generalized slot-owner decode as a causal v2 semantic improvement; reject checkpoint promotion because strict meaning remains zero.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "988a824f8b08065946c17c3602a7ca74565fe605",
+    "code_dirty": false,
+    "components": {"harness.model_build.eval": "v38", "evals.meaningful_program": "2.12.0", "evals.scoring": "v13", "model.twotower": "v188"},
+    "stamped_at": "2026-07-22T00:26:16.720731+00:00"
+  }
+}

@@ -371,3 +371,22 @@ def test_e722_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) 
         "08873bf0940eec19d0e90f50bfbd801f8547b45e450fa6379abe21c90a25597d"
     )
     assert run["train_summary"]["checkpoint_synced"] is False
+
+
+def test_e723_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e723-symbol-only-slot-owner140-r1"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    assert run["scoreboard"]["suites"]["smoke"]["meaningful_program_rate"] == (
+        0.6666666666666666
+    )
+    assert run["scoreboard"]["suites"]["held_out"]["structural_similarity"] == 0.394
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "787d2d21d7c29d56637355fd364f16a0d67b1f452fc0f4ce3a7d486b2bd62795"
+    )
+    assert run["train_summary"]["checkpoint_synced"] is False

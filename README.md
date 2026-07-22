@@ -46,6 +46,7 @@ it fails semantic gates and is not promoted. See
 | E720 component-inventory diagnostic | `e720-symbol-only-component-inventory600-r1/last.pt` | `outputs/runs/…` (local) | Inventory head learned (top-k recall 0.6875), but smoke parse/strict meaning remained 0.0 and weight-4 decode timed out 3/3 — rejected, not ship |
 | E721 role/count plan diagnostic | `e721-symbol-only-component-plan190-r4/last.pt` | `outputs/runs/…` (local) | Smoke parse 1.0, but strict meaning 0.0 and plan weight 1 is identical to weight 0; local 190-step syntax diagnostic only, rejected |
 | E722 component-edge diagnostic | `e722-symbol-only-component-edge150-r1/last.pt` | `outputs/runs/…` (local) | Parse 1.0 / structure 0.2861 / recall 0.5, but strict meaning 0.0 and edge on/off identical — rejected, not ship |
+| E723 slot-owner diagnostic | `e723-symbol-only-slot-owner140-r1/last.pt` | `outputs/runs/…` (local) | Causal smoke + held-out gains; smoke meaning-v1 0.6667 / structure 0.5614, but strict-v2 0.0 — lever retained, checkpoint rejected |
 | Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5; wiring only |
 | Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Local DirectML verify | `local_directml_adreno_20260714/last.pt` | `outputs/runs/…` (local) | Adreno GPU train/checkpoint OK; 5-step wiring run, not evaluated or ship |
