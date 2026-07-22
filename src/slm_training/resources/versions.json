@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-22",
+          "note": "Centralize decode-lever companion dependencies and fail before artifacts when required slot-contract or visible semantic-role configuration is absent"
+        },
         {
           "version": "v11",
           "date": "2026-07-22",
@@ -3796,6 +3801,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v206",
+          "date": "2026-07-22",
+          "note": "no-bump: consume the canonical slot-contract lever set in the retained runtime guard without changing decode behavior"
+        },
         {
           "version": "v206",
           "date": "2026-07-22",

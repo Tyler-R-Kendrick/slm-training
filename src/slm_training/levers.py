@@ -91,6 +91,42 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
     "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
 }
 
+# Runtime prerequisites belong in the same registry as codec support.  Keeping
+# them here makes construction fail before a harness creates run artifacts;
+# model-side checks remain as defense in depth for callers that bypass the
+# canonical factory.  Each tuple is an OR of complete companion configurations.
+_SLOT_CONTRACT_DECODE: Final = (
+    {"slot_contract_constrained_decode": True},
+    {"template_fill_decode": True},
+)
+SLOT_CONTRACT_DECODE_LEVERS: Final = (
+    "schema_role_slot_decode_weight",
+    "slot_coverage_close_decode_weight",
+    "semantic_plan_typed_array_nonempty_margin_decode_weight",
+    "semantic_plan_typed_array_item_margin_decode_weight",
+    "semantic_plan_repeated_slot_margin_decode_weight",
+    "required_slot_margin_decode_weight",
+)
+_VISIBLE_SEMANTIC_ROLE_DECODE: Final = (
+    {
+        "slot_contract_constrained_decode": True,
+        "honest_slot_contract": True,
+        "semantic_role_contract_in_context": True,
+    },
+    {
+        "template_fill_decode": True,
+        "honest_slot_contract": True,
+        "semantic_role_contract_in_context": True,
+    },
+)
+LEVER_COMPANION_REQUIREMENTS: Final = {
+    **{
+        name: _SLOT_CONTRACT_DECODE
+        for name in SLOT_CONTRACT_DECODE_LEVERS
+    },
+    "semantic_role_decode_weight": _VISIBLE_SEMANTIC_ROLE_DECODE,
+}
+
 
 def _canonical_capability_value(field: str, value: Any) -> Any:
     normalized = str(value or "").lower()
@@ -146,6 +182,18 @@ def untrained_decode_levers(config: Any) -> dict[str, tuple[str, ...]]:
     }
 
 
+def missing_lever_companions(
+    config: Any,
+) -> dict[str, tuple[dict[str, Any], ...]]:
+    """Return enabled levers whose required runtime inputs cannot be built."""
+    return {
+        name: requirements
+        for name, requirements in LEVER_COMPANION_REQUIREMENTS.items()
+        if _positive_numeric(config, name)
+        and not any(_matches_requirement(config, item) for item in requirements)
+    }
+
+
 def lever_configuration_errors(
     config: Any, *, require_trained_decode: bool = False
 ) -> tuple[str, ...]:
@@ -154,6 +202,12 @@ def lever_configuration_errors(
     incompatible = incompatible_lever_requirements(config)
     if incompatible:
         errors.append(f"unsupported enabled levers: {', '.join(incompatible)}")
+    missing_companions = missing_lever_companions(config)
+    errors.extend(
+        f"{name} requires one companion configuration: "
+        f"{', '.join(str(_requirement_json(item)) for item in requirements)}"
+        for name, requirements in missing_companions.items()
+    )
     if require_trained_decode:
         untrained = untrained_decode_levers(config)
         errors.extend(
@@ -240,6 +294,11 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             catalog[item.name]["requires_trained_any"] = list(
                 TRAINED_DECODE_REQUIREMENTS[item.name]
             )
+        if item.name in LEVER_COMPANION_REQUIREMENTS:
+            catalog[item.name]["requires_companion_configuration"] = [
+                _requirement_json(requirement)
+                for requirement in LEVER_COMPANION_REQUIREMENTS[item.name]
+            ]
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]

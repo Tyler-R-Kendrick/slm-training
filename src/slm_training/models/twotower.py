@@ -11238,17 +11238,11 @@ class TwoTowerModel(nn.Module):
             # without either flag used to silently no-op every step (E611-E616
             # replayed a matched control/treatment eval this way without ever
             # observing a difference). Fail loud instead of reproducing that footgun.
-            _contract_gated_weight_names = (
-                "schema_role_slot_decode_weight",
-                "slot_coverage_close_decode_weight",
-                "semantic_plan_typed_array_nonempty_margin_decode_weight",
-                "semantic_plan_typed_array_item_margin_decode_weight",
-                "semantic_plan_repeated_slot_margin_decode_weight",
-                "required_slot_margin_decode_weight",
-            )
+            from slm_training.levers import SLOT_CONTRACT_DECODE_LEVERS
+
             _active_contract_gated_weights = sorted(
                 name
-                for name in _contract_gated_weight_names
+                for name in SLOT_CONTRACT_DECODE_LEVERS
                 if float(getattr(self.config, name, 0.0) or 0.0) > 0.0
             )
             if _active_contract_gated_weights:

@@ -1,16 +1,19 @@
 from dataclasses import fields
 from pathlib import Path
+from types import SimpleNamespace
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
     HF_JOB_TIMEOUT,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
+    LEVER_COMPANION_REQUIREMENTS,
     LEVER_REQUIREMENTS,
     MAX_RUN_MINUTES,
     MAX_RUN_SECONDS,
     TRAINED_DECODE_REQUIREMENTS,
     lever_catalog,
+    missing_lever_companions,
     untrained_decode_levers,
 )
 
@@ -109,3 +112,35 @@ def test_learned_decode_dependencies_are_discoverable_and_fail_closed() -> None:
         "requires_trained_any"
     ] == ["root_reference_arity_loss_weight"]
     assert set(TRAINED_DECODE_REQUIREMENTS) <= LEVER_REQUIREMENTS.keys()
+
+
+def test_runtime_companion_dependencies_are_discoverable_and_fail_closed() -> None:
+    config = SimpleNamespace(
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        semantic_role_decode_weight=2.0,
+        slot_contract_constrained_decode=False,
+        template_fill_decode=False,
+        honest_slot_contract=False,
+        semantic_role_contract_in_context=False,
+    )
+
+    assert missing_lever_companions(config) == {
+        "semantic_role_decode_weight": LEVER_COMPANION_REQUIREMENTS[
+            "semantic_role_decode_weight"
+        ]
+    }
+    assert lever_catalog()["semantic_role_decode_weight"][
+        "requires_companion_configuration"
+    ] == [
+        {
+            "honest_slot_contract": True,
+            "semantic_role_contract_in_context": True,
+            "slot_contract_constrained_decode": True,
+        },
+        {
+            "honest_slot_contract": True,
+            "semantic_role_contract_in_context": True,
+            "template_fill_decode": True,
+        },
+    ]
