@@ -5847,3 +5847,26 @@ this is not a ship result. No checkpoint was created or synced.
 
 Evidence: [JSON](iter-e746-visible-slot-inventory-contract-20260722.json) and
 [notes](iter-e746-visible-slot-inventory-contract-20260722.md).
+
+## E747-E751 symbol-only RICO ownership repair
+
+E747 first failed closed on a stale eval target containing free-form text.
+Test-data v4 now asserts the output contract after normalization, aborts before
+artifacts when enforcement is disabled, and resolves owning-checkout manifest
+paths. The replacement 51-record multisuite snapshot has zero output-contract
+violations and identifies RICO as the weakest valid suite.
+
+Matched E748-E750 arms prove semantic-plan weight changes alone cannot dislodge
+the erroneous `Callout`: the lexer component path was initially unreachable,
+then a synthetic direct-role obligation preserved the tie. Model v212 fixes the
+canonical obligation layer so planned containers satisfy roles through public
+schema descendants. On local CPU RICO `n=3`, E751 raises fidelity 0.2323→0.6970,
+structure 0.0946→0.7216, component recall 0→1, and reward 0.7067→0.8461.
+
+Retain the harness repairs, but do not promote: repeated Cards are nested and
+overcounted, strict-v2 remains zero, and AgentV remains 0/1. No checkpoint was
+created or synced. Next repair component-cardinality parsing and sibling
+topology before changing weights or training.
+
+Evidence: [JSON](iter-e747-e751-symbol-only-rico-ownership-20260722.json) and
+[notes](iter-e747-e751-symbol-only-rico-ownership-20260722.md).

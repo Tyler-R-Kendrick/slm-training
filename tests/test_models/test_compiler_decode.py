@@ -2190,6 +2190,38 @@ def test_prompt_semantic_plan_ranks_lexer_tree_paths(path_kind: str) -> None:
     assert covered == Counter({card: 1})
 
 
+def test_prompt_semantic_plan_keeps_repeated_lexer_families_as_siblings() -> None:
+    model = _model(
+        semantic_plan_decode_weight=6.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    state = make_grammar_state()
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([Card([", add_special=False),
+    ]
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 5}]
+    model._semantic_plan_outer_groups = [None]
+
+    bias = model._semantic_plan_bias(
+        0,
+        (card, text),
+        ("component", "component"),
+        state,
+        prefix,
+        torch.tensor([8.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert (torch.tensor([8.0, 1.0]) + bias).argmax().item() == 1
+
+
 def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     monkeypatch,
 ) -> None:
@@ -2555,6 +2587,24 @@ def test_prompt_semantic_plan_does_not_cross_component_conjunction() -> None:
     assert plan is not None
     assert [slot.component_family for slot in plan.role_slots] == [
         "Button",
+        "Card",
+        "Card",
+        "Card",
+    ]
+
+
+def test_prompt_semantic_plan_excludes_inline_role_metadata_from_counts() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Build a column mobile layout with 5 cards, 1 text block "
+        "(roles: card, text) using placeholders only."
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Card",
+        "Card",
         "Card",
         "Card",
         "Card",

@@ -3819,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v212",
+      "version": "v213",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3841,6 +3841,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v213",
+          "date": "2026-07-22",
+          "note": "Exclude role metadata from component cardinality and preserve repeated lexer families as siblings unless explicit outer-group topology permits nesting"
+        },
         {
           "version": "v212",
           "date": "2026-07-22",
