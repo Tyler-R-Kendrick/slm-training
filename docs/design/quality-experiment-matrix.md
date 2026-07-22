@@ -5670,3 +5670,18 @@ checkpoint creation occurred.
 
 Evidence: [narrative](iter-e736-lexer-semantic-plan-reachability-20260722.md)
 and [JSON](iter-e736-lexer-semantic-plan-reachability-20260722.json).
+
+## E738 lexer planned-subtree nonempty margin
+
+E738 reuses the existing typed-array nonempty semantic-plan bias on lexer
+restricted/tree decoding instead of adding a parallel knob. On the unchanged
+E735 checkpoint and matched local three-record smoke recipe, plan weights 4/2
+replace the E736 hero's `Card([])` with a nonempty grammar/AST subtree. Meaning-v1
+rises 0.6667→1.0, fidelity 0.5278→0.6111, structure 0.5614→0.6503, component
+recall 0.4167→0.5, and reward 0.8073→0.8363 with zero timeouts. Retain lever v10
+and model v203, but do not promote: strict-v2 and AgentV remain zero. Next target
+is typed visible-slot role binding inside the retained subtree. No training,
+checkpoint creation, remote compute, sync, or serving change occurred.
+
+Evidence: [narrative](iter-e738-lexer-planned-subtree-nonempty-20260722.md)
+and [JSON](iter-e738-lexer-planned-subtree-nonempty-20260722.json).
