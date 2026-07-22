@@ -315,8 +315,12 @@ def _forward_binder_component_requirements(
             and int(prefix_ids[index + 1]) == equal_id
         )
         if token_id in bind_ids and not is_declaration:
-            allowed = _schema_array_item_components(engine, schema)
-            if allowed and _active_array_position(engine) == "item_start":
+            allowed = (
+                _schema_array_item_components(engine, schema)
+                if _active_array_position(engine) == "item_start"
+                else _schema_slot_components(engine, schema)
+            )
+            if allowed:
                 prior = requirements.get(token_id)
                 requirements[token_id] = (
                     allowed if prior is None else frozenset(prior & allowed)
@@ -1224,11 +1228,23 @@ def build_completion_forest(
         slot_components = _schema_slot_components(engine, schema)
         if slot_components:
             before_stage = _snapshot()
+            bind_ids = set(tokenizer.kind_ids("bind"))
+            binder_components = _binder_component_types(tokenizer, prefix_ids)
+            typed_binders = {
+                binder
+                for binder, component in binder_components.items()
+                if component in slot_components
+            }
+            unknown_binders = bind_ids - set(binder_components)
             candidates = {
                 token_id
                 for token_id in candidates
-                if _semantic_kind(tokenizer, token_id) != "component"
-                or _token_piece(tokenizer, token_id) in slot_components
+                if (
+                    _semantic_kind(tokenizer, token_id) == "component"
+                    and _token_piece(tokenizer, token_id) in slot_components
+                )
+                or token_id in typed_binders
+                or token_id in unknown_binders
             }
             _record_excluded(
                 ConstraintStage.SCHEMA,

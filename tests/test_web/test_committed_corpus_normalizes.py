@@ -62,5 +62,6 @@ def test_newest_honest_boards_are_visible() -> None:
         "iter-e916-e920-schema-component-types-20260722.json",
         "iter-e921-e922-schema-inline-items-20260722.json",
         "iter-e923-e925-closed-array-arity-20260722.json",
+        "iter-e926-e927-direct-component-types-20260722.json",
     ):
         assert f"docs/design/{name}" in sources, name

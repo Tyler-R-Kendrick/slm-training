@@ -6442,3 +6442,16 @@ a dual-card timeout and overall parse/reward regression. Retain the compiler
 repair, keep schema typing default off, and target whole-path feasibility next.
 AgentV is 0/3; no ship gates or checkpoint changes. Full evidence:
 [closed-array arity results](iter-e923-e925-closed-array-arity-20260722.md).
+
+# E926-E927 — strict direct component types (2026-07-22)
+
+The v246 default-off schema path now excludes arbitrary expressions from
+component-valued properties and propagates direct property types to forward
+declarations. The form attempt replaces `(null)` with typed `Buttons` and
+input-family binders, but then aliases one binder across incompatible `Input`
+and `Button` obligations. E927 therefore exactly matches E924's aggregate:
+strict-v2 0.6, parse 0.8, fidelity 0.6286, and reward 0.6994. Retain the local
+precision improvement default off, reject the treatment, and prevent
+incompatible unresolved-binder reuse next. AgentV is 0/2; no ship gates or
+checkpoint changes. Full evidence:
+[direct-type results](iter-e926-e927-direct-component-types-20260722.md).

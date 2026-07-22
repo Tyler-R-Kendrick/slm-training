@@ -5017,12 +5017,30 @@ def test_completion_forest_enforces_direct_component_property_schema(
     )
     assert tokenizer.token_to_id[allowed] in forest.candidate_ids
     assert tokenizer.token_to_id[rejected] not in forest.candidate_ids
+    assert tokenizer.token_to_id["("] not in forest.candidate_ids
     assert any(
         evidence.stage is ConstraintStage.SCHEMA
         and evidence.reason_code == "schema_slot_component_type"
         and evidence.candidate_id == tokenizer.token_to_id[rejected]
         for evidence in forest.evidence
     )
+
+
+def test_completion_forest_propagates_direct_component_binder_type() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Form(":name",b1,[FormControl(":label",Input("email"))])\nb1=',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+    )
+
+    assert tokenizer.token_to_id["Buttons"] in forest.candidate_ids
+    assert tokenizer.token_to_id["Button"] not in forest.candidate_ids
 
 
 def test_gold_decisions_follow_compiler_forest() -> None:

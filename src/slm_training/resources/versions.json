@@ -4106,7 +4106,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v245",
+      "version": "v246",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4130,6 +4130,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v246",
+          "date": "2026-07-22",
+          "note": "Restrict opt-in component-valued properties to compatible components or binders and propagate direct property types to forward declarations"
+        },
         {
           "version": "v245",
           "date": "2026-07-22",
