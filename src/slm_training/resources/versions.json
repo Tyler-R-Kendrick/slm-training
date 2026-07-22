@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-22",
+          "note": "Expose semantic-plan family scoring and margin as executable lexer compiler levers"
+        },
         {
           "version": "v8",
           "date": "2026-07-22",
@@ -3754,7 +3759,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v198",
+      "version": "v202",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3776,6 +3781,26 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v202",
+          "date": "2026-07-22",
+          "note": "Count fulfilled semantic-plan families by tokenizer component IDs so bare lexer symbols cannot be forced repeatedly"
+        },
+        {
+          "version": "v201",
+          "date": "2026-07-22",
+          "note": "Keep topology-free lexer semantic-plan obligations on bound families so they cannot override the trained root-role decision"
+        },
+        {
+          "version": "v200",
+          "date": "2026-07-22",
+          "note": "Apply prompt-semantic component obligations during lexer compiler path selection instead of silently ignoring the configured plan"
+        },
+        {
+          "version": "v199",
+          "date": "2026-07-22",
+          "note": "Build prompt-semantic component obligations for the lexer compiler instead of rejecting its supported scoring path"
+        },
         {
           "version": "v198",
           "date": "2026-07-22",

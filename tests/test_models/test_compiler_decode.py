@@ -2093,6 +2093,83 @@ def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     assert bound_bias is not None and bound_bias.tolist() == [3.0, 0.0]
 
 
+def test_prompt_semantic_plan_reaches_lexer_compiler(monkeypatch) -> None:
+    model = _model(
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    card_id = model.tokenizer.token_to_id["Card"]
+
+    def decode(_ctx, _ctx_pad, length: int) -> torch.Tensor:
+        assert model._semantic_plan_action_scores
+        assert card_id in model._semantic_plan_action_scores[0]
+        return torch.full((1, length), model.tokenizer.eos_id, dtype=torch.long)
+
+    monkeypatch.setattr(model, "_greedy_ltr_decode_batch", decode)
+    monkeypatch.setattr(model, "_decode_ids", lambda _ids: "root = Stack([])")
+    monkeypatch.setattr(model, "_ensure_valid_openui", lambda text, *_a, **_k: text)
+
+    assert model.generate_batch_requests(
+        [GenerationRequest(prompt="Card layout.")]
+    ) == ["root = Stack([])"]
+
+
+def test_prompt_semantic_plan_ranks_lexer_tree_paths() -> None:
+    from types import SimpleNamespace
+
+    model = _model(
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root=Stack([", add_special=False)]
+    paths = (
+        CompletionPath((card, tokenizer.token_to_id["("]), "component_bound"),
+        CompletionPath((text, tokenizer.token_to_id["("]), "component_bound"),
+    )
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 1}]
+    ctx, ctx_pad = model._encode_context(["Card layout."])
+
+    with collect_decode_stats() as stats:
+        selected = model._select_compiler_path(
+            prefix,
+            paths,
+            ctx,
+            ctx_pad,
+            24,
+            tree=True,
+            state=SimpleNamespace(section_types=(), frames=()),
+        )
+
+    assert selected == paths[0].token_ids
+    assert stats.semantic_plan_applications == 1
+
+    root_paths = tuple(
+        CompletionPath(path.token_ids, "component_root") for path in paths
+    )
+    with collect_decode_stats() as root_stats:
+        model._select_compiler_path(
+            prefix,
+            root_paths,
+            ctx,
+            ctx_pad,
+            24,
+            tree=True,
+            state=SimpleNamespace(section_types=(), frames=()),
+        )
+    assert root_stats.semantic_plan_applications == 0
+
+    covered = model._semantic_plan_covered_counts(
+        SimpleNamespace(),
+        tokenizer.encode("root = Stack([b1])\nb1 = Card([])", add_special=True),
+        {"Card": card, "TextContent": text},
+    )
+    assert covered == Counter({card: 1})
+
+
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
