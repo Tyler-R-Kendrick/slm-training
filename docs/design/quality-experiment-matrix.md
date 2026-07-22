@@ -5488,3 +5488,15 @@ strict-v2 remains 0.0 and AgentV is 0/1 per arm.
 
 Evidence: [narrative](iter-e723-slot-owner-symbol-only-20260721.md) and
 [JSON](iter-e723-slot-owner-symbol-only-20260721.json).
+
+## E724 symbol-only slot-coverage closure
+
+E724 applies the existing minimal effective coverage-close weight 2 to the
+exact E723 checkpoint and retained slot-owner recipe. The bounded local smoke
+run is prediction- and quality-identical to E723, with no coverage-close
+applications or choice changes: parse 1.0, meaning-v1 0.6667, strict-v2 0.0,
+structure 0.5614, recall 0.4167, reward 0.8073, AgentV 0/1. Reject as no-effect
+and close this weight ladder for E723; no training or checkpoint creation.
+
+Evidence: [narrative](iter-e724-slot-coverage-close-symbol-only-20260721.md) and
+[JSON](iter-e724-slot-coverage-close-symbol-only-20260721.json).

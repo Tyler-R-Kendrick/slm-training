@@ -390,3 +390,20 @@ def test_e723_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) 
         "787d2d21d7c29d56637355fd364f16a0d67b1f452fc0f4ce3a7d486b2bd62795"
     )
     assert run["train_summary"]["checkpoint_synced"] is False
+
+
+def test_e724_no_effect_run_persists_without_new_checkpoint(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e724-slot-coverage-close2-smoke-r1"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    smoke = run["scoreboard"]["suites"]["smoke"]
+    assert smoke["meaningful_program_rate"] == 0.6666666666666666
+    assert smoke["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "run_id": "e724-slot-coverage-close2-smoke-r1",
+  "experiment_id": "E724",
+  "date_utc": "2026-07-21",
+  "status": "completed_no_effect_rejected",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "reused_run_id": "e723-symbol-only-slot-owner140-r1",
+    "sha256": "787d2d21d7c29d56637355fd364f16a0d67b1f452fc0f4ce3a7d486b2bd62795",
+    "created": false,
+    "synced": false,
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "evaluation_policy": {
+    "suites": ["smoke"],
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "slot_component_decode_weight": 1.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1057.44,
+      "latency_ms_p95": 1214.61
+    }
+  },
+  "control": {
+    "run_id": "e723-slot-owner-tree-smoke-r1",
+    "slot_coverage_close_decode_weight": 0.0,
+    "predictions_and_quality_metrics_identical": true,
+    "prediction_set_sha256": "cc795b50ff56b342909c033a6b88735bda67f0e293ea4704f500b006016156f0"
+  },
+  "decode_effect": {"applications": 0, "choice_changes": 0, "retained": false},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Reject as no-effect and close coverage-close weight tuning for E723.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cf160534c63b396fa48401d334ac1ff6e0c9b4dc",
+    "code_dirty": false,
+    "components": {"harness.model_build.eval": "v38", "evals.meaningful_program": "2.12.0", "evals.scoring": "v13", "model.twotower": "v188"},
+    "stamped_at": "2026-07-22T00:32:55.895477+00:00"
+  }
+}
