@@ -5900,3 +5900,16 @@ remaining undercount.
 
 Evidence: [JSON](iter-e753-e754-plan-margin-delimiter-20260722.json) and
 [notes](iter-e753-e754-plan-margin-delimiter-20260722.md).
+
+# E755-E757 — repeated marker ownership (2026-07-22)
+
+Local matched RICO n=3 replay on checkpoint `710e2dbe…`. E755 proved the first
+ownership helper was inert in compiler-tree path ranking; E756 exposed and
+preserved a parent-array over-closure regression. Retained model v217 reuses
+`semantic_plan_margin_decode_weight=2` (the repeated-slot-specific lever stays
+zero) and scopes marker namespace ownership to open repeated component calls.
+E757: parse 1.0, fidelity 0.9394, validity 0.9637, structure 0.9639, component
+recall 1.0, reward 0.9188, strict-v2 0.3333, p95 9173.58 ms, zero timeouts and
+fallbacks. The remaining failures are two standalone text markers; AgentV is
+0/1 and this is not a ship claim. See
+[`iter-e755-e757-repeated-marker-ownership-20260722.md`](iter-e755-e757-repeated-marker-ownership-20260722.md).
