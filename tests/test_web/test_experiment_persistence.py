@@ -352,3 +352,22 @@ def test_e721_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) 
         "c30fd565fced08626f39af5e9e23d233d88c26e0dac3b031928105b97c20f530"
     )
     assert run["train_summary"]["checkpoint_synced"] is False
+
+
+def test_e722_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e722-symbol-only-component-edge150-r1"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    smoke = run["scoreboard"]["suites"]["smoke"]
+    assert smoke["parse_rate"] == 1.0
+    assert smoke["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert smoke["structural_similarity"] == 0.2861
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "08873bf0940eec19d0e90f50bfbd801f8547b45e450fa6379abe21c90a25597d"
+    )
+    assert run["train_summary"]["checkpoint_synced"] is False
