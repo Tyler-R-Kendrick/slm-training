@@ -6284,3 +6284,15 @@ timeout, two fallback-marked rows, and AgentV 0/2. Retain E886 as the local
 scratch parent, not ship; next target held-out strict meaning rather than more
 undirected steps. Full evidence:
 [recovered baseline results](iter-e886-e888-recovered-baseline-20260722.md).
+
+# E889-E890 — hard-tail continuation under current policy (2026-07-22)
+
+E889 continued E886 for 20 local CPU steps on committed E872 hard-tail data in
+2.91 seconds. Against the matched E888 held-out `n=5` baseline, E890 improves
+parse 0.8→1.0, fidelity 0.6400→0.6733, recall 0.4190→0.5190, and reward
+0.7178→0.8570 while removing the timeout. Meaning-v1 stays 0.4, strict-v2 stays
+0.2, fallback-marked rows rise 2→3, and structure regresses 0.2588→0.1889;
+AgentV remains 0/1. Reject E889 as a replacement and retain E886. The next arm
+should replay hard-tail examples without discarding the base distribution.
+Full evidence:
+[hard-tail current-policy results](iter-e889-e890-hard-tail-current-policy-20260722.md).

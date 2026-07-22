@@ -52,5 +52,6 @@ def test_newest_honest_boards_are_visible() -> None:
         "iter-e868-e878-hard-tail-warmstart-20260722.json",
         "iter-e879-e885-vocab-union-matched-eval-20260722.json",
         "iter-e886-e888-recovered-baseline-20260722.json",
+        "iter-e889-e890-hard-tail-current-policy-20260722.json",
     ):
         assert f"docs/design/{name}" in sources, name
