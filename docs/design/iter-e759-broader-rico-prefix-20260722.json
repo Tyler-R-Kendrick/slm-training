@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E759",
+  "run_id": "e759-broader-rico-n9-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-22",
+  "description": "Broaden the retained v218 standalone-namespace repair from RICO n=3 to the largest comfortable prefix under the two-minute local command cap",
+  "decision": {
+    "retain": "model.twotower v218 and the canonical decode recipe",
+    "reject": "new training, remote compute, checkpoint promotion, and ship claims from a diagnostic prefix",
+    "reason": "Three matched local runs preserve perfect contract and structure metrics through RICO n=9 with zero timeouts or fallbacks",
+    "next": "sample non-prefix RICO records locally to expose the next accepted-path defect"
+  },
+  "local_compute": true,
+  "matched_runs": [
+    {"run_id": "e759-broader-rico-n8-r1", "n": 8, "result": "all contract and structure metrics 1.0; p95 11032.62 ms", "artifact_valid": true},
+    {"run_id": "e759-broader-rico-n8-r2", "n": 8, "result": "metric-identical repeat; p95 10379.51 ms", "artifact_valid": true},
+    {"run_id": "e759-broader-rico-n9-r1", "n": 9, "result": "retained broader prefix; all contract and structure metrics 1.0", "artifact_valid": true}
+  ],
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E759 matched local RICO prefix expansion",
+    "suite": "rico_held",
+    "suite_n": 9,
+    "honesty_mode": "strict_compiler_tree + visible honest slot contract + declared RuntimeSymbol semantic roles",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "c68deaacd88f0981e4ad98424f32811b1ac28d1472763e549396a8cc3892fd37",
+    "semantic_plan_decode_weight": 6.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_repeated_slot_margin_decode_weight": 0.0,
+    "decode_timeout_seconds": 12.0,
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "suites": {
+    "rico_held": {
+      "n": 9,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 1.0,
+      "tree_edit_similarity": 1.0,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9336666666666668,
+      "latency_ms_p50": 9068.77,
+      "latency_ms_p95": 10761.18,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": {"evaluated": false, "pass": false, "passed": false, "reason": "nine-record diagnostic prefix; insufficient n, missing policy suites, and AgentV 0/1"},
+  "output_contract": {"free_form_output_strings": 0, "allowed_completion_surface": "OpenUI grammar/AST symbols, schema enum literals, and declared template markers"},
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cbc26ea216a4fa03572e66d9e8789abd07fb3ed4",
+    "code_dirty": false,
+    "components": {"config.levers": "v15", "harness.model_build.eval": "v43", "evals.meaningful_program": "2.12.0", "evals.scoring": "v13", "model.twotower": "v218"},
+    "stamped_at": "2026-07-22T10:16:50.457781+00:00"
+  }
+}
