@@ -3794,7 +3794,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v207",
+      "version": "v208",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3816,6 +3816,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v208",
+          "date": "2026-07-22",
+          "note": "Normalize real lexer component paths as bound families for semantic-plan scoring inside an existing container"
+        },
         {
           "version": "v207",
           "date": "2026-07-22",

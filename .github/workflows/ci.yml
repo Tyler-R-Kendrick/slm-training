@@ -29,14 +29,21 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
-          npm ci &
-          root_pid=$!
           npm --prefix src/apps/openui_bridge ci &
           openui_pid=$!
-          npm --prefix src/apps/design_md_bridge ci &
-          design_pid=$!
-          npm --prefix src/apps/graphql_bridge ci &
-          graphql_pid=$!
+          need_node=false
+          if ! git diff --quiet "$BASE_SHA"...HEAD -- \
+            package.json package-lock.json src/apps \
+            src/slm_training/web/static/openui scripts/validate_page_dsl.py; then
+            need_node=true
+            npm ci &
+            root_pid=$!
+            npm --prefix src/apps/design_md_bridge ci &
+            design_pid=$!
+            npm --prefix src/apps/graphql_bridge ci &
+            graphql_pid=$!
+          fi
+          echo "NEED_NODE=$need_node" >> "$GITHUB_ENV"
 
           python -m pip install --only-binary=:all: \
             --index-url https://download.pytorch.org/whl/cpu \
@@ -61,20 +68,37 @@ jobs:
             python -m pip install -e ".[$extras]"
           fi
 
-          wait "$root_pid"
           wait "$openui_pid"
-          wait "$design_pid"
-          wait "$graphql_pid"
-      - name: Validate repository organization
-        run: python -m scripts.repo_policy
-      - run: ruff check .
-      - run: python -m compileall -q src scripts tests
+          if [ "$need_node" = true ]; then
+            wait "$root_pid"
+            wait "$design_pid"
+            wait "$graphql_pid"
+          fi
       - name: Run changed regression tests
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
-      - name: Validate dashboard OpenUI page programs are in sync
-        run: python scripts/validate_page_dsl.py --check
+
+  python-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install static-check dependencies
+        run: |
+          python -m pip install --no-deps -e .
+          python -m pip install "ruff>=0.9,<1" "pydantic>=2.7,<3" "lark>=1.1,<2"
+      - name: Validate repository organization
+        run: python -m scripts.repo_policy
+      - run: ruff check .
+      - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced
         run: python -m scripts.verify_checkpoint_references --check
       - name: Verify version stamps and component bumps
@@ -110,6 +134,8 @@ jobs:
           python -m scripts.build_test_data --source both --version ci --train-manifest outputs/data/train/ci/manifest.json
           test -s outputs/data/train/ci/quality_report.json
           test -f outputs/data/train/ci/rejected.jsonl
+      - name: Validate dashboard OpenUI page programs are in sync
+        run: python scripts/validate_page_dsl.py --check
       - name: Persist CI dataset metadata (manifest + stats + quality report)
         uses: actions/upload-artifact@v4
         with:
