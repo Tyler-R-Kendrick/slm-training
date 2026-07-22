@@ -6331,3 +6331,14 @@ or experiment candidates. Both added rows are Silver, independently judged,
 and quality 1.0. Retain the immutable corpus for matched training; admission
 alone is not model or ship evidence. Full evidence:
 [typed-role supplement results](iter-e897-typed-role-supplement-20260722.md).
+
+# E898 — typed-role scratch attempts (2026-07-22)
+
+E898 tried to isolate E897 with the 600-step scratch recipe. `r1` was
+externally interrupted with no summary or checkpoint. `r2` stopped on the
+95.09-second wall budget at 279/600 steps, loss 4.4771, and serialized SHA
+`a1683be8…cf2161`. Both attempts are invalid: never evaluate, sync, promote,
+serve, resume, or use them as parents. Retain E897 and replace the overlong arm
+with a short focused typed-role continuation mixed against the base corpus.
+Full evidence:
+[typed-role scratch attempts](iter-e898-typed-role-scratch-attempts-20260722.md).
