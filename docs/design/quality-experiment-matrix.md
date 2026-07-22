@@ -5560,3 +5560,19 @@ scoreboard without constrained slot decode are documented but excluded.
 
 Evidence: [narrative](iter-e729-binder-topology-symbol-only-20260722.md) and
 [JSON](iter-e729-binder-topology-symbol-only-20260722.json).
+
+## E730 atomic strict-policy conditioning preservation
+
+E730 finds that the first atomic `strict_compiler_tree` preset also forced
+schema and slot-contract input conditioning, changing the checkpoint input
+rather than merely enforcing strict decode. On E723's unchanged checkpoint,
+that v39 preset regresses smoke meaning-v1 0.6667→0.3333, fidelity
+0.5278→0.0, structure 0.5614→0.1353, recall 0.4167→0.1667, and reward
+0.8073→0.6070. The canonical v40 policy now atomically owns decode/honesty
+invariants only and preserves checkpoint conditioning. Its clean local CPU
+smoke run exactly reproduces E723 quality with no timeout. Strict-v2 remains
+0.0 and AgentV remains 0/1, so retain the harness fix without a ship claim or
+new checkpoint.
+
+Evidence: [narrative](iter-e730-atomic-policy-conditioning-20260722.md) and
+[JSON](iter-e730-atomic-policy-conditioning-20260722.json).
