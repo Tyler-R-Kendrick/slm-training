@@ -5746,3 +5746,22 @@ smoke suite.
 
 Evidence: [JSON](iter-e741-lexer-slot-coverage-close-20260722.json) and
 [notes](iter-e741-lexer-slot-coverage-close-20260722.md).
+
+## E742 lexer bound-family normalization
+
+E742 normalizes real lexer `component` compiler paths into the existing
+bound-family semantic-plan scorer; the scorer previously recognized only the
+synthetic `component_bound` kind and silently no-op'd on the actual path. The
+matched local CPU smoke pair (`n=3`, unchanged E735 checkpoint, coverage-close
+2) changes only semantic-plan family weight/margin 0/0 versus 4/2. Treatment
+fires 3 times, changes 2 choices, restores `Card` and `Callout`, raises
+meaning-v1 0.6667→1.0, structure 0.5464→0.6628, and recall 0.4167→0.5.
+
+Reject the weights and promotion: fidelity falls 1.0→0.8889, validity
+1.0→0.9333, reward 0.9370→0.9037, strict-v2 stays zero, and AgentV stays 0/1.
+Retain model v208 default-off so enabled canonical levers execute consistently
+across tokenizer representations. No checkpoint was created or synced. The
+next target is typed semantic-role placement inside the restored families.
+
+Evidence: [JSON](iter-e742-lexer-bound-family-normalization-20260722.json) and
+[notes](iter-e742-lexer-bound-family-normalization-20260722.md).

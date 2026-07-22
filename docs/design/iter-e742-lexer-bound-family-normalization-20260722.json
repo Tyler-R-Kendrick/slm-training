@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E742",
+  "run_id": "e742-lexer-family4-margin2-coverage2-smoke-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-22",
+  "description": "Normalize real lexer component paths into the existing bound-family semantic-plan scorer",
+  "decision": {
+    "retain": "model v208 bound-family path normalization, default off",
+    "reject": "semantic-plan weights 4/2, checkpoint promotion, and ship claims",
+    "reason": "required families and structural metrics improve, but fidelity, validity, and reward regress while strict-v2 and AgentV remain zero",
+    "next": "place visible template symbols in schema-compatible typed properties inside restored planned families"
+  },
+  "local_compute": true,
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E742 matched local diagnostic",
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "strict_compiler_tree + honest_slot_contract + visible semantic roles",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "839c17f01a701fd42400d56da82da51e1f988b5d3bd78ccfa8c688b1be844ef4",
+    "eval_suite_manifest_sha": "9cf9ab46201b79e787dca445035f7d5cda2fa0c835e5d33dc38eca88db900e1c",
+    "evaluation_policy": "strict_compiler_tree",
+    "eval_limit": 3,
+    "grammar_ltr_max_tokens": 160,
+    "decode_timeout_seconds": 8.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "semantic_role_decode_weight": 2.0,
+    "schema_role_slot_decode_weight": 2.0,
+    "component_plan_decode_weight": 1.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "semantic_role_contract_in_context": true,
+    "effective_model_config_fields": 235,
+    "matched_config_check": "byte-identical after removing semantic_plan_decode_weight and semantic_plan_margin_decode_weight",
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "runs": [
+    {
+      "run_id": "e742-lexer-family0-coverage2-smoke-r1",
+      "label": "accepted v208 control",
+      "semantic_plan_decode_weight": 0.0,
+      "semantic_plan_margin_decode_weight": 0.0,
+      "semantic_plan_applications": 0,
+      "semantic_plan_choice_changes": 0,
+      "slot_coverage_close_applications": 3,
+      "slot_coverage_close_choice_changes": 3,
+      "tokens_emitted": 61,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.6666666666666666,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.5464,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.9369999999999999,
+      "latency_ms_p50": 1733.0,
+      "latency_ms_p95": 2536.31,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e742-lexer-family4-margin2-coverage2-smoke-r1",
+      "label": "accepted v208 treatment",
+      "semantic_plan_decode_weight": 4.0,
+      "semantic_plan_margin_decode_weight": 2.0,
+      "semantic_plan_applications": 3,
+      "semantic_plan_choice_changes": 2,
+      "slot_coverage_close_applications": 3,
+      "slot_coverage_close_choice_changes": 3,
+      "tokens_emitted": 61,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.3333333333333333,
+      "placeholder_fidelity": 0.8888888888888888,
+      "placeholder_validity": 0.9333333333333332,
+      "structural_similarity": 0.6628,
+      "component_type_recall": 0.5,
+      "reward_score": 0.9036666666666667,
+      "latency_ms_p50": 1050.14,
+      "latency_ms_p95": 3089.87,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.3333333333333333,
+      "placeholder_fidelity": 0.8888888888888888,
+      "placeholder_validity": 0.9333333333333332,
+      "structural_similarity": 0.6628,
+      "component_type_recall": 0.5,
+      "reward_score": 0.9036666666666667,
+      "latency_ms_p50": 1050.14,
+      "latency_ms_p95": 3089.87,
+      "decode_timeout_count": 0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "three-record scratch smoke diagnostic; fidelity and reward regress, strict-v2 is zero, and AgentV is 0/1"
+  },
+  "strict_v2_failure": {
+    "coverage": 0.3333333333333333,
+    "reason_prevalence": {
+      "placeholder_semantic_role_mismatch": 1,
+      "required_inventory_unknown": 2,
+      "schema_value_role_mismatch:Card.children": 1
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6675cc7aef5a4223710922a70884217c63ec1caa",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v42",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v208"
+    },
+    "stamped_at": "2026-07-22T06:57:05.423359+00:00"
+  }
+}
