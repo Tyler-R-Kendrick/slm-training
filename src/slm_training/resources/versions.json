@@ -2627,7 +2627,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v39",
+      "version": "v40",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2637,6 +2637,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v40",
+          "date": "2026-07-21",
+          "note": "Keep atomic strict decode policy from mutating checkpoint schema, slot-contract, or design input conditioning"
+        },
         {
           "version": "v39",
           "date": "2026-07-21",
@@ -3726,6 +3731,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v191",
+          "date": "2026-07-21",
+          "note": "no-bump: adjust ModelBuildConfig policy regression expectations; TwoTower model behavior is unchanged"
+        },
         {
           "version": "v191",
           "date": "2026-07-21",

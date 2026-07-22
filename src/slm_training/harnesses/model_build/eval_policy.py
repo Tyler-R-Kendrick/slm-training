@@ -9,17 +9,15 @@ CHECKPOINT_DECLARED_POLICY = "checkpoint_declared"
 STRICT_COMPILER_TREE_POLICY_ID = "strict_compiler_tree"
 
 # Fields shared by exact choice completion and strict compiler-tree decoding.
-# Keep this bundle atomic: partial copies previously produced incomparable runs
-# with honest mode enabled but slot-contract constrained decoding disabled.
+# Keep decode/honesty atomic, but preserve checkpoint input conditioning:
+# changing schema, slot-contract, or DESIGN.md context changes model logits and
+# is an experiment lever, not a decode-safety requirement.
 STRICT_EVALUATION_POLICY: dict[str, Any] = {
     "grammar_constrained": True,
     "grammar_ltr_primary": True,
     "grammar_finalize_validate": True,
-    "schema_in_context": True,
-    "slot_contract_in_context": True,
     "slot_contract_constrained_decode": True,
     "honest_slot_contract": True,
-    "design_md_in_context": False,
     "allow_unconstrained_fallback": False,
 }
 STRICT_COMPILER_TREE_POLICY: dict[str, Any] = {

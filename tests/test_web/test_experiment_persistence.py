@@ -489,3 +489,23 @@ def test_e729_rejected_checkpoint_and_scoreboard_persist_without_outputs(
         "c5bafb8d88a0897e3c9c2d4727b04134042ae2944cdeabcb3c65fb7a9d18c43d"
     )
     assert run["train_summary"]["checkpoint_synced"] is False
+
+
+def test_e730_policy_fix_and_regression_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    fixed = readers.run("e730-e723-atomic-policy-smoke-r3")
+    regressed = readers.run("e730-e723-atomic-policy-smoke-r1")
+
+    assert fixed["provenance"] == "committed"
+    assert fixed["scoreboard"]["suites"]["smoke"]["meaningful_program_rate"] == (
+        0.6666666666666666
+    )
+    assert fixed["scoreboard"]["suites"]["smoke"]["structural_similarity"] == 0.5614
+    assert fixed["train_summary"] is None
+    assert regressed["provenance"] == "committed"
+    assert regressed["scoreboard"]["suites"]["smoke"]["structural_similarity"] == (
+        0.13526666666666667
+    )

@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "run_id": "e730-e723-atomic-policy-smoke-r3",
+  "experiment_id": "E730",
+  "date_utc": "2026-07-22",
+  "status": "completed_harness_regression_fixed",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "path": "outputs/runs/e723-symbol-only-slot-owner140-r1/checkpoints/last.pt",
+    "sha256": "787d2d21d7c29d56637355fd364f16a0d67b1f452fc0f4ce3a7d486b2bd62795",
+    "created": false,
+    "synced": false,
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "evaluation_policy": {
+    "id": "strict_compiler_tree",
+    "device": "cpu",
+    "suite": "smoke",
+    "n": 3,
+    "eval_suite_manifest_sha256": "9cf9ab46201b79e787dca445035f7d5cda2fa0c835e5d33dc38eca88db900e1c",
+    "max_wall_minutes": 2,
+    "decode_timeout_seconds": 8,
+    "grammar_ltr_max_tokens": 160,
+    "grammar_constrained": true,
+    "compiler_decode_mode": "tree",
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "schema_in_context": false,
+    "slot_contract_in_context": false
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "ast_node_f1": 0.7000000000000001,
+      "ast_edge_f1": 0.3333333333333333,
+      "latency_ms_p50": 918.03,
+      "latency_ms_p95": 1211.78,
+      "decode_timeout_count": 0,
+      "component_plan_applications": 9,
+      "slot_component_applications": 3,
+      "slot_component_choice_changes": 3
+    }
+  },
+  "matched_runs": [
+    {
+      "run_id": "e730-e723-atomic-policy-smoke-r1",
+      "label": "regressed preset before fix",
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.3333333333333333,
+        "meaningful_program_v1_rate": 0.3333333333333333,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.13526666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.607,
+        "ast_node_f1": 0.16666666666666666,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 745.83,
+        "latency_ms_p95": 1284.19,
+        "decode_timeout_count": 0
+      },
+      "conditioning": {
+        "schema_in_context": true,
+        "slot_contract_in_context": true
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "b8421346ca73fd06a9a035b4e4490b506580df15",
+        "code_dirty": false,
+        "components": {
+          "harness.model_build.eval": "v39",
+          "evals.meaningful_program": "2.12.0",
+          "evals.scoring": "v13",
+          "model.twotower": "v191"
+        },
+        "stamped_at": "2026-07-22T02:13:35.975615+00:00"
+      }
+    }
+  ],
+  "excluded_configurations": [
+    {
+      "run_id": "e730-e723-atomic-policy-smoke-r2",
+      "reason": "completed after the harness edit but before commit; retained as dirty validation and excluded from accepted evidence"
+    }
+  ],
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": false,
+  "decision": "Keep strict decode and honesty controls atomic, but preserve checkpoint-bound input conditioning. The clean corrected run reproduces E723 quality; strict-v2 remains zero, so this is a harness fix with no ship claim.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b25d4a33de72942de9e4436da3c15b441af97310",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v40",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v191"
+    },
+    "stamped_at": "2026-07-22T02:16:53.640122+00:00"
+  }
+}
