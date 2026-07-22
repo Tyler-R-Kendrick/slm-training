@@ -6320,3 +6320,14 @@ Strict-v2 stays 0.2 and AgentV is 0/2. Reject E894 as dominated by E891; stop
 replay-ratio tuning and target typed collection roles plus repeated subtree spam.
 Full evidence:
 [low-replay results](iter-e894-e896-low-replay-20260722.md).
+
+# E897 — typed-role supplement (2026-07-22)
+
+E897 derives from committed E851 under unchanged strict gates and adds only
+`train_tabs_01` plus `train_card_stack_01`, targeting E892's typed
+`Tabs.items` and paired-card failures. The build admits 353/353 rows with zero
+rejects, warnings, decontamination hits, sanitizer fallbacks, recommendations,
+or experiment candidates. Both added rows are Silver, independently judged,
+and quality 1.0. Retain the immutable corpus for matched training; admission
+alone is not model or ship evidence. Full evidence:
+[typed-role supplement results](iter-e897-typed-role-supplement-20260722.md).
