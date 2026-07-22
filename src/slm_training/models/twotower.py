@@ -5026,10 +5026,11 @@ class TwoTowerModel(nn.Module):
             getattr(self.config, "semantic_role_decode_weight", 0.0) or 0.0
         )
         learned_enabled = learned_weight > 0.0 and self.slot_component_head is not None
+        bound_component_kinds = {"component", "component_bound"}
         if (
             (not learned_enabled and role_weight <= 0.0)
             or not slot_contract
-            or "component_bound" not in candidate_kinds
+            or not bound_component_kinds.intersection(candidate_kinds)
         ):
             return None
         remaining_slots: list[str] = []
@@ -5093,7 +5094,7 @@ class TwoTowerModel(nn.Module):
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
             index = component_index.get(token_id)
-            if index is None or kind != "component_bound":
+            if index is None or kind not in bound_component_kinds:
                 continue
             slot_content_count = getattr(self.tokenizer, "slot_content_count", None)
             required = (
@@ -5134,6 +5135,31 @@ class TwoTowerModel(nn.Module):
                 role_weight > 0.0 and semantic_role_candidates
             )
         return bias if applied else None
+
+    def _slot_component_bias_for_row(
+        self,
+        row: int,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        slot_contract: list[str] | None = None,
+    ) -> torch.Tensor | None:
+        """Apply learned and declared slot-family scores for one decode row."""
+
+        def row_value(values: list[Any] | None) -> Any:
+            return values[row] if values and row < len(values) else None
+
+        return self._slot_component_bias(
+            ctx,
+            ctx_pad,
+            prefix,
+            candidate_ids,
+            candidate_kinds,
+            slot_contract if slot_contract is not None else row_value(self._slot_contracts),
+            row_value(self._semantic_role_candidates),
+        )
 
     def _semantic_plan_covered_counts(
         self,
@@ -8512,7 +8538,8 @@ class TwoTowerModel(nn.Module):
                     stats.component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_plan
                     )
-            slot_bias = self._slot_component_bias(
+            slot_bias = self._slot_component_bias_for_row(
+                plan_row,
                 ctx,
                 ctx_pad,
                 prefix,
@@ -8676,7 +8703,8 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
                             )
-                    slot_bias = self._slot_component_bias(
+                    slot_bias = self._slot_component_bias_for_row(
+                        plan_row,
                         ctx,
                         ctx_pad,
                         prefix,
@@ -9643,23 +9671,13 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
                             )
-                    slot_bias = self._slot_component_bias(
+                    slot_bias = self._slot_component_bias_for_row(
+                        row,
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
                         ids[row, :position].tolist(),
                         candidate_ids,
                         candidate_kinds,
-                        (
-                            self._slot_contracts[row]
-                            if self._slot_contracts and row < len(self._slot_contracts)
-                            else None
-                        ),
-                        (
-                            self._semantic_role_candidates[row]
-                            if self._semantic_role_candidates
-                            and row < len(self._semantic_role_candidates)
-                            else None
-                        ),
                     )
                     if slot_bias is not None:
                         before_slot = int(scores.argmax().item())
@@ -11220,17 +11238,11 @@ class TwoTowerModel(nn.Module):
             # without either flag used to silently no-op every step (E611-E616
             # replayed a matched control/treatment eval this way without ever
             # observing a difference). Fail loud instead of reproducing that footgun.
-            _contract_gated_weight_names = (
-                "schema_role_slot_decode_weight",
-                "slot_coverage_close_decode_weight",
-                "semantic_plan_typed_array_nonempty_margin_decode_weight",
-                "semantic_plan_typed_array_item_margin_decode_weight",
-                "semantic_plan_repeated_slot_margin_decode_weight",
-                "required_slot_margin_decode_weight",
-            )
+            from slm_training.levers import SLOT_CONTRACT_DECODE_LEVERS
+
             _active_contract_gated_weights = sorted(
                 name
-                for name in _contract_gated_weight_names
+                for name in SLOT_CONTRACT_DECODE_LEVERS
                 if float(getattr(self.config, name, 0.0) or 0.0) > 0.0
             )
             if _active_contract_gated_weights:

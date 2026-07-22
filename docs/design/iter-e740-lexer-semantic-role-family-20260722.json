@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E740",
+  "run_id": "e740-lexer-role-family2-smoke-r2",
+  "date_utc": "2026-07-22",
+  "description": "Lexer declared semantic-role component-family scoring diagnostic",
+  "decision": {
+    "retain": "the shared slot-family scorer now recognizes lexer compiler component paths and receives declared role candidates through one row adapter",
+    "reject": "semantic-role weight promotion, checkpoint promotion, and ship claims",
+    "reason": "the treatment changes the button family and removes duplicate-subtree spam, but every aggregate quality metric remains unchanged and strict meaningfulness stays zero",
+    "next": "close legal container paths after all declared template symbols are consumed"
+  },
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E740 matched local diagnostic",
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "strict_compiler_tree + honest_slot_contract + visible semantic roles",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "evaluation_policy": "strict_compiler_tree",
+    "eval_limit": 3,
+    "grammar_ltr_max_tokens": 160,
+    "decode_timeout_seconds": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "schema_role_slot_decode_weight": 2.0,
+    "semantic_role_contract_in_context": true,
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "runs": [
+    {
+      "run_id": "e740-lexer-role-family0-smoke-r1",
+      "label": "preliminary v205 control; compiler kind mismatch kept the role scorer inert",
+      "accepted_for_final_comparison": false,
+      "semantic_role_decode_weight": 0.0,
+      "slot_component_applications": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.9166666666666666,
+      "structural_similarity": 0.4886,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.912,
+      "decode_timeout_count": 0
+    },
+    {
+      "run_id": "e740-lexer-role-family2-smoke-r1",
+      "label": "preliminary v205 treatment; exact null because compiler kind mismatch kept the role scorer inert",
+      "accepted_for_final_comparison": false,
+      "semantic_role_decode_weight": 2.0,
+      "slot_component_applications": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.9166666666666666,
+      "structural_similarity": 0.4886,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.912,
+      "decode_timeout_count": 0
+    },
+    {
+      "run_id": "e740-lexer-role-family0-smoke-r2",
+      "label": "accepted v206 control",
+      "accepted_for_final_comparison": true,
+      "semantic_role_decode_weight": 0.0,
+      "slot_component_applications": 8,
+      "slot_component_choice_changes": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.9166666666666666,
+      "placeholder_validity": 0.9500000000000001,
+      "structural_similarity": 0.4886,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.912,
+      "latency_ms_p50": 2149.75,
+      "latency_ms_p95": 2580.51,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e740-lexer-role-family2-smoke-r2",
+      "label": "accepted v206 treatment",
+      "accepted_for_final_comparison": true,
+      "semantic_role_decode_weight": 2.0,
+      "slot_component_applications": 8,
+      "slot_component_choice_changes": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.9166666666666666,
+      "placeholder_validity": 0.9500000000000001,
+      "structural_similarity": 0.4886,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.912,
+      "latency_ms_p50": 2199.4,
+      "latency_ms_p95": 2313.0,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.9166666666666666,
+      "placeholder_validity": 0.9500000000000001,
+      "structural_similarity": 0.4886,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.912,
+      "decode_timeout_count": 0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "three-record scratch smoke diagnostic; strict-v2 and AgentV remain zero"
+  },
+  "strict_v2_failure": {
+    "coverage": 0.6666666666666666,
+    "treatment_reason_prevalence": {
+      "placeholder_semantic_role_mismatch": 1,
+      "placeholder_spam": 1,
+      "prompt_component_missing": 2,
+      "required_component_missing": 2,
+      "required_inventory_unknown": 1
+    },
+    "targeted_reason_removed": "duplicate_subtree_spam"
+  },
+  "post_run_remediation": {
+    "lever_registry_version": "config.levers/v12",
+    "status": "implemented and regression-tested; no additional experiment run",
+    "change": "centralize slot-contract and visible semantic-role companion requirements and reject invalid enabled lever configurations during model construction before run artifacts exist",
+    "runtime_guard": "the model consumes the same canonical slot-contract lever set as defense in depth",
+    "historical_evidence_policy": "retain the v205 negative runs as explicit diagnostic evidence rather than publishing them as accepted comparison arms"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4dcd0d680216a3bd3e21d5259a37fd052d6f90bd",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v41",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v206"
+    },
+    "stamped_at": "2026-07-22T05:57:18.443287+00:00"
+  }
+}

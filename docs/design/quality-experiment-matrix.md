@@ -5700,3 +5700,21 @@ and ship claims. A v203 exact-command replay also proves the default-off change
 is neutral and exposed incomplete historical recipe persistence; eval harness
 v41 now serializes all decode weights from `ModelBuildConfig`. Evidence: [JSON](iter-e739-lexer-active-schema-role-binding-20260722.json)
 and [notes](iter-e739-lexer-active-schema-role-binding-20260722.md).
+
+## E740 lexer semantic-role family scoring
+
+E740 makes the already-declared dual-path slot-family scorer genuinely execute
+on lexer compiler paths by supplying declared role candidates through one row
+adapter and normalizing lexer `component` with choice `component_bound`. The
+matched local CPU smoke pair (`n=3`, E735, strict compiler tree) records eight
+applications and three immediate changes in both v206 arms. Role weight 2
+changes the button record's first child to `Button` and removes
+`duplicate_subtree_spam`, but every aggregate metric is exactly null and
+strict-v2 / AgentV remain zero because decoding continues into repeated-symbol
+children. Retain the reachability correction; reject the weight and promotion.
+Lever registry v12 additionally centralizes required companion settings and
+rejects missing slot-contract or visible semantic-role inputs during model
+construction, before any run artifact exists; the runtime guard consumes that
+same canonical set rather than maintaining another list.
+Evidence: [JSON](iter-e740-lexer-semantic-role-family-20260722.json) and
+[notes](iter-e740-lexer-semantic-role-family-20260722.md).

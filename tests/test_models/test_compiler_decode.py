@@ -32,6 +32,7 @@ from slm_training.models.grammar import make_grammar_state
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
+from slm_training.levers import SLOT_CONTRACT_DECODE_LEVERS
 
 
 def _model(**config_overrides) -> TwoTowerModel:
@@ -45,6 +46,20 @@ def _model(**config_overrides) -> TwoTowerModel:
     )
     output_tokenizer = config_overrides.pop("output_tokenizer", "lexer")
     compiler_decode_mode = config_overrides.pop("compiler_decode_mode", "tree")
+    satisfy_companions = config_overrides.pop("_satisfy_companions", True)
+    active_contract_weight = any(
+        float(config_overrides.get(name, 0.0) or 0.0) > 0.0
+        for name in (*SLOT_CONTRACT_DECODE_LEVERS, "semantic_role_decode_weight")
+    )
+    if active_contract_weight and satisfy_companions:
+        config_overrides.setdefault("slot_contract_constrained_decode", True)
+    if (
+        satisfy_companions
+        and float(config_overrides.get("semantic_role_decode_weight", 0.0) or 0.0)
+        > 0.0
+    ):
+        config_overrides.setdefault("honest_slot_contract", True)
+        config_overrides.setdefault("semantic_role_contract_in_context", True)
     config = TwoTowerConfig(
         context_backend="scratch",
         output_tokenizer=output_tokenizer,
@@ -1392,11 +1407,12 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     enabled, so the bias silently no-opped on every decode step regardless of
     weight or checkpoint quality. Fail loud instead of reproducing that footgun.
     """
-    model = _model(output_tokenizer="choice", **{weight_name: 8.0})
-    request = GenerationRequest(prompt="Gallery block.", slot_contract=[":gallery.image"])
-
-    with pytest.raises(ValueError, match="slot_contract_constrained_decode"):
-        model.generate_batch_requests([request])
+    with pytest.raises(ValueError, match="requires one companion configuration"):
+        _model(
+            output_tokenizer="choice",
+            _satisfy_companions=False,
+            **{weight_name: 8.0},
+        )
 
 
 @pytest.mark.parametrize(
@@ -2258,6 +2274,44 @@ def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> 
         CompletionPath((card_header, lpar, body_id, comma), "component_root"),
     )
     ctx, ctx_pad = model._encode_context(["Hero card."])
+
+    selected = model._select_compiler_path(
+        prefix,
+        paths,
+        ctx,
+        ctx_pad,
+        32,
+        tree=True,
+        slot_contract=model._slot_contracts[0],
+        state=state,
+    )
+
+    assert selected == paths[0].token_ids
+
+
+def test_lexer_semantic_role_ranks_compiler_component_family(monkeypatch) -> None:
+    model = _model(semantic_role_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    button = tokenizer.token_to_id["Button"]
+    text = tokenizer.token_to_id["TextContent"]
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root = Stack([", add_special=False)]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._slot_contracts = [[":cta.label"]]
+    model._semantic_role_candidates = [{":cta.label": ("Button",)}]
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [2.0 if token_id == text else 1.0 for token_id in candidate_ids]
+        ),
+    )
+    paths = (
+        CompletionPath((button, tokenizer.token_to_id["("]), "component"),
+        CompletionPath((text, tokenizer.token_to_id["("]), "component"),
+    )
+    ctx, ctx_pad = model._encode_context(["Single button."])
 
     selected = model._select_compiler_path(
         prefix,

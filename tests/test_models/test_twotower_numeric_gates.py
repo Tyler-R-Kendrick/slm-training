@@ -339,6 +339,21 @@ def test_model_build_config_rejects_choice_only_schema_lever_for_lexer() -> None
         )
 
 
+def test_model_build_config_rejects_missing_decode_companions_before_artifacts(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "runs"
+    with pytest.raises(ValueError, match="requires one companion configuration"):
+        _valid_build_config(
+            run_root=run_root,
+            run_id="must-not-exist",
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            semantic_role_decode_weight=2.0,
+        )
+    assert not run_root.exists()
+
+
 # --------------------------------------------------------------------------- #
 # TwoTowerConfig numeric gates (torch-backed module)
 # --------------------------------------------------------------------------- #
