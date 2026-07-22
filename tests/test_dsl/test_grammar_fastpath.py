@@ -497,6 +497,42 @@ def test_ensure_valid_fallback_only_when_finalize() -> None:
         assert "grammar_finalize_validate" in str(exc)
 
 
+def test_minimal_valid_fallback_never_invents_marker() -> None:
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            d_model=64,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=2,
+            max_target_len=32,
+            max_prompt_len=32,
+        ),
+        device="cpu",
+    )
+
+    declared = model._minimal_valid_openui([":request.title"])
+    assert declared is not None
+    assert ":request.title" in declared
+    assert ":cta.label" not in declared
+
+    marker_free = model._minimal_valid_openui()
+    assert marker_free is not None
+    assert marker_free == "root = Separator()"
+    assert model._minimal_valid_openui(["free form"]) == marker_free
+
+
 def test_admit_fill_rejects_hard_prefix() -> None:
     tok = _tok()
     eng = OpenUIIncrementalEngine()

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E763-E764",
+  "run_id": "e764-declared-fallback-heldout-n5-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-22",
+  "description": "Make canonical held-out targets symbol-only and prevent certified decoder fallback from inventing undeclared markers",
+  "decision": {
+    "retain": "data.test_build v5, model.twotower v222, and published eval snapshot e763_symbol_only_eval_r2_20260722",
+    "reject": "free-form eval targets, weakening leakage gates, canned fallback markers, whole-contract fallback templates, checkpoint promotion, and ship claims",
+    "reason": "The rebuilt snapshot is symbol-only and disjoint, while the matched replay proves every fallback marker is request-declared without masking the checkpoint's low structural quality",
+    "next": "repair the constrained model path responsible for four certified fallbacks, then replay the same immutable held-out suite locally"
+  },
+  "local_compute": true,
+  "preflight_failures": [
+    {
+      "stage": "legacy_snapshot_load",
+      "result": "rejected before model decode because held_out_tabs_01 contained free-form TabItem.value strings",
+      "artifact_valid": false
+    },
+    {
+      "stage": "initial_rebuild",
+      "result": "rejected before publication because two fixture structures overlapped the train manifest",
+      "artifact_valid": false
+    }
+  ],
+  "data_build": {
+    "dataset_id": "e763_symbol_only_eval_r2_20260722",
+    "published_path": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722",
+    "manifest_sha256": "d22f53fddabffa2491bf98f64c65a87442c169c47a6d52f9cee2b40efb6ff004",
+    "suite_counts": {"smoke": 3, "held_out": 5, "adversarial": 4, "ood": 4, "rico_held": 3},
+    "total_records": 19,
+    "output_contract_errors": 0,
+    "undeclared_marker_records": 0,
+    "leakage_rejected": 37,
+    "literals_templatized": 0,
+    "sanitizer_fallbacks": 0,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "7c567aa2cdd79d2f221adae0efe9309a03ce1f61",
+      "code_dirty": true,
+      "components": {"data.test_build": "v5"},
+      "stamped_at": "2026-07-22T11:39:34.912155+00:00"
+    }
+  },
+  "matched_runs": [
+    {
+      "run_id": "e763-heldout-full-n5-r1",
+      "model_version": "v221",
+      "n": 5,
+      "contract_precision": 0.2,
+      "placeholder_fidelity": 0.2,
+      "structural_similarity": 0.23886,
+      "component_type_recall": 0.2619047619047619,
+      "reward_score": 0.673,
+      "fallback_count": 4,
+      "result": "negative: four certified fallbacks invented undeclared :cta.label",
+      "artifact_valid": true
+    },
+    {
+      "run_id": "e764-declared-fallback-heldout-n5-r1",
+      "model_version": "v222",
+      "n": 5,
+      "contract_precision": 1.0,
+      "placeholder_fidelity": 0.4019047619047619,
+      "structural_similarity": 0.21554,
+      "component_type_recall": 0.22857142857142856,
+      "reward_score": 0.7335800000000001,
+      "fallback_count": 4,
+      "result": "retained harness fix: no prediction invents a marker; low model quality remains exposed",
+      "artifact_valid": true
+    }
+  ],
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E763-E764 matched full held_out n=5",
+    "suite": "held_out",
+    "suite_n": 5,
+    "honesty_mode": "strict_compiler_tree + visible honest slot contract + declared RuntimeSymbol semantic roles",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "d22f53fddabffa2491bf98f64c65a87442c169c47a6d52f9cee2b40efb6ff004",
+    "eval_suite_manifest_sha": "a94aca7a025ad3f4373c1a266d012b6c737761f0e140794e5f12fbea59144c99",
+    "semantic_plan_decode_weight": 6.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "decode_timeout_seconds": 12.0,
+    "decode_canvas_cap": 160,
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.2,
+      "meaningful_program_v1_rate": 0.2,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "contract_precision": 1.0,
+      "contract_recall": 0.4019047619047619,
+      "placeholder_fidelity": 0.4019047619047619,
+      "placeholder_validity": 0.64114,
+      "structural_similarity": 0.21554,
+      "tree_edit_similarity": 0.21554,
+      "component_type_recall": 0.22857142857142856,
+      "reward_score": 0.7335800000000001,
+      "latency_ms_p50": 3753.5,
+      "latency_ms_p95": 7134.7,
+      "decode_timeout_count": 0,
+      "fallback_count": 4
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": {"evaluated": false, "pass": false, "passed": false, "reason": "five-record held-out scratch diagnostic; insufficient n, missing policy suites, strict-v2 zero, and AgentV 0/1"},
+  "output_contract": {"free_form_output_strings": 0, "undeclared_prediction_markers": 0, "allowed_completion_surface": "OpenUI grammar/AST symbols, schema enum literals, and request-declared template markers"},
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7c567aa2cdd79d2f221adae0efe9309a03ce1f61",
+    "code_dirty": true,
+    "components": {"config.levers": "v15", "harness.model_build.eval": "v44", "evals.meaningful_program": "2.13.0", "evals.scoring": "v14", "model.twotower": "v222"},
+    "stamped_at": "2026-07-22T11:46:30.379153+00:00"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "version": "e763_symbol_only_eval_r2_20260722",
+  "kind": "eval",
+  "source": "both",
+  "suites": {
+    "smoke": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/suites/smoke/records.jsonl",
+    "held_out": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/suites/held_out/records.jsonl",
+    "adversarial": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/suites/adversarial/records.jsonl",
+    "ood": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/suites/ood/records.jsonl",
+    "rico_held": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/suites/rico_held/records.jsonl"
+  },
+  "stats": "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722/stats.json",
+  "ids": [
+    "smoke_hero_01",
+    "smoke_button_01",
+    "smoke_callout_01",
+    "held_out_form_01",
+    "held_out_dual_card_01",
+    "held_out_input_01",
+    "held_out_tabs_01",
+    "held_out_settings_01",
+    "adv_empty_prompt_01",
+    "adv_dual_card_01",
+    "adv_deep_nest_01",
+    "adv_many_buttons_01",
+    "ood_dashboard_01",
+    "ood_gallery_01",
+    "ood_modal_01",
+    "ood_auth_01",
+    "rico_eval_test_25",
+    "rico_eval_test_42",
+    "rico_eval_test_77"
+  ],
+  "suite_counts": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 3
+  },
+  "content_fingerprint": "d22f53fddabffa2491bf98f64c65a87442c169c47a6d52f9cee2b40efb6ff004",
+  "train_manifest": "src/slm_training/resources/data/train/remediated/manifest.json",
+  "built_at": "2026-07-22T11:39:34.495550+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7c567aa2cdd79d2f221adae0efe9309a03ce1f61",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v5"
+    },
+    "stamped_at": "2026-07-22T11:39:34.912155+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e763_symbol_only_eval_r2_20260722",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "stats.json",
+      "sha256": "bb2b996039ce5e882fa39ce56238c546a102027ced0fdbcfb884dab06adf54c7",
+      "size": 1410
+    },
+    {
+      "path": "suites/adversarial/records.jsonl",
+      "sha256": "dc3ba506cb17d82b9b2d428f17b97ea900c4ca1c5fe5d253054e3e07a1d130fb",
+      "size": 17794
+    },
+    {
+      "path": "suites/held_out/records.jsonl",
+      "sha256": "a94aca7a025ad3f4373c1a266d012b6c737761f0e140794e5f12fbea59144c99",
+      "size": 22949
+    },
+    {
+      "path": "suites/ood/records.jsonl",
+      "sha256": "46ed37ecb634f5a2ae21ee55e1240d52eff04be9923ec5b3347fac882c88a147",
+      "size": 18160
+    },
+    {
+      "path": "suites/rico_held/records.jsonl",
+      "sha256": "0148966c1aff8d51ebad900613230c39aab21d33fe73c6a0c0e38b3592fb1fe5",
+      "size": 15805
+    },
+    {
+      "path": "suites/smoke/records.jsonl",
+      "sha256": "7d621bcfb1ade3cc230fcc967fa6d3c8519dfae5e29a56fe174de817dbbd7b6c",
+      "size": 13238
+    }
+  ]
+}

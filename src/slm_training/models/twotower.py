@@ -24,6 +24,7 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
@@ -4061,14 +4062,16 @@ class TwoTowerModel(nn.Module):
             return None
         return ser
 
-    def _minimal_valid_openui(self) -> str | None:
-        """Deterministic vocab-backed valid program when model decode cannot certify."""
-        candidates = [
-            'root = Button(":cta.label")\n',
-            'root = TextContent(":hero.title")\n',
-            'root = Stack([cta])\ncta = Button(":cta.label")\n',
-            'root = Card([title])\ntitle = TextContent(":hero.title")\n',
-        ]
+    def _minimal_valid_openui(
+        self, slot_contract: list[str] | tuple[str, ...] | None = None
+    ) -> str | None:
+        """Return a certified fallback without inventing completion symbols."""
+        marker = next((item for item in slot_contract or () if is_placeholder(item)), None)
+        candidates = (
+            [f"root = TextContent({json.dumps(marker)})\n"]
+            if marker
+            else ["root = Separator()\n"]
+        )
         for raw in candidates:
             ser = self._canonical_valid_openui(raw)
             if ser is None:
@@ -4152,7 +4155,7 @@ class TwoTowerModel(nn.Module):
             if ser is not None:
                 return ser
         if self.config.grammar_finalize_validate:
-            fallback = self._minimal_valid_openui()
+            fallback = self._minimal_valid_openui(slot_contract)
             if fallback is not None:
                 return fallback
             raise RuntimeError(

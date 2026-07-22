@@ -66,7 +66,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
     out_dir = Path(result["output_dir"])
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["suite_counts"]["smoke"] == 1
-    assert manifest["version_stamp"]["components"] == {"data.test_build": "v4"}
+    assert manifest["version_stamp"]["components"] == {"data.test_build": "v5"}
     assert result["stats"]["version_stamp"] == manifest["version_stamp"]
     assert (out_dir / "suites" / "smoke" / "records.jsonl").exists()
 

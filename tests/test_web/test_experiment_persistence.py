@@ -587,3 +587,23 @@ def test_e751_through_e762_rico_repairs_persist_without_outputs(
         "structural_similarity"
     ] == 1.0
     assert unique_markers["train_summary"] is None
+
+
+def test_e764_held_out_fallback_repair_persists_without_outputs(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    run = readers.run("e764-declared-fallback-heldout-n5-r1")
+
+    assert run["provenance"] == "committed"
+    held_out = run["scoreboard"]["suites"]["held_out"]
+    assert held_out["contract_precision"] == 1.0
+    assert held_out["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert held_out["fallback_count"] == 4
+    assert run["train_summary"] is None
+    assert "e764-declared-fallback-heldout-n5-r1" not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
