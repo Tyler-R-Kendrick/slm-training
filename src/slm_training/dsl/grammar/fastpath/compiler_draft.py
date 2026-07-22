@@ -364,6 +364,22 @@ def active_declaration_reference_count(
     return next((count for binder, count in reversed(arities) if binder == active), 0)
 
 
+def root_declaration_reference_arity_target(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[int, int] | None:
+    """Return lexer root-reference count and available bound declarations."""
+    try:
+        root = int(tokenizer.bind_id(0))
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+    arities = binder_reference_arities(tokenizer, token_ids)
+    target = next((count for binder, count in arities if binder == root), None)
+    if target is None:
+        return None
+    bound = sum(int(binder) != root for binder, _count in arities)
+    return int(target), max(int(target), bound)
+
+
 def active_parent_component_ids(
     tokenizer: Any, prefix_ids: list[int]
 ) -> tuple[int, ...]:
@@ -1241,6 +1257,7 @@ def gold_compiler_decision_positions(
 __all__ = [
     "active_declaration_binder_id",
     "active_declaration_reference_count",
+    "root_declaration_reference_arity_target",
     "active_parent_component_ids",
     "binder_reference_arities",
     "CompletionForest",

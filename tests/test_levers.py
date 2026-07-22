@@ -33,7 +33,24 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     ]
     assert catalog["root_reference_arity_loss_weight"][
         "supported_configurations"
-    ] == [{"model_name": "twotower", "output_tokenizer": "choice"}]
+    ] == [
+        {"model_name": "twotower", "output_tokenizer": "choice"},
+        {
+            "model_name": "twotower",
+            "output_tokenizer": "lexer",
+            "compiler_decode_mode": ["restricted", "tree"],
+        },
+    ]
+    assert catalog["root_reference_arity_decode_weight"][
+        "supported_configurations"
+    ] == [
+        {"model_name": "twotower", "output_tokenizer": "choice"},
+        {
+            "model_name": "twotower",
+            "output_tokenizer": "lexer",
+            "compiler_decode_mode": ["restricted", "tree"],
+        }
+    ]
     assert catalog["binder_arity_decode_weight"]["supported_configurations"] == [
         {
             "model_name": "twotower",

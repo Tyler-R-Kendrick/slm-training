@@ -509,3 +509,22 @@ def test_e730_policy_fix_and_regression_persist_without_outputs(tmp_path: Path) 
     assert regressed["scoreboard"]["suites"]["smoke"]["structural_similarity"] == (
         0.13526666666666667
     )
+
+
+def test_e731_checkpoint_and_no_effect_arms_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    run = readers.run("e731-symbol-only-root-arity140-r1")
+    treatment = readers.run("e731-root-arity2-tree-smoke-r3")
+
+    assert run["provenance"] == "committed"
+    assert run["train_summary"]["root_reference_arity_rows"] == 2
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "bff1e0e6b07f3063c59b6549c121b4ceb38e7f0a5a90f093783673bcac2fbb88"
+    )
+    assert run["train_summary"]["checkpoint_synced"] is False
+    assert treatment["scoreboard"]["suites"]["smoke"]["structural_similarity"] == (
+        0.5614
+    )
