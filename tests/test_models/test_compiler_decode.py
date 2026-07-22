@@ -3493,14 +3493,17 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
     assert model.root_reference_arity_head.weight.grad is not None
     assert model.root_reference_arity_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["root_reference_arity_rows"] == 1
-    assert model.last_training_metrics["root_reference_arity_accuracy"] == 1.0
+    assert model.last_training_metrics["root_reference_arity_accuracy"] == 0.0
     assert model.last_training_metrics["root_reference_arity_classes_mean"] == 3.0
+    assert model.root_reference_arity_head.bias.grad is not None
+    assert model.root_reference_arity_head.bias.grad[-1] > 0
 
     tokenizer = model.tokenizer
     with torch.no_grad():
         model.root_reference_arity_head.weight.zero_()
         model.root_reference_arity_head.bias.zero_()
         model.root_reference_arity_head.bias[2] = 4.0
+        model.root_reference_arity_head.bias[-1] = 20.0
         model.root_reference_arity_head.bias[-1] = 20.0
     state = ChoiceDecodeState(tokenizer, slot_count=2)
     for token in ("+TextContent", "@0", "-", "+TextContent", "@1", "-", "["):
@@ -4305,7 +4308,10 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
     assert model.root_reference_arity_head.weight.grad is not None
     assert model.root_reference_arity_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["root_reference_arity_rows"] == 1
+    assert model.last_training_metrics["root_reference_arity_accuracy"] == 0.0
     assert model.last_training_metrics["root_reference_arity_classes_mean"] == 3.0
+    assert model.root_reference_arity_head.bias.grad is not None
+    assert model.root_reference_arity_head.bias.grad[-1] > 0
 
     tokenizer = model.tokenizer
     with torch.no_grad():

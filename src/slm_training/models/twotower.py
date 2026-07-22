@@ -3560,12 +3560,10 @@ class TwoTowerModel(nn.Module):
                 valid_max = min(
                     max(target, int(section_count)), root_logits.size(1) - 1
                 )
-                bounded_logits = root_logits[row : row + 1, : valid_max + 1]
+                scores = root_logits[row : row + 1]
                 target_tensor = torch.as_tensor([target], device=ctx.device)
-                root_losses.append(F.cross_entropy(bounded_logits, target_tensor))
-                root_hits.append(
-                    bounded_logits[0].argmax().eq(target_tensor[0]).float()
-                )
+                root_losses.append(F.cross_entropy(scores, target_tensor))
+                root_hits.append(scores[0].argmax().eq(target_tensor[0]).float())
                 root_class_counts.append(valid_max + 1)
             root_loss = (
                 torch.stack(root_losses).mean()
