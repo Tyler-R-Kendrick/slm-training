@@ -3819,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v210",
+      "version": "v211",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3841,6 +3841,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v211",
+          "date": "2026-07-22",
+          "note": "Apply semantic-plan family scores to direct lexer component candidates inside compiler containers"
+        },
         {
           "version": "v210",
           "date": "2026-07-22",

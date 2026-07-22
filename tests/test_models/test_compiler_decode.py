@@ -2105,9 +2105,11 @@ def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     bound_bias = model._semantic_plan_bias(
         0, candidates, ("component_bound", "component_bound")
     )
+    lexer_bias = model._semantic_plan_bias(0, candidates, ("component", "component"))
 
     assert root_bias is not None and root_bias.tolist() == [3.0, 0.0]
     assert bound_bias is not None and bound_bias.tolist() == [3.0, 0.0]
+    assert lexer_bias is not None and lexer_bias.tolist() == [3.0, 0.0]
 
 
 def test_prompt_semantic_plan_reaches_lexer_compiler(monkeypatch) -> None:

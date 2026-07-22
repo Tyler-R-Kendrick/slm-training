@@ -5618,6 +5618,7 @@ class TwoTowerModel(nn.Module):
         bias = torch.zeros(len(candidate_ids), device=next(self.parameters()).device)
         applied = False
         component_kinds = {
+            "component",
             "component_root",
             "component_bound",
             "component_root_or_bound",
@@ -5815,6 +5816,7 @@ class TwoTowerModel(nn.Module):
         """Record bounded score evidence for a planned family after the first."""
         section_types = tuple(getattr(state, "section_types", ()))
         component_kinds = {
+            "component",
             "component_root",
             "component_bound",
             "component_root_or_bound",
