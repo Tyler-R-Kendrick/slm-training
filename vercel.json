@@ -5,7 +5,7 @@
     "src/slm_training/web/vercel.py": {
       "maxDuration": 120,
       "includeFiles": "{docs/design/**,docs/MODEL_CARD.md,src/slm_training/resources/checkpoints/playground_demo/**}",
-      "excludeFiles": "{tests/**,src/apps/**,**/governance/records.jsonl,src/slm_training/resources/data/train/{e177_semantic_judge_v2,e214_schema_role_judge_v3,e218_schema_normalized_judge_v5,e297_semantic_contract_judge_v1,scope_graded_v1}/**}"
+      "excludeFiles": "{.venv/**,.vercel/**,node_modules/**,outputs/**,tests/**,src/apps/**,**/governance/records.jsonl,**/train/e177_*/**,**/train/e21[48]_*/**,**/train/e297_*/**,**/train/scope_graded_v1/**}"
     }
   }
 }

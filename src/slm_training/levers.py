@@ -33,13 +33,18 @@ VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
 VERCEL_FUNCTION_EXCLUDE_FILES: Final = (
+    ".venv/**",
+    ".vercel/**",
+    "node_modules/**",
+    "outputs/**",
     "tests/**",
     "src/apps/**",
     "**/governance/records.jsonl",
     # Historical semantic/schema-role corpora are provenance, not runtime data.
-    "src/slm_training/resources/data/train/{e177_semantic_judge_v2,"
-    "e214_schema_role_judge_v3,e218_schema_normalized_judge_v5,"
-    "e297_semantic_contract_judge_v1,scope_graded_v1}/**",
+    "**/train/e177_*/**",
+    "**/train/e21[48]_*/**",
+    "**/train/e297_*/**",
+    "**/train/scope_graded_v1/**",
 )
 
 # Active, source-controlled corpora. Historical snapshots remain immutable

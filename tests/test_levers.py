@@ -42,8 +42,9 @@ def test_run_policy_is_derived_from_one_value() -> None:
     )
     assert "docs/design/**" in VERCEL_FUNCTION_INCLUDE_FILES
     vercel_exclude_glob = "{" + ",".join(VERCEL_FUNCTION_EXCLUDE_FILES) + "}"
-    assert "e214_schema_role_judge_v3" in vercel_exclude_glob
+    assert "e21[48]" in vercel_exclude_glob
     assert len(vercel_exclude_glob) <= 256
+    assert vercel_exclude_glob.count("{") == 1
     config = ModelBuildConfig(train_dir=Path("outputs/data/train"))
     assert config.output_tokenizer == DEFAULT_OUTPUT_TOKENIZER == "lexer"
     assert config.decode_timeout_seconds == DEFAULT_DECODE_TIMEOUT_SECONDS == 12.0

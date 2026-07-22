@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v28",
+      "version": "v29",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v29",
+          "date": "2026-07-22",
+          "note": "Use non-nested Vercel exclusion globs so legacy corpora are actually removed from the function bundle"
+        },
         {
           "version": "v28",
           "date": "2026-07-22",
