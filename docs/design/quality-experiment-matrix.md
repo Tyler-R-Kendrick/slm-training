@@ -5883,3 +5883,20 @@ delimiter decision. No checkpoint was created or synced.
 
 Evidence: [JSON](iter-e752-repeated-card-siblings-20260722.json) and
 [notes](iter-e752-repeated-card-siblings-20260722.md).
+
+## E753-E754 semantic-plan delimiter continuity
+
+Model v214 extends the existing semantic-plan margin across the lexer parent
+array's `,` versus `]` boundary while sibling requirements remain. E753 hit its
+8-second per-record diagnostic timeout and is not evidence. The clean E754
+local CPU replay (`n=3`, 12-second record guard, canonical two-minute command
+cap) has zero timeouts: parse 1.0, fidelity 0.8788, validity 0.9273, structure
+0.8901, recall 1.0, and reward 0.9007.
+
+Retain v214, but do not promote: strict-v2 remains zero, marker ownership is
+uneven, one three-Card row emits two Cards, and AgentV is 0/1. No checkpoint was
+created or synced. Next repair repeated-family marker ownership and the
+remaining undercount.
+
+Evidence: [JSON](iter-e753-e754-plan-margin-delimiter-20260722.json) and
+[notes](iter-e753-e754-plan-margin-delimiter-20260722.md).
