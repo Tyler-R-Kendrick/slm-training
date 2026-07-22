@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-22",
+          "note": "Expose the existing semantic-plan typed-array nonempty margin on lexer compiler paths"
+        },
         {
           "version": "v9",
           "date": "2026-07-22",
@@ -3759,7 +3764,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v202",
+      "version": "v203",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3781,6 +3786,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v203",
+          "date": "2026-07-22",
+          "note": "Apply semantic-plan margin to keep planned lexer typed-array subtrees nonempty"
+        },
         {
           "version": "v202",
           "date": "2026-07-22",

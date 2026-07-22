@@ -45,7 +45,6 @@ _CHOICE_ONLY_DECODE_LEVERS: Final = (
     "semantic_plan_root_margin_decode_weight",
     "semantic_plan_repeated_array_close_margin_decode_weight",
     "semantic_plan_repeated_slot_margin_decode_weight",
-    "semantic_plan_typed_array_nonempty_margin_decode_weight",
     "semantic_plan_typed_array_item_margin_decode_weight",
     "visible_reference_decode_weight",
     "root_reference_identity_decode_weight",
@@ -57,6 +56,7 @@ _DUAL_PATH_DECODE_LEVERS: Final = (
     "semantic_role_decode_weight",
     "semantic_plan_decode_weight",
     "semantic_plan_margin_decode_weight",
+    "semantic_plan_typed_array_nonempty_margin_decode_weight",
     "root_reference_arity_decode_weight",
 )
 _COMPILER_PATH_DECODE_LEVERS: Final = (
