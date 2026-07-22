@@ -5576,3 +5576,17 @@ new checkpoint.
 
 Evidence: [narrative](iter-e730-atomic-policy-conditioning-20260722.md) and
 [JSON](iter-e730-atomic-policy-conditioning-20260722.json).
+
+## E731 lexer-native root-reference arity
+
+E731 implements the symbol-only lexer capability E726 found missing, with
+grammar-native root-arity targets and compiler continue/stop scoring. A
+140-step local CPU train completes in 82.20 seconds under the two-minute cap;
+the final head has loss 1.0957 and accuracy 0.5 over two active rows. On strict
+smoke, weights 1 and 2 each apply six times but change zero choices. Weights
+0/1/2 are prediction- and quality-identical at meaning-v1 0.6667, strict-v2
+0.0, structure 0.5614, recall 0.4167, and AgentV 0/1. Retain the executable
+default-off capability, reject the checkpoint, and close this scalar ladder.
+
+Evidence: [narrative](iter-e731-lexer-root-arity-symbol-only-20260722.md) and
+[JSON](iter-e731-lexer-root-arity-symbol-only-20260722.json).
