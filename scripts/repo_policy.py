@@ -79,6 +79,28 @@ def canonical_run_minutes(*, root: Path = ROOT) -> int:
     raise ValueError(f"MAX_RUN_MINUTES must be an integer literal in {path}")
 
 
+def canonical_vercel_include_files(*, root: Path = ROOT) -> tuple[str, ...]:
+    """Read the deployment evidence contract from the canonical lever module."""
+    path = root / "src/slm_training/levers.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in tree.body:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "VERCEL_FUNCTION_INCLUDE_FILES"
+        ):
+            value = ast.literal_eval(node.value)
+            if isinstance(value, tuple) and all(isinstance(item, str) for item in value):
+                return value
+    raise ValueError(
+        f"VERCEL_FUNCTION_INCLUDE_FILES must be a string tuple literal in {path}"
+    )
+
+
+def _vercel_include_glob(*, root: Path = ROOT) -> str:
+    return "{" + ",".join(canonical_vercel_include_files(root=root)) + "}"
+
+
 def validate_top_level(paths: Iterable[str]) -> list[str]:
     roots = {path.split("/", 1)[0] for path in paths if path}
     return [
@@ -203,6 +225,48 @@ def sync_workflow_timeouts(*, root: Path = ROOT) -> list[Path]:
     return changed
 
 
+def validate_vercel_run_policy(*, root: Path = ROOT) -> list[str]:
+    path = root / "vercel.json"
+    if not path.is_file():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    config = payload.get("functions", {}).get("src/slm_training/web/vercel.py", {})
+    expected_seconds = canonical_run_minutes(root=root) * 60
+    expected_files = _vercel_include_glob(root=root)
+    errors: list[str] = []
+    if config.get("maxDuration") != expected_seconds:
+        errors.append(
+            f"Vercel duration differs from canonical {expected_seconds}-second cap; "
+            "run `python -m scripts.repo_policy --sync-run-policy`"
+        )
+    if config.get("includeFiles") != expected_files:
+        errors.append(
+            "Vercel bundle omits canonical committed evidence; run "
+            "`python -m scripts.repo_policy --sync-run-policy`"
+        )
+    return errors
+
+
+def sync_run_policy(*, root: Path = ROOT) -> list[Path]:
+    """Regenerate every external adapter from the canonical run levers."""
+    changed = sync_workflow_timeouts(root=root)
+    path = root / "vercel.json"
+    if not path.is_file():
+        return changed
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    config = payload.setdefault("functions", {}).setdefault(
+        "src/slm_training/web/vercel.py", {}
+    )
+    config["maxDuration"] = canonical_run_minutes(root=root) * 60
+    config["includeFiles"] = _vercel_include_glob(root=root)
+    before = path.read_text(encoding="utf-8")
+    after = json.dumps(payload, indent=2) + "\n"
+    if after != before:
+        path.write_text(after, encoding="utf-8")
+        changed.append(path)
+    return changed
+
+
 def _git(args: list[str], *, root: Path = ROOT) -> str:
     return subprocess.run(
         ["git", *args],
@@ -268,6 +332,7 @@ def validate_repository(*, root: Path = ROOT) -> list[str]:
     errors = validate_top_level(paths)
     errors.extend(validate_published_data_sizes(paths, root=root))
     errors.extend(validate_workflow_timeouts(root=root))
+    errors.extend(validate_vercel_run_policy(root=root))
     ignored = _git(["ls-files", "-ci", "--exclude-standard"], root=root).splitlines()
     errors.extend(
         f"tracked ignored artifact: {path}"
@@ -398,6 +463,11 @@ def main(argv: list[str] | None = None) -> int:
         help="derive every workflow timeout from slm_training.levers.MAX_RUN_MINUTES",
     )
     parser.add_argument(
+        "--sync-run-policy",
+        action="store_true",
+        help="derive workflow and Vercel adapters from slm_training.levers",
+    )
+    parser.add_argument(
         "--staged",
         action="store_true",
         help="document that validation is running from the staged pre-commit hook",
@@ -408,6 +478,10 @@ def main(argv: list[str] | None = None) -> int:
         help="read hook JSON from stdin and block raw moves of tracked paths",
     )
     args = parser.parse_args(argv)
+    if args.sync_run_policy:
+        for path in sync_run_policy():
+            print(f"synced {path.relative_to(ROOT)}")
+        return 0
     if args.sync_workflow_timeouts:
         for path in sync_workflow_timeouts():
             print(f"synced {path.relative_to(ROOT)}")
