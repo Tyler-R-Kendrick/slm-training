@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "run_id": "e725-symbol-only-component-inventory130-r1",
+  "experiment_id": "E725",
+  "date_utc": "2026-07-22",
+  "status": "completed_scratch_diagnostic_rejected",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "path": "outputs/runs/e725-symbol-only-component-inventory130-r1/checkpoints/last.pt",
+    "sha256": "897208bf4bf0ce12b137145a3a6c88f2140faa6579080b0fe54c6794fde8ba1e",
+    "created": true,
+    "synced": false,
+    "sync_reason": "explicit --no-sync-checkpoints local scratch diagnostic",
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "path": "outputs/data/train/symbol-only-integrated-smoke-20260721",
+    "records": 141,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 130,
+    "batch_size": 4,
+    "max_wall_minutes": 2,
+    "elapsed_wall_seconds": 73.22065596099128,
+    "seen_prompt_tokens": 66368,
+    "seen_target_tokens": 13898,
+    "trainable_parameters": 1978201,
+    "component_inventory_loss_weight": 1.0,
+    "component_inventory_decode_weight": 1.0,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "component_edge_loss_weight": 1.0,
+    "component_edge_decode_weight": 0.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_decode_weight": 1.0,
+    "last_loss": 12.511235237121582,
+    "primary_final_reconstruction_loss": 5.519655704498291,
+    "component_inventory_loss": 0.9025958776473999,
+    "component_inventory_topk_recall": 0.6833333373069763,
+    "component_inventory_score_margin": 2.0877702236175537,
+    "component_inventory_positive_count_mean": 3.75,
+    "checkpoint": "outputs/runs/e725-symbol-only-component-inventory130-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "897208bf4bf0ce12b137145a3a6c88f2140faa6579080b0fe54c6794fde8ba1e",
+    "checkpoint_synced": false,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "8791bbeed85a92892e22b0310584ca4cb7038851",
+      "code_dirty": false,
+      "components": {"harness.model_build.train": "v18"},
+      "stamped_at": "2026-07-22T00:39:47.650084+00:00"
+    }
+  },
+  "evaluation_policy": {
+    "suites": ["smoke"],
+    "device": "cpu",
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "suites": {
+    "smoke": {
+      "run_id": "e725-component-inventory1-smoke-r3",
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "meaningful_program_v1_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.30943333333333334,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 1459.93,
+      "latency_ms_p95": 1773.3
+    }
+  },
+  "control": {
+    "run_id": "e725-component-inventory0-smoke-r4",
+    "component_inventory_decode_weight": 0.0,
+    "predictions_and_quality_metrics_identical": true,
+    "prediction_set_sha256": "30b4cba4dea673a6453b2c54cdb1c6e5d60279a26be2c40f3b3dda92cb068f99"
+  },
+  "invalid_setup_attempts": [
+    {"run_id": "e725-component-inventory1-smoke-r1", "reason": "missing default ignored eval directory; no records loaded"},
+    {"run_id": "e725-component-inventory1-smoke-r2", "reason": "missing worktree-local ignored eval directory; no records loaded"}
+  ],
+  "decode_effect": {"applications": 0, "choice_changes": 0, "retained": false},
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Reject the checkpoint and inventory decode lever; target structural component reachability next.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8791bbeed85a92892e22b0310584ca4cb7038851",
+    "code_dirty": false,
+    "components": {"harness.model_build.eval": "v38", "evals.meaningful_program": "2.12.0", "evals.scoring": "v13", "model.twotower": "v188"},
+    "stamped_at": "2026-07-22T00:41:15.248558+00:00"
+  }
+}
