@@ -6213,3 +6213,13 @@ but E857 regressed strict meaning from 1.0000 to 0.6667 and structure from
 0.6589 to 0.5500 without fixing the missing wrapper. Reject the checkpoint and
 remove the ineffective producer fixture; E851/E852 remains the baseline. Full
 evidence: [two-action results](iter-e855-e857-two-action-group-20260722.md).
+
+# E858-E859 — lexer structural decode diagnosis (2026-07-22)
+
+E858 correctly failed closed when choice-tokenizer-only root/schema levers were
+requested on the lexer checkpoint. E859 doubled the compatible semantic-plan
+weights from 4/2 to 8/4 on unchanged E852/E842. Parse, strict meaning, and
+fidelity remained 1.0000, but structure fell to 0.6422 and recall to 0.6667.
+Reject 8/4 and retain 4/2; the remaining over-generation needs trained
+structural evidence rather than a larger decode bias. Full evidence:
+[lexer structural decode results](iter-e858-e859-lexer-structural-decode-20260722.md).
