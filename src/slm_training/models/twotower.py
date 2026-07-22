@@ -6403,21 +6403,15 @@ class TwoTowerModel(nn.Module):
             getattr(self.config, "schema_role_slot_decode_weight", 0.0) or 0.0
         )
         frames = list(getattr(state, "frames", ()))
-        if (
-            weight <= 0.0
-            or not frames
-            or not slot_contract
-            or not semantic_role_candidates
-        ):
+        if weight <= 0.0 or not slot_contract:
             return None
-        frame = frames[-1]
-        schemas = tuple(getattr(frame, "schemas", ()))
-        index = int(getattr(frame, "arg_index", -1))
         active_property: str | None = None
-        if getattr(frame, "kind", None) == "component":
-            component = str(getattr(frame, "expr_type", "")).removeprefix(
-                "element:"
-            )
+        compiler_mode = False
+        if frames and getattr(frames[-1], "kind", None) == "component":
+            frame = frames[-1]
+            schemas = tuple(getattr(frame, "schemas", ()))
+            index = int(getattr(frame, "arg_index", -1))
+            component = str(getattr(frame, "expr_type", "")).removeprefix("element:")
             property_names = tuple(getattr(frame, "property_names", ()))
             if (
                 role_bindings
@@ -6425,17 +6419,17 @@ class TwoTowerModel(nn.Module):
                 and 0 <= index < len(property_names)
             ):
                 active_property = str(property_names[index])
-            accepts_slot = (
-                0 <= index < len(schemas)
-                and (
-                    bool(schemas[index].get("x-openui-placeholder"))
-                    or (
-                        active_property is not None
-                        and schemas[index].get("type") == "string"
-                    )
+            accepts_slot = 0 <= index < len(schemas) and (
+                bool(schemas[index].get("x-openui-placeholder"))
+                or (
+                    active_property is not None
+                    and schemas[index].get("type") == "string"
                 )
             )
-        elif getattr(frame, "kind", None) == "object":
+        elif frames and getattr(frames[-1], "kind", None) == "object":
+            frame = frames[-1]
+            schemas = tuple(getattr(frame, "schemas", ()))
+            index = int(getattr(frame, "arg_index", -1))
             active_property = getattr(frame, "active_property", None)
             component = next(
                 (
@@ -6451,10 +6445,31 @@ class TwoTowerModel(nn.Module):
                 and self._schema_can_reach_visible_slot(dict(schemas[index]))
             )
         else:
-            return None
+            compiler_mode = True
+            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+            from slm_training.dsl.lang_core import library_schema
+            from slm_training.models.grammar import make_grammar_state
+
+            compiler_state = state
+            expected_prefix = list((prefix or ())[1:])
+            if list(getattr(state, "prefix_ids", ())) != expected_prefix:
+                compiler_state = make_grammar_state()
+                for token_id in expected_prefix:
+                    compiler_state.advance_token(self.tokenizer, int(token_id))
+            active = _active_call(getattr(compiler_state, "engine", compiler_state))
+            if active is None:
+                return None
+            component, index, _ = active
+            definition = library_schema().get("$defs", {}).get(component) or {}
+            properties = tuple((definition.get("properties") or {}).items())
+            if index < 0 or index >= len(properties):
+                return None
+            active_property, schema = properties[index]
+            accepts_slot = bool(schema.get("x-openui-placeholder")) or (
+                schema.get("type") == "string"
+            )
         if not component or not accepts_slot:
             return None
-        from slm_training.dsl.production_codec import SLOT_PREFIX
 
         properties_by_slot = semantic_role_properties
         if properties_by_slot is None and not self._opaque_slot_projection_active:
@@ -6469,20 +6484,25 @@ class TwoTowerModel(nn.Module):
         )
         bias = scores.new_zeros(len(candidate_ids))
         applied = False
+        slot_by_id = {
+            int(self.tokenizer.sym_id(index)): slot
+            for index, slot in enumerate(slot_contract[: self.tokenizer.sym_slots])
+        }
         for position, token_id in enumerate(candidate_ids):
-            token = str(self.tokenizer.id_to_token.get(token_id, ""))
-            if not token.startswith(SLOT_PREFIX):
-                continue
-            try:
-                slot_index = int(token[len(SLOT_PREFIX) :])
-                slot = slot_contract[slot_index]
-            except (ValueError, IndexError):
+            slot = slot_by_id.get(int(token_id))
+            if slot is None:
                 continue
             candidate_score = float(scores[position].item())
             if bound_slots is not None and not math.isfinite(candidate_score):
                 continue
             if (
-                component in semantic_role_candidates.get(slot, ())
+                (
+                    compiler_mode
+                    or (
+                        semantic_role_candidates is not None
+                        and component in semantic_role_candidates.get(slot, ())
+                    )
+                )
                 and (bound_slots is None or slot in bound_slots)
                 and (prefix is None or token_id not in prefix)
                 and (
@@ -6495,11 +6515,38 @@ class TwoTowerModel(nn.Module):
                         0.0,
                         float(scores.max().item()) + weight - candidate_score,
                     )
-                    if bound_slots is not None
+                    if compiler_mode or bound_slots is not None
                     else weight
                 )
                 applied = True
         return bias if applied else None
+
+    def _schema_role_slot_bias_for_row(
+        self,
+        row: int,
+        state: Any,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        scores: torch.Tensor,
+        slot_contract: list[str] | None = None,
+    ) -> torch.Tensor | None:
+        """Apply the shared active-schema slot scorer for one decode row."""
+
+        def row_value(values: list[Any] | None) -> Any:
+            return values[row] if values and row < len(values) else None
+
+        return self._schema_role_slot_bias(
+            state,
+            candidate_ids,
+            scores,
+            slot_contract
+            if slot_contract is not None
+            else row_value(self._slot_contracts),
+            row_value(self._semantic_role_candidates),
+            prefix,
+            row_value(self._semantic_plan_role_bindings),
+            row_value(self._semantic_role_properties),
+        )
 
     def _slot_coverage_close_bias(
         self,
@@ -8546,6 +8593,16 @@ class TwoTowerModel(nn.Module):
             )
             if nonempty_bias is not None:
                 scores = scores + nonempty_bias
+            schema_role_slot_bias = self._schema_role_slot_bias_for_row(
+                plan_row,
+                state,
+                prefix,
+                candidates,
+                scores,
+                slot_contract,
+            )
+            if schema_role_slot_bias is not None:
+                scores = scores + schema_role_slot_bias
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -8718,6 +8775,16 @@ class TwoTowerModel(nn.Module):
                     )
                     if nonempty_bias is not None:
                         scores = scores + nonempty_bias
+                schema_role_slot_bias = self._schema_role_slot_bias_for_row(
+                    plan_row,
+                    state,
+                    list(parent),
+                    candidate_ids,
+                    scores,
+                    slot_contract,
+                )
+                if schema_role_slot_bias is not None:
+                    scores = scores + schema_role_slot_bias
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())
@@ -9622,34 +9689,12 @@ class TwoTowerModel(nn.Module):
                     )
                     if schema_opaque_close_bias is not None:
                         scores = scores + schema_opaque_close_bias
-                    schema_role_slot_bias = self._schema_role_slot_bias(
+                    schema_role_slot_bias = self._schema_role_slot_bias_for_row(
+                        row,
                         states[row],
+                        ids[row, :position].tolist(),
                         candidate_ids,
                         scores,
-                        (
-                            self._slot_contracts[row]
-                            if self._slot_contracts and row < len(self._slot_contracts)
-                            else None
-                        ),
-                        (
-                            self._semantic_role_candidates[row]
-                            if self._semantic_role_candidates
-                            and row < len(self._semantic_role_candidates)
-                            else None
-                        ),
-                        ids[row, :position].tolist(),
-                        (
-                            self._semantic_plan_role_bindings[row]
-                            if self._semantic_plan_role_bindings
-                            and row < len(self._semantic_plan_role_bindings)
-                            else None
-                        ),
-                        (
-                            self._semantic_role_properties[row]
-                            if self._semantic_role_properties
-                            and row < len(self._semantic_role_properties)
-                            else None
-                        ),
                     )
                     if schema_role_slot_bias is not None:
                         scores = scores + schema_role_slot_bias

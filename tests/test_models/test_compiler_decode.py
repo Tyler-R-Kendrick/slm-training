@@ -2226,6 +2226,53 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     assert selected == paths[1].token_ids
 
 
+def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> None:
+    model = _model(schema_role_slot_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    title_id = tokenizer.sym_id(0)
+    body_id = tokenizer.sym_id(1)
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = ", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._slot_contracts = [[":hero.title", ":hero.body"]]
+    model._semantic_role_candidates = [{}]
+    model._semantic_role_properties = [
+        {":hero.title": ("title",), ":hero.body": ("text",)}
+    ]
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [4.0 if token_id == body_id else 1.0 for token_id in candidate_ids]
+        ),
+    )
+    card_header = tokenizer.token_to_id["CardHeader"]
+    lpar = tokenizer.token_to_id["("]
+    comma = tokenizer.token_to_id[","]
+    paths = (
+        CompletionPath((card_header, lpar, title_id, comma), "component_root"),
+        CompletionPath((card_header, lpar, body_id, comma), "component_root"),
+    )
+    ctx, ctx_pad = model._encode_context(["Hero card."])
+
+    selected = model._select_compiler_path(
+        prefix,
+        paths,
+        ctx,
+        ctx_pad,
+        32,
+        tree=True,
+        slot_contract=model._slot_contracts[0],
+        state=state,
+    )
+
+    assert selected == paths[0].token_ids
+
+
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
