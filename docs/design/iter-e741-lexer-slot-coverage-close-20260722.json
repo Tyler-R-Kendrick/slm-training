@@ -84,6 +84,24 @@
       "agentv_total": 1
     }
   ],
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.6666666666666666,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.5464,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.9369999999999999,
+      "latency_ms_p50": 1749.18,
+      "latency_ms_p95": 2715.37,
+      "decode_timeout_count": 0
+    }
+  },
   "ship_gates": {
     "evaluated": false,
     "pass": false,

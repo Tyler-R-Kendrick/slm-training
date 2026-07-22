@@ -12,7 +12,11 @@ from pathlib import Path
 from slm_training.web.observability import Readers
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_TYPED_REASONS = {"unreadable", "no_metric_blocks"}
+_TYPED_REASONS = {
+    "unreadable",
+    "no_metric_blocks",
+    "canonical_missing_suites",
+}
 
 # Observed at introduction: 257 normalized rows of 378 files. The floor leaves
 # headroom for genuinely non-experiment additions without allowing a reader

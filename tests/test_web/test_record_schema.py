@@ -88,6 +88,42 @@ def test_non_experiment_records_get_typed_reasons() -> None:
     assert record is None and reason == "no_metric_blocks"
 
 
+def test_canonical_record_never_promotes_nested_diagnostic_metrics() -> None:
+    malformed = {
+        "schema_version": 1,
+        "run_id": "e741-treatment",
+        "run_class": "scratch_matrix",
+        "harness_remediation": {
+            "replay": {"parse_rate": 1.0, "structural_similarity": 0.1}
+        },
+    }
+
+    record, reason = normalize_experiment_record(malformed, stem="e741")
+
+    assert record is None
+    assert reason == "canonical_missing_suites"
+
+
+def test_canonical_root_suite_wins_over_nested_diagnostic_metrics() -> None:
+    payload = {
+        "schema_version": 1,
+        "run_id": "e741-treatment",
+        "run_class": "scratch_matrix",
+        "suites": {
+            "smoke": {"n": 3, "parse_rate": 1.0, "structural_similarity": 0.5}
+        },
+        "harness_remediation": {
+            "replay": {"parse_rate": 1.0, "structural_similarity": 0.1}
+        },
+    }
+
+    record, reason = normalize_experiment_record(payload, stem="e741")
+
+    assert reason is None and record is not None
+    assert record["source_schema"] == "suites@<root>"
+    assert record["suites"]["smoke"]["structural_similarity"] == 0.5
+
+
 def test_canonical_envelope_validates() -> None:
     envelope = canonical_envelope(
         run_id="run-1",

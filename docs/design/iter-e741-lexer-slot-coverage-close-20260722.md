@@ -52,3 +52,9 @@ can no longer alias distinct runs. Regression tests verify both complete
 serialization and the real policy shape. The parent v206 replay and v207
 default-off control match in predictions and aggregate metrics, also proving
 that the v207 default-off model change itself is neutral.
+
+The committed-record contract also fails closed. Canonical records must expose
+an explicit root `suites` board; the reader rejects a missing board with a typed
+reason instead of searching nested remediation or replay metrics. E741 names
+the accepted treatment under `suites.smoke`, so the deployed scoreboard cannot
+mistake its parent replay for the primary result.
