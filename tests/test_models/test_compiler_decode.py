@@ -4772,8 +4772,15 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
 
     second = [*first, tokenizer.bind_id(1), tokenizer.token_to_id[","]]
     forest = build_completion_forest(tokenizer, second)
-    assert tokenizer.bind_id(1) in forest.candidate_ids
+    assert tokenizer.bind_id(1) not in forest.candidate_ids
     assert tokenizer.bind_id(2) in forest.candidate_ids
+
+    nested = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root=Stack([Stack([b1]),", add_special=False),
+    ]
+    forest = build_completion_forest(tokenizer, nested)
+    assert tokenizer.bind_id(1) in forest.candidate_ids
 
     declaration = [
         tokenizer.bos_id,
@@ -5277,7 +5284,8 @@ def test_binder_topology_supervises_and_biases_legal_references() -> None:
         id="binder-topology",
         prompt="card with title and body",
         openui=(
-            "root = Card([title, body])\n"
+            "root = Stack([group, title, body])\n"
+            "group = Card([title, body])\n"
             'title = TextContent(":hero.title")\n'
             'body = TextContent(":hero.body")'
         ),

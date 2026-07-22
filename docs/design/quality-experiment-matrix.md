@@ -6098,3 +6098,16 @@ Strict-v2 remains 0 and every row has duplicate-subtree spam; held-out recall
 is unchanged from E830 while structure regresses. Reject more undirected steps
 as the next lever and do not sync or promote. Full evidence:
 [longer v4 baseline results](iter-e832-e834-longer-v4-baseline-20260722.md).
+
+# E835 — unique structural-array references (2026-07-22)
+
+The lexer compiler now makes repeated binder references within one structural
+array illegal using only AST binder identity. A matched local CPU replay of the
+unchanged E832 checkpoint on held-out `n=5` removes repeated direct references
+and reaches parse 1.0, fidelity 1.0, reward 0.9874, and zero timeout/fallback.
+Strict-v2 remains 0/5 because independently constructed identical subtrees
+still trigger `duplicate_subtree_spam`; every row also misses required grammar
+components. Retain the ownership invariant, reject a quality/ship claim, and
+move component coverage into structured harness/data authority rather than
+template-name interpretation. Full evidence:
+[unique array reference results](iter-e835-unique-array-references-20260722.md).

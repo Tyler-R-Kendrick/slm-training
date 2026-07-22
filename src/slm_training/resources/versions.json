@@ -3942,7 +3942,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v227",
+      "version": "v228",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3966,6 +3966,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v228",
+          "date": "2026-07-22",
+          "note": "Make duplicate binder references within one structural array compiler-illegal"
+        },
         {
           "version": "v227",
           "date": "2026-07-22",

@@ -336,6 +336,39 @@ def _binder_reference_would_cycle(
     return False
 
 
+def _active_array_direct_references(
+    tokenizer: Any, prefix_ids: list[int]
+) -> frozenset[int]:
+    """Return binder references already used as direct items of the live array."""
+    pairs = {")": "(", "]": "[", "}": "{"}
+    stack: list[tuple[str, int]] = []
+    for index, token_id in enumerate(prefix_ids):
+        piece = _token_piece(tokenizer, int(token_id))
+        if piece in {"(", "[", "{"}:
+            stack.append((piece, index))
+        elif piece in pairs and stack and stack[-1][0] == pairs[piece]:
+            stack.pop()
+    array = next(
+        ((piece, index) for piece, index in reversed(stack) if piece == "["),
+        None,
+    )
+    if array is None:
+        return frozenset()
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    nested: list[str] = []
+    references: set[int] = set()
+    for raw_token_id in prefix_ids[array[1] + 1 :]:
+        token_id = int(raw_token_id)
+        piece = _token_piece(tokenizer, token_id)
+        if piece in {"(", "[", "{"}:
+            nested.append(piece)
+        elif piece in pairs and nested and nested[-1] == pairs[piece]:
+            nested.pop()
+        elif not nested and token_id in bind_ids:
+            references.add(token_id)
+    return frozenset(references)
+
+
 def _active_declaration_scope(tokenizer: Any, prefix_ids: list[int]) -> str | None:
     """Classify the live declaration by typed root/bound binder identity."""
     _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
@@ -1264,6 +1297,14 @@ def build_completion_forest(
         if _active_array_is_empty(engine):
             candidates -= allowed_id_set(tokenizer, frozenset({"RSQB"})) or set()
         _record_excluded(ConstraintStage.SCHEMA, "schema_array_children", before_stage)
+
+        before_stage = _snapshot()
+        candidates -= _active_array_direct_references(tokenizer, prefix_ids)
+        _record_excluded(
+            ConstraintStage.BINDING,
+            "binding_array_reference_reuse",
+            before_stage,
+        )
 
     if arity is not None:
         before_stage = _snapshot()
