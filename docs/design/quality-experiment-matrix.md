@@ -6127,3 +6127,14 @@ Retain the default-off harness mechanism, but do not promote the lever or
 checkpoint. Next, prevent unneeded binder paths from outranking still-required
 grammar components. Full evidence:
 [plan coverage closure results](iter-e836-e838-plan-coverage-close-20260722.md).
+
+# E839-E840 — all-path semantic-plan margin (2026-07-22)
+
+E839 broadened the plan margin across all legal grammar paths. Smoke retained
+strict-v2 3/3, removed final binders, improved structure to 0.6572, and cut p50
+to 1.74 seconds. E840 rejected it on held-out `n=5`: strict-v2 remained zero,
+two rows timed out, fidelity fell to 0.3333, structure to 0.1263, recall to
+0.1810, and reward to 0.4822. Restore component-only comparison in v231 and
+move next to structured plan/schema reachability for repeated typed
+collections. Full evidence:
+[all-path margin results](iter-e839-e840-all-path-plan-margin-20260722.md).

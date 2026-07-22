@@ -3942,7 +3942,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v229",
+      "version": "v231",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3966,6 +3966,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v231",
+          "date": "2026-07-22",
+          "note": "Reject the v230 all-path plan margin after held-out timeouts and restore component-only comparison"
+        },
+        {
+          "version": "v230",
+          "date": "2026-07-22",
+          "note": "Floor still-required grammar component paths above unneeded binder references"
+        },
         {
           "version": "v229",
           "date": "2026-07-22",
