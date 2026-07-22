@@ -2527,7 +2527,6 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     state = make_grammar_state()
     for token_id in prefix[1:]:
         state.advance_token(tokenizer, token_id)
-    close_id = tokenizer.token_to_id["]"]
     binder_id = tokenizer.token_to_id["<BIND_1>"]
     tabs_id = tokenizer.token_to_id["Tabs"]
     item_id = tokenizer.token_to_id["TabItem"]
@@ -2538,23 +2537,23 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
         0,
         state,
         prefix,
-        (close_id, binder_id, item_id),
-        torch.tensor([8.0, 9.0, 1.0]),
+        (binder_id, item_id),
+        torch.tensor([9.0, 1.0]),
     )
 
     assert bias is not None
-    assert bias.tolist() == [0.0, 0.0, 10.0]
+    assert bias.tolist() == [0.0, 10.0]
 
     monkeypatch.setattr(
         model,
         "_project_candidates",
         lambda _hidden, candidate_ids: torch.tensor(
-            [8.0 if token_id == close_id else 1.0 for token_id in candidate_ids]
+            [9.0 if token_id == binder_id else 1.0 for token_id in candidate_ids]
         ),
     )
     ctx, ctx_pad = model._encode_context(["Card layout."])
     paths = (
-        CompletionPath((close_id,), "literal"),
+        CompletionPath((binder_id,), "binder"),
         CompletionPath((item_id, tokenizer.token_to_id["("]), "component"),
     )
     selected = model._select_compiler_path(

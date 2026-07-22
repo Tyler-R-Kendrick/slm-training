@@ -7428,7 +7428,7 @@ class TwoTowerModel(nn.Module):
             ):
                 return None
             close_id = self.tokenizer.token_to_id.get("]")
-            if close_id not in candidate_ids:
+            if close_id not in candidate_ids and typed_margin <= 0.0:
                 return None
             targets = [
                 position

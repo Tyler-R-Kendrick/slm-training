@@ -4096,7 +4096,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v240",
+      "version": "v241",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4120,6 +4120,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v241",
+          "date": "2026-07-22",
+          "note": "Apply the explicit lexer typed-item margin when schema validation has already removed the empty-array close candidate"
+        },
         {
           "version": "v240",
           "date": "2026-07-22",
