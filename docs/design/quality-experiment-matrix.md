@@ -5447,3 +5447,17 @@ bias are rejected; no upload or promotion.
 
 Evidence: [narrative](iter-e720-component-inventory-symbol-only-20260721.md) and
 [JSON](iter-e720-component-inventory-symbol-only-20260721.json).
+
+## E721 symbol-only role/count component plan
+
+E721 applies the existing generalized root-class and bound-component-count plan
+to E720's overgrown incomplete outputs. Requested budgets of 600, 420, and 280
+all hit the 110-second interrupt at about 241–245 steps and are invalid. A
+190-step local CPU recipe completed in 90.39 seconds under
+`max_wall_minutes=2`. Its smoke parse rate is 1.0 with no timeouts, but strict-v2
+meaning and reward remain 0.0. Plan weight 1 records 39 applications and zero
+choice changes; weight 0 produces identical outputs and aggregate metrics.
+Reject the checkpoint and decode lever; retain only non-causal syntax evidence.
+
+Evidence: [narrative](iter-e721-component-plan-symbol-only-20260721.md) and
+[JSON](iter-e721-component-plan-symbol-only-20260721.json).
