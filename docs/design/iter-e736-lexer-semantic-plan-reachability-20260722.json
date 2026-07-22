@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E736",
+  "run_id": "e736-lexer-semantic-plan4-margin2-smoke-r4",
+  "description": "Lexer semantic-plan reachability and codec-neutral family coverage diagnostic",
+  "date_utc": "2026-07-22",
+  "status": "completed_harness_fixes_retained_decode_recipe_rejected",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.4444444444444444,
+      "structural_similarity": 0.4586333333333334,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.7683333333333332,
+      "decode_timeout_count": 0
+    }
+  },
+  "checkpoint": {
+    "run_id": "e735-symbol-only-root-arity-fullhead140-r1",
+    "sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "created_by_e736": false,
+    "sync": "not_applicable"
+  },
+  "evaluation_policy": {
+    "id": "strict_compiler_tree",
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "allow_unconstrained_fallback": false,
+    "decode_timeout_seconds": 8.0,
+    "grammar_ltr_max_tokens": 160,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0
+  },
+  "preflight": {
+    "before": "lexer semantic_plan_decode_weight and semantic_plan_margin_decode_weight rejected as unsupported",
+    "after": "only the family score and margin are dual-path; choice-only semantic topology and reference levers remain rejected"
+  },
+  "runs": [
+    {
+      "run_id": "e735-root-arity-fullhead1-smoke-r1",
+      "label": "control",
+      "model_twotower": "v198",
+      "semantic_plan_applications": 0,
+      "semantic_plan_choice_changes": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e736-slot-component0-smoke-r1",
+      "label": "slot-owner off diagnostic",
+      "model_twotower": "v198",
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.3333333333333333,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.12416666666666666,
+      "component_type_recall": 0.16666666666666666,
+      "reward_score": 0.725,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e736-lexer-semantic-plan4-margin2-smoke-r1",
+      "label": "configuration accepted but tree selector inert",
+      "model_twotower": "v199",
+      "semantic_plan_applications": 0,
+      "semantic_plan_choice_changes": 0,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e736-lexer-semantic-plan4-margin2-smoke-r2",
+      "label": "root and bound reachability",
+      "model_twotower": "v200",
+      "semantic_plan_applications": 5,
+      "semantic_plan_choice_changes": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.4444444444444444,
+      "structural_similarity": 0.21303333333333332,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.7403333333333334,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e736-lexer-semantic-plan4-margin2-smoke-r3",
+      "label": "bound-only ownership with marker-only coverage accounting",
+      "model_twotower": "v201",
+      "semantic_plan_applications": 5,
+      "semantic_plan_choice_changes": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.4444444444444444,
+      "structural_similarity": 0.4586333333333334,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.7683333333333332,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e736-lexer-semantic-plan4-margin2-smoke-r4",
+      "label": "bound-only codec-neutral coverage",
+      "model_twotower": "v202",
+      "semantic_plan_applications": 3,
+      "semantic_plan_choice_changes": 2,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.4444444444444444,
+      "structural_similarity": 0.4586333333333334,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.7683333333333332,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "support_failures": [
+    "module execution resolved the shared checkout CLI and rejected --evaluation-policy before artifacts",
+    "read-only summary loop used invalid timeout/for shell syntax before reading artifacts"
+  ],
+  "decision": {
+    "retain": [
+      "central dual-path capability declaration for semantic-plan family score and margin",
+      "lexer compiler-tree plan row and grammar-state plumbing",
+      "bound-family ownership that preserves trained root-role decisions",
+      "codec-neutral component-ID coverage accounting"
+    ],
+    "reject": "semantic plan weights 4/2 on the E735 checkpoint",
+    "reason": "causal component-family changes regress fidelity, structure, recall, and reward while strict-v2 remains zero",
+    "next": "repair nonempty planned-family subtree and visible-slot role coverage before another semantic-plan decode experiment"
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "diagnostic smoke n=3 only; strict-v2 is zero and AgentV fails"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "52114d0a69e43ad3528fb3b473262cd5e0c72f40",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v40",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v202"
+    },
+    "stamped_at": "2026-07-22T04:27:47.534963+00:00"
+  }
+}

@@ -5650,3 +5650,23 @@ promote it.
 
 Evidence: [narrative](iter-e735-root-arity-full-head-20260722.md) and
 [JSON](iter-e735-root-arity-full-head-20260722.json).
+
+## E736 lexer semantic-plan reachability
+
+E736 traces the missing-family failure beyond E735 without another training
+cycle. The central registry and model setup rejected semantic-plan family
+scoring on lexer, while compiler-tree selection omitted that scorer entirely.
+The retained default-off harness fix exposes only the two genuinely dual-path
+family levers, threads plan row/state through tree selection, preserves the
+trained root-role decision, and counts fulfilled families by tokenizer
+component ID across both codecs.
+
+The final r4 treatment is causal (three applications, two choice changes) and
+recovers `Callout`, but regresses E735's fidelity 0.5278→0.4444, structure
+0.5614→0.4586, recall 0.4167→0.3333, and reward 0.8073→0.7683. Strict-v2 stays
+0.0 and AgentV stays 0/1. Reject weights 4/2 for this checkpoint; retain the
+fail-closed reachability/accounting fixes at default off. No training or
+checkpoint creation occurred.
+
+Evidence: [narrative](iter-e736-lexer-semantic-plan-reachability-20260722.md)
+and [JSON](iter-e736-lexer-semantic-plan-reachability-20260722.json).
