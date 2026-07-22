@@ -1278,16 +1278,6 @@ def build_completion_forest(
                 for binder, component in binder_components.items()
                 if component in array_item_components
             }
-            from slm_training.models.grammar import contract_allowed_token_ids
-
-            unused_symbols = contract_allowed_token_ids(
-                tokenizer, prefix_ids, slot_contract
-            )
-            unknown_binders = (
-                bind_ids - set(binder_components)
-                if unused_symbols is None or bool(unused_symbols)
-                else set()
-            )
             candidates = {
                 token_id
                 for token_id in candidates
@@ -1298,7 +1288,6 @@ def build_completion_forest(
                 and (
                     token_id not in bind_ids
                     or token_id in typed_binders
-                    or token_id in unknown_binders
                 )
             }
         if _active_array_is_empty(engine):
