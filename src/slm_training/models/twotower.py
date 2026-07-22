@@ -12554,6 +12554,7 @@ class TwoTowerModel(nn.Module):
             self.context_tokenizer.save(ctx_tok_path)
             ctx_tok_name = ctx_tok_path.name
         meta_path = path.with_suffix(".meta.json")
+        parameter_count = int(sum(p.numel() for p in self.parameters()))
         meta_path.write_text(
             json.dumps(
                 {
@@ -12569,6 +12570,8 @@ class TwoTowerModel(nn.Module):
                     "hf_model_name": self.config.hf_model_name
                     if is_hf_context(self.context)
                     else None,
+                    "parameter_count": parameter_count,
+                    "serialized_weight_bytes": parameter_count * 4,
                 },
                 indent=2,
             )

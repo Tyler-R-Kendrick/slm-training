@@ -20,6 +20,11 @@ import {
   type GatePayload,
 } from "../components";
 
+function metricCell(row: any, key: string) {
+  const v = row.metrics?.[key];
+  return v === undefined || v === null ? "—" : pct(v);
+}
+
 export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const roster = usePoll<any>("/api/checkpoints", 30000);
@@ -31,25 +36,42 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
   const [gate, setGate] = useState<GatePayload | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
 
+  const checkpoints = roster.data?.checkpoints ?? [];
   const runs = (quality.data?.results ?? []).filter((r: any) => r.suites);
+  // Prefer roster run_ids that already carry linked suite metrics; fall back to
+  // the quality board so the gate editor still works on cold deploys.
+  const gateOptions = [
+    ...checkpoints
+      .filter((c: any) => c.suites && Object.keys(c.suites).length)
+      .map((c: any) => ({
+        id: c.experiment_id || c.run_id,
+        run_id: c.run_id,
+        suites: c.suites,
+      })),
+    ...runs.filter(
+      (r: any) => !checkpoints.some((c: any) => c.run_id === r.run_id && c.suites && Object.keys(c.suites).length),
+    ),
+  ];
 
   useEffect(() => {
     getJSON<any>("/api/gates/policy").then((d) => setPolicy(d.policy)).catch(() => {});
   }, []);
   useEffect(() => {
-    if (!runId && runs.length) setRunId(runs[0].id);
-  }, [quality.data]);
+    if (!runId && gateOptions.length) setRunId(gateOptions[0].run_id || gateOptions[0].id);
+  }, [roster.data, quality.data]);
 
-  const selected = runs.find((r: any) => r.id === runId);
+  const selected =
+    gateOptions.find((r: any) => r.run_id === runId || r.id === runId) ||
+    runs.find((r: any) => r.id === runId || r.run_id === runId);
 
   useEffect(() => {
-    if (!policy || !selected) return;
+    if (!policy || !selected?.suites) return;
     postJSON<GatePayload>("/api/gates/evaluate", { suites: selected.suites, thresholds: policy })
       .then(setGate)
       .catch(() => setGate(null));
-  }, [policy, runId, quality.data]);
+  }, [policy, runId, roster.data, quality.data]);
 
-  const cmp = usePoll<any>(runId ? `/api/comparisons/metrics?candidate_run_id=${runId}` : null, 15000);
+  const cmp = usePoll<any>(runId ? `/api/comparisons/metrics?candidate_run_id=${encodeURIComponent(runId)}` : null, 15000);
   const dep = roster.data?.deployment ?? {};
   const twChampion = champions.data?.champions?.twotower;
 
@@ -59,14 +81,15 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
         <h1 className="page-title">Checkpoints &amp; Promotion</h1>
         <p className="page-sub">
           Navigate the roster, tune <strong>configurable gates</strong> live, and promote through the
-          real honest-ship + lineage checks. Gate math runs server-side even read-only.
+          real honest-ship + lineage checks. Gate math runs server-side even read-only. Each run links
+          to its stored experiment metrics.
         </p>
       </div>
 
       <ErrorNote error={roster.error} />
 
       <Grid min="200px">
-        <StatTile label="Checkpoints" value={(roster.data?.checkpoints ?? []).length} accent="moss" />
+        <StatTile label="Checkpoints" value={checkpoints.length} accent="moss" />
         <StatTile label="Deployed" value={dep.selected ? "1" : "0"} accent={dep.selected ? "promoted" : undefined} sub={dep.selected?.track ?? "none selected"} />
         <StatTile label="TwoTower champion" value={twChampion ? "set" : "none"} accent={twChampion ? "promoted" : undefined} sub={twChampion?.run_id ?? ""} />
         <StatTile label="A/B comparisons" value={cmp.data?.total ?? 0} sub={cmp.data ? `${pct(cmp.data.win_rate)} win` : ""} />
@@ -80,19 +103,44 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
             { key: "architecture", label: "Architecture" },
             { key: "parameters", label: "Parameters", align: "right" },
             { key: "model_size", label: "Model size", align: "right" },
-            { key: "throughput", label: "Throughput", align: "right" },
+            { key: "gate_pass", label: "Gate" },
+            { key: "meaningful", label: "Meaningful", align: "right" },
+            { key: "structure", label: "Structure", align: "right" },
+            { key: "agentv", label: "AgentV", align: "right" },
+            { key: "evaluation_status", label: "Eval" },
             { key: "status", label: "Status" },
-            { key: "source", label: "Source" },
           ]}
-          rows={roster.data?.checkpoints ?? []}
+          rows={checkpoints}
           render={{
-            run_id: (r) => <span className="mono">{r.run_id || "—"}</span>,
+            run_id: (r) =>
+              r.run_id ? (
+                <a
+                  className="mono runlink"
+                  onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id)}`)}
+                  title="open run detail with linked metrics"
+                >
+                  {r.run_id}
+                </a>
+              ) : (
+                <span className="mono">—</span>
+              ),
+            gate_pass: (r) =>
+              r.gate_pass === undefined || r.gate_pass === null ? (
+                <span className="hint">—</span>
+              ) : (
+                <StatusPill value={!!r.gate_pass} label={r.gate_pass ? "pass" : "fail"} />
+              ),
+            meaningful: (r) => metricCell(r, "meaningful_program_rate"),
+            structure: (r) => metricCell(r, "structural_similarity"),
+            agentv: (r) =>
+              r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+            evaluation_status: (r) => <StatusPill value={r.evaluation_status || "—"} />,
             status: (r) => <StatusPill value={r.status} label={(r.status || "—").slice(0, 26)} />,
-            source: (r) => <span className="hint">{r.source || "—"}</span>,
           }}
         />
         <p className="hint" style={{ marginTop: "0.6rem" }}>
-          ≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.
+          ≈ denotes a comparable architecture estimate; Meaningful / Structure / AgentV come from the
+          linked experiment scoreboard for the same run id.
           {roster.data?.bucket?.ok
             ? ` HF bucket: ${roster.data.bucket.count ?? 0} remote run(s)${roster.data.bucket.updated_at ? `, updated ${roster.data.bucket.updated_at}` : ""}.`
             : roster.data?.bucket?.error
@@ -105,7 +153,11 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
         title="Configurable ship gates"
         right={
           <select value={runId ?? ""} onChange={(e) => setRunId(e.target.value)} style={{ background: "var(--bg-2)", color: "var(--text)", border: "1px solid var(--border-strong)", borderRadius: "4px", padding: "0.3rem" }}>
-            {runs.map((r: any) => <option key={r.id} value={r.id}>{r.id} · {r.run_id}</option>)}
+            {gateOptions.map((r: any) => (
+              <option key={`${r.id}-${r.run_id}`} value={r.run_id || r.id}>
+                {(r.run_id || r.id)}{r.id && r.run_id && r.id !== r.run_id ? ` · ${r.id}` : ""}
+              </option>
+            ))}
           </select>
         }
       >
@@ -117,7 +169,13 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
         {selected && (
           <div className="two-col">
             <div>
-              <div className="hint" style={{ marginBottom: "0.5rem" }}>Edit per-suite minimum thresholds — the matrix re-evaluates live via the same <span className="mono">evaluate_ship_gates</span> the ship pipeline uses.</div>
+              <div className="hint" style={{ marginBottom: "0.5rem" }}>
+                Edit per-suite minimum thresholds — the matrix re-evaluates live via the same{" "}
+                <span className="mono">evaluate_ship_gates</span> the ship pipeline uses. Selected run:{" "}
+                <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(selected.run_id || selected.id)}`)}>
+                  {selected.run_id || selected.id}
+                </a>
+              </div>
               {policy && <ThresholdEditor policy={policy} onChange={setPolicy} />}
             </div>
             <div>

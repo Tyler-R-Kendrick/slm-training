@@ -43,7 +43,8 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
         <h1 className="page-title">Experiments</h1>
         <p className="page-sub">
           Ablation matrices — each row is one lever with a stable id. Cells are per-suite
-          metrics against ship gates. Rows are evidence, not deployable models. Values
+          metrics against ship gates, with parameter size and checkpoint path joined from
+          the model card when available. Rows are evidence, not deployable models. Values
           marked * come from legacy pre-split boards where parse_rate stood in for meaningful.
         </p>
       </div>
@@ -70,11 +71,14 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "id" },
+            { key: "run_id", label: "run" },
+            { key: "parameters", label: "params", align: "right" },
             { key: "date", label: "date" },
             { key: "description", label: "experiment" },
             { key: "pass", label: "gate" },
             ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" as const })),
             { key: "agentv", label: "AgentV", align: "right" },
+            { key: "checkpoint", label: "checkpoint" },
             { key: "trace", label: "trace", align: "right" },
           ]}
           rows={results}
@@ -84,12 +88,33 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
                 {r.id}
               </a>
             ),
+            run_id: (r) =>
+              r.run_id ? (
+                <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id)}`)} title="open run detail">
+                  {r.run_id}
+                </a>
+              ) : (
+                <span className="hint">—</span>
+              ),
+            parameters: (r) => <span className="mono">{r.parameters || "—"}</span>,
             description: (r) => <span style={{ color: "var(--text-dim)" }}>{(r.description || "").slice(0, 70)}</span>,
             pass: (r) => (r.pass === undefined ? <span className="hint">—</span> : <StatusPill value={r.pass} label={r.pass ? "pass" : "fail"} />),
             ...Object.fromEntries(
               metricColumns.map((c: any) => [c.key, (r: any) => suiteMetric(r, c.suite, c.metric)]),
             ),
             agentv: (r) => r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+            checkpoint: (r) =>
+              r.checkpoint ? (
+                <a
+                  className="mono runlink"
+                  onClick={() => navigate("/checkpoints")}
+                  title="open checkpoints roster"
+                >
+                  {String(r.checkpoint).split("/").slice(-2).join("/")}
+                </a>
+              ) : (
+                <span className="hint">—</span>
+              ),
             trace: (r) => <span className="mono">{r.trace_id?.slice(0, 12) ?? "—"}</span>,
           }}
         />

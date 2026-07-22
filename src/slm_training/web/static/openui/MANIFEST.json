@@ -18,7 +18,7 @@
         "checkpoints_roster_full",
         "checkpoints_tiles"
       ],
-      "sha256": "a1dc7350960c9da03379ff1a4264332bdb73103e73a322e3eccb495b1bccb081",
+      "sha256": "8c4ba1a6208895a8525277dc7b13d40656e5328b22ac5790f0127ef84f5cf2aa",
       "status": "ok"
     },
     "data": {
@@ -68,7 +68,7 @@
       "queries": [
         "scoreboard"
       ],
-      "sha256": "ba1196cfcb06af8213a4078e7a6a848460ea83c929966a14b136d1553fba2e74",
+      "sha256": "3cb012b9abd8d361725d1722ef243fe984332b76dc2396fbb87e9ad175d1d073",
       "status": "ok"
     },
     "overview": {
@@ -100,7 +100,7 @@
         "overview_insights",
         "overview_jobs"
       ],
-      "sha256": "bc4e1d49caf7b222ff5ec7e5d2adde2061b2818f2be729afeb6ff47f1b3f3af3",
+      "sha256": "f30cc040e827031aff865233abdd69dc8af887e6babd4ab8c88474bb6006cd82",
       "status": "ok"
     },
     "playground": {

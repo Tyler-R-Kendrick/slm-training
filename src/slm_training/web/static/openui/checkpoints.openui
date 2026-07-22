@@ -1,12 +1,12 @@
 tiles = Query("checkpoints_tiles", {}, { rows: [] }, 30)
 roster = Query("checkpoints_roster_full", {}, { rows: [], provenance: "committed" }, 30)
 
-head = PageHead("Checkpoints & Promotion", "Navigate the roster, tune configurable gates live, and promote through the real honest-ship + lineage checks. Gate math runs server-side even read-only.")
+head = PageHead("Checkpoints & Promotion", "Navigate the roster, tune configurable gates live, and promote through the real honest-ship + lineage checks. Gate math runs server-side even read-only. Each run links to its stored experiment metrics.")
 
 tileRow = Grid(@Each(tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)), "200px")
 
-rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "architecture", label: "Architecture" }, { key: "parameters", label: "Parameters", align: "right" }, { key: "model_size", label: "Model size", align: "right" }, { key: "throughput", label: "Throughput", align: "right" }, { key: "status", label: "Status" }, { key: "source", label: "Source" }]
-rosterPanel = Panel("Roster", [DataTable(rosterCols, roster.rows), Hint("≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.", true)], ProvenanceBadge(roster.provenance))
+rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "architecture", label: "Architecture" }, { key: "parameters", label: "Parameters", align: "right" }, { key: "model_size", label: "Model size", align: "right" }, { key: "gate_pass", label: "Gate" }, { key: "meaningful", label: "Meaningful", align: "right" }, { key: "structure", label: "Structure", align: "right" }, { key: "agentv", label: "AgentV", align: "right" }, { key: "evaluation_status", label: "Eval" }, { key: "status", label: "Status" }]
+rosterPanel = Panel("Roster", [DataTable(rosterCols, roster.rows, 26, "run_id"), Hint("≈ denotes a comparable architecture estimate; Meaningful / Structure / AgentV come from the linked experiment scoreboard for the same run id.", true)], ProvenanceBadge(roster.provenance))
 
 console = CheckpointConsole()
 

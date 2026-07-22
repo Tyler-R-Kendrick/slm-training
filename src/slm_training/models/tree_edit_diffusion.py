@@ -822,6 +822,7 @@ class TreeEditDiffusionModel(nn.Module):
             "config": asdict(self.config),
             "state_dict": {k: v.cpu() for k, v in self.state_dict().items()},
         }
+        parameter_count = int(sum(p.numel() for p in self.parameters()))
         path.with_suffix(".meta.json").write_text(
             json.dumps(
                 {
@@ -829,6 +830,8 @@ class TreeEditDiffusionModel(nn.Module):
                     "format_version": self.CHECKPOINT_FORMAT,
                     "tokenizer": tokenizer_path.name,
                     "vocab_size": self.tokenizer.vocab_size,
+                    "parameter_count": parameter_count,
+                    "serialized_weight_bytes": parameter_count * 4,
                 },
                 indent=2,
             )

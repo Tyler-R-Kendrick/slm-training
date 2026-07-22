@@ -102,6 +102,8 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
             { key: "parameters", label: "Parameters", align: "right" },
             { key: "model_size", label: "Model size", align: "right" },
             { key: "throughput", label: "Throughput", align: "right" },
+            { key: "meaningful", label: "Meaningful", align: "right" },
+            { key: "structure", label: "Structure", align: "right" },
             { key: "evaluation_status", label: "Evaluation" },
             { key: "status", label: "Model-card status" },
           ]}
@@ -112,6 +114,8 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
                 {row.run_id || "—"}
               </a>
             ),
+            meaningful: (row) => pct(row.metrics?.meaningful_program_rate),
+            structure: (row) => pct(row.metrics?.structural_similarity),
             evaluation_status: (row) => <StatusPill value={row.evaluation_status} />,
             status: (row) => <span className="hint">{row.status || "—"}</span>,
           }}
