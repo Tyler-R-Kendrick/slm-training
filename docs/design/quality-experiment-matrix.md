@@ -5765,3 +5765,23 @@ next target is typed semantic-role placement inside the restored families.
 
 Evidence: [JSON](iter-e742-lexer-bound-family-normalization-20260722.json) and
 [notes](iter-e742-lexer-bound-family-normalization-20260722.md).
+
+## E743 lexer required-slot margin reachability
+
+E743 fixes the harness path exposed by the first treatment preflight: the
+canonical registry declared `required_slot_margin_decode_weight` choice-only,
+and the lexer compiler had no adapter. No artifact was written for that invalid
+arm. Model v209 and lever registry v14 now route both restricted and tree lexer
+selection through one shared schema-gated scorer, with focused regressions for
+both modes.
+
+The accepted local CPU smoke pair (`n=3`, unchanged E735 checkpoint) changes
+only required-slot margin 0 versus 2. Treatment applies six times but changes
+zero choices; predictions and every quality metric remain identical (parse
+1.0, meaning-v1 1.0, strict-v2 0, fidelity 0.8889, validity 0.9333, structure
+0.6628, recall 0.5, reward 0.9037, AgentV 0/1). Retain the default-off
+reachability fix, reject weight 2 and promotion, and target typed planned-family
+role ownership next. No checkpoint was created or synced.
+
+Evidence: [JSON](iter-e743-lexer-required-slot-margin-20260722.json) and
+[notes](iter-e743-lexer-required-slot-margin-20260722.md).
