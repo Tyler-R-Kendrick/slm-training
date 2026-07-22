@@ -1,0 +1,53 @@
+{
+  "version": "e763_symbol_only_eval_r2_20260722",
+  "source": "both",
+  "seed_path": "src/slm_training/resources/test_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_test.jsonl",
+  "rico_hf_split": null,
+  "rico_limit": null,
+  "rico_hf_cache_path": "src/slm_training/resources/rico/hf_test_cache.jsonl",
+  "target_records": null,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 19,
+    "changed": 19,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 18,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 1
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 13,
+      "misses": 43
+    }
+  },
+  "suite_counts": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 3
+  },
+  "total_records": 19,
+  "error_count": 0,
+  "errors": [],
+  "leakage_rejected": 37,
+  "train_manifest": "src/slm_training/resources/data/train/remediated/manifest.json",
+  "built_at": "2026-07-22T11:39:34.495550+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7c567aa2cdd79d2f221adae0efe9309a03ce1f61",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v5"
+    },
+    "stamped_at": "2026-07-22T11:39:34.912155+00:00"
+  }
+}

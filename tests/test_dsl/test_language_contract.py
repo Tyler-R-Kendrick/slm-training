@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from slm_training.dsl import lang_core
@@ -14,6 +16,8 @@ from slm_training.dsl.language_contract import (
     contract_id,
     current_contract,
 )
+from slm_training.dsl.placeholders import extract_placeholders
+from slm_training.dsl.schema import load_jsonl
 
 
 def test_current_contract_pins_installed_langcore() -> None:
@@ -59,6 +63,13 @@ def test_symbol_only_output_contract_rejects_free_form_text() -> None:
         assert_symbol_only_output('root = TextContent("Welcome back")')
     with pytest.raises(OutputContractError, match="free-form strings"):
         assert_symbol_only_output('root = TagBlock(["New Item Alpha"])')
+
+
+def test_canonical_eval_seeds_are_symbol_only_and_declared() -> None:
+    records = load_jsonl(Path("src/slm_training/resources/test_seeds.jsonl"))
+    for record in records:
+        assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+        assert set(extract_placeholders(record.openui)).issubset(record.placeholders), record.id
 
 
 def test_library_schema_falls_back_to_committed_snapshot(monkeypatch) -> None:

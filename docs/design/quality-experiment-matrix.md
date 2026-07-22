@@ -5953,3 +5953,18 @@ structure, tree edit, component recall, and strict-v2 all at 1.0; reward is
 AgentV is 0/1 and the slice is below ship n, so no promotion or ship claim is
 made. Full positive and negative evidence:
 [`iter-e760-e762-local-sampling-marker-uniqueness-20260722.md`](iter-e760-e762-local-sampling-marker-uniqueness-20260722.md).
+
+# E763-E764 — symbol-only held-out fallback (2026-07-22)
+
+Retain test-data v5 and model v222. The canonical 19-record eval snapshot now
+contains only grammar/AST symbols, schema enums, and declared markers; it has
+zero contract errors, zero undeclared markers, and rejected 37 train overlaps
+without weakening leakage gates. The seed resource is now covered by component
+versioning and a CI regression test.
+
+The matched local held-out n=5 replay proves certified fallback no longer
+invents `:cta.label`: contract precision rises 0.2→1.0 and every prediction is
+request-bound. Quality remains honestly weak (strict-v2 0, structure 0.2155,
+component recall 0.2286, four fallbacks, AgentV 0/1), so no checkpoint is
+promoted. No remote compute ran. Full evidence:
+[`iter-e763-e764-symbol-only-heldout-fallback-20260722.md`](iter-e763-e764-symbol-only-heldout-fallback-20260722.md).

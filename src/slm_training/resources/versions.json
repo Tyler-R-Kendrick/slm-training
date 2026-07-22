@@ -156,13 +156,19 @@
       ]
     },
     "data.test_build": {
-      "version": "v4",
+      "version": "v5",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
-        "src/slm_training/harnesses/test_data/"
+        "src/slm_training/harnesses/test_data/",
+        "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-22",
+          "note": "Make canonical held-out targets symbol-only and structurally disjoint without weakening leakage gates"
+        },
         {
           "version": "v4",
           "date": "2026-07-22",
@@ -3844,7 +3850,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v221",
+      "version": "v222",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3868,6 +3874,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v222",
+          "date": "2026-07-22",
+          "note": "Derive certified fallback markers from the request contract and use a marker-free fallback when no contract exists"
+        },
         {
           "version": "v221",
           "date": "2026-07-22",
