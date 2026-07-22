@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -634,6 +635,9 @@ def test_twotower_choice_wiring(
 
     ckpt = tmp_path / "choice.pt"
     model.save(ckpt)
+    metadata = json.loads(ckpt.with_suffix(".meta.json").read_text(encoding="utf-8"))
+    assert metadata["parameter_count"] == sum(p.numel() for p in model.parameters())
+    assert metadata["serialized_weight_bytes"] == metadata["parameter_count"] * 4
     sidecar = ckpt.with_suffix(".tokenizer.json")
     assert sidecar.is_file()
     assert CHOICE_TOKENIZER_KIND in sidecar.read_text(encoding="utf-8")

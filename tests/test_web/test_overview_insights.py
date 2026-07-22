@@ -229,3 +229,79 @@ def test_model_card_surfaces_comparable_resource_metrics(tmp_path) -> None:
     assert fixture_row["parameters"] == "740K"
     assert fixture_row["model_size"] == "3.00 MB"
     assert fixture_row["throughput"] == "≈80–120 tok/s CPU"
+
+
+def test_checkpoints_and_scoreboards_link_shared_metrics(tmp_path) -> None:
+    """Roster + experiments must join the same stored suite metrics by run_id."""
+    docs = tmp_path / "docs"
+    design = docs / "design"
+    design.mkdir(parents=True)
+    (docs / "MODEL_CARD.md").write_text(
+        """# Model card
+
+## Current checkpoint roster
+
+| Role | Run id | Kind | Parameters | Location | Status |
+| --- | --- | --- | --- | --- | --- |
+| Linked checkpoint | `linked-run` | CPU scratch | ≈740K | `outputs/runs/linked-run/checkpoints/last.pt` | candidate |
+
+## Checkpoint history
+
+| Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
+| --- | --- | --- | --- | --- |
+| 2026-07-22 | `linked-run` | `outputs/runs/linked-run/` | smoke meaning 0.80 | linked |
+""",
+        encoding="utf-8",
+    )
+    (design / "quality-matrix-results.json").write_text(
+        json.dumps(
+            {
+                "results": [
+                    {
+                        "id": "E900",
+                        "run_id": "linked-run",
+                        "pass": True,
+                        "checkpoint": "outputs/runs/linked-run/checkpoints/last.pt",
+                        "agentv": {"passed": 4, "total": 5},
+                        "suites": {
+                            "smoke": {
+                                "n": 5,
+                                "meaningful_program_rate": 0.8,
+                                "structural_similarity": 0.6,
+                                "component_type_recall": 0.5,
+                                "placeholder_fidelity": 0.7,
+                                "reward_score": 0.9,
+                            }
+                        },
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    readers = Readers(tmp_path)
+    roster_row = next(
+        row for row in readers.checkpoints()["checkpoints"] if row["run_id"] == "linked-run"
+    )
+    assert roster_row["parameters"] == "≈740K"
+    assert roster_row["experiment_id"] == "E900"
+    assert roster_row["matrix"] == "quality"
+    assert roster_row["gate_pass"] is True
+    assert roster_row["evaluation_status"] == "evaluated"
+    assert roster_row["metrics"]["meaningful_program_rate"] == 0.8
+    assert roster_row["agentv"] == {"passed": 4, "total": 5}
+
+    board = readers.scoreboard("quality")["results"][0]
+    assert board["run_id"] == "linked-run"
+    assert board["parameters"] == "≈740K"
+    assert board["checkpoint"] == "outputs/runs/linked-run/checkpoints/last.pt"
+
+    reference = next(
+        row
+        for row in readers.performance_insights()["references"]
+        if row["run_id"] == "linked-run"
+    )
+    assert reference["parameters"] == "≈740K"
+    assert reference["metrics"]["meaningful_program_rate"] == 0.8
+    assert reference["evaluation_status"] == "evaluated"

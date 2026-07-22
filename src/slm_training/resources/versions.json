@@ -1103,7 +1103,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -1123,6 +1123,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-24",
+          "note": "Link committed model-card parameters and checkpoint evidence to dashboard scoreboards and roster metrics"
+        },
         {
           "version": "v7",
           "date": "2026-07-24",
@@ -5934,7 +5939,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v233",
+      "version": "v234",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5960,6 +5965,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v234",
+          "date": "2026-07-24",
+          "note": "Persist exact parameter count and serialized FP32 weight-byte estimate in TwoTower checkpoint metadata"
+        },
         {
           "version": "v233",
           "date": "2026-07-24",
