@@ -6946,7 +6946,11 @@ class TwoTowerModel(nn.Module):
         )
         if margin <= 0.0 or not slot_contract:
             return None
-        if state is not None and len(getattr(state, "frames", ())) == 0:
+        if (
+            state is not None
+            and hasattr(state, "frames")
+            and len(getattr(state, "frames", ())) == 0
+        ):
             return None
         if state is not None and not self._required_slot_margin_position_accepts_slot(
             state
@@ -6985,15 +6989,34 @@ class TwoTowerModel(nn.Module):
         """Whether the active argument position is schema-tagged for a slot.
 
         E630: mirrors ``_schema_role_slot_bias``'s own ``accepts_slot`` gate
-        exactly -- a ``component`` frame's current argument must carry
+        exactly -- a choice decoder ``component`` frame's current argument must carry
         ``x-openui-placeholder`` (the content properties: ``label``, ``text``,
         ``title``, ...), and an ``object`` frame's current property schema
         must be able to reach a visible slot at all. Any other frame kind
         (``variadic``, ``fixed``, ...) is left permissive (``True``) since
         this bias's only observed failure mode is stuffing missing slots into
         optional enum/opaque *component*/*object* properties, not array items.
+        The lexer compiler exposes its active call through a grammar engine
+        instead of schema frames, so its equivalent gate accepts only an
+        explicitly tagged placeholder or a non-enum string property.
         """
         frames = list(getattr(state, "frames", ()))
+        if not frames and getattr(state, "engine", None) is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+            from slm_training.dsl.lang_core import library_schema
+
+            active = _active_call(state.engine)
+            if active is None:
+                return False
+            component, index, _ = active
+            definition = library_schema().get("$defs", {}).get(component) or {}
+            properties = tuple((definition.get("properties") or {}).values())
+            if not 0 <= index < len(properties):
+                return False
+            schema = properties[index]
+            return bool(schema.get("x-openui-placeholder")) or (
+                schema.get("type") == "string" and "enum" not in schema
+            )
         if not frames:
             return True
         frame = frames[-1]
@@ -8557,6 +8580,28 @@ class TwoTowerModel(nn.Module):
                 for kind in kinds
             )
 
+        def apply_required_slot_margin(
+            scores: torch.Tensor,
+            candidate_ids: tuple[int, ...],
+        ) -> torch.Tensor:
+            bias = self._required_slot_margin_bias(
+                prefix,
+                candidate_ids,
+                scores,
+                slot_contract,
+                state=state,
+            )
+            if bias is None:
+                return scores
+            before = int(scores.argmax().item())
+            scores = scores + bias
+            if stats is not None:
+                stats.required_slot_margin_applications += 1
+                stats.required_slot_margin_choice_changes += int(
+                    int(scores.argmax().item()) != before
+                )
+            return scores
+
         if not tree:
             canvas = self._compiler_canvas(prefix, length)
             hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
@@ -8679,6 +8724,7 @@ class TwoTowerModel(nn.Module):
                     stats.slot_coverage_close_choice_changes += int(
                         int(scores.argmax().item()) != before_coverage_close
                     )
+            scores = apply_required_slot_margin(scores, candidates)
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -8862,6 +8908,8 @@ class TwoTowerModel(nn.Module):
                 )
                 if schema_role_slot_bias is not None:
                     scores = scores + schema_role_slot_bias
+                if parent == tuple(prefix):
+                    scores = apply_required_slot_margin(scores, candidate_ids)
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())

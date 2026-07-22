@@ -2376,6 +2376,54 @@ def test_lexer_slot_coverage_close_stops_after_declared_symbols(
     assert incomplete == paths[1].token_ids
 
 
+@pytest.mark.parametrize("tree", [False, True])
+def test_lexer_required_slot_margin_uses_missing_visible_symbol(
+    monkeypatch, tree: bool
+) -> None:
+    model = _model(required_slot_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    title_id = tokenizer.sym_id(0)
+    body_id = tokenizer.sym_id(1)
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([TextContent(", add_special=False),
+        body_id,
+        *tokenizer.encode("), TextContent(", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    slot_contract = [":title", ":body"]
+    paths = (
+        CompletionPath((title_id,), "slot"),
+        CompletionPath((body_id,), "slot"),
+    )
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [1.0 if token_id == title_id else 4.0 for token_id in candidate_ids]
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["Two text fields."])
+
+    with collect_decode_stats() as stats:
+        selected = model._select_compiler_path(
+            prefix,
+            paths,
+            ctx,
+            ctx_pad,
+            48,
+            tree=tree,
+            slot_contract=slot_contract,
+            state=state,
+        )
+
+    assert selected == paths[0].token_ids
+    assert stats.required_slot_margin_applications == 1
+    assert stats.required_slot_margin_choice_changes == 1
+
+
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

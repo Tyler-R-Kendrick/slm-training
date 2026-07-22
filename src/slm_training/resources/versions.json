@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-22",
+          "note": "Declare required-slot margin dual-path after wiring the shared bias into lexer compiler selection"
+        },
         {
           "version": "v13",
           "date": "2026-07-22",
@@ -3794,7 +3799,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v208",
+      "version": "v209",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3816,6 +3821,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v209",
+          "date": "2026-07-22",
+          "note": "Apply the existing required-slot margin through one shared compiler restricted/tree adapter"
+        },
         {
           "version": "v208",
           "date": "2026-07-22",
