@@ -5474,3 +5474,17 @@ only the non-semantic Pareto observation.
 
 Evidence: [narrative](iter-e722-component-edge-symbol-only-20260721.md) and
 [JSON](iter-e722-component-edge-symbol-only-20260721.json).
+
+## E723 symbol-only slot owner
+
+E723 adds the generalized prompt-conditioned slot-to-component owner objective
+to E722's training stack. A 140-step local CPU run completes in 77.16 seconds
+under `max_wall_minutes=2`. Slot decode causally improves smoke meaning-v1
+0.3333→0.6667, structure 0.3283→0.5614, recall 0.1667→0.4167, and reward
+0.3203→0.8073. Held-out also improves: meaning-v1 0→0.25, structure
+0.2988→0.3940, recall 0→0.3208, reward 0→0.7290. All seven applications
+change a choice. Retain the lever, but reject checkpoint promotion because
+strict-v2 remains 0.0 and AgentV is 0/1 per arm.
+
+Evidence: [narrative](iter-e723-slot-owner-symbol-only-20260721.md) and
+[JSON](iter-e723-slot-owner-symbol-only-20260721.json).
