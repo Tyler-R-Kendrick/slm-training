@@ -3754,7 +3754,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v195",
+      "version": "v197",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3776,6 +3776,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v197",
+          "date": "2026-07-22",
+          "note": "Reject rank-calibrated lexer root arity after it caused three of three bounded smoke decodes to time out"
+        },
+        {
+          "version": "v196",
+          "date": "2026-07-22",
+          "note": "Calibrate lexer root-reference arity weight one as interpolation to the trained continue-or-stop class"
+        },
         {
           "version": "v195",
           "date": "2026-07-22",

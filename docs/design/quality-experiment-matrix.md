@@ -5609,3 +5609,21 @@ remain the only path allowed to initialize a newly enabled auxiliary head.
 
 Evidence: [narrative](iter-e733-lexer-root-identity-reachability-20260722.md)
 and [JSON](iter-e733-lexer-root-identity-reachability-20260722.json).
+
+## E734 root-arity rank calibration
+
+E734 tests a stronger integration for the reachable lexer root-arity head:
+weight 1 interpolates fully to the trained continue-or-stop class when it
+conflicts with compiler path scores. Unit tests prove both conflict directions,
+but the clean local CPU smoke treatment times out all three records at eight
+seconds each. The matched weight-0 control retains parse 1.0, meaning-v1
+0.6667, fidelity 0.5278, structure 0.5614, recall 0.4167, reward 0.8073, and no
+timeouts. Both AgentV bundles remain 0/1 and strict-v2 remains 0.0.
+
+Reject and revert the stronger authority. `model.twotower` v197 restores the
+bounded raw-logit integration; no checkpoint was created or changed. Further
+root-arity work must improve supervision or eligible sampling before another
+decode-authority experiment.
+
+Evidence: [narrative](iter-e734-root-arity-rank-calibration-20260722.md) and
+[JSON](iter-e734-root-arity-rank-calibration-20260722.json).
