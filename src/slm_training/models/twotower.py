@@ -5261,6 +5261,17 @@ class TwoTowerModel(nn.Module):
         return result
 
     @staticmethod
+    def _semantic_role_namespace_groups(
+        slots: tuple[str, ...] | list[str],
+    ) -> tuple[tuple[str, ...], ...]:
+        """Group declared markers by their semantic owner namespace."""
+        groups: dict[str, list[str]] = {}
+        for slot in slots:
+            namespace, separator, _property = slot.removeprefix(":").rpartition(".")
+            groups.setdefault(namespace if separator else slot, []).append(slot)
+        return tuple(tuple(group) for group in groups.values())
+
+    @staticmethod
     def _semantic_role_enum_candidates(
         slot: str, candidates: tuple[str, ...]
     ) -> tuple[str, ...]:
@@ -5294,6 +5305,7 @@ class TwoTowerModel(nn.Module):
         from slm_training.data.quality import semantic_role_properties
         from slm_training.dsl.lang_core import library_schema
 
+        slots = tuple(dict.fromkeys(slots))
         definition = library_schema().get("$defs", {}).get(family, {})
         string_properties = {
             name
@@ -5301,7 +5313,9 @@ class TwoTowerModel(nn.Module):
             if isinstance(schema, dict) and schema.get("type") == "string"
         }
         if not string_properties:
-            return True
+            return len(TwoTowerModel._semantic_role_namespace_groups(slots)) <= max(
+                0, instances
+            )
         properties_by_slot = semantic_role_properties(list(slots))
         if any(
             not string_properties.intersection(properties_by_slot.get(slot, ()))
@@ -5327,6 +5341,18 @@ class TwoTowerModel(nn.Module):
         return match(0, frozenset())
 
     @staticmethod
+    def _semantic_role_reachable_family_has_capacity(
+        family: str, slots: tuple[str, ...], instances: int
+    ) -> bool:
+        """Bound nested role namespaces to one structural owner per instance."""
+        slots = tuple(dict.fromkeys(slots))
+        return TwoTowerModel._semantic_role_family_has_capacity(
+            family, slots, instances
+        ) and len(TwoTowerModel._semantic_role_namespace_groups(slots)) <= max(
+            0, instances
+        )
+
+    @staticmethod
     def _semantic_plan_role_obligations(
         family_counts: Counter[str],
         role_candidates: dict[str, tuple[str, ...]] | None,
@@ -5341,13 +5367,14 @@ class TwoTowerModel(nn.Module):
         planned = set(family_counts)
         schema_descendants = TwoTowerModel._schema_descendant_families(planned)
         bindings: dict[str, list[str]] = defaultdict(list)
+        coverage: dict[str, list[str]] = defaultdict(list)
         bound_slots: set[str] = set()
         component_names = sorted(
             {component for candidates in role_candidates.values() for component in candidates}
         )
 
         def covered_by_planned(slots: tuple[str, ...]) -> bool:
-            trial = {family: list(assigned) for family, assigned in bindings.items()}
+            trial = {family: list(assigned) for family, assigned in coverage.items()}
 
             def match(index: int) -> bool:
                 if index == len(slots):
@@ -5358,11 +5385,17 @@ class TwoTowerModel(nn.Module):
                 )
                 for family in sorted(planned.intersection(compatible)):
                     assigned = trial.setdefault(family, [])
-                    if not TwoTowerModel._semantic_role_family_has_capacity(
-                        family,
-                        (*assigned, slot),
-                        completed[family],
-                    ):
+                    assigned_slots = (*assigned, *bindings.get(family, ()), slot)
+                    has_capacity = (
+                        TwoTowerModel._semantic_role_family_has_capacity(
+                            family, assigned_slots, completed[family]
+                        )
+                        if family in role_candidates[slot]
+                        else TwoTowerModel._semantic_role_reachable_family_has_capacity(
+                            family, assigned_slots, completed[family]
+                        )
+                    )
+                    if not has_capacity:
                         continue
                     assigned.append(slot)
                     if match(index + 1):
@@ -5370,7 +5403,10 @@ class TwoTowerModel(nn.Module):
                     assigned.pop()
                 return False
 
-            return match(0)
+            if not match(0):
+                return False
+            coverage.update(trial)
+            return True
 
         for slots, candidates in TwoTowerModel._semantic_role_joint_candidates(
             list(role_candidates), component_names
@@ -5408,7 +5444,11 @@ class TwoTowerModel(nn.Module):
                     if preferred in planned and preferred in candidates
                     and TwoTowerModel._semantic_role_family_has_capacity(
                         preferred,
-                        (*bindings[preferred], slot),
+                        (
+                            *coverage.get(preferred, ()),
+                            *bindings.get(preferred, ()),
+                            slot,
+                        ),
                         completed[preferred],
                     )
                 ),
@@ -5418,7 +5458,11 @@ class TwoTowerModel(nn.Module):
                         for family in sorted(planned.intersection(candidates))
                         if TwoTowerModel._semantic_role_family_has_capacity(
                             family,
-                            (*bindings[family], slot),
+                            (
+                                *coverage.get(family, ()),
+                                *bindings.get(family, ()),
+                                slot,
+                            ),
                             completed[family],
                         )
                     ),
@@ -5428,9 +5472,27 @@ class TwoTowerModel(nn.Module):
             if planned_family is not None:
                 bindings[planned_family].append(slot)
                 continue
-            if planned.intersection(
-                (reachable_role_candidates or {}).get(slot, ())
-            ):
+            reachable_family = next(
+                (
+                    family
+                    for family in sorted(
+                        planned.intersection(
+                            (reachable_role_candidates or {}).get(slot, ())
+                        )
+                    )
+                    if TwoTowerModel._semantic_role_reachable_family_has_capacity(
+                        family,
+                        (
+                            *coverage.get(family, ()),
+                            *bindings.get(family, ()),
+                            slot,
+                        ),
+                        completed[family],
+                    )
+                ),
+                None,
+            )
+            if reachable_family is not None:
                 family = next(
                     (
                         preferred
@@ -5444,7 +5506,11 @@ class TwoTowerModel(nn.Module):
                         direct in planned
                         and not TwoTowerModel._semantic_role_family_has_capacity(
                             direct,
-                            (*bindings[direct], slot),
+                            (
+                                *coverage.get(direct, ()),
+                                *bindings.get(direct, ()),
+                                slot,
+                            ),
                             completed[direct],
                         )
                         for direct in candidates
@@ -5452,6 +5518,7 @@ class TwoTowerModel(nn.Module):
                     if exhausted_direct and family not in schema_descendants:
                         completed[family] += 1
                         planned.add(family)
+                    coverage[reachable_family].append(slot)
                     bindings[family].append(slot)
                     continue
             nested_candidates = tuple(
@@ -7500,15 +7567,20 @@ class TwoTowerModel(nn.Module):
             int(self.tokenizer.sym_id(index))
             for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
         }
-        groups: dict[str, list[int]] = {}
-        for index, slot in enumerate(slot_contract[: self.tokenizer.sym_slots]):
-            namespace, separator, _property = slot.removeprefix(":").rpartition(".")
-            if separator:
-                groups.setdefault(namespace, []).append(int(self.tokenizer.sym_id(index)))
+        visible_slots = slot_contract[: self.tokenizer.sym_slots]
+        slot_ids = {
+            slot: int(self.tokenizer.sym_id(index))
+            for index, slot in enumerate(visible_slots)
+        }
+        groups = [
+            [slot_ids[slot] for slot in group]
+            for group in self._semantic_role_namespace_groups(visible_slots)
+            if "." in group[0].removeprefix(":")
+        ]
         repeated_count = int(self._semantic_plan_action_counts[row][owner_id])
         if len(groups) >= repeated_count:
             selected = sorted(
-                sorted(groups.values(), key=lambda group: (-len(group), group[0]))[
+                sorted(groups, key=lambda group: (-len(group), group[0]))[
                     :repeated_count
                 ],
                 key=lambda group: group[0],

@@ -5913,3 +5913,16 @@ recall 1.0, reward 0.9188, strict-v2 0.3333, p95 9173.58 ms, zero timeouts and
 fallbacks. The remaining failures are two standalone text markers; AgentV is
 0/1 and this is not a ship claim. See
 [`iter-e755-e757-repeated-marker-ownership-20260722.md`](iter-e755-e757-repeated-marker-ownership-20260722.md).
+
+# E758 — standalone marker sibling (2026-07-22)
+
+Retain model v218. The shared semantic namespace-capacity rule prevents five
+reachable Cards from claiming a sixth independent marker namespace, so the
+unowned namespace becomes a direct `TextContent` sibling. No new lever or
+phrase-specific parsing was added.
+
+Matched local RICO n=3: parse 1.0, fidelity 1.0, validity 1.0, structure 1.0,
+component recall 1.0, reward 0.9370, strict-v2 1.0, p50 9282.32 ms, p95
+9463.23 ms, zero timeouts, and zero fallbacks. AgentV is 0/1; this diagnostic
+does not establish ship readiness. Full evidence:
+[`iter-e758-standalone-marker-sibling-20260722.md`](iter-e758-standalone-marker-sibling-20260722.md).
