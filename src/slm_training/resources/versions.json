@@ -3779,6 +3779,11 @@
         {
           "version": "v198",
           "date": "2026-07-22",
+          "note": "no-bump: record the matched E735 training and smoke evidence for the full-head root-arity objective"
+        },
+        {
+          "version": "v198",
+          "date": "2026-07-22",
           "note": "Train root-reference arity against the full inference head so high-arity tail logits receive negative supervision"
         },
         {
