@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "run_id": "e726-symbol-only-root-arity140-r1",
+  "experiment_id": "E726",
+  "date_utc": "2026-07-22",
+  "status": "completed_invalid_configuration_excluded",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "valid_experiment_evidence": false,
+  "invalid_reason": "choice-only root-reference arity weights were silently ignored by the lexer output path",
+  "checkpoint": {
+    "path": "outputs/runs/e726-symbol-only-root-arity140-r1/checkpoints/last.pt",
+    "sha256": "d84148fe327c18dee6a4ad4957b1b23499e17ae364c79a97cdc8150503a1b91b",
+    "created": true,
+    "synced": false,
+    "sync_reason": "explicit --no-sync-checkpoints invalid local scratch diagnostic",
+    "promoted": false,
+    "usable": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "path": "outputs/data/train/symbol-only-integrated-smoke-20260721",
+    "records": 141,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 140,
+    "batch_size": 4,
+    "max_wall_minutes": 2,
+    "elapsed_wall_seconds": 81.1962426629907,
+    "seen_prompt_tokens": 72021,
+    "seen_target_tokens": 14976,
+    "trainable_parameters": 1913056,
+    "requested_root_reference_arity_loss_weight": 1.0,
+    "requested_root_reference_arity_decode_weight": 1.0,
+    "root_reference_arity_head_instantiated": false,
+    "root_reference_arity_training_rows": 0,
+    "last_loss": 9.176352500915527,
+    "primary_final_reconstruction_loss": 5.075340747833252,
+    "checkpoint": "outputs/runs/e726-symbol-only-root-arity140-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "d84148fe327c18dee6a4ad4957b1b23499e17ae364c79a97cdc8150503a1b91b",
+    "checkpoint_synced": false,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "d67fdceda28f401c731544fbf5b6f3cd28b73c72",
+      "code_dirty": false,
+      "components": {"harness.model_build.train": "v18"},
+      "stamped_at": "2026-07-22T00:53:16.079409+00:00"
+    }
+  },
+  "identity_audit": {
+    "reference_run_id": "e723-symbol-only-slot-owner140-r1",
+    "state_dict_tensor_count": 137,
+    "changed_tensor_count": 0,
+    "training_metrics_identical": true
+  },
+  "evaluation": {
+    "status": "not_run",
+    "reason": "the configured treatment was not instantiated, so evaluation would only replay E723 weights"
+  },
+  "harness_fix": {
+    "canonical_registry": "slm_training.levers.LEVER_OUTPUT_TOKENIZERS",
+    "validation": "ModelBuildConfig and TwoTowerConfig fail before model construction",
+    "cli_proof": "e726-invalid-config-proof rejected before run-directory creation",
+    "focused_tests_passed": 37,
+    "component_versions": {"config.levers": "v2", "model.twotower": "v189"}
+  },
+  "ship_gates": false,
+  "decision": "Invalidate the checkpoint and fail closed on incompatible output-tokenizer lever configurations."
+}

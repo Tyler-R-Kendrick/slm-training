@@ -181,6 +181,40 @@ def test_model_build_config_accepts_valid_schedules_and_weights() -> None:
     assert cfg.recursive_depth_supervision_weights == (0.5, 1.0, 0.5)
 
 
+@pytest.mark.parametrize(
+    "weight_name",
+    [
+        "root_reference_arity_loss_weight",
+        "root_reference_arity_decode_weight",
+        "root_reference_identity_loss_weight",
+        "root_reference_identity_decode_weight",
+    ],
+)
+def test_model_build_config_rejects_choice_only_reference_weights_for_lexer(
+    weight_name: str,
+) -> None:
+    with pytest.raises(ValueError, match="require output_tokenizer='choice'"):
+        _valid_build_config(output_tokenizer="lexer", **{weight_name: 1.0})
+
+
+def test_model_build_config_accepts_reference_weights_for_choice() -> None:
+    cfg = _valid_build_config(
+        output_tokenizer="choice",
+        root_reference_arity_loss_weight=1.0,
+        root_reference_identity_decode_weight=1.0,
+    )
+    assert cfg.root_reference_arity_loss_weight == 1.0
+
+
+def test_model_build_config_rejects_reference_weights_for_other_models() -> None:
+    with pytest.raises(ValueError, match="require model_name='twotower'"):
+        _valid_build_config(
+            model_name="stub",
+            output_tokenizer="choice",
+            root_reference_arity_loss_weight=1.0,
+        )
+
+
 # --------------------------------------------------------------------------- #
 # TwoTowerConfig numeric gates (torch-backed module)
 # --------------------------------------------------------------------------- #
@@ -199,6 +233,14 @@ def _valid_twotower_config(**overrides: object) -> TwoTowerConfig:
     }
     defaults.update(overrides)
     return TwoTowerConfig(**defaults)  # type: ignore[arg-type]
+
+
+def test_twotower_config_rejects_choice_only_reference_weight_for_lexer() -> None:
+    with pytest.raises(ValueError, match="require output_tokenizer='choice'"):
+        _valid_twotower_config(
+            output_tokenizer="lexer",
+            root_reference_arity_decode_weight=1.0,
+        )
 
 
 # The six SLM-237 recursive-depth defects must now raise at config construction

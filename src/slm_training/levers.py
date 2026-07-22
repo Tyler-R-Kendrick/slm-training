@@ -20,6 +20,46 @@ MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 
+# Applicability lives beside discovery so CLIs and harness validation cannot
+# drift from the human-visible lever catalog.
+LEVER_OUTPUT_TOKENIZERS: Final = {
+    "root_reference_arity_loss_weight": frozenset({"choice"}),
+    "root_reference_arity_decode_weight": frozenset({"choice"}),
+    "root_reference_identity_loss_weight": frozenset({"choice"}),
+    "root_reference_identity_decode_weight": frozenset({"choice"}),
+}
+LEVER_MODELS: Final = {
+    name: frozenset({"twotower"}) for name in LEVER_OUTPUT_TOKENIZERS
+}
+
+
+def incompatible_output_tokenizer_levers(config: Any) -> list[str]:
+    """Return enabled levers that cannot execute for the selected codec."""
+    output_tokenizer = getattr(config, "output_tokenizer", None)
+    return [
+        name
+        for name, supported in LEVER_OUTPUT_TOKENIZERS.items()
+        if isinstance((value := getattr(config, name, 0.0)), (int, float))
+        and not isinstance(value, bool)
+        and value != 0.0
+        and output_tokenizer not in supported
+    ]
+
+
+def incompatible_model_levers(config: Any) -> list[str]:
+    """Return enabled levers that cannot execute for the selected model."""
+    model_name = getattr(config, "model_name", None)
+    if model_name is None:
+        return []
+    return [
+        name
+        for name, supported in LEVER_MODELS.items()
+        if isinstance((value := getattr(config, name, 0.0)), (int, float))
+        and not isinstance(value, bool)
+        and value != 0.0
+        and model_name not in supported
+    ]
+
 
 def _json_value(value: Any) -> Any:
     if isinstance(value, Path):
@@ -69,6 +109,11 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             "type": str(item.type),
             "source": "slm_training.harnesses.model_build.config.ModelBuildConfig",
         }
+        if item.name in LEVER_OUTPUT_TOKENIZERS:
+            catalog[item.name]["supported_output_tokenizers"] = sorted(
+                LEVER_OUTPUT_TOKENIZERS[item.name]
+            )
+            catalog[item.name]["supported_models"] = sorted(LEVER_MODELS[item.name])
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]

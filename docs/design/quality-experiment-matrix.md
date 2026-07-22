@@ -5515,3 +5515,18 @@ attempts that loaded no records are documented and excluded from evidence.
 
 Evidence: [narrative](iter-e725-component-inventory-symbol-only-20260722.md) and
 [JSON](iter-e725-component-inventory-symbol-only-20260722.json).
+
+## E726 root-reference arity compatibility failure
+
+E726 attempted to combine E723's lexer-based slot-owner signal with the
+existing root-reference arity loss/decode weight 1. The local 140-step CPU run
+completed in 81.20 seconds, but the treatment was not instantiated:
+root-reference arity and identity were choice-tokenizer-only. All 137 learned
+tensors and training metrics are identical to E723, so the checkpoint is
+invalidated and no evaluation was run. The shared config now fails closed
+before model construction, and the canonical lever catalog exposes supported
+output tokenizers. `config.levers` advances to v2 and `model.twotower` to v189;
+focused registry/config tests pass 37/37.
+
+Evidence: [narrative](iter-e726-root-arity-compatibility-symbol-only-20260722.md)
+and [JSON](iter-e726-root-arity-compatibility-symbol-only-20260722.json).

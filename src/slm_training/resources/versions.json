@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Declare output-tokenizer applicability in the canonical lever catalog and fail closed on incompatible enabled levers"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -3685,7 +3690,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v188",
+      "version": "v189",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3706,6 +3711,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v189",
+          "date": "2026-07-22",
+          "note": "E726: fail closed when choice-only root-reference levers are requested with lexer or compositional output"
+        },
         {
           "version": "v188",
           "date": "2026-07-21",
