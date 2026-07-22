@@ -3872,7 +3872,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v224",
+      "version": "v225",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3896,6 +3896,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v225",
+          "date": "2026-07-22",
+          "note": "Constrain primitive array items and separators from their generated schema type while preserving component-array and positional-call boundaries"
+        },
         {
           "version": "v224",
           "date": "2026-07-22",

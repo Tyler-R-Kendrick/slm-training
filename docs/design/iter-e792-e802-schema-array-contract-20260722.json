@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E792-E802",
+  "run_id": "e802-array-item-schema-heldout-n5-r2",
+  "description": "Constrain primitive array items and separators from the official generated schema",
+  "date_utc": "2026-07-22",
+  "decision": {
+    "retain": "model.twotower v225 schema-derived primitive array item and separator constraints",
+    "reject": "global marker-inventory closure, checkpoint promotion, and ship claims",
+    "reason": "The schema repair removes an invalid continuation class without changing E789 headline quality; global closure caused ownership collapse and timeout or fallback",
+    "next": "allocate marker ownership by schema role and planned family before constraining closure"
+  },
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E792-E802 targeted settings diagnostics plus held_out n=5",
+    "suite": "held_out",
+    "suite_n": 5,
+    "honesty_mode": "strict_compiler_tree with request-declared RuntimeSymbol contract",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "d22f53fddabffa2491bf98f64c65a87442c169c47a6d52f9cee2b40efb6ff004",
+    "eval_suite_manifest_sha": "a94aca7a025ad3f4373c1a266d012b6c737761f0e140794e5f12fbea59144c99",
+    "decode_timeout_seconds": 12.0,
+    "decode_canvas_cap": 160,
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "arms": [
+    {"run_id": "e792-marker-closure-settings-n1-r1", "valid": false, "result": "global marker closure timed out at the 12-second record guard"},
+    {"run_id": "e793-marker-closure-settings-n1-time30-diagnostic", "valid": false, "result": "diagnostic reached the canvas cap and certified fallback with fidelity 0.2"},
+    {"run_id": "e794-array-schema-marker-closure-settings-n1-r1", "valid": false, "result": "primitive item typing exposed repeated numeric-array continuation under global closure"},
+    {"run_id": "e795-schema-exit-marker-closure-settings-n1-r1", "valid": false, "result": "over-broad enum reachability created an empty forest"},
+    {"run_id": "e796-schema-marker-closure-settings-n1-r1", "valid": false, "result": "closed-array state was confused with the enclosing component array and fell back"},
+    {"run_id": "e797-schema-marker-closure-settings-n1-r1", "valid": false, "result": "global closure still timed out after parser-state repair"},
+    {"run_id": "e798-schema-marker-closure-settings-n1-time30-diagnostic", "valid": false, "result": "trace proved all markers were stuffed into the first family before optional-expression growth"},
+    {"run_id": "e799-hard-marker-inventory-settings-n1-r1", "valid": false, "result": "hard post-inventory component closure still timed out and was rejected"},
+    {"run_id": "e800-array-item-schema-settings-n1-r1", "valid": true, "result": "targeted settings replay: meaningful-v1 1.0, fidelity 0.8, structure 0.4133, recall 0.5, zero fallback and timeout"},
+    {"run_id": "e801-array-item-schema-heldout-n5-r1", "valid": true, "result": "pre-version-bump held-out replay matched E789 headline metrics"},
+    {"run_id": "e802-array-item-schema-heldout-n5-r2", "valid": true, "result": "final model v225 held-out replay matched E789 headline metrics with zero fallback and timeout"}
+  ],
+  "output_contract": {
+    "allowed": ["grammar/AST symbols", "schema enum literals", "declared template markers"],
+    "forbidden": ["free-form completion strings", "undeclared template markers"],
+    "observed_forbidden_count": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "five-record diagnostic subset; strict-v2 zero, marker fidelity incomplete, and AgentV 0/1"
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6,
+      "meaningful_program_v1_rate": 0.6,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.8,
+      "contract_precision": 1.0,
+      "contract_recall": 0.7076190476190476,
+      "placeholder_fidelity": 0.7076190476190476,
+      "placeholder_validity": 0.8245799999999999,
+      "structural_similarity": 0.5622,
+      "tree_edit_similarity": 0.5622,
+      "component_type_recall": 0.5857142857142856,
+      "reward_score": 0.86128,
+      "latency_ms_p50": 2796.95,
+      "latency_ms_p95": 3165.11,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "588948fb36f9a033da839a8e83ce46b7b540c5e1",
+    "code_dirty": true,
+    "components": {
+      "model.twotower": "v225",
+      "config.levers": "v17",
+      "harness.model_build.eval": "v45",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14"
+    },
+    "stamped_at": "2026-07-22T14:31:22.485172+00:00"
+  }
+}

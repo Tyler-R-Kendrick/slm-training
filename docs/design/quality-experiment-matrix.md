@@ -6000,3 +6000,18 @@ fallbacks/timeouts, but fidelity regresses 1.0→0.7076 and strict-v2/AgentV
 remain 0. Retain the generalized compiler repair; reject margin policy and
 checkpoint promotion. No remote compute ran. Full evidence:
 [`iter-e781-e790-numeric-literal-planning-20260722.md`](iter-e781-e790-numeric-literal-planning-20260722.md).
+
+# E792-E802 — schema array contract (2026-07-22)
+
+Retain model v225. Primitive arrays now derive legal item starts and post-item
+separators from the official item schema; component values cannot enter a
+numeric array, and enclosing positional arity no longer erases an in-array
+comma. The initial global marker-closure treatment was rejected because it
+stuffed unrelated markers into the first family and caused timeout or fallback.
+
+The final local held-out n=5 replay matches E789: parse 1.0, meaningful-v1 0.6,
+fidelity 0.7076, validity 0.8246, structure 0.5622, component recall 0.5857,
+reward 0.8613, p95 3165.11 ms, and zero fallback/timeout. Strict-v2 and AgentV
+remain zero, so this is a compiler-correctness retention with no checkpoint or
+ship claim. No remote compute ran. Full positive and negative evidence:
+[`iter-e792-e802-schema-array-contract-20260722.md`](iter-e792-e802-schema-array-contract-20260722.md).
