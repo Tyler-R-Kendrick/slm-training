@@ -626,3 +626,23 @@ def test_e780_schema_closed_decoder_persists_without_outputs(tmp_path: Path) -> 
     assert run_id not in {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
+
+
+def test_e789_numeric_literal_planning_persists_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    run_id = "e789-plan-margin2-heldout-n5-r1"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    held_out = run["scoreboard"]["suites"]["held_out"]
+    assert held_out["meaningful_program_rate"] == 0.6
+    assert held_out["placeholder_fidelity"] == 0.7076190476190476
+    assert held_out["component_type_recall"] == 0.5857142857142856
+    assert held_out["fallback_count"] == 0
+    assert run["train_summary"] is None
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }

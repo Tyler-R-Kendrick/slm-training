@@ -6,11 +6,21 @@ scan) and the V5 lexer-native ``DSLNativeTokenizer`` (exact kind metadata).
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from slm_training.models.tokenizer import OpenUITokenizer
 
 _DSL_ALLOWED_CACHE: dict[tuple[int, int, frozenset[str]], frozenset[int]] = {}
+_NUMBER_COMPLETE = re.compile(
+    r"^-?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?$"
+)
+_NUMBER_PREFIX = re.compile(
+    r"^(?:-?|"
+    r"-?\d+(?:\.\d*)?|"
+    r"-?\.\d*|"
+    r"-?(?:\d+(?:\.\d*)?|\.\d+)[eE][+-]?\d*)$"
+)
 
 
 def _is_dsl_native(tokenizer: Any) -> bool:
@@ -39,6 +49,37 @@ def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
     if _is_dsl_native(tokenizer):
         return tokenizer.decode(token_ids, preserve_trailing_newline=True)
     return tokenizer.decode(token_ids)
+
+
+def token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
+    """Decode one token into the source fragment consumed by grammar state."""
+    tid = int(token_id)
+    if tid in {
+        tokenizer.pad_id,
+        tokenizer.bos_id,
+        tokenizer.eos_id,
+        tokenizer.mask_id,
+    }:
+        return ""
+    raw = str(tokenizer.id_to_token.get(tid, ""))
+    if raw == "NL":
+        return "\n"
+    if raw == "LIT_STR":
+        return '"'
+    if raw in {"LIT_NUM", "LIT_END"}:
+        return ""
+    if raw.startswith("B:"):
+        try:
+            return chr(int(raw[2:], 16))
+        except ValueError:
+            return raw
+    kind_of = getattr(tokenizer, "kind_of", None)
+    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+    if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
+        decoded = tokenizer.decode([tid])
+        if decoded:
+            return decoded
+    return raw
 
 
 def allowed_id_set(
@@ -81,27 +122,49 @@ def apply_literal_frame(
     prefix_ids: list[int],
     candidates: set[int] | None,
 ) -> set[int] | None:
-    """Restrict lexer-native string frames to their legal token channel."""
+    """Restrict lexer-native framed literals to bytes until ``LIT_END``."""
     if not _is_dsl_native(tokenizer):
         return candidates
 
     from slm_training.models.dsl_tokenizer import TokenKind
 
-    opener = tokenizer.token_to_id.get("LIT_STR")
+    openers = {
+        int(token_id): name
+        for name in ("LIT_STR", "LIT_NUM")
+        if (token_id := tokenizer.token_to_id.get(name)) is not None
+    }
     closer = tokenizer.token_to_id.get("LIT_END")
-    if opener is None or closer is None:
+    if not openers or closer is None:
         return candidates
 
-    inside = False
-    for token_id in prefix_ids:
-        if int(token_id) == int(opener) and not inside:
-            inside = True
-        elif int(token_id) == int(closer) and inside:
-            inside = False
-
     byte_ids = set(tokenizer.kind_ids(TokenKind.BYTE))
-    if inside:
-        return byte_ids | {int(closer)}
+    frame: str | None = None
+    body = ""
+    for token_id in prefix_ids:
+        current = int(token_id)
+        if current in openers and frame is None:
+            frame = openers[current]
+            body = ""
+        elif current == int(closer) and frame is not None:
+            frame = None
+            body = ""
+        elif frame is not None and current in byte_ids:
+            raw = str(tokenizer.id_to_token.get(current, ""))
+            if raw.startswith("B:"):
+                body += chr(int(raw[2:], 16))
+
+    if frame == "LIT_NUM":
+        numeric_bytes = {
+            token_id
+            for token_id in byte_ids
+            if (raw := str(tokenizer.id_to_token.get(token_id, ""))).startswith("B:")
+            and _NUMBER_PREFIX.fullmatch(body + chr(int(raw[2:], 16)))
+        }
+        return numeric_bytes | (
+            {int(closer)} if _NUMBER_COMPLETE.fullmatch(body) else set()
+        )
+    if frame is not None:
+        return byte_ids | ({int(closer)} if body else set())
     if candidates is None:
         return None
     return set(candidates) - byte_ids - {int(closer)}

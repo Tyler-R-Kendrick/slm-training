@@ -6,6 +6,7 @@ import pytest
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
+    CHANGED_TEST_WORKERS,
     HF_JOB_TIMEOUT,
     INTERRUPT_AFTER_SECONDS,
     KILL_GRACE_SECONDS,
@@ -24,6 +25,7 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert MAX_RUN_SECONDS == MAX_RUN_MINUTES * 60
     assert INTERRUPT_AFTER_SECONDS + KILL_GRACE_SECONDS == MAX_RUN_SECONDS
     assert HF_JOB_TIMEOUT == f"{MAX_RUN_MINUTES}m"
+    assert CHANGED_TEST_WORKERS > 0
 
 
 def test_catalog_discovers_build_levers_and_context_differences() -> None:
@@ -32,6 +34,12 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     assert catalog["max_wall_minutes"]["source"] == (
         "slm_training.levers.MAX_RUN_MINUTES"
     )
+    assert catalog["changed_test_workers"] == {
+        "category": "run",
+        "default": CHANGED_TEST_WORKERS,
+        "type": "int",
+        "source": "slm_training.levers.CHANGED_TEST_WORKERS",
+    }
     assert catalog["semantic_plan_decode_weight"]["category"] == "decode"
     assert catalog["context_backend"]["contexts_diverge"] is True
     assert catalog["context_backend"]["checkpoint_default"] == "scratch"
