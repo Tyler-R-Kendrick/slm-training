@@ -6223,3 +6223,13 @@ fidelity remained 1.0000, but structure fell to 0.6422 and recall to 0.6667.
 Reject 8/4 and retain 4/2; the remaining over-generation needs trained
 structural evidence rather than a larger decode bias. Full evidence:
 [lexer structural decode results](iter-e858-e859-lexer-structural-decode-20260722.md).
+
+# E860-E863 — root-arity warm start (2026-07-22)
+
+E860 failed closed before training because the lexer compiler mode was omitted.
+E861 correctly warm-started E852 for 120 local CPU steps with full-head
+root-reference arity supervision in 20.32 seconds. Matched decode weights 1/0
+both regressed strict meaning, fidelity, structure, and recall versus E853;
+weight 1 changed one choice but traded 0.0097 structure for 0.0833 fidelity.
+Reject the checkpoint: unfrozen continuation drift dominates the auxiliary
+signal. Full evidence: [root-arity warm start](iter-e860-e863-root-arity-warmstart-20260722.md).

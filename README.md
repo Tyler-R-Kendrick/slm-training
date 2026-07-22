@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E861 root-arity warm-start diagnostic | `e861-root-arity-warmstart120-r1/last.pt` | `outputs/runs/…` (local) | 120 steps / 20.32s; matched smoke root-arity weight 1 gives strict-v2 0.6667, fidelity 0.8333, structure 0.4850, AgentV 0/1 — rejected, not ship |
 | E856 two-action diagnostic | `e856-two-action-group-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 57.13s; smoke n=3 strict-v2 0.6667, structure 0.5500, recall 0.7500, AgentV 0/1 — rejected, not ship |
 | E852 surgical typed-collection baseline | `e852-e826-typed-supplement-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 70.15s; smoke n=3 parse/strict/fidelity 1.0, structure 0.6589, recall 0.7500, reward 0.9490, AgentV 0/1 — retained scratch baseline, not ship |
 | E848 repeated typed-collection diagnostic | `e848-repeated-typed-collections-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 69.88s; smoke n=3 parse/strict/fidelity 0.6667, structure 0.5300, reward 0.6327, one timeout, AgentV 0/1 — rejected, not ship |
