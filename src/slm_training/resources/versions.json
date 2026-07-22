@@ -156,13 +156,18 @@
       ]
     },
     "data.test_build": {
-      "version": "v2",
+      "version": "v3",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-22",
+          "note": "Assert the symbol-only output contract after test-target normalization and fail before artifacts when sanitization is disabled or falls back"
+        },
         {
           "version": "v2",
           "date": "2026-07-19",

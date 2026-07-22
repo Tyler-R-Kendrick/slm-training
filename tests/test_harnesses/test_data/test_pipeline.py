@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.dsl import bridge_available
+from slm_training.dsl.language_contract import output_contract_violations
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -64,6 +65,8 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
     out_dir = Path(result["output_dir"])
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["suite_counts"]["smoke"] == 1
+    assert manifest["version_stamp"]["components"] == {"data.test_build": "v3"}
+    assert result["stats"]["version_stamp"] == manifest["version_stamp"]
     assert (out_dir / "suites" / "smoke" / "records.jsonl").exists()
 
 
@@ -279,3 +282,63 @@ def test_test_builder_sanitizes_gold_with_shared_transform(tmp_path: Path) -> No
     ]
     assert '"column"' in off_records[0]["openui"]
     assert off["stats"]["sanitize"] == {"mode": "off"}
+
+
+def test_test_builder_templatizes_or_rejects_free_form_targets(tmp_path: Path) -> None:
+    seeds = tmp_path / "free_form_seeds.jsonl"
+    write_jsonl(
+        seeds,
+        [
+            ExampleRecord(
+                id="free_form_form",
+                prompt="Contact form.",
+                openui=(
+                    'root = Form("contact", actions, [])\n'
+                    'actions = Buttons([Button(":form.submit")])'
+                ),
+                split="held_out",
+                meta={"suite": "held_out"},
+            )
+        ],
+    )
+    result = build_test_data(
+        TestDataConfig(
+            seed_path=seeds,
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "eval",
+            version="enforced",
+            suites=("held_out",),
+            train_manifest=None,
+            require_train_manifest=False,
+        )
+    )
+    record = json.loads(
+        (
+            Path(result["output_dir"])
+            / "suites"
+            / "held_out"
+            / "records.jsonl"
+        ).read_text(encoding="utf-8")
+    )
+    assert output_contract_violations(record["openui"]) == ()
+    assert record["meta"]["sanitize"]["template_fills"] == {
+        ":root.name": "contact"
+    }
+
+    rejected_root = tmp_path / "eval_off"
+    with pytest.raises(ValueError, match="symbol-only output contract"):
+        build_test_data(
+            TestDataConfig(
+                seed_path=seeds,
+                rico_path=None,
+                source="fixture",
+                output_root=rejected_root,
+                version="off",
+                suites=("held_out",),
+                train_manifest=None,
+                require_train_manifest=False,
+                sanitize_mode="off",
+            )
+        )
+    assert not rejected_root.exists()
