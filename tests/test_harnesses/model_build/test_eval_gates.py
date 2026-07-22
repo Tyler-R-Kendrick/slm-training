@@ -420,6 +420,7 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     stamp = metrics["version_stamp"]
     assert stamp["stamp_schema"] == "version_stamp/v1"
     assert set(stamp["components"]) == {
+        "config.levers",
         "harness.model_build.eval",
         "evals.meaningful_program",
         "evals.scoring",
@@ -441,6 +442,7 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
     assert board["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+    assert "config.levers" in board["version_stamp"]["components"]
     assert "harness.model_build.eval" in board["version_stamp"]["components"]
     assert board["checkpoint"] is None
     assert board["checkpoint_sha256"] is None

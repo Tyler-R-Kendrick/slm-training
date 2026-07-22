@@ -39,6 +39,16 @@ from slm_training.versioning import component_version
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
+def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
+    components = (
+        "config.levers",
+        "harness.model_build.eval",
+        "evals.meaningful_program",
+        "evals.scoring",
+    )
+    return components + (("model.twotower",) if config.model_name == "twotower" else ())
+
+
 def _annotate_decode_trace_records(
     stats: object,
     records: list[ExampleRecord],
@@ -651,11 +661,7 @@ def evaluate(
         try:
             component_versions = {
                 cid: component_version(cid)
-                for cid in (
-                    "harness.model_build.eval",
-                    "evals.meaningful_program",
-                    "evals.scoring",
-                )
+                for cid in _evaluation_version_components(config)
             }
         except Exception:  # noqa: BLE001 - degrade gracefully if registry unavailable
             component_versions = {}
@@ -1306,14 +1312,9 @@ def evaluate(
     suite_path = run_dir / f"eval_{config.suite}.json"
     from slm_training.versioning import build_version_stamp
 
-    version_components = [
-        "harness.model_build.eval",
-        "evals.meaningful_program",
-        "evals.scoring",
-    ]
-    if config.model_name == "twotower":
-        version_components.append("model.twotower")
-    metrics["version_stamp"] = build_version_stamp(*version_components)
+    metrics["version_stamp"] = build_version_stamp(
+        *_evaluation_version_components(config)
+    )
     metrics["output"] = str(suite_path)
     if publish_agentv:
         if config.suite in DEFAULT_SHIP_GATES:
@@ -1397,16 +1398,7 @@ def evaluate_suites(
         "code_dirty": next(iter(board.values()), {}).get("code_dirty"),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
-        "version_stamp": build_version_stamp(
-            *(
-                [
-                    "harness.model_build.eval",
-                    "evals.meaningful_program",
-                    "evals.scoring",
-                ]
-                + (["model.twotower"] if config.model_name == "twotower" else [])
-            )
-        ),
+        "version_stamp": build_version_stamp(*_evaluation_version_components(config)),
     }
     # Ceiling + length-budget diagnostics ride with every board so a zero
     # scoreboard is attributable: harness/data breakage (ceiling < 1, budget

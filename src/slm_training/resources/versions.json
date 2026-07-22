@@ -2687,7 +2687,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v42",
+      "version": "v43",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2697,6 +2697,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v43",
+          "date": "2026-07-22",
+          "note": "Include the canonical lever-contract version in eval cache identity and every suite or scoreboard version stamp"
+        },
         {
           "version": "v42",
           "date": "2026-07-22",
