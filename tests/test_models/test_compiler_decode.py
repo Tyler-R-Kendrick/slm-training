@@ -2170,6 +2170,62 @@ def test_prompt_semantic_plan_ranks_lexer_tree_paths() -> None:
     assert covered == Counter({card: 1})
 
 
+def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
+    monkeypatch,
+) -> None:
+    model = _model(semantic_plan_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode(
+            "root = Stack([b1])\nb1 = Card([", add_special=False
+        ),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    card_id = tokenizer.token_to_id["Card"]
+    close_id = tokenizer.token_to_id["]"]
+    stack_id = tokenizer.token_to_id["Stack"]
+    model._semantic_plan_action_counts = [{card_id: 1}]
+    model._slot_contracts = [[":hero.title"]]
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        prefix,
+        (close_id, stack_id),
+        torch.tensor([8.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 9.0]
+
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [8.0 if token_id == close_id else 1.0 for token_id in candidate_ids]
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["Card layout."])
+    paths = (
+        CompletionPath((close_id,), "literal"),
+        CompletionPath((stack_id, tokenizer.token_to_id["("]), "component"),
+    )
+    selected = model._select_compiler_path(
+        prefix,
+        paths,
+        ctx,
+        ctx_pad,
+        32,
+        tree=True,
+        state=state,
+    )
+
+    assert selected == paths[1].token_ids
+
+
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

@@ -7028,13 +7028,81 @@ class TwoTowerModel(nn.Module):
             )
             or 0.0
         )
+        from slm_training.models.choice_tokenizer import is_choice_tokenizer
+
+        choice_codec = is_choice_tokenizer(self.tokenizer)
+        if not choice_codec:
+            margin = max(
+                margin,
+                float(
+                    getattr(self.config, "semantic_plan_margin_decode_weight", 0.0)
+                    or 0.0
+                ),
+            )
         frames = list(getattr(state, "frames", ()))
         slot_contract = (
             self._slot_contracts[row]
             if self._slot_contracts and row < len(self._slot_contracts)
             else None
         )
-        if max(margin, typed_margin) <= 0.0 or len(frames) < 2 or not slot_contract:
+        if max(margin, typed_margin) <= 0.0 or not slot_contract:
+            return None
+        if not choice_codec:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+            from slm_training.dsl.lang_core import library_schema
+
+            active = _active_call(getattr(state, "engine", state))
+            if active is None or not prefix:
+                return None
+            component, index, _ = active
+            definition = library_schema().get("$defs", {}).get(component) or {}
+            properties = list((definition.get("properties") or {}).values())
+            schema = properties[index] if index < len(properties) else {}
+            if (
+                prefix[-1] != self.tokenizer.token_to_id.get("[")
+                or schema.get("type") != "array"
+                or not isinstance(schema.get("items"), dict)
+                or not self._schema_can_reach_visible_slot(dict(schema["items"]))
+            ):
+                return None
+            family_id = next(
+                (
+                    token_id
+                    for token_id in self._component_inventory_token_ids()
+                    if str(self.tokenizer.id_to_token.get(token_id, ""))
+                    .removeprefix("COMP:")
+                    .removeprefix("+")
+                    == component
+                ),
+                None,
+            )
+            if (
+                family_id is None
+                or not self._semantic_plan_action_counts
+                or row >= len(self._semantic_plan_action_counts)
+                or self._semantic_plan_action_counts[row].get(family_id, 0) <= 0
+            ):
+                return None
+            close_id = self.tokenizer.token_to_id.get("]")
+            if close_id not in candidate_ids:
+                return None
+            targets = [
+                position
+                for position, token_id in enumerate(candidate_ids)
+                if token_id != close_id
+            ]
+            if not targets:
+                return None
+            target = max(targets, key=lambda position: float(scores[position].item()))
+            bias = scores.new_zeros(len(candidate_ids))
+            bias[target] = max(
+                0.0,
+                float(scores.max().item())
+                + max(margin, typed_margin)
+                - float(scores[target].item()),
+            )
+            return bias
+        if len(frames) < 2:
             return None
         frame = frames[-1]
         schemas = tuple(getattr(frame, "schemas", ()))
@@ -8473,6 +8541,11 @@ class TwoTowerModel(nn.Module):
                     stats.semantic_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_semantic_plan
                     )
+            nonempty_bias = self._semantic_plan_typed_array_nonempty_bias(
+                plan_row, state, prefix, candidates, scores
+            )
+            if nonempty_bias is not None:
+                scores = scores + nonempty_bias
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -8640,6 +8713,11 @@ class TwoTowerModel(nn.Module):
                             stats.semantic_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_semantic_plan
                             )
+                    nonempty_bias = self._semantic_plan_typed_array_nonempty_bias(
+                        plan_row, state, prefix, candidate_ids, scores
+                    )
+                    if nonempty_bias is not None:
+                        scores = scores + nonempty_bias
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())

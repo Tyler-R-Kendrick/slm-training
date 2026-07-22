@@ -67,6 +67,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     assert catalog["semantic_plan_margin_decode_weight"][
         "supported_configurations"
     ] == catalog["semantic_plan_decode_weight"]["supported_configurations"]
+    assert catalog["semantic_plan_typed_array_nonempty_margin_decode_weight"][
+        "supported_configurations"
+    ] == catalog["semantic_plan_decode_weight"]["supported_configurations"]
     assert catalog["binder_arity_decode_weight"]["supported_configurations"] == [
         {
             "model_name": "twotower",
