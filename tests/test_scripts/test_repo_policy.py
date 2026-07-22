@@ -96,7 +96,8 @@ def test_vercel_policy_is_generated_from_canonical_run_levers(tmp_path: Path) ->
     levers.write_text(
         "MAX_RUN_MINUTES: Final = 2\n"
         "VERCEL_FUNCTION_INCLUDE_FILES: Final = "
-        "('docs/design/**', 'docs/MODEL_CARD.md')\n",
+        "('docs/design/**', 'docs/MODEL_CARD.md')\n"
+        "VERCEL_FUNCTION_EXCLUDE_FILES: Final = ('outputs/**', 'tests/**')\n",
         encoding="utf-8",
     )
     config = tmp_path / "vercel.json"
@@ -106,13 +107,14 @@ def test_vercel_policy_is_generated_from_canonical_run_levers(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    assert len(validate_vercel_run_policy(root=tmp_path)) == 2
+    assert len(validate_vercel_run_policy(root=tmp_path)) == 3
     assert sync_run_policy(root=tmp_path) == [config]
     assert validate_vercel_run_policy(root=tmp_path) == []
     generated = json.loads(config.read_text(encoding="utf-8"))
     function = generated["functions"]["src/slm_training/web/vercel.py"]
     assert function["maxDuration"] == 120
     assert function["includeFiles"] == "{docs/design/**,docs/MODEL_CARD.md}"
+    assert function["excludeFiles"] == "{outputs/**,tests/**}"
 
 
 def test_former_root_buckets_cannot_return() -> None:

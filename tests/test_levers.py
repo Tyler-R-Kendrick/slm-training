@@ -20,6 +20,7 @@ from slm_training.levers import (
     MAX_RUN_MINUTES,
     MAX_HARNESS_WALL_MINUTES,
     VERCEL_FUNCTION_INCLUDE_FILES,
+    VERCEL_FUNCTION_EXCLUDE_FILES,
     MAX_RUN_SECONDS,
     PROHIBITED_TEMPLATE_SEMANTIC_LEVERS,
     STRICT_COMPILER_TREE_POLICY,
@@ -40,6 +41,9 @@ def test_run_policy_is_derived_from_one_value() -> None:
         == INTERRUPT_AFTER_SECONDS
     )
     assert "docs/design/**" in VERCEL_FUNCTION_INCLUDE_FILES
+    assert "src/slm_training/resources/data/train/e214_schema_role_judge_v3/**" in (
+        VERCEL_FUNCTION_EXCLUDE_FILES
+    )
     config = ModelBuildConfig(train_dir=Path("outputs/data/train"))
     assert config.output_tokenizer == DEFAULT_OUTPUT_TOKENIZER == "lexer"
     assert config.decode_timeout_seconds == DEFAULT_DECODE_TIMEOUT_SECONDS == 12.0

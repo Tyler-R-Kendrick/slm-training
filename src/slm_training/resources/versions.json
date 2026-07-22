@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v26",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v27",
+          "date": "2026-07-22",
+          "note": "Centralize Vercel bundle exclusions and omit superseded semantic/schema-role training corpora from the deployed runtime"
+        },
         {
           "version": "v26",
           "date": "2026-07-22",

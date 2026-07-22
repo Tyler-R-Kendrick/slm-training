@@ -79,26 +79,40 @@ def canonical_run_minutes(*, root: Path = ROOT) -> int:
     raise ValueError(f"MAX_RUN_MINUTES must be an integer literal in {path}")
 
 
-def canonical_vercel_include_files(*, root: Path = ROOT) -> tuple[str, ...]:
-    """Read the deployment evidence contract from the canonical lever module."""
+def _canonical_string_tuple(name: str, *, root: Path = ROOT) -> tuple[str, ...]:
+    """Read one deployment tuple without importing the package."""
     path = root / "src/slm_training/levers.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in tree.body:
         if (
             isinstance(node, ast.AnnAssign)
             and isinstance(node.target, ast.Name)
-            and node.target.id == "VERCEL_FUNCTION_INCLUDE_FILES"
+            and node.target.id == name
         ):
             value = ast.literal_eval(node.value)
             if isinstance(value, tuple) and all(isinstance(item, str) for item in value):
                 return value
     raise ValueError(
-        f"VERCEL_FUNCTION_INCLUDE_FILES must be a string tuple literal in {path}"
+        f"{name} must be a string tuple literal in {path}"
     )
+
+
+def canonical_vercel_include_files(*, root: Path = ROOT) -> tuple[str, ...]:
+    """Read the deployment evidence contract from the canonical lever module."""
+    return _canonical_string_tuple("VERCEL_FUNCTION_INCLUDE_FILES", root=root)
+
+
+def canonical_vercel_exclude_files(*, root: Path = ROOT) -> tuple[str, ...]:
+    """Read the deployment exclusion contract from the canonical lever module."""
+    return _canonical_string_tuple("VERCEL_FUNCTION_EXCLUDE_FILES", root=root)
 
 
 def _vercel_include_glob(*, root: Path = ROOT) -> str:
     return "{" + ",".join(canonical_vercel_include_files(root=root)) + "}"
+
+
+def _vercel_exclude_glob(*, root: Path = ROOT) -> str:
+    return "{" + ",".join(canonical_vercel_exclude_files(root=root)) + "}"
 
 
 def validate_top_level(paths: Iterable[str]) -> list[str]:
@@ -233,6 +247,7 @@ def validate_vercel_run_policy(*, root: Path = ROOT) -> list[str]:
     config = payload.get("functions", {}).get("src/slm_training/web/vercel.py", {})
     expected_seconds = canonical_run_minutes(root=root) * 60
     expected_files = _vercel_include_glob(root=root)
+    expected_excludes = _vercel_exclude_glob(root=root)
     errors: list[str] = []
     if config.get("maxDuration") != expected_seconds:
         errors.append(
@@ -242,6 +257,11 @@ def validate_vercel_run_policy(*, root: Path = ROOT) -> list[str]:
     if config.get("includeFiles") != expected_files:
         errors.append(
             "Vercel bundle omits canonical committed evidence; run "
+            "`python -m scripts.repo_policy --sync-run-policy`"
+        )
+    if config.get("excludeFiles") != expected_excludes:
+        errors.append(
+            "Vercel bundle exclusions differ from canonical levers; run "
             "`python -m scripts.repo_policy --sync-run-policy`"
         )
     return errors
@@ -259,6 +279,7 @@ def sync_run_policy(*, root: Path = ROOT) -> list[Path]:
     )
     config["maxDuration"] = canonical_run_minutes(root=root) * 60
     config["includeFiles"] = _vercel_include_glob(root=root)
+    config["excludeFiles"] = _vercel_exclude_glob(root=root)
     before = path.read_text(encoding="utf-8")
     after = json.dumps(payload, indent=2) + "\n"
     if after != before:
