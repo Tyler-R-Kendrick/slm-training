@@ -406,12 +406,8 @@ def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
         text = tok.decode(ids, table=table)
         for ph in placeholders:
             assert f'"{ph}"' in text
-        assert (
-            "Stack" in text
-            or "Card" in text
-            or "TextContent" in text
-            or "Button" in text
-        )
+        assert text.strip()
+        assert not output_contract_violations(text)
 
 
 def test_canonicalize_is_idempotent_per_example(tok: DSLNativeTokenizer) -> None:

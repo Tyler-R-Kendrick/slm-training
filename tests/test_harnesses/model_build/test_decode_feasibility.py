@@ -40,11 +40,11 @@ def test_decode_feasibility_fails_at_cap_64(tmp_path: Path) -> None:
     suite_dir.mkdir(parents=True)
     long_prog = (
         'root = Stack([a, b, c], "column")\n'
-        'a = TextContent(":a")\n'
-        'b = TextContent(":b")\n'
+        'a = TextContent(":slot_0")\n'
+        'b = TextContent(":slot_1")\n'
         'c = Card([x, y])\n'
-        'x = TextContent(":x")\n'
-        'y = Button(":y")\n'
+        'x = TextContent(":slot_2")\n'
+        'y = Button(":slot_3")\n'
     )
     write_jsonl(
         suite_dir / "records.jsonl",
@@ -54,7 +54,7 @@ def test_decode_feasibility_fails_at_cap_64(tmp_path: Path) -> None:
                 prompt="long",
                 openui=long_prog,
                 split="held_out",
-                placeholders=[":a", ":b", ":x", ":y"],
+                placeholders=[":slot_0", ":slot_1", ":slot_2", ":slot_3"],
             )
         ],
     )
@@ -69,12 +69,12 @@ def test_pick_constrained_token_admits_placeholder_subtokens() -> None:
     from slm_training.models.grammar import pick_constrained_token
     from slm_training.models.tokenizer import quoted_placeholder_tokens
 
-    text = 'hero = TextContent(":smoke.hero.title")\n'
+    text = 'hero = TextContent(":slot_0")\n'
     tokenizer = OpenUITokenizer.build([text])
     prefix = tokenizer.encode("hero = TextContent(", add_special=False)
     ph_ids = [
         tokenizer.token_to_id[t]
-        for t in quoted_placeholder_tokens(":smoke.hero.title")
+        for t in quoted_placeholder_tokens(":slot_0")
     ]
     for i, target_id in enumerate(ph_ids):
         logits = torch.zeros(tokenizer.vocab_size)
@@ -96,7 +96,7 @@ def test_pick_constrained_token_admits_placeholder_subtokens() -> None:
 def test_stream_probe_accepts_closing_bracket() -> None:
     from slm_training.models.grammar import _stream_probe_ok
 
-    src = 'root = Stack([cta], "column")\ncta = Button(":cta")\n'
+    src = 'root = Stack([cta], "column")\ncta = Button(":slot_0")\n'
     tokenizer = OpenUITokenizer.build([src])
     ids = tokenizer.encode(src, add_special=False)
     # Find a closing paren in the gold sequence.

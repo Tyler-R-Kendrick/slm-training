@@ -6233,3 +6233,14 @@ both regressed strict meaning, fidelity, structure, and recall versus E853;
 weight 1 changed one choice but traded 0.0097 structure for 0.0833 fidelity.
 Reject the checkpoint: unfrozen continuation drift dominates the auxiliary
 signal. Full evidence: [root-arity warm start](iter-e860-e863-root-arity-warmstart-20260722.md).
+
+## Opaque-marker ownership correction (2026-07-22)
+
+Template-marker conversion is a harness and dataset responsibility, never a
+model objective. The centralized lever policy now rejects namespace
+augmentation, the train/eval CLIs and dashboard job builder no longer expose
+semantic marker controls, and the active V2 quality matrix no longer offers
+the historical E14 namespace arm. Model-build and dataset tests use canonical
+contiguous `:slot_N` fixtures; deliberately invalid named-marker cases remain
+only where rejection itself is under test. No training or evaluation was run
+for this policy correction.

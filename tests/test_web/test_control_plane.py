@@ -497,114 +497,21 @@ def test_e533_visible_role_inference_run_is_persisted() -> None:
     assert detail["scoreboard"]["suites"]["ood"]["n"] == 4
 
 
-def test_e534_visible_role_decode_bias_run_is_persisted() -> None:
+def test_prohibited_semantic_marker_runs_are_not_active() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
-    run_id = "e534-e531-ood160-visible-role-bias4-r2"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
-    assert listed["pass"] is False
-    detail = readers.run(run_id)
-    assert set(detail["scoreboard"]["suites"]) == {"ood"}
-    assert detail["scoreboard"]["suites"]["ood"]["n"] == 4
-    assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
-
-
-def test_e535_visible_reference_completeness_run_is_persisted() -> None:
-    root = Path(__file__).parents[2]
-    readers = Readers(root)
-    run_id = "e535-e531-ood160-visible-role4-reference4-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
-    assert listed["pass"] is False
-    detail = readers.run(run_id)
-    ood = detail["scoreboard"]["suites"]["ood"]
-    assert ood["n"] == 4
-    assert ood["visible_reference_applications"] == 0
-    assert ood["ref_graph_exact"] == 0.0
-
-
-def test_e536_choice_decision_evidence_run_is_persisted() -> None:
-    root = Path(__file__).parents[2]
-    readers = Readers(root)
-    run_id = "e536-e531-ood160-choice-evidence-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
-    assert listed["pass"] is False
-    detail = readers.run(run_id)
-    ood = detail["scoreboard"]["suites"]["ood"]
-    assert ood["n"] == 4
-    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v1"]
-    assert detail["scoreboard"]["agentv"]["passed"] == 0
-
-
-def test_e538_role_plan_composition_run_is_persisted() -> None:
-    root = Path(__file__).parents[2]
-    readers = Readers(root)
-    run_id = "e538-e531-ood160-role4-plan4-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
-    assert listed["pass"] is False
-    detail = readers.run(run_id)
-    ood = detail["scoreboard"]["suites"]["ood"]
-    assert ood["n"] == 4
-    assert ood["meaningful_program_rate"] == 0.0
-    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v1"]
-    assert detail["scoreboard"]["agentv"]["passed"] == 0
-
-
-def test_e539_structural_reference_runs_are_persisted() -> None:
-    root = Path(__file__).parents[2]
-    readers = Readers(root)
-    runs = {row.get("run_id"): row for row in readers.runs()["runs"]}
-    control_id = "e539-control-e531-ood160-role4-reference0-r1"
-    intervention_id = "e539-e531-ood160-role4-structural-reference4-r1"
-    assert runs[control_id]["pass"] is False
-    assert runs[intervention_id]["pass"] is False
-
-    control = readers.run(control_id)["scoreboard"]["suites"]["ood"]
-    intervention = readers.run(intervention_id)
-    ood = intervention["scoreboard"]["suites"]["ood"]
-    assert control["n"] == ood["n"] == 4
-    assert control["placeholder_fidelity"] == 0.3833333333333333
-    assert ood["placeholder_fidelity"] == 0.4666666666666667
-    assert intervention["scoreboard"]["agentv"]["passed"] == 0
-
-
-def test_e540_reference_phase_telemetry_run_is_persisted() -> None:
-    root = Path(__file__).parents[2]
-    readers = Readers(root)
-    run_id = "e540-e531-ood160-role4-reference4-phase-trace-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
-    assert listed["pass"] is False
-    detail = readers.run(run_id)
-    ood = detail["scoreboard"]["suites"]["ood"]
-    assert ood["n"] == 4
-    assert ood["placeholder_fidelity"] == 0.4666666666666667
-    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v2"]
-    assert detail["scoreboard"]["agentv"]["passed"] == 0
-
-
-def test_e541_root_reference_run_is_persisted() -> None:
-    root = Path(__file__).parents[2]
-    readers = Readers(root)
-    run_id = "e541-e531-ood160-role4-root-reference4-r1"
-    listed = next(
-        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
-    )
-    assert listed["pass"] is False
-    detail = readers.run(run_id)
-    ood = detail["scoreboard"]["suites"]["ood"]
-    assert ood["n"] == 4
-    assert ood["placeholder_fidelity"] == 0.3833333333333333
-    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v2"]
-    assert detail["scoreboard"]["agentv"]["passed"] == 0
+    active = {row.get("run_id") for row in readers.runs()["runs"]}
+    prohibited = {
+        "e534-e531-ood160-visible-role-bias4-r2",
+        "e535-e531-ood160-visible-role4-reference4-r1",
+        "e536-e531-ood160-choice-evidence-r1",
+        "e538-e531-ood160-role4-plan4-r1",
+        "e539-control-e531-ood160-role4-reference0-r1",
+        "e539-e531-ood160-role4-structural-reference4-r1",
+        "e540-e531-ood160-role4-reference4-phase-trace-r1",
+        "e541-e531-ood160-role4-root-reference4-r1",
+    }
+    assert active.isdisjoint(prohibited)
 
 
 def test_e544_root_identity_run_and_checkpoint_are_persisted(
@@ -3073,7 +2980,6 @@ def test_train_data_job_renders_existing_derivative_controls() -> None:
             "base_version": "v1",
             "version": "v1-derived",
             "synthesizer": "layout",
-            "namespace_augment": True,
             "edit_derivatives": False,
             "repairs_per_program": 0,
         }
@@ -3081,7 +2987,7 @@ def test_train_data_job_renders_existing_derivative_controls() -> None:
     assert ["--derive-from", "outputs/data/train/v1/records.jsonl"] == argv[
         argv.index("--derive-from") : argv.index("--derive-from") + 2
     ]
-    assert "--namespace-augment" in argv
+    assert "--namespace-augment" not in argv
     assert "--no-edit-derivatives" in argv
 
 

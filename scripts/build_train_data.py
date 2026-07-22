@@ -241,11 +241,6 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
-        "--namespace-augment",
-        action="store_true",
-        help="Emit namespace-augmented train variants (:acme.* re-prefix).",
-    )
-    parser.add_argument(
         "--prompt-slot-contract",
         action="store_true",
         help="Append each record's declared placeholder inventory to its prompt.",
@@ -260,14 +255,6 @@ def main(argv: list[str] | None = None) -> int:
         choices=("counts", "types"),
         default="counts",
         help="Expose exact component counts (default) or component types only.",
-    )
-    parser.add_argument(
-        "--prompt-semantic-role-contract",
-        action="store_true",
-        help=(
-            "Group visible slots by semantic namespace and annotate compatible "
-            "owners from the visible component types; requires both prompt contracts."
-        ),
     )
     parser.add_argument(
         "--sanitize-mode",
@@ -418,11 +405,9 @@ def main(argv: list[str] | None = None) -> int:
         max_openui_chars=args.max_openui_chars,
         max_components=args.max_components,
         curriculum=args.curriculum,
-        namespace_augment=args.namespace_augment,
         prompt_slot_contract=args.prompt_slot_contract,
         prompt_component_contract=args.prompt_component_contract,
         prompt_component_contract_mode=args.prompt_component_contract_mode,
-        prompt_semantic_role_contract=args.prompt_semantic_role_contract,
         sanitize_mode=args.sanitize_mode,
         max_records_per_parent=args.max_records_per_parent,
         fuzzy_dedup=bool(args.fuzzy_dedup),

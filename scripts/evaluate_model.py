@@ -214,23 +214,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's slot-to-component role bias.",
     )
     parser.add_argument(
-        "--semantic-role-decode-weight",
-        type=float,
-        default=None,
-        help="Bias legal component choices using only visible semantic-role candidates.",
-    )
-    parser.add_argument(
-        "--semantic-role-schema-candidates",
-        action="store_true",
-        help="Derive legal component candidates from visible slot roles and the public schema.",
-    )
-    parser.add_argument(
-        "--slot-coverage-close-decode-weight",
-        type=float,
-        default=None,
-        help="Prefer role-compatible visible-slot coverage before legal frame closure.",
-    )
-    parser.add_argument(
         "--schema-value-decode-weight",
         type=float,
         default=None,
@@ -262,12 +245,6 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="Prefer legal closure at optional unconstrained arguments.",
-    )
-    parser.add_argument(
-        "--schema-role-slot-decode-weight",
-        type=float,
-        default=None,
-        help="Prefer visible slots compatible with the active content property owner.",
     )
     parser.add_argument(
         "--required-slot-margin-decode-weight",
@@ -322,12 +299,6 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="Close nested arrays after one item inside repeated plan families.",
-    )
-    parser.add_argument(
-        "--semantic-plan-repeated-slot-margin-decode-weight",
-        type=float,
-        default=None,
-        help="Floor the best unused visible slot inside repeated plan instances.",
     )
     parser.add_argument(
         "--semantic-plan-typed-array-nonempty-margin-decode-weight",
@@ -420,14 +391,6 @@ def main(argv: list[str] | None = None) -> int:
         "--slot-contract-in-context",
         action="store_true",
         help="Override: inject placeholder inventory (SLOT_CONTRACT) into context.",
-    )
-    parser.add_argument(
-        "--semantic-role-contract-in-context",
-        action="store_true",
-        help=(
-            "Normalize prompt-mentioned components and visible slots into the "
-            "semantic-role contract used by E530 training."
-        ),
     )
     parser.add_argument(
         "--slot-contract-constrained-decode",
@@ -677,7 +640,6 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
-        semantic_role_contract_in_context=(args.semantic_role_contract_in_context),
         slot_contract_constrained_decode=(
             args.slot_contract_constrained_decode or args.ship_gates
         ),
@@ -707,15 +669,11 @@ def main(argv: list[str] | None = None) -> int:
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
-        semantic_role_decode_weight=args.semantic_role_decode_weight,
-        semantic_role_schema_candidates=args.semantic_role_schema_candidates,
-        slot_coverage_close_decode_weight=args.slot_coverage_close_decode_weight,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
         schema_open_decode_weight=args.schema_open_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
-        schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
         required_slot_margin_decode_weight=(args.required_slot_margin_decode_weight),
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         semantic_plan_margin_decode_weight=(args.semantic_plan_margin_decode_weight),
@@ -728,9 +686,6 @@ def main(argv: list[str] | None = None) -> int:
         ),
         semantic_plan_repeated_array_close_margin_decode_weight=(
             args.semantic_plan_repeated_array_close_margin_decode_weight
-        ),
-        semantic_plan_repeated_slot_margin_decode_weight=(
-            args.semantic_plan_repeated_slot_margin_decode_weight
         ),
         semantic_plan_typed_array_nonempty_margin_decode_weight=(
             args.semantic_plan_typed_array_nonempty_margin_decode_weight

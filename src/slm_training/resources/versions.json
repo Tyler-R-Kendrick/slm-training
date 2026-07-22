@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-22",
+          "note": "Prohibit namespace augmentation so opaque marker canonicalization remains exclusively harness-owned"
+        },
         {
           "version": "v23",
           "date": "2026-07-22",
@@ -2783,7 +2788,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v49",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2794,6 +2799,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-22",
+          "note": "Remove prohibited semantic template-label controls from the evaluation CLI"
+        },
         {
           "version": "v49",
           "date": "2026-07-22",
@@ -3426,7 +3436,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3437,6 +3447,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-22",
+          "note": "Remove namespace augmentation from the canonical train-data CLI"
+        },
         {
           "version": "v20",
           "date": "2026-07-22",
@@ -3694,12 +3709,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v6",
+      "version": "v7",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-22",
+          "note": "Remove the prohibited semantic namespace augmentation arm and its data build path"
+        },
         {
           "version": "v6",
           "date": "2026-07-22",

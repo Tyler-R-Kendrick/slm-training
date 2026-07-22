@@ -68,6 +68,7 @@ STRICT_COMPILER_TREE_POLICY: Final = {
     "compiler_decode_mode": "tree",
 }
 PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
+    "namespace_augment": "renames opaque markers into user-defined namespaces",
     "prompt_semantic_role_contract": "adds user-defined marker labels to training prompts",
     "semantic_role_contract_in_context": "exposes user-defined marker labels",
     "semantic_role_decode_weight": "scores user-defined marker labels",
@@ -375,6 +376,18 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
                 checkpoint_defaults[item.name]
             )
             catalog[item.name]["contexts_diverge"] = True
+    for name, reason in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS.items():
+        catalog.setdefault(
+            name,
+            {
+                "category": "data",
+                "default": False,
+                "type": "bool",
+                "source": "slm_training.levers.PROHIBITED_TEMPLATE_SEMANTIC_LEVERS",
+                "prohibited": True,
+                "prohibited_reason": reason,
+            },
+        )
     catalog["max_wall_minutes"].update(
         {
             "default": MAX_HARNESS_WALL_MINUTES,

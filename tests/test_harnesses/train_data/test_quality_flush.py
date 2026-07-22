@@ -294,12 +294,12 @@ def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
     record = ExampleRecord(
         id="normalize-slider-schema",
         prompt="Build a Slider component.",
-        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":label")',
-        placeholders=[":label"],
+        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":slot_0")',
+        placeholders=[":slot_0"],
         design_md="# Design\n",
     )
     normalized = _normalize_record(record, sanitize=SanitizeOptions(mode="enforce"))
-    assert 'Slider(":root.name", "continuous", 0, 100, 1, [40], ":label")' in (
+    assert 'Slider(":slot_0", "continuous", 0, 100, 1, [40], ":slot_1")' in (
         normalized.openui
     )
     assert independent_judge(normalized)["ok"]

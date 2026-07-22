@@ -25,6 +25,7 @@ from slm_training.levers import (
     TRAINED_DECODE_REQUIREMENTS,
     lever_catalog,
     missing_lever_companions,
+    require_valid_lever_configuration,
     untrained_decode_levers,
 )
 
@@ -195,6 +196,14 @@ def test_template_semantic_role_recipe_is_prohibited() -> None:
     catalog = lever_catalog()
     assert catalog["semantic_role_decode_weight"]["prohibited"] is True
     assert catalog["template_markers_are_opaque"]["default"] is True
+
+
+def test_namespace_augmentation_is_prohibited() -> None:
+    with pytest.raises(ValueError, match="namespace_augment is prohibited"):
+        require_valid_lever_configuration(
+            SimpleNamespace(namespace_augment=True), context="data"
+        )
+    assert lever_catalog()["namespace_augment"]["prohibited"] is True
 
 
 def test_symbol_anonymization_cannot_be_disabled() -> None:

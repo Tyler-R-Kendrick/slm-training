@@ -16,11 +16,11 @@ from slm_training.runtime.telemetry import run_trace
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 @pytest.fixture()
@@ -35,14 +35,14 @@ def train_dir(tmp_path: Path) -> Path:
                 prompt="Hero",
                 openui=HERO,
                 split="train",
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
             ),
             ExampleRecord(
                 id="b",
                 prompt="CTA",
                 openui=CTA,
                 split="train",
-                placeholders=[":cta.label"],
+                placeholders=[":slot_0"],
             ),
         ],
     )
