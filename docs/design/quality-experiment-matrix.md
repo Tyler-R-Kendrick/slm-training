@@ -5803,3 +5803,26 @@ checkpoint was created or synced.
 
 Evidence: [JSON](iter-e744-schema-wide-role-candidates-20260722.json) and
 [notes](iter-e744-schema-wide-role-candidates-20260722.md).
+
+## E745 lexer bound-role continuation
+
+E745 extends the existing schema-role scorer across the lexer compiler's
+comma/close representation boundary. When the next optional official schema
+property owns a still-missing bound role, restricted and tree decoding now
+continue the call instead of closing it and later emitting another component.
+No new lever or free-form target path was added.
+
+The code-only local CPU smoke replay (`n=3`, unchanged E735 checkpoint) uses
+E744's accepted configuration byte-for-byte. The hero becomes one
+`CardHeader(title, subtitle)` plus one kicker and body; role mismatch,
+duplicate-subtree spam, and placeholder spam disappear. Structure rises
+0.7535→0.8308, emitted tokens fall 77→64, and p95 falls 4074→2551 ms while
+parse, meaning-v1, fidelity, validity, recall, and reward hold.
+
+Retain v210, but do not promote: every remaining strict-v2 result is
+`required_inventory_unknown`, coverage is zero, and AgentV remains 0/1. The
+next target is evaluator coverage from declared runtime symbols. No checkpoint
+was created or synced.
+
+Evidence: [JSON](iter-e745-lexer-bound-role-continuation-20260722.json) and
+[notes](iter-e745-lexer-bound-role-continuation-20260722.md).
