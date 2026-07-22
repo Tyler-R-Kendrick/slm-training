@@ -5,6 +5,7 @@ from scripts.repo_policy import (
     MAX_PUBLISHED_DATA_BYTES,
     pre_tool_decision,
     raw_mv_paths,
+    sync_workflow_timeouts,
     validate_new_design_record_paths,
     validate_skill_mirrors,
     validate_top_level,
@@ -56,17 +57,34 @@ def test_top_level_allowlist_rejects_sprawl() -> None:
     ]
 
 
-def test_workflows_require_three_minute_timeout(tmp_path: Path) -> None:
+def test_workflows_require_and_sync_canonical_timeout(tmp_path: Path) -> None:
+    levers = tmp_path / "src/slm_training/levers.py"
+    levers.parent.mkdir(parents=True)
+    levers.write_text("MAX_RUN_MINUTES: Final = 2\n", encoding="utf-8")
     workflows = tmp_path / ".github/workflows"
     workflows.mkdir(parents=True)
     workflow = workflows / "ci.yml"
     workflow.write_text("jobs:\n  test:\n    timeout-minutes: 3\n", encoding="utf-8")
+    assert validate_workflow_timeouts(root=tmp_path) == [
+        "workflow timeout differs from canonical 2-minute cap: "
+        ".github/workflows/ci.yml#test; run `python -m scripts.repo_policy "
+        "--sync-workflow-timeouts`"
+    ]
+
+    assert sync_workflow_timeouts(root=tmp_path) == [workflow]
+    assert workflow.read_text(encoding="utf-8") == (
+        "jobs:\n  test:\n    timeout-minutes: 2\n"
+    )
     assert validate_workflow_timeouts(root=tmp_path) == []
 
-    workflow.write_text("jobs:\n  test:\n    timeout-minutes: 30\n", encoding="utf-8")
+    workflow.write_text("jobs:\n  test:\n    runs-on: ubuntu-latest\n", encoding="utf-8")
     assert validate_workflow_timeouts(root=tmp_path) == [
-        "workflow exceeds three-minute timeout: .github/workflows/ci.yml"
+        "workflow job lacks canonical run timeout: .github/workflows/ci.yml#test"
     ]
+    assert sync_workflow_timeouts(root=tmp_path) == [workflow]
+    assert workflow.read_text(encoding="utf-8") == (
+        "jobs:\n  test:\n    timeout-minutes: 2\n    runs-on: ubuntu-latest\n"
+    )
 
 
 def test_former_root_buckets_cannot_return() -> None:
