@@ -6387,3 +6387,17 @@ unchanged from E893. Retain cap 192 as the best bounded E891 diagnostic recipe,
 without changing the global default or claiming ship readiness; AgentV is 0/3.
 Full evidence:
 [canvas-cap results](iter-e904-e907-e891-canvas-cap-20260722.md).
+
+# E908-E915 — lexer typed-array item margin (2026-07-22)
+
+E908's hard unresolved-binder exclusion and E913/E915's explicit typed-item
+margin double strict-v2 0.2→0.4 by making the compact settings row correct, but
+they collapse form, dual-card, and tabs to semantically invalid minimal
+fallbacks. Against the matched E914 control, E915 raises structure
+0.2945→0.3406 and recall 0.4476→0.5619 but lowers fidelity 0.5133→0.5019 and
+marks all five rows as fallbacks. The valid compact settings/input rows retain
+fidelity and recall 1.0; low aggregate scores come from omitted required
+placeholders/components, not minification. Retain the lexer capability default
+off, reject the E891 treatment, and keep E906 as the best diagnostic recipe.
+AgentV is 0/8. Full evidence:
+[typed-item results](iter-e908-e915-typed-array-item-margin-20260722.md).
