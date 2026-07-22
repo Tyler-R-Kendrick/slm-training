@@ -3205,6 +3205,25 @@ def test_semantic_plan_role_obligations_keep_reachable_roles_nested() -> None:
     }
 
 
+def test_semantic_plan_role_obligations_do_not_add_reachable_joint_carrier() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 5}),
+        {
+            ":cards.title": ("Callout", "TextContent"),
+            ":cards.body": ("Callout", "TextContent"),
+        },
+        {
+            ":cards.title": ("Card", "Callout", "TextContent"),
+            ":cards.body": ("Card", "Callout", "TextContent"),
+        },
+    )
+
+    assert counts == Counter({"Card": 5})
+    assert bindings == {
+        "TextContent": (":cards.title", ":cards.body"),
+    }
+
+
 def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     from types import SimpleNamespace
 

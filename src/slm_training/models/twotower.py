@@ -5353,7 +5353,10 @@ class TwoTowerModel(nn.Module):
                 if index == len(slots):
                     return True
                 slot = slots[index]
-                for family in sorted(planned.intersection(role_candidates[slot])):
+                compatible = set(role_candidates[slot]) | set(
+                    (reachable_role_candidates or {}).get(slot, ())
+                )
+                for family in sorted(planned.intersection(compatible)):
                     assigned = trial.setdefault(family, [])
                     if not TwoTowerModel._semantic_role_family_has_capacity(
                         family,

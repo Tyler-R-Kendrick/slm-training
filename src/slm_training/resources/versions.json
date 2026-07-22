@@ -3819,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v211",
+      "version": "v212",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3841,6 +3841,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v212",
+          "date": "2026-07-22",
+          "note": "Treat planned container families as satisfying joint semantic roles reachable through their schema descendants"
+        },
         {
           "version": "v211",
           "date": "2026-07-22",
