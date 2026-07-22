@@ -28,16 +28,16 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
+          node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
+          npm --prefix src/apps/openui_bridge ci &
+          openui_pid=$!
           need_node=false
           if ! git diff --quiet "$BASE_SHA"...HEAD -- \
             package.json package-lock.json src/apps \
             src/slm_training/web/static/openui scripts/validate_page_dsl.py; then
             need_node=true
-            node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
             npm ci &
             root_pid=$!
-            npm --prefix src/apps/openui_bridge ci &
-            openui_pid=$!
             npm --prefix src/apps/design_md_bridge ci &
             design_pid=$!
             npm --prefix src/apps/graphql_bridge ci &
@@ -68,9 +68,9 @@ jobs:
             python -m pip install -e ".[$extras]"
           fi
 
+          wait "$openui_pid"
           if [ "$need_node" = true ]; then
             wait "$root_pid"
-            wait "$openui_pid"
             wait "$design_pid"
             wait "$graphql_pid"
           fi
