@@ -5545,3 +5545,18 @@ causal comparison.
 
 Evidence: [narrative](iter-e727-binder-arity-symbol-only-20260722.md) and
 [JSON](iter-e727-binder-arity-symbol-only-20260722.json).
+
+## E729 symbol-only binder-reference topology
+
+E729 adds the lexer-native parent-to-child binder topology objective to E723's
+slot-owner recipe. A 140-step local CPU run completes in 77.50 seconds under
+`max_wall_minutes=2`; topology loss reaches 0.6602 and accuracy 0.7143 across
+seven rows. The matched smoke control reproduces E723 (meaning-v1 0.6667,
+structure 0.5614, recall 0.4167). Topology weights 0.25 and 1 both change all
+three applicable choices and regress to meaning-v1 0.3333, structure 0.4642,
+and recall 0.25; strict-v2 remains 0.0 and AgentV is 0/1. Reject the checkpoint
+and keep topology decode off. A missing-data setup attempt and a weaker-policy
+scoreboard without constrained slot decode are documented but excluded.
+
+Evidence: [narrative](iter-e729-binder-topology-symbol-only-20260722.md) and
+[JSON](iter-e729-binder-topology-symbol-only-20260722.json).
