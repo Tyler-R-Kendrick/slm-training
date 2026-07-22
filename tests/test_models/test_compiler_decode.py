@@ -5074,6 +5074,36 @@ def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
     )
 
 
+def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Form(":slot_0",b1,[FormControl(":slot_1",b2)])\n'
+        "b1=Buttons([b3,b4",
+        add_special=True,
+    )[:-1]
+    contract = [":slot_0", ":slot_1", ":slot_2", ":slot_3"]
+
+    control = build_completion_forest(tokenizer, prefix, slot_contract=contract)
+    assert tokenizer.token_to_id[","] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+
+    assert tokenizer.token_to_id[","] not in forest.candidate_ids
+    assert tokenizer.token_to_id["]"] in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_array_children"
+        and evidence.candidate_id == tokenizer.token_to_id[","]
+        for evidence in forest.evidence
+    )
+
+
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(

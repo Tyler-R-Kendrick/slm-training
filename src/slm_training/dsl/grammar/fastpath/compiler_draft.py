@@ -1389,6 +1389,10 @@ def build_completion_forest(
         node_terminals = frozenset({"NAME", "COMPONENT", "COMMA", "RSQB", "RPAR"})
         node_ids = allowed_id_set(tokenizer, node_terminals) or set()
         candidates &= node_ids
+        active_array_references = _active_array_direct_references(
+            tokenizer, prefix_ids
+        )
+        content_capacity_reached = False
         if array_item_components:
             bind_ids = set(tokenizer.kind_ids("bind"))
             binder_components = _binder_component_types(tokenizer, prefix_ids)
@@ -1417,6 +1421,16 @@ def build_completion_forest(
                     if pending_requirements.get(binder) is None
                     or bool(pending_requirements[binder] & array_item_components)
                 }
+                content_capacity_reached = (
+                    unused_symbols is not None
+                    and all(
+                        _component_requires_available_content(component)
+                        for component in array_item_components
+                    )
+                    and len(active_array_references) >= len(unused_symbols)
+                )
+                if content_capacity_reached:
+                    unknown_binders &= pending_requirements.keys()
             candidates = {
                 token_id
                 for token_id in candidates
@@ -1430,12 +1444,14 @@ def build_completion_forest(
                     or token_id in unknown_binders
                 )
             }
+        if content_capacity_reached:
+            candidates -= allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
         if _active_array_is_empty(engine):
             candidates -= allowed_id_set(tokenizer, frozenset({"RSQB"})) or set()
         _record_excluded(ConstraintStage.SCHEMA, "schema_array_children", before_stage)
 
         before_stage = _snapshot()
-        candidates -= _active_array_direct_references(tokenizer, prefix_ids)
+        candidates -= active_array_references
         _record_excluded(
             ConstraintStage.BINDING,
             "binding_array_reference_reuse",

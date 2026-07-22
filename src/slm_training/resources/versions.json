@@ -4106,7 +4106,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v247",
+      "version": "v248",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4130,6 +4130,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v248",
+          "date": "2026-07-22",
+          "note": "Bound fresh forward binders in typed content-bearing arrays by the remaining opaque slot capacity"
+        },
         {
           "version": "v247",
           "date": "2026-07-22",

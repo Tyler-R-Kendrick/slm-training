@@ -6468,3 +6468,16 @@ and reward 0.8488→0.7640. Retain the generalized check default off, reject
 promotion, and diagnose that timeout next. AgentV is 0/2; no ship gates or
 checkpoint changes. Full evidence:
 [binder-intersection results](iter-e928-e929-binder-requirement-intersection-20260722.md).
+
+# E930-E931 — typed-array slot capacity (2026-07-22)
+
+v248 closes typed content-bearing arrays once their direct forward references
+equal the remaining opaque-slot capacity. This stops the Form path from
+reserving an unbounded button-binder sequence. Against E930, E931 improves
+meaning-v1 0.6→0.8, fidelity 0.68→0.80, structure 0.3419→0.5700, type recall
+0.5810→0.7714, and fallbacks 2→1. It also exposes an `Input.name` placeholder
+role mismatch, leaves dual-card timed out, lowers parse 1.0→0.8 and reward
+0.8488→0.7640, and reaches only strict-v2 0.6. Retain the capability default
+off, reject the treatment, and restrict opaque symbols to official placeholder
+properties next. AgentV is 0/2; no ship gates or checkpoint changes. Full
+evidence: [typed-capacity results](iter-e930-e931-typed-array-capacity-20260722.md).
