@@ -6087,3 +6087,14 @@ actual opaque request inventory; smoke n=1 reaches parse/meaning-v1 1.0 and
 reward 0.874 in 2.73 seconds. Strict-v2 and AgentV remain zero, so the checkpoint
 is still rejected. Full evidence:
 [strict request harness results](iter-e830-e831-strict-request-harness-20260722.md).
+
+# E832-E834 — longer v4 baseline (2026-07-22)
+
+E832 completed 600 local CPU steps in 63.30 seconds. E833 smoke n=3 reaches
+parse 1.0, meaning-v1 0.6667, fidelity 1.0, reward 0.9820, and zero timeout or
+fallback. E834 held-out n=5 reaches parse 1.0, meaning-v1 0.2, fidelity 1.0,
+structure 0.2995, recall 0.2952, reward 0.9682, and zero timeout/fallback.
+Strict-v2 remains 0 and every row has duplicate-subtree spam; held-out recall
+is unchanged from E830 while structure regresses. Reject more undirected steps
+as the next lever and do not sync or promote. Full evidence:
+[longer v4 baseline results](iter-e832-e834-longer-v4-baseline-20260722.md).
