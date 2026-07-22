@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -11,7 +12,6 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_ROOTS = {
@@ -59,7 +59,24 @@ MAX_PUBLISHED_DATA_BYTES = 50 * 1024 * 1024
 # clone (330 dangling references incl. foreign /home/codex/... paths shipped
 # before this guard). Applies to NEW design records only; history is immutable.
 ABSOLUTE_ARTIFACT_PATH_RE = re.compile(r'"(?:/home/|/Users/|/root/|/tmp/)[^"]*"')
-MAX_WORKFLOW_MINUTES = 3
+WORKFLOW_TIMEOUT_RE = re.compile(r"^(\s*timeout-minutes:\s*)\d+(\s*)$", re.MULTILINE)
+WORKFLOW_JOB_RE = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+
+
+def canonical_run_minutes(*, root: Path = ROOT) -> int:
+    """Read the policy constant without importing the not-yet-installed package."""
+    path = root / "src/slm_training/levers.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in tree.body:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "MAX_RUN_MINUTES"
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, int)
+        ):
+            return node.value.value
+    raise ValueError(f"MAX_RUN_MINUTES must be an integer literal in {path}")
 
 
 def validate_top_level(paths: Iterable[str]) -> list[str]:
@@ -117,23 +134,73 @@ def validate_published_data_sizes(
     return errors
 
 
+def _workflow_jobs(text: str) -> list[tuple[str, int, int]]:
+    lines = text.splitlines(keepends=True)
+    jobs_line = next((i for i, line in enumerate(lines) if line.rstrip() == "jobs:"), None)
+    if jobs_line is None:
+        return []
+    end = next(
+        (i for i in range(jobs_line + 1, len(lines)) if lines[i].strip() and not lines[i][0].isspace()),
+        len(lines),
+    )
+    starts = [
+        (match.group(1), i)
+        for i in range(jobs_line + 1, end)
+        if (match := WORKFLOW_JOB_RE.match(lines[i].rstrip()))
+    ]
+    return [
+        (name, start, starts[index + 1][1] if index + 1 < len(starts) else end)
+        for index, (name, start) in enumerate(starts)
+    ]
+
+
 def validate_workflow_timeouts(*, root: Path = ROOT) -> list[str]:
+    max_run_minutes = canonical_run_minutes(root=root)
     errors: list[str] = []
     for path in sorted((root / ".github/workflows").glob("*.y*ml")):
-        values = [
-            int(value)
-            for value in re.findall(
-                r"^\s*timeout-minutes:\s*(\d+)\s*$",
-                path.read_text(encoding="utf-8"),
-                flags=re.MULTILINE,
-            )
-        ]
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
         relative = path.relative_to(root)
-        if not values:
-            errors.append(f"workflow lacks three-minute timeout: {relative}")
-        elif any(value > MAX_WORKFLOW_MINUTES for value in values):
-            errors.append(f"workflow exceeds three-minute timeout: {relative}")
+        for job, start, end in _workflow_jobs(text):
+            values = [
+                int(match.group(1))
+                for line in lines[start + 1 : end]
+                if (match := re.match(r"^    timeout-minutes:\s*(\d+)\s*$", line))
+            ]
+            location = f"{relative}#{job}"
+            if not values:
+                errors.append(f"workflow job lacks canonical run timeout: {location}")
+            elif any(value != max_run_minutes for value in values):
+                errors.append(
+                    f"workflow timeout differs from canonical {max_run_minutes}-minute "
+                    f"cap: {location}; run `python -m scripts.repo_policy "
+                    "--sync-workflow-timeouts`"
+                )
     return errors
+
+
+def sync_workflow_timeouts(*, root: Path = ROOT) -> list[Path]:
+    """Rewrite workflow timeout adapters from the one canonical run-policy lever."""
+    max_run_minutes = canonical_run_minutes(root=root)
+    changed: list[Path] = []
+    for path in sorted((root / ".github/workflows").glob("*.y*ml")):
+        before = path.read_text(encoding="utf-8")
+        after = WORKFLOW_TIMEOUT_RE.sub(
+            rf"\g<1>{max_run_minutes}\g<2>",
+            before,
+        )
+        lines = after.splitlines(keepends=True)
+        for _, start, end in reversed(_workflow_jobs(after)):
+            if not any(
+                re.match(r"^    timeout-minutes:", line)
+                for line in lines[start + 1 : end]
+            ):
+                lines.insert(start + 1, f"    timeout-minutes: {max_run_minutes}\n")
+        after = "".join(lines)
+        if after != before:
+            path.write_text(after, encoding="utf-8")
+            changed.append(path)
+    return changed
 
 
 def _git(args: list[str], *, root: Path = ROOT) -> str:
@@ -326,6 +393,11 @@ def pre_tool_decision(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--sync-workflow-timeouts",
+        action="store_true",
+        help="derive every workflow timeout from slm_training.levers.MAX_RUN_MINUTES",
+    )
+    parser.add_argument(
         "--staged",
         action="store_true",
         help="document that validation is running from the staged pre-commit hook",
@@ -336,6 +408,10 @@ def main(argv: list[str] | None = None) -> int:
         help="read hook JSON from stdin and block raw moves of tracked paths",
     )
     args = parser.parse_args(argv)
+    if args.sync_workflow_timeouts:
+        for path in sync_workflow_timeouts():
+            print(f"synced {path.relative_to(ROOT)}")
+        return 0
     if args.pre_tool_use:
         try:
             payload = json.load(sys.stdin)
