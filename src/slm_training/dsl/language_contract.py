@@ -25,9 +25,11 @@ from typing import Any, Iterable
 
 # Language spec the repo currently targets (see module docstring).
 LANG_SPEC = "openui-lang-0.2.x"
-# v2 is intentionally checkpoint-incompatible: output targets may contain only
-# grammar/AST literals and placeholder symbols, never open-vocabulary strings.
-OUTPUT_CONTRACT_VERSION = 2
+# v4 is intentionally checkpoint-incompatible: output targets may contain only
+# grammar/AST literals and opaque ordinal placeholder symbols, never
+# open-vocabulary strings. Persisted train/eval records and their structured
+# metadata must already use the harness-owned ``:slot_<ordinal>`` identities.
+OUTPUT_CONTRACT_VERSION = 4
 OUTPUT_CONTRACT_NAME = "symbol_only"
 
 # src/slm_training/dsl/language_contract.py -> repo root is parents[3].

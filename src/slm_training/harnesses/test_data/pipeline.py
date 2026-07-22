@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
+from slm_training.data.contract import canonicalize_example_template_markers
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.language_contract import (
@@ -112,7 +113,7 @@ def _normalize(
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
-    return out
+    return canonicalize_example_template_markers(out)
 
 
 def _aggregate_sanitize(

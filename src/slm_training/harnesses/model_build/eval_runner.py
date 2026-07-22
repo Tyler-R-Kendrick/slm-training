@@ -14,7 +14,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from slm_training.data.contract import RuntimeSymbol
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
@@ -33,6 +32,10 @@ from slm_training.evals.eval_cache import (
     suite_result_key,
 )
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
+from slm_training.levers import (
+    DEFAULT_DECODE_TIMEOUT_SECONDS,
+    MAX_HARNESS_WALL_SECONDS,
+)
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.versioning import component_version
 
@@ -573,6 +576,14 @@ def evaluate(
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
 ) -> dict:
+    run_started = time.perf_counter()
+    configured_wall_seconds = float(
+        (config.max_wall_minutes or (MAX_HARNESS_WALL_SECONDS / 60)) * 60
+    )
+    run_deadline = run_started + min(
+        configured_wall_seconds,
+        float(MAX_HARNESS_WALL_SECONDS),
+    )
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
@@ -736,23 +747,7 @@ def evaluate(
 
     def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
-        request = GenerationRequest.from_record(record, schema=schema)
-        # Historical evaluation checkpoints use visible placeholder suffixes as
-        # semantic-role features. Declare that compatibility authority explicitly;
-        # opaque production requests still require caller-provided typed symbols.
-        data = request.to_dict()
-        data["runtime_symbols"] = [
-            RuntimeSymbol(
-                surface=slot,
-                role="external_entity",
-                semantic_role=(
-                    re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
-                    or "value"
-                ),
-            ).to_dict()
-            for slot in request.slot_contract
-        ]
-        return GenerationRequest.from_dict(data)
+        return GenerationRequest.from_record(record, schema=schema)
 
     def _effective_request_for(record: ExampleRecord) -> GenerationRequest:
         request = _request_for(record)
@@ -820,8 +815,16 @@ def evaluate(
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate a chunk, converting an explicit diagnostic timeout to failures."""
         nonlocal decode_timeout_count
-        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
-        if seconds <= 0 or not hasattr(signal, "setitimer"):
+        remaining = run_deadline - time.perf_counter()
+        if remaining <= 0:
+            decode_timeout_count += len(chunk)
+            return ["" for _ in chunk], []
+        configured = float(
+            getattr(config, "decode_timeout_seconds", 0)
+            or DEFAULT_DECODE_TIMEOUT_SECONDS
+        )
+        seconds = min(configured, remaining)
+        if not hasattr(signal, "setitimer"):
             return _generate_chunk_unbounded(chunk)
 
         def _alarm(_signum: int, _frame: object) -> None:

@@ -27,13 +27,23 @@
       ]
     },
     "config.levers": {
-      "version": "v17",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-22",
+          "note": "Centralize symbol-only tokenizer and bounded decode defaults with the two-minute run policy"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-22",
+          "note": "Centralize the opaque-template-marker policy and prohibit every marker-label semantic lever plus disabling symbol anonymization"
+        },
         {
           "version": "v17",
           "date": "2026-07-22",
@@ -166,7 +176,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v5",
+      "version": "v7",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -174,6 +184,16 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-22",
+          "note": "Keep metadata-only opaque values out of the model completion inventory while sanitizing them out of band"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-22",
+          "note": "Canonicalize every persisted eval marker and nested contract field to opaque ordinal slot identities"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -2728,7 +2748,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v45",
+      "version": "v47",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2739,6 +2759,16 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v47",
+          "date": "2026-07-22",
+          "note": "Bound every decode and the cumulative eval deadline so result finalization precedes the two-minute command interrupt"
+        },
+        {
+          "version": "v46",
+          "date": "2026-07-22",
+          "note": "Stop synthesizing RuntimeSymbol semantic roles from evaluation marker suffixes"
+        },
         {
           "version": "v45",
           "date": "2026-07-22",
@@ -3002,12 +3032,22 @@
       ]
     },
     "harness.model_build.data": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/data.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-22",
+          "note": "Reject noncanonical marker identities anywhere in persisted train or eval records including nested metadata"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Reject explicit template semantic-role labels in shared train and eval record loading before model construction or artifacts"
+        },
         {
           "version": "v1",
           "date": "2026-07-22",
@@ -3016,13 +3056,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-22",
+          "note": "Reserve finalization time inside the two-minute hard cap so capped runs serialize their checkpoint and summary before command interruption"
+        },
         {
           "version": "v20",
           "date": "2026-07-22",
@@ -3336,7 +3381,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v11",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3347,6 +3392,21 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-22",
+          "note": "Declare only target-used opaque slots as completion inventory and keep metadata-only values out of supervision"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-22",
+          "note": "Canonicalize caller marker names atomically across train targets prompts and nested verification metadata before admission"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-22",
+          "note": "Reject semantic template-role prompt projection and explicit semantic-role labels before synthesis or training"
+        },
         {
           "version": "v11",
           "date": "2026-07-22",
@@ -3872,7 +3932,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v225",
+      "version": "v227",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3896,6 +3956,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v227",
+          "date": "2026-07-22",
+          "note": "Reject named marker records and request contracts instead of converting marker names inside model construction or generation"
+        },
+        {
+          "version": "v226",
+          "date": "2026-07-22",
+          "note": "Make external template markers opaque across TwoTower and grammar-diffusion context encoding, runtime metadata, pseudo-embeddings, slot heads, and deterministic template fill"
+        },
         {
           "version": "v225",
           "date": "2026-07-22",

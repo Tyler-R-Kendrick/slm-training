@@ -66,7 +66,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
     out_dir = Path(result["output_dir"])
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["suite_counts"]["smoke"] == 1
-    assert manifest["version_stamp"]["components"] == {"data.test_build": "v5"}
+    assert manifest["version_stamp"]["components"] == {"data.test_build": "v7"}
     assert result["stats"]["version_stamp"] == manifest["version_stamp"]
     assert (out_dir / "suites" / "smoke" / "records.jsonl").exists()
 
@@ -256,7 +256,9 @@ def test_test_builder_sanitizes_gold_with_shared_transform(tmp_path: Path) -> No
         .read_text(encoding="utf-8")
         .splitlines()
     ]
-    expected = sanitize_openui(gold, options=SanitizeOptions(mode="enforce")).openui
+    expected = sanitize_openui(
+        gold, options=SanitizeOptions(mode="enforce")
+    ).openui.replace(":hero.title", ":slot_0")
     assert records[0]["openui"] == expected
     assert '"column"' not in records[0]["openui"]
 
@@ -323,9 +325,7 @@ def test_test_builder_templatizes_or_rejects_free_form_targets(tmp_path: Path) -
         ).read_text(encoding="utf-8")
     )
     assert output_contract_violations(record["openui"]) == ()
-    assert record["meta"]["sanitize"]["template_fills"] == {
-        ":root.name": "contact"
-    }
+    assert record["meta"]["sanitize"]["template_fills"] == {":slot_0": "contact"}
 
     rejected_root = tmp_path / "eval_off"
     with pytest.raises(ValueError, match="symbol-only output contract"):

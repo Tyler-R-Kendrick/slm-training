@@ -9,6 +9,7 @@ from pathlib import Path
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
+from slm_training.levers import DEFAULT_OUTPUT_TOKENIZER
 
 
 def _probability(value: str) -> float:
@@ -238,8 +239,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--output-tokenizer",
-        choices=("compositional", "lexer", "choice"),
-        default="compositional",
+        choices=("lexer", "choice"),
+        default=DEFAULT_OUTPUT_TOKENIZER,
     )
     parser.add_argument(
         "--bind-encoding",

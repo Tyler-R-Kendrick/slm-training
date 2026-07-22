@@ -1,0 +1,60 @@
+{
+  "schema": "openui_experiment_result/v1",
+  "experiment_ids": ["E803", "E804"],
+  "date": "2026-07-22",
+  "policy": {
+    "template_markers_are_opaque": true,
+    "completion_vocabulary": "grammar/AST symbols, closed schema literals, and template-marker codec identities only",
+    "semantic_marker_metadata": "prohibited",
+    "marker_name_inference": "prohibited"
+  },
+  "e803": {
+    "run_id": "e803-schema-namespace-ownership-settings-n1-r1",
+    "status": "invalid_evidence",
+    "reason": "The treatment inferred component ownership from user-defined marker suffixes and namespaces.",
+    "metrics_are_admissible": false,
+    "checkpoint_eligible": false,
+    "promotion_eligible": false,
+    "observed_metrics": {
+      "n": 1,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "fidelity": 0.8,
+      "structure_score": 0.765,
+      "component_recall": 1.0,
+      "reward": 0.901,
+      "fallback_count": 0,
+      "timeout_count": 0
+    }
+  },
+  "e804": {
+    "status": "harness_policy_verification",
+    "new_train_or_eval_run": false,
+    "changes": [
+      "Output contract v4 invalidates every pre-canonical checkpoint and requires retraining.",
+      "Shared train/eval loading rejects records with explicit template semantic-role labels before artifacts exist.",
+      "Central lever validation rejects semantic marker roles, schema-role routing, namespace grouping, and disabled symbol anonymization.",
+      "External RuntimeSymbol markers reject semantic metadata.",
+      "Evaluation no longer fabricates semantic roles from marker suffixes.",
+      "TwoTower and grammar-diffusion context encoding, pseudo-embeddings, slot-component features, and deterministic template fill use ordinal marker identities."
+    ],
+    "verification": {
+      "compiler_decode_tests": "182 passed",
+      "opaque_marker_targeted_tests": "280 passed",
+      "command_cap_seconds": 110
+    }
+  },
+  "decision": "Invalidate E803 and all checkpoints or recipes that require semantic marker labels; retain only the opaque-marker harness policy.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca5d17cf0359d202857878db1281847023c31d1e",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v18",
+      "harness.model_build.data": "v2",
+      "harness.model_build.eval": "v46",
+      "model.twotower": "v226"
+    },
+    "stamped_at": "2026-07-22T15:03:23.783008+00:00"
+  }
+}

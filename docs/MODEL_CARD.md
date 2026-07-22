@@ -26,19 +26,22 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 
 ## Current checkpoint roster
 
-**Compatibility notice (2026-07-21):** output contract v2 permits only
-grammar/AST symbols and template placeholders. All pre-E714 checkpoints below
-were created under an earlier free-form-capable output contract and are
-intentionally incompatible with current loading, serving, resume, promotion,
-and evaluation paths. They remain provenance only; E714 is the first compatible
-scratch baseline.
+**Compatibility notice (2026-07-22):** output contract v4 requires the data
+harness to persist only opaque ordinal marker identities across every record
+field and nested contract. E828 is the first v4 checkpoint whose declared
+completion inventory contains only target-used slots. Every
+older checkpoint below is intentionally incompatible with current loading,
+serving, resume, promotion, and evaluation paths and remains provenance only.
+E820 is invalid because metadata-only values polluted its completion inventory.
+E828 is a rejected local scratch diagnostic, not a serving candidate.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1` | CPU scratch output-contract-v4 baseline | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/checkpoints/last.pt` (local) | 120 steps / 14.46s, SHA `84f35247…6df38e36`; held-out n=5 parse/meaning/fidelity 0.0, four bounded decode timeouts, AgentV 0/1 — **compatible diagnostic, rejected; no sync or promotion** ([results](design/iter-e822-e829-target-slot-inventory-20260722.md)) |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1` | CPU scratch output-contract-v2 corrected root-arity objective | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/checkpoints/last.pt` (local) | 140 steps / 82.07s, SHA `710e2dbe…68b970`; impossible smoke argmax class 41 becomes class 1, but weight 0/1 quality is identical and strict-v2 remains 0.0 — **objective fix retained, checkpoint rejected** ([results](design/iter-e735-root-arity-full-head-20260722.md)) |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1` | CPU scratch output-contract-v2 invalid capability declaration | `outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt` (local) | 140 steps / 78.98s, SHA `cddb5f28…5167fc`; matched weight 0/1 eval has zero identity applications — **invalidated; never sync, promote, serve, resume, or use as parent** ([results](design/iter-e733-lexer-root-identity-reachability-20260722.md)) |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1` | CPU scratch output-contract-v2 root-arity objective | `outputs/runs/e731-symbol-only-root-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 82.20s, SHA `bff1e0e6…2fbb88`; weights 0/1/2 are prediction-identical and strict-v2 remains 0.0 — **capability retained, checkpoint rejected** ([results](design/iter-e731-lexer-root-arity-symbol-only-20260722.md)) |
-| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1` | CPU scratch output-contract-v2 baseline | `outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 48.72s, SHA `71ef1d25…2b49e`; all predictions satisfy symbol-only v2, but five-suite strict meaning is 0.0 and AgentV 0/5 — **compatible diagnostic, not promotable or ship** ([results](design/iter-e714-symbol-only-baseline-20260721.md)) |
+| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1` | CPU scratch output-contract-v2 baseline | `outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 48.72s, SHA `71ef1d25…2b49e`; all predictions satisfy symbol-only v2, but the checkpoint predates opaque-marker v3 and is now **incompatible provenance only** ([results](design/iter-e714-symbol-only-baseline-20260721.md)) |
 | E720 component-inventory diagnostic | `e720-symbol-only-component-inventory600-r1` | CPU scratch output-contract-v2 inventory objective | `outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt` (local) | 600 steps / 72.38s, SHA `842a1a21…f91a11`; inventory top-k recall 0.6875, but smoke parse/strict meaning 0.0 and weight-4 decode timed out 3/3 — **rejected, not promotable or ship** ([results](design/iter-e720-component-inventory-symbol-only-20260721.md)) |
 | E721 role/count plan diagnostic | `e721-symbol-only-component-plan190-r4` | CPU scratch output-contract-v2 component plan | `outputs/runs/e721-symbol-only-component-plan190-r4/checkpoints/last.pt` (local) | 190 steps / 90.39s, SHA `c30fd565…20f530`; smoke parse 1.0, but strict meaning 0.0 and plan on/off outputs are identical — **rejected, not promotable or ship** ([results](design/iter-e721-component-plan-symbol-only-20260721.md)) |
 | E722 component-edge diagnostic | `e722-symbol-only-component-edge150-r1` | CPU scratch output-contract-v2 plan + edge objective | `outputs/runs/e722-symbol-only-component-edge150-r1/checkpoints/last.pt` (local) | 150 steps / 77.52s, SHA `08873bf0…a25597d`; parse 1.0 / structure 0.2861 / recall 0.5, but strict meaning 0.0 and edge on/off identical — **rejected, not promotable or ship** ([results](design/iter-e722-component-edge-symbol-only-20260721.md)) |
@@ -224,7 +227,7 @@ scratch-matrix clears as production readiness; silent gold-placeholder channels.
 | --- | --- |
 | Model | TwoTower (context tower + MaskGIT-style denoiser); optional `grammar_diffusion` |
 | Context | HF frozen backbone (`HuggingFaceTB/SmolLM2-135M`) for full ship track; scratch for matrix/CI demos |
-| Output tokenizer | Compositional `OpenUITokenizer` (default) or V5 lexer (`DSLNativeTokenizer`) |
+| Output tokenizer | Symbol-only V5 lexer (`DSLNativeTokenizer`, default) or closed choice codec; compositional free-form-capable targets are rejected |
 | Decode | Grammar-constrained LTR / MaskGIT + repair levers (see design docs) |
 | Topology experiment | `grammar_diffusion` v2: typed production-tree expansion/contraction with bounded active nodes; no fixed canvas |
 | Verified-solver decode | `verified_solver_decode` (VSS1-03) **off by default**: opt-in certificate-checked exact-closure pruning of the compiler-tree forest before soft ranking, on the DSL-native path only. **Experimental and unmeasured — no checkpoint uses it and it carries no ship/quality claim** ([config glossary](design/quality-experiment-matrix.md#configuration-glossary--verified-solver-decode-vss1-03)). |
@@ -271,6 +274,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e829-target-slots-only-v4-heldout-n5-r1`) | 5 | 0.0 | 0.0 | 0.0108 | 0.0 | No — four bounded decode timeouts, meaning-v1/strict-v2 0.0, AgentV 0/1; v4 diagnostic subset |
+| held_out (`e809-opaque-context-v3-heldout-n5-r1`) | 5 | 0.2 | 0.0333 | 0.0293 | 0.1314 | Invalid provenance — v3 corpus retained caller-authored marker names |
 | smoke (`e714-symbol-only-scratch600-r1`) | 3 | 0.3333 | 1.0 | 0.0880 | 0.0 | No — strict-v2 0.0, AgentV 0/1; compatible diagnostic subset |
 | smoke (`e720-component-inventory-tree-smoke-r1`, bias 4) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No — 3/3 timeouts, strict-v2 0.0, AgentV 0/1 |
 | smoke (`e720-component-inventory-tree-bias0-smoke-r2`, bias 0) | 3 | 0.0 | 0.8056 | 0.2903 | 0.0 | No — non-empty diagnostic overlap recovered, but strict-v2 0.0 and AgentV 0/1 |
@@ -900,6 +905,9 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-22 | `e828-target-slots-only-v4-scratch120-r1` | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/` (local) | Held-out n=5 parse/meaning-v1/strict-v2/fidelity 0.0 / structure 0.0108 / recall 0.0667, AgentV 0/1 | First target-inventory-correct output-contract-v4 checkpoint; 120 CPU steps / 14.46s; explicit no-sync scratch diagnostic, rejected |
+| 2026-07-22 | `e820-opaque-slots-v4-scratch120-r1` | `outputs/runs/e820-opaque-slots-v4-scratch120-r1/` (local) | Invalidated before comparison | Metadata-only opaque values polluted the declared completion inventory; no sync or promotion |
+| 2026-07-22 | `e808-opaque-context-v3-scratch120-r1` | `outputs/runs/e808-opaque-context-v3-scratch120-r1/` (local) | Historical held-out n=5 parse 0.2 / meaning 0.0 | Invalidated: v3 data persisted user-defined marker names, so this checkpoint is incompatible provenance only |
 | 2026-07-22 | `e735-symbol-only-root-arity-fullhead140-r1` | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/` (local) | E731 smoke head argmax 41 becomes 1; weight 0/1 smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0, AgentV 0/1 | 140-step / 82.07s explicit no-sync CPU scratch diagnostic; objective correction retained, checkpoint rejected |
 | 2026-07-22 | `e733-symbol-only-root-identity140-r1` | `outputs/runs/e733-symbol-only-root-identity140-r1/` (local) | Weight 0/1 smoke outputs and metrics identical; treatment has zero identity applications, strict-v2 0.0, AgentV 0/1 | 140-step / 78.98s explicit no-sync CPU run under an invalid transient capability declaration; checkpoint invalidated and final config rejects lexer identity before artifacts |
 | 2026-07-22 | `e731-symbol-only-root-arity140-r1` | `outputs/runs/e731-symbol-only-root-arity140-r1/` (local) | Smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0; weights 0/1/2 identical, AgentV 0/1 | 140-step / 82.20s explicit no-sync CPU scratch diagnostic; capability retained, checkpoint rejected |

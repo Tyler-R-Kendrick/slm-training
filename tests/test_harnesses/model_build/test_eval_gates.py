@@ -130,7 +130,7 @@ def test_evaluate_applies_offset_before_limit(
         ExampleRecord(
             id=f"s{index}",
             prompt=f"Prompt {index}",
-            openui='root = TextContent(":value")',
+            openui='root = TextContent(":slot_0")',
             split="smoke",
             meta={"suite": "smoke"},
         )
@@ -192,6 +192,44 @@ def test_train_loader_rejects_free_form_targets_before_a_run_exists(
     )
 
     with pytest.raises(ValueError, match="symbol-only output contract"):
+        load_train_records(train_dir)
+
+
+def test_train_loader_rejects_template_semantic_labels(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="forbidden-role-label",
+                prompt="CTA\nSemantic roles: action -> Button",
+                openui='root = Button(":slot_0")',
+                placeholders=[":slot_0"],
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="semantic role labels are prohibited"):
+        load_train_records(train_dir)
+
+
+def test_train_loader_rejects_user_defined_marker_names(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="forbidden-marker-name",
+                prompt="CTA with :cta.label",
+                openui='root = Button(":cta.label")',
+                placeholders=[":cta.label"],
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
         load_train_records(train_dir)
 
 
@@ -435,8 +473,8 @@ def test_evaluate_suites_scoreboard(
     (test_dir / "suites" / "smoke").mkdir(parents=True)
     hero = (
         'root = Stack([hero], "column")\n'
-        'hero_title = TextContent(":hero.title")\n'
-        'hero_body = TextContent(":hero.body")\n'
+        'hero_title = TextContent(":slot_0")\n'
+        'hero_body = TextContent(":slot_1")\n'
         "hero = Card([hero_title, hero_body])"
     )
     records = [
@@ -532,7 +570,7 @@ def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = TextContent(":copy.value")'
+    gold = 'root = TextContent(":slot_0")'
     record = ExampleRecord(
         id="stats-1",
         prompt="Copy value",
@@ -569,7 +607,7 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     record = ExampleRecord(
         id="timeout-1",
         prompt="Copy value",
-        openui='root = TextContent(":copy.value")',
+        openui='root = TextContent(":slot_0")',
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -596,17 +634,54 @@ def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> No
     assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
 
 
+def test_evaluate_interrupts_a_blocked_decoder_before_harness_deadline(
+    tmp_path: Path,
+) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="blocked-1",
+        prompt="Copy value",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class BlockedModel:
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            while True:
+                pass
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="blocked-generation",
+        model_name="twotower",
+        decode_timeout_seconds=0.01,
+    )
+    metrics = evaluate(config, model=BlockedModel(), publish_agentv=False)
+    assert metrics["decode_timeout_count"] == 1
+    assert metrics["empty_prediction_count"] == 1
+
+
 def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
+    gold = 'root = Stack([cta])\ncta = Button(":slot_0")'
     record = ExampleRecord(
         id="s1",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -623,10 +698,10 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
             assert len(requests) == 1
             request = requests[0]
             assert request.prompt == "CTA"
-            assert request.slot_contract == (":prod.cta",)
-            assert len(request.runtime_symbols) == 1
-            assert request.runtime_symbols[0].surface == ":prod.cta"
-            assert request.runtime_symbols[0].semantic_role == "cta"
+            assert request.slot_contract == (":slot_0",)
+            assert request.runtime_symbols == ()
+            assert request.effective_runtime_symbols()[0].surface == ":slot_0"
+            assert request.effective_runtime_symbols()[0].semantic_role is None
             assert not hasattr(request, "openui")
             return [gold]
 
@@ -652,12 +727,12 @@ def test_evaluate_passes_reported_canvas_cap_to_request_generation(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Button(":prod.cta")'
+    gold = 'root = Button(":slot_0")'
     record = ExampleRecord(
         id="canvas-cap",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -696,12 +771,12 @@ def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Button(":prod.cta")'
+    gold = 'root = Button(":slot_0")'
     record = ExampleRecord(
         id="request-stats",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )
@@ -712,7 +787,7 @@ def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
         def generate_batch_requests(
             self, requests: list[GenerationRequest]
         ) -> list[str]:
-            assert requests[0].slot_contract == (":prod.cta",)
+            assert requests[0].slot_contract == (":slot_0",)
             return [gold]
 
         def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
@@ -738,12 +813,12 @@ def test_topology_composite_keeps_quality_structure_trace_and_efficiency(
     test_dir = tmp_path / "test"
     train_dir.mkdir()
     (test_dir / "suites" / "smoke").mkdir(parents=True)
-    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
+    gold = 'root = Stack([cta])\ncta = Button(":slot_0")'
     record = ExampleRecord(
         id="s1",
         prompt="CTA",
         openui=gold,
-        placeholders=[":prod.cta"],
+        placeholders=[":slot_0"],
         split="smoke",
         meta={"suite": "smoke"},
     )

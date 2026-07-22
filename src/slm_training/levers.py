@@ -18,6 +18,13 @@ MAX_RUN_MINUTES: Final = 2
 KILL_GRACE_SECONDS: Final = 10
 MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
+# Harnesses must stop themselves early enough to serialize checkpoints and
+# result metadata before the command-level interrupt fires.
+HARNESS_FINALIZATION_RESERVE_SECONDS: Final = 15
+MAX_HARNESS_WALL_SECONDS: Final = (
+    INTERRUPT_AFTER_SECONDS - HARNESS_FINALIZATION_RESERVE_SECONDS
+)
+MAX_HARNESS_WALL_MINUTES: Final = MAX_HARNESS_WALL_SECONDS / 60
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
@@ -25,6 +32,24 @@ VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "docs/MODEL_CARD.md",
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
+
+# Template markers are codec identities, never semantic supervision.  Keep this
+# policy beside every other user-facing lever so there is one discoverable
+# source of truth for training and decode configuration.
+TEMPLATE_MARKERS_ARE_OPAQUE: Final = True
+DEFAULT_OUTPUT_TOKENIZER: Final = "lexer"
+DEFAULT_DECODE_TIMEOUT_SECONDS: Final = 12.0
+PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
+    "prompt_semantic_role_contract": "adds user-defined marker labels to training prompts",
+    "semantic_role_contract_in_context": "exposes user-defined marker labels",
+    "semantic_role_decode_weight": "scores user-defined marker labels",
+    "semantic_role_schema_candidates": "maps user-defined marker labels to schema",
+    "schema_role_slot_decode_weight": "maps user-defined marker labels to schema",
+    "slot_coverage_close_decode_weight": "uses marker-label-derived schema reachability",
+    "semantic_plan_repeated_slot_margin_decode_weight": (
+        "groups markers by user-defined namespace labels"
+    ),
+}
 
 # Applicability lives beside discovery so CLIs and harness validation cannot
 # drift from the human-visible lever catalog. Each tuple is an OR of complete
@@ -47,7 +72,6 @@ _CHOICE_ONLY_DECODE_LEVERS: Final = (
     "semantic_plan_root_decode_weight",
     "semantic_plan_root_margin_decode_weight",
     "semantic_plan_repeated_array_close_margin_decode_weight",
-    "semantic_plan_repeated_slot_margin_decode_weight",
     "semantic_plan_typed_array_item_margin_decode_weight",
     "visible_reference_decode_weight",
     "root_reference_identity_decode_weight",
@@ -56,9 +80,6 @@ _DUAL_PATH_DECODE_LEVERS: Final = (
     "component_inventory_decode_weight",
     "component_plan_decode_weight",
     "slot_component_decode_weight",
-    "semantic_role_decode_weight",
-    "slot_coverage_close_decode_weight",
-    "schema_role_slot_decode_weight",
     "required_slot_margin_decode_weight",
     "semantic_plan_decode_weight",
     "semantic_plan_margin_decode_weight",
@@ -112,33 +133,15 @@ _SLOT_CONTRACT_DECODE: Final = (
     },
 )
 SLOT_CONTRACT_DECODE_LEVERS: Final = (
-    "schema_role_slot_decode_weight",
-    "slot_coverage_close_decode_weight",
     "semantic_plan_typed_array_nonempty_margin_decode_weight",
     "semantic_plan_typed_array_item_margin_decode_weight",
-    "semantic_plan_repeated_slot_margin_decode_weight",
     "required_slot_margin_decode_weight",
-)
-_VISIBLE_SEMANTIC_ROLE_DECODE: Final = (
-    {
-        "slot_contract_in_context": True,
-        "slot_contract_constrained_decode": True,
-        "honest_slot_contract": True,
-        "semantic_role_contract_in_context": True,
-    },
-    {
-        "slot_contract_in_context": True,
-        "template_fill_decode": True,
-        "honest_slot_contract": True,
-        "semantic_role_contract_in_context": True,
-    },
 )
 LEVER_COMPANION_REQUIREMENTS: Final = {
     **{
         name: _SLOT_CONTRACT_DECODE
         for name in SLOT_CONTRACT_DECODE_LEVERS
     },
-    "semantic_role_decode_weight": _VISIBLE_SEMANTIC_ROLE_DECODE,
 }
 
 
@@ -213,6 +216,19 @@ def lever_configuration_errors(
 ) -> tuple[str, ...]:
     """Return every canonical lever-contract violation for ``config``."""
     errors: list[str] = []
+    if TEMPLATE_MARKERS_ARE_OPAQUE and getattr(config, "symbol_anonymization", True) is False:
+        errors.append(
+            "symbol_anonymization=False is prohibited because template markers are opaque"
+        )
+    prohibited = {
+        name: reason
+        for name, reason in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS.items()
+        if bool(getattr(config, name, False))
+    }
+    errors.extend(
+        f"{name} is prohibited because template markers are opaque: {reason}"
+        for name, reason in prohibited.items()
+    )
     incompatible = incompatible_lever_requirements(config)
     if incompatible:
         errors.append(f"unsupported enabled levers: {', '.join(incompatible)}")
@@ -313,6 +329,16 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
                 _requirement_json(requirement)
                 for requirement in LEVER_COMPANION_REQUIREMENTS[item.name]
             ]
+        if item.name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS:
+            catalog[item.name]["prohibited"] = True
+            catalog[item.name]["prohibited_reason"] = (
+                PROHIBITED_TEMPLATE_SEMANTIC_LEVERS[item.name]
+            )
+        if item.name == "symbol_anonymization":
+            catalog[item.name]["required"] = True
+            catalog[item.name]["required_reason"] = (
+                "template markers are opaque codec identities"
+            )
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]
@@ -320,15 +346,17 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             catalog[item.name]["contexts_diverge"] = True
     catalog["max_wall_minutes"].update(
         {
-            "default": MAX_RUN_MINUTES,
-            "maximum": MAX_RUN_MINUTES,
+            "default": MAX_HARNESS_WALL_MINUTES,
+            "maximum": MAX_HARNESS_WALL_MINUTES,
             "derived": {
+                "hard_cap_minutes": MAX_RUN_MINUTES,
                 "interrupt_after_seconds": INTERRUPT_AFTER_SECONDS,
                 "kill_grace_seconds": KILL_GRACE_SECONDS,
+                "finalization_reserve_seconds": HARNESS_FINALIZATION_RESERVE_SECONDS,
                 "total_seconds": MAX_RUN_SECONDS,
                 "hf_job_timeout": HF_JOB_TIMEOUT,
             },
-            "source": "slm_training.levers.MAX_RUN_MINUTES",
+            "source": "slm_training.levers.MAX_HARNESS_WALL_MINUTES",
         }
     )
     catalog["changed_test_workers"] = {
@@ -342,6 +370,12 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "default": list(VERCEL_FUNCTION_INCLUDE_FILES),
         "type": "tuple[str, ...]",
         "source": "slm_training.levers.VERCEL_FUNCTION_INCLUDE_FILES",
+    }
+    catalog["template_markers_are_opaque"] = {
+        "category": "data",
+        "default": TEMPLATE_MARKERS_ARE_OPAQUE,
+        "type": "bool",
+        "source": "slm_training.levers.TEMPLATE_MARKERS_ARE_OPAQUE",
     }
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 

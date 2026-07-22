@@ -6015,3 +6015,63 @@ reward 0.8613, p95 3165.11 ms, and zero fallback/timeout. Strict-v2 and AgentV
 remain zero, so this is a compiler-correctness retention with no checkpoint or
 ship claim. No remote compute ran. Full positive and negative evidence:
 [`iter-e792-e802-schema-array-contract-20260722.md`](iter-e792-e802-schema-array-contract-20260722.md).
+
+# E803-E804 — opaque template-marker enforcement (2026-07-22)
+
+Invalidate E803. Its settings-row gain used marker suffixes and namespaces as
+semantic labels, so none of its metrics are admissible for checkpoint or
+promotion decisions. E804 fixes the harness boundary: external markers carry
+no semantic metadata, model-visible contexts and features use ordinal marker
+identities, deterministic template fill is name-invariant, and the canonical
+lever validator rejects every marker-semantic route plus disabled symbol
+anonymization before artifacts are created.
+
+No E804 train or eval ran; the policy was verified by the compiler suite (182
+passed) and final cross-model targeted suite (280 passed in 14.04 seconds). No
+checkpoint was created or promoted and no remote compute ran. Full record:
+[`iter-e803-e804-opaque-template-markers-20260722.md`](iter-e803-e804-opaque-template-markers-20260722.md).
+
+# E805-E809 — invalid marker-name v3 baseline (2026-07-22)
+
+E805-E809 are invalid evidence. Although explicit semantic-role lines were
+removed, the persisted corpus still contained caller-authored marker names.
+That made marker conversion a learned/model-visible concern instead of a data
+harness responsibility. Output contract v4 invalidates every checkpoint here.
+
+E806 r1 was interrupted and invalid. E806 r2 then exposed a remaining leak:
+training contexts and scratch vocabulary construction still consumed raw marker
+spellings. E806/E807 are therefore invalidated. After removing that channel,
+E808 stopped gracefully at 100.17 seconds after 33 local CPU steps. E809
+held-out n=5 completed under the command cap: parse 0.2, meaning-v1 and strict-v2
+0.0, fidelity 0.0333, validity 0.1, structure 0.0293, component recall 0.0667,
+reward 0.1314, p50/p95 12002.03/13905.16 ms, four decode timeouts, one fallback,
+and AgentV 0/1. Those metrics are provenance only; no remote compute, sync,
+promotion, or deployment occurred. Full record:
+[`iter-e805-e809-opaque-marker-baseline-20260722.md`](iter-e805-e809-opaque-marker-baseline-20260722.md).
+
+# E810-E821 — canonical-slot data harness and v4 baseline (2026-07-22)
+
+Retain the data/harness boundary: train and eval builders canonicalize caller
+markers to opaque ordinals across targets, prompts, accepted outputs, and nested
+metadata. The shared loader rejects any persisted semantic name. The CLI
+defaults to the lexer-only codec, and evaluation uses centralized 12-second
+per-record plus 95-second cumulative deadlines so artifacts finalize before the
+two-minute command interrupt.
+
+E818 admitted 350/674 strict train candidates with no parse, placeholder,
+judge-contract, or sanitization-fallback failures. E819 contains 23 disjoint
+canonical eval records. E820 completed 120 local CPU steps in 13.64 seconds;
+E821 held-out n=5 finalized with parse/meaning/fidelity 0.0, structure 0.0044,
+recall 0.0286, four bounded timeouts, and AgentV 0/1. The infrastructure is
+retained; the checkpoint is rejected. Full record:
+[`iter-e810-e821-canonical-slot-harness-20260722.md`](iter-e810-e821-canonical-slot-harness-20260722.md).
+
+# E822-E829 — target-only completion inventory (2026-07-22)
+
+The artifact audit invalidated E820: its opaque conversion was correct, but
+metadata-only values expanded the model completion inventory. E826 fixes the
+harness boundary and audits zero declared-vs-target inventory mismatches across
+all train/eval rows. E828 completed 120 local CPU steps in 14.46 seconds. E829
+held-out n=5 finalized with parse/meaning/fidelity/reward 0.0, structure 0.0108,
+recall 0.0667, four bounded timeouts, and AgentV 0/1. The checkpoint is rejected.
+Full evidence: [target-slot inventory results](iter-e822-e829-target-slot-inventory-20260722.md).

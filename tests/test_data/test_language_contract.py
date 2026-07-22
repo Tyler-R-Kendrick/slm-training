@@ -12,7 +12,11 @@ from slm_training.data.language_contract import (
     iter_positives,
 )
 from slm_training.data.language_contract.corpus import NEGATIVE_GATES
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import (
+    GenerationRequest,
+    assert_canonical_template_markers,
+    canonicalize_example_template_markers,
+)
 from slm_training.data.quality import independent_judge
 from slm_training.data.verify import Gate, GateStatus, evaluate_gate, verify_record
 from slm_training.dsl.lang_core import bridge_available
@@ -168,3 +172,51 @@ def test_output_targets_round_trip_and_reach_generation_request() -> None:
     assert request.output_kind == "lexical"
     assert request.output_category == "boolean"
     assert GenerationRequest.from_dict(request.to_dict()) == request
+
+
+def test_marker_canonicalization_updates_structural_metadata_atomically() -> None:
+    record = ExampleRecord(
+        id="semantic-marker",
+        prompt="Use :hero.title and :cta.label.",
+        openui=(
+            'title = TextContent(":hero.title")\n'
+            'cta = Button(":cta.label")\n'
+            'root = Stack([title, cta], "column")'
+        ),
+        placeholders=[":hero.title", ":cta.label"],
+        split="train",
+        meta={
+            "semantic_contract": {
+                "version": 1,
+                "placeholders": [":cta.label", ":hero.title"],
+            },
+            "nested": {":hero.title": ":cta.label"},
+        },
+    )
+
+    canonical = canonicalize_example_template_markers(record)
+
+    assert canonical.placeholders == [":slot_0", ":slot_1"]
+    assert canonical.meta["semantic_contract"]["placeholders"] == [
+        ":slot_0",
+        ":slot_1",
+    ]
+    assert canonical.meta["nested"] == {":slot_0": ":slot_1"}
+    assert_canonical_template_markers(canonical)
+
+
+def test_metadata_only_markers_do_not_expand_completion_inventory() -> None:
+    record = ExampleRecord(
+        id="metadata-marker",
+        prompt="Build the captured layout.",
+        openui='root = TextContent(":title.copy")',
+        placeholders=[":title.copy", ":offscreen.label"],
+        meta={"normalized_ui_graph": [{"text": ":offscreen.label"}]},
+    )
+
+    canonical = canonicalize_example_template_markers(record)
+
+    assert canonical.openui == 'root = TextContent(":slot_0")'
+    assert canonical.placeholders == [":slot_0"]
+    assert canonical.meta["normalized_ui_graph"][0]["text"] == ":slot_1"
+    assert_canonical_template_markers(canonical)

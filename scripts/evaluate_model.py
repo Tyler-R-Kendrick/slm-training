@@ -20,6 +20,7 @@ from slm_training.harnesses.model_build.ship_gates import (
     evaluate_ship_gates,
     write_ship_gates,
 )
+from slm_training.levers import DEFAULT_DECODE_TIMEOUT_SECONDS
 
 
 def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
@@ -505,8 +506,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--decode-timeout-seconds",
         type=float,
-        default=None,
-        help="Diagnostic per-record decode timeout; omit for unlimited evaluation.",
+        default=DEFAULT_DECODE_TIMEOUT_SECONDS,
+        help="Per-record decode timeout from the centralized run policy.",
     )
     parser.add_argument(
         "--no-design-md-context",

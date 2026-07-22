@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import (
+    DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_OUTPUT_TOKENIZER,
+    MAX_HARNESS_WALL_MINUTES,
+)
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
     validate_model_build_config,
@@ -29,7 +33,7 @@ class ModelBuildConfig:
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
     # Cumulative deadline; canonical run policy lives in slm_training.levers.
-    max_wall_minutes: float | None = float(MAX_RUN_MINUTES)
+    max_wall_minutes: float | None = float(MAX_HARNESS_WALL_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4
     # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.
@@ -254,7 +258,7 @@ class ModelBuildConfig:
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers
-    output_tokenizer: str = "lexer"  # symbol-only grammar/AST tokens
+    output_tokenizer: str = DEFAULT_OUTPUT_TOKENIZER
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"
@@ -405,7 +409,7 @@ class ModelBuildConfig:
     byte_budget: int | None = None
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
-    decode_timeout_seconds: float | None = None
+    decode_timeout_seconds: float | None = DEFAULT_DECODE_TIMEOUT_SECONDS
     grammar_finalize_on_last_attempt_only: bool = False
     allow_unconstrained_fallback: bool = True
     # V7 speculative denoising (docs/design/speculative-denoising.md)
@@ -463,6 +467,7 @@ class ModelBuildConfig:
     constraint_debt_routing_calibrator_path: Path | None = None
 
     def __post_init__(self) -> None:
+        from slm_training.levers import require_valid_lever_configuration
         from slm_training.harnesses.model_build.eval_policy import (
             apply_evaluation_policy,
         )
@@ -473,6 +478,7 @@ class ModelBuildConfig:
             validate_model_build_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        require_valid_lever_configuration(self, context="model build config")
 
     @property
     def run_dir(self) -> Path:

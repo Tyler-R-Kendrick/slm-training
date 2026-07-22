@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import torch
+import pytest
 
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.models.parallel_decode import (
@@ -17,6 +18,7 @@ from slm_training.models.template_fill import (
     normalize_placeholders,
     prompt_semantic_role_candidates,
     typed_semantic_role_candidates,
+    typed_semantic_role_properties,
 )
 from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
@@ -47,90 +49,24 @@ def test_ensure_prompt_inventory_idempotent() -> None:
     assert inventory_from_prompt(once, heuristic=False) == slots
 
 
-def test_semantic_roles_use_only_prompt_mentioned_components() -> None:
-    prompt = ensure_prompt_semantic_roles(
-        "Modal with a title, body, and confirm button.",
-        [":ood.modal.title", ":ood.modal.body", ":ood.modal.label"],
-    )
-    assert "Components: Button, Modal" in prompt
-    assert "Semantic roles: ood.modal(" in prompt
-    assert "label -> Button" in prompt
-    assert "title -> Modal" in prompt
-    assert "TextContent" not in prompt
-    assert ensure_prompt_semantic_roles(prompt, [":hidden.slot"]) == prompt
+def test_model_side_semantic_marker_helpers_are_disabled() -> None:
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        ensure_prompt_semantic_roles("Modal", [":modal.title"])
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        prompt_semantic_role_candidates("Modal", [":modal.title"])
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        typed_semantic_role_candidates("Modal", [":modal.title"], [])
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        typed_semantic_role_properties([":modal.title"], [])
 
 
-def test_semantic_roles_fail_closed_without_visible_components() -> None:
-    prompt = "A compact confirmation surface."
-    assert ensure_prompt_semantic_roles(prompt, [":modal.title"]) == prompt
-
-
-def test_semantic_role_candidates_use_local_authored_associations() -> None:
-    prompt = (
-        "Sign-up column with name input, email input, and create button.\n"
-        "Placeholders: :ood.auth.name, :ood.auth.email, :ood.auth.create\n"
-        "Components: Button, Input\n"
-        "Semantic roles: ood.auth(create, email, name -> Input)"
-    )
-
-    assert prompt_semantic_role_candidates(
-        prompt,
-        [":ood.auth.name", ":ood.auth.email", ":ood.auth.create"],
-    ) == {
-        ":ood.auth.name": ("Input",),
-        ":ood.auth.email": ("Input",),
-        ":ood.auth.create": ("Button",),
-    }
-
-
-def test_semantic_role_candidates_can_use_visible_roles_and_public_schema() -> None:
-    prompt = "Modal dialog confirming a destructive delete action."
-    slots = [":ood.modal.title", ":ood.modal.body", ":ood.modal.confirm"]
-
-    candidates = prompt_semantic_role_candidates(
-        prompt,
-        slots,
-        include_schema_candidates=True,
-    )
-
-    assert "Modal" in candidates[":ood.modal.title"]
-    assert "TextContent" in candidates[":ood.modal.body"]
-    assert "Button" in candidates[":ood.modal.confirm"]
-
-
-def test_typed_semantic_roles_ignore_external_marker_spelling() -> None:
-    prompt = "Modal dialog with a title and confirm button."
-    left = typed_semantic_role_candidates(
-        prompt,
-        [":hero.title", ":hero.confirm"],
-        [
-            RuntimeSymbol(
-                surface=":hero.title",
-                role="external_entity",
-                semantic_role="title",
-            ),
-            RuntimeSymbol(
-                surface=":hero.confirm",
-                role="external_entity",
-                semantic_role="confirm",
-            ),
-        ],
-        include_schema_candidates=True,
-    )
-    right = typed_semantic_role_candidates(
-        prompt,
-        [":x", ":y"],
-        [
-            RuntimeSymbol(surface=":x", role="external_entity", semantic_role="title"),
-            RuntimeSymbol(
-                surface=":y", role="external_entity", semantic_role="confirm"
-            ),
-        ],
-        include_schema_candidates=True,
-    )
-    assert tuple(left.values()) == tuple(right.values())
-    assert "Modal" in left[":hero.title"]
-    assert "Button" in left[":hero.confirm"]
+def test_external_markers_reject_semantic_metadata() -> None:
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        RuntimeSymbol(
+            surface=":hero.title",
+            role="external_entity",
+            semantic_role="title",
+        )
 
 
 def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:
@@ -249,7 +185,7 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
     from slm_training.harnesses.model_build.plugin import GenerationRequest
     from slm_training.models.template_fill import inventory_from_prompt
 
-    src = 'root = Stack([t], "column")\nt = TextContent(":smoke.hero.title")'
+    src = 'root = Stack([t], "column")\nt = TextContent(":slot_0")'
     cfg = TwoTowerConfig(
         d_model=64,
         n_heads=4,
@@ -269,7 +205,7 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
                 id="hero",
                 prompt="Build a hero",
                 openui=src,
-                placeholders=[":smoke.hero.title"],
+                placeholders=[":slot_0"],
             )
         ],
         config=cfg,
@@ -288,15 +224,15 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
         [
             GenerationRequest(
                 prompt="Build a hero card.",
-                slot_contract=(":smoke.hero.title", ":smoke.hero.body"),
+                slot_contract=(":slot_0", ":slot_1"),
             )
         ]
     )
     assert seen
     assert "Placeholders:" in seen[0]
     inv = inventory_from_prompt(seen[0], heuristic=False)
-    assert ":smoke.hero.title" in inv
-    assert ":smoke.hero.body" in inv
+    assert ":slot_0" in inv
+    assert ":slot_1" in inv
 
 
 def test_suffix_rollback_config_roundtrip() -> None:

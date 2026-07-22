@@ -17,9 +17,18 @@ def test_build_slot_contract_template_binds_inventory() -> None:
     assert 'root = Stack([' in src
     assert 'TextContent(":smoke.hero.title")' in src
     assert 'TextContent(":smoke.hero.body")' in src
-    assert 'Button(":cta.label")' in src
-    assert "card = Card([" in src
+    assert 'TextContent(":cta.label")' in src
+    assert "slot_0 =" in src
+    assert "hero" not in src.replace(":smoke.hero.title", "").replace(
+        ":smoke.hero.body", ""
+    )
     assert normalize_placeholders(["cta.label", ":cta.label"]) == [":cta.label"]
+
+
+def test_template_structure_does_not_depend_on_marker_names() -> None:
+    semantic = build_slot_contract_template([":hero.title", ":hero.cta"])
+    opaque = build_slot_contract_template([":x", ":y"])
+    assert semantic.replace(":hero.title", ":x").replace(":hero.cta", ":y") == opaque
 
 
 def test_template_token_length_fits_e18_budget() -> None:

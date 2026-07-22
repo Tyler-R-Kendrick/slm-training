@@ -107,7 +107,7 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
     assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
-    assert "Placeholders: :hero.title, :hero.body" in rows["t1"].prompt
+    assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
     assert result["stats"]["prompt_component_contract"] is True
     assert result["stats"]["prompt_slot_contract"] is True
     assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
@@ -136,46 +136,11 @@ def test_component_contract_can_expose_types_without_counts(tmp_path: Path) -> N
     assert result["stats"]["prompt_component_contract_mode"] == "types"
 
 
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
-def test_semantic_role_contract_uses_only_visible_slots_and_types(
-    tmp_path: Path,
-) -> None:
-    result = build_train_data(
+def test_semantic_role_contract_is_prohibited(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="template markers are opaque"):
         TrainDataConfig(
             seed_path=_seed_file(tmp_path),
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "train_data",
-            version="roles",
-            synthesizer="none",
-            prompt_slot_contract=True,
-            prompt_component_contract=True,
-            prompt_component_contract_mode="types",
             prompt_semantic_role_contract=True,
-        )
-    )
-    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Semantic roles: hero(body -> TextContent, title -> TextContent)" in rows["t1"].prompt
-    assert "Semantic roles: cta(label -> Button)" in rows["t2"].prompt
-    assert " x" not in rows["t2"].prompt
-    assert result["stats"]["prompt_semantic_role_contract"] is True
-
-
-def test_semantic_role_contract_requires_visible_authority(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="requires visible component and slot"):
-        build_train_data(
-            TrainDataConfig(
-                seed_path=_seed_file(tmp_path),
-                rico_path=None,
-                source="fixture",
-                output_root=tmp_path / "train_data",
-                version="invalid-roles",
-                synthesizer="none",
-                prompt_semantic_role_contract=True,
-            )
         )
 
 
@@ -327,7 +292,8 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             rico_limit=10,
         )
     )
-    assert result["stats"]["record_count"] >= 5
+    # Opaque-slot canonicalization collapses semantic-name-only duplicates.
+    assert result["stats"]["record_count"] >= 3
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
 

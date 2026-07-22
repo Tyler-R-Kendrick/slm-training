@@ -86,6 +86,7 @@ class TrainDataConfig:
     # _normalize_record before the official validate. off | audit | enforce;
     # None = the profile decides (strict=enforce, permissive=off).
     sanitize_mode: str | None = None
+
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -151,6 +152,11 @@ class TrainDataConfig:
     # Autoresearch snapshots must never overwrite prior evidence.
     immutable: bool = False
 
+    def __post_init__(self) -> None:
+        from slm_training.levers import require_valid_lever_configuration
+
+        require_valid_lever_configuration(self, context="TrainDataConfig")
+
     @property
     def output_dir(self) -> Path:
         return self.output_root / self.version
@@ -194,12 +200,17 @@ def _normalize_record(
     *,
     sanitize: "SanitizeOptions | None" = None,
 ) -> ExampleRecord:
-    from slm_training.data.contract import normalize_example_record
+    from slm_training.data.contract import (
+        assert_no_template_semantic_labels,
+        canonicalize_example_template_markers,
+        normalize_example_record,
+    )
     from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
     record = normalize_example_record(record)
+    assert_no_template_semantic_labels(record.prompt, record.design_md)
     if record.target_kind != "document":
         from slm_training.dsl.analysis.templatize import templatize_fragment
         from slm_training.dsl.language_contract import assert_symbol_only_output
@@ -267,7 +278,7 @@ def _normalize_record(
                 "templatize_skipped": {},
             }
         surfaces = [primary, *(target.text for target in accepted_outputs)]
-        return ExampleRecord(
+        return canonicalize_example_template_markers(ExampleRecord(
             id=record.id,
             prompt=record.prompt.strip(),
             openui=primary,
@@ -281,7 +292,7 @@ def _normalize_record(
             target_kind=record.target_kind,
             target_category=record.target_category,
             accepted_outputs=accepted_outputs,
-        )
+        ))
 
     scrubbed = strip_style_literals(record.openui)
     # Deterministic sanitization runs on the style-stripped source *before*
@@ -420,6 +431,7 @@ def _normalize_record(
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
+    out = canonicalize_example_template_markers(out)
     from slm_training.data.quality import independent_judge
 
     # Feed the deterministic prompt/output judge into the authoritative
@@ -1699,18 +1711,11 @@ def build_train_data(
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
     # contract cannot silently change which source examples are admitted.
-    if config.prompt_semantic_role_contract and not (
-        config.prompt_component_contract and config.prompt_slot_contract
-    ):
-        raise ValueError(
-            "prompt_semantic_role_contract requires visible component and slot contracts"
-        )
     if (
         config.prompt_component_contract
         or config.prompt_slot_contract
-        or config.prompt_semantic_role_contract
     ):
-        from slm_training.data.quality import component_counts, semantic_role_contract
+        from slm_training.data.quality import component_counts
         from slm_training.models.template_fill import ensure_prompt_inventory
 
         component_mode = config.prompt_component_contract_mode
@@ -1735,15 +1740,6 @@ def build_train_data(
                 prompt = ensure_prompt_inventory(
                     prompt, list(record.placeholders or [])
                 )
-            if config.prompt_semantic_role_contract and not any(
-                line.startswith("Semantic roles:") for line in prompt.splitlines()
-            ):
-                roles = semantic_role_contract(
-                    list(record.placeholders or []),
-                    [name for name, _count in counts],
-                )
-                if roles:
-                    prompt = f"{prompt}\nSemantic roles: {roles}"
             contracted.append(replace(record, prompt=prompt))
         deduped = contracted
 

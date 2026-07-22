@@ -12,16 +12,16 @@ torch = pytest.importorskip("torch")
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.train_loop import train
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import MAX_HARNESS_WALL_MINUTES
 from slm_training.models.twotower import TwoTowerModel
 
 HERO = (
     'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")\n'
     "hero = Card([hero_title, hero_body])"
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 @pytest.fixture()
@@ -36,21 +36,21 @@ def train_dir(tmp_path: Path) -> Path:
                 prompt="Hero",
                 openui=HERO,
                 split="train",
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
             ),
             ExampleRecord(
                 id="b",
                 prompt="CTA",
                 openui=CTA,
                 split="train",
-                placeholders=[":cta.label"],
+                placeholders=[":slot_0"],
             ),
             ExampleRecord(
                 id="c",
                 prompt="Hero two",
                 openui=HERO,
                 split="train",
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
             ),
         ],
     )
@@ -112,17 +112,17 @@ def test_wall_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> None
     assert summary["max_wall_minutes"] == 1e-9
 
 
-def test_wall_budget_is_hard_capped_at_three_minutes(
+def test_wall_budget_reserves_time_for_finalization(
     train_dir: Path, tmp_path: Path
 ) -> None:
-    with pytest.raises(ValueError, match=f"at most {MAX_RUN_MINUTES}"):
+    with pytest.raises(ValueError, match=f"at most {MAX_HARNESS_WALL_MINUTES}"):
         train(
             _cfg(
                 train_dir,
                 tmp_path,
                 "over_wall",
                 1,
-                max_wall_minutes=MAX_RUN_MINUTES + 0.01,
+                max_wall_minutes=MAX_HARNESS_WALL_MINUTES + 0.01,
             )
         )
 
@@ -169,14 +169,14 @@ def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> Non
                 prompt="Hero",
                 openui=HERO,
                 split="train",
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
             ),
             ExampleRecord(
                 id="z",
                 prompt="Different",
                 openui=CTA,
                 split="train",
-                placeholders=[":cta.label"],
+                placeholders=[":slot_0"],
             ),
         ],
     )
@@ -211,18 +211,18 @@ def test_initialize_from_resets_state_for_new_corpus(
             [
                 (
                     "Hero",
-                    HERO.replace(":hero.", ":fresh."),
-                    [":fresh.title", ":fresh.body"],
+                    HERO,
+                    [":slot_0", ":slot_1"],
                 ),
                 (
                     "CTA",
-                    CTA.replace(":cta.label", ":fresh.action"),
-                    [":fresh.action"],
+                    CTA,
+                    [":slot_0"],
                 ),
                 (
                     "Hero two",
-                    HERO.replace(":hero.", ":fresh."),
-                    [":fresh.title", ":fresh.body"],
+                    HERO,
+                    [":slot_0", ":slot_1"],
                 ),
             ]
         )
@@ -264,12 +264,12 @@ def test_initialize_from_resets_state_for_new_corpus(
         assert torch.equal(value, initialized_model.state_dict()[key]), key
     assert source_model.config.slot_component_lexeme_priors
     assert any(
-        key == "fresh"
+        key == "slot_0"
         for key, _scores in initialized_model.config.slot_component_lexeme_priors
     )
     assert (
         source_model.config.slot_component_lexeme_priors
-        != initialized_model.config.slot_component_lexeme_priors
+        == initialized_model.config.slot_component_lexeme_priors
     )
 
     retained = train(
@@ -339,14 +339,14 @@ def test_parent_replay_is_deterministic_and_provenanced(
                 prompt="Parent hero",
                 openui=HERO,
                 split="train",
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
             ),
             ExampleRecord(
                 id="parent-cta",
                 prompt="Parent CTA",
                 openui=CTA,
                 split="train",
-                placeholders=[":cta.label"],
+                placeholders=[":slot_0"],
             ),
         ],
     )
@@ -396,7 +396,7 @@ def test_loss_eval_wiring(train_dir: Path, tmp_path: Path) -> None:
                 prompt="Hero held",
                 openui=HERO,
                 split="held_out",
-                placeholders=[":hero.title", ":hero.body"],
+                placeholders=[":slot_0", ":slot_1"],
             )
         ],
     )

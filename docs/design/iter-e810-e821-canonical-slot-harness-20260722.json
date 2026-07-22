@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E810-E821",
+  "run_id": "e821-opaque-slots-v4-heldout-n5-r1",
+  "date_utc": "2026-07-22",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "output_contract_version": 4,
+  "data": {
+    "train_version": "e818_opaque_slot_ids_v4",
+    "eval_version": "e819_opaque_slot_ids_v4",
+    "roots": 126,
+    "candidates": 674,
+    "admitted": 350,
+    "mean_quality_score": 0.9897,
+    "records_templatized": 148,
+    "literals_templatized": 223,
+    "sanitization_fallbacks": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "content_fingerprint": "57e702de72e3b816f94cc74797cbe06063ce76001b7683a3d5939a6126dc2736",
+    "eval_records": 23
+  },
+  "training": {
+    "run_id": "e820-opaque-slots-v4-scratch120-r1",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "steps_requested": 120,
+    "steps_completed": 120,
+    "elapsed_wall_seconds": 13.6366,
+    "last_loss": 6.0485,
+    "checkpoint": "outputs/runs/e820-opaque-slots-v4-scratch120-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "0dc1f81d2cbf59acb8e027b3df06354643abd8072843cd259cdbd7e1e433523e",
+    "checkpoint_sync": false,
+    "checkpoint_sync_reason": "local scratch diagnostic"
+  },
+  "invalid_runs": [
+    {
+      "run_id": "e814-opaque-slots-v4-scratch120-r1",
+      "reason": "failed before step 1 because the CLI selected the forbidden compositional tokenizer"
+    },
+    {
+      "run_id": "e816-opaque-slots-v4-heldout-n5-r1",
+      "reason": "pre-fix evaluator reached the outer command interrupt without finalizing evidence"
+    }
+  ],
+  "held_out": {
+    "n": 5,
+    "parse_rate": 0.0,
+    "meaningful_program_v1_rate": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "structural_similarity": 0.00444,
+    "component_type_recall": 0.02857142857142857,
+    "reward_score": 0.0,
+    "latency_ms_p50": 12001.79,
+    "latency_ms_p95": 27224.56,
+    "fallback_count": 1,
+    "decode_timeout_count": 4
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "five-record diagnostic subset with zero parse and meaning"
+  },
+  "decision": {
+    "retain": "harness-owned opaque ordinals, output contract v4, symbol-only defaults, bounded eval finalization",
+    "reject": "checkpoint promotion, sync, deployment, and ship claims"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ca5d17cf0359d202857878db1281847023c31d1e",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v19",
+      "data.test_build": "v6",
+      "harness.train_data": "v13",
+      "harness.model_build.data": "v3",
+      "harness.model_build.train": "v21",
+      "harness.model_build.eval": "v47",
+      "model.twotower": "v226"
+    }
+  }
+}
