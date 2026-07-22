@@ -6374,3 +6374,16 @@ recall 0.7143→0.4524; AgentV is 0/1. Reject E902 without smoke. Focused replay
 is falsified at both retention settings; move to schema-typed decoder behavior.
 Full evidence:
 [focused retention results](iter-e902-e903-focused-role-retention-20260722.md).
+
+# E904-E907 — E891 compiler canvas cap (2026-07-22)
+
+E904 fails closed before model load because the historical repeated-array
+close lever is unsupported for lexer compiler-tree decode. E905-E907 therefore
+vary only the LTR canvas cap. Cap 160 removes the timeout but regresses
+fidelity, structure, and recall. Cap 192 removes the timeout while retaining
+meaning-v1 0.8 and improves fidelity 0.8000→0.8400, structure 0.3298→0.3492,
+recall 0.7143→0.7810, and reward 0.7844→0.9178; its smoke aggregate is exactly
+unchanged from E893. Retain cap 192 as the best bounded E891 diagnostic recipe,
+without changing the global default or claiming ship readiness; AgentV is 0/3.
+Full evidence:
+[canvas-cap results](iter-e904-e907-e891-canvas-cap-20260722.md).
