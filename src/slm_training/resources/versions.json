@@ -27,13 +27,23 @@
       ]
     },
     "config.levers": {
-      "version": "v6",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-22",
+          "note": "Withdraw unreachable lexer root-reference identity supervision and decoding so invalid configurations fail before artifacts"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-22",
+          "note": "Expose trained root-reference identity supervision and decoding on the lexer compiler path"
+        },
         {
           "version": "v6",
           "date": "2026-07-22",
@@ -2899,13 +2909,23 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v18",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-22",
+          "note": "Restore the root-reference identity strict-subset sampler to its reachable choice-tokenizer capability"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-22",
+          "note": "Select strict-subset root-reference identity records through either choice or lexer grammar-native targets"
+        },
         {
           "version": "v18",
           "date": "2026-07-21",
@@ -3734,7 +3754,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v193",
+      "version": "v195",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3756,6 +3776,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v195",
+          "date": "2026-07-22",
+          "note": "Remove unreachable lexer root-reference identity ranking while retaining strict serving checkpoint validation for enabled root heads"
+        },
+        {
+          "version": "v194",
+          "date": "2026-07-22",
+          "note": "Add lexer-native root-reference identity supervision and compiler-path ranking; reject serving checkpoints missing enabled root heads"
+        },
         {
           "version": "v193",
           "date": "2026-07-22",

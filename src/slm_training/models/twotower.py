@@ -693,7 +693,10 @@ def _truncate_with_eos(ids: list[int], max_len: int, eos_id: int) -> list[int]:
 
 
 def _load_checkpoint_state(
-    model: nn.Module, state_dict: dict[str, torch.Tensor]
+    model: nn.Module,
+    state_dict: dict[str, torch.Tensor],
+    *,
+    allow_missing_auxiliary_heads: bool = False,
 ) -> None:
     """Load a checkpoint while rejecting silent trainable-weight mismatches."""
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
@@ -712,12 +715,13 @@ def _load_checkpoint_state(
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
     # V7 survival head is likewise a plug-in (trained via survival_train, E73).
     allowed_missing |= {key for key in missing if key.startswith("survival_head.")}
-    allowed_missing |= {
-        key for key in missing if key.startswith("root_reference_arity_head.")
-    }
-    allowed_missing |= {
-        key for key in missing if key.startswith("root_reference_identity_head.")
-    }
+    if allow_missing_auxiliary_heads:
+        allowed_missing |= {
+            key for key in missing if key.startswith("root_reference_arity_head.")
+        }
+        allowed_missing |= {
+            key for key in missing if key.startswith("root_reference_identity_head.")
+        }
     # SLM-138: a shared-recursive denoiser adds z-state parameters that older
     # stacked checkpoints legitimately omit; warm-start them randomly. Only
     # the "full" z_state_mode (denoiser_arch="shared_recursive") declares
@@ -12681,7 +12685,11 @@ class TwoTowerModel(nn.Module):
             payload.get("config") or {},
             allow_tie_migration=allow_tie_migration,
         )
-        _load_checkpoint_state(self, payload["state_dict"])
+        _load_checkpoint_state(
+            self,
+            payload["state_dict"],
+            allow_missing_auxiliary_heads=True,
+        )
         source_config = payload.get("config") or {}
         restored_prior_fields: list[str] = []
         for field_name in (

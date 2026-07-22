@@ -61,6 +61,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
             "compiler_decode_mode": ["restricted", "tree"],
         }
     ]
+    assert catalog["root_reference_identity_decode_weight"][
+        "supported_configurations"
+    ] == [{"model_name": "twotower", "output_tokenizer": "choice"}]
 
 
 def test_every_decode_weight_has_a_capability_requirement() -> None:

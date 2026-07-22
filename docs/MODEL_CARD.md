@@ -35,6 +35,7 @@ scratch baseline.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1` | CPU scratch output-contract-v2 invalid capability declaration | `outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt` (local) | 140 steps / 78.98s, SHA `cddb5f28…5167fc`; matched weight 0/1 eval has zero identity applications — **invalidated; never sync, promote, serve, resume, or use as parent** ([results](design/iter-e733-lexer-root-identity-reachability-20260722.md)) |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1` | CPU scratch output-contract-v2 root-arity objective | `outputs/runs/e731-symbol-only-root-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 82.20s, SHA `bff1e0e6…2fbb88`; weights 0/1/2 are prediction-identical and strict-v2 remains 0.0 — **capability retained, checkpoint rejected** ([results](design/iter-e731-lexer-root-arity-symbol-only-20260722.md)) |
 | E714 symbol-only baseline | `e714-symbol-only-scratch600-r1` | CPU scratch output-contract-v2 baseline | `outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 48.72s, SHA `71ef1d25…2b49e`; all predictions satisfy symbol-only v2, but five-suite strict meaning is 0.0 and AgentV 0/5 — **compatible diagnostic, not promotable or ship** ([results](design/iter-e714-symbol-only-baseline-20260721.md)) |
 | E720 component-inventory diagnostic | `e720-symbol-only-component-inventory600-r1` | CPU scratch output-contract-v2 inventory objective | `outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt` (local) | 600 steps / 72.38s, SHA `842a1a21…f91a11`; inventory top-k recall 0.6875, but smoke parse/strict meaning 0.0 and weight-4 decode timed out 3/3 — **rejected, not promotable or ship** ([results](design/iter-e720-component-inventory-symbol-only-20260721.md)) |
@@ -284,6 +285,7 @@ Leakage: structural fingerprints + train/test isolation
 | held_out (`e727-binder-arity1-tree-heldout-r4`, arity 1) | 4 | 1.0 | 0.2667 | 0.3940 | 0.7290 | No — identical to arity 0, strict-v2 0.0, AgentV 0/1 |
 | smoke (`e729-binder-topology1-tree-smoke-r3`, topology 1) | 3 | 1.0 | 0.5278 | 0.4642 | 0.7953 | No — meaning-v1 0.3333 vs control 0.6667; strict-v2 0.0, AgentV 0/1 |
 | smoke (`e731-root-arity2-tree-smoke-r3`, root arity 2) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | No — identical to weights 0/1 after six applications and zero changes; strict-v2 0.0, AgentV 0/1 |
+| invalid (`e733-root-identity1-tree-smoke-r1`, root identity 1) | 3 | 1.0 | 0.5278 | 0.5614 | 0.8073 | Invalid — treatment recorded zero applications; checkpoint and lexer capability declaration invalidated, AgentV 0/1 |
 | held_out (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 0.5 | 0.1638 | 0.0 | No — strict-v2 0.0, two timeouts, AgentV 0/1 |
 | adversarial (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 1.0 | 0.1221 | 0.0 | No — strict-v2 0.0, AgentV 0/1 |
 | ood (`e714-symbol-only-scratch600-r1`) | 4 | 0.5 | 0.5 | 0.0483 | 0.0 | No — strict-v2 0.0, two timeouts, AgentV 0/1 |
@@ -896,6 +898,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-22 | `e733-symbol-only-root-identity140-r1` | `outputs/runs/e733-symbol-only-root-identity140-r1/` (local) | Weight 0/1 smoke outputs and metrics identical; treatment has zero identity applications, strict-v2 0.0, AgentV 0/1 | 140-step / 78.98s explicit no-sync CPU run under an invalid transient capability declaration; checkpoint invalidated and final config rejects lexer identity before artifacts |
 | 2026-07-22 | `e731-symbol-only-root-arity140-r1` | `outputs/runs/e731-symbol-only-root-arity140-r1/` (local) | Smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0; weights 0/1/2 identical, AgentV 0/1 | 140-step / 82.20s explicit no-sync CPU scratch diagnostic; capability retained, checkpoint rejected |
 | 2026-07-22 | `e727-symbol-only-binder-arity140-r1` | `outputs/runs/e727-symbol-only-binder-arity140-r1/` (local) | Smoke meaning-v1 0.6667 / structure 0.5614; held-out meaning-v1 0.25 / structure 0.3940; strict-v2 0.0, AgentV 0/1 | 140-step / 77.46s no-sync CPU scratch diagnostic; arity weights 1/2 cause no choice changes, checkpoint rejected |
 | 2026-07-22 | `e729-symbol-only-binder-topology140-r1` | `outputs/runs/e729-symbol-only-binder-topology140-r1/` (local) | Smoke meaning-v1 0.3333 / structure 0.4642 at topology 0.25/1 vs control 0.6667 / 0.5614; strict-v2 0.0, AgentV 0/1 | 140-step / 77.50s no-sync CPU scratch diagnostic; topology changes 3/3 choices harmfully, checkpoint rejected |

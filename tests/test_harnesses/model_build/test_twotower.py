@@ -182,6 +182,52 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
         TwoTowerModel.from_checkpoint(path, device="cpu")
 
 
+@pytest.mark.parametrize(
+    ("output_tokenizer", "compiler_decode_mode", "loss_name", "head_name"),
+    [
+        (
+            "choice",
+            "off",
+            "root_reference_identity_loss_weight",
+            "root_reference_identity_head",
+        ),
+        (
+            "lexer",
+            "tree",
+            "root_reference_arity_loss_weight",
+            "root_reference_arity_head",
+        ),
+    ],
+)
+def test_checkpoint_rejects_missing_enabled_root_head(
+    tmp_path: Path,
+    output_tokenizer: str,
+    compiler_decode_mode: str,
+    loss_name: str,
+    head_name: str,
+) -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer=output_tokenizer,
+            compiler_decode_mode=compiler_decode_mode,
+            **{loss_name: 1.0},
+        ),
+    )
+    path = tmp_path / f"missing-{head_name}.pt"
+    model.save(path)
+    payload = torch.load(path, map_location="cpu", weights_only=True)
+    del payload["state_dict"][f"{head_name}.weight"]
+    torch.save(payload, path)
+
+    with pytest.raises(ValueError, match="checkpoint state mismatch"):
+        TwoTowerModel.from_checkpoint(path, device="cpu")
+
+
 def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
     model = TwoTowerModel.from_records(
         [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
