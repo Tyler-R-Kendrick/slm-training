@@ -334,3 +334,21 @@ def test_e720_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) 
         if row.get("run_id") == run_id
     )
     assert "842a1a21" in checkpoint["status"]
+
+
+def test_e721_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e721-symbol-only-component-plan190-r4"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    smoke = run["scoreboard"]["suites"]["smoke"]
+    assert smoke["parse_rate"] == 1.0
+    assert smoke["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "c30fd565fced08626f39af5e9e23d233d88c26e0dac3b031928105b97c20f530"
+    )
+    assert run["train_summary"]["checkpoint_synced"] is False
