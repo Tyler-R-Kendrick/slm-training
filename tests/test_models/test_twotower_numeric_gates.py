@@ -193,7 +193,7 @@ def test_model_build_config_accepts_valid_schedules_and_weights() -> None:
 def test_model_build_config_rejects_choice_only_reference_weights_for_lexer(
     weight_name: str,
 ) -> None:
-    with pytest.raises(ValueError, match="require output_tokenizer='choice'"):
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
         _valid_build_config(output_tokenizer="lexer", **{weight_name: 1.0})
 
 
@@ -207,11 +207,50 @@ def test_model_build_config_accepts_reference_weights_for_choice() -> None:
 
 
 def test_model_build_config_rejects_reference_weights_for_other_models() -> None:
-    with pytest.raises(ValueError, match="require model_name='twotower'"):
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
         _valid_build_config(
             model_name="stub",
             output_tokenizer="choice",
             root_reference_arity_loss_weight=1.0,
+        )
+
+
+@pytest.mark.parametrize(
+    "weight_name",
+    [
+        "component_edge_decode_weight",
+        "binder_component_plan_decode_weight",
+        "binder_topology_decode_weight",
+        "binder_arity_decode_weight",
+    ],
+)
+def test_model_build_config_rejects_compiler_path_levers_when_decode_is_off(
+    weight_name: str,
+) -> None:
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
+        _valid_build_config(
+            output_tokenizer="lexer",
+            compiler_decode_mode="off",
+            **{weight_name: 1.0},
+        )
+
+
+def test_model_build_config_accepts_lexer_levers_with_tree_decode() -> None:
+    cfg = _valid_build_config(
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        component_plan_decode_weight=1.0,
+        binder_arity_decode_weight=1.0,
+    )
+    assert cfg.binder_arity_decode_weight == 1.0
+
+
+def test_model_build_config_rejects_choice_only_schema_lever_for_lexer() -> None:
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
+        _valid_build_config(
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            schema_value_decode_weight=1.0,
         )
 
 
@@ -236,7 +275,7 @@ def _valid_twotower_config(**overrides: object) -> TwoTowerConfig:
 
 
 def test_twotower_config_rejects_choice_only_reference_weight_for_lexer() -> None:
-    with pytest.raises(ValueError, match="require output_tokenizer='choice'"):
+    with pytest.raises(ValueError, match="unsupported enabled levers"):
         _valid_twotower_config(
             output_tokenizer="lexer",
             root_reference_arity_decode_weight=1.0,

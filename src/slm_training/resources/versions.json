@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-22",
+          "note": "Unify decode-lever capability requirements and reject configurations with no executable choice or compiler path before runs start"
+        },
         {
           "version": "v2",
           "date": "2026-07-22",
@@ -3690,7 +3695,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v189",
+      "version": "v190",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3711,6 +3716,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v190",
+          "date": "2026-07-22",
+          "note": "Fail closed when enabled decode levers cannot execute for the selected output tokenizer and compiler mode"
+        },
         {
           "version": "v189",
           "date": "2026-07-22",

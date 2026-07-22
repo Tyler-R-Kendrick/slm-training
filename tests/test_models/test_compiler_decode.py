@@ -43,9 +43,11 @@ def _model(**config_overrides) -> TwoTowerModel:
         source="fixture",
     )
     output_tokenizer = config_overrides.pop("output_tokenizer", "lexer")
+    compiler_decode_mode = config_overrides.pop("compiler_decode_mode", "tree")
     config = TwoTowerConfig(
         context_backend="scratch",
         output_tokenizer=output_tokenizer,
+        compiler_decode_mode=compiler_decode_mode,
         d_model=32,
         n_heads=2,
         context_layers=1,
@@ -464,10 +466,12 @@ def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> N
 def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     from types import SimpleNamespace
 
-    model = _model(slot_coverage_close_decode_weight=4.0)
+    model = _model(
+        output_tokenizer="choice", slot_coverage_close_decode_weight=4.0
+    )
     tokenizer = model.tokenizer
     close_id = tokenizer.token_to_id["]"]
-    button_id = tokenizer.token_to_id["Button"]
+    button_id = tokenizer.token_to_id["+Button"]
     candidates = (button_id, close_id)
     scores = torch.zeros(2)
     typed = SimpleNamespace(
@@ -4810,11 +4814,13 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
     still missing from the prefix; already-filled slots and the fully-covered
     case are both no-ops, and the default-off weight never fires.
     """
-    model = _model(required_slot_margin_decode_weight=2.0)
+    model = _model(
+        output_tokenizer="choice", required_slot_margin_decode_weight=2.0
+    )
     tokenizer = model.tokenizer
     slot0 = tokenizer.sym_id(0)
     slot1 = tokenizer.sym_id(1)
-    button_id = tokenizer.token_to_id["Button"]
+    button_id = tokenizer.token_to_id["+Button"]
     slot_contract = [":status.title", ":status.body"]
     candidates = (slot0, slot1, button_id)
     scores = torch.tensor([9.0, 2.0, 10.0])
@@ -4837,7 +4843,9 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
     )
 
     # Default-off weight never fires, even with missing slots present.
-    off_model = _model(required_slot_margin_decode_weight=0.0)
+    off_model = _model(
+        output_tokenizer="choice", required_slot_margin_decode_weight=0.0
+    )
     assert (
         off_model._required_slot_margin_bias(
             prefix, candidates, scores, slot_contract
@@ -4868,11 +4876,13 @@ def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
     """
     from types import SimpleNamespace
 
-    model = _model(required_slot_margin_decode_weight=2.0)
+    model = _model(
+        output_tokenizer="choice", required_slot_margin_decode_weight=2.0
+    )
     tokenizer = model.tokenizer
     slot0 = tokenizer.sym_id(0)
     slot1 = tokenizer.sym_id(1)
-    button_id = tokenizer.token_to_id["Button"]
+    button_id = tokenizer.token_to_id["+Button"]
     slot_contract = [":status.title", ":status.body"]
     candidates = (slot0, slot1, button_id)
     scores = torch.tensor([9.0, 2.0, 10.0])
@@ -4939,11 +4949,13 @@ def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> No
     """
     from types import SimpleNamespace
 
-    model = _model(required_slot_margin_decode_weight=2.0)
+    model = _model(
+        output_tokenizer="choice", required_slot_margin_decode_weight=2.0
+    )
     tokenizer = model.tokenizer
     slot0 = tokenizer.sym_id(0)
     slot1 = tokenizer.sym_id(1)
-    button_id = tokenizer.token_to_id["Button"]
+    button_id = tokenizer.token_to_id["+Button"]
     slot_contract = [":status.title", ":status.body"]
     candidates = (slot0, slot1, button_id)
     scores = torch.tensor([9.0, 2.0, 10.0])

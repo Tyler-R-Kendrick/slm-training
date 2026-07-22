@@ -216,6 +216,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             context_layers=1,
             denoiser_layers=1,
             output_tokenizer="lexer",
+            compiler_decode_mode="tree",
             component_inventory_loss_weight=1.0,
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.0,
@@ -235,11 +236,11 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_topology_decode_weight=0.2,
             binder_arity_loss_weight=0.7,
             binder_arity_decode_weight=0.1,
-            root_reference_arity_loss_weight=0.6,
-            root_reference_arity_decode_weight=0.05,
-            root_reference_identity_loss_weight=0.55,
+            root_reference_arity_loss_weight=0.0,
+            root_reference_arity_decode_weight=0.0,
+            root_reference_identity_loss_weight=0.0,
             root_reference_identity_negative_weight=3.0,
-            root_reference_identity_decode_weight=0.04,
+            root_reference_identity_decode_weight=0.0,
         ),
     )
     assert model.component_inventory_head is not None
@@ -247,7 +248,10 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     model.save(path)
 
     loaded = TwoTowerModel.from_checkpoint(path, device="cpu")
-    apply_runtime_overrides(loaded, ModelBuildConfig(train_dir=tmp_path))
+    apply_runtime_overrides(
+        loaded,
+        ModelBuildConfig(train_dir=tmp_path, runtime_override_fields=frozenset()),
+    )
 
     assert loaded.component_inventory_head is not None
     assert loaded.component_plan_head is not None
@@ -281,16 +285,30 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_arity_loss_weight == 0.7
     assert loaded.config.binder_arity_decode_weight == 0.1
 
-    assert loaded.config.root_reference_arity_loss_weight == 0.6
-    assert loaded.config.root_reference_arity_decode_weight == 0.05
-    assert loaded.config.root_reference_identity_loss_weight == 0.55
+    assert loaded.config.root_reference_arity_loss_weight == 0.0
+    assert loaded.config.root_reference_arity_decode_weight == 0.0
+    assert loaded.config.root_reference_identity_loss_weight == 0.0
     assert loaded.config.root_reference_identity_negative_weight == 3.0
-    assert loaded.config.root_reference_identity_decode_weight == 0.04
+    assert loaded.config.root_reference_identity_decode_weight == 0.0
 
     apply_runtime_overrides(
         loaded,
         ModelBuildConfig(
             train_dir=tmp_path,
+            runtime_override_fields=frozenset(
+                {
+                    "compiler_decode_mode",
+                    "component_inventory_decode_weight",
+                    "component_plan_decode_weight",
+                    "component_edge_decode_weight",
+                    "binder_component_plan_decode_weight",
+                    "binder_topology_decode_weight",
+                    "binder_arity_decode_weight",
+                    "root_reference_arity_decode_weight",
+                    "root_reference_identity_decode_weight",
+                }
+            ),
+            compiler_decode_mode="tree",
             component_inventory_decode_weight=0.0,
             component_plan_decode_weight=0.0,
             component_edge_decode_weight=0.0,
@@ -779,6 +797,7 @@ def test_opaque_projection_keeps_marker_names_out_of_scoring() -> None:
             n_heads=4,
             context_layers=1,
             denoiser_layers=1,
+            compiler_decode_mode="tree",
             slot_component_decode_weight=1.0,
             slot_contract_in_context=True,
         ),
