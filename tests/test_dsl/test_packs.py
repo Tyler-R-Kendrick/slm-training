@@ -45,6 +45,8 @@ def test_pack_contract_invariants(pack_id: str) -> None:
 
 
 def test_openui_pack_placeholder_policy() -> None:
+    from slm_training.dsl.language_contract import output_contract_violations
+
     pack = get_pack("openui")
     assert pack.placeholders.is_placeholder(":hero.title")
     assert not pack.placeholders.is_placeholder("plain text")
@@ -52,6 +54,7 @@ def test_openui_pack_placeholder_policy() -> None:
     records = pack.corpus_generator(2, 1)
     extracted = pack.placeholders.extract(records[0].openui)
     assert all(pack.placeholders.is_placeholder(p) for p in extracted)
+    assert all(not output_contract_violations(record.openui) for record in records)
 
 
 def test_engine_seam_resolves_registered_backends() -> None:

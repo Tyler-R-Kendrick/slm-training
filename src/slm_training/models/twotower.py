@@ -4157,6 +4157,9 @@ class TwoTowerModel(nn.Module):
         if self.config.grammar_finalize_validate:
             fallback = self._minimal_valid_openui(slot_contract)
             if fallback is not None:
+                active = get_active_stats()
+                if active is not None:
+                    active.certified_fallbacks += 1
                 return fallback
             raise RuntimeError(
                 "grammar_finalize_validate: model could not produce a complete valid OpenUI program"
@@ -9501,6 +9504,25 @@ class TwoTowerModel(nn.Module):
             # points it is meant to protect. Fall back only when no legal path
             # exists at all.
             if not forest.paths:
+                if stats is not None:
+                    stats.constrained_dead_ends += 1
+                    stats.constrained_dead_end_last_position = len(prefix)
+                    if len(stats.constrained_dead_end_traces) < 16:
+                        stats.constrained_dead_end_traces.append(
+                            {
+                                "phase": "compiler_tree",
+                                "reason": "empty_completion_forest",
+                                "position": len(prefix),
+                                "prefix_text": self._decode_ids(
+                                    torch.tensor(prefix, dtype=torch.long)
+                                ),
+                                "prefix_tokens": [
+                                    self.tokenizer.id_to_token.get(int(token_id), "")
+                                    for token_id in prefix
+                                ],
+                                "terminals": list(forest.terminals),
+                            }
+                        )
                 if search_mode != "greedy":
                     if stats is not None:
                         stats.compiler_lattice_bottoms += 1

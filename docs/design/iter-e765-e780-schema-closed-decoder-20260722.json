@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E765-E780",
+  "run_id": "e780-schema-closed-heldout-n5-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-22",
+  "description": "Prevent schema, content-exhaustion, typed-reference, binder-cycle, and canvas-runaway failures before constrained decoder finalization",
+  "decision": {
+    "retain": "model.twotower v223 and harness.model_build.eval v45",
+    "reject": "lattice timeout, required-symbol-only no-effect arm, invalid typed references, cyclic binders, recursive container runaway, checkpoint promotion, and ship claims",
+    "reason": "The final full held-out replay has complete request-marker fidelity with zero fallback or timeout, while weak component roles remain visible",
+    "next": "improve learned marker-to-component role assignment on the same immutable held-out suite without weakening schema closure"
+  },
+  "local_compute": true,
+  "producer_repairs": {
+    "component": "harness.train_data v11",
+    "openui_pack": "templatize ProgramSpec output before record emission and assert symbol-only output",
+    "train_settings_seed": "replace notify and volume free-form names with declared markers",
+    "gate_changes": 0
+  },
+  "arms": [
+    {"run_id":"e765-greedy-heldout-form-n1-r1","n":1,"artifact_valid":true,"result":"baseline: one compiler fallback; fidelity 0.142857; structure 0.1148"},
+    {"run_id":"e765-lattice-heldout-form-n1-r1","n":1,"artifact_valid":false,"result":"invalid: 12-second decode timeout and empty prediction"},
+    {"run_id":"e766-symbol-exhaustion-heldout-form-n1-r1","n":1,"artifact_valid":true,"result":"rejected no-effect arm: fidelity 0.142857; one fallback"},
+    {"run_id":"e767-schema-array-boundary-heldout-form-n1-r1","n":1,"artifact_valid":true,"result":"retained generalized array boundary: fidelity 0.428571; structure 0.5136; zero fallback"},
+    {"run_id":"e768-schema-array-boundary-heldout-n5-r1","n":5,"artifact_valid":true,"result":"interim full replay: fidelity 0.625714; structure 0.38196; two fallbacks"},
+    {"run_id":"e769-required-symbol-heldout-input-n1-r1","n":1,"artifact_valid":true,"result":"diagnostic: empty containers exposed; fidelity 0.5"},
+    {"run_id":"e770-nonempty-children-heldout-input-n1-r1","n":1,"artifact_valid":true,"result":"retained nonempty children rule: fidelity and component recall 1.0; zero fallback"},
+    {"run_id":"e771-schema-closure-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"diagnostic: compiler plus certified fallback now counted"},
+    {"run_id":"e772-dead-end-trace-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"diagnostic: bounded trace localized empty forest after CardHeader("},
+    {"run_id":"e773-symbol-consumer-closure-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"interim: full fidelity and zero fallback; exposed empty typed array"},
+    {"run_id":"e774-nonempty-typed-array-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"interim: exposed wrong component type inside Buttons"},
+    {"run_id":"e775-typed-array-item-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"interim: exposed incompatible binder reference inside Buttons"},
+    {"run_id":"e776-typed-binder-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"diagnostic: typed binder rejection exposed unavailable required content"},
+    {"run_id":"e777-required-symbol-closure-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"diagnostic: compiler closed but cyclic binder forced certified fallback"},
+    {"run_id":"e778-acyclic-binder-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"diagnostic: acyclic graph exposed recursive container canvas exhaustion"},
+    {"run_id":"e779-closed-leaf-heldout-settings-n1-r1","n":1,"artifact_valid":true,"result":"retained closure: fidelity 1.0; structure 0.1978; zero fallback"},
+    {"run_id":"e780-schema-closed-heldout-n5-r1","n":5,"artifact_valid":true,"result":"retained full replay: fidelity 1.0; structure 0.39212; zero fallback and timeout"}
+  ],
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E765-E780 targeted diagnostics plus final held_out n=5",
+    "suite": "held_out",
+    "suite_n": 5,
+    "honesty_mode": "strict_compiler_tree with request-declared RuntimeSymbol contract",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "d22f53fddabffa2491bf98f64c65a87442c169c47a6d52f9cee2b40efb6ff004",
+    "eval_suite_manifest_sha": "a94aca7a025ad3f4373c1a266d012b6c737761f0e140794e5f12fbea59144c99",
+    "decode_timeout_seconds": 12.0,
+    "decode_canvas_cap": 160,
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.2,
+      "meaningful_program_v1_rate": 0.2,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 1.0,
+      "contract_precision": 1.0,
+      "contract_recall": 1.0,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.39211999999999997,
+      "tree_edit_similarity": 0.39211999999999997,
+      "component_type_recall": 0.2571428571428571,
+      "reward_score": 0.9465999999999999,
+      "latency_ms_p50": 3316.53,
+      "latency_ms_p95": 3543.57,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "agentv": {"passed":0,"total":1,"execution_errors":0,"mean_score":0.5},
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "five-record diagnostic subset; missing policy suites, strict-v2 zero, low component recall, and AgentV 0/1"
+  },
+  "output_contract": {
+    "free_form_output_strings": 0,
+    "undeclared_prediction_markers": 0,
+    "allowed_completion_surface": "OpenUI grammar/AST symbols, schema enum literals, and request-declared template markers"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "005b90190a7ab587a04ea40c28a61b818e555344",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v15",
+      "harness.model_build.eval": "v45",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v223"
+    },
+    "stamped_at": "2026-07-22T12:34:51.427195+00:00"
+  }
+}

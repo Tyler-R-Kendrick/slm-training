@@ -28,6 +28,11 @@ def test_decode_stats_merge_counts_unconstrained_retries() -> None:
     assert total.unconstrained_retries == 3
 
 
+def test_decode_stats_aggregates_certified_fallbacks() -> None:
+    summary = aggregate_stats([DecodeStats(certified_fallbacks=2)])
+    assert summary["certified_fallbacks_sum"] == 2.0
+
+
 def test_decode_stats_aggregates_row_bypass_counts() -> None:
     stats = DecodeStats(
         denoiser_rows_evaluated=2,

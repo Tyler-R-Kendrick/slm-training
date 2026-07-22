@@ -108,6 +108,7 @@ class DecodeStats:
     compiler_lattice_termination_reason: str = ""
     template_fastpath_count: int = 0
     template_fallback_count: int = 0
+    certified_fallbacks: int = 0
     root_invariant_bypass_count: int = 0
     dynamic_mask_applications: int = 0
     dynamic_candidates_before: int = 0
@@ -307,6 +308,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "constrained_dead_end_candidate_count",
         "template_fastpath_count",
         "template_fallback_count",
+        "certified_fallbacks",
         "root_invariant_bypass_count",
         "dynamic_mask_applications",
         "dynamic_candidates_before",

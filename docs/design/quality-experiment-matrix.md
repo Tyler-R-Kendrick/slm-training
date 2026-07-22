@@ -5968,3 +5968,19 @@ request-bound. Quality remains honestly weak (strict-v2 0, structure 0.2155,
 component recall 0.2286, four fallbacks, AgentV 0/1), so no checkpoint is
 promoted. No remote compute ran. Full evidence:
 [`iter-e763-e764-symbol-only-heldout-fallback-20260722.md`](iter-e763-e764-symbol-only-heldout-fallback-20260722.md).
+
+# E765-E780 — schema-closed constrained decoder (2026-07-22)
+
+Retain model v223 and eval harness v45. The compiler now rejects components
+whose text/child content is unavailable, empty or wrongly typed component
+arrays, incompatible typed binder references, binder cycles, and recursive
+container expansion after the request marker inventory is exhausted. Certified
+finalization fallback is included in canonical fallback telemetry.
+
+The final local held-out n=5 replay has parse, contract precision/recall,
+fidelity, and validity all at 1.0; structure 0.3921; component recall 0.2571;
+reward 0.9466; p95 3543.57 ms; and zero fallbacks/timeouts. Meaningful-v1 is
+only 0.2, strict-v2 is 0, and AgentV is 0/1, so no checkpoint is promoted and
+no ship claim is made. The lattice timeout is explicitly invalid evidence. No
+remote compute ran. Full evidence:
+[`iter-e765-e780-schema-closed-decoder-20260722.md`](iter-e765-e780-schema-closed-decoder-20260722.md).

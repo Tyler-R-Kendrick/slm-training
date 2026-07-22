@@ -357,6 +357,136 @@ def test_allowed_id_set_expands_components() -> None:
     assert tok.token_to_id["="] not in allowed
 
 
+def test_completion_forest_closes_component_reference_array_before_postfix() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Buttons([Button(":one")',
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":one", ":two"],
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert "]" in candidates
+    assert {"[", ".", "?", "+", "-", "*", "/", "%"}.isdisjoint(candidates)
+
+
+def test_completion_forest_excludes_symbol_consumers_after_contract_exhaustion() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([Button(":first"), Input(":second"), ',
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":first", ":second"],
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert {
+        "TextContent",
+        "Button",
+        "Buttons",
+        "Form",
+        "Input",
+        "CardHeader",
+        "Stack",
+        "Card",
+    }.isdisjoint(candidates)
+    assert "Separator" in candidates
+
+
+def test_completion_forest_rejects_empty_component_children() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode("root = Stack([", add_special=True)[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":unused"],
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert "]" not in candidates
+    assert "Separator" in candidates
+
+
+def test_completion_forest_rejects_empty_typed_component_array() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode("root = Buttons([", add_special=True)[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":action"],
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert "]" not in candidates
+    assert "Button" in candidates
+    assert "Stack" not in candidates
+
+
+def test_completion_forest_restricts_typed_array_binder_references() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root = Stack([b1, b2])\nb1 = Button(":action")\n'
+        "b2 = Stack([b1])\nb3 = Buttons([",
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+        slot_contract=[":action"],
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert "<BIND_1>" in candidates
+    assert "<BIND_2>" not in candidates
+
+
+def test_completion_forest_rejects_cyclic_binder_reference() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        "root = Stack([b1])\nb1 = Stack([b2])\nb2 = Card([",
+        add_special=True,
+    )[:-1]
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        state=make_grammar_state(),
+    )
+
+    candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
+    assert "<BIND_1>" not in candidates
+    assert "Separator" in candidates
+
+
 def test_cached_native_masks_intersect_active_symbols() -> None:
     from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -488,10 +618,14 @@ def test_ensure_valid_fallback_only_when_finalize() -> None:
     assert model._canonical_valid_openui(out) is None
     assert fallback is None or out != fallback
 
+    from slm_training.models.decode_stats import collect_decode_stats
+
     model.config.grammar_finalize_validate = True
     try:
-        certified = model._ensure_valid_openui(raw, ctx, ctx_pad, 16, attempts=1)
+        with collect_decode_stats() as stats:
+            certified = model._ensure_valid_openui(raw, ctx, ctx_pad, 16, attempts=1)
         assert model._canonical_valid_openui(certified) is not None
+        assert stats.certified_fallbacks == 1
     except RuntimeError as exc:
         # Tiny fixture vocab may lack fallback templates — raise is still correct.
         assert "grammar_finalize_validate" in str(exc)
