@@ -6428,3 +6428,17 @@ generalized capability default off, reject the treatment, and target
 completion-aware optional recursive arguments next. AgentV is 0/2; no ship
 gates or checkpoint changes. Full evidence:
 [schema-inline results](iter-e921-e922-schema-inline-items-20260722.md).
+
+# E923-E925 — closed-array schema arity (2026-07-22)
+
+The compiler formerly admitted a trailing comma after a closed array-valued
+final component argument, then produced an empty completion forest. v245
+restricts that exemption to arrays that remain open. Against v244 E921, the
+v245 default path keeps held-out parse 1.0 while improving meaning-v1
+0.4→0.6, slot fidelity 0.5133→0.6800, structure 0.2945→0.3419, recall
+0.4476→0.5810, and reward 0.7826→0.8488. Smoke retains exact E907 quality
+parity. The opt-in schema-inline arm reaches strict-v2 0.6 but is rejected for
+a dual-card timeout and overall parse/reward regression. Retain the compiler
+repair, keep schema typing default off, and target whole-path feasibility next.
+AgentV is 0/3; no ship gates or checkpoint changes. Full evidence:
+[closed-array arity results](iter-e923-e925-closed-array-arity-20260722.md).

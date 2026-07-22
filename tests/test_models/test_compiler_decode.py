@@ -4737,6 +4737,23 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
+def test_completion_forest_closes_max_arity_after_array_argument() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=TabItem(":value",":label",[TextContent(":content")]',
+        add_special=False,
+    )
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[":value", ":label", ":content"],
+        enforce_schema_component_types=True,
+    )
+
+    assert set(forest.candidate_ids) == {tokenizer.token_to_id[")"]}
+
+
 def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
     from slm_training.models.dsl_tokenizer import TokenKind
 

@@ -1417,7 +1417,7 @@ def build_completion_forest(
             rpar_ids = allowed_id_set(tokenizer, frozenset({"RPAR"})) or set()
             candidates -= rpar_ids
         if arg_count >= maximum and not (
-            schema_type == "array" and current_started
+            schema_type == "array" and active_array_position is not None
         ):
             comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
             candidates -= comma_ids

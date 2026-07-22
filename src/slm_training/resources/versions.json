@@ -4106,7 +4106,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v244",
+      "version": "v245",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4130,6 +4130,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v245",
+          "date": "2026-07-22",
+          "note": "Remove impossible trailing-comma branches after a closed array fills the final official-schema component argument"
+        },
         {
           "version": "v244",
           "date": "2026-07-22",
