@@ -2424,6 +2424,59 @@ def test_lexer_required_slot_margin_uses_missing_visible_symbol(
     assert stats.required_slot_margin_choice_changes == 1
 
 
+@pytest.mark.parametrize("tree", [False, True])
+def test_lexer_schema_role_slot_continues_to_missing_bound_property(
+    monkeypatch, tree: bool
+) -> None:
+    model = _model(schema_role_slot_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    title_id = tokenizer.sym_id(0)
+    subtitle_id = tokenizer.sym_id(1)
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Card([CardHeader(", add_special=False),
+        title_id,
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    comma_id = tokenizer.token_to_id[","]
+    close_id = tokenizer.token_to_id[")"]
+    paths = (
+        CompletionPath((comma_id,), "structural"),
+        CompletionPath((close_id,), "structural"),
+    )
+    model._semantic_plan_role_bindings = [{
+        "CardHeader": (":hero.title", ":hero.subtitle")
+    }]
+    model._semantic_role_properties = [{
+        ":hero.title": ("text", "title"),
+        ":hero.subtitle": ("subtitle",),
+    }]
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [1.0 if token_id == comma_id else 4.0 for token_id in candidate_ids]
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["Hero card."])
+
+    selected = model._select_compiler_path(
+        prefix,
+        paths,
+        ctx,
+        ctx_pad,
+        48,
+        tree=tree,
+        slot_contract=[":hero.title", ":hero.subtitle"],
+        state=state,
+    )
+
+    assert subtitle_id not in prefix
+    assert selected == paths[0].token_ids
+
+
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan

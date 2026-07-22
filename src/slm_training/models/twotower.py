@@ -6485,7 +6485,12 @@ class TwoTowerModel(nn.Module):
             active = _active_call(getattr(compiler_state, "engine", compiler_state))
             if active is None:
                 return None
-            component, index, _ = active
+            component, index, arg_count = active
+            if (
+                arg_count > index
+                and self.tokenizer.token_to_id.get(",") in candidate_ids
+            ):
+                index += 1
             definition = library_schema().get("$defs", {}).get(component) or {}
             properties = tuple((definition.get("properties") or {}).items())
             if index < 0 or index >= len(properties):
@@ -6514,6 +6519,23 @@ class TwoTowerModel(nn.Module):
             int(self.tokenizer.sym_id(index)): slot
             for index, slot in enumerate(slot_contract[: self.tokenizer.sym_slots])
         }
+        if compiler_mode and bound_slots and prefix is not None:
+            separator_id = self.tokenizer.token_to_id.get(",")
+            missing_for_property = any(
+                slot in bound_slots
+                and token_id not in prefix
+                and active_property in properties_by_slot.get(slot, ())
+                for token_id, slot in slot_by_id.items()
+            )
+            if missing_for_property and separator_id in candidate_ids:
+                position = candidate_ids.index(separator_id)
+                bias[position] = max(
+                    0.0,
+                    float(scores.max().item())
+                    + weight
+                    - float(scores[position].item()),
+                )
+                applied = True
         for position, token_id in enumerate(candidate_ids):
             slot = slot_by_id.get(int(token_id))
             if slot is None:

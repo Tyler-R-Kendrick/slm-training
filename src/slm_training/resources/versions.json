@@ -3799,7 +3799,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v209",
+      "version": "v210",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3821,6 +3821,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v210",
+          "date": "2026-07-22",
+          "note": "Continue lexer compiler calls into an optional schema property when it owns a still-missing bound semantic role"
+        },
         {
           "version": "v209",
           "date": "2026-07-22",
