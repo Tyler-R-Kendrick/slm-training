@@ -3819,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v217",
+      "version": "v218",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3841,6 +3841,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v218",
+          "date": "2026-07-22",
+          "note": "Share marker namespace ownership between semantic obligations and repeated decode so exhausted structural owners add standalone siblings"
+        },
         {
           "version": "v217",
           "date": "2026-07-22",

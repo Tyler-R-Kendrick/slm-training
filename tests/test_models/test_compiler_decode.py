@@ -3469,6 +3469,28 @@ def test_semantic_plan_role_obligations_do_not_add_reachable_joint_carrier() -> 
     }
 
 
+def test_semantic_plan_role_obligations_add_unowned_namespace_sibling() -> None:
+    slots = {
+        ":toolbar.text": ("TextContent",),
+        **{
+            f":card{index}.{role}": ("Callout", "TextContent")
+            for index in range(1, 6)
+            for role in ("title", "body")
+        },
+    }
+
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 5}),
+        slots,
+        {slot: ("Card", "TextContent") for slot in slots},
+    )
+
+    assert counts == Counter({"Card": 5, "TextContent": 1})
+    assert bindings == {
+        "TextContent": tuple(slots),
+    }
+
+
 def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
     from types import SimpleNamespace
 

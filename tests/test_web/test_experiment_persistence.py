@@ -530,7 +530,7 @@ def test_e731_checkpoint_and_no_effect_arms_persist_without_outputs(tmp_path: Pa
     )
 
 
-def test_e751_e752_e754_e757_rico_repairs_persist_without_outputs(
+def test_e751_e752_e754_e757_e758_rico_repairs_persist_without_outputs(
     tmp_path: Path,
 ) -> None:
     readers = Readers(Path(__file__).parents[2])
@@ -541,6 +541,9 @@ def test_e751_e752_e754_e757_rico_repairs_persist_without_outputs(
     siblings = readers.run("e752-repeated-card-siblings-rico-n3-r1")
     delimiter = readers.run("e754-plan-margin-delimiter-rico-n3-r1")
     marker_ownership = readers.run("e757-scoped-marker-ownership-rico-n3-r1")
+    standalone_sibling = readers.run(
+        "e758-standalone-marker-sibling-rico-n3-r1"
+    )
 
     assert ownership["provenance"] == "committed"
     assert ownership["scoreboard"]["suites"]["rico_held"][
@@ -560,3 +563,11 @@ def test_e751_e752_e754_e757_rico_repairs_persist_without_outputs(
         "binding_aware_meaningful_v2_rate_strict"
     ] == 1 / 3
     assert marker_ownership["train_summary"] is None
+    assert standalone_sibling["provenance"] == "committed"
+    assert standalone_sibling["scoreboard"]["suites"]["rico_held"][
+        "binding_aware_meaningful_v2_rate_strict"
+    ] == 1.0
+    assert standalone_sibling["scoreboard"]["suites"]["rico_held"][
+        "structural_similarity"
+    ] == 1.0
+    assert standalone_sibling["train_summary"] is None
