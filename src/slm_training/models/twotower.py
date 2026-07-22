@@ -5786,6 +5786,42 @@ class TwoTowerModel(nn.Module):
                         margin_bias,
                     )
                 applied = True
+        if (
+            margin > 0.0
+            and remaining_counts is not None
+            and not any(remaining_counts.values())
+            and prefix
+            and candidate_scores is not None
+        ):
+            slot_contract = (
+                self._slot_contracts[row]
+                if self._slot_contracts and row < len(self._slot_contracts)
+                else ()
+            )
+            required_slot_ids = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(
+                    min(len(slot_contract or ()), int(self.tokenizer.sym_slots))
+                )
+            }
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                _active_array_start_index,
+            )
+
+            close_id = self.tokenizer.token_to_id.get("]")
+            if (
+                required_slot_ids.issubset(prefix)
+                and close_id in candidate_ids
+                and _active_array_start_index(self.tokenizer, prefix) is not None
+            ):
+                target = candidate_ids.index(close_id)
+                bias[target] = max(
+                    float(bias[target].item()),
+                    float(candidate_scores.max().item())
+                    + margin
+                    - float(candidate_scores[target].item()),
+                )
+                applied = True
         frames = getattr(state, "frames", ())
         if margin > 0.0 and remaining_counts is not None and not frames:
             remaining_families = {

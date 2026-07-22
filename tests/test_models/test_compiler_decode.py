@@ -2426,6 +2426,56 @@ def test_prompt_semantic_plan_keeps_parent_open_for_remaining_siblings() -> None
     assert (scores + bias).argmax().item() == 0
 
 
+def test_prompt_semantic_plan_closes_array_after_opaque_coverage() -> None:
+    model = _model(
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    comma = tokenizer.token_to_id[","]
+    close = tokenizer.token_to_id["]"]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode(
+            'root = Stack([Card([TextContent(":slot_0")])',
+            add_special=False,
+        ),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 1}]
+    model._slot_contracts = [[":slot_0"]]
+
+    scores = torch.tensor([8.0, 1.0])
+    bias = model._semantic_plan_bias(
+        0,
+        (comma, close),
+        ("structural", "structural"),
+        state,
+        prefix,
+        scores,
+    )
+
+    assert bias is not None
+    assert (scores + bias).argmax().item() == 1
+
+    model._slot_contracts = [[":slot_0", ":slot_1"]]
+    assert (
+        model._semantic_plan_bias(
+            0,
+            (comma, close),
+            ("structural", "structural"),
+            state,
+            prefix,
+            scores,
+        )
+        is None
+    )
+
+
 def test_prompt_semantic_plan_does_not_continue_inside_repeated_family() -> None:
     model = _model(
         semantic_plan_decode_weight=6.0,

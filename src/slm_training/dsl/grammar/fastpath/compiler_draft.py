@@ -336,10 +336,8 @@ def _binder_reference_would_cycle(
     return False
 
 
-def _active_array_direct_references(
-    tokenizer: Any, prefix_ids: list[int]
-) -> frozenset[int]:
-    """Return binder references already used as direct items of the live array."""
+def _active_array_start_index(tokenizer: Any, prefix_ids: list[int]) -> int | None:
+    """Return the token index of the innermost live array."""
     pairs = {")": "(", "]": "[", "}": "{"}
     stack: list[tuple[str, int]] = []
     for index, token_id in enumerate(prefix_ids):
@@ -352,12 +350,21 @@ def _active_array_direct_references(
         ((piece, index) for piece, index in reversed(stack) if piece == "["),
         None,
     )
-    if array is None:
+    return array[1] if array is not None else None
+
+
+def _active_array_direct_references(
+    tokenizer: Any, prefix_ids: list[int]
+) -> frozenset[int]:
+    """Return binder references already used as direct items of the live array."""
+    array_start = _active_array_start_index(tokenizer, prefix_ids)
+    if array_start is None:
         return frozenset()
+    pairs = {")": "(", "]": "[", "}": "{"}
     bind_ids = set(tokenizer.kind_ids("bind"))
     nested: list[str] = []
     references: set[int] = set()
-    for raw_token_id in prefix_ids[array[1] + 1 :]:
+    for raw_token_id in prefix_ids[array_start + 1 :]:
         token_id = int(raw_token_id)
         piece = _token_piece(tokenizer, token_id)
         if piece in {"(", "[", "{"}:

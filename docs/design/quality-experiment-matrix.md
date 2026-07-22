@@ -6111,3 +6111,19 @@ components. Retain the ownership invariant, reject a quality/ship claim, and
 move component coverage into structured harness/data authority rather than
 template-name interpretation. Full evidence:
 [unique array reference results](iter-e835-unique-array-references-20260722.md).
+
+# E836-E838 — prompt-component coverage closure (2026-07-22)
+
+E836's general prompt-to-grammar component plan recovered every required smoke
+component with marker fidelity 1.0, but duplicate AST-subtree spam kept
+strict-v2 at 0/3. E837 reused the existing semantic-plan margin to close active
+structural arrays only after required grammar component counts and opaque slot
+identities were covered. Smoke strict-v2 rose to 3/3, structure to 0.6033, and
+p95 fell to 3.47 seconds with zero timeout/fallback.
+
+E838 rejected generalization: held-out `n=5` reached strict-v2 0, parse 0.6,
+fidelity 0.5, structure 0.1389, reward 0.5508, and two 12-second timeouts.
+Retain the default-off harness mechanism, but do not promote the lever or
+checkpoint. Next, prevent unneeded binder paths from outranking still-required
+grammar components. Full evidence:
+[plan coverage closure results](iter-e836-e838-plan-coverage-close-20260722.md).
