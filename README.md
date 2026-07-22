@@ -42,6 +42,7 @@ it fails semantic gates and is not promoted. See
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1/last.pt` | `outputs/runs/…` (local) | Proposed lever has zero reachable decode applications; config now rejects lexer identity before artifacts — checkpoint invalidated |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1/last.pt` | `outputs/runs/…` (local) | Lexer-native head is executable, but weights 0/1/2 change no choices; smoke strict-v2 0.0 — checkpoint rejected |
 | E714 symbol-only baseline | `e714-symbol-only-scratch600-r1/last.pt` | `outputs/runs/…` (local) | First v2-compatible CPU scratch checkpoint; 600 steps / 48.72s, strict meaning 0.0 and AgentV 0/5 — diagnostic only, not ship |
 | E720 component-inventory diagnostic | `e720-symbol-only-component-inventory600-r1/last.pt` | `outputs/runs/…` (local) | Inventory head learned (top-k recall 0.6875), but smoke parse/strict meaning remained 0.0 and weight-4 decode timed out 3/3 — rejected, not ship |

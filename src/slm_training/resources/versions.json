@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-22",
+          "note": "Withdraw unreachable lexer root-reference identity supervision and decoding so invalid configurations fail before artifacts"
+        },
         {
           "version": "v7",
           "date": "2026-07-22",
@@ -2904,13 +2909,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-22",
+          "note": "Restore the root-reference identity strict-subset sampler to its reachable choice-tokenizer capability"
+        },
         {
           "version": "v19",
           "date": "2026-07-22",
@@ -3744,7 +3754,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v194",
+      "version": "v195",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3766,6 +3776,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v195",
+          "date": "2026-07-22",
+          "note": "Remove unreachable lexer root-reference identity ranking while retaining strict serving checkpoint validation for enabled root heads"
+        },
         {
           "version": "v194",
           "date": "2026-07-22",

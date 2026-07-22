@@ -21,7 +21,6 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     gold_compiler_decisions,
     gold_compiler_decision_positions,
     root_declaration_reference_arity_target,
-    root_declaration_reference_identity_target,
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -3382,15 +3381,12 @@ def test_structural_root_reference_arity_ignores_nested_lists() -> None:
     assert bound == 3
 
 
-@pytest.mark.parametrize("output_tokenizer", ["choice", "lexer"])
-def test_strict_root_reference_identity_sampler_selects_only_strict_subsets(
-    output_tokenizer: str,
-) -> None:
+def test_strict_root_reference_identity_sampler_selects_only_strict_subsets() -> None:
     from slm_training.harnesses.model_build.train_loop import (
         _strict_root_reference_identity_records,
     )
 
-    model = _model(output_tokenizer=output_tokenizer)
+    model = _model(output_tokenizer="choice")
     records = [
         ExampleRecord(
             id="strict",
@@ -4281,20 +4277,6 @@ def test_binder_reference_arities_follow_grammar_token_roles() -> None:
     assert root_declaration_reference_arity_target(tokenizer, ids) == (2, 3)
 
 
-def test_lexer_root_reference_identity_follows_bound_declaration_order() -> None:
-    tokenizer = DSLNativeTokenizer.build()
-    ids = tokenizer.encode(
-        'root = Card([body])\n'
-        'title = TextContent(":hero.title")\n'
-        'body = TextContent(":hero.body")',
-        add_special=False,
-    )
-    assert root_declaration_reference_identity_target(tokenizer, ids) == (
-        frozenset({1}),
-        2,
-    )
-
-
 def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
     model = _model(
         root_reference_arity_loss_weight=1.0,
@@ -4344,50 +4326,6 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
     )
     assert continue_bias is not None and continue_bias[1] > continue_bias[0]
     assert stop_bias is not None and stop_bias[0] > stop_bias[1]
-
-
-def test_lexer_root_reference_identity_trains_and_ranks_root_list_paths() -> None:
-    model = _model(
-        root_reference_identity_loss_weight=1.0,
-        root_reference_identity_decode_weight=1.0,
-    )
-    record = ExampleRecord(
-        id="lexer-root-identity",
-        prompt="card containing body",
-        openui=(
-            'root = Card([body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
-        ),
-        placeholders=[":hero.title", ":hero.body"],
-        split="train",
-        source="fixture",
-    )
-    loss = model.training_loss([record])
-    loss.backward()
-    auxiliary_loss = model.take_detached_auxiliary_loss()
-    assert auxiliary_loss is not None
-    auxiliary_loss.backward()
-    assert model.root_reference_identity_head is not None
-    assert model.root_reference_identity_head.weight.grad is not None
-    assert model.root_reference_identity_head.weight.grad.abs().sum() > 0
-    assert model.last_training_metrics["root_reference_identity_rows"] == 1
-    assert model.last_training_metrics["root_reference_identity_classes_mean"] == 2
-
-    tokenizer = model.tokenizer
-    with torch.no_grad():
-        model.root_reference_identity_head.weight.zero_()
-        model.root_reference_identity_head.bias.zero_()
-        model.root_reference_identity_head.bias[1] = 4.0
-    ctx, ctx_pad = model._encode_context([record.prompt])
-    title = CompletionPath((tokenizer.bind_id(1),), "bind_reference")
-    body = CompletionPath((tokenizer.bind_id(2),), "bind_reference")
-    prefix = tokenizer.encode("root = Card([", add_special=False)
-    bias = model._root_reference_identity_path_bias(
-        ctx, ctx_pad, prefix, (title, body), [2.0, 1.0]
-    )
-    assert bias is not None
-    assert 2.0 + bias[0] < 1.0 + bias[1]
 
 
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:

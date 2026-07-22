@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E733",
+  "date_utc": "2026-07-22",
+  "status": "invalidated_unreachable_lever",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "run_id": "e733-symbol-only-root-identity140-r1",
+    "path": "outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt",
+    "sha256": "cddb5f2801f81cc9b9603005c8faebd425b435b491c20dea7cce7fb5de5167fc",
+    "created": true,
+    "synced": false,
+    "sync_reason": "invalid local-only configuration; explicit --no-sync-checkpoints",
+    "promoted": false,
+    "eligible_as_parent": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "records": 141,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 140,
+    "batch_size": 4,
+    "max_wall_minutes": 2,
+    "elapsed_wall_seconds": 78.97666383499745,
+    "seen_prompt_tokens": 72021,
+    "seen_target_tokens": 14976,
+    "last_loss": 9.86697769165039,
+    "primary_final_reconstruction_loss": 5.075340747833252,
+    "root_reference_identity_loss": 0.6906251907348633,
+    "root_reference_identity_exact_accuracy": 0.5,
+    "root_reference_identity_positive_recall": 1.0,
+    "root_reference_identity_negative_accuracy": 0.0,
+    "root_reference_identity_negative_rows": 1,
+    "root_reference_identity_rows": 2,
+    "root_reference_identity_classes_mean": 4.0,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "ccba6f1b3776d4ccfc359958a27c20aa81b1eddf",
+      "code_dirty": false,
+      "components": {"harness.model_build.train": "v19"},
+      "stamped_at": "2026-07-22T03:19:51.593285+00:00"
+    }
+  },
+  "evaluation_policy": {
+    "id": "strict_compiler_tree",
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "eval_suite_manifest_sha256": "9cf9ab46201b79e787dca445035f7d5cda2fa0c835e5d33dc38eca88db900e1c",
+    "max_wall_minutes": 2,
+    "decode_timeout_seconds": 8,
+    "grammar_ltr_max_tokens": 160,
+    "schema_in_context": false,
+    "slot_contract_in_context": false,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false
+  },
+  "matched_runs": [
+    {
+      "run_id": "e733-root-identity0-tree-smoke-r1",
+      "label": "weight 0 control",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "root_reference_identity_applications": 0,
+      "root_reference_identity_choice_changes": 0
+    },
+    {
+      "run_id": "e733-root-identity1-tree-smoke-r1",
+      "label": "weight 1 treatment",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.5614,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.8073333333333332,
+      "root_reference_identity_applications": 0,
+      "root_reference_identity_choice_changes": 0
+    }
+  ],
+  "agentv": {"passed": 0, "total": 1, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "diagnosis": "The lexer compiler exposes root bind references in canonical declaration order, leaving no competing identity branch for the proposed head to rank.",
+  "harness_correction": {
+    "root_reference_identity_supported_output_tokenizers": ["choice"],
+    "lexer_loss_rejected_before_artifacts": true,
+    "lexer_decode_rejected_before_artifacts": true,
+    "missing_enabled_root_head_rejected_for_serving_eval_resume": true,
+    "missing_auxiliary_head_allowed_for_explicit_warm_start": true
+  },
+  "decision": "Invalidate the run and checkpoint. Do not retain or hide the lexer identity path; reject it at centralized lever validation before artifacts."
+}

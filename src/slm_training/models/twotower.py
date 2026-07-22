@@ -1533,17 +1533,11 @@ class TwoTowerModel(nn.Module):
             isolated_aux_init(
                 lambda: nn.Linear(
                     self.config.d_model,
-                    int(
-                        getattr(
-                            tokenizer,
-                            "ref_slots",
-                            max(1, int(getattr(tokenizer, "bind_slots", 64)) - 1),
-                        )
-                    ),
+                    int(getattr(tokenizer, "ref_slots", 64)),
                 ),
                 110,
             )
-            if root_reference_identity_enabled
+            if root_reference_identity_enabled and _is_choice_output(self.config)
             else None
         )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
@@ -3608,28 +3602,9 @@ class TwoTowerModel(nn.Module):
         if root_identity_negative_w < 0.0:
             raise ValueError("root_reference_identity_negative_weight must be >= 0")
         if root_identity_w > 0.0 and self.root_reference_identity_head is not None:
-            if _is_choice_output(self.config):
-                from slm_training.models.choice_tokenizer import (
-                    structural_root_reference_identity_target,
-                )
-
-                def identity_target(row: int, record: ExampleRecord):
-                    return structural_root_reference_identity_target(
-                        self.tokenizer,
-                        target_ids[row].tolist(),
-                        slot_count=len(record.placeholders or ()),
-                    )
-
-            else:
-                from slm_training.dsl.grammar.fastpath.compiler_draft import (
-                    root_declaration_reference_identity_target,
-                )
-
-                def identity_target(row: int, record: ExampleRecord):
-                    _ = record
-                    return root_declaration_reference_identity_target(
-                        self.tokenizer, target_ids[row].tolist()
-                    )
+            from slm_training.models.choice_tokenizer import (
+                structural_root_reference_identity_target,
+            )
 
             identity_logits = self.root_reference_identity_head(
                 self._pool_context(ctx, ctx_pad).detach()
@@ -3640,7 +3615,11 @@ class TwoTowerModel(nn.Module):
             identity_negative_accuracies: list[torch.Tensor] = []
             identity_class_counts: list[int] = []
             for row, record in enumerate(batch):
-                target_and_bound = identity_target(row, record)
+                target_and_bound = structural_root_reference_identity_target(
+                    self.tokenizer,
+                    target_ids[row].tolist(),
+                    slot_count=len(record.placeholders or ()),
+                )
                 if target_and_bound is None:
                     continue
                 references, section_count = target_and_bound
@@ -8332,77 +8311,6 @@ class TwoTowerModel(nn.Module):
             for index in range(len(paths))
         ]
 
-    def _root_reference_identity_path_bias(
-        self,
-        ctx: torch.Tensor,
-        ctx_pad: torch.Tensor | None,
-        prefix: list[int],
-        paths: tuple,
-        path_scores: list[float],
-    ) -> list[float] | None:
-        """Rank lexer-native root references with the trained identity head."""
-        weight = float(
-            getattr(self.config, "root_reference_identity_decode_weight", 0.0)
-            or 0.0
-        )
-        if weight <= 0.0 or self.root_reference_identity_head is None:
-            return None
-        from slm_training.dsl.grammar.fastpath.compiler_draft import (
-            active_declaration_binder_id,
-        )
-
-        try:
-            if active_declaration_binder_id(
-                self.tokenizer, prefix
-            ) != self.tokenizer.bind_id(0):
-                return None
-            bind_ids = tuple(int(token) for token in self.tokenizer.kind_ids("bind"))
-        except (AttributeError, KeyError, TypeError, ValueError):
-            return None
-        identity_by_token = {
-            token_id: index for index, token_id in enumerate(bind_ids[1:])
-        }
-        used = {
-            identity_by_token[int(token_id)]
-            for token_id in prefix
-            if int(token_id) in identity_by_token
-        }
-        references: list[tuple[int, int]] = []
-        for path_index, path in enumerate(paths):
-            identity = next(
-                (
-                    identity_by_token[int(token_id)]
-                    for token_id in path.token_ids
-                    if int(token_id) in identity_by_token
-                ),
-                None,
-            )
-            if identity is not None and identity < self.root_reference_identity_head.out_features:
-                references.append((path_index, identity))
-        unused = [item for item in references if item[1] not in used]
-        if len(unused) < 2:
-            return None
-        logits = self.root_reference_identity_head(self._pool_context(ctx, ctx_pad))[0]
-        ranked_unused = sorted(
-            unused,
-            key=lambda item: float(logits[item[1]].detach().cpu()),
-            reverse=True,
-        )
-        ranked_path_scores = sorted(
-            (path_scores[index] for index, _identity in unused),
-            reverse=True,
-        )
-        mix = min(weight, 1.0)
-        bias = [0.0] * len(paths)
-        for rank, (path_index, _identity) in enumerate(ranked_unused):
-            bias[path_index] = mix * (
-                ranked_path_scores[rank] - path_scores[path_index]
-            )
-        for path_index, identity in references:
-            if identity in used:
-                bias[path_index] = -20.0 * mix
-        return bias
-
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -8736,21 +8644,6 @@ class TwoTowerModel(nn.Module):
                 stats.root_reference_arity_choice_changes += int(
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_root_arity
-                )
-        root_identity_bias = self._root_reference_identity_path_bias(
-            ctx, ctx_pad, prefix, paths, path_scores
-        )
-        if root_identity_bias is not None:
-            before_root_identity = max(range(len(paths)), key=path_scores.__getitem__)
-            path_scores = [
-                score + root_identity_bias[index]
-                for index, score in enumerate(path_scores)
-            ]
-            if stats is not None:
-                stats.root_reference_identity_applications += 1
-                stats.root_reference_identity_choice_changes += int(
-                    max(range(len(paths)), key=path_scores.__getitem__)
-                    != before_root_identity
                 )
         if bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)

@@ -5590,3 +5590,22 @@ default-off capability, reject the checkpoint, and close this scalar ladder.
 
 Evidence: [narrative](iter-e731-lexer-root-arity-symbol-only-20260722.md) and
 [JSON](iter-e731-lexer-root-arity-symbol-only-20260722.json).
+
+## E733 lexer root-identity reachability audit
+
+E733 invalidates a proposed lexer-native root-reference identity capability
+instead of reporting its no-effect result as model evidence. A 140-step local
+CPU train completed in 78.98 seconds, but matched strict smoke weights 0/1 were
+prediction-identical and the enabled treatment recorded zero applications. The
+canonical lexer compiler exposes root bind references in declaration order, so
+there is no competing identity branch for this head to rank.
+
+The checkpoint is invalid and excluded from sync, promotion, serving, resume,
+and parent selection. Central lever validation keeps identity choice-only and
+now has a regression proving lexer identity loss/decode configurations fail
+before a run directory exists. Serving/eval/resume checkpoint loading also
+rejects enabled root heads missing from checkpoint state; explicit warm starts
+remain the only path allowed to initialize a newly enabled auxiliary head.
+
+Evidence: [narrative](iter-e733-lexer-root-identity-reachability-20260722.md)
+and [JSON](iter-e733-lexer-root-identity-reachability-20260722.json).
