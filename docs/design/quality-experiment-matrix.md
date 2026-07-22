@@ -6309,3 +6309,14 @@ parse/meaning/fidelity but regresses structure 0.6589→0.5783 and recall
 candidate, keep E886 as the unqualified baseline, and test lower replay
 exposure next. Full evidence:
 [balanced replay results](iter-e891-e893-balanced-replay-20260722.md).
+
+# E894-E896 — low hard-tail replay (2026-07-22)
+
+E894 lowered requested E872 replay to 10% (11.25% effective) for a 20-step E886
+continuation. E896 exactly matches E891's smoke aggregate, but E895 held-out
+loses meaning-v1 0.8→0.6, fidelity 0.8000→0.6733, structure 0.3298→0.3035,
+and recall 0.7143→0.6476 while reintroducing three fallback-marked rows.
+Strict-v2 stays 0.2 and AgentV is 0/2. Reject E894 as dominated by E891; stop
+replay-ratio tuning and target typed collection roles plus repeated subtree spam.
+Full evidence:
+[low-replay results](iter-e894-e896-low-replay-20260722.md).
