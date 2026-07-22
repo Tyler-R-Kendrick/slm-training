@@ -14,8 +14,7 @@ from typing import Any, Iterable, Sequence
 
 from slm_training.levers import (
     MAX_RUN_MINUTES,
-    incompatible_model_levers,
-    incompatible_output_tokenizer_levers,
+    incompatible_lever_requirements,
 )
 
 
@@ -454,19 +453,13 @@ def validate_numeric_config(cfg: Any, *, context: str = "config") -> NumericSche
         if mn is not None and mx is not None and mn > mx:
             report.record("mask_min/max", False, "mask_min must be <= mask_max")
 
-    incompatible = incompatible_output_tokenizer_levers(cfg)
+    incompatible = incompatible_lever_requirements(cfg)
     if incompatible:
         report.record(
-            "output_tokenizer_lever_compatibility",
+            "lever_capability_compatibility",
             False,
-            f"{', '.join(incompatible)} require output_tokenizer='choice'",
-        )
-    incompatible = incompatible_model_levers(cfg)
-    if incompatible:
-        report.record(
-            "model_lever_compatibility",
-            False,
-            f"{', '.join(incompatible)} require model_name='twotower'",
+            f"unsupported enabled levers: {', '.join(incompatible)}; "
+            "inspect `python -m slm_training.levers` for supported configurations",
         )
 
     if not report.valid:

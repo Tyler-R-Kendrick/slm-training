@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.plugin import ModelPlugin, StubModel
+from slm_training.levers import incompatible_lever_requirements
 
 if TYPE_CHECKING:
     from slm_training.models.twotower import TwoTowerConfig
@@ -254,6 +255,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         cfg.grammar_ltr_primary = True
     if int(getattr(config, "best_of_n", 1) or 1) > 1 and hasattr(cfg, "best_of_n"):
         cfg.best_of_n = int(config.best_of_n)
+    incompatible = incompatible_lever_requirements(cfg)
+    if incompatible:
+        raise ValueError(
+            "runtime overrides produced unsupported enabled levers: "
+            f"{', '.join(incompatible)}; inspect `python -m slm_training.levers` "
+            "for supported configurations"
+        )
     if bool(getattr(config, "use_dynamic_quant", False)) and hasattr(
         model, "apply_dynamic_quant"
     ):

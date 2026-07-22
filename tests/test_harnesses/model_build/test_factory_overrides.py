@@ -1,6 +1,8 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.factory import apply_runtime_overrides
 
@@ -56,10 +58,14 @@ def test_compiler_search_overrides_are_typed() -> None:
 
 def test_semantic_plan_margin_is_an_explicit_runtime_override() -> None:
     model = SimpleNamespace(
-        config=SimpleNamespace(semantic_plan_margin_decode_weight=0.0)
+        config=SimpleNamespace(
+            output_tokenizer="choice",
+            semantic_plan_margin_decode_weight=0.0,
+        )
     )
     config = ModelBuildConfig(
         train_dir=Path("."),
+        output_tokenizer="choice",
         semantic_plan_margin_decode_weight=2.0,
     )
 
@@ -98,6 +104,25 @@ def test_explicit_runtime_override_fields_preserve_unrelated_checkpoint_config()
     assert model.config.compiler_search_mode == "gram"
     assert model.config.schema_in_context is True
     assert model.config.output_tokenizer == "lexer"
+
+
+def test_runtime_override_cannot_disable_path_used_by_checkpoint_lever() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(
+            model_name="twotower",
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            binder_arity_decode_weight=1.0,
+        )
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        runtime_override_fields=frozenset({"compiler_decode_mode"}),
+        compiler_decode_mode="off",
+    )
+
+    with pytest.raises(ValueError, match="runtime overrides produced unsupported"):
+        apply_runtime_overrides(model, config)
 
 
 def test_action_alias_overrides_round_trip() -> None:

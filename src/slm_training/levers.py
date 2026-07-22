@@ -21,50 +21,104 @@ INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 
 # Applicability lives beside discovery so CLIs and harness validation cannot
-# drift from the human-visible lever catalog.
-LEVER_OUTPUT_TOKENIZERS: Final = {
-    "root_reference_arity_loss_weight": frozenset({"choice"}),
-    "root_reference_arity_decode_weight": frozenset({"choice"}),
-    "root_reference_identity_loss_weight": frozenset({"choice"}),
-    "root_reference_identity_decode_weight": frozenset({"choice"}),
+# drift from the human-visible lever catalog. Each tuple is an OR of complete
+# supported configurations; fields inside one configuration are ANDed.
+_CHOICE: Final = {"model_name": "twotower", "output_tokenizer": "choice"}
+_LEXER_COMPILER: Final = {
+    "model_name": "twotower",
+    "output_tokenizer": "lexer",
+    "compiler_decode_mode": frozenset({"restricted", "tree"}),
 }
-LEVER_MODELS: Final = {
-    name: frozenset({"twotower"}) for name in LEVER_OUTPUT_TOKENIZERS
+_CHOICE_ONLY_DECODE_LEVERS: Final = (
+    "slot_coverage_close_decode_weight",
+    "schema_value_decode_weight",
+    "schema_enum_close_decode_weight",
+    "schema_open_decode_weight",
+    "schema_opaque_decode_weight",
+    "schema_opaque_close_decode_weight",
+    "schema_role_slot_decode_weight",
+    "required_slot_margin_decode_weight",
+    "semantic_plan_decode_weight",
+    "semantic_plan_margin_decode_weight",
+    "semantic_plan_seed_decode_weight",
+    "semantic_plan_inline_decode_weight",
+    "semantic_plan_binding_decode_weight",
+    "semantic_plan_root_decode_weight",
+    "semantic_plan_root_margin_decode_weight",
+    "semantic_plan_repeated_array_close_margin_decode_weight",
+    "semantic_plan_repeated_slot_margin_decode_weight",
+    "semantic_plan_typed_array_nonempty_margin_decode_weight",
+    "semantic_plan_typed_array_item_margin_decode_weight",
+    "visible_reference_decode_weight",
+    "root_reference_arity_decode_weight",
+    "root_reference_identity_decode_weight",
+)
+_DUAL_PATH_DECODE_LEVERS: Final = (
+    "component_inventory_decode_weight",
+    "component_plan_decode_weight",
+    "slot_component_decode_weight",
+    "semantic_role_decode_weight",
+)
+_COMPILER_PATH_DECODE_LEVERS: Final = (
+    "component_edge_decode_weight",
+    "binder_component_plan_decode_weight",
+    "binder_topology_decode_weight",
+    "binder_arity_decode_weight",
+)
+LEVER_REQUIREMENTS: Final = {
+    **{name: (_CHOICE,) for name in _CHOICE_ONLY_DECODE_LEVERS},
+    **{name: (_CHOICE, _LEXER_COMPILER) for name in _DUAL_PATH_DECODE_LEVERS},
+    **{name: (_LEXER_COMPILER,) for name in _COMPILER_PATH_DECODE_LEVERS},
+    "root_reference_arity_loss_weight": (_CHOICE,),
+    "root_reference_identity_loss_weight": (_CHOICE,),
 }
 
 
-def incompatible_output_tokenizer_levers(config: Any) -> list[str]:
-    """Return enabled levers that cannot execute for the selected codec."""
-    output_tokenizer = getattr(config, "output_tokenizer", None)
-    return [
-        name
-        for name, supported in LEVER_OUTPUT_TOKENIZERS.items()
+def _canonical_capability_value(field: str, value: Any) -> Any:
+    normalized = str(value or "").lower()
+    if field == "output_tokenizer":
+        if normalized in {"choice", "choices", "choice_codec"}:
+            return "choice"
+        if normalized in {"lexer", "dsl", "dsl_native"}:
+            return "lexer"
+    return value
+
+
+def _matches_requirement(config: Any, requirement: dict[str, Any]) -> bool:
+    for field, expected in requirement.items():
+        if field == "model_name" and not hasattr(config, field):
+            continue
+        actual = _canonical_capability_value(field, getattr(config, field, None))
+        if isinstance(expected, frozenset):
+            if actual not in expected:
+                return False
+        elif actual != expected:
+            return False
+    return True
+
+
+def incompatible_lever_requirements(config: Any) -> dict[str, tuple[dict[str, Any], ...]]:
+    """Return enabled levers for which no executable configuration exists."""
+    return {
+        name: requirements
+        for name, requirements in LEVER_REQUIREMENTS.items()
         if isinstance((value := getattr(config, name, 0.0)), (int, float))
         and not isinstance(value, bool)
         and value != 0.0
-        and output_tokenizer not in supported
-    ]
+        and not any(_matches_requirement(config, item) for item in requirements)
+    }
 
 
-def incompatible_model_levers(config: Any) -> list[str]:
-    """Return enabled levers that cannot execute for the selected model."""
-    model_name = getattr(config, "model_name", None)
-    if model_name is None:
-        return []
-    return [
-        name
-        for name, supported in LEVER_MODELS.items()
-        if isinstance((value := getattr(config, name, 0.0)), (int, float))
-        and not isinstance(value, bool)
-        and value != 0.0
-        and model_name not in supported
-    ]
+def _requirement_json(requirement: dict[str, Any]) -> dict[str, Any]:
+    return {name: _json_value(value) for name, value in requirement.items()}
 
 
 def _json_value(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
-    if isinstance(value, (tuple, frozenset)):
+    if isinstance(value, frozenset):
+        return sorted(_json_value(item) for item in value)
+    if isinstance(value, tuple):
         return [_json_value(item) for item in value]
     if isinstance(value, dict):
         return {str(key): _json_value(item) for key, item in value.items()}
@@ -109,11 +163,11 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             "type": str(item.type),
             "source": "slm_training.harnesses.model_build.config.ModelBuildConfig",
         }
-        if item.name in LEVER_OUTPUT_TOKENIZERS:
-            catalog[item.name]["supported_output_tokenizers"] = sorted(
-                LEVER_OUTPUT_TOKENIZERS[item.name]
-            )
-            catalog[item.name]["supported_models"] = sorted(LEVER_MODELS[item.name])
+        if item.name in LEVER_REQUIREMENTS:
+            catalog[item.name]["supported_configurations"] = [
+                _requirement_json(requirement)
+                for requirement in LEVER_REQUIREMENTS[item.name]
+            ]
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]
