@@ -3819,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v214",
+      "version": "v217",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3841,6 +3841,21 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v217",
+          "date": "2026-07-22",
+          "note": "Scope repeated-instance ownership to structurally open lexer component calls so parent sibling arrays remain open"
+        },
+        {
+          "version": "v216",
+          "date": "2026-07-22",
+          "note": "Apply repeated-instance marker ownership during restricted and compiler-tree path ranking"
+        },
+        {
+          "version": "v215",
+          "date": "2026-07-22",
+          "note": "Use the shared semantic-plan margin to keep template-marker namespaces owned by their repeated lexer component instance"
+        },
         {
           "version": "v214",
           "date": "2026-07-22",

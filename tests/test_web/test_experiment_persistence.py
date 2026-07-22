@@ -530,7 +530,9 @@ def test_e731_checkpoint_and_no_effect_arms_persist_without_outputs(tmp_path: Pa
     )
 
 
-def test_e751_e752_e754_rico_repairs_persist_without_outputs(tmp_path: Path) -> None:
+def test_e751_e752_e754_e757_rico_repairs_persist_without_outputs(
+    tmp_path: Path,
+) -> None:
     readers = Readers(Path(__file__).parents[2])
     readers.outputs = tmp_path / "missing-outputs"
     readers.lineage = LineageStore(readers.outputs / "lineage")
@@ -538,6 +540,7 @@ def test_e751_e752_e754_rico_repairs_persist_without_outputs(tmp_path: Path) -> 
     ownership = readers.run("e751-reachable-role-plan-rico-n3-r1")
     siblings = readers.run("e752-repeated-card-siblings-rico-n3-r1")
     delimiter = readers.run("e754-plan-margin-delimiter-rico-n3-r1")
+    marker_ownership = readers.run("e757-scoped-marker-ownership-rico-n3-r1")
 
     assert ownership["provenance"] == "committed"
     assert ownership["scoreboard"]["suites"]["rico_held"][
@@ -552,3 +555,8 @@ def test_e751_e752_e754_rico_repairs_persist_without_outputs(tmp_path: Path) -> 
         "placeholder_fidelity"
     ] == 0.8787878787878789
     assert delimiter["train_summary"] is None
+    assert marker_ownership["provenance"] == "committed"
+    assert marker_ownership["scoreboard"]["suites"]["rico_held"][
+        "binding_aware_meaningful_v2_rate_strict"
+    ] == 1 / 3
+    assert marker_ownership["train_summary"] is None

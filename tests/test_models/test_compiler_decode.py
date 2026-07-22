@@ -1108,6 +1108,128 @@ def test_repeated_plan_slot_bias_targets_best_unused_visible_slot() -> None:
     )
 
 
+def test_repeated_plan_slot_bias_uses_shared_plan_margin_for_lexer_ownership() -> None:
+    from slm_training.models.grammar import make_grammar_state
+
+    model = _model(
+        semantic_plan_margin_decode_weight=2.0,
+        semantic_plan_repeated_slot_margin_decode_weight=0.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["Card"]
+    model._semantic_plan_action_counts = [{card_id: 3}]
+    model._slot_contracts = [[
+        ":toolbar.text",
+        ":card1.title",
+        ":card1.body",
+        ":card2.title",
+        ":card2.body",
+        ":card3.title",
+        ":card3.body",
+    ]]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([Card([TextContent(", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    toolbar = tokenizer.sym_id(0)
+    card1_title = tokenizer.sym_id(1)
+
+    bias = model._semantic_plan_repeated_slot_bias(
+        0,
+        state,
+        prefix,
+        (toolbar, card1_title),
+        torch.tensor([8.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert (torch.tensor([8.0, 1.0]) + bias).argmax().item() == 1
+
+
+def test_repeated_plan_slot_bias_closes_completed_lexer_owner_group() -> None:
+    from slm_training.models.grammar import make_grammar_state
+
+    model = _model(
+        semantic_plan_margin_decode_weight=2.0,
+        semantic_plan_repeated_slot_margin_decode_weight=0.0,
+    )
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["Card"]
+    model._semantic_plan_action_counts = [{card_id: 3}]
+    model._slot_contracts = [[
+        ":toolbar.text",
+        ":card1.title",
+        ":card1.body",
+        ":card2.title",
+        ":card2.body",
+        ":card3.title",
+        ":card3.body",
+    ]]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([Card([TextContent(", add_special=False),
+        tokenizer.sym_id(1),
+        *tokenizer.encode("), TextContent(", add_special=False),
+        tokenizer.sym_id(2),
+        *tokenizer.encode(")", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    comma = tokenizer.token_to_id[","]
+    close = tokenizer.token_to_id["]"]
+
+    bias = model._semantic_plan_repeated_slot_bias(
+        0,
+        state,
+        prefix,
+        (comma, close),
+        torch.tensor([8.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert (torch.tensor([8.0, 1.0]) + bias).argmax().item() == 1
+
+
+def test_repeated_plan_slot_bias_does_not_close_parent_sibling_array() -> None:
+    from slm_training.models.grammar import make_grammar_state
+
+    model = _model(semantic_plan_margin_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    card_id = tokenizer.token_to_id["Card"]
+    model._semantic_plan_action_counts = [{card_id: 3}]
+    model._slot_contracts = [[
+        ":card1.title",
+        ":card1.body",
+        ":card2.title",
+        ":card2.body",
+        ":card3.title",
+        ":card3.body",
+    ]]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([Card([TextContent(", add_special=False),
+        tokenizer.sym_id(0),
+        *tokenizer.encode("), TextContent(", add_special=False),
+        tokenizer.sym_id(1),
+        *tokenizer.encode(")])", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+
+    assert model._semantic_plan_repeated_slot_bias(
+        0,
+        state,
+        prefix,
+        (tokenizer.token_to_id[","], tokenizer.token_to_id["]"]),
+        torch.tensor([1.0, 8.0]),
+    ) is None
+
+
 def test_typed_array_nonempty_bias_starts_slot_bearing_authored_array() -> None:
     from types import SimpleNamespace
 

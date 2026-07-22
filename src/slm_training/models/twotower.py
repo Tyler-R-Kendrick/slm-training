@@ -7128,9 +7128,36 @@ class TwoTowerModel(nn.Module):
         self,
         row: int,
         state: Any,
+        prefix: list[int] | None = None,
     ) -> int | None:
         """Return the deepest repeated prompt-plan family in the active path."""
-        return self._semantic_plan_owner_id(row, state, minimum_count=2)
+        owner_id = self._semantic_plan_owner_id(row, state, minimum_count=2)
+        if owner_id is not None:
+            return owner_id
+        if not self._semantic_plan_action_counts or row >= len(
+            self._semantic_plan_action_counts
+        ):
+            return None
+        repeated = {
+            token_id
+            for token_id, count in self._semantic_plan_action_counts[row].items()
+            if count >= 2
+        }
+        tokens = tuple(prefix or getattr(state, "prefix_ids", ()))
+        open_id = self.tokenizer.token_to_id.get("(")
+        close_id = self.tokenizer.token_to_id.get(")")
+        pending: int | None = None
+        stack: list[int | None] = []
+        for token_id in tokens:
+            token_id = int(token_id)
+            if token_id in repeated:
+                pending = token_id
+            elif token_id == open_id:
+                stack.append(pending)
+                pending = None
+            elif token_id == close_id and stack:
+                stack.pop()
+        return next((token_id for token_id in reversed(stack) if token_id), None)
 
     def _semantic_plan_owner_id(
         self,
@@ -7436,21 +7463,27 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
-        """Floor the best unused visible slot for each repeated plan instance."""
-        margin = float(
-            getattr(
-                self.config,
-                "semantic_plan_repeated_slot_margin_decode_weight",
-                0.0,
-            )
-            or 0.0
+        """Keep marker namespaces owned by their repeated plan instance."""
+        margin = max(
+            float(
+                getattr(
+                    self.config,
+                    "semantic_plan_repeated_slot_margin_decode_weight",
+                    0.0,
+                )
+                or 0.0
+            ),
+            float(
+                getattr(self.config, "semantic_plan_margin_decode_weight", 0.0)
+                or 0.0
+            ),
         )
         slot_contract = (
             self._slot_contracts[row]
             if self._slot_contracts and row < len(self._slot_contracts)
             else None
         )
-        owner_id = self._semantic_plan_repeated_owner_id(row, state)
+        owner_id = self._semantic_plan_repeated_owner_id(row, state, prefix)
         if margin <= 0.0 or not slot_contract or owner_id is None:
             return None
         owner_position = max(
@@ -7467,6 +7500,47 @@ class TwoTowerModel(nn.Module):
             int(self.tokenizer.sym_id(index))
             for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
         }
+        groups: dict[str, list[int]] = {}
+        for index, slot in enumerate(slot_contract[: self.tokenizer.sym_slots]):
+            namespace, separator, _property = slot.removeprefix(":").rpartition(".")
+            if separator:
+                groups.setdefault(namespace, []).append(int(self.tokenizer.sym_id(index)))
+        repeated_count = int(self._semantic_plan_action_counts[row][owner_id])
+        if len(groups) >= repeated_count:
+            selected = sorted(
+                sorted(groups.values(), key=lambda group: (-len(group), group[0]))[
+                    :repeated_count
+                ],
+                key=lambda group: group[0],
+            )
+            instance = prefix[: owner_position + 1].count(owner_id) - 1
+            if 0 <= instance < len(selected):
+                owned = set(selected[instance])
+                emitted = owned.intersection(prefix)
+                missing = owned.difference(emitted)
+                targets = [
+                    position
+                    for position, token_id in enumerate(candidate_ids)
+                    if token_id in missing
+                ]
+                comma_id = self.tokenizer.token_to_id.get(",")
+                close_id = self.tokenizer.token_to_id.get("]")
+                if not targets and comma_id in candidate_ids and close_id in candidate_ids:
+                    targets = [
+                        candidate_ids.index(comma_id if missing else close_id)
+                    ]
+                if targets:
+                    target = max(
+                        targets, key=lambda position: float(scores[position].item())
+                    )
+                    bias = scores.new_zeros(len(candidate_ids))
+                    bias[target] = max(
+                        0.0,
+                        float(scores.max().item())
+                        + margin
+                        - float(scores[target].item()),
+                    )
+                    return bias
         if any(
             token_id in visible_slot_ids for token_id in prefix[owner_position + 1 :]
         ):
@@ -8818,6 +8892,11 @@ class TwoTowerModel(nn.Module):
                         int(scores.argmax().item()) != before_coverage_close
                     )
             scores = apply_required_slot_margin(scores, candidates)
+            repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
+                plan_row, state, prefix, candidates, scores
+            )
+            if repeated_slot_bias is not None:
+                scores = scores + repeated_slot_bias
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -9003,6 +9082,15 @@ class TwoTowerModel(nn.Module):
                     scores = scores + schema_role_slot_bias
                 if parent == tuple(prefix):
                     scores = apply_required_slot_margin(scores, candidate_ids)
+                repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
+                    plan_row,
+                    state,
+                    list(parent),
+                    candidate_ids,
+                    scores,
+                )
+                if repeated_slot_bias is not None:
+                    scores = scores + repeated_slot_bias
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())
@@ -9063,6 +9151,20 @@ class TwoTowerModel(nn.Module):
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_coverage_close
                 )
+        path_candidates = tuple(int(path.token_ids[0]) for path in paths)
+        path_tensor = torch.tensor(path_scores, device=ctx.device)
+        repeated_slot_bias = self._semantic_plan_repeated_slot_bias(
+            plan_row,
+            state,
+            prefix,
+            path_candidates,
+            path_tensor,
+        )
+        if repeated_slot_bias is not None:
+            path_scores = [
+                float(value)
+                for value in (path_tensor + repeated_slot_bias).detach().cpu().tolist()
+            ]
         if bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)
             probs = F.softmax(torch.tensor(path_scores) / temp, dim=0)
