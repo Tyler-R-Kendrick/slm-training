@@ -2130,7 +2130,8 @@ def test_prompt_semantic_plan_reaches_lexer_compiler(monkeypatch) -> None:
     ) == ["root = Stack([])"]
 
 
-def test_prompt_semantic_plan_ranks_lexer_tree_paths() -> None:
+@pytest.mark.parametrize("path_kind", ["component", "component_bound"])
+def test_prompt_semantic_plan_ranks_lexer_tree_paths(path_kind: str) -> None:
     from types import SimpleNamespace
 
     model = _model(
@@ -2142,8 +2143,8 @@ def test_prompt_semantic_plan_ranks_lexer_tree_paths() -> None:
     text = tokenizer.token_to_id["TextContent"]
     prefix = [tokenizer.bos_id, *tokenizer.encode("root=Stack([", add_special=False)]
     paths = (
-        CompletionPath((card, tokenizer.token_to_id["("]), "component_bound"),
-        CompletionPath((text, tokenizer.token_to_id["("]), "component_bound"),
+        CompletionPath((card, tokenizer.token_to_id["("]), path_kind),
+        CompletionPath((text, tokenizer.token_to_id["("]), path_kind),
     )
     model._semantic_plan_action_scores = [{card: 1.0}]
     model._semantic_plan_action_counts = [{card: 1}]

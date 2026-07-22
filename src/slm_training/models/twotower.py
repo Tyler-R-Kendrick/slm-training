@@ -8551,7 +8551,9 @@ class TwoTowerModel(nn.Module):
 
         def bound_plan_kinds(kinds: tuple[str, ...]) -> tuple[str, ...]:
             return tuple(
-                "component_bound" if kind == "component_bound" else ""
+                "component_bound"
+                if kind in {"component", "component_bound"}
+                else ""
                 for kind in kinds
             )
 
