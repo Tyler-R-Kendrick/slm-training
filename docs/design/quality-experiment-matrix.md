@@ -6272,3 +6272,15 @@ contract, and topology families. Positives passed meaningful evaluation at
 evaluation at 0.0000. No gate changed, no model trained, and no ship claim is
 made. Full evidence:
 [semantic-contrast opaque-slot results](iter-e866-e867-semantic-contrast-opaque-slots-20260722.md).
+
+# E886-E888 — recovered current-policy baseline (2026-07-22)
+
+E886 reproduced the lost E852 checkpoint bit-for-bit from committed E851 data:
+600 local CPU steps completed in 53.30 seconds with the same final loss and SHA.
+Current-policy E887 smoke `n=3` reproduces parse/strict/fidelity 1.0, structure
+0.6589, and recall 0.7500. E888 held-out `n=5` reaches parse 0.8, strict-v2
+0.2, fidelity 0.64, structure 0.2588, recall 0.4190, and reward 0.7178, with one
+timeout, two fallback-marked rows, and AgentV 0/2. Retain E886 as the local
+scratch parent, not ship; next target held-out strict meaning rather than more
+undirected steps. Full evidence:
+[recovered baseline results](iter-e886-e888-recovered-baseline-20260722.md).

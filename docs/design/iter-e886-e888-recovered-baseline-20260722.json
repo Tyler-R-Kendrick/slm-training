@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e888-e886-current-policy-heldout-n5-r1",
+  "experiment_id": "E886-E888",
+  "date": "2026-07-22",
+  "decision": "retain_recovered_baseline_target_heldout_strict_meaning",
+  "train": {
+    "run_id": "e886-e851-recovery-scratch600-r1",
+    "train_dir": "src/slm_training/resources/data/train/e851_e826_typed_supplement_v1",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 600,
+    "elapsed_wall_seconds": 53.29524673500009,
+    "last_loss": 4.073660850524902,
+    "data_manifest_sha": "b5193be89e42fb052a056584f22a9159cf1dccbb1edf2271ec1941cd41e56fb9",
+    "checkpoint_sha256": "76cd2dc28b921cd9de3efff29e2b07ebf8df453abbca31559f95368525b09819",
+    "checkpoint_sync": "disabled_local_scratch"
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "binding_aware_meaningful_v2_rate_strict": 1.0, "placeholder_fidelity_normalized": 1.0, "structural_similarity": 0.6589, "component_type_recall": 0.75, "reward_score": 0.949, "decode_timeout_count": 0, "fallback_count": 0},
+    "held_out": {"n": 5, "parse_rate": 0.8, "meaningful_program_rate": 0.4, "binding_aware_meaningful_v2_rate_strict": 0.2, "placeholder_fidelity_normalized": 0.64, "structural_similarity": 0.25884, "component_type_recall": 0.41904761904761906, "reward_score": 0.7178, "decode_timeout_count": 1, "fallback_count": 2}
+  },
+  "agentv": {"passed": 0, "total": 2, "failed": 2, "execution_errors": 0},
+  "ship_gates": {"evaluated": false, "pass": false, "reason": "diagnostic smoke and held_out only; AgentV failed and held_out strict-v2/structure remain below policy"},
+  "recipe": {"device": "cpu", "context_backend": "scratch", "output_tokenizer": "lexer", "evaluation_policy": "strict_compiler_tree", "diagnostic_subset": true, "max_wall_minutes": 1.5833333333333333, "checkpoint_sync": "disabled_local_scratch", "remote_workflow": false},
+  "completion_contract": "grammar/AST symbols plus canonical opaque :slot_N markers only",
+  "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "b66fc2b1d28e13a34c39aeccb7f7b45131301f1b", "code_dirty": false, "components": {"config.levers": "v29", "harness.model_build.train": "v22", "harness.model_build.eval": "v51", "evals.meaningful_program": "2.13.0", "evals.scoring": "v14", "model.twotower": "v236"}, "stamped_at": "2026-07-22T21:25:25.384715+00:00"}
+}
