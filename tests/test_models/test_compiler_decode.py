@@ -2515,26 +2515,30 @@ def test_prompt_semantic_plan_does_not_continue_inside_repeated_family() -> None
 def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     monkeypatch,
 ) -> None:
-    model = _model(semantic_plan_margin_decode_weight=2.0)
+    model = _model(
+        semantic_plan_margin_decode_weight=2.0,
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
     tokenizer = model.tokenizer
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode("root = Stack([b1])\nb1 = Card([", add_special=False),
+        *tokenizer.encode("root = Tabs([", add_special=False),
     ]
     state = make_grammar_state()
     for token_id in prefix[1:]:
         state.advance_token(tokenizer, token_id)
     close_id = tokenizer.token_to_id["]"]
     binder_id = tokenizer.token_to_id["<BIND_1>"]
-    stack_id = tokenizer.token_to_id["Stack"]
-    model._semantic_plan_action_counts = [{stack_id: 1}]
+    tabs_id = tokenizer.token_to_id["Tabs"]
+    item_id = tokenizer.token_to_id["TabItem"]
+    model._semantic_plan_action_counts = [{tabs_id: 1}]
     model._slot_contracts = [[":hero.title"]]
 
     bias = model._semantic_plan_typed_array_nonempty_bias(
         0,
         state,
         prefix,
-        (close_id, binder_id, stack_id),
+        (close_id, binder_id, item_id),
         torch.tensor([8.0, 9.0, 1.0]),
     )
 
@@ -2551,7 +2555,7 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     ctx, ctx_pad = model._encode_context(["Card layout."])
     paths = (
         CompletionPath((close_id,), "literal"),
-        CompletionPath((stack_id, tokenizer.token_to_id["("]), "component"),
+        CompletionPath((item_id, tokenizer.token_to_id["("]), "component"),
     )
     selected = model._select_compiler_path(
         prefix,

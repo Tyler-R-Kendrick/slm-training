@@ -7407,11 +7407,23 @@ class TwoTowerModel(nn.Module):
                 .removeprefix("+")
                 in allowed_components
             }
+            unique_schema_item_ids = {
+                token_id
+                for token_id in self._component_inventory_token_ids()
+                if len(allowed_components) == 1
+                and str(self.tokenizer.id_to_token.get(token_id, ""))
+                .removeprefix("COMP:")
+                .removeprefix("+")
+                in allowed_components
+            }
+            preferred_item_ids = planned_item_ids | (
+                unique_schema_item_ids if typed_margin > 0.0 else set()
+            )
             if (
                 family_id is None
                 or (
                     plan_counts.get(family_id, 0) <= 0
-                    and not planned_item_ids
+                    and not preferred_item_ids
                 )
             ):
                 return None
@@ -7428,7 +7440,7 @@ class TwoTowerModel(nn.Module):
             typed_targets = [
                 position
                 for position in targets
-                if candidate_ids[position] in planned_item_ids
+                if candidate_ids[position] in preferred_item_ids
             ]
             ranked_targets = typed_targets or targets
             target = max(

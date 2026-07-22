@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v29",
+      "version": "v30",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v30",
+          "date": "2026-07-22",
+          "note": "Advertise the existing typed-array item margin on lexer restricted and tree compiler paths now that the path executes it"
+        },
         {
           "version": "v29",
           "date": "2026-07-22",
@@ -4091,7 +4096,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v239",
+      "version": "v240",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4115,6 +4120,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v240",
+          "date": "2026-07-22",
+          "note": "Extend the explicit typed-array item margin to lexer compiler paths and prefer a unique public-schema item without semantic marker labels"
+        },
         {
           "version": "v239",
           "date": "2026-07-22",
