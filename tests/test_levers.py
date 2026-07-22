@@ -23,3 +23,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     assert catalog["semantic_plan_decode_weight"]["category"] == "decode"
     assert catalog["context_backend"]["contexts_diverge"] is True
     assert catalog["context_backend"]["checkpoint_default"] == "scratch"
+    assert catalog["root_reference_arity_loss_weight"][
+        "supported_output_tokenizers"
+    ] == ["choice"]
+    assert catalog["root_reference_arity_loss_weight"]["supported_models"] == [
+        "twotower"
+    ]

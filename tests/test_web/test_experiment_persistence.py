@@ -426,3 +426,22 @@ def test_e725_checkpoint_and_scoreboard_persist_without_outputs(tmp_path: Path) 
         "897208bf4bf0ce12b137145a3a6c88f2140faa6579080b0fe54c6794fde8ba1e"
     )
     assert run["train_summary"]["checkpoint_synced"] is False
+
+
+def test_e726_invalid_checkpoint_provenance_persists_without_outputs(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e726-symbol-only-root-arity140-r1"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    assert run["scoreboard"] is None
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "d84148fe327c18dee6a4ad4957b1b23499e17ae364c79a97cdc8150503a1b91b"
+    )
+    assert run["train_summary"]["root_reference_arity_head_instantiated"] is False
+    assert run["train_summary"]["checkpoint_synced"] is False

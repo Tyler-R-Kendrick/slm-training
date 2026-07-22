@@ -12,7 +12,11 @@ import math
 from dataclasses import dataclass, fields as _fields
 from typing import Any, Iterable, Sequence
 
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import (
+    MAX_RUN_MINUTES,
+    incompatible_model_levers,
+    incompatible_output_tokenizer_levers,
+)
 
 
 class NumericValidationError(ValueError):
@@ -449,6 +453,21 @@ def validate_numeric_config(cfg: Any, *, context: str = "config") -> NumericSche
         mx = getattr(cfg, "mask_max")
         if mn is not None and mx is not None and mn > mx:
             report.record("mask_min/max", False, "mask_min must be <= mask_max")
+
+    incompatible = incompatible_output_tokenizer_levers(cfg)
+    if incompatible:
+        report.record(
+            "output_tokenizer_lever_compatibility",
+            False,
+            f"{', '.join(incompatible)} require output_tokenizer='choice'",
+        )
+    incompatible = incompatible_model_levers(cfg)
+    if incompatible:
+        report.record(
+            "model_lever_compatibility",
+            False,
+            f"{', '.join(incompatible)} require model_name='twotower'",
+        )
 
     if not report.valid:
         raise NumericValidationError(
