@@ -64,6 +64,7 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
         )
     )
     policy = _effective_evaluation_policy(config, plugin)
+    assert policy["evaluation_policy"] == "checkpoint_declared"
     assert policy["context_backend"] == "scratch"
     assert policy["grammar_constrained"] is True
     assert policy["grammar_ltr_primary"] is False

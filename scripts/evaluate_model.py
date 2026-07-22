@@ -11,6 +11,10 @@ from slm_training.evals.eval_cache import EvalCache, EvalCacheConfig, EvalCacheM
 from slm_training.evals.record_schema import RUN_CLASSES
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.eval_policy import (
+    EVALUATION_POLICIES,
+    STRICT_COMPILER_TREE_POLICY_ID,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -64,6 +68,15 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/data/eval/v1"),
     )
     parser.add_argument("--suite", default="smoke")
+    parser.add_argument(
+        "--evaluation-policy",
+        choices=tuple(EVALUATION_POLICIES),
+        default="checkpoint_declared",
+        help=(
+            "Atomic evaluation policy preset. Selecting compiler tree mode "
+            "always normalizes this to strict_compiler_tree."
+        ),
+    )
     parser.add_argument(
         "--suites",
         default=None,
@@ -632,6 +645,11 @@ def main(argv: list[str] | None = None) -> int:
         train_dir=args.train_dir,
         test_dir=args.test_dir,
         suite=args.suite,
+        evaluation_policy=(
+            STRICT_COMPILER_TREE_POLICY_ID
+            if args.ship_gates
+            else args.evaluation_policy
+        ),
         run_class=args.run_class
         or ("ship_eval" if args.ship_gates else "scratch_matrix"),
         run_root=args.run_root,

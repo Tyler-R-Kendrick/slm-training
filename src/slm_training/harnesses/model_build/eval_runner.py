@@ -362,6 +362,9 @@ def _effective_evaluation_policy(
         return None if effective is None else bool(effective)
 
     return {
+        "evaluation_policy": str(
+            getattr(config, "evaluation_policy", "checkpoint_declared")
+        ),
         "context_backend": value("context_backend"),
         "local_files_only": bool(value("local_files_only")),
         "grammar_constrained": optional_bool("grammar_constrained"),
