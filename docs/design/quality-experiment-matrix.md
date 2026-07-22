@@ -6195,3 +6195,21 @@ steps in 70.15 seconds. E853 smoke reached parse/meaning-v1/strict-v2/fidelity
 timeout. This beats E843 structure and recall, but AgentV remains 0/1 and only
 smoke `n=3` ran; retain as a scratch baseline without a ship claim. Full
 evidence: [surgical supplement results](iter-e850-e853-surgical-typed-supplement-20260722.md).
+
+# E854 — action-group leakage rejection (2026-07-22)
+
+E854 tested a generalized standalone `Buttons` producer after E853 exposed that
+distribution gap. The unchanged test-structure gate rejected it as topologically
+equivalent to a committed smoke record, leaving the corpus fingerprint identical
+to E851. The fixture was removed and no training followed. Retain the leakage
+gate; source structurally distinct action groups instead. Full evidence:
+[E854 rejection](iter-e854-action-group-leakage-rejection-20260722.md).
+
+# E855-E857 — structurally disjoint action group (2026-07-22)
+
+E855 admitted one structurally disjoint two-action `Buttons` fixture with zero
+quality warnings. E856 completed 600 local CPU scratch steps in 57.13 seconds,
+but E857 regressed strict meaning from 1.0000 to 0.6667 and structure from
+0.6589 to 0.5500 without fixing the missing wrapper. Reject the checkpoint and
+remove the ineffective producer fixture; E851/E852 remains the baseline. Full
+evidence: [two-action results](iter-e855-e857-two-action-group-20260722.md).

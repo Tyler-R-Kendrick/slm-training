@@ -3426,7 +3426,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v17",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3437,6 +3437,21 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-22",
+          "note": "Remove the ineffective two-action fixture after matched smoke regressed structure and strict meaning"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-22",
+          "note": "Add a structurally disjoint two-action Buttons producer fixture"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-22",
+          "note": "Rejected a standalone one-action fixture after test-structure decontamination; fixture removed"
+        },
         {
           "version": "v17",
           "date": "2026-07-22",
