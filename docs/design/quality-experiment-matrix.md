@@ -5926,3 +5926,15 @@ component recall 1.0, reward 0.9370, strict-v2 1.0, p50 9282.32 ms, p95
 9463.23 ms, zero timeouts, and zero fallbacks. AgentV is 0/1; this diagnostic
 does not establish ship readiness. Full evidence:
 [`iter-e758-standalone-marker-sibling-20260722.md`](iter-e758-standalone-marker-sibling-20260722.md).
+
+# E759 — broader RICO prefix (2026-07-22)
+
+Retain model v218 and the canonical recipe. Three matched local runs extend the
+E758 fix through RICO n=9 with parse, fidelity, validity, structure, tree-edit,
+component recall, and strict-v2 all at 1.0. The retained n=9 run has reward
+0.9337, p50 9068.77 ms, p95 10761.18 ms, zero timeouts, and zero fallbacks.
+
+No lever changed, no checkpoint was created, and no remote compute ran. AgentV
+is 0/1 and this diagnostic prefix is below ship n, so it is not a promotion or
+ship result. Next probe non-prefix records locally. Full evidence:
+[`iter-e759-broader-rico-prefix-20260722.md`](iter-e759-broader-rico-prefix-20260722.md).
