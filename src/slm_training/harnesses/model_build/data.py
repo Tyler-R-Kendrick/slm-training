@@ -7,6 +7,24 @@ from pathlib import Path
 
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.data.store import DataStore
+from slm_training.dsl.language_contract import assert_symbol_only_output
+
+
+def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
+    """Load records only after every completion target clears contract v2."""
+    records = load_jsonl(path)
+    for record in records:
+        try:
+            assert_symbol_only_output(
+                record.openui,
+                output_kind=record.target_kind,
+            )
+        except ValueError as exc:
+            raise ValueError(
+                f"{path}: record {record.id!r} violates the symbol-only output "
+                f"contract: {exc}"
+            ) from exc
+    return records
 
 
 def load_train_records(train_dir: Path) -> list[ExampleRecord]:
@@ -14,7 +32,7 @@ def load_train_records(train_dir: Path) -> list[ExampleRecord]:
     records_path = train_dir / "records.jsonl"
     if not records_path.exists():
         raise FileNotFoundError(f"missing train records: {records_path}")
-    return load_jsonl(records_path)
+    return _load_symbol_only_records(records_path)
 
 
 def load_suite_records(test_dir: Path, suite: str) -> list[ExampleRecord]:
@@ -26,12 +44,12 @@ def load_suite_records(test_dir: Path, suite: str) -> list[ExampleRecord]:
         if suite in suites:
             declared = Path(suites[suite])
             if declared.is_file():
-                return load_jsonl(declared)
+                return _load_symbol_only_records(declared)
     # Fallback to conventional path
     path = test_dir / "suites" / suite / "records.jsonl"
     if not path.exists():
         raise FileNotFoundError(f"missing suite {suite!r} under {test_dir}")
-    return load_jsonl(path)
+    return _load_symbol_only_records(path)
 
 
 def batched(items: list[ExampleRecord], batch_size: int) -> list[list[ExampleRecord]]:

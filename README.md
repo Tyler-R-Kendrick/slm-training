@@ -248,9 +248,11 @@ python -m slm_training.levers
 python -m slm_training.levers --category decode
 ```
 
-The catalog identifies intentional checkpoint-vs-harness default differences
-and each decode lever's executable tokenizer/compiler configurations. Invalid
-combinations fail during config construction, before a run directory is made.
+The catalog identifies intentional checkpoint-vs-harness default differences,
+each decode lever's executable tokenizer/compiler configurations, and the
+training objective that must exist in a checkpoint before a learned decode
+head can be enabled. Invalid, untrained, or inert combinations fail during
+config construction or checkpoint override, before run artifacts are made.
 The repository-wide run cap is the sole policy lever owned directly by
 `src/slm_training/levers.py`; changing `MAX_RUN_MINUTES` updates every Python
 consumer. Local compute is the default experiment path. Remote CI and managed
