@@ -463,6 +463,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Diagnostic-only cap for every selected suite; omit for full eval.",
     )
     parser.add_argument(
+        "--eval-offset",
+        type=int,
+        default=ModelBuildConfig.eval_offset,
+        help="Diagnostic-only records to skip before applying --eval-limit.",
+    )
+    parser.add_argument(
         "--gen-steps",
         type=int,
         default=8,
@@ -678,6 +684,7 @@ def main(argv: list[str] | None = None) -> int:
         design_md_in_context=design_md_override,
         rico_eval_limit=args.rico_limit,
         eval_limit=args.eval_limit,
+        eval_offset=args.eval_offset,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
         allow_unconstrained_fallback=not args.no_unconstrained_fallback,

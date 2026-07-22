@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from slm_training.models.tokenizer import OpenUITokenizer, load_tokenizer_sidecar
 from slm_training.models.twotower import TwoTowerConfig
 
 
@@ -46,3 +47,14 @@ def test_action_shortlist_defaults_to_off() -> None:
     assert cfg.action_shortlist_score_margin == pytest.approx(0.0)
     assert cfg.action_shortlist_fallback_policy == "confidence_and_coverage"
     assert cfg.action_shortlist_shadow_full_score is False
+
+
+def test_tokenizer_sidecar_legacy_opt_in(tmp_path) -> None:
+    path = tmp_path / "legacy.tokenizer.json"
+    tokenizer = OpenUITokenizer.build(["root = Stack([])"])
+    tokenizer.version = 1
+    tokenizer.save(path)
+
+    with pytest.raises(ValueError, match="tokenizer version mismatch"):
+        load_tokenizer_sidecar(path)
+    assert load_tokenizer_sidecar(path, allow_legacy=True).version == 1

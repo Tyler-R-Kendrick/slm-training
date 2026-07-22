@@ -530,7 +530,7 @@ def test_e731_checkpoint_and_no_effect_arms_persist_without_outputs(tmp_path: Pa
     )
 
 
-def test_e751_e752_e754_e757_e758_e759_rico_repairs_persist_without_outputs(
+def test_e751_through_e762_rico_repairs_persist_without_outputs(
     tmp_path: Path,
 ) -> None:
     readers = Readers(Path(__file__).parents[2])
@@ -545,6 +545,7 @@ def test_e751_e752_e754_e757_e758_e759_rico_repairs_persist_without_outputs(
         "e758-standalone-marker-sibling-rico-n3-r1"
     )
     broader_prefix = readers.run("e759-broader-rico-n9-r1")
+    unique_markers = readers.run("e762-unique-markers-offset27-n8-r1")
 
     assert ownership["provenance"] == "committed"
     assert ownership["scoreboard"]["suites"]["rico_held"][
@@ -578,3 +579,11 @@ def test_e751_e752_e754_e757_e758_e759_rico_repairs_persist_without_outputs(
         "binding_aware_meaningful_v2_rate_strict"
     ] == 1.0
     assert broader_prefix["train_summary"] is None
+    assert unique_markers["provenance"] == "committed"
+    assert unique_markers["scoreboard"]["suites"]["rico_held"][
+        "eval_offset"
+    ] == 27
+    assert unique_markers["scoreboard"]["suites"]["rico_held"][
+        "structural_similarity"
+    ] == 1.0
+    assert unique_markers["train_summary"] is None

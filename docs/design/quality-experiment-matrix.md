@@ -5938,3 +5938,18 @@ No lever changed, no checkpoint was created, and no remote compute ran. AgentV
 is 0/1 and this diagnostic prefix is below ship n, so it is not a promotion or
 ship result. Next probe non-prefix records locally. Full evidence:
 [`iter-e759-broader-rico-prefix-20260722.md`](iter-e759-broader-rico-prefix-20260722.md).
+
+# E760-E762 — shifted sampling and single-use markers (2026-07-22)
+
+Retain eval harness v44, model v220, and meaningful-v2 2.13.0. The canonical
+evaluator now applies a provenance-stamped offset before its diagnostic limit,
+which exposed two non-prefix defects without copying the suite. E761 scopes
+global role bindings to direct obligations; E762 makes declared lexer markers
+single-use and teaches meaningful-v2 to reject duplicates.
+
+The retained local offset-27 n=8 replay has parse, fidelity, validity,
+structure, tree edit, component recall, and strict-v2 all at 1.0; reward is
+0.9295, p50 8883.50 ms, p95 10781.45 ms, with zero timeouts and fallbacks.
+AgentV is 0/1 and the slice is below ship n, so no promotion or ship claim is
+made. Full positive and negative evidence:
+[`iter-e760-e762-local-sampling-marker-uniqueness-20260722.md`](iter-e760-e762-local-sampling-marker-uniqueness-20260722.md).

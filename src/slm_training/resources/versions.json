@@ -300,12 +300,17 @@
       ]
     },
     "evals.meaningful_program": {
-      "version": "2.12.0",
+      "version": "2.13.0",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/meaningful_program.py"
       ],
       "history": [
+        {
+          "version": "2.13.0",
+          "date": "2026-07-22",
+          "note": "Reject duplicate declared template-marker identities instead of treating set coverage as sufficient"
+        },
         {
           "version": "2.12.0",
           "date": "2026-07-21",
@@ -414,12 +419,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v13",
+      "version": "v14",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-22",
+          "note": "Templatize positive SwitchItem and TabItem metric-gaming archetypes so accepted fixtures contain no free-form output strings"
+        },
         {
           "version": "v13",
           "date": "2026-07-21",
@@ -605,6 +615,11 @@
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v1",
+          "date": "2026-07-22",
+          "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.12.0 to 2.13.0; thresholds remain disabled and ship policy is unchanged"
+        },
         {
           "version": "openui_ship_gates_v1",
           "date": "2026-07-21",
@@ -2697,7 +2712,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v43",
+      "version": "v44",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2707,6 +2722,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v44",
+          "date": "2026-07-22",
+          "note": "Add provenance-stamped eval offsets to sample non-prefix records locally without cache collisions"
+        },
         {
           "version": "v43",
           "date": "2026-07-22",
@@ -3501,12 +3521,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v4",
+      "version": "v5",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-22",
+          "note": "Centralize design-context conditioning in the shared strict compiler-tree policy inherited by V9 and V10"
+        },
         {
           "version": "v4",
           "date": "2026-07-21",
@@ -3819,13 +3844,15 @@
       ]
     },
     "model.twotower": {
-      "version": "v218",
+      "version": "v221",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
+        "src/slm_training/models/tokenizer.py",
+        "src/slm_training/models/checkpoint_migrate.py",
         "src/slm_training/models/template_fill.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
@@ -3841,6 +3868,26 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v221",
+          "date": "2026-07-22",
+          "note": "Centralize tokenizer sidecar dispatch and preserve lexer-native tokenizer identity through checkpoint migration"
+        },
+        {
+          "version": "v220",
+          "date": "2026-07-22",
+          "note": "Make declared lexer template markers single-use under slot-contract constrained decode"
+        },
+        {
+          "version": "v219",
+          "date": "2026-07-22",
+          "note": "Bind only direct semantic-role obligations globally so nested repeated-owner markers cannot displace standalone siblings"
+        },
+        {
+          "version": "v218",
+          "date": "2026-07-22",
+          "note": "no-bump: add evaluator-only record offset metadata to ModelBuildConfig without changing model construction or decoding"
+        },
         {
           "version": "v218",
           "date": "2026-07-22",

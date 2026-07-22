@@ -84,6 +84,25 @@ def test_hard_prompt_inventory_rejects_extra_placeholder_identity() -> None:
     assert "unexpected_placeholder_identity" in report.reason_codes
 
 
+def test_hard_prompt_inventory_rejects_duplicate_placeholder_identity() -> None:
+    source = (
+        'root = Stack([TextContent(":hero.title"), '
+        'TextContent(":hero.title")])'
+    )
+    report = binding_aware_meaningful_v2(
+        source,
+        record=ExampleRecord(
+            id="duplicate-slot",
+            prompt="Build one TextContent. Placeholders: :hero.title",
+            openui='root = TextContent(":hero.title")',
+            placeholders=[":hero.title"],
+        ),
+    )
+
+    assert report.verdict is False
+    assert "duplicate_placeholder_identity" in report.reason_codes
+
+
 def test_component_only_contract_keeps_placeholder_coverage_unknown() -> None:
     record = ExampleRecord(
         id="component-only",
