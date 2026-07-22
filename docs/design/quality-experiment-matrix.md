@@ -5500,3 +5500,18 @@ and close this weight ladder for E723; no training or checkpoint creation.
 
 Evidence: [narrative](iter-e724-slot-coverage-close-symbol-only-20260721.md) and
 [JSON](iter-e724-slot-coverage-close-symbol-only-20260721.json).
+
+## E725 cumulative symbol-only component inventory
+
+E725 adds component-inventory loss/decode weight 1 to E723's plan, edge, and
+slot-owner recipe. The 130-step local CPU run completes in 73.22 seconds under
+`max_wall_minutes=2`; the inventory head reaches 0.6833 top-k recall and a
+2.0878 positive score margin. On the accepted three-record smoke diagnostic,
+inventory weight 1 and weight 0 are byte-identical: parse 1.0, meaning-v1 and
+strict-v2 0.0, structure 0.3094, component recall/reward 0.0, no timeouts, and
+AgentV 0/1. Zero inventory applications or choice changes occur. Reject the
+checkpoint and lever; target structural component reachability next. Two setup
+attempts that loaded no records are documented and excluded from evidence.
+
+Evidence: [narrative](iter-e725-component-inventory-symbol-only-20260722.md) and
+[JSON](iter-e725-component-inventory-symbol-only-20260722.json).
