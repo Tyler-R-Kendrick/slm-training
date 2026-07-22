@@ -2288,7 +2288,6 @@ def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> 
 
     assert selected == paths[0].token_ids
 
-
 def test_lexer_semantic_role_ranks_compiler_component_family(monkeypatch) -> None:
     model = _model(semantic_role_decode_weight=2.0)
     tokenizer = model.tokenizer
@@ -2325,6 +2324,55 @@ def test_lexer_semantic_role_ranks_compiler_component_family(monkeypatch) -> Non
     )
 
     assert selected == paths[0].token_ids
+
+
+@pytest.mark.parametrize("tree", [False, True])
+def test_lexer_slot_coverage_close_stops_after_declared_symbols(
+    monkeypatch, tree: bool
+) -> None:
+    model = _model(slot_coverage_close_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    close_id = tokenizer.token_to_id["]"]
+    text = tokenizer.token_to_id["TextContent"]
+    prefix = [tokenizer.bos_id, tokenizer.sym_id(0)]
+    paths = (
+        CompletionPath((close_id,), "grammar_rsqb_populated"),
+        CompletionPath((text, tokenizer.token_to_id["("]), "component"),
+    )
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [5.0 if token_id == text else 1.0 for token_id in candidate_ids]
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["Single label."])
+
+    selected = model._select_compiler_path(
+        prefix,
+        paths,
+        ctx,
+        ctx_pad,
+        32,
+        tree=tree,
+        slot_contract=[":cta.label"],
+        state=make_grammar_state(),
+    )
+
+    assert selected == paths[0].token_ids
+
+    incomplete = model._select_compiler_path(
+        [tokenizer.bos_id],
+        paths,
+        ctx,
+        ctx_pad,
+        32,
+        tree=tree,
+        slot_contract=[":cta.label"],
+        state=make_grammar_state(),
+    )
+
+    assert incomplete == paths[1].token_ids
 
 
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:

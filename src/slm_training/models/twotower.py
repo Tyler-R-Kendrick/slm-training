@@ -7563,6 +7563,42 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _slot_coverage_close_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+        scores: list[float] | torch.Tensor,
+    ) -> list[float] | None:
+        """Floor an immediate compiler-legal container close after coverage."""
+        weight = float(
+            getattr(self.config, "slot_coverage_close_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or not slot_contract or len(paths) != len(scores):
+            return None
+        try:
+            covered = all(
+                int(self.tokenizer.sym_id(index)) in prefix
+                for index in range(len(slot_contract))
+            )
+            close_id = int(self.tokenizer.token_to_id["]"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+        if not covered:
+            return None
+        closes = [
+            bool(path.token_ids and int(path.token_ids[0]) == close_id)
+            for path in paths
+        ]
+        if not any(closes) or all(closes):
+            return None
+        values = [float(score) for score in scores]
+        floor = max(values) + weight
+        return [
+            max(0.0, floor - values[index]) if closes[index] else 0.0
+            for index in range(len(paths))
+        ]
+
     def _semantic_plan_outer_group_target(
         self,
         row: int,
@@ -8630,6 +8666,17 @@ class TwoTowerModel(nn.Module):
             )
             if schema_role_slot_bias is not None:
                 scores = scores + schema_role_slot_bias
+            coverage_close_bias = self._slot_coverage_close_path_bias(
+                prefix, paths, slot_contract, scores
+            )
+            if coverage_close_bias is not None:
+                before_coverage_close = int(scores.argmax().item())
+                scores = scores + scores.new_tensor(coverage_close_bias)
+                if stats is not None:
+                    stats.slot_coverage_close_applications += 1
+                    stats.slot_coverage_close_choice_changes += int(
+                        int(scores.argmax().item()) != before_coverage_close
+                    )
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -8855,6 +8902,23 @@ class TwoTowerModel(nn.Module):
                 stats.root_reference_arity_choice_changes += int(
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_root_arity
+                )
+        coverage_close_bias = self._slot_coverage_close_path_bias(
+            prefix, paths, slot_contract, path_scores
+        )
+        if coverage_close_bias is not None:
+            before_coverage_close = max(
+                range(len(paths)), key=path_scores.__getitem__
+            )
+            path_scores = [
+                score + coverage_close_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+            if stats is not None:
+                stats.slot_coverage_close_applications += 1
+                stats.slot_coverage_close_choice_changes += int(
+                    max(range(len(paths)), key=path_scores.__getitem__)
+                    != before_coverage_close
                 )
         if bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)
