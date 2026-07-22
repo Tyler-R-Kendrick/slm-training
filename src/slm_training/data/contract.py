@@ -57,6 +57,11 @@ def assert_no_template_semantic_labels(*texts: str | None) -> None:
         )
 
 
+def is_canonical_template_marker(marker: str) -> bool:
+    """Return whether ``marker`` is one opaque harness-owned slot identity."""
+    return bool(_OPAQUE_MARKER_RE.fullmatch(marker))
+
+
 def project_template_markers(text: str | None, markers: Iterable[str]) -> str | None:
     """Replace user-defined marker spellings with ordinal codec identities."""
     if text is None:
@@ -186,7 +191,7 @@ def assert_canonical_template_markers(record: ExampleRecord) -> None:
 def assert_canonical_template_marker_inventory(markers: Iterable[str]) -> None:
     """Reject a marker inventory that is named or has noncontiguous ordinals."""
     combined = list(dict.fromkeys(markers))
-    if any(not _OPAQUE_MARKER_RE.fullmatch(marker) for marker in combined):
+    if any(not is_canonical_template_marker(marker) for marker in combined):
         raise ValueError(
             "persisted template markers must use opaque :slot_<ordinal> identities"
         )
@@ -768,6 +773,7 @@ __all__ = [
     "choice_generation_fingerprint",
     "binders_in_source",
     "canonical_slot_contract",
+    "is_canonical_template_marker",
     "load_generation_requests",
     "normalize_example_record",
 ]

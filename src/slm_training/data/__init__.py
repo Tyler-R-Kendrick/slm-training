@@ -3,6 +3,7 @@
 from slm_training.data.contract import (
     GenerationRequest,
     canonical_slot_contract,
+    is_canonical_template_marker,
     normalize_example_record,
 )
 from slm_training.data.dedup import (
@@ -44,6 +45,7 @@ __all__ = [
     "apply_fuzzy_dedup",
     "apply_semantic_cluster_cap",
     "canonical_slot_contract",
+    "is_canonical_template_marker",
     "cluster_by_structure",
     "cluster_exposure_stats",
     "clustered_train_val_split",

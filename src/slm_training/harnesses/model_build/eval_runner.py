@@ -14,6 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from slm_training.data.contract import is_canonical_template_marker
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
@@ -152,18 +153,15 @@ def _sha256_file(path: Path) -> str:
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | None:
     """
-    Namespace-stripped placeholder overlap (diagnostic / ablation metric).
+    Legacy-schema alias for strict opaque-marker overlap.
+
+    Semantic namespace labels are prohibited and receive no normalization
+    credit. The retained field name avoids breaking historical result readers.
 
     ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
     undefined evidence, never a vacuous 1.0.
     """
-    pred_set = _placeholders_of(pred)
-    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
-    if not gold_set:
-        return None if not pred_set else 0.0
-    pred_n = {_normalize_placeholder(p) for p in pred_set}
-    gold_n = {_normalize_placeholder(p) for p in gold_set}
-    return len(pred_n & gold_n) / len(gold_n)
+    return _placeholder_fidelity(pred, gold)
 
 
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
@@ -180,15 +178,6 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
     return len(pred_set & gold_set) / len(gold_set)
 
 
-def _normalize_placeholder(token: str) -> str:
-    """Drop leading namespace segment so :smoke.hero.title ~= :hero.title."""
-    body = token[1:] if token.startswith(":") else token
-    parts = body.split(".")
-    if len(parts) >= 3:
-        return ".".join(parts[1:])
-    return body
-
-
 def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
     """
     Soft placeholder quality for diagnostics only (not a ship gate alone).
@@ -201,12 +190,8 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
         return None if not pred_set else 0.5
     if not pred_set:
         return 0.0
-    well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(
-        pred_set
-    )
-    pred_n = {_normalize_placeholder(p) for p in pred_set}
-    gold_n = {_normalize_placeholder(p) for p in gold_set}
-    overlap = len(pred_n & gold_n) / len(gold_n) if gold_n else 0.0
+    well_formed = sum(is_canonical_template_marker(p) for p in pred_set) / len(pred_set)
+    overlap = len(pred_set & gold_set) / len(gold_set)
     return round(0.4 * well_formed + 0.6 * overlap, 4)
 
 

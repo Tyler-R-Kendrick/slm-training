@@ -24,16 +24,16 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 PROGRAM = (
     'root = Stack([inline_card, panel, cta], "column")\n'
     "inline_card = Card([title])\n"
-    'title = TextContent(":hero.title")\n'
+    'title = TextContent(":slot_0")\n'
     "panel = Card([body])\n"
-    'body = TextContent(":hero.body")\n'
-    'cta = Button(":cta.label")'
+    'body = TextContent(":slot_1")\n'
+    'cta = Button(":slot_2")'
 )
-SHORT_PROGRAM = 'root = Stack([title])\ntitle = TextContent(":hero.title")'
+SHORT_PROGRAM = 'root = Stack([title])\ntitle = TextContent(":slot_0")'
 LONG_PROGRAM = (
     "root = Stack([title, cta])\n"
-    'title = TextContent(":hero.title")\n'
-    'cta = Button(":cta.label")'
+    'title = TextContent(":slot_0")\n'
+    'cta = Button(":slot_1")'
 )
 
 
@@ -177,7 +177,7 @@ def test_twotower_diffusion_loss_trains_length_head_and_preserves_cache() -> Non
             id="a",
             prompt="Build a hero with a CTA.",
             openui=LONG_PROGRAM,
-            placeholders=[":hero.title", ":cta.label"],
+            placeholders=[":slot_0", ":slot_1"],
         )
     ]
     config = TwoTowerConfig(

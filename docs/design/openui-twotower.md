@@ -41,7 +41,9 @@ Root: `Stack`. Content components include `TextContent`, `Card([children])`, `Bu
 
 ### Placeholder policy
 
-User-facing string props (`text`, `label`, `title`, `placeholder`, `alt`, …) **must** be placeholders like `:hero.title`.
+User-facing string props (`text`, `label`, `title`, `placeholder`, `alt`, …)
+**must** use contiguous harness-owned opaque markers such as `:slot_0`. Semantic
+marker names are invalid; the model never converts or invents marker identities.
 
 ### DESIGN.md
 

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e867-opaque-semantic-contrast-smoke",
+  "experiment_id": "E866-E867",
+  "date": "2026-07-22",
+  "decision": "retain_data_harness_fix_no_model_or_ship_claim",
+  "suites": {
+    "smoke": {
+      "n": 20,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.7
+    }
+  },
+  "recipe": {
+    "builder": "semantic_contrast",
+    "builder_version": "1.0.1",
+    "seed": 13,
+    "source_count": 4,
+    "splits": ["train"],
+    "split_weights": [1.0],
+    "device": "cpu",
+    "honesty_mode": "production"
+  },
+  "runs": [
+    {
+      "run_id": "e866_opaque_semantic_contrast_smoke",
+      "pairs": 9,
+      "records": 18,
+      "rejected": 18,
+      "named_marker_rejections": 0,
+      "noncontiguous_marker_rejections": 5,
+      "status": "rejected_harness_incomplete"
+    },
+    {
+      "run_id": "e867_opaque_semantic_contrast_smoke",
+      "pairs": 10,
+      "records": 20,
+      "rejected": 17,
+      "named_marker_rejections": 0,
+      "noncontiguous_marker_rejections": 0,
+      "families": {
+        "positive": 4,
+        "binding": 1,
+        "content": 3,
+        "contract": 1,
+        "topology": 1
+      },
+      "positive_meaningful_pass_rate": 1.0,
+      "negative_meaningful_pass_rate": 0.0,
+      "verifier_pass_rate": 1.0,
+      "status": "retained_diagnostic_builder_smoke"
+    }
+  ],
+  "rejected_reasons": {
+    "compilation or verifier rejection": 4,
+    "negative_passed": 13
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "53f216d57aa82e75768329768b5a07581ba673d9",
+    "code_dirty": true,
+    "components": {
+      "data.semantic_contrast": "v2",
+      "evals.meaningful_program": "2.13.0"
+    },
+    "stamped_at": "2026-07-22T19:50:44.230911+00:00"
+  }
+}

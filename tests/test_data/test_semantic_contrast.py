@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.data.progspec.generate import GeneratorConfig, ProgramGenerator
+from slm_training.data.contract import assert_canonical_template_markers
 from slm_training.data.semantic_contrast import (
     ContrastFamily,
     SemanticContrastBuilder,
@@ -113,6 +114,7 @@ def test_positive_passes_negative_fails_and_surface_stays_valid(tmp_path):
     # Every record surface must pass the verifier.
     for rec in positives + negatives:
         record = ExampleRecord.from_dict(rec["record"])
+        assert_canonical_template_markers(record)
         report = verify_record(record, VerificationContext(source_kind="program"))
         assert report.ok, f"{rec['record']['id']} failed verifier"
 

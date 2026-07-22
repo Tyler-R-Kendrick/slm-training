@@ -6244,3 +6244,31 @@ the historical E14 namespace arm. Model-build and dataset tests use canonical
 contiguous `:slot_N` fixtures; deliberately invalid named-marker cases remain
 only where rejection itself is under test. No training or evaluation was run
 for this policy correction.
+
+# E864-E865 — opaque-marker validity ownership (2026-07-22)
+
+E864 exposed a remaining evaluator contradiction: three canonical `:slot_N`
+predictions had exact fidelity and contract precision/recall of 1.0000, while
+the legacy validity metric returned 0.6000 because it still rewarded dotted
+semantic names. Harness v51 now reuses the canonical data-contract predicate
+and gives semantic namespaces no normalization credit. The matched E865 replay
+produced byte-identical prediction hashes and changed only validity to 1.0000;
+structure stayed 0.6589, component recall 0.7500, reward 0.9490, with zero
+timeouts/fallbacks and AgentV 0/1. This is a harness/test-data correction, not a
+model objective or ship claim. Full evidence:
+[opaque-marker validity results](iter-e864-e865-opaque-marker-validity-20260722.md).
+
+# E866-E867 — semantic-contrast opaque-slot producer repair (2026-07-22)
+
+The fail-closed repository gate exposed stale named markers in a diffusion test
+fixture and semantic-contrast generator surfaces. The builder now projects
+sources before plan extraction, its shared seed compiler emits only `:slot_N`,
+compiled transforms are reindexed contiguously, and only admitted pairs reach
+the dataset while all other candidates remain in `rejected.jsonl`. E866 removed
+named markers but exposed five noncontiguous-transform rejects. E867 eliminated
+those too and admitted 10 pairs / 20 records across positive, binding, content,
+contract, and topology families. Positives passed meaningful evaluation at
+1.0000; admitted negatives passed syntax verification at 1.0000 and meaningful
+evaluation at 0.0000. No gate changed, no model trained, and no ship claim is
+made. Full evidence:
+[semantic-contrast opaque-slot results](iter-e866-e867-semantic-contrast-opaque-slots-20260722.md).

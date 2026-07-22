@@ -75,6 +75,16 @@ def test_real_mismatches_still_score_zero() -> None:
     assert component_type_recall("root = Stack([])", _GOLD) == 0.0
 
 
+def test_placeholder_metrics_only_credit_opaque_harness_markers() -> None:
+    gold = _record()
+    opaque = 'root = Button(":slot_0")'
+    semantic = 'root = Button(":hero.title")'
+
+    assert _placeholder_validity(opaque, gold) == 1.0
+    assert _placeholder_fidelity_normalized(semantic, gold) == 0.0
+    assert _placeholder_validity(semantic, gold) == 0.0
+
+
 def test_tree_match_splits_model_failure_from_harness_failure() -> None:
     # Unparseable prediction: a genuine 0.0.
     assert _tree_match("garbage(", _GOLD) == 0.0
