@@ -5143,14 +5143,9 @@ class TwoTowerModel(nn.Module):
     ) -> Counter[int]:
         """Count planned families at every emitted nesting depth."""
         if prefix is not None:
+            component_ids = set(family_token_ids.values())
             return Counter(
-                family_token_ids[family]
-                for token_id in prefix
-                if (
-                    token := str(self.tokenizer.id_to_token.get(token_id, ""))
-                ).startswith(("+", "COMP:"))
-                and (family := token.removeprefix("COMP:").removeprefix("+"))
-                in family_token_ids
+                int(token_id) for token_id in prefix if int(token_id) in component_ids
             )
         return Counter(
             family_token_ids.get(str(expr_type).removeprefix("element:"))
@@ -8320,6 +8315,8 @@ class TwoTowerModel(nn.Module):
         tree: bool,
         slot_contract: list[str] | None = None,
         coverage: str = "complete",
+        plan_row: int = 0,
+        state: Any | None = None,
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
         if len(paths) == 1 and coverage == "complete":
@@ -8374,6 +8371,12 @@ class TwoTowerModel(nn.Module):
                         ],
                     }
                 )
+
+        def bound_plan_kinds(kinds: tuple[str, ...]) -> tuple[str, ...]:
+            return tuple(
+                "component_bound" if kind == "component_bound" else ""
+                for kind in kinds
+            )
 
         if not tree:
             canvas = self._compiler_canvas(prefix, length)
@@ -8453,6 +8456,22 @@ class TwoTowerModel(nn.Module):
                     stats.root_reference_arity_applications += 1
                     stats.root_reference_arity_choice_changes += int(
                         int(scores.argmax().item()) != before_root_arity
+                    )
+            semantic_plan_bias = self._semantic_plan_bias(
+                plan_row,
+                candidates,
+                bound_plan_kinds(tuple(path.kind for path in paths)),
+                state,
+                prefix,
+                scores,
+            )
+            if semantic_plan_bias is not None:
+                before_semantic_plan = int(scores.argmax().item())
+                scores = scores + semantic_plan_bias
+                if stats is not None:
+                    stats.semantic_plan_applications += 1
+                    stats.semantic_plan_choice_changes += int(
+                        int(scores.argmax().item()) != before_semantic_plan
                     )
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
@@ -8599,6 +8618,27 @@ class TwoTowerModel(nn.Module):
                             stats.binder_topology_applications += 1
                             stats.binder_topology_choice_changes += int(
                                 int(scores.argmax().item()) != before_topology
+                            )
+                    semantic_plan_bias = self._semantic_plan_bias(
+                        plan_row,
+                        candidate_ids,
+                        bound_plan_kinds(
+                            tuple(
+                                first_edge_kinds.get(token_id, "")
+                                for token_id in candidate_ids
+                            )
+                        ),
+                        state,
+                        prefix,
+                        scores,
+                    )
+                    if semantic_plan_bias is not None:
+                        before_semantic_plan = int(scores.argmax().item())
+                        scores = scores + semantic_plan_bias
+                        if stats is not None:
+                            stats.semantic_plan_applications += 1
+                            stats.semantic_plan_choice_changes += int(
+                                int(scores.argmax().item()) != before_semantic_plan
                             )
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
@@ -8823,6 +8863,7 @@ class TwoTowerModel(nn.Module):
         _search_state: object | None = None,
         _trajectory_id: int = 0,
         _disable_trajectory_fork: bool = False,
+        _plan_row: int = 0,
     ) -> torch.Tensor:
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
@@ -9052,6 +9093,8 @@ class TwoTowerModel(nn.Module):
                     tree=mode == "tree",
                     slot_contract=slot_contract,
                     coverage=forest.coverage,
+                    plan_row=_plan_row,
+                    state=state,
                 )
             if search_mode != "greedy":
                 hard_signature = rank_forest(forest).signature
@@ -9144,6 +9187,7 @@ class TwoTowerModel(nn.Module):
                                     _search_state=branch_search,
                                     _trajectory_id=trajectory_id + 1,
                                     _disable_trajectory_fork=True,
+                                    _plan_row=_plan_row,
                                 )
                                 text = self._decode_ids(branch)
                                 canonical = self._canonical_valid_openui(
@@ -9315,6 +9359,7 @@ class TwoTowerModel(nn.Module):
                     length,
                     mode=mode,
                     slot_contract=contract,
+                    _plan_row=i,
                 )
             )
         return torch.stack(rows)
@@ -11217,11 +11262,6 @@ class TwoTowerModel(nn.Module):
             or 0.0,
         )
         if plan_weight > 0.0:
-            if not choice_constrained:
-                raise ValueError(
-                    "semantic plan decode weights currently require choice-codec "
-                    "constrained decode"
-                )
             from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
             from slm_training.data.quality import semantic_role_reachable_candidates
 

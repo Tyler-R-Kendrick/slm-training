@@ -38,8 +38,6 @@ _CHOICE_ONLY_DECODE_LEVERS: Final = (
     "schema_opaque_close_decode_weight",
     "schema_role_slot_decode_weight",
     "required_slot_margin_decode_weight",
-    "semantic_plan_decode_weight",
-    "semantic_plan_margin_decode_weight",
     "semantic_plan_seed_decode_weight",
     "semantic_plan_inline_decode_weight",
     "semantic_plan_binding_decode_weight",
@@ -57,6 +55,8 @@ _DUAL_PATH_DECODE_LEVERS: Final = (
     "component_plan_decode_weight",
     "slot_component_decode_weight",
     "semantic_role_decode_weight",
+    "semantic_plan_decode_weight",
+    "semantic_plan_margin_decode_weight",
     "root_reference_arity_decode_weight",
 )
 _COMPILER_PATH_DECODE_LEVERS: Final = (
