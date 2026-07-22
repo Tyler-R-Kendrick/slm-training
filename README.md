@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E848 repeated typed-collection diagnostic | `e848-repeated-typed-collections-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 69.88s; smoke n=3 parse/strict/fidelity 0.6667, structure 0.5300, reward 0.6327, one timeout, AgentV 0/1 — rejected, not ship |
 | E832 longer v4 baseline | `e832-target-slots-v4-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 63.30s; held-out n=5 parse 1.0 / fidelity 1.0 / reward 0.9682, but strict-v2 0 and duplicate-subtree spam on every row — rejected, not ship |
 | E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1/last.pt` | `outputs/runs/…` (local) | First completion-inventory-correct v4 checkpoint; strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / fidelity 0.8857 / reward 0.9195, strict-v2 0.0 and AgentV 0/1 — rejected, not ship |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1/last.pt` | `outputs/runs/…` (local) | Removes impossible class-41 tail prediction, but weight 0/1 smoke quality remains identical and strict-v2 0.0 — fix retained, checkpoint rejected |

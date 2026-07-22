@@ -7,6 +7,7 @@ import pytest
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
     CHANGED_TEST_WORKERS,
+    DEFAULT_CONTEXT_BACKEND,
     DEFAULT_DECODE_TIMEOUT_SECONDS,
     DEFAULT_EVAL_DATA_DIR,
     DEFAULT_OUTPUT_TOKENIZER,
@@ -46,6 +47,8 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert CHANGED_TEST_WORKERS > 0
     assert DEFAULT_TRAIN_DATA_DIR.is_dir()
     assert DEFAULT_EVAL_DATA_DIR.is_dir()
+    assert DEFAULT_CONTEXT_BACKEND == "scratch"
+    assert lever_catalog()["default_context_backend"]["default"] == "scratch"
 
 
 def test_catalog_discovers_build_levers_and_context_differences() -> None:
@@ -68,8 +71,8 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     )
     assert catalog["default_eval_data_dir"]["default"] == str(DEFAULT_EVAL_DATA_DIR)
     assert catalog["semantic_plan_decode_weight"]["category"] == "decode"
-    assert catalog["context_backend"]["contexts_diverge"] is True
-    assert catalog["context_backend"]["checkpoint_default"] == "scratch"
+    assert catalog["context_backend"]["default"] == DEFAULT_CONTEXT_BACKEND
+    assert "contexts_diverge" not in catalog["context_backend"]
     assert catalog["evaluation_policy"]["choices"] == [
         "checkpoint_declared",
         "strict_compiler_tree",

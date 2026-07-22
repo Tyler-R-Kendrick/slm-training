@@ -41,6 +41,7 @@ DEFAULT_TRAIN_DATA_DIR: Final = Path(
 DEFAULT_EVAL_DATA_DIR: Final = Path(
     "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1"
 )
+DEFAULT_CONTEXT_BACKEND: Final = "scratch"
 
 # Template markers are codec identities, never semantic supervision.  Keep this
 # policy beside every other user-facing lever so there is one discoverable
@@ -418,6 +419,13 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "default": str(DEFAULT_EVAL_DATA_DIR),
         "type": "Path",
         "source": "slm_training.levers.DEFAULT_EVAL_DATA_DIR",
+    }
+    catalog["default_context_backend"] = {
+        "category": "model",
+        "default": DEFAULT_CONTEXT_BACKEND,
+        "type": "str",
+        "choices": ["scratch", "hf"],
+        "source": "slm_training.levers.DEFAULT_CONTEXT_BACKEND",
     }
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 

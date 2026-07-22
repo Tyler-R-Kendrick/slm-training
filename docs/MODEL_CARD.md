@@ -38,6 +38,7 @@ supersedes E829's permissive-harness metrics for this checkpoint.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| E848 repeated typed-collection diagnostic | `e848-repeated-typed-collections-scratch600-r1` | CPU scratch output-contract-v4 diagnostic | `outputs/runs/e848-repeated-typed-collections-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 69.88s, SHA `036d6487…f35bed9`; smoke n=3 parse/strict/fidelity 0.6667, structure 0.5300, reward 0.6327, one timeout, AgentV 0/1 — **rejected; no sync or promotion** ([results](design/iter-e844-e849-repeated-typed-collections-20260722.md)) |
 | E832 longer v4 baseline | `e832-target-slots-v4-scratch600-r1` | CPU scratch output-contract-v4 baseline | `outputs/runs/e832-target-slots-v4-scratch600-r1/checkpoints/last.pt` (local) | 600 steps / 63.30s, SHA `01561831…77992d`; held-out n=5 parse 1.0 / meaning-v1 0.2 / fidelity 1.0 / reward 0.9682, but strict-v2 0 and duplicate-subtree spam on every row — **compatible diagnostic, rejected; no sync or promotion** ([results](design/iter-e832-e834-longer-v4-baseline-20260722.md)) |
 | E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1` | CPU scratch output-contract-v4 baseline | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/checkpoints/last.pt` (local) | 120 steps / 14.46s, SHA `84f35247…6df38e36`; strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / fidelity 0.8857 / reward 0.9195 with zero timeout/fallback, but strict-v2 and AgentV remain 0 — **compatible diagnostic, rejected; no sync or promotion** ([results](design/iter-e830-e831-strict-request-harness-20260722.md)) |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1` | CPU scratch output-contract-v2 corrected root-arity objective | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/checkpoints/last.pt` (local) | 140 steps / 82.07s, SHA `710e2dbe…68b970`; impossible smoke argmax class 41 becomes class 1, but weight 0/1 quality is identical and strict-v2 remains 0.0 — **objective fix retained, checkpoint rejected** ([results](design/iter-e735-root-arity-full-head-20260722.md)) |
@@ -901,8 +902,8 @@ checkpoint is rejected.
 
 - Smoke parse alone is a canary, not generalization.
 - Soft `placeholder_validity` is diagnostic; ship on `placeholder_fidelity`.
-- Inventory must come from the user-visible prompt / DESIGN.md under
-  `honest_slot_contract=True` (no silent `gold.placeholders`).
+- Inventory is a harness-owned structured request contract under
+  `honest_slot_contract=True` (no model inference or silent `gold.placeholders`).
 - Scratch + short steps ≠ HF + full `rico_held` production claim.
 
 ---
@@ -911,6 +912,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-22 | `e848-repeated-typed-collections-scratch600-r1` | `outputs/runs/e848-repeated-typed-collections-scratch600-r1/` (local) | Smoke n=3 parse/meaning-v1/strict-v2/fidelity 0.6667 / structure 0.5300 / reward 0.6327, one timeout, AgentV 0/1 | 600 CPU steps / 69.88s; explicit no-sync scratch diagnostic; broad E845 mixture regressed E843, rejected |
 | 2026-07-22 | `e832-target-slots-v4-scratch600-r1` | `outputs/runs/e832-target-slots-v4-scratch600-r1/` (local) | Held-out n=5 parse 1.0 / meaning-v1 0.2 / strict-v2 0.0 / fidelity 1.0 / reward 0.9682, AgentV 0/1 | 600 CPU steps / 63.30s; explicit no-sync scratch diagnostic; duplicate-subtree spam on every row, rejected |
 | 2026-07-22 | `e828-target-slots-only-v4-scratch120-r1` | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/` (local) | Strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / strict-v2 0.0 / fidelity 0.8857 / reward 0.9195, AgentV 0/1 | First target-inventory-correct output-contract-v4 checkpoint; 120 CPU steps / 14.46s; E830 supersedes invalid permissive-harness E829 metrics; explicit no-sync scratch diagnostic, rejected |
 | 2026-07-22 | `e820-opaque-slots-v4-scratch120-r1` | `outputs/runs/e820-opaque-slots-v4-scratch120-r1/` (local) | Invalidated before comparison | Metadata-only opaque values polluted the declared completion inventory; no sync or promotion |

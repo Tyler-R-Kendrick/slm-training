@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from slm_training.levers import (
+    DEFAULT_CONTEXT_BACKEND,
     DEFAULT_DECODE_TIMEOUT_SECONDS,
     CHECKPOINT_DECLARED_POLICY,
     DEFAULT_OUTPUT_TOKENIZER,
@@ -58,8 +59,8 @@ class ModelBuildConfig:
     mask_min: float = 0.15
     mask_max: float = 0.85
     gen_steps: int = 8
-    # Prefer HF when available; tests/CI can pass --context-backend scratch.
-    context_backend: str = "hf"  # scratch | hf
+    # Local-first. Remote/full HF context must be selected explicitly.
+    context_backend: str = DEFAULT_CONTEXT_BACKEND  # scratch | hf
     hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
     hf_model_revision: str | None = None
     # False for scratch POC; True by default when context_backend=hf (see factory)

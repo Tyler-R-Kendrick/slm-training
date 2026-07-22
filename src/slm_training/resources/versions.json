@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v22",
+      "version": "v23",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v23",
+          "date": "2026-07-22",
+          "note": "Make scratch the single local-first context backend default; require explicit hf selection"
+        },
         {
           "version": "v22",
           "date": "2026-07-22",
@@ -3421,7 +3426,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3432,6 +3437,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-22",
+          "note": "Add canonical three-item FormControl and SwitchItem producer fixtures for repeated typed collections"
+        },
         {
           "version": "v14",
           "date": "2026-07-22",
@@ -3987,7 +3997,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v233",
+      "version": "v234",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4011,6 +4021,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v234",
+          "date": "2026-07-22",
+          "note": "Consume the centralized local-first context backend in training and model-build defaults"
+        },
         {
           "version": "v233",
           "date": "2026-07-22",

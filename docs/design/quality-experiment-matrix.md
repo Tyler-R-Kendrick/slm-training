@@ -6171,3 +6171,15 @@ recall 0.6667; reward 0.9490; and zero timeout/fallback. AgentV remained 0/1,
 so retain the harness correction without making a ship or checkpoint claim.
 Full evidence:
 [harness-owned slot smoke](iter-e843-harness-owned-slot-smoke-20260722.md).
+
+# E844-E849 — repeated typed collections (2026-07-22)
+
+E845's strict all-source build admitted 613 rows and restored repeated typed
+collections: TabItem 6 rows, FormControl 2, and SwitchItem 4. The required
+synthesis feedback was reviewed without weakening gates. E847 exposed and
+triggered removal of the local CLI's implicit HF context default. E848 then
+completed 600 CPU scratch steps in 69.88 seconds, but E849 smoke regressed to
+parse/strict/fidelity 0.6667, structure 0.5300, recall 0.5000, reward 0.6327,
+and one timeout; AgentV remained 0/1. Retain the producer and local-first
+harness fixes, reject the checkpoint and broad-mixture promotion. Full evidence:
+[repeated typed-collection results](iter-e844-e849-repeated-typed-collections-20260722.md).

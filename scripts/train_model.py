@@ -9,7 +9,11 @@ from pathlib import Path
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
-from slm_training.levers import DEFAULT_OUTPUT_TOKENIZER, DEFAULT_TRAIN_DATA_DIR
+from slm_training.levers import (
+    DEFAULT_CONTEXT_BACKEND,
+    DEFAULT_OUTPUT_TOKENIZER,
+    DEFAULT_TRAIN_DATA_DIR,
+)
 
 
 def _probability(value: str) -> float:
@@ -438,8 +442,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--context-backend",
         choices=("scratch", "hf"),
-        default="hf",
-        help="Context tower backend (default: hf; use scratch for offline CI).",
+        default=DEFAULT_CONTEXT_BACKEND,
+        help="Context tower backend (default: scratch; select hf explicitly).",
     )
     parser.add_argument(
         "--hf-model",
