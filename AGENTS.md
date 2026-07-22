@@ -32,8 +32,10 @@ Experiment-first OpenUI layout SLMs:
 Every train, eval, benchmark, profile, telemetry, matrix, reproduction, and
 supporting shell command must obey the canonical cap in
 `src/slm_training/levers.py`. Use its derived interrupt and kill-grace values;
-training and campaign harnesses must not exceed its `MAX_RUN_MINUTES`. Change
-that one constant to update local experiment execution. Prefer local compute;
+training, campaign, and CI harnesses must not exceed its `MAX_RUN_MINUTES`.
+Change that one constant, then run
+`python -m scripts.repo_policy --sync-workflow-timeouts` to regenerate the
+GitHub job adapters. Prefer local compute;
 remote CI and managed jobs are last-resort convenience surfaces. A timed
 out, interrupted, or killed run is never evidence.
 
