@@ -242,7 +242,15 @@ def prompt_semantic_plan(prompt: str):
     authored_prompt = "\n".join(
         line
         for line in prompt.splitlines()
-        if not line.startswith(("Placeholders:", "Components:", "Semantic roles:"))
+        if not line.startswith(
+            ("Placeholders:", "Components:", "Semantic roles:", "Roles:")
+        )
+    )
+    authored_prompt = re.sub(
+        r"\(\s*(?:semantic\s+)?roles?\s*:[^)]*\)",
+        "",
+        authored_prompt,
+        flags=re.IGNORECASE,
     )
     components = list(
         _prompt_component_requirements(

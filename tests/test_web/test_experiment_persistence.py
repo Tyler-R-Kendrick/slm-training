@@ -528,3 +528,27 @@ def test_e731_checkpoint_and_no_effect_arms_persist_without_outputs(tmp_path: Pa
     assert treatment["scoreboard"]["suites"]["smoke"]["structural_similarity"] == (
         0.5614
     )
+
+
+def test_e751_e752_e754_rico_repairs_persist_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    ownership = readers.run("e751-reachable-role-plan-rico-n3-r1")
+    siblings = readers.run("e752-repeated-card-siblings-rico-n3-r1")
+    delimiter = readers.run("e754-plan-margin-delimiter-rico-n3-r1")
+
+    assert ownership["provenance"] == "committed"
+    assert ownership["scoreboard"]["suites"]["rico_held"][
+        "component_type_recall"
+    ] == 1.0
+    assert siblings["provenance"] == "committed"
+    assert siblings["scoreboard"]["suites"]["rico_held"][
+        "structural_similarity"
+    ] == 0.5025
+    assert delimiter["provenance"] == "committed"
+    assert delimiter["scoreboard"]["suites"]["rico_held"][
+        "placeholder_fidelity"
+    ] == 0.8787878787878789
+    assert delimiter["train_summary"] is None

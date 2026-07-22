@@ -5353,7 +5353,10 @@ class TwoTowerModel(nn.Module):
                 if index == len(slots):
                     return True
                 slot = slots[index]
-                for family in sorted(planned.intersection(role_candidates[slot])):
+                compatible = set(role_candidates[slot]) | set(
+                    (reachable_role_candidates or {}).get(slot, ())
+                )
+                for family in sorted(planned.intersection(compatible)):
                     assigned = trial.setdefault(family, [])
                     if not TwoTowerModel._semantic_role_family_has_capacity(
                         family,
@@ -5618,6 +5621,7 @@ class TwoTowerModel(nn.Module):
         bias = torch.zeros(len(candidate_ids), device=next(self.parameters()).device)
         applied = False
         component_kinds = {
+            "component",
             "component_root",
             "component_bound",
             "component_root_or_bound",
@@ -5633,9 +5637,75 @@ class TwoTowerModel(nn.Module):
             and any(kind in component_kinds for kind in candidate_kinds)
             else None
         )
+        forbidden_self_nesting: set[int] = set()
+        if state is not None and candidate_scores is not None and remaining_counts:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+
+            active_call = _active_call(getattr(state, "engine", state))
+            outer_group = (
+                self._semantic_plan_outer_groups[row]
+                if self._semantic_plan_outer_groups
+                and row < len(self._semantic_plan_outer_groups)
+                else None
+            )
+            if active_call is not None and outer_group is None:
+                active_family = active_call[0]
+                for position, (token_id, kind) in enumerate(
+                    zip(candidate_ids, candidate_kinds, strict=True)
+                ):
+                    family = (
+                        str(self.tokenizer.id_to_token.get(token_id, ""))
+                        .removeprefix("COMP:")
+                        .removeprefix("+")
+                    )
+                    alternatives = [
+                        float(candidate_scores[index].item())
+                        for index, other_kind in enumerate(candidate_kinds)
+                        if index != position and other_kind in component_kinds
+                    ]
+                    if (
+                        kind in component_kinds
+                        and family == active_family
+                        and self._semantic_plan_action_counts
+                        and self._semantic_plan_action_counts[row].get(token_id, 0) > 1
+                        and alternatives
+                    ):
+                        separation = max(weight, margin, 1.0)
+                        bias[position] = min(
+                            -separation,
+                            max(alternatives)
+                            - separation
+                            - float(candidate_scores[position].item()),
+                        )
+                        forbidden_self_nesting.add(position)
+                        applied = True
+                remaining_families = {
+                    family
+                    for family, token_id in family_token_ids.items()
+                    if family != active_family
+                    and remaining_counts.get(token_id, 0) > 0
+                }
+                comma_id = self.tokenizer.token_to_id.get(",")
+                close_id = self.tokenizer.token_to_id.get("]")
+                if (
+                    margin > 0.0
+                    and remaining_families
+                    and comma_id in candidate_ids
+                    and close_id in candidate_ids
+                ):
+                    target = candidate_ids.index(comma_id)
+                    bias[target] = max(
+                        float(bias[target].item()),
+                        float(candidate_scores.max().item())
+                        + margin
+                        - float(candidate_scores[target].item()),
+                    )
+                    applied = True
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
+            if position in forbidden_self_nesting:
+                continue
             score = scores.get(token_id, 0.0)
             still_required = (
                 remaining_counts is None or remaining_counts.get(token_id, 0) > 0
@@ -5815,6 +5885,7 @@ class TwoTowerModel(nn.Module):
         """Record bounded score evidence for a planned family after the first."""
         section_types = tuple(getattr(state, "section_types", ()))
         component_kinds = {
+            "component",
             "component_root",
             "component_bound",
             "component_root_or_bound",

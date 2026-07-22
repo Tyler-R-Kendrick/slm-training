@@ -2105,9 +2105,11 @@ def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     bound_bias = model._semantic_plan_bias(
         0, candidates, ("component_bound", "component_bound")
     )
+    lexer_bias = model._semantic_plan_bias(0, candidates, ("component", "component"))
 
     assert root_bias is not None and root_bias.tolist() == [3.0, 0.0]
     assert bound_bias is not None and bound_bias.tolist() == [3.0, 0.0]
+    assert lexer_bias is not None and lexer_bias.tolist() == [3.0, 0.0]
 
 
 def test_prompt_semantic_plan_reaches_lexer_compiler(monkeypatch) -> None:
@@ -2186,6 +2188,111 @@ def test_prompt_semantic_plan_ranks_lexer_tree_paths(path_kind: str) -> None:
         {"Card": card, "TextContent": text},
     )
     assert covered == Counter({card: 1})
+
+
+def test_prompt_semantic_plan_keeps_repeated_lexer_families_as_siblings() -> None:
+    model = _model(
+        semantic_plan_decode_weight=6.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    state = make_grammar_state()
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([Card([", add_special=False),
+    ]
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 5}]
+    model._semantic_plan_outer_groups = [None]
+
+    bias = model._semantic_plan_bias(
+        0,
+        (card, text),
+        ("component", "component"),
+        state,
+        prefix,
+        torch.tensor([8.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert (torch.tensor([8.0, 1.0]) + bias).argmax().item() == 1
+
+
+def test_prompt_semantic_plan_keeps_parent_open_for_remaining_siblings() -> None:
+    model = _model(
+        semantic_plan_decode_weight=6.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    comma = tokenizer.token_to_id[","]
+    close = tokenizer.token_to_id["]"]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode(
+            'root = Stack([Card([TextContent(":sym0")])',
+            add_special=False,
+        ),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 5}]
+    model._semantic_plan_outer_groups = [None]
+
+    scores = torch.tensor([1.0, 4.0])
+    bias = model._semantic_plan_bias(
+        0,
+        (comma, close),
+        ("structural", "structural"),
+        state,
+        prefix,
+        scores,
+    )
+
+    assert bias is not None
+    assert (scores + bias).argmax().item() == 0
+
+
+def test_prompt_semantic_plan_does_not_continue_inside_repeated_family() -> None:
+    model = _model(
+        semantic_plan_decode_weight=6.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    comma = tokenizer.token_to_id[","]
+    close = tokenizer.token_to_id["]"]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode(
+            'root = Stack([Card([TextContent(":sym0")',
+            add_special=False,
+        ),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 5}]
+    model._semantic_plan_outer_groups = [None]
+
+    assert (
+        model._semantic_plan_bias(
+            0,
+            (comma, close),
+            ("structural", "structural"),
+            state,
+            prefix,
+            torch.tensor([1.0, 4.0]),
+        )
+        is None
+    )
 
 
 def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
@@ -2553,6 +2660,24 @@ def test_prompt_semantic_plan_does_not_cross_component_conjunction() -> None:
     assert plan is not None
     assert [slot.component_family for slot in plan.role_slots] == [
         "Button",
+        "Card",
+        "Card",
+        "Card",
+    ]
+
+
+def test_prompt_semantic_plan_excludes_inline_role_metadata_from_counts() -> None:
+    from slm_training.models.template_fill import prompt_semantic_plan
+
+    plan = prompt_semantic_plan(
+        "Build a column mobile layout with 5 cards, 1 text block "
+        "(roles: card, text) using placeholders only."
+    )
+
+    assert plan is not None
+    assert [slot.component_family for slot in plan.role_slots] == [
+        "Card",
+        "Card",
         "Card",
         "Card",
         "Card",
@@ -3200,6 +3325,25 @@ def test_semantic_plan_role_obligations_keep_reachable_roles_nested() -> None:
     assert counts == Counter({"Card": 2})
     assert bindings == {
         "TextContent": (":dashboard.m1.value", ":dashboard.m2.value")
+    }
+
+
+def test_semantic_plan_role_obligations_do_not_add_reachable_joint_carrier() -> None:
+    counts, bindings = TwoTowerModel._semantic_plan_role_obligations(
+        Counter({"Card": 5}),
+        {
+            ":cards.title": ("Callout", "TextContent"),
+            ":cards.body": ("Callout", "TextContent"),
+        },
+        {
+            ":cards.title": ("Card", "Callout", "TextContent"),
+            ":cards.body": ("Card", "Callout", "TextContent"),
+        },
+    )
+
+    assert counts == Counter({"Card": 5})
+    assert bindings == {
+        "TextContent": (":cards.title", ":cards.body"),
     }
 
 

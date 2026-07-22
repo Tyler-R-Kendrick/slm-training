@@ -156,13 +156,23 @@
       ]
     },
     "data.test_build": {
-      "version": "v2",
+      "version": "v4",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-22",
+          "note": "Stamp test-data build evidence and resolve train-manifest records from the owning checkout"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-22",
+          "note": "Assert the symbol-only output contract after test-target normalization and fail before artifacts when sanitization is disabled or falls back"
+        },
         {
           "version": "v2",
           "date": "2026-07-19",
@@ -3809,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v210",
+      "version": "v214",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3831,6 +3841,26 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v214",
+          "date": "2026-07-22",
+          "note": "Carry the semantic-plan margin across lexer array delimiters while sibling component requirements remain"
+        },
+        {
+          "version": "v213",
+          "date": "2026-07-22",
+          "note": "Exclude role metadata from component cardinality and preserve repeated lexer families as siblings unless explicit outer-group topology permits nesting"
+        },
+        {
+          "version": "v212",
+          "date": "2026-07-22",
+          "note": "Treat planned container families as satisfying joint semantic roles reachable through their schema descendants"
+        },
+        {
+          "version": "v211",
+          "date": "2026-07-22",
+          "note": "Apply semantic-plan family scores to direct lexer component candidates inside compiler containers"
+        },
         {
           "version": "v210",
           "date": "2026-07-22",

@@ -13,8 +13,13 @@ from typing import TYPE_CHECKING
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
+from slm_training.dsl.language_contract import (
+    OutputContractError,
+    assert_symbol_only_output,
+)
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+from slm_training.versioning import build_version_stamp
 
 if TYPE_CHECKING:
     from slm_training.harnesses.train_data.sanitize import SanitizeOptions
@@ -87,6 +92,7 @@ def _normalize(
     placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
     openui = program.serialized or scrubbed.strip()
     openui = strip_style_literals(openui)
+    assert_symbol_only_output(openui)
     meta = {**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True}
     if sanitize_meta is not None:
         meta["sanitize"] = sanitize_meta
@@ -215,6 +221,10 @@ def build_test_data(config: TestDataConfig) -> dict:
             continue
         try:
             normalized = _normalize(seed, sanitize=sanitize_options)
+        except OutputContractError as exc:
+            raise ValueError(
+                f"test record {seed.id!r} violates the symbol-only output contract: {exc}"
+            ) from exc
         except (ParseError, ValueError) as exc:
             errors.append({"id": seed.id, "error": str(exc)})
             continue
@@ -307,6 +317,7 @@ def build_test_data(config: TestDataConfig) -> dict:
     content_fingerprint = fingerprint_hash.hexdigest()
 
     built_at = datetime.now(timezone.utc).isoformat()
+    version_stamp = build_version_stamp("data.test_build")
     stats = {
         "version": config.version,
         "source": source,
@@ -327,6 +338,7 @@ def build_test_data(config: TestDataConfig) -> dict:
         "leakage_rejected": len(leakage),
         "train_manifest": str(config.train_manifest) if config.train_manifest else None,
         "built_at": built_at,
+        "version_stamp": version_stamp,
     }
     stats_path = out_dir / "stats.json"
     stats_path.write_text(json.dumps(stats, indent=2) + "\n", encoding="utf-8")
@@ -342,6 +354,7 @@ def build_test_data(config: TestDataConfig) -> dict:
         "content_fingerprint": content_fingerprint,
         "train_manifest": str(config.train_manifest) if config.train_manifest else None,
         "built_at": built_at,
+        "version_stamp": version_stamp,
     }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

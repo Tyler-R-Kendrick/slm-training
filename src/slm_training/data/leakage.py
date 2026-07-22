@@ -145,7 +145,17 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
         )
     )
     if need_backfill:
-        for record in load_jsonl(records_path):
+        raw_records_path = Path(str(records_path))
+        candidates = (
+            raw_records_path,
+            manifest_path.parent / raw_records_path,
+            *(parent / raw_records_path for parent in manifest_path.parents),
+        )
+        resolved_records_path = next(
+            (candidate for candidate in candidates if candidate.is_file()),
+            raw_records_path,
+        )
+        for record in load_jsonl(resolved_records_path):
             ids.add(record.id)
             group = (record.meta or {}).get("split_group_id")
             if group:

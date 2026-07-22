@@ -5847,3 +5847,56 @@ this is not a ship result. No checkpoint was created or synced.
 
 Evidence: [JSON](iter-e746-visible-slot-inventory-contract-20260722.json) and
 [notes](iter-e746-visible-slot-inventory-contract-20260722.md).
+
+## E747-E751 symbol-only RICO ownership repair
+
+E747 first failed closed on a stale eval target containing free-form text.
+Test-data v4 now asserts the output contract after normalization, aborts before
+artifacts when enforcement is disabled, and resolves owning-checkout manifest
+paths. The replacement 51-record multisuite snapshot has zero output-contract
+violations and identifies RICO as the weakest valid suite.
+
+Matched E748-E750 arms prove semantic-plan weight changes alone cannot dislodge
+the erroneous `Callout`: the lexer component path was initially unreachable,
+then a synthetic direct-role obligation preserved the tie. Model v212 fixes the
+canonical obligation layer so planned containers satisfy roles through public
+schema descendants. On local CPU RICO `n=3`, E751 raises fidelity 0.2323→0.6970,
+structure 0.0946→0.7216, component recall 0→1, and reward 0.7067→0.8461.
+
+Retain the harness repairs, but do not promote: repeated Cards are nested and
+overcounted, strict-v2 remains zero, and AgentV remains 0/1. No checkpoint was
+created or synced. Next repair component-cardinality parsing and sibling
+topology before changing weights or training.
+
+Evidence: [JSON](iter-e747-e751-symbol-only-rico-ownership-20260722.json) and
+[notes](iter-e747-e751-symbol-only-rico-ownership-20260722.md).
+
+## E752 repeated Card sibling topology
+
+Model v213 removes inline role metadata from component cardinality and prevents
+implicit repeated-family self-nesting. The matched local CPU RICO replay turns
+the E751 six-deep Card chain into sibling Cards and cuts p95 6974→4634 ms, but
+the parent array closes after two of five planned Cards. Fidelity is 0.4545,
+structure 0.5025, strict-v2 0, and AgentV 0/1. Retain the topology repair but do
+not promote; next carry the existing semantic-plan margin across the lexer
+delimiter decision. No checkpoint was created or synced.
+
+Evidence: [JSON](iter-e752-repeated-card-siblings-20260722.json) and
+[notes](iter-e752-repeated-card-siblings-20260722.md).
+
+## E753-E754 semantic-plan delimiter continuity
+
+Model v214 extends the existing semantic-plan margin across the lexer parent
+array's `,` versus `]` boundary while sibling requirements remain. E753 hit its
+8-second per-record diagnostic timeout and is not evidence. The clean E754
+local CPU replay (`n=3`, 12-second record guard, canonical two-minute command
+cap) has zero timeouts: parse 1.0, fidelity 0.8788, validity 0.9273, structure
+0.8901, recall 1.0, and reward 0.9007.
+
+Retain v214, but do not promote: strict-v2 remains zero, marker ownership is
+uneven, one three-Card row emits two Cards, and AgentV is 0/1. No checkpoint was
+created or synced. Next repair repeated-family marker ownership and the
+remaining undercount.
+
+Evidence: [JSON](iter-e753-e754-plan-margin-delimiter-20260722.json) and
+[notes](iter-e753-e754-plan-margin-delimiter-20260722.md).
