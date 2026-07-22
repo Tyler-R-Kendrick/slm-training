@@ -17,6 +17,9 @@ class ModelBuildConfig:
     train_dir: Path
     test_dir: Path | None = None
     suite: str = "smoke"
+    # Atomic policy preset. compiler_decode_mode=tree always selects the strict
+    # bundle in eval_policy before validation or artifact creation.
+    evaluation_policy: str = "checkpoint_declared"
     # Honesty label stamped into every eval payload (see evals.record_schema
     # RUN_CLASSES): fixture_demo | scratch_matrix | ship_eval.
     run_class: str = "scratch_matrix"
@@ -458,6 +461,11 @@ class ModelBuildConfig:
     constraint_debt_routing_calibrator_path: Path | None = None
 
     def __post_init__(self) -> None:
+        from slm_training.harnesses.model_build.eval_policy import (
+            apply_evaluation_policy,
+        )
+
+        apply_evaluation_policy(self)
         # SLM-242: fail-closed numeric/schedule gate.
         try:
             validate_model_build_config(self)

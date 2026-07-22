@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-21",
+          "note": "Expose the atomic evaluation policy preset in the canonical lever catalog"
+        },
         {
           "version": "v3",
           "date": "2026-07-22",
@@ -2622,7 +2627,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v38",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2632,6 +2637,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-07-21",
+          "note": "Normalize compiler-tree evaluation to one atomic strict policy before artifacts are created"
+        },
         {
           "version": "v38",
           "date": "2026-07-21",
@@ -3695,7 +3705,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v190",
+      "version": "v191",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3716,6 +3726,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v191",
+          "date": "2026-07-21",
+          "note": "Apply atomic evaluation policy presets during ModelBuildConfig construction"
+        },
         {
           "version": "v190",
           "date": "2026-07-22",

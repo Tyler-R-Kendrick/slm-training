@@ -85,10 +85,12 @@ def test_exact_or_compiler_preserves_representation_per_codec() -> None:
     choice = spec.resolve_config_overrides("choice")
     assert choice["compiler_decode_mode"] == "off"
     assert choice["allow_unconstrained_fallback"] is False
+    assert choice["slot_contract_constrained_decode"] is True
     # Surface/lexer -> compiler-tree greedy.
     lexer = spec.resolve_config_overrides("lexer")
     assert lexer["compiler_decode_mode"] == "tree"
     assert lexer["compiler_search_mode"] == "greedy"
+    assert lexer["slot_contract_constrained_decode"] is True
     # A surface checkpoint is never coerced into a choice codec: the codec set
     # excludes nothing it supports, and an unknown codec is incompatible.
     ok, reason = spec.is_compatible(model_family="twotower", output_codec="mystery")

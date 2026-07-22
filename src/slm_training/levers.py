@@ -186,6 +186,14 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             "source": "slm_training.levers.MAX_RUN_MINUTES",
         }
     )
+    from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
+
+    catalog["evaluation_policy"].update(
+        {
+            "choices": sorted(EVALUATION_POLICIES),
+            "source": "slm_training.harnesses.model_build.eval_policy.EVALUATION_POLICIES",
+        }
+    )
     return catalog
 
 

@@ -245,6 +245,47 @@ def test_model_build_config_accepts_lexer_levers_with_tree_decode() -> None:
     assert cfg.binder_arity_decode_weight == 1.0
 
 
+def test_model_build_config_normalizes_tree_decode_to_atomic_strict_policy(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "runs"
+    cfg = _valid_build_config(
+        run_root=run_root,
+        run_id="must-not-exist",
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        honest_slot_contract=True,
+        slot_contract_constrained_decode=False,
+    )
+
+    assert cfg.evaluation_policy == "strict_compiler_tree"
+    assert cfg.slot_contract_constrained_decode is True
+    assert cfg.slot_contract_in_context is True
+    assert cfg.allow_unconstrained_fallback is False
+    assert not cfg.run_dir.exists()
+
+
+def test_model_build_config_explicit_strict_policy_selects_tree_decode() -> None:
+    cfg = _valid_build_config(evaluation_policy="strict_compiler_tree")
+
+    assert cfg.output_tokenizer == "lexer"
+    assert cfg.compiler_decode_mode == "tree"
+    assert cfg.slot_contract_constrained_decode is True
+
+
+def test_model_build_config_rejects_unknown_evaluation_policy_before_artifacts(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "runs"
+    with pytest.raises(ValueError, match="unknown evaluation_policy"):
+        _valid_build_config(
+            run_root=run_root,
+            run_id="must-not-exist",
+            evaluation_policy="partial_tree",
+        )
+    assert not run_root.exists()
+
+
 def test_model_build_config_rejects_choice_only_schema_lever_for_lexer() -> None:
     with pytest.raises(ValueError, match="unsupported enabled levers"):
         _valid_build_config(

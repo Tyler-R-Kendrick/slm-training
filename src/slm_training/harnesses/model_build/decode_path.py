@@ -30,6 +30,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, Mapping
 
+from slm_training.harnesses.model_build.eval_policy import STRICT_EVALUATION_POLICY
 from slm_training.lineage.records import content_sha
 
 __all__ = [
@@ -239,13 +240,7 @@ _CURRENT_EXACT_OR_COMPILER = DecodePathSpec(
     supported_model_families=("twotower",),
     supported_output_codecs=("choice", "lexer", "compositional"),
     sampling=(("deterministic", True),),
-    lever_overrides=(
-        ("grammar_constrained", True),
-        ("grammar_ltr_primary", True),
-        ("grammar_finalize_validate", True),
-        ("honest_slot_contract", True),
-        ("allow_unconstrained_fallback", False),
-    ),
+    lever_overrides=tuple(STRICT_EVALUATION_POLICY.items()),
     codec_lever_overrides=(
         # Choice codec routes to the exact ChoiceDecodeState pushdown automatically
         # when grammar is on; compiler-tree is not applicable.
