@@ -2672,7 +2672,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v41",
+      "version": "v42",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2682,6 +2682,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v42",
+          "date": "2026-07-22",
+          "note": "Persist the complete effective post-checkpoint model configuration in every evaluation policy and cache identity"
+        },
         {
           "version": "v41",
           "date": "2026-07-22",
