@@ -465,3 +465,27 @@ def test_e727_checkpoint_and_scoreboards_persist_without_outputs(tmp_path: Path)
         "c211d2eae1028334a33d16adc2c29b26a908ade3f90e8c86c2d3da914136a857"
     )
     assert run["train_summary"]["checkpoint_synced"] is False
+
+
+def test_e729_rejected_checkpoint_and_scoreboard_persist_without_outputs(
+    tmp_path: Path,
+) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e729-symbol-only-binder-topology140-r1"
+
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    assert run["scoreboard"]["suites"]["smoke"]["meaningful_program_rate"] == (
+        0.3333333333333333
+    )
+    assert run["scoreboard"]["suites"]["smoke"]["structural_similarity"] == (
+        0.46416666666666667
+    )
+    assert run["train_summary"]["binder_topology_rows"] == 7
+    assert run["train_summary"]["checkpoint_sha256"] == (
+        "c5bafb8d88a0897e3c9c2d4727b04134042ae2944cdeabcb3c65fb7a9d18c43d"
+    )
+    assert run["train_summary"]["checkpoint_synced"] is False

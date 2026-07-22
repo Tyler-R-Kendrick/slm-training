@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "run_id": "e729-symbol-only-binder-topology140-r1",
+  "experiment_id": "E729",
+  "date_utc": "2026-07-22",
+  "status": "completed_harmful_rejected",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "checkpoint": {
+    "path": "outputs/runs/e729-symbol-only-binder-topology140-r1/checkpoints/last.pt",
+    "sha256": "c5bafb8d88a0897e3c9c2d4727b04134042ae2944cdeabcb3c65fb7a9d18c43d",
+    "created": true,
+    "synced": false,
+    "sync_reason": "explicit --no-sync-checkpoints local scratch diagnostic",
+    "promoted": false,
+    "output_contract": "symbol_only/v2"
+  },
+  "dataset": {
+    "path": "outputs/data/train/symbol-only-integrated-smoke-20260721",
+    "records": 141,
+    "manifest_sha256": "78096191b5272658a1f6c48b6cdceaba5492f363630c0bf7d1b19d2f465b2b45"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 140,
+    "batch_size": 4,
+    "max_wall_minutes": 2,
+    "elapsed_wall_seconds": 77.49984571299865,
+    "seen_prompt_tokens": 72021,
+    "seen_target_tokens": 14976,
+    "trainable_parameters": 2441440,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "component_edge_loss_weight": 1.0,
+    "component_edge_decode_weight": 0.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_decode_weight": 1.0,
+    "binder_topology_loss_weight": 1.0,
+    "binder_topology_decode_weight": 1.0,
+    "last_loss": 9.836565017700195,
+    "primary_final_reconstruction_loss": 5.075340747833252,
+    "binder_topology_loss": 0.6602128148078918,
+    "binder_topology_accuracy": 0.7142857313156128,
+    "binder_topology_rows": 7,
+    "binder_topology_candidate_count_mean": 3.7142857142857144,
+    "checkpoint": "outputs/runs/e729-symbol-only-binder-topology140-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "c5bafb8d88a0897e3c9c2d4727b04134042ae2944cdeabcb3c65fb7a9d18c43d",
+    "checkpoint_synced": false,
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "code_commit": "40a12b3b4e28dc4bbbc69a161c0c5f16799e935b",
+      "code_dirty": false,
+      "components": {"harness.model_build.train": "v18"},
+      "stamped_at": "2026-07-22T01:41:21.679537+00:00"
+    }
+  },
+  "evaluation_policy": {
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "compiler_decode_mode": "tree",
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "allow_unconstrained_fallback": false,
+    "grammar_ltr_max_tokens": 160,
+    "per_record_timeout_seconds": 8,
+    "max_attempts": 1,
+    "max_wall_minutes": 2
+  },
+  "suites": {
+    "smoke": {
+      "run_id": "e729-binder-topology1-tree-smoke-r3",
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "meaningful_program_v1_rate": 0.3333333333333333,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.5277777777777778,
+      "structural_similarity": 0.46416666666666667,
+      "component_type_recall": 0.25,
+      "reward_score": 0.7953333333333333,
+      "decode_timeout_count": 0,
+      "binder_topology_applications": 3,
+      "binder_topology_choice_changes": 3,
+      "prediction_set_sha256": "5a01741b48e00608e239d6a3d2846c1b60d473ac58cc1286b76b209b390bdcd7"
+    }
+  },
+  "matched_control": {
+    "run_id": "e729-binder-topology0-tree-smoke-r4",
+    "weight": 0.0,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.6666666666666666,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "placeholder_fidelity": 0.5277777777777778,
+    "structural_similarity": 0.5614,
+    "component_type_recall": 0.4166666666666667,
+    "reward_score": 0.8073333333333332,
+    "prediction_set_sha256": "23eda1e89748c9e7472fe5a19e91d61b810231631943f6b664776ec258a2399b"
+  },
+  "attenuation": {
+    "run_id": "e729-binder-topology025-tree-smoke-r5",
+    "weight": 0.25,
+    "applications": 3,
+    "choice_changes": 3,
+    "prediction_set_sha256": "5a01741b48e00608e239d6a3d2846c1b60d473ac58cc1286b76b209b390bdcd7",
+    "predictions_and_quality_metrics_identical_to_weight_1": true
+  },
+  "excluded_configurations": [
+    {
+      "run_id": "e729-binder-topology1-tree-smoke-r1",
+      "reason": "missing default eval-data directory; stopped before model execution and emitted no scoreboard"
+    },
+    {
+      "run_id": "e729-binder-topology1-tree-smoke-r2",
+      "reason": "slot-contract constrained decode was off, unlike the E723/E727 strict policy; retained only as a weaker-policy failure"
+    }
+  ],
+  "agentv": {"passed": 0, "total": 3, "execution_errors": 0, "mean_score": 0.5},
+  "ship_gates": false,
+  "decision": "Reject the checkpoint and keep binder-topology decode disabled for the E723 symbol-only recipe; weights 0.25 and 1 causally regress smoke quality.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "40a12b3b4e28dc4bbbc69a161c0c5f16799e935b",
+    "code_dirty": false,
+    "components": {"harness.model_build.eval": "v38", "evals.meaningful_program": "2.12.0", "evals.scoring": "v13", "model.twotower": "v190"},
+    "stamped_at": "2026-07-22T01:43:49.536603+00:00"
+  }
+}
