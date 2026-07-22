@@ -6363,3 +6363,14 @@ strict-v2 0.2→0, structure 0.3298→0.0293, recall 0.7143→0.0667, and timeou
 1→4; AgentV is 0/1. Reject E900 without smoke, retain only E891 as parent, and
 test parent-weight retention before any further focused exposure. Full evidence:
 [focused continuation results](iter-e900-e901-focused-role-continuation-20260722.md).
+
+# E902-E903 — focused typed-role retention (2026-07-22)
+
+E902 changes only parent-weight retention from 0% to 5% against E900's matched
+75/25 base/focus continuation. RMS drift falls 0.001289→0.000821 and E903 avoids
+the catastrophic four-timeout collapse, but versus E892 it halves meaning-v1
+0.8→0.4, loses strict-v2 0.2→0, and regresses structure 0.3298→0.1824 and
+recall 0.7143→0.4524; AgentV is 0/1. Reject E902 without smoke. Focused replay
+is falsified at both retention settings; move to schema-typed decoder behavior.
+Full evidence:
+[focused retention results](iter-e902-e903-focused-role-retention-20260722.md).

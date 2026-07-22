@@ -56,5 +56,6 @@ def test_newest_honest_boards_are_visible() -> None:
         "iter-e891-e893-balanced-replay-20260722.json",
         "iter-e894-e896-low-replay-20260722.json",
         "iter-e900-e901-focused-role-continuation-20260722.json",
+        "iter-e902-e903-focused-role-retention-20260722.json",
     ):
         assert f"docs/design/{name}" in sources, name

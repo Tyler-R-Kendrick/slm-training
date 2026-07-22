@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E902 focused-role retention diagnostic | `e902-e891-base75-focus25-retain05-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 strict-v2 0 / structure 0.1824 / recall 0.4524, AgentV 0/1 — retention averts collapse but remains worse than E891; rejected |
 | E900 focused-role continuation | `e900-e891-base75-focus25-warm20-r2/last.pt` | `outputs/runs/…` (local) | Held-out n=5 parse 0.2 / strict-v2 0 / structure 0.0293 / recall 0.0667 / four timeouts, AgentV 0/1 — catastrophic rejection, never use as parent |
 | E898 typed-role scratch attempt | `e898-e897-typed-role-scratch600-r2/last.pt` | `outputs/runs/…` (local) | Invalid 279/600-step wall-budget partial; never evaluate, sync, promote, serve, resume, or use as parent |
 | E894 low-replay diagnostic | `e894-e886-base90-hard10-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 meaning-v1 0.6 / strict-v2 0.2 / structure 0.3035 / recall 0.6476; smoke matches E891, AgentV 0/2 — dominated and rejected, not ship |

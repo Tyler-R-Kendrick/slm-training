@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e903-e902-current-policy-heldout-n5-r1",
+  "experiment_id": "E902-E903",
+  "date": "2026-07-22",
+  "decision": "reject_retained_focused_continuation_move_to_schema_typed_decode",
+  "train": {
+    "run_id": "e902-e891-base75-focus25-retain05-warm20-r1",
+    "parent_run_id": "e891-e886-base75-hard25-warm20-r1",
+    "train_dir": "src/slm_training/resources/data/train/e851_e826_typed_supplement_v1",
+    "replay_train_dir": "src/slm_training/resources/data/train/e899_typed_role_focus_v1",
+    "requested_replay_fraction": 0.25,
+    "effective_replay_fraction": 0.2375,
+    "seen_primary_examples": 61,
+    "seen_replay_examples": 19,
+    "initialization_weight_retention": 0.05,
+    "steps": 20,
+    "elapsed_wall_seconds": 4.295778280999912,
+    "last_loss": 4.366077423095703,
+    "initialized_weight_count": 1681282,
+    "initialized_weight_rms_drift": 0.0008210977082608081,
+    "data_manifest_sha": "9d1c4ec82f4aeb3d378e1b4cf8f80ebfb5c5542e9f497202aef3341fab215f67",
+    "checkpoint_sha256": "0cd41fa0d075ba0e0faab4e58236cb20c64c52773300671700ec056e66e58671",
+    "checkpoint_sync": "disabled_local_scratch"
+  },
+  "baseline": {
+    "run_id": "e892-e891-current-policy-heldout-n5-r1",
+    "n": 5,
+    "parse_rate": 0.8,
+    "meaningful_program_rate": 0.8,
+    "binding_aware_meaningful_v2_rate_strict": 0.2,
+    "placeholder_fidelity_normalized": 0.8,
+    "structural_similarity": 0.32984,
+    "component_type_recall": 0.7142857142857142,
+    "reward_score": 0.7844,
+    "decode_timeout_count": 1,
+    "fallback_count": 0
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 0.8,
+      "meaningful_program_rate": 0.4,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity_normalized": 0.64,
+      "structural_similarity": 0.1824,
+      "component_type_recall": 0.4523809523809524,
+      "reward_score": 0.7202,
+      "decode_timeout_count": 1,
+      "empty_prediction_count": 1,
+      "fallback_count": 1,
+      "failure_breakdown": {
+        "low_component_recall": 2,
+        "parse_error": 1
+      }
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "failed": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "diagnostic held_out n=5 only; regression from parent and AgentV failure"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8c356bf908c6b53c8939faee82a7b7944f2fc701",
+    "code_dirty": true,
+    "dirty_reason": "unrelated untracked SLM experiment files in shared worktree",
+    "components": {
+      "config.levers": "v29",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v236"
+    },
+    "stamped_at": "2026-07-22T21:52:31.048640+00:00"
+  }
+}
