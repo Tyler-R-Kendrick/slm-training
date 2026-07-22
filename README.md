@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E891 balanced-replay held-out candidate | `e891-e886-base75-hard25-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 meaning-v1 0.8 / strict-v2 0.2 / structure 0.3298 / recall 0.7143; smoke strict-v2 1.0 / structure 0.5783, AgentV 0/2 — strongest held-out candidate, not ship |
 | E889 hard-tail current-policy diagnostic | `e889-e886-hard80-warm20-r1/last.pt` | `outputs/runs/…` (local) | 20 steps / 2.91s; held-out n=5 parse 1.0 / strict-v2 0.2 / structure 0.1889 / recall 0.5190 / reward 0.8570, AgentV 0/1 — rejected, not ship |
 | E886 recovered current baseline | `e886-e851-recovery-scratch600-r1/last.pt` | `outputs/runs/…` (local) | Bit-identical E852 recovery; 600 steps / 53.30s; smoke n=3 strict-v2 1.0, held-out n=5 strict-v2 0.2 / structure 0.2588 / recall 0.4190, AgentV 0/2 — retained scratch parent, not ship |
 | E879 union-vocabulary compatibility proof | `e879-e852-e872-vocab-union-zero-r1/last.pt` | `outputs/runs/…` (local) | Zero-step load retained all 712 parent tokens and all 131 tensors; atomic-policy smoke exactly reproduces E852 — diagnostic only, not ship |

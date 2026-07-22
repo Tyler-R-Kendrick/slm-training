@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e893-e891-current-policy-smoke-n3-r1",
+  "experiment_id": "E891-E893",
+  "date": "2026-07-22",
+  "decision": "retain_strongest_heldout_candidate_lower_replay_next",
+  "train": {
+    "run_id": "e891-e886-base75-hard25-warm20-r1",
+    "parent_run_id": "e886-e851-recovery-scratch600-r1",
+    "train_dir": "src/slm_training/resources/data/train/e851_e826_typed_supplement_v1",
+    "replay_train_dir": "src/slm_training/resources/data/train/e872_e851_hard80_v2",
+    "replay_fraction": 0.25,
+    "seen_primary_examples": 60,
+    "seen_replay_examples": 20,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 20,
+    "elapsed_wall_seconds": 3.0604308270001184,
+    "last_loss": 4.190179347991943,
+    "initialized_weight_count": 1681282,
+    "initialized_weight_rms_drift": 0.001092250334299317,
+    "data_manifest_sha": "06b5d1f0942a5e7ea772805763ffa9344a3eaf77a77d756a47692376666d7cd5",
+    "checkpoint_sha256": "a0ca03a45246d71ef11452ffa671e4adcb7aa8f50b89e48e86eeb39d79eee37d",
+    "checkpoint_sync": "disabled_local_scratch"
+  },
+  "baseline": {
+    "checkpoint_run_id": "e886-e851-recovery-scratch600-r1",
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "structural_similarity": 0.6589,
+      "component_type_recall": 0.75,
+      "reward_score": 0.949,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 0.8,
+      "meaningful_program_rate": 0.4,
+      "binding_aware_meaningful_v2_rate_strict": 0.2,
+      "placeholder_fidelity_normalized": 0.64,
+      "structural_similarity": 0.25884,
+      "component_type_recall": 0.41904761904761906,
+      "reward_score": 0.7178,
+      "decode_timeout_count": 1,
+      "fallback_count": 2
+    }
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 1.0,
+      "placeholder_fidelity_normalized": 1.0,
+      "structural_similarity": 0.5783333333333333,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.945,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 0.8,
+      "meaningful_program_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.2,
+      "placeholder_fidelity_normalized": 0.8,
+      "structural_similarity": 0.32984,
+      "component_type_recall": 0.7142857142857142,
+      "reward_score": 0.7844,
+      "decode_timeout_count": 1,
+      "fallback_count": 0,
+      "failure_breakdown": {
+        "parse_error": 1
+      }
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 2,
+    "failed": 2,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "diagnostic smoke and held_out only; AgentV failed, strict-v2 did not improve, and smoke topology regressed"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "evaluation_policy": "strict_compiler_tree",
+    "diagnostic_subset": true,
+    "max_wall_minutes": 1.5833333333333333,
+    "checkpoint_sync": "disabled_local_scratch",
+    "remote_workflow": false
+  },
+  "completion_contract": "grammar/AST symbols plus canonical opaque :slot_N markers only",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ede60fb90c16dec6ffb9692d5a2c4529232aa6f6",
+    "code_dirty": false,
+    "components": {
+      "config.levers": "v29",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v236"
+    },
+    "stamped_at": "2026-07-22T21:33:24.972493+00:00"
+  }
+}

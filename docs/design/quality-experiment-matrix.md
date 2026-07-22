@@ -6296,3 +6296,16 @@ AgentV remains 0/1. Reject E889 as a replacement and retain E886. The next arm
 should replay hard-tail examples without discarding the base distribution.
 Full evidence:
 [hard-tail current-policy results](iter-e889-e890-hard-tail-current-policy-20260722.md).
+
+# E891-E893 — balanced hard-tail replay (2026-07-22)
+
+E891 continued E886 for 20 local CPU steps with 75% E851 base and 25% E872
+hard-tail exposure. Against E888 held-out `n=5`, E892 doubles meaning-v1
+0.4→0.8 and improves fidelity 0.6400→0.8000, structure 0.2588→0.3298, recall
+0.4190→0.7143, and reward 0.7178→0.7844 while removing both fallback-marked
+rows. Strict-v2 stays 0.2 and the timeout remains. E893 smoke retains perfect
+parse/meaning/fidelity but regresses structure 0.6589→0.5783 and recall
+0.7500→0.6667; AgentV is 0/2. Retain E891 as the strongest held-out research
+candidate, keep E886 as the unqualified baseline, and test lower replay
+exposure next. Full evidence:
+[balanced replay results](iter-e891-e893-balanced-replay-20260722.md).
