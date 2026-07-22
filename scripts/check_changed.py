@@ -13,6 +13,11 @@ from scripts.repo_policy import validate_repository
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from slm_training.levers import CHANGED_TEST_WORKERS  # noqa: E402
+
+
 GLOBAL_TEST_FILES = {
     "pyproject.toml",
     "pytest.ini",
@@ -136,7 +141,6 @@ SUITES_BY_PREFIX = (
 )
 CODE_SUFFIXES = {".c", ".css", ".html", ".js", ".json", ".mjs", ".py", ".ts", ".tsx", ".yaml", ".yml"}
 HOOK_TEST_FILE_LIMIT = 100
-CHANGED_TEST_WORKERS = 4
 
 
 def changed_files(*, staged: bool, base_ref: str | None = None) -> list[str]:

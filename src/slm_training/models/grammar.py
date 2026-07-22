@@ -37,31 +37,9 @@ _ACTIVE_DSL: str | None = None
 
 def _token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     """Decode one token into the partial source consumed by the grammar."""
-    tid = int(token_id)
-    if tid in {
-        tokenizer.pad_id,
-        tokenizer.bos_id,
-        tokenizer.eos_id,
-        tokenizer.mask_id,
-    }:
-        return ""
-    raw = tokenizer.id_to_token.get(tid, "")
-    if raw == "NL":
-        return "\n"
-    if raw in {"LIT_STR", "LIT_END"}:
-        return '"'
-    if raw.startswith("B:"):
-        try:
-            return chr(int(raw[2:], 16))
-        except ValueError:
-            return raw
-    kind_of = getattr(tokenizer, "kind_of", None)
-    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
-    if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
-        decoded = tokenizer.decode([tid])
-        if decoded:
-            return decoded
-    return raw
+    from slm_training.dsl.grammar.fastpath.token_map import token_surface_piece
+
+    return token_surface_piece(tokenizer, token_id)
 
 
 def _decode_prefix_text(

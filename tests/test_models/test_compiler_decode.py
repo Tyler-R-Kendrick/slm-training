@@ -4589,6 +4589,69 @@ def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
     assert not (set(forest.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE))
 
 
+def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+    from slm_training.models.grammar import GrammarDecodeState
+    from slm_training.models.dsl_tokenizer import TokenKind
+
+    tokenizer = DSLNativeTokenizer.build()
+    number_slot = tokenizer.encode(
+        'root=Slider(":value","discrete",', add_special=False
+    )
+    opener = tokenizer.token_to_id["LIT_NUM"]
+    opening = build_completion_forest(
+        tokenizer, number_slot, slot_contract=[":value"]
+    )
+    opener_path = next(path for path in opening.paths if path.token_ids[0] == opener)
+    assert opener_path.token_ids == (opener,)
+
+    prefix = [*number_slot, opener]
+
+    empty = build_completion_forest(tokenizer, prefix, slot_contract=[":value"])
+    byte_ids = tokenizer.kind_ids(TokenKind.BYTE)
+    assert set(empty.candidate_ids)
+    assert set(empty.candidate_ids) <= byte_ids
+    assert tokenizer.token_to_id["B:30"] in empty.candidate_ids
+    assert tokenizer.token_to_id["B:61"] not in empty.candidate_ids
+    assert tokenizer.token_to_id["LIT_END"] not in empty.candidate_ids
+    digit_path = next(
+        path
+        for path in empty.paths
+        if path.token_ids[0] == tokenizer.token_to_id["B:30"]
+    )
+    assert digit_path.token_ids == (tokenizer.token_to_id["B:30"],)
+
+    with_digit = build_completion_forest(
+        tokenizer,
+        [*prefix, tokenizer.token_to_id["B:30"]],
+        slot_contract=[":value"],
+    )
+    assert tokenizer.token_to_id["LIT_END"] in with_digit.candidate_ids
+    close_path = next(
+        path
+        for path in with_digit.paths
+        if path.token_ids[0] == tokenizer.token_to_id["LIT_END"]
+    )
+    assert close_path.token_ids == (tokenizer.token_to_id["LIT_END"],)
+
+    complete_number = tokenizer.encode(
+        'root=Slider(":value","discrete",1e1', add_special=False
+    )
+    state = GrammarDecodeState(engine=OpenUIIncrementalEngine())
+    for token_id in complete_number:
+        state.advance_token(tokenizer, token_id)
+    assert state.prefix_text.replace(" ", "") == tokenizer.decode(
+        complete_number, preserve_trailing_newline=True
+    ).replace(" ", "")
+    after_number = build_completion_forest(
+        tokenizer,
+        complete_number,
+        state=state,
+        slot_contract=[":value"],
+    )
+    assert set(after_number.candidate_ids) == {tokenizer.token_to_id[","]}
+
+
 def test_completion_forest_rejects_enum_absent_from_fixed_schema_vocabulary(
     monkeypatch,
 ) -> None:

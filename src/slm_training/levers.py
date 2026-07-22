@@ -19,6 +19,7 @@ KILL_GRACE_SECONDS: Final = 10
 MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
+CHANGED_TEST_WORKERS: Final = 4
 
 # Applicability lives beside discovery so CLIs and harness validation cannot
 # drift from the human-visible lever catalog. Each tuple is an OR of complete
@@ -325,6 +326,12 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             "source": "slm_training.levers.MAX_RUN_MINUTES",
         }
     )
+    catalog["changed_test_workers"] = {
+        "category": "run",
+        "default": CHANGED_TEST_WORKERS,
+        "type": "int",
+        "source": "slm_training.levers.CHANGED_TEST_WORKERS",
+    }
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 
     catalog["evaluation_policy"].update(

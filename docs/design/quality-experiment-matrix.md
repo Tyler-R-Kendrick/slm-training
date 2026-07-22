@@ -5984,3 +5984,19 @@ only 0.2, strict-v2 is 0, and AgentV is 0/1, so no checkpoint is promoted and
 no ship claim is made. The lattice timeout is explicitly invalid evidence. No
 remote compute ran. Full evidence:
 [`iter-e765-e780-schema-closed-decoder-20260722.md`](iter-e765-e780-schema-closed-decoder-20260722.md).
+
+# E781-E790 — numeric literal planning closure (2026-07-22)
+
+Retain model v224. Lexer-native numeric literals now stay inside a
+schema-checked sign/digit/decimal/exponent byte automaton; literal open/close
+markers are hard compiler draft boundaries; and compiler plus persistent
+grammar state share one token-to-source conversion. The repaired targeted
+settings row reaches meaningful-v1 1.0, structure 0.4133, component recall
+0.5, and zero fallback.
+
+The local held-out n=5 plan-margin replay improves meaningful-v1 0.2→0.6,
+structure 0.3921→0.5622, and component recall 0.2571→0.5857 with zero
+fallbacks/timeouts, but fidelity regresses 1.0→0.7076 and strict-v2/AgentV
+remain 0. Retain the generalized compiler repair; reject margin policy and
+checkpoint promotion. No remote compute ran. Full evidence:
+[`iter-e781-e790-numeric-literal-planning-20260722.md`](iter-e781-e790-numeric-literal-planning-20260722.md).

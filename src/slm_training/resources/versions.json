@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-22",
+          "note": "Move changed-test parallelism into the canonical run-policy module and expose it through the single lever catalog"
+        },
         {
           "version": "v15",
           "date": "2026-07-22",
@@ -3862,7 +3867,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v223",
+      "version": "v224",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3886,6 +3891,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v224",
+          "date": "2026-07-22",
+          "note": "Keep lexer-native numeric literals inside a schema-checked byte automaton and share one token-to-source conversion across compiler and persistent grammar state"
+        },
         {
           "version": "v223",
           "date": "2026-07-22",

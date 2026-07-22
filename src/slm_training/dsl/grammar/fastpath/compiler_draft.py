@@ -15,6 +15,7 @@ from slm_training.dsl.grammar.fastpath.token_map import (
     allowed_id_set,
     apply_literal_frame,
     decode_prefix,
+    token_surface_piece as _token_piece,
 )
 
 Coverage = Literal["complete", "partial", "none"]
@@ -160,16 +161,16 @@ class CompilerDecision:
         return self.token_kind in {"component", "bind", "state", "builtin"}
 
 
-def _token_piece(tokenizer: Any, token_id: int) -> str:
-    raw = tokenizer.id_to_token.get(int(token_id), "")
-    if raw == "NL":
-        return "\n"
-    if raw in {"LIT_STR", "LIT_END"}:
-        return '"'
-    decoded = tokenizer.decode([int(token_id)])
-    if decoded or raw.startswith(("<BIND_", "<SYM_", "<STATE_", "<MACRO_")):
-        return decoded
-    return raw
+def _literal_frame_is_open(tokenizer: Any, token_ids: list[int]) -> bool:
+    """Whether lexer-native token ids end inside a framed literal body."""
+    opened = False
+    for token_id in token_ids:
+        raw = str(tokenizer.id_to_token.get(int(token_id), ""))
+        if raw in {"LIT_STR", "LIT_NUM"} and not opened:
+            opened = True
+        elif raw == "LIT_END" and opened:
+            opened = False
+    return opened
 
 
 def _semantic_kind(tokenizer: Any, token_id: int) -> str:
@@ -1339,7 +1340,18 @@ def build_completion_forest(
             continue
         branch_text = prefix_text
         admitted = True
+        opened_literal_frame = _literal_frame_is_open(tokenizer, prefix_ids)
+        crossed_literal_boundary = False
         for token_id in sequence:
+            raw = str(tokenizer.id_to_token.get(int(token_id), ""))
+            if raw in {"LIT_STR", "LIT_NUM"}:
+                opened_literal_frame = True
+                crossed_literal_boundary = True
+                continue
+            if raw == "LIT_END":
+                opened_literal_frame = False
+                crossed_literal_boundary = True
+                continue
             piece = _token_piece(tokenizer, int(token_id))
             probe = branch.probe_chunk(piece)
             if probe is None:
@@ -1357,7 +1369,11 @@ def build_completion_forest(
             _record_one(ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False)
             continue
         drafted = [int(token_id) for token_id in sequence]
-        while len(drafted) < max_path_tokens:
+        while (
+            not opened_literal_frame
+            and not crossed_literal_boundary
+            and len(drafted) < max_path_tokens
+        ):
             forced = force_next_token_id(branch, tokenizer, branch_text)
             if forced is None or forced in specials:
                 break
