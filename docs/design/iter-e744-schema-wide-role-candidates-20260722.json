@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E744",
+  "run_id": "e744-schema-role-candidates1-plan4-coverage2-smoke-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-22",
+  "description": "Expand declared semantic roles across compatible official schema properties",
+  "decision": {
+    "retain": "semantic_role_schema_candidates enabled as the next diagnostic control",
+    "reject": "checkpoint promotion and ship claims",
+    "reason": "all aggregate quality metrics improve or hold, but repeated body symbols keep strict-v2 at zero and AgentV at 0/1",
+    "next": "give descendant role families explicit instance cardinality instead of binding roles to zero planned instances"
+  },
+  "local_compute": true,
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E744 matched local diagnostic",
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "strict_compiler_tree + honest_slot_contract + declared RuntimeSymbol semantic roles",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "839c17f01a701fd42400d56da82da51e1f988b5d3bd78ccfa8c688b1be844ef4",
+    "eval_suite_manifest_sha": "9cf9ab46201b79e787dca445035f7d5cda2fa0c835e5d33dc38eca88db900e1c",
+    "evaluation_policy": "strict_compiler_tree",
+    "eval_limit": 3,
+    "grammar_ltr_max_tokens": 160,
+    "decode_timeout_seconds": 8.0,
+    "slot_coverage_close_decode_weight": 2.0,
+    "semantic_role_decode_weight": 2.0,
+    "schema_role_slot_decode_weight": 2.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "component_plan_decode_weight": 1.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "semantic_role_contract_in_context": true,
+    "effective_model_config_fields": 235,
+    "matched_config_check": "byte-identical after removing semantic_role_schema_candidates",
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "runs": [
+    {
+      "run_id": "e744-schema-role-candidates0-plan4-coverage2-smoke-r1",
+      "label": "accepted control",
+      "semantic_role_schema_candidates": false,
+      "semantic_plan_applications": 3,
+      "semantic_plan_choice_changes": 2,
+      "slot_coverage_close_applications": 3,
+      "slot_coverage_close_choice_changes": 3,
+      "tokens_emitted": 61,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.3333333333333333,
+      "placeholder_fidelity": 0.8888888888888888,
+      "placeholder_validity": 0.9333333333333332,
+      "structural_similarity": 0.6628,
+      "component_type_recall": 0.5,
+      "reward_score": 0.9036666666666667,
+      "latency_ms_p50": 992.74,
+      "latency_ms_p95": 3573.16,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e744-schema-role-candidates1-plan4-coverage2-smoke-r1",
+      "label": "accepted treatment",
+      "semantic_role_schema_candidates": true,
+      "semantic_plan_applications": 5,
+      "semantic_plan_choice_changes": 3,
+      "slot_coverage_close_applications": 4,
+      "slot_coverage_close_choice_changes": 3,
+      "tokens_emitted": 77,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.3333333333333333,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.7535333333333334,
+      "component_type_recall": 0.75,
+      "reward_score": 0.9369999999999999,
+      "latency_ms_p50": 1714.17,
+      "latency_ms_p95": 4074.19,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "meaningful_program_v1_rate": 1.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.3333333333333333,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.7535333333333334,
+      "component_type_recall": 0.75,
+      "reward_score": 0.9369999999999999,
+      "latency_ms_p50": 1714.17,
+      "latency_ms_p95": 4074.19,
+      "decode_timeout_count": 0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "three-record scratch smoke diagnostic; strict-v2 is zero, duplicate symbol spam remains, and AgentV is 0/1"
+  },
+  "strict_v2_failure": {
+    "coverage": 0.3333333333333333,
+    "reason_prevalence": {
+      "placeholder_semantic_role_mismatch": 1,
+      "duplicate_subtree_spam": 1,
+      "placeholder_spam": 1,
+      "required_inventory_unknown": 2
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "61d5f9325180c3617bc0840504494935f913f85d",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v42",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v209"
+    },
+    "stamped_at": "2026-07-22T07:50:43.749558+00:00"
+  }
+}
