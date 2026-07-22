@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-22",
+          "note": "Expose the existing slot-coverage close lever on lexer restricted and tree compiler paths"
+        },
         {
           "version": "v12",
           "date": "2026-07-22",
@@ -2667,7 +2672,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v41",
+      "version": "v42",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2677,6 +2682,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v42",
+          "date": "2026-07-22",
+          "note": "Persist the complete effective post-checkpoint model configuration in every evaluation policy and cache identity"
+        },
         {
           "version": "v41",
           "date": "2026-07-22",
@@ -3779,7 +3789,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v206",
+      "version": "v207",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3801,6 +3811,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v207",
+          "date": "2026-07-22",
+          "note": "Floor an immediate lexer compiler container close after every declared template symbol is consumed"
+        },
         {
           "version": "v206",
           "date": "2026-07-22",

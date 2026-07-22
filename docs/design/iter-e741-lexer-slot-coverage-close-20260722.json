@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E741",
+  "run_id": "e741-lexer-coverage-close2-smoke-r2",
+  "date_utc": "2026-07-22",
+  "description": "Lexer container closure after complete declared-template-symbol coverage",
+  "decision": {
+    "retain": "the existing coverage-close lever on lexer restricted and compiler-tree paths, default off, with shared telemetry",
+    "reject": "checkpoint promotion and ship claims",
+    "reason": "the treatment bounded generation and improved structure and latency without metric regression, but strict-v2 and AgentV remain zero",
+    "next": "repair the remaining declared component-family recall failure without reopening unbounded containers"
+  },
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "recipe": {
+    "device": "cpu",
+    "training_steps": 0,
+    "context_backend": "scratch",
+    "matrix_set": "E741 matched local diagnostic",
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "strict_compiler_tree + honest_slot_contract + visible semantic roles",
+    "checkpoint_sha256": "710e2dbeff0ffa0d307ae25a4f38ff02d4cbe745a49e465736481fc8e268b970",
+    "eval_data_manifest_sha": "839c17f01a701fd42400d56da82da51e1f988b5d3bd78ccfa8c688b1be844ef4",
+    "eval_suite_manifest_sha": "9cf9ab46201b79e787dca445035f7d5cda2fa0c835e5d33dc38eca88db900e1c",
+    "evaluation_policy": "strict_compiler_tree",
+    "eval_limit": 3,
+    "grammar_ltr_max_tokens": 160,
+    "decode_timeout_seconds": 8.0,
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "schema_role_slot_decode_weight": 2.0,
+    "semantic_role_decode_weight": 2.0,
+    "semantic_role_contract_in_context": true,
+    "effective_model_config_fields": 235,
+    "matched_config_check": "byte-identical after removing slot_coverage_close_decode_weight",
+    "max_run_minutes": 2,
+    "remote_compute": false,
+    "checkpoint_created": false
+  },
+  "runs": [
+    {
+      "run_id": "e741-lexer-coverage-close0-smoke-r2",
+      "label": "accepted v207 control",
+      "slot_coverage_close_decode_weight": 0.0,
+      "slot_coverage_close_applications": 0,
+      "slot_coverage_close_choice_changes": 0,
+      "tokens_emitted": 174,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.6666666666666666,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.1653,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.9369999999999999,
+      "latency_ms_p50": 5242.22,
+      "latency_ms_p95": 5757.28,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    },
+    {
+      "run_id": "e741-lexer-coverage-close2-smoke-r2",
+      "label": "accepted v207 treatment",
+      "slot_coverage_close_decode_weight": 2.0,
+      "slot_coverage_close_applications": 3,
+      "slot_coverage_close_choice_changes": 3,
+      "tokens_emitted": 61,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "binding_aware_meaningful_v2_coverage": 0.6666666666666666,
+      "placeholder_fidelity": 1.0,
+      "placeholder_validity": 1.0,
+      "structural_similarity": 0.5464,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.9369999999999999,
+      "latency_ms_p50": 1749.18,
+      "latency_ms_p95": 2715.37,
+      "decode_timeout_count": 0,
+      "agentv_passed": 0,
+      "agentv_total": 1
+    }
+  ],
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "passed": false,
+    "reason": "three-record scratch smoke diagnostic; strict-v2 is zero and AgentV is 0/1"
+  },
+  "strict_v2_failure": {
+    "coverage": 0.6666666666666666,
+    "reason_prevalence": {
+      "placeholder_semantic_role_mismatch": 1,
+      "prompt_component_missing": 2,
+      "required_component_missing": 2,
+      "required_inventory_unknown": 1
+    },
+    "scoreboard_failure_breakdown": {
+      "low_component_recall": 1
+    }
+  },
+  "harness_remediation": {
+    "component_version": "harness.model_build.eval/v42",
+    "cause": "historical eval artifacts serialized selected decode weights but not the complete effective model configuration",
+    "fix": "recursively persist every effective model configuration field inside evaluation_policy; cache identity hashes the same policy",
+    "serialized_field_count": 235,
+    "replay": {
+      "run_id": "e741-parent-v206-replay-smoke-r1",
+      "code_commit": "85b91119e05762e7be0aa90c830fe243c94031c0",
+      "result": "predictions and aggregate metrics exactly match the v207 default-off control",
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "structural_similarity": 0.1653,
+      "component_type_recall": 0.4166666666666667,
+      "reward_score": 0.9369999999999999
+    },
+    "historical_evidence_policy": "retain E740 as incomplete-recipe diagnostic evidence; do not present it as a reconstructible baseline"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cb6eb7ac4059c50bcbeaa43f84730d7803be45c5",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v42",
+      "evals.meaningful_program": "2.12.0",
+      "evals.scoring": "v13",
+      "model.twotower": "v207"
+    },
+    "stamped_at": "2026-07-22T06:33:59.442720+00:00"
+  }
+}

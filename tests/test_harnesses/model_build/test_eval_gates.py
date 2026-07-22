@@ -76,11 +76,26 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     assert policy["grammar_ltr_primary"] is False
     assert policy["component_plan_decode_weight"] == 3.0
     assert policy["root_reference_arity_decode_weight"] == 2.0
+    assert policy["effective_model_config"]["grammar_ltr_max_tokens"] == 256
+    assert policy["effective_model_config"]["component_plan_decode_weight"] == 3.0
     assert {
         field.name
         for field in fields(ModelBuildConfig)
         if field.name.endswith("_decode_weight")
     } <= policy.keys()
+
+
+def test_evaluation_policy_snapshots_every_loaded_model_config_field() -> None:
+    config = ModelBuildConfig(train_dir=Path("train"))
+    loaded = SimpleNamespace(alpha=1, path=Path("checkpoint"), modes=("tree",))
+
+    policy = _effective_evaluation_policy(config, SimpleNamespace(config=loaded))
+
+    assert policy["effective_model_config"] == {
+        "alpha": 1,
+        "modes": ["tree"],
+        "path": "checkpoint",
+    }
 
 
 def test_structural_similarity_identical() -> None:

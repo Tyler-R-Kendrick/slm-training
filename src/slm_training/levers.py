@@ -30,7 +30,6 @@ _LEXER_COMPILER: Final = {
     "compiler_decode_mode": frozenset({"restricted", "tree"}),
 }
 _CHOICE_ONLY_DECODE_LEVERS: Final = (
-    "slot_coverage_close_decode_weight",
     "schema_value_decode_weight",
     "schema_enum_close_decode_weight",
     "schema_open_decode_weight",
@@ -53,6 +52,7 @@ _DUAL_PATH_DECODE_LEVERS: Final = (
     "component_plan_decode_weight",
     "slot_component_decode_weight",
     "semantic_role_decode_weight",
+    "slot_coverage_close_decode_weight",
     "schema_role_slot_decode_weight",
     "semantic_plan_decode_weight",
     "semantic_plan_margin_decode_weight",

@@ -362,6 +362,28 @@ def _effective_evaluation_policy(
         effective = value(name)
         return None if effective is None else bool(effective)
 
+    def json_value(item: object) -> object:
+        if item is None or isinstance(item, (bool, int, float, str)):
+            return item
+        if isinstance(item, Path):
+            return str(item)
+        if isinstance(item, (list, tuple, set, frozenset)):
+            return [json_value(value) for value in item]
+        if isinstance(item, dict):
+            return {str(key): json_value(value) for key, value in item.items()}
+        return str(item)
+
+    if model_config is None:
+        model_snapshot: dict[str, object] = {}
+    else:
+        try:
+            names = [field.name for field in fields(model_config)]
+        except TypeError:
+            names = sorted(vars(model_config))
+        model_snapshot = {
+            name: json_value(getattr(model_config, name)) for name in names
+        }
+
     return {
         "evaluation_policy": str(
             getattr(config, "evaluation_policy", "checkpoint_declared")
@@ -409,6 +431,10 @@ def _effective_evaluation_policy(
         "allow_unconstrained_fallback": bool(value("allow_unconstrained_fallback")),
         "gen_steps": int(value("gen_steps") or 0),
         "grammar_ltr_max_tokens": int(value("grammar_ltr_max_tokens") or 0),
+        # Complete post-load/post-override model state. The summary fields above
+        # stay convenient for dashboards, while this snapshot makes behavior
+        # reconstructible without guessing which non-default field mattered.
+        "effective_model_config": model_snapshot,
     }
 
 
