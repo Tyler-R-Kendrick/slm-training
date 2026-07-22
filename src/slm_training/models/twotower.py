@@ -91,7 +91,6 @@ from slm_training.models.speculative_denoise import (
 )
 from slm_training.models.template_fill import (
     build_slot_contract_template,
-    ensure_prompt_inventory,
     inventory_from_prompt,
     prompt_semantic_plan,
     template_mask_positions,
@@ -10944,17 +10943,16 @@ class TwoTowerModel(nn.Module):
     ) -> list[str] | None:
         """Return inventory for decode/context.
 
-        E35 honest mode: inventory comes from the user-visible prompt/DESIGN.md
-        only (never ``gold.placeholders``). When the prompt lacks an explicit
-        inventory, a keyword heuristic is used. Non-honest mode (legacy V3)
-        falls back to gold placeholders for template fill / conditioning.
+        Honest mode accepts only an explicit canonical inventory from visible
+        request text and never ``gold.placeholders``. Structured requests pass
+        their harness-owned contract directly and do not call this fallback.
         """
         dm = design_md
         if dm is None and gold is not None and use_gold_design:
             dm = gold.design_md
         honest = bool(getattr(self.config, "honest_slot_contract", False))
         if honest:
-            inv = inventory_from_prompt(prompt, dm, heuristic=True)
+            inv = inventory_from_prompt(prompt, dm, heuristic=False)
             return inv or None
         # Prefer visible inventory when present, else gold (legacy path).
         inv = inventory_from_prompt(prompt, dm, heuristic=False)
@@ -10962,7 +10960,7 @@ class TwoTowerModel(nn.Module):
             return inv
         if gold is not None and gold.placeholders:
             return list(gold.placeholders)
-        return inventory_from_prompt(prompt, dm, heuristic=True) or None
+        return inventory_from_prompt(prompt, dm, heuristic=False) or None
 
     def _context_prompts(
         self,
@@ -10986,10 +10984,8 @@ class TwoTowerModel(nn.Module):
             contract: list[str] | None = None
             schema = schemas[i] if schemas and i < len(schemas) else None
             if use_contract and not opaque_slot_projection:
-                honest = bool(getattr(self.config, "honest_slot_contract", False))
                 if (
-                    not honest
-                    and slot_contracts
+                    slot_contracts
                     and i < len(slot_contracts)
                     and slot_contracts[i] is not None
                 ):
@@ -11205,10 +11201,9 @@ class TwoTowerModel(nn.Module):
     ) -> list[str]:
         """Generate using production-available inputs only (no gold records).
 
-        E35 honesty: when ``honest_slot_contract`` is set, surface
-        ``request.slot_contract`` into the user-visible prompt via
-        ``ensure_prompt_inventory`` (inventory-in-prompt API), then extract
-        inventory from the prompt text — never a silent gold channel.
+        Slot contracts are prepared and canonicalized by the request harness.
+        The model consumes those opaque symbols directly; it never derives or
+        converts marker identities from prompt language.
         """
         from slm_training.levers import require_valid_lever_configuration
 
@@ -11225,14 +11220,11 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "checkpoint predates compact output contracts; request a document"
             )
-        honest = bool(getattr(self.config, "honest_slot_contract", False))
         prompts: list[str] = []
         slot_contracts: list[list[str] | None] = []
         for r in requests:
             prompt = r.prompt
             contract = list(r.slot_contract) if r.slot_contract else None
-            if honest and contract and not _opaque_slot_projection:
-                prompt = ensure_prompt_inventory(prompt, contract)
             prompts.append(prompt)
             slot_contracts.append(contract)
         schemas = [r.schema for r in requests]
@@ -11581,18 +11573,8 @@ class TwoTowerModel(nn.Module):
             or bool(opaque_slot_projection)
         )
         honest = bool(getattr(self.config, "honest_slot_contract", False))
-        # E35: surface inventory in the user-visible prompt when gold provides
-        # slots but the prompt text does not (inventory-in-prompt API).
-        if honest and golds:
-            prompts = [
-                ensure_prompt_inventory(
-                    prompts[i],
-                    list(golds[i].placeholders or []) if golds[i] is not None else None,
-                )
-                for i in range(len(prompts))
-            ]
         if use_contract_decode:
-            if (not honest or opaque_slot_projection) and slot_contracts is not None:
+            if slot_contracts is not None:
                 self._slot_contracts = [list(c) if c else None for c in slot_contracts]
             else:
                 self._slot_contracts = []

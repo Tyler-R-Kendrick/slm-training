@@ -88,17 +88,19 @@ def test_placeholder_set_mismatch_fails() -> None:
 
 
 def test_request_target_contract_match() -> None:
-    source = 'root = Card([TextContent(":card.title")])\n'
-    record = _record(source, placeholders=[":card.title"])
-    request = GenerationRequest(prompt=record.prompt, slot_contract=(":card.title",))
+    source = 'root = Card([TextContent(":slot_0")])\n'
+    record = _record(source, placeholders=[":slot_0"])
+    request = GenerationRequest(prompt=record.prompt, slot_contract=(":slot_0",))
     report = evaluate_integrity(record, request=request)
     assert report.passed
 
 
 def test_request_target_contract_mismatch() -> None:
-    source = 'root = Card([TextContent(":card.title")])\n'
-    record = _record(source, placeholders=[":card.title"])
-    request = GenerationRequest(prompt=record.prompt, slot_contract=(":card.other",))
+    source = 'root = Card([TextContent(":slot_0")])\n'
+    record = _record(source, placeholders=[":slot_0"])
+    request = GenerationRequest(
+        prompt=record.prompt, slot_contract=(":slot_0", ":slot_1")
+    )
     report = evaluate_integrity(record, request=request)
     assert not report.passed
     assert IntegrityCheck.REQUEST_TARGET_CONTRACT_MATCH.value in report.hard_fail_reasons

@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-22",
+          "note": "Point every canonical eval entrypoint at the harness-owned opaque-slot snapshot"
+        },
         {
           "version": "v21",
           "date": "2026-07-22",
@@ -186,7 +191,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v8",
+      "version": "v9",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -194,6 +199,11 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-22",
+          "note": "Fail invalid fixture normalization and assert opaque markers before persisting eval suites"
+        },
         {
           "version": "v8",
           "date": "2026-07-22",
@@ -815,12 +825,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-22",
+          "note": "Use opaque ordinal slot contracts in the external ceiling fixture requests"
+        },
         {
           "version": "v60",
           "date": "2026-07-21",
@@ -3972,7 +3987,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v232",
+      "version": "v233",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3996,6 +4011,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v233",
+          "date": "2026-07-22",
+          "note": "Consume harness-owned opaque slot contracts without model-side marker conversion or semantic-name inference"
+        },
         {
           "version": "v232",
           "date": "2026-07-22",

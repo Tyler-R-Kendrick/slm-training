@@ -39,7 +39,7 @@ DEFAULT_TRAIN_DATA_DIR: Final = Path(
     "src/slm_training/resources/data/train/e826_target_slots_only_v4"
 )
 DEFAULT_EVAL_DATA_DIR: Final = Path(
-    "src/slm_training/resources/data/eval/e827_target_slots_only_v4"
+    "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1"
 )
 
 # Template markers are codec identities, never semantic supervision.  Keep this

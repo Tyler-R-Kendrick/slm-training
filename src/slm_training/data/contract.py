@@ -299,11 +299,7 @@ class GenerationRequest:
         assert_no_template_semantic_labels(self.prompt, self.design_md)
         if self.output_kind not in OUTPUT_KINDS:
             raise ValueError(f"invalid output kind {self.output_kind!r}")
-        for slot in self.slot_contract:
-            if not slot.startswith(":"):
-                raise ValueError(
-                    f"slot_contract entries must start with ':', got {slot!r}"
-                )
+        assert_canonical_template_marker_inventory(self.slot_contract)
         seen: set[str] = set()
         for symbol in self.runtime_symbols:
             if symbol.surface in seen:

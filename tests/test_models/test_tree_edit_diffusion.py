@@ -22,12 +22,12 @@ from slm_training.models.tree_edit_diffusion import (
 PROGRAM = (
     'root = Stack([inline_card, panel, cta], "column")\n'
     "inline_card = Card([title])\n"
-    'title = TextContent(":hero.title")\n'
+    'title = TextContent(":slot_0")\n'
     "panel = Card([body])\n"
-    'body = TextContent(":hero.body")\n'
-    'cta = Button(":cta.label")'
+    'body = TextContent(":slot_1")\n'
+    'cta = Button(":slot_2")'
 )
-INVENTORY = [":hero.title", ":hero.body", ":cta.label"]
+INVENTORY = [":slot_0", ":slot_1", ":slot_2"]
 
 
 def test_mutations_preserve_validity_and_inverse_restores() -> None:

@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import re
 
+from slm_training.data.contract import assert_canonical_template_marker_inventory
 from slm_training.dsl.placeholders import PLACEHOLDER_RE, extract_placeholders
 
 _INVENTORY_LINE_RE = re.compile(
@@ -39,14 +40,13 @@ _CALLOUT_HINTS = ("callout", "alert", "warning", "info", "notice")
 
 
 def normalize_placeholders(placeholders: list[str] | None) -> list[str]:
-    out: list[str] = []
-    seen: set[str] = set()
-    for raw in placeholders or []:
-        ph = raw if raw.startswith(":") else f":{raw}"
-        if ph in seen:
-            continue
-        seen.add(ph)
-        out.append(ph)
+    """Validate an already-canonical harness-owned slot contract.
+
+    The model must never translate user-defined marker names. Builders own
+    that projection and persisted train/eval records expose only ``:slot_N``.
+    """
+    out = list(dict.fromkeys(placeholders or ()))
+    assert_canonical_template_marker_inventory(out)
     return out
 
 
@@ -276,12 +276,13 @@ def inventory_from_prompt(
     heuristic: bool = True,
 ) -> list[str]:
     """
-    Derive a slot inventory from user-visible text (E35).
+    Read an already-canonical slot inventory from user-visible text.
 
     Priority:
       1. Explicit ``Placeholders:`` / ``Inventory:`` lines
       2. Any ``:ns.slot`` tokens in prompt + DESIGN.md
-      3. (optional) keyword heuristic under a stable namespace from the prompt
+    The ``heuristic`` argument is retained for checkpoint/config compatibility;
+    inventing marker names from prompt words is forbidden.
     """
     text = f"{prompt or ''}\n{design_md or ''}"
     explicit: list[str] = []
@@ -301,62 +302,8 @@ def inventory_from_prompt(
     if found:
         return normalize_placeholders(found)
 
-    if not heuristic:
-        return []
-    return _heuristic_inventory_from_prompt(prompt or "")
-
-
-def _heuristic_inventory_from_prompt(prompt: str) -> list[str]:
-    """Keyword → inventory under a stable namespace derived from the prompt."""
-    low = prompt.lower()
-    digest = hashlib.sha1(prompt.encode("utf-8")).hexdigest()[:6]
-    ns = "ui"
-    for candidate in (
-        "smoke",
-        "held",
-        "adv",
-        "ood",
-        "hero",
-        "form",
-        "login",
-        "settings",
-        "pricing",
-        "gallery",
-        "auth",
-        "dash",
-        "modal",
-        "tabs",
-    ):
-        if candidate in low:
-            ns = candidate
-            break
-    else:
-        ns = f"p{digest}"
-
-    slots: list[str] = []
-    if any(w in low for w in ("title", "header", "heading", "kicker")):
-        slots.append(f":{ns}.title")
-    if any(w in low for w in ("subtitle", "subheading")):
-        slots.append(f":{ns}.subtitle")
-    if any(w in low for w in ("body", "description", "desc", "copy", "text", "blurb")):
-        slots.append(f":{ns}.body")
-    if any(w in low for w in ("button", "cta", "submit", "action", "continue")):
-        slots.append(f":{ns}.cta")
-    if any(w in low for w in ("email", "input", "field", "password", "search")):
-        slots.append(f":{ns}.input")
-    if any(w in low for w in ("image", "avatar", "photo", "banner", "icon")):
-        slots.append(f":{ns}.image")
-        slots.append(f":{ns}.alt")
-    if any(w in low for w in ("callout", "alert", "notice", "warning")):
-        slots.append(f":{ns}.callout.title")
-        slots.append(f":{ns}.callout.body")
-    if any(w in low for w in ("card", "feature")) and f":{ns}.title" not in slots:
-        slots.append(f":{ns}.title")
-        if f":{ns}.body" not in slots:
-            slots.append(f":{ns}.body")
-    if not slots:
-        slots = [f":{ns}.title", f":{ns}.body"]
-    return normalize_placeholders(slots)
+    _ = heuristic
+    return []
 
 
 def build_slot_contract_template(placeholders: list[str] | None) -> str:

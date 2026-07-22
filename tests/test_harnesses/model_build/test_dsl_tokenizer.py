@@ -106,10 +106,10 @@ def test_runtime_symbol_contract_and_v2_table_migration(
 ) -> None:
     request = GenerationRequest(
         prompt="Hero",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
         runtime_symbols=(
             RuntimeSymbol(
-                surface=":hero.title",
+                surface=":slot_0",
                 role="external_entity",
             ),
             RuntimeSymbol(surface="$filter", role="state", semantic_type="filter"),
@@ -142,8 +142,13 @@ def test_generation_request_rejects_template_semantic_labels() -> None:
     with pytest.raises(ValueError, match="semantic role labels are prohibited"):
         GenerationRequest(
             prompt="Build a modal.\nSemantic roles: title -> Button",
-            slot_contract=(":modal.title",),
+            slot_contract=(":slot_0",),
         )
+
+
+def test_generation_request_rejects_named_template_markers() -> None:
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        GenerationRequest(prompt="Build a modal.", slot_contract=(":modal.title",))
 
 
 def test_symbol_permutation_preserves_root_and_surfaces() -> None:

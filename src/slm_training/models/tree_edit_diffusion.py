@@ -30,6 +30,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from slm_training.data.contract import (
+    assert_canonical_template_marker_inventory,
+    assert_canonical_template_markers,
+)
 from slm_training.dsl.parser import validate
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
@@ -777,16 +781,8 @@ class TreeEditDiffusionModel(nn.Module):
         outputs: list[str] = []
         self._generation_evidence = []
         for index, request in enumerate(requests):
-            inventory = [
-                value if value.startswith(":") else f":{value}"
-                for value in (request.slot_contract or ())
-            ]
-            if not inventory:
-                from slm_training.models.template_fill import inventory_from_prompt
-
-                inventory = inventory_from_prompt(
-                    request.prompt, request.design_md, heuristic=True
-                )
+            inventory = list(request.slot_contract or ())
+            assert_canonical_template_marker_inventory(inventory)
             text, evidence = self._decode_one(
                 ctx[index : index + 1],
                 ctx_pad[index : index + 1],
@@ -800,7 +796,7 @@ class TreeEditDiffusionModel(nn.Module):
         from slm_training.models.template_fill import inventory_from_prompt
 
         design_md = gold.design_md if gold is not None else None
-        contract = tuple(inventory_from_prompt(prompt, design_md, heuristic=True))
+        contract = tuple(inventory_from_prompt(prompt, design_md, heuristic=False))
         return self.generate_batch_requests(
             [
                 GenerationRequest(
@@ -864,6 +860,8 @@ class TreeEditDiffusionModel(nn.Module):
         config: TreeEditDiffusionConfig | None = None,
         device: str | torch.device = "cpu",
     ) -> TreeEditDiffusionModel:
+        for record in records:
+            assert_canonical_template_markers(record)
         texts = [r.prompt for r in records] + [r.openui for r in records if r.openui]
         tokenizer = OpenUITokenizer.build(texts)
         return cls(tokenizer, config=config, device=device)

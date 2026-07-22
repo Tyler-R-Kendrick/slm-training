@@ -26,9 +26,9 @@ from slm_training.dsl.schema import ExampleRecord
 
 
 def test_inventory_from_prompt_explicit_line() -> None:
-    prompt = "Build a hero.\nPlaceholders: :smoke.hero.title, :smoke.hero.body"
+    prompt = "Build a hero.\nPlaceholders: :slot_0, :slot_1"
     inv = inventory_from_prompt(prompt, heuristic=False)
-    assert inv == [":smoke.hero.title", ":smoke.hero.body"]
+    assert inv == [":slot_0", ":slot_1"]
 
 
 def test_inventory_from_prompt_heuristic() -> None:
@@ -36,12 +36,11 @@ def test_inventory_from_prompt_heuristic() -> None:
         "Build a hero card with title and body and a CTA button.",
         heuristic=True,
     )
-    assert any(s.endswith(".title") for s in inv)
-    assert any("cta" in s or s.endswith(".body") for s in inv)
+    assert inv == []
 
 
 def test_ensure_prompt_inventory_idempotent() -> None:
-    slots = [":smoke.cta.label"]
+    slots = [":slot_0"]
     once = ensure_prompt_inventory("Single button.", slots)
     twice = ensure_prompt_inventory(once, slots)
     assert once == twice
@@ -91,7 +90,7 @@ def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:
 
 
 def test_visible_corrupt_marks_predict_mask() -> None:
-    src = build_slot_contract_template([":a.title", ":a.body"])
+    src = build_slot_contract_template([":slot_0", ":slot_1"])
     tok = OpenUITokenizer.build([src, "Make a card"])
     cfg = TwoTowerConfig(
         d_model=64,
@@ -176,14 +175,12 @@ def test_honest_slot_contract_ignores_gold_placeholders() -> None:
         source="fixture",
     )
     contract = model._resolve_slot_contract(gold.prompt, gold, None)
-    assert contract is not None
-    assert ":LEAKED.GOLD.slot" not in contract
+    assert contract is None
 
 
-def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
-    """E35 inventory-in-prompt: request.slot_contract is surfaced into prompt text."""
+def test_generate_batch_requests_consumes_harness_slot_contract() -> None:
+    """The harness-owned contract stays structured; the model does not convert it."""
     from slm_training.harnesses.model_build.plugin import GenerationRequest
-    from slm_training.models.template_fill import inventory_from_prompt
 
     src = 'root = Stack([t], "column")\nt = TextContent(":slot_0")'
     cfg = TwoTowerConfig(
@@ -213,10 +210,12 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
     )
     # Capture prompts seen by _generate_batch_once.
     seen: list[str] = []
+    seen_contracts: list[list[str] | None] = []
     orig = model._generate_batch_once
 
     def _spy(prompts, *args, **kwargs):  # noqa: ANN001
         seen.extend(prompts)
+        seen_contracts.extend(kwargs.get("slot_contracts") or [])
         return orig(prompts, *args, **kwargs)
 
     model._generate_batch_once = _spy  # type: ignore[method-assign]
@@ -228,11 +227,8 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
             )
         ]
     )
-    assert seen
-    assert "Placeholders:" in seen[0]
-    inv = inventory_from_prompt(seen[0], heuristic=False)
-    assert ":slot_0" in inv
-    assert ":slot_1" in inv
+    assert seen == ["Build a hero card."]
+    assert seen_contracts == [[":slot_0", ":slot_1"]]
 
 
 def test_suffix_rollback_config_roundtrip() -> None:
@@ -242,4 +238,4 @@ def test_suffix_rollback_config_roundtrip() -> None:
 
 
 def test_normalize_placeholders_stable() -> None:
-    assert normalize_placeholders(["a.b", ":a.b", "a.b"]) == [":a.b"]
+    assert normalize_placeholders([":slot_0", ":slot_0"]) == [":slot_0"]

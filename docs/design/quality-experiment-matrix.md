@@ -6150,3 +6150,14 @@ matrix, phase, autoresearch, benchmark, diagnosis, migration, and model-cycle
 entrypoints. This prevents missing `outputs/data/*/v1` paths or legacy named
 corpora from being selected implicitly. Full evidence:
 [canonical corpus default audit](iter-e841-canonical-corpus-defaults-20260722.md).
+
+# E842 — harness-owned slot contract (2026-07-22)
+
+Model-side marker normalization and prompt-word marker inference were removed
+from TwoTower, grammar diffusion, and tree-edit diffusion. The request harness
+now rejects every noncontiguous or named slot contract. The strict E842 eval
+build retained 23/23 expected rows with zero normalization errors, zero
+sanitizer fallbacks, and zero named target markers; invalid fixture
+normalization is fatal instead of silently omitted. The centralized eval lever
+now points to E842. No model evaluation or ship claim occurred. Full evidence:
+[harness-owned slot-contract results](iter-e842-harness-owned-slot-contract-20260722.md).

@@ -385,10 +385,10 @@ def _fixture_requests() -> list[GenerationRequest]:
     return [
         GenerationRequest(
             prompt="Create a screen with a title and a button that submits a form.",
-            slot_contract=(":title", ":submit_label"),
+            slot_contract=(":slot_0", ":slot_1"),
         ),
         GenerationRequest(
             prompt="Create a login form with username and password fields.",
-            slot_contract=(":username", ":password"),
+            slot_contract=(":slot_0", ":slot_1"),
         ),
     ]
