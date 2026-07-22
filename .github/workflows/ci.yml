@@ -60,8 +60,9 @@ jobs:
             extras=mcp
           fi
           if ! git diff --quiet "$BASE_SHA"...HEAD -- \
-            src/slm_training/web scripts/export_onnx.py scripts/serve_playground.py \
-            tests/test_web tests/test_export_onnx.py; then
+            src/slm_training/models/onnx_inference.py scripts/export_onnx.py \
+            scripts/serve_playground.py tests/test_export_onnx.py \
+            tests/test_web/test_onnx_inference.py; then
             extras="${extras:+$extras,}web"
           fi
           if [ -n "$extras" ]; then
