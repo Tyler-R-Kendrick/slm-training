@@ -6342,3 +6342,13 @@ serve, resume, or use them as parents. Retain E897 and replace the overlong arm
 with a short focused typed-role continuation mixed against the base corpus.
 Full evidence:
 [typed-role scratch attempts](iter-e898-typed-role-scratch-attempts-20260722.md).
+
+# E899 — focused typed-role corpus (2026-07-22)
+
+E899 contains only the two E897 fixtures needed to guarantee typed
+`Tabs.items` and paired-card exposure in a short continuation. Unchanged strict
+gates admit 2/2 Silver, quality-1.0 rows with zero rejects, warnings,
+decontamination hits, sanitizer fallbacks, recommendations, or experiment
+candidates. Retain E899 as a focused input mixed with the E851 base through
+replay; admission alone is not model or ship evidence. Full evidence:
+[focused typed-role corpus](iter-e899-typed-role-focus-20260722.md).

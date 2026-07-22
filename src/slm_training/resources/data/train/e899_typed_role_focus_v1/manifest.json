@@ -1,0 +1,178 @@
+{
+  "version": "e899_typed_role_focus_v1",
+  "kind": "train",
+  "profile": "strict",
+  "source": "fixture",
+  "records": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/stats.json",
+  "quality_report": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/quality_report.json",
+  "rejected": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/rejected.jsonl",
+  "synthesis_feedback": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/synthesis_feedback.json",
+  "record_count": 2,
+  "ids": [
+    "train_card_stack_01",
+    "train_tabs_01"
+  ],
+  "split_group_ids": [],
+  "prompt_fingerprints": [
+    "32d64606979148fe4d9ed702e5854fff0a0893aa11201c633ea4b42c0c3c57b1",
+    "57a0651f4b2cc77f34735c0f76c27105f51649ce432c704b5e91dc4d547459f8"
+  ],
+  "openui_fingerprints": [
+    "12b8340898bd75d6632d83fac4b960a279547f1a2ca3bbc63bfd1a230d3de600",
+    "4a4c006e2805871787021f6ad88fe2657d71f8d07b58d85903b94a15b6ffc800"
+  ],
+  "structure_fingerprints": [
+    "a562a7550ec74f50ba34c00109898a62096df68c9e231e0a10bdae85ce3a3e7f",
+    "bee6377f552c2329e319a4b0c340c085af251d1027cf7b2698492d299be4b990"
+  ],
+  "pair_fingerprints": [
+    "2d23964166ae72d6253b697ad60831bdfc7c74ef3e4cab5930e2d3d61ff7cc37",
+    "cb869c6402c3e6a197806dce155193a89ee1ff8da70f2df41e6091e61597d77b"
+  ],
+  "design_md_fingerprints": [
+    "36462924112a9466757c62f2ad607f81ab7ae005794643c91622f1f04a9a957c",
+    "ce686e8212db4316327cea6fea3e508124ac22e8d098f9d523f7aef6665fb2b8"
+  ],
+  "content_fingerprint": "d037a43b1c210a3b58fbf2d5d1c76480f8f494562f138477a4706e6fc12e31d6",
+  "source_families": {
+    "families": {
+      "human_curated": {
+        "unique_records": 2,
+        "unique_root_parents": 2,
+        "prompt_chars": 130,
+        "target_chars": 486,
+        "target_tokens": 253,
+        "records_per_root_parent": {
+          "max": 1,
+          "p50": 1,
+          "p95": 1
+        }
+      }
+    },
+    "total_records": 2,
+    "unique_root_parents": 2,
+    "records_per_root_parent": {
+      "max": 1,
+      "p50": 1,
+      "p95": 1
+    },
+    "cluster_exposure": {
+      "unique_clusters": 2,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    }
+  },
+  "governance": {
+    "croissant.json": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/governance/dataset.spdx.json"
+  },
+  "mixture": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e899_typed_role_focus_v1/synthesis_telemetry.jsonl",
+  "synthesis_telemetry_sha256": "23c6860edb67f06ca3f0e798c739f097c22e5c30e33d075637ab20440619e3ff",
+  "diffusion_online": {
+    "policies": [
+      "uniform",
+      "contiguous",
+      "statement",
+      "ast_subtree",
+      "reference",
+      "edit_local",
+      "disjoint",
+      "all_mask",
+      "expansion",
+      "contraction",
+      "reorder",
+      "macro_substitution"
+    ],
+    "mask_min": 0.15,
+    "mask_max": 0.85,
+    "overallocate": 8,
+    "length_buckets": [
+      32,
+      64,
+      96,
+      128,
+      192,
+      256,
+      384,
+      512
+    ],
+    "max_length": null
+  },
+  "built_at": "2026-07-22T21:46:37.311706+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6527d6a1f5a68008f8f78c9783874a57971fad94",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v22"
+    },
+    "stamped_at": "2026-07-22T21:46:37.333925+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e899_typed_role_focus_v1",
+  "immutable": true,
+  "trace_id": "f1fcab6fa8df105212cf010cf439d68e",
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "18ba644aaac024c987be515ca0175f0c627593e0d558dc6e24838574831bdf8d",
+      "size": 2520
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "378a28542a2fe51d2dacaa55f309a9066d899c59e8e702494dfd513c2bbdc971",
+      "size": 410
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "f5cd354735e623b9f46d898cfd6237260f4f6c579934e5578639cc72d3171945",
+      "size": 1022
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "eae52c20b7454fd19fe4ed4c23d69647574758e7bcbbb5ef91c3947c1eb3c2c3",
+      "size": 11985
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "7d8bde4783e80c66e610d12911869c9a5136370d141de389ba84bb785fcc6ab0",
+      "size": 3901
+    },
+    {
+      "path": "quality_report.json",
+      "sha256": "e561dc9331a2039d5b5ae0431169e1c1ca37a4cc7c8e8cac0da032d40646321b",
+      "size": 3859
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "46777a4242d2975127e37e0a580c20202e811498c2ce71b8f151ef50adedae1d",
+      "size": 12433
+    },
+    {
+      "path": "rejected.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "stats.json",
+      "sha256": "0416f3a5651d5c7864ba72c4cf75ad48af8a7aaf6ff93972e4c1113124049bee",
+      "size": 8015
+    },
+    {
+      "path": "synthesis_feedback.json",
+      "sha256": "59e0b302c70bf34aa7bae7141293aa7508200ee9e75adc9976160ce231d2f964",
+      "size": 784
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "23c6860edb67f06ca3f0e798c739f097c22e5c30e33d075637ab20440619e3ff",
+      "size": 191
+    }
+  ]
+}
