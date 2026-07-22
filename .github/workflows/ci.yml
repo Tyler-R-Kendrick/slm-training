@@ -28,15 +28,22 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
-          npm ci &
-          root_pid=$!
-          npm --prefix src/apps/openui_bridge ci &
-          openui_pid=$!
-          npm --prefix src/apps/design_md_bridge ci &
-          design_pid=$!
-          npm --prefix src/apps/graphql_bridge ci &
-          graphql_pid=$!
+          need_node=false
+          if ! git diff --quiet "$BASE_SHA"...HEAD -- \
+            package.json package-lock.json src/apps \
+            src/slm_training/web/static/openui scripts/validate_page_dsl.py; then
+            need_node=true
+            node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
+            npm ci &
+            root_pid=$!
+            npm --prefix src/apps/openui_bridge ci &
+            openui_pid=$!
+            npm --prefix src/apps/design_md_bridge ci &
+            design_pid=$!
+            npm --prefix src/apps/graphql_bridge ci &
+            graphql_pid=$!
+          fi
+          echo "NEED_NODE=$need_node" >> "$GITHUB_ENV"
 
           python -m pip install --only-binary=:all: \
             --index-url https://download.pytorch.org/whl/cpu \
@@ -61,10 +68,12 @@ jobs:
             python -m pip install -e ".[$extras]"
           fi
 
-          wait "$root_pid"
-          wait "$openui_pid"
-          wait "$design_pid"
-          wait "$graphql_pid"
+          if [ "$need_node" = true ]; then
+            wait "$root_pid"
+            wait "$openui_pid"
+            wait "$design_pid"
+            wait "$graphql_pid"
+          fi
       - name: Validate repository organization
         run: python -m scripts.repo_policy
       - run: ruff check .
@@ -74,6 +83,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
       - name: Validate dashboard OpenUI page programs are in sync
+        if: env.NEED_NODE == 'true'
         run: python scripts/validate_page_dsl.py --check
       - name: Verify checkpoint references are resolvable and provenanced
         run: python -m scripts.verify_checkpoint_references --check
