@@ -74,17 +74,31 @@ jobs:
             wait "$design_pid"
             wait "$graphql_pid"
           fi
-      - name: Validate repository organization
-        run: python -m scripts.repo_policy
-      - run: ruff check .
-      - run: python -m compileall -q src scripts tests
       - name: Run changed regression tests
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
-      - name: Validate dashboard OpenUI page programs are in sync
-        if: env.NEED_NODE == 'true'
-        run: python scripts/validate_page_dsl.py --check
+
+  python-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install static-check dependencies
+        run: |
+          python -m pip install --no-deps -e .
+          python -m pip install "ruff>=0.9,<1" "pydantic>=2.7,<3"
+      - name: Validate repository organization
+        run: python -m scripts.repo_policy
+      - run: ruff check .
+      - run: python -m compileall -q src scripts tests
       - name: Verify checkpoint references are resolvable and provenanced
         run: python -m scripts.verify_checkpoint_references --check
       - name: Verify version stamps and component bumps
@@ -120,6 +134,8 @@ jobs:
           python -m scripts.build_test_data --source both --version ci --train-manifest outputs/data/train/ci/manifest.json
           test -s outputs/data/train/ci/quality_report.json
           test -f outputs/data/train/ci/rejected.jsonl
+      - name: Validate dashboard OpenUI page programs are in sync
+        run: python scripts/validate_page_dsl.py --check
       - name: Persist CI dataset metadata (manifest + stats + quality report)
         uses: actions/upload-artifact@v4
         with:
