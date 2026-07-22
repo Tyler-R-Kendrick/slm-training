@@ -371,7 +371,9 @@ def test_write_ship_gates_stamps_payload(tmp_path: Path) -> None:
     assert on_disk["version_stamp"]["stamp_schema"] == "version_stamp/v1"
 
 
-def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
+def test_evaluate_suites_scoreboard(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
     train_dir.mkdir()
@@ -415,11 +417,12 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     )
     model = StubModel(noise_rate=0.0, seed=0)
     model.forward(records)
-    metrics = evaluate(config, model=model)
+    metrics = evaluate(config, model=model, publish_agentv=False)
     assert "reward_score" in metrics
     stamp = metrics["version_stamp"]
     assert stamp["stamp_schema"] == "version_stamp/v1"
     assert set(stamp["components"]) == {
+        "config.levers",
         "harness.model_build.eval",
         "evals.meaningful_program",
         "evals.scoring",
@@ -438,9 +441,14 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert metrics["binding_aware_meaningful_v2_coverage"] == 0.0
     assert metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
 
+    monkeypatch.setattr(
+        "slm_training.evals.agentv.publish_model_evaluation",
+        lambda *_args, **_kwargs: {},
+    )
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
     assert board["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+    assert "config.levers" in board["version_stamp"]["components"]
     assert "harness.model_build.eval" in board["version_stamp"]["components"]
     assert board["checkpoint"] is None
     assert board["checkpoint_sha256"] is None
@@ -575,7 +583,7 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
         run_id="request-only",
         model_name="stub",
     )
-    metrics = evaluate(config, model=RequestOnlyModel())
+    metrics = evaluate(config, model=RequestOnlyModel(), publish_agentv=False)
     assert metrics["raw_syntax_validity"] == 1.0
     assert metrics["contract_precision"] == 1.0
     assert metrics["contract_recall"] == 1.0

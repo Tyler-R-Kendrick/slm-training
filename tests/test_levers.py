@@ -2,6 +2,8 @@ from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
     HF_JOB_TIMEOUT,
@@ -122,6 +124,7 @@ def test_runtime_companion_dependencies_are_discoverable_and_fail_closed() -> No
         output_tokenizer="lexer",
         compiler_decode_mode="tree",
         semantic_role_decode_weight=2.0,
+        slot_contract_in_context=False,
         slot_contract_constrained_decode=False,
         template_fill_decode=False,
         honest_slot_contract=False,
@@ -139,11 +142,37 @@ def test_runtime_companion_dependencies_are_discoverable_and_fail_closed() -> No
         {
             "honest_slot_contract": True,
             "semantic_role_contract_in_context": True,
+            "slot_contract_in_context": True,
             "slot_contract_constrained_decode": True,
         },
         {
             "honest_slot_contract": True,
             "semantic_role_contract_in_context": True,
+            "slot_contract_in_context": True,
             "template_fill_decode": True,
         },
     ]
+
+
+def test_semantic_role_recipe_requires_visible_slot_inventory() -> None:
+    with pytest.raises(ValueError, match="slot_contract_in_context"):
+        ModelBuildConfig(
+            train_dir=Path("outputs/data/train"),
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            semantic_role_decode_weight=2.0,
+            slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
+            semantic_role_contract_in_context=True,
+        )
+
+    ModelBuildConfig(
+        train_dir=Path("outputs/data/train"),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        semantic_role_decode_weight=2.0,
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        honest_slot_contract=True,
+        semantic_role_contract_in_context=True,
+    )

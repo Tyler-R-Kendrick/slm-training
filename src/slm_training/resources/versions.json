@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-22",
+          "note": "Require visible slot inventory whenever slot-aware or semantic-role decode levers are enabled"
+        },
         {
           "version": "v14",
           "date": "2026-07-22",
@@ -2682,7 +2687,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v42",
+      "version": "v43",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2692,6 +2697,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v43",
+          "date": "2026-07-22",
+          "note": "Include the canonical lever-contract version in eval cache identity and every suite or scoreboard version stamp"
+        },
         {
           "version": "v42",
           "date": "2026-07-22",
@@ -3821,6 +3831,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v210",
+          "date": "2026-07-22",
+          "note": "no-bump: keep compiler test fixtures valid under the stricter central slot-inventory companion contract; model behavior is unchanged"
+        },
         {
           "version": "v210",
           "date": "2026-07-22",

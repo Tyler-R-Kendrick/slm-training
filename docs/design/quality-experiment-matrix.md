@@ -5826,3 +5826,24 @@ was created or synced.
 
 Evidence: [JSON](iter-e745-lexer-bound-role-continuation-20260722.json) and
 [notes](iter-e745-lexer-bound-role-continuation-20260722.md).
+
+## E746 visible slot-inventory contract
+
+E746 corrects the E745 diagnosis: the evaluator did not need to infer an
+inventory from marker spellings. The E745 recipe enabled slot-aware and
+semantic-role decode with `slot_contract_in_context=false`, so the strict
+contract was incomplete. Lever registry v15 now requires visible slot
+inventory for every such lever and rejects the old combination during config
+construction, before artifacts. Eval harness v43 stamps the lever-contract
+version into cache keys, suite results, and scoreboards.
+
+The matched local CPU replay (`n=3`, unchanged E735 checkpoint) changes only
+`slot_contract_in_context false -> true`. Predictions and all model-quality
+metrics are unchanged: parse, meaning-v1, fidelity, and validity remain 1.0;
+structure remains 0.8308, recall 0.75, reward 0.9370, and 64 symbols are
+emitted. Because the required inventory is explicitly visible, strict-v2 and
+coverage both move 0→1 without any evaluator change. AgentV remains 0/1, so
+this is not a ship result. No checkpoint was created or synced.
+
+Evidence: [JSON](iter-e746-visible-slot-inventory-contract-20260722.json) and
+[notes](iter-e746-visible-slot-inventory-contract-20260722.md).
