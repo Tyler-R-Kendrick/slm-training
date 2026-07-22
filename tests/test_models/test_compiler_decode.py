@@ -2600,6 +2600,37 @@ def test_lexer_typed_item_margin_abstains_for_recursive_unique_item() -> None:
     )
 
 
+def test_lexer_schema_types_prefer_recursive_unique_item() -> None:
+    model = _model(
+        compiler_schema_component_types=True,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Tabs([", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    binder_id = tokenizer.token_to_id["<BIND_1>"]
+    tabs_id = tokenizer.token_to_id["Tabs"]
+    item_id = tokenizer.token_to_id["TabItem"]
+    model._semantic_plan_action_counts = [{tabs_id: 1}]
+    model._slot_contracts = [[":tab", ":content"]]
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        prefix,
+        (binder_id, item_id),
+        torch.tensor([9.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0]
+
+
 def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> None:
     model = _model(schema_role_slot_decode_weight=2.0)
     tokenizer = model.tokenizer

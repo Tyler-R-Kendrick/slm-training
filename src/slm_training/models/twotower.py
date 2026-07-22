@@ -7426,17 +7426,22 @@ class TwoTowerModel(nn.Module):
                 )
                 for name in unique_required
             )
+            schema_component_types = bool(
+                getattr(self.config, "compiler_schema_component_types", False)
+            )
             unique_schema_item_ids = {
                 token_id
                 for token_id in self._component_inventory_token_ids()
-                if unique_item_is_closed_leaf
+                if (unique_item_is_closed_leaf or schema_component_types)
                 and str(self.tokenizer.id_to_token.get(token_id, ""))
                 .removeprefix("COMP:")
                 .removeprefix("+")
                 in allowed_components
             }
             preferred_item_ids = planned_item_ids | (
-                unique_schema_item_ids if typed_margin > 0.0 else set()
+                unique_schema_item_ids
+                if typed_margin > 0.0 or schema_component_types
+                else set()
             )
             if typed_margin > 0.0 and allowed_components and not preferred_item_ids:
                 return None
@@ -7449,7 +7454,11 @@ class TwoTowerModel(nn.Module):
             ):
                 return None
             close_id = self.tokenizer.token_to_id.get("]")
-            if close_id not in candidate_ids and typed_margin <= 0.0:
+            if (
+                close_id not in candidate_ids
+                and typed_margin <= 0.0
+                and not (schema_component_types and unique_schema_item_ids)
+            ):
                 return None
             targets = [
                 position

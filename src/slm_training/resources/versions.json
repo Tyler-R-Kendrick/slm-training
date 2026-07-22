@@ -4106,7 +4106,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v243",
+      "version": "v244",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4130,6 +4130,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v244",
+          "date": "2026-07-22",
+          "note": "Use opt-in official schema typing to prefer the unique recursive inline item before its slot resources are consumed by a forward declaration"
+        },
         {
           "version": "v243",
           "date": "2026-07-22",

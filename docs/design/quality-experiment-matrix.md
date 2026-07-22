@@ -6414,3 +6414,17 @@ properties in E920 causes two timeouts and reward 0.5086. Retain the generalized
 capability default off, reject the E891 treatments, and target typed declaration
 resource planning next. AgentV is 0/5; no ship gates or checkpoint changes.
 Full evidence: [schema-component results](iter-e916-e920-schema-component-types-20260722.md).
+
+# E921-E922 — schema-aware recursive inline items (2026-07-22)
+
+The default-off v244 path uses an official unique typed-array item type to
+prefer the recursive inline component before a forward binder consumes its
+slots. Settings and input become compact strict-v2-valid programs with slot
+fidelity and gold type recall 1.0, but form and dual-card still time out and
+tabs reaches an empty completion forest after an optional-argument comma.
+Against same-revision E921, E922 raises strict-v2 0.2→0.4 but drops parse
+1.0→0.6, slot fidelity 0.5133→0.4333, and reward 0.7826→0.5110. Retain the
+generalized capability default off, reject the treatment, and target
+completion-aware optional recursive arguments next. AgentV is 0/2; no ship
+gates or checkpoint changes. Full evidence:
+[schema-inline results](iter-e921-e922-schema-inline-items-20260722.md).
