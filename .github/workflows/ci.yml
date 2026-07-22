@@ -24,17 +24,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            src/apps/openui_bridge/package-lock.json
-            src/apps/design_md_bridge/package-lock.json
-            src/apps/graphql_bridge/package-lock.json
       - name: Install Python and Node dependencies
         run: |
+          node -e 'const major=Number(process.versions.node.split(".")[0]); if (major < 20 || major >= 23) process.exit(1)'
           npm ci &
           root_pid=$!
           npm --prefix src/apps/openui_bridge ci &
