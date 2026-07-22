@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-22",
+          "note": "Expose trained root-reference identity supervision and decoding on the lexer compiler path"
+        },
         {
           "version": "v6",
           "date": "2026-07-22",
@@ -2899,13 +2904,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-22",
+          "note": "Select strict-subset root-reference identity records through either choice or lexer grammar-native targets"
+        },
         {
           "version": "v18",
           "date": "2026-07-21",
@@ -3734,7 +3744,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v193",
+      "version": "v194",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3756,6 +3766,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v194",
+          "date": "2026-07-22",
+          "note": "Add lexer-native root-reference identity supervision and compiler-path ranking; reject serving checkpoints missing enabled root heads"
+        },
         {
           "version": "v193",
           "date": "2026-07-22",

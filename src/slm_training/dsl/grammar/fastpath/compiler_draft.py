@@ -380,6 +380,60 @@ def root_declaration_reference_arity_target(
     return int(target), max(int(target), bound)
 
 
+def root_declaration_reference_identity_target(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[frozenset[int], int] | None:
+    """Return lexer root-reference identities plus available bound declarations."""
+    try:
+        bind_ids = set(tokenizer.kind_ids("bind"))
+        root = int(tokenizer.bind_id(0))
+        equal_id = int(tokenizer.token_to_id["="])
+        newline_id = tokenizer.token_to_id.get("NL")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+    statements: list[list[int]] = []
+    current: list[int] = []
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            if current:
+                statements.append(current)
+            current = []
+        else:
+            current.append(token_id)
+    if current:
+        statements.append(current)
+    declarations: list[int] = []
+    root_references: list[int] | None = None
+    for statement in statements:
+        declaration_at = next(
+            (
+                index
+                for index, token_id in enumerate(statement[:-1])
+                if token_id in bind_ids and statement[index + 1] == equal_id
+            ),
+            None,
+        )
+        if declaration_at is None:
+            continue
+        declaration = int(statement[declaration_at])
+        declarations.append(declaration)
+        if declaration == root:
+            root_references = [
+                int(token_id)
+                for token_id in statement[declaration_at + 2 :]
+                if token_id in bind_ids
+            ]
+    if root_references is None:
+        return None
+    bound = [binder for binder in declarations if binder != root]
+    identity = {binder: index for index, binder in enumerate(bound)}
+    references = frozenset(
+        identity[binder] for binder in root_references if binder in identity
+    )
+    return references, len(bound)
+
+
 def active_parent_component_ids(
     tokenizer: Any, prefix_ids: list[int]
 ) -> tuple[int, ...]:
@@ -1258,6 +1312,7 @@ __all__ = [
     "active_declaration_binder_id",
     "active_declaration_reference_count",
     "root_declaration_reference_arity_target",
+    "root_declaration_reference_identity_target",
     "active_parent_component_ids",
     "binder_reference_arities",
     "CompletionForest",

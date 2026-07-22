@@ -190,7 +190,7 @@ def test_model_build_config_accepts_valid_schedules_and_weights() -> None:
         "root_reference_identity_decode_weight",
     ],
 )
-def test_model_build_config_rejects_choice_only_reference_weights_for_lexer(
+def test_model_build_config_rejects_reference_weights_without_compiler_path(
     weight_name: str,
 ) -> None:
     with pytest.raises(ValueError, match="unsupported enabled levers"):
@@ -241,8 +241,11 @@ def test_model_build_config_accepts_lexer_levers_with_tree_decode() -> None:
         compiler_decode_mode="tree",
         component_plan_decode_weight=1.0,
         binder_arity_decode_weight=1.0,
+        root_reference_identity_loss_weight=1.0,
+        root_reference_identity_decode_weight=1.0,
     )
     assert cfg.binder_arity_decode_weight == 1.0
+    assert cfg.root_reference_identity_decode_weight == 1.0
 
 
 def test_twotower_rejects_untrained_root_arity_decode_head() -> None:
