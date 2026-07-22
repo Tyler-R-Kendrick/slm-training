@@ -6075,3 +6075,15 @@ all train/eval rows. E828 completed 120 local CPU steps in 14.46 seconds. E829
 held-out n=5 finalized with parse/meaning/fidelity/reward 0.0, structure 0.0108,
 recall 0.0667, four bounded timeouts, and AgentV 0/1. The checkpoint is rejected.
 Full evidence: [target-slot inventory results](iter-e822-e829-target-slot-inventory-20260722.md).
+
+# E830-E831 — strict request harness (2026-07-22)
+
+E829's zero-parse/four-timeout result was a permissive evaluation-harness
+failure, not a requirement for the model to convert content or marker names.
+The same checkpoint under E830's strict compiler-tree policy reaches held-out
+parse 1.0, fidelity 0.8857, reward 0.9195, and zero timeout/fallback. E831 proves
+the canonical CLI now selects that policy without a flag and persists the
+actual opaque request inventory; smoke n=1 reaches parse/meaning-v1 1.0 and
+reward 0.874 in 2.73 seconds. Strict-v2 and AgentV remain zero, so the checkpoint
+is still rejected. Full evidence:
+[strict request harness results](iter-e830-e831-strict-request-harness-20260722.md).

@@ -66,9 +66,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
         "checkpoint_declared",
         "strict_compiler_tree",
     ]
-    assert catalog["root_reference_arity_loss_weight"][
-        "supported_configurations"
-    ] == [
+    assert catalog["evaluation_policy"]["default"] == "strict_compiler_tree"
+    assert catalog["evaluation_policy"]["config_default"] == "checkpoint_declared"
+    assert catalog["root_reference_arity_loss_weight"]["supported_configurations"] == [
         {"model_name": "twotower", "output_tokenizer": "choice"},
         {
             "model_name": "twotower",
@@ -84,11 +84,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
             "model_name": "twotower",
             "output_tokenizer": "lexer",
             "compiler_decode_mode": ["restricted", "tree"],
-        }
+        },
     ]
-    assert catalog["semantic_plan_decode_weight"][
-        "supported_configurations"
-    ] == [
+    assert catalog["semantic_plan_decode_weight"]["supported_configurations"] == [
         {"model_name": "twotower", "output_tokenizer": "choice"},
         {
             "model_name": "twotower",
@@ -96,16 +94,22 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
             "compiler_decode_mode": ["restricted", "tree"],
         },
     ]
-    assert catalog["semantic_plan_margin_decode_weight"][
-        "supported_configurations"
-    ] == catalog["semantic_plan_decode_weight"]["supported_configurations"]
-    assert catalog["semantic_plan_typed_array_nonempty_margin_decode_weight"][
-        "supported_configurations"
-    ] == catalog["semantic_plan_decode_weight"]["supported_configurations"]
+    assert (
+        catalog["semantic_plan_margin_decode_weight"]["supported_configurations"]
+        == catalog["semantic_plan_decode_weight"]["supported_configurations"]
+    )
+    assert (
+        catalog["semantic_plan_typed_array_nonempty_margin_decode_weight"][
+            "supported_configurations"
+        ]
+        == catalog["semantic_plan_decode_weight"]["supported_configurations"]
+    )
     assert catalog["schema_role_slot_decode_weight"]["prohibited"] is True
     assert "supported_configurations" not in catalog["schema_role_slot_decode_weight"]
     assert catalog["slot_coverage_close_decode_weight"]["prohibited"] is True
-    assert "supported_configurations" not in catalog["slot_coverage_close_decode_weight"]
+    assert (
+        "supported_configurations" not in catalog["slot_coverage_close_decode_weight"]
+    )
     assert catalog["binder_arity_decode_weight"]["supported_configurations"] == [
         {
             "model_name": "twotower",
@@ -120,7 +124,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
 
 def test_every_decode_weight_has_a_capability_requirement() -> None:
     decode_weights = {
-        item.name for item in fields(ModelBuildConfig) if item.name.endswith("decode_weight")
+        item.name
+        for item in fields(ModelBuildConfig)
+        if item.name.endswith("decode_weight")
     }
     assert decode_weights <= (
         LEVER_REQUIREMENTS.keys() | PROHIBITED_TEMPLATE_SEMANTIC_LEVERS.keys()
@@ -136,9 +142,7 @@ def test_learned_decode_dependencies_are_discoverable_and_fail_closed() -> None:
     )
 
     assert untrained_decode_levers(config) == {
-        "root_reference_arity_decode_weight": (
-            "root_reference_arity_loss_weight",
-        )
+        "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",)
     }
     assert lever_catalog()["root_reference_arity_decode_weight"][
         "requires_trained_any"

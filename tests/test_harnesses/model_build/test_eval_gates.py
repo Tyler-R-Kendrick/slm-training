@@ -405,9 +405,7 @@ def test_certified_fallback_fails_when_unmeasured() -> None:
     del suites["smoke"]["fallback_count"]
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any(
-        "smoke:certified_fallback unmeasured" in f for f in result["failures"]
-    )
+    assert any("smoke:certified_fallback unmeasured" in f for f in result["failures"])
 
 
 def test_certified_fallback_fails_on_measured_fallbacks() -> None:
@@ -425,7 +423,9 @@ def test_ship_gates_fail_on_insufficient_suite_n() -> None:
     suites["smoke"]["n"] = 3
     result = evaluate_ship_gates(suites)
     assert result["pass"] is False
-    assert any("smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"])
+    assert any(
+        "smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"]
+    )
 
 
 def test_ship_gates_min_n_overridable_per_suite_policy() -> None:
@@ -444,9 +444,10 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
     first = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     second = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
     policy = first["meaningful_metric_policy"]
-    assert policy["threshold_version"] == second["meaningful_metric_policy"][
-        "threshold_version"
-    ]
+    assert (
+        policy["threshold_version"]
+        == second["meaningful_metric_policy"]["threshold_version"]
+    )
     assert policy["threshold_version"].startswith("custom:")
     assert policy["meaningful_program_v1"]["thresholds"] == "request_thresholds"
     assert policy["binding_aware_meaningful_v2"]["thresholds"] is None
@@ -532,7 +533,9 @@ def test_evaluate_suites_scoreboard(
     assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
     assert metrics["binding_aware_meaningful_v2_rate_strict"] == 0.0
     assert metrics["binding_aware_meaningful_v2_coverage"] == 0.0
-    assert metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+    assert (
+        metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
+    )
 
     monkeypatch.setattr(
         "slm_training.evals.agentv.publish_model_evaluation",
@@ -718,6 +721,7 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["contract_precision"] == 1.0
     assert metrics["contract_recall"] == 1.0
     assert metrics["fallback_count"] == 0
+    assert metrics["details"][0]["generation_request"]["slot_contract"] == [":slot_0"]
 
 
 def test_evaluate_passes_reported_canvas_cap_to_request_generation(

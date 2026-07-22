@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-22",
+          "note": "Centralize the fail-closed evaluation policy and make strict compiler-tree decoding the canonical run default"
+        },
         {
           "version": "v19",
           "date": "2026-07-22",
@@ -2748,7 +2753,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v47",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2759,6 +2764,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v48",
+          "date": "2026-07-22",
+          "note": "Default canonical evaluation to strict symbol-only decoding and persist the actual opaque slot request inventory"
+        },
         {
           "version": "v47",
           "date": "2026-07-22",
@@ -3956,6 +3966,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v227",
+          "date": "2026-07-22",
+          "note": "no-bump: reference the centralized evaluation-policy identifier from ModelBuildConfig without changing model behavior"
+        },
         {
           "version": "v227",
           "date": "2026-07-22",

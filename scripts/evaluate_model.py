@@ -20,7 +20,10 @@ from slm_training.harnesses.model_build.ship_gates import (
     evaluate_ship_gates,
     write_ship_gates,
 )
-from slm_training.levers import DEFAULT_DECODE_TIMEOUT_SECONDS
+from slm_training.levers import (
+    DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_EVALUATION_POLICY,
+)
 
 
 def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
@@ -72,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--evaluation-policy",
         choices=tuple(EVALUATION_POLICIES),
-        default="checkpoint_declared",
+        default=DEFAULT_EVALUATION_POLICY,
         help=(
             "Atomic evaluation policy preset. Selecting compiler tree mode "
             "always normalizes this to strict_compiler_tree."
@@ -672,9 +675,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
-        semantic_role_contract_in_context=(
-            args.semantic_role_contract_in_context
-        ),
+        semantic_role_contract_in_context=(args.semantic_role_contract_in_context),
         slot_contract_constrained_decode=(
             args.slot_contract_constrained_decode or args.ship_gates
         ),
@@ -713,18 +714,12 @@ def main(argv: list[str] | None = None) -> int:
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
         schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
-        required_slot_margin_decode_weight=(
-            args.required_slot_margin_decode_weight
-        ),
+        required_slot_margin_decode_weight=(args.required_slot_margin_decode_weight),
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
-        semantic_plan_margin_decode_weight=(
-            args.semantic_plan_margin_decode_weight
-        ),
+        semantic_plan_margin_decode_weight=(args.semantic_plan_margin_decode_weight),
         semantic_plan_seed_decode_weight=args.semantic_plan_seed_decode_weight,
         semantic_plan_inline_decode_weight=args.semantic_plan_inline_decode_weight,
-        semantic_plan_binding_decode_weight=(
-            args.semantic_plan_binding_decode_weight
-        ),
+        semantic_plan_binding_decode_weight=(args.semantic_plan_binding_decode_weight),
         semantic_plan_root_decode_weight=args.semantic_plan_root_decode_weight,
         semantic_plan_root_margin_decode_weight=(
             args.semantic_plan_root_margin_decode_weight
@@ -743,9 +738,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
-        binder_component_plan_decode_weight=(
-            args.binder_component_plan_decode_weight
-        ),
+        binder_component_plan_decode_weight=(args.binder_component_plan_decode_weight),
         binder_topology_decode_weight=args.binder_topology_decode_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
@@ -772,7 +765,9 @@ def main(argv: list[str] | None = None) -> int:
         constraint_debt_routing_signal=args.constraint_debt_routing_signal,
         constraint_debt_routing_threshold_high=args.constraint_debt_routing_threshold_high,
         constraint_debt_routing_threshold_low=args.constraint_debt_routing_threshold_low,
-        constraint_debt_routing_hysteresis=max(1, args.constraint_debt_routing_hysteresis),
+        constraint_debt_routing_hysteresis=max(
+            1, args.constraint_debt_routing_hysteresis
+        ),
         constraint_debt_routing_fallback_policy=args.constraint_debt_routing_fallback_policy,
         constraint_debt_routing_budget_mode=args.constraint_debt_routing_budget_mode,
         constraint_debt_routing_calibrator_path=args.constraint_debt_routing_calibrator_path,

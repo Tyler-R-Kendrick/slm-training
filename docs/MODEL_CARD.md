@@ -33,11 +33,12 @@ completion inventory contains only target-used slots. Every
 older checkpoint below is intentionally incompatible with current loading,
 serving, resume, promotion, and evaluation paths and remains provenance only.
 E820 is invalid because metadata-only values polluted its completion inventory.
-E828 is a rejected local scratch diagnostic, not a serving candidate.
+E828 is a rejected local scratch diagnostic, not a serving candidate. E830
+supersedes E829's permissive-harness metrics for this checkpoint.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
-| E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1` | CPU scratch output-contract-v4 baseline | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/checkpoints/last.pt` (local) | 120 steps / 14.46s, SHA `84f35247…6df38e36`; held-out n=5 parse/meaning/fidelity 0.0, four bounded decode timeouts, AgentV 0/1 — **compatible diagnostic, rejected; no sync or promotion** ([results](design/iter-e822-e829-target-slot-inventory-20260722.md)) |
+| E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1` | CPU scratch output-contract-v4 baseline | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/checkpoints/last.pt` (local) | 120 steps / 14.46s, SHA `84f35247…6df38e36`; strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / fidelity 0.8857 / reward 0.9195 with zero timeout/fallback, but strict-v2 and AgentV remain 0 — **compatible diagnostic, rejected; no sync or promotion** ([results](design/iter-e830-e831-strict-request-harness-20260722.md)) |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1` | CPU scratch output-contract-v2 corrected root-arity objective | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/checkpoints/last.pt` (local) | 140 steps / 82.07s, SHA `710e2dbe…68b970`; impossible smoke argmax class 41 becomes class 1, but weight 0/1 quality is identical and strict-v2 remains 0.0 — **objective fix retained, checkpoint rejected** ([results](design/iter-e735-root-arity-full-head-20260722.md)) |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1` | CPU scratch output-contract-v2 invalid capability declaration | `outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt` (local) | 140 steps / 78.98s, SHA `cddb5f28…5167fc`; matched weight 0/1 eval has zero identity applications — **invalidated; never sync, promote, serve, resume, or use as parent** ([results](design/iter-e733-lexer-root-identity-reachability-20260722.md)) |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1` | CPU scratch output-contract-v2 root-arity objective | `outputs/runs/e731-symbol-only-root-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 82.20s, SHA `bff1e0e6…2fbb88`; weights 0/1/2 are prediction-identical and strict-v2 remains 0.0 — **capability retained, checkpoint rejected** ([results](design/iter-e731-lexer-root-arity-symbol-only-20260722.md)) |
@@ -274,6 +275,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e830-target-slots-strict-harness-heldout-n5-r1`) | 5 | 1.0 | 0.8857 | 0.3523 | 0.9195 | No — meaning-v1 0.2, strict-v2 0.0, AgentV 0/1; zero timeout/fallback |
+| smoke (`e831-default-strict-request-evidence-smoke-n1-r1`) | 1 | 1.0 | 0.75 | 0.6625 | 0.874 | No — diagnostic n=1, strict-v2 0.0, AgentV 0/1; canonical default/request-evidence proof |
 | held_out (`e829-target-slots-only-v4-heldout-n5-r1`) | 5 | 0.0 | 0.0 | 0.0108 | 0.0 | No — four bounded decode timeouts, meaning-v1/strict-v2 0.0, AgentV 0/1; v4 diagnostic subset |
 | held_out (`e809-opaque-context-v3-heldout-n5-r1`) | 5 | 0.2 | 0.0333 | 0.0293 | 0.1314 | Invalid provenance — v3 corpus retained caller-authored marker names |
 | smoke (`e714-symbol-only-scratch600-r1`) | 3 | 0.3333 | 1.0 | 0.0880 | 0.0 | No — strict-v2 0.0, AgentV 0/1; compatible diagnostic subset |
@@ -905,7 +908,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-07-22 | `e828-target-slots-only-v4-scratch120-r1` | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/` (local) | Held-out n=5 parse/meaning-v1/strict-v2/fidelity 0.0 / structure 0.0108 / recall 0.0667, AgentV 0/1 | First target-inventory-correct output-contract-v4 checkpoint; 120 CPU steps / 14.46s; explicit no-sync scratch diagnostic, rejected |
+| 2026-07-22 | `e828-target-slots-only-v4-scratch120-r1` | `outputs/runs/e828-target-slots-only-v4-scratch120-r1/` (local) | Strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / strict-v2 0.0 / fidelity 0.8857 / reward 0.9195, AgentV 0/1 | First target-inventory-correct output-contract-v4 checkpoint; 120 CPU steps / 14.46s; E830 supersedes invalid permissive-harness E829 metrics; explicit no-sync scratch diagnostic, rejected |
 | 2026-07-22 | `e820-opaque-slots-v4-scratch120-r1` | `outputs/runs/e820-opaque-slots-v4-scratch120-r1/` (local) | Invalidated before comparison | Metadata-only opaque values polluted the declared completion inventory; no sync or promotion |
 | 2026-07-22 | `e808-opaque-context-v3-scratch120-r1` | `outputs/runs/e808-opaque-context-v3-scratch120-r1/` (local) | Historical held-out n=5 parse 0.2 / meaning 0.0 | Invalidated: v3 data persisted user-defined marker names, so this checkpoint is incompatible provenance only |
 | 2026-07-22 | `e735-symbol-only-root-arity-fullhead140-r1` | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/` (local) | E731 smoke head argmax 41 becomes 1; weight 0/1 smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0, AgentV 0/1 | 140-step / 82.07s explicit no-sync CPU scratch diagnostic; objective correction retained, checkpoint rejected |

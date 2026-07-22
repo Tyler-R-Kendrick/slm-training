@@ -34,6 +34,7 @@ from slm_training.evals.eval_cache import (
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.levers import (
     DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_EVALUATION_POLICY,
     MAX_HARNESS_WALL_SECONDS,
 )
 from slm_training.models.decode_stats import collect_decode_stats
@@ -99,9 +100,15 @@ def _aggregate_scope_contract_metrics(
     def summarize(group: list[dict[str, Any]]) -> dict[str, Any]:
         summary: dict[str, Any] = {"sample_count": len(group)}
         for key in mean_keys:
-            values = [float(row[key]) for row in group if isinstance(row.get(key), (int, float))]
+            values = [
+                float(row[key])
+                for row in group
+                if isinstance(row.get(key), (int, float))
+            ]
             if values:
-                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(values) / len(values)
+                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(
+                    values
+                ) / len(values)
         tp = sum(int(row.get("failure_cone_tp", 0)) for row in group)
         fp = sum(int(row.get("failure_cone_fp", 0)) for row in group)
         fn = sum(int(row.get("failure_cone_fn", 0)) for row in group)
@@ -113,7 +120,9 @@ def _aggregate_scope_contract_metrics(
                 "failure_cone_recall": recall,
                 "failure_cone_f1": (
                     2.0 * precision * recall / (precision + recall)
-                    if precision is not None and recall is not None and precision + recall
+                    if precision is not None
+                    and recall is not None
+                    and precision + recall
                     else None
                 ),
             }
@@ -399,7 +408,7 @@ def _effective_evaluation_policy(
 
     return {
         "evaluation_policy": str(
-            getattr(config, "evaluation_policy", "checkpoint_declared")
+            getattr(config, "evaluation_policy", DEFAULT_EVALUATION_POLICY)
         ),
         "context_backend": value("context_backend"),
         "local_files_only": bool(value("local_files_only")),
@@ -596,9 +605,7 @@ def evaluate(
         suite_limit = getattr(config, "rico_eval_limit", None)
     records = records[
         suite_offset : (
-            suite_offset + max(0, int(suite_limit))
-            if suite_limit is not None
-            else None
+            suite_offset + max(0, int(suite_limit)) if suite_limit is not None else None
         )
     ]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
@@ -754,8 +761,6 @@ def evaluate(
         data = request.to_dict()
         if not getattr(config, "design_md_in_context", False):
             data.pop("design_md", None)
-        if not getattr(config, "slot_contract_in_context", False):
-            data["slot_contract"] = []
         return GenerationRequest.from_dict(data)
 
     def _requests_for(chunk: list[ExampleRecord]) -> list[GenerationRequest]:
@@ -769,9 +774,7 @@ def evaluate(
             with collect_decode_stats() as stats:
                 requests = _requests_for(chunk)
                 try:
-                    predictions = generate_batch_requests(
-                        requests, max_len=canvas_cap
-                    )
+                    predictions = generate_batch_requests(requests, max_len=canvas_cap)
                 except TypeError:
                     predictions = generate_batch_requests(requests)
             _annotate_decode_trace_records(stats, chunk)
@@ -781,9 +784,7 @@ def evaluate(
             return predictions, list(evidence)
         if callable(generate_with_stats) and len(chunk) == 1:
             try:
-                text, stats = generate_with_stats(
-                    chunk[0].prompt, max_len=canvas_cap
-                )
+                text, stats = generate_with_stats(chunk[0].prompt, max_len=canvas_cap)
             except TypeError:
                 text, stats = generate_with_stats(chunk[0].prompt)
             _annotate_decode_trace_records(stats, chunk)
@@ -1087,7 +1088,9 @@ def evaluate(
         upper = 1.0 - wilson_lower_bound(total - successes, total)
         return [round(lower, 4), round(upper, 4)]
 
-    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    run_class = (
+        config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    )
     metrics = {
         "schema_version": SCHEMA_VERSION,
         "run_class": run_class,
@@ -1107,9 +1110,7 @@ def evaluate(
         # "not measured" must never render as a fabricated 0.0.
         "parse_rate": (syntax_parse_ok / document_n) if document_n else None,
         "meaningful_program_rate": (parse_ok / document_n) if document_n else None,
-        "syntax_parse_rate": (
-            (syntax_parse_ok / document_n) if document_n else None
-        ),
+        "syntax_parse_rate": ((syntax_parse_ok / document_n) if document_n else None),
         "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
         "parse_rate_ci95": _wilson_ci95(syntax_parse_ok, document_n),
         "meaningful_program_rate_ci95": _wilson_ci95(parse_ok, document_n),
@@ -1297,8 +1298,11 @@ def evaluate(
         metrics["speculative_stats"] = spec_stats.as_dict()
     if decode_stats_rows:
         from slm_training.models.decode_stats import aggregate_stats
+
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
-        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
+        retries = sum(
+            int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows
+        )
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
 
     # Metrics the active decode policy enforces by construction: consumers must
@@ -1348,9 +1352,14 @@ def evaluate(
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
     # SDE3-01: persist the full suite result for exact replay when enabled.
-    if cache is not None and cache_key is not None and cache.config.mode in (
-        EvalCacheMode.READ_WRITE,
-        EvalCacheMode.REFRESH,
+    if (
+        cache is not None
+        and cache_key is not None
+        and cache.config.mode
+        in (
+            EvalCacheMode.READ_WRITE,
+            EvalCacheMode.REFRESH,
+        )
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)

@@ -36,13 +36,13 @@ summary and the full card whenever a checkpoint is created or promoted.
 
 **Current compatibility:** output contract v4 requires harness-canonical
 `:slot_<ordinal>` markers in persisted train/eval data and nested metadata.
-E828 is the first target-inventory-correct v4 scratch checkpoint; it fails quality gates and
-is not promoted. Every older checkpoint is incompatible provenance only. See
+E828 is the first target-inventory-correct v4 scratch checkpoint; its corrected
+strict-harness eval still fails quality gates and it is not promoted. Every older checkpoint is incompatible provenance only. See
 [the contract](docs/design/symbol-only-output-contract.md).
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
-| E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1/last.pt` | `outputs/runs/…` (local) | First completion-inventory-correct v4 checkpoint; 120 steps / 14.46s, held-out n=5 parse/meaning/fidelity 0.0 with four bounded timeouts — rejected, not ship |
+| E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1/last.pt` | `outputs/runs/…` (local) | First completion-inventory-correct v4 checkpoint; strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / fidelity 0.8857 / reward 0.9195, strict-v2 0.0 and AgentV 0/1 — rejected, not ship |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1/last.pt` | `outputs/runs/…` (local) | Removes impossible class-41 tail prediction, but weight 0/1 smoke quality remains identical and strict-v2 0.0 — fix retained, checkpoint rejected |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1/last.pt` | `outputs/runs/…` (local) | Proposed lever has zero reachable decode applications; config now rejects lexer identity before artifacts — checkpoint invalidated |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1/last.pt` | `outputs/runs/…` (local) | Lexer-native head is executable, but weights 0/1/2 change no choices; smoke strict-v2 0.0 — checkpoint rejected |

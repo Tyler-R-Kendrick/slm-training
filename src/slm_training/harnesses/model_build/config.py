@@ -7,6 +7,7 @@ from pathlib import Path
 
 from slm_training.levers import (
     DEFAULT_DECODE_TIMEOUT_SECONDS,
+    CHECKPOINT_DECLARED_POLICY,
     DEFAULT_OUTPUT_TOKENIZER,
     MAX_HARNESS_WALL_MINUTES,
 )
@@ -23,7 +24,7 @@ class ModelBuildConfig:
     suite: str = "smoke"
     # Atomic policy preset. compiler_decode_mode=tree always selects the strict
     # bundle in eval_policy before validation or artifact creation.
-    evaluation_policy: str = "checkpoint_declared"
+    evaluation_policy: str = CHECKPOINT_DECLARED_POLICY
     # Honesty label stamped into every eval payload (see evals.record_schema
     # RUN_CLASSES): fixture_demo | scratch_matrix | ship_eval.
     run_class: str = "scratch_matrix"
@@ -457,8 +458,12 @@ class ModelBuildConfig:
     # SLM-212 (SDE5-05): default-off constraint-debt routing over decode paths.
     # All modes are default-off; routing only selects among existing MaskGIT /
     # constrained LTR / ASAp decode paths and never changes legal membership.
-    constraint_debt_routing_mode: str = "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
-    constraint_debt_routing_signal: str = "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    constraint_debt_routing_mode: str = (
+        "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
+    )
+    constraint_debt_routing_signal: str = (
+        "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    )
     constraint_debt_routing_threshold_high: float = 2.0
     constraint_debt_routing_threshold_low: float | None = None
     constraint_debt_routing_hysteresis: int = 1

@@ -39,6 +39,24 @@ VERCEL_FUNCTION_INCLUDE_FILES: Final = (
 TEMPLATE_MARKERS_ARE_OPAQUE: Final = True
 DEFAULT_OUTPUT_TOKENIZER: Final = "lexer"
 DEFAULT_DECODE_TIMEOUT_SECONDS: Final = 12.0
+CHECKPOINT_DECLARED_POLICY: Final = "checkpoint_declared"
+STRICT_COMPILER_TREE_POLICY_ID: Final = "strict_compiler_tree"
+# Every evaluation enforces the symbol-only completion boundary independently
+# of checkpoint provenance. The compiler-tree bundle is the canonical default.
+DEFAULT_EVALUATION_POLICY: Final = STRICT_COMPILER_TREE_POLICY_ID
+STRICT_EVALUATION_POLICY: Final = {
+    "grammar_constrained": True,
+    "grammar_ltr_primary": True,
+    "grammar_finalize_validate": True,
+    "slot_contract_constrained_decode": True,
+    "honest_slot_contract": True,
+    "allow_unconstrained_fallback": False,
+}
+STRICT_COMPILER_TREE_POLICY: Final = {
+    **STRICT_EVALUATION_POLICY,
+    "output_tokenizer": DEFAULT_OUTPUT_TOKENIZER,
+    "compiler_decode_mode": "tree",
+}
 PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
     "prompt_semantic_role_contract": "adds user-defined marker labels to training prompts",
     "semantic_role_contract_in_context": "exposes user-defined marker labels",
@@ -138,10 +156,7 @@ SLOT_CONTRACT_DECODE_LEVERS: Final = (
     "required_slot_margin_decode_weight",
 )
 LEVER_COMPANION_REQUIREMENTS: Final = {
-    **{
-        name: _SLOT_CONTRACT_DECODE
-        for name in SLOT_CONTRACT_DECODE_LEVERS
-    },
+    **{name: _SLOT_CONTRACT_DECODE for name in SLOT_CONTRACT_DECODE_LEVERS},
 }
 
 
@@ -168,7 +183,9 @@ def _matches_requirement(config: Any, requirement: dict[str, Any]) -> bool:
     return True
 
 
-def incompatible_lever_requirements(config: Any) -> dict[str, tuple[dict[str, Any], ...]]:
+def incompatible_lever_requirements(
+    config: Any,
+) -> dict[str, tuple[dict[str, Any], ...]]:
     """Return enabled levers for which no executable configuration exists."""
     return {
         name: requirements
@@ -183,9 +200,7 @@ def incompatible_lever_requirements(config: Any) -> dict[str, tuple[dict[str, An
 def _positive_numeric(config: Any, field: str) -> bool:
     value = getattr(config, field, 0.0)
     return (
-        isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and value > 0.0
+        isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0.0
     )
 
 
@@ -216,7 +231,10 @@ def lever_configuration_errors(
 ) -> tuple[str, ...]:
     """Return every canonical lever-contract violation for ``config``."""
     errors: list[str] = []
-    if TEMPLATE_MARKERS_ARE_OPAQUE and getattr(config, "symbol_anonymization", True) is False:
+    if (
+        TEMPLATE_MARKERS_ARE_OPAQUE
+        and getattr(config, "symbol_anonymization", True) is False
+    ):
         errors.append(
             "symbol_anonymization=False is prohibited because template markers are opaque"
         )
@@ -339,7 +357,10 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
             catalog[item.name]["required_reason"] = (
                 "template markers are opaque codec identities"
             )
-        if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
+        if (
+            item.name in checkpoint_defaults
+            and checkpoint_defaults[item.name] != default
+        ):
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]
             )
@@ -381,15 +402,19 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
 
     catalog["evaluation_policy"].update(
         {
+            "default": DEFAULT_EVALUATION_POLICY,
+            "config_default": CHECKPOINT_DECLARED_POLICY,
             "choices": sorted(EVALUATION_POLICIES),
-            "source": "slm_training.harnesses.model_build.eval_policy.EVALUATION_POLICIES",
+            "source": "slm_training.levers.DEFAULT_EVALUATION_POLICY",
         }
     )
     return catalog
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="List canonical OpenUI training levers.")
+    parser = argparse.ArgumentParser(
+        description="List canonical OpenUI training levers."
+    )
     parser.add_argument("--category", default=None)
     args = parser.parse_args(argv)
     catalog = lever_catalog()
