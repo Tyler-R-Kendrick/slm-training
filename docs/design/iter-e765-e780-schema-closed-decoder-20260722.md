@@ -41,3 +41,10 @@ records and asserts the symbol-only contract at that boundary. The canonical
 settings train seed replaces its `notify` and `volume` literals with declared
 markers. Harness train-data v11 records both producer repairs; no acceptance
 gate or threshold changed.
+
+The first PR Python job was cancelled by the unchanged two-minute job cap: a
+cold dependency setup plus 320 serial changed tests exceeded the budget. The
+same selected tests pass locally with four workers in 18.23 seconds in the
+canonical `check_changed` harness, whose worker count is one named constant
+(versus 33.34 seconds serial). Test selection and assertions are unchanged,
+and the workflow requires no special configuration or dependency.
