@@ -176,6 +176,62 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
+def test_existing_corpus_can_be_supplemented_from_fixture_registry(
+    tmp_path: Path,
+) -> None:
+    roots = _seed_file(tmp_path)
+    fixture = ExampleRecord(
+        id="supplement",
+        prompt="Three-item switch group",
+        openui=(
+            'root = SwitchGroup(":slot_0", [a, b, c])\n'
+            'a = SwitchItem(":slot_1", ":slot_2", ":slot_3")\n'
+            'b = SwitchItem(":slot_4", ":slot_5", ":slot_6")\n'
+            'c = SwitchItem(":slot_7", ":slot_8", ":slot_9")'
+        ),
+        placeholders=[f":slot_{index}" for index in range(10)],
+        split="train",
+    )
+    fixture_path = tmp_path / "supplements.jsonl"
+    write_jsonl(fixture_path, [fixture])
+
+    result = build_train_data(
+        TrainDataConfig(
+            source="existing+fixture",
+            derive_from=roots,
+            seed_path=fixture_path,
+            fixture_ids=("supplement",),
+            output_root=tmp_path / "train_data",
+            version="supplemented",
+            synthesizer="none",
+            include_frontier_artifacts=False,
+            include_language_contract=False,
+            include_edit_derivatives=False,
+            repairs_per_program=0,
+        )
+    )
+
+    rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
+    assert {"t1", "t2", "supplement"} <= {row.id for row in rows}
+
+
+def test_unknown_fixture_selection_fails_closed(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unknown fixture ids"):
+        build_train_data(
+            TrainDataConfig(
+                source="fixture",
+                seed_path=_seed_file(tmp_path),
+                fixture_ids=("missing",),
+                output_root=tmp_path / "train_data",
+                synthesizer="none",
+            )
+        )
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
 def test_documentizes_expressions_and_records_target_selection(tmp_path: Path) -> None:
     result = build_train_data(
         TrainDataConfig(

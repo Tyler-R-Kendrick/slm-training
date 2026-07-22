@@ -6183,3 +6183,15 @@ parse/strict/fidelity 0.6667, structure 0.5300, recall 0.5000, reward 0.6327,
 and one timeout; AgentV remained 0/1. Retain the producer and local-first
 harness fixes, reject the checkpoint and broad-mixture promotion. Full evidence:
 [repeated typed-collection results](iter-e844-e849-repeated-typed-collections-20260722.md).
+
+# E850-E853 — surgical typed-collection supplement (2026-07-22)
+
+The shared builder gained fail-closed explicit fixture selection after E850
+showed that composing the full fixture registry was overbroad. E851 adds exactly
+the two repeated typed-collection fixtures to curated E826 under unchanged
+strict gates, with zero quality warnings. E852 completed 600 local CPU scratch
+steps in 70.15 seconds. E853 smoke reached parse/meaning-v1/strict-v2/fidelity
+1.0000, structure 0.6589, recall 0.7500, reward 0.9490, and zero fallback or
+timeout. This beats E843 structure and recall, but AgentV remains 0/1 and only
+smoke `n=3` ran; retain as a scratch baseline without a ship claim. Full
+evidence: [surgical supplement results](iter-e850-e853-surgical-typed-supplement-20260722.md).

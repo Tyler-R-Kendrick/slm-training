@@ -44,6 +44,7 @@ class TrainDataConfig:
     # Explicitly set fields always win over the profile (see resolve_profile).
     profile: str = "strict"
     seed_path: Path | None = None
+    fixture_ids: tuple[str, ...] = ()
     # Human thumbs-up promotions from the annotate playground.
     human_annotations_path: Path | None = Path(
         "src/slm_training/resources/annotations/human_train.jsonl"
@@ -51,7 +52,7 @@ class TrainDataConfig:
     rico_path: Path | None = Path(
         "src/slm_training/resources/rico/semantic_train.jsonl"
     )
-    # rico | fixture | existing | both | awwwards | rico+awwwards | all
+    # rico | fixture | existing | existing+fixture | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
     derive_from: Path | None = None
@@ -1060,7 +1061,15 @@ def _records_from_fixtures(
     human_records, human_errors = _records_from_seed_file(
         config.human_annotations_path, require_split=config.require_split
     )
-    return fixture_records + human_records, fixture_errors + human_errors
+    records = fixture_records + human_records
+    if config.fixture_ids:
+        requested = set(config.fixture_ids)
+        available = {record.id for record in records}
+        missing = requested - available
+        if missing:
+            raise ValueError(f"unknown fixture ids: {sorted(missing)}")
+        records = [record for record in records if record.id in requested]
+    return records, fixture_errors + human_errors
 
 
 def _records_from_rico(
@@ -1212,7 +1221,7 @@ def build_train_data(
     # rejected.jsonl with its stage + reason (never silently discarded).
     rejections: list[dict] = []
 
-    if source in {"fixture", "both", "fixtures", "all"}:
+    if source in {"fixture", "both", "fixtures", "existing+fixture", "all"}:
         fixture_records, fixture_errors = _records_from_fixtures(config)
         seeds.extend(fixture_records)
         errors.extend(fixture_errors)
@@ -1224,7 +1233,7 @@ def build_train_data(
         aww_records, aww_errors = _records_from_awwwards(config)
         seeds.extend(aww_records)
         errors.extend(aww_errors)
-    if source == "existing":
+    if source in {"existing", "existing+fixture"}:
         records, source_errors = _records_from_existing(config)
         seeds.extend(records)
         errors.extend(source_errors)
@@ -1243,7 +1252,13 @@ def build_train_data(
         )
         seeds.extend(records)
         errors.extend(source_errors)
-    if source in {"language_contract", "integrated", "all", "existing"}:
+    if source in {
+        "language_contract",
+        "integrated",
+        "all",
+        "existing",
+        "existing+fixture",
+    }:
         records, source_errors = _records_from_language_contract(config)
         seeds.extend(records)
         errors.extend(source_errors)
@@ -1262,6 +1277,7 @@ def build_train_data(
         "both",
         "awwwards",
         "existing",
+        "existing+fixture",
         "rico+awwwards",
         "programspec",
         "language_contract",
@@ -1334,7 +1350,7 @@ def build_train_data(
             "generation",
         }:
             candidates.extend(synth.expand(seed))
-            if source == "existing" and (
+            if source in {"existing", "existing+fixture"} and (
                 config.include_edit_derivatives or config.repairs_per_program > 0
             ):
                 try:

@@ -34,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
             "awwwards",
             "rico+awwwards",
             "existing",
+            "existing+fixture",
             "programspec",
             "language_contract",
             "deconstruct",
@@ -48,6 +49,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("src/slm_training/resources/train_seeds.jsonl"),
         help="JSONL seed fixtures (used when source includes fixtures).",
+    )
+    parser.add_argument(
+        "--fixture-ids",
+        default="",
+        help="Comma-separated fixture ids to include (default: all fixtures).",
     )
     parser.add_argument(
         "--derive-from",
@@ -388,7 +394,12 @@ def main(argv: list[str] | None = None) -> int:
 
     config = TrainDataConfig(
         profile=args.profile,
-        seed_path=args.seed_path if args.source in {"fixture", "both", "all"} else None,
+        seed_path=args.seed_path
+        if args.source in {"fixture", "both", "existing+fixture", "all"}
+        else None,
+        fixture_ids=tuple(
+            item.strip() for item in args.fixture_ids.split(",") if item.strip()
+        ),
         rico_path=args.rico_path
         if args.source in {"rico", "both", "rico+awwwards", "all"}
         else None,
