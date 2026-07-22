@@ -5718,3 +5718,27 @@ construction, before any run artifact exists; the runtime guard consumes that
 same canonical set rather than maintaining another list.
 Evidence: [JSON](iter-e740-lexer-semantic-role-family-20260722.json) and
 [notes](iter-e740-lexer-semantic-role-family-20260722.md).
+
+## E741 lexer slot-coverage close
+
+E741 extends the existing coverage-close lever to lexer compiler-tree and
+restricted decoding. On the matched local CPU smoke pair (`n=3`, unchanged
+E735 checkpoint), weight 2 fires and changes the close choice on all three
+records after all declared template symbols appear. It cuts emitted tokens
+174→61 and p50 latency 5242→1749 ms, while structural similarity rises
+0.1653→0.5464. Parse, meaning-v1, fidelity, validity, component recall, reward,
+strict-v2, and AgentV do not regress. Retain the generalized default-off
+behavior; reject checkpoint promotion and ship claims because strict-v2 stays
+zero and AgentV stays 0/1.
+
+The E740 recipe could not be reconstructed from its persisted policy. A parent
+v206 replay exactly matches the v207 default-off control, proving the model
+change is neutral and the historical artifact omitted effective settings. Eval
+harness v42 fixes the cause: every artifact now recursively persists all 235
+effective model-config fields, and cache identity hashes that complete policy.
+The accepted E741 arms are byte-identical after removing their single tested
+coverage-close weight. E740 remains visible as incomplete-recipe diagnostic
+evidence rather than being hidden or used as a reproducible baseline.
+
+Evidence: [JSON](iter-e741-lexer-slot-coverage-close-20260722.json) and
+[notes](iter-e741-lexer-slot-coverage-close-20260722.md).
