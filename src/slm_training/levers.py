@@ -20,6 +20,11 @@ MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
+VERCEL_FUNCTION_INCLUDE_FILES: Final = (
+    "docs/design/**",
+    "docs/MODEL_CARD.md",
+    "src/slm_training/resources/checkpoints/playground_demo/**",
+)
 
 # Applicability lives beside discovery so CLIs and harness validation cannot
 # drift from the human-visible lever catalog. Each tuple is an OR of complete
@@ -331,6 +336,12 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "default": CHANGED_TEST_WORKERS,
         "type": "int",
         "source": "slm_training.levers.CHANGED_TEST_WORKERS",
+    }
+    catalog["vercel_function_include_files"] = {
+        "category": "run",
+        "default": list(VERCEL_FUNCTION_INCLUDE_FILES),
+        "type": "tuple[str, ...]",
+        "source": "slm_training.levers.VERCEL_FUNCTION_INCLUDE_FILES",
     }
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 

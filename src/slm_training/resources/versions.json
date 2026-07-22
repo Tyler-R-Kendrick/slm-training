@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-07-22",
+          "note": "Generate Vercel duration and committed-evidence bundle inputs from the canonical run-policy levers"
+        },
         {
           "version": "v16",
           "date": "2026-07-22",

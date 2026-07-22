@@ -34,8 +34,8 @@ supporting shell command must obey the canonical cap in
 `src/slm_training/levers.py`. Use its derived interrupt and kill-grace values;
 training, campaign, and CI harnesses must not exceed its `MAX_RUN_MINUTES`.
 Change that one constant, then run
-`python -m scripts.repo_policy --sync-workflow-timeouts` to regenerate the
-GitHub job adapters. Prefer local compute;
+`python -m scripts.repo_policy --sync-run-policy` to regenerate the GitHub and
+Vercel adapters. Prefer local compute;
 remote CI and managed jobs are last-resort convenience surfaces. A timed
 out, interrupted, or killed run is never evidence.
 

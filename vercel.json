@@ -3,8 +3,8 @@
   "framework": "fastapi",
   "functions": {
     "src/slm_training/web/vercel.py": {
-      "maxDuration": 180,
-      "includeFiles": "src/slm_training/resources/checkpoints/playground_demo/**",
+      "maxDuration": 120,
+      "includeFiles": "{docs/design/**,docs/MODEL_CARD.md,src/slm_training/resources/checkpoints/playground_demo/**}",
       "excludeFiles": "{.venv/**,.vercel/**,node_modules/**,outputs/**,tests/**,src/apps/**,src/slm_training/resources/data/**/governance/records.jsonl}"
     }
   }

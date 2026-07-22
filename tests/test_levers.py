@@ -13,6 +13,7 @@ from slm_training.levers import (
     LEVER_COMPANION_REQUIREMENTS,
     LEVER_REQUIREMENTS,
     MAX_RUN_MINUTES,
+    VERCEL_FUNCTION_INCLUDE_FILES,
     MAX_RUN_SECONDS,
     TRAINED_DECODE_REQUIREMENTS,
     lever_catalog,
@@ -25,6 +26,8 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert MAX_RUN_SECONDS == MAX_RUN_MINUTES * 60
     assert INTERRUPT_AFTER_SECONDS + KILL_GRACE_SECONDS == MAX_RUN_SECONDS
     assert HF_JOB_TIMEOUT == f"{MAX_RUN_MINUTES}m"
+    assert "docs/design/**" in VERCEL_FUNCTION_INCLUDE_FILES
+    assert "docs/MODEL_CARD.md" in VERCEL_FUNCTION_INCLUDE_FILES
     assert CHANGED_TEST_WORKERS > 0
 
 
@@ -33,6 +36,9 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
     assert len(catalog) >= 200
     assert catalog["max_wall_minutes"]["source"] == (
         "slm_training.levers.MAX_RUN_MINUTES"
+    )
+    assert catalog["vercel_function_include_files"]["default"] == list(
+        VERCEL_FUNCTION_INCLUDE_FILES
     )
     assert catalog["changed_test_workers"] == {
         "category": "run",

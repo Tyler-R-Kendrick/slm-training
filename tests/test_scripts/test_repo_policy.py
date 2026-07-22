@@ -1,3 +1,4 @@
+import json
 import subprocess
 from pathlib import Path
 
@@ -5,10 +6,12 @@ from scripts.repo_policy import (
     MAX_PUBLISHED_DATA_BYTES,
     pre_tool_decision,
     raw_mv_paths,
+    sync_run_policy,
     sync_workflow_timeouts,
     validate_new_design_record_paths,
     validate_skill_mirrors,
     validate_top_level,
+    validate_vercel_run_policy,
     validate_published_data_sizes,
     validate_workflow_timeouts,
 )
@@ -85,6 +88,31 @@ def test_workflows_require_and_sync_canonical_timeout(tmp_path: Path) -> None:
     assert workflow.read_text(encoding="utf-8") == (
         "jobs:\n  test:\n    timeout-minutes: 2\n    runs-on: ubuntu-latest\n"
     )
+
+
+def test_vercel_policy_is_generated_from_canonical_run_levers(tmp_path: Path) -> None:
+    levers = tmp_path / "src/slm_training/levers.py"
+    levers.parent.mkdir(parents=True)
+    levers.write_text(
+        "MAX_RUN_MINUTES: Final = 2\n"
+        "VERCEL_FUNCTION_INCLUDE_FILES: Final = "
+        "('docs/design/**', 'docs/MODEL_CARD.md')\n",
+        encoding="utf-8",
+    )
+    config = tmp_path / "vercel.json"
+    config.write_text(
+        '{"functions":{"src/slm_training/web/vercel.py":'
+        '{"maxDuration":180,"includeFiles":"old/**"}}}\n',
+        encoding="utf-8",
+    )
+
+    assert len(validate_vercel_run_policy(root=tmp_path)) == 2
+    assert sync_run_policy(root=tmp_path) == [config]
+    assert validate_vercel_run_policy(root=tmp_path) == []
+    generated = json.loads(config.read_text(encoding="utf-8"))
+    function = generated["functions"]["src/slm_training/web/vercel.py"]
+    assert function["maxDuration"] == 120
+    assert function["includeFiles"] == "{docs/design/**,docs/MODEL_CARD.md}"
 
 
 def test_former_root_buckets_cannot_return() -> None:
