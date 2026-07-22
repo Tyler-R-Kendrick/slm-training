@@ -52,6 +52,7 @@ def _model(**config_overrides) -> TwoTowerModel:
         for name in (*SLOT_CONTRACT_DECODE_LEVERS, "semantic_role_decode_weight")
     )
     if active_contract_weight and satisfy_companions:
+        config_overrides.setdefault("slot_contract_in_context", True)
         config_overrides.setdefault("slot_contract_constrained_decode", True)
     if (
         satisfy_companions

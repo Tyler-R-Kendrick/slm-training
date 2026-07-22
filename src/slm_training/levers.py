@@ -96,8 +96,14 @@ TRAINED_DECODE_REQUIREMENTS: Final = {
 # model-side checks remain as defense in depth for callers that bypass the
 # canonical factory.  Each tuple is an OR of complete companion configurations.
 _SLOT_CONTRACT_DECODE: Final = (
-    {"slot_contract_constrained_decode": True},
-    {"template_fill_decode": True},
+    {
+        "slot_contract_in_context": True,
+        "slot_contract_constrained_decode": True,
+    },
+    {
+        "slot_contract_in_context": True,
+        "template_fill_decode": True,
+    },
 )
 SLOT_CONTRACT_DECODE_LEVERS: Final = (
     "schema_role_slot_decode_weight",
@@ -109,11 +115,13 @@ SLOT_CONTRACT_DECODE_LEVERS: Final = (
 )
 _VISIBLE_SEMANTIC_ROLE_DECODE: Final = (
     {
+        "slot_contract_in_context": True,
         "slot_contract_constrained_decode": True,
         "honest_slot_contract": True,
         "semantic_role_contract_in_context": True,
     },
     {
+        "slot_contract_in_context": True,
         "template_fill_decode": True,
         "honest_slot_contract": True,
         "semantic_role_contract_in_context": True,
