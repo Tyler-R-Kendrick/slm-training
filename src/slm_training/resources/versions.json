@@ -4106,7 +4106,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v246",
+      "version": "v247",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4130,6 +4130,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v247",
+          "date": "2026-07-22",
+          "note": "Reject unresolved binders at typed component use sites when their accumulated official-schema requirements are disjoint"
+        },
         {
           "version": "v246",
           "date": "2026-07-22",

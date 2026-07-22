@@ -6455,3 +6455,16 @@ precision improvement default off, reject the treatment, and prevent
 incompatible unresolved-binder reuse next. AgentV is 0/2; no ship gates or
 checkpoint changes. Full evidence:
 [direct-type results](iter-e926-e927-direct-component-types-20260722.md).
+
+# E928-E929 — binder requirement intersection (2026-07-22)
+
+v247 excludes unresolved binders whose accumulated official-schema component
+requirements are disjoint from the active typed use site. The formerly invalid
+Form path now uses separate `Buttons` and input-family binders and passes
+strict-v2. Against E928, E929 improves meaning-v1 0.6→0.8, strict-v2 0.2→0.8,
+fidelity 0.68→0.80, structure 0.3419→0.5430, and type recall 0.5810→0.7429,
+while reducing fallbacks 2→1. A dual-card timeout still lowers parse 1.0→0.8
+and reward 0.8488→0.7640. Retain the generalized check default off, reject
+promotion, and diagnose that timeout next. AgentV is 0/2; no ship gates or
+checkpoint changes. Full evidence:
+[binder-intersection results](iter-e928-e929-binder-requirement-intersection-20260722.md).

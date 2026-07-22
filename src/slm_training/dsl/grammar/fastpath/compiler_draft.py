@@ -302,7 +302,7 @@ def _forward_binder_component_requirements(
     prefix_ids: list[int],
     schema: dict[str, Any],
 ) -> dict[int, frozenset[str]]:
-    """Propagate typed-array use-site constraints to later declarations."""
+    """Propagate typed component use-site constraints to later declarations."""
     bind_ids = set(tokenizer.kind_ids("bind"))
     equal_id = int(tokenizer.token_to_id["="])
     engine = OpenUIIncrementalEngine()
@@ -1236,6 +1236,15 @@ def build_completion_forest(
                 if component in slot_components
             }
             unknown_binders = bind_ids - set(binder_components)
+            pending_requirements = _forward_binder_component_requirements(
+                tokenizer, prefix_ids, schema
+            )
+            unknown_binders = {
+                binder
+                for binder in unknown_binders
+                if pending_requirements.get(binder) is None
+                or bool(pending_requirements[binder] & slot_components)
+            }
             candidates = {
                 token_id
                 for token_id in candidates
@@ -1398,6 +1407,16 @@ def build_completion_forest(
                 if unused_symbols is None or bool(unused_symbols)
                 else set()
             )
+            if enforce_schema_component_types:
+                pending_requirements = _forward_binder_component_requirements(
+                    tokenizer, prefix_ids, schema
+                )
+                unknown_binders = {
+                    binder
+                    for binder in unknown_binders
+                    if pending_requirements.get(binder) is None
+                    or bool(pending_requirements[binder] & array_item_components)
+                }
             candidates = {
                 token_id
                 for token_id in candidates
