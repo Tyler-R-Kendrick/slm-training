@@ -73,6 +73,24 @@ LEVER_REQUIREMENTS: Final = {
     "root_reference_identity_loss_weight": (_CHOICE,),
 }
 
+# A decode head is usable only when its checkpoint trained that head. Without
+# this contract a non-zero decode weight can instantiate or select random
+# parameters while the run reports the lever as enabled.
+TRAINED_DECODE_REQUIREMENTS: Final = {
+    "component_inventory_decode_weight": ("component_inventory_loss_weight",),
+    "component_plan_decode_weight": ("component_plan_loss_weight",),
+    "slot_component_decode_weight": ("slot_component_loss_weight",),
+    "component_edge_decode_weight": (
+        "component_edge_loss_weight",
+        "component_edge_alignment_loss_weight",
+    ),
+    "binder_component_plan_decode_weight": ("binder_component_plan_loss_weight",),
+    "binder_topology_decode_weight": ("binder_topology_loss_weight",),
+    "binder_arity_decode_weight": ("binder_arity_loss_weight",),
+    "root_reference_arity_decode_weight": ("root_reference_arity_loss_weight",),
+    "root_reference_identity_decode_weight": ("root_reference_identity_loss_weight",),
+}
+
 
 def _canonical_capability_value(field: str, value: Any) -> Any:
     normalized = str(value or "").lower()
@@ -107,6 +125,56 @@ def incompatible_lever_requirements(config: Any) -> dict[str, tuple[dict[str, An
         and value != 0.0
         and not any(_matches_requirement(config, item) for item in requirements)
     }
+
+
+def _positive_numeric(config: Any, field: str) -> bool:
+    value = getattr(config, field, 0.0)
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and value > 0.0
+    )
+
+
+def untrained_decode_levers(config: Any) -> dict[str, tuple[str, ...]]:
+    """Return enabled learned decode levers without a trained owning objective."""
+    return {
+        name: owners
+        for name, owners in TRAINED_DECODE_REQUIREMENTS.items()
+        if _positive_numeric(config, name)
+        and not any(_positive_numeric(config, owner) for owner in owners)
+    }
+
+
+def lever_configuration_errors(
+    config: Any, *, require_trained_decode: bool = False
+) -> tuple[str, ...]:
+    """Return every canonical lever-contract violation for ``config``."""
+    errors: list[str] = []
+    incompatible = incompatible_lever_requirements(config)
+    if incompatible:
+        errors.append(f"unsupported enabled levers: {', '.join(incompatible)}")
+    if require_trained_decode:
+        untrained = untrained_decode_levers(config)
+        errors.extend(
+            f"{name} requires a trained checkpoint objective: {' or '.join(owners)}"
+            for name, owners in untrained.items()
+        )
+    return tuple(errors)
+
+
+def require_valid_lever_configuration(
+    config: Any, *, require_trained_decode: bool = False, context: str = "config"
+) -> None:
+    """Fail before execution when a lever cannot have its advertised effect."""
+    errors = lever_configuration_errors(
+        config, require_trained_decode=require_trained_decode
+    )
+    if errors:
+        raise ValueError(
+            f"{context} has invalid enabled levers: {'; '.join(errors)}; "
+            "inspect `python -m slm_training.levers` for supported configurations"
+        )
 
 
 def _requirement_json(requirement: dict[str, Any]) -> dict[str, Any]:
@@ -168,6 +236,10 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
                 _requirement_json(requirement)
                 for requirement in LEVER_REQUIREMENTS[item.name]
             ]
+        if item.name in TRAINED_DECODE_REQUIREMENTS:
+            catalog[item.name]["requires_trained_any"] = list(
+                TRAINED_DECODE_REQUIREMENTS[item.name]
+            )
         if item.name in checkpoint_defaults and checkpoint_defaults[item.name] != default:
             catalog[item.name]["checkpoint_default"] = _json_value(
                 checkpoint_defaults[item.name]

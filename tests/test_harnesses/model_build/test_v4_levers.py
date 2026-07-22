@@ -250,7 +250,6 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
     from slm_training.models.template_fill import inventory_from_prompt
 
     src = 'root = Stack([t], "column")\nt = TextContent(":smoke.hero.title")'
-    tok = OpenUITokenizer.build([src, "Build a hero"])
     cfg = TwoTowerConfig(
         d_model=64,
         n_heads=4,
@@ -264,7 +263,18 @@ def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
         gen_steps=2,
         max_target_len=96,
     )
-    model = TwoTowerModel(tokenizer=tok, config=cfg, device="cpu")
+    model = TwoTowerModel.from_records(
+        [
+            ExampleRecord(
+                id="hero",
+                prompt="Build a hero",
+                openui=src,
+                placeholders=[":smoke.hero.title"],
+            )
+        ],
+        config=cfg,
+        device="cpu",
+    )
     # Capture prompts seen by _generate_batch_once.
     seen: list[str] = []
     orig = model._generate_batch_once

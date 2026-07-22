@@ -21,14 +21,16 @@ is intentionally incompatible and must not be evaluated, resumed, promoted, or
 served by current code. There is no migration because old weights learned a
 different prediction space; retraining from symbol-only targets is required.
 
-The invariant is enforced at four boundaries:
+The invariant is enforced at five boundaries:
 
 1. train-data sanitization templatizes and revalidates every non-grammar string;
-2. model construction rejects nonconforming records and free-form-capable output
+2. the shared train/eval record loader rejects a nonconforming corpus before
+   model construction, checkpoint creation, or run artifacts;
+3. model construction rejects nonconforming records and free-form-capable output
    tokenizers;
-3. tokenizer encoding and constrained decoding cannot represent free-form string
+4. tokenizer encoding and constrained decoding cannot represent free-form string
    literals; and
-4. both meaningfulness metrics reject any free-form output string.
+5. both meaningfulness metrics reject any free-form output string.
 
 ## Measured smoke
 

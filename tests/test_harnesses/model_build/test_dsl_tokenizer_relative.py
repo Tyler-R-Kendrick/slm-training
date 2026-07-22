@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.dsl import bridge_available
+from slm_training.dsl.language_contract import output_contract_violations
 from slm_training.models.dsl_tokenizer import (
     BIND_DEF,
     DSLNativeTokenizer,
@@ -88,6 +89,10 @@ def test_relative_fixture_corpus_property() -> None:
             continue
         row = json.loads(line)
         src = row["openui"]
+        if output_contract_violations(src):
+            with pytest.raises(ValueError, match="free-form output string"):
+                tok.encode(src)
+            continue
         table = SymbolTable.from_placeholders(row.get("placeholders") or [])
         decoded = tok.decode(tok.encode(src, table=table), table=table)
         assert canonicalize(decoded) == canonicalize(src), row.get("id")

@@ -1,4 +1,5 @@
 from dataclasses import fields
+from pathlib import Path
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
@@ -8,7 +9,9 @@ from slm_training.levers import (
     LEVER_REQUIREMENTS,
     MAX_RUN_MINUTES,
     MAX_RUN_SECONDS,
+    TRAINED_DECODE_REQUIREMENTS,
     lever_catalog,
+    untrained_decode_levers,
 )
 
 
@@ -65,3 +68,22 @@ def test_every_decode_weight_has_a_capability_requirement() -> None:
         item.name for item in fields(ModelBuildConfig) if item.name.endswith("decode_weight")
     }
     assert decode_weights <= LEVER_REQUIREMENTS.keys()
+
+
+def test_learned_decode_dependencies_are_discoverable_and_fail_closed() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("outputs/data/train"),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        root_reference_arity_decode_weight=1.0,
+    )
+
+    assert untrained_decode_levers(config) == {
+        "root_reference_arity_decode_weight": (
+            "root_reference_arity_loss_weight",
+        )
+    }
+    assert lever_catalog()["root_reference_arity_decode_weight"][
+        "requires_trained_any"
+    ] == ["root_reference_arity_loss_weight"]
+    assert set(TRAINED_DECODE_REQUIREMENTS) <= LEVER_REQUIREMENTS.keys()

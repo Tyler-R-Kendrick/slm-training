@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-22",
+          "note": "Declare trained-objective dependencies for learned decode heads and reject untrained or inert configurations before execution"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -2879,6 +2884,20 @@
         }
       ]
     },
+    "harness.model_build.data": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/model_build/data.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-22",
+          "note": "Enforce the symbol-only completion contract in shared train and eval record loading before model construction or artifacts"
+        }
+      ]
+    },
     "harness.model_build.train": {
       "version": "v18",
       "kind": "harness",
@@ -3715,7 +3734,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v192",
+      "version": "v193",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3737,6 +3756,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v193",
+          "date": "2026-07-22",
+          "note": "Fail closed when a learned decode head is enabled without a nonzero owning checkpoint training objective"
+        },
         {
           "version": "v192",
           "date": "2026-07-22",

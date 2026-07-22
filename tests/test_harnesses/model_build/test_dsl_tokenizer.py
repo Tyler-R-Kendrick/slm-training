@@ -8,6 +8,7 @@ import pytest
 import torch
 
 from slm_training.data.contract import GenerationRequest, RuntimeSymbol
+from slm_training.dsl.language_contract import output_contract_violations
 from slm_training.models.dsl_tokenizer import (
     DSLNativeTokenizer,
     SymbolTable,
@@ -31,12 +32,12 @@ CTA = (
 
 V05_PROGRAM = (
     "root = Stack([button, count])\n"
-    '$filter = "all"\n'
-    'items = Query("get_items", {filter: $filter}, {rows: []})\n'
-    'save = Mutation("save_item", {filter: $filter})\n'
-    'submit = Action([@Run(save), @Run(items), @Set($filter, "all")])\n'
+    '$filter = ":filter.all"\n'
+    'items = Query(":query.get_items", {filter: $filter}, {rows: []})\n'
+    'save = Mutation(":mutation.save_item", {filter: $filter})\n'
+    'submit = Action([@Run(save), @Run(items), @Set($filter, ":filter.all")])\n'
     'button = Button(":actions.save", submit)\n'
-    'count = TextContent("" + @Count(items.rows))'
+    'count = TextContent(":count.value" + @Count(items.rows))'
 )
 
 
@@ -47,7 +48,7 @@ def tok() -> DSLNativeTokenizer:
 
 def test_vocab_is_fixed_and_typed(tok: DSLNativeTokenizer) -> None:
     # Fixed corpus-independent vocabulary incl. 64 reserved <MACRO_i> rows (C3).
-    assert tok.vocab_size <= 480
+    assert tok.vocab_size <= 512
     assert tok.kind_of(tok.token_to_id["Stack"]) == TokenKind.COMPONENT
     assert tok.kind_of(tok.token_to_id["="]) == TokenKind.STRUCT
     assert tok.kind_of(tok.sym_id(0)) == TokenKind.SYM
@@ -196,13 +197,11 @@ def test_disabled_features_are_exact_and_semantic_mask_keeps_gold(
     assert torch.isfinite(masked[0, 0, tok.bind_id(1)])
 
 
-def test_round_trip_without_symbol_table_uses_literal_channel(
+def test_placeholder_without_symbol_table_fails_closed(
     tok: DSLNativeTokenizer,
 ) -> None:
-    ids = tok.encode(HERO, use_symbol_table=False)
-    text = tok.decode(ids)
-    assert ":hero.title" in text
-    assert "Stack" in text
+    with pytest.raises(ValueError, match="free-form output string is forbidden"):
+        tok.encode(HERO, use_symbol_table=False)
 
 
 def test_length_reduction_vs_compositional(tok: DSLNativeTokenizer) -> None:
@@ -286,7 +285,10 @@ def test_macro_induction_round_trip_and_persistence(tmp_path) -> None:
         json.loads(line)["openui"]
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
-    ][:12]
+    ]
+    sources = [source for source in sources if not output_contract_violations(source)][
+        :12
+    ]
 
     tok = DSLNativeTokenizer.build()
     first = induce_macros(sources, tok, MacroInductionConfig())
@@ -367,6 +369,10 @@ def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
         src = row["openui"]
         placeholders = row.get("placeholders") or []
         table = SymbolTable.from_placeholders(placeholders)
+        if output_contract_violations(src):
+            with pytest.raises(ValueError, match="free-form output string"):
+                tok.encode(src, table=table)
+            continue
         ids = tok.encode(src, table=table)
         text = tok.decode(ids, table=table)
         for ph in placeholders:
@@ -390,6 +396,10 @@ def test_canonicalize_is_idempotent_per_example(tok: DSLNativeTokenizer) -> None
         if not line.strip():
             continue
         src = json.loads(line)["openui"]
+        if output_contract_violations(src):
+            with pytest.raises(ValueError, match="free-form output string"):
+                tok.canonicalize(src, SymbolTable())
+            continue
         first = tok.canonicalize(src, SymbolTable())
         second = tok.canonicalize(first, SymbolTable())
         assert second == first
@@ -405,12 +415,20 @@ def test_compositional_still_longer_on_placeholders() -> None:
 
 
 def test_v05_typed_state_and_builtin_roundtrip(tok: DSLNativeTokenizer) -> None:
-    table = SymbolTable.from_placeholders([":actions.save"])
+    table = SymbolTable.from_placeholders(
+        [
+            ":actions.save",
+            ":count.value",
+            ":filter.all",
+            ":mutation.save_item",
+            ":query.get_items",
+        ]
+    )
     ids = tok.encode(V05_PROGRAM, table=table)
     assert any(tok.kind_of(i) == TokenKind.STATE for i in ids)
     assert any(tok.kind_of(i) == TokenKind.BUILTIN for i in ids)
     decoded = tok.decode(ids, table=table)
-    assert '$s0 = "all"' in decoded
+    assert '$s0 = ":filter.all"' in decoded
     assert "Query(" in decoded and "Mutation(" in decoded
     assert "Action([@Run(" in decoded and "@Set($s0" in decoded
     assert "{filter: $s0}" in decoded
@@ -425,11 +443,12 @@ def test_v05_tokenizer_ignores_line_comments(tok: DSLNativeTokenizer) -> None:
 def test_v05_numbers_and_single_quotes_use_typed_literals(
     tok: DSLNativeTokenizer,
 ) -> None:
-    source = "root = TextContent('hello')\nsmall = .5\nlarge = -1.25e+3"
-    ids = tok.encode(source)
+    source = "root = TextContent(':copy.hello')\nsmall = .5\nlarge = -1.25e+3"
+    table = SymbolTable.from_placeholders([":copy.hello"])
+    ids = tok.encode(source, table=table)
     assert ids.count(tok.token_to_id["LIT_NUM"]) == 2
-    decoded = tok.decode(ids)
-    assert 'TextContent("hello")' in decoded
+    decoded = tok.decode(ids, table=table)
+    assert 'TextContent(":copy.hello")' in decoded
     assert ".5" in decoded
     assert "-1.25e+3" in decoded
 

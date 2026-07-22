@@ -121,7 +121,29 @@ def test_runtime_override_cannot_disable_path_used_by_checkpoint_lever() -> None
         compiler_decode_mode="off",
     )
 
-    with pytest.raises(ValueError, match="runtime overrides produced unsupported"):
+    with pytest.raises(ValueError, match="runtime overrides has invalid enabled levers"):
+        apply_runtime_overrides(model, config)
+
+
+def test_runtime_override_cannot_activate_untrained_decode_head() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(
+            model_name="twotower",
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            root_reference_arity_loss_weight=0.0,
+            root_reference_arity_decode_weight=0.0,
+        )
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        runtime_override_fields=frozenset({"root_reference_arity_decode_weight"}),
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        root_reference_arity_decode_weight=1.0,
+    )
+
+    with pytest.raises(ValueError, match="requires a trained checkpoint objective"):
         apply_runtime_overrides(model, config)
 
 

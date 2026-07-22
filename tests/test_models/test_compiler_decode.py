@@ -298,7 +298,10 @@ def test_slot_component_head_trains_on_visible_slot_owners() -> None:
 def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
     from types import MethodType
 
-    model = _model(slot_component_decode_weight=2.0)
+    model = _model(
+        slot_component_loss_weight=1.0,
+        slot_component_decode_weight=2.0,
+    )
     assert model.slot_component_head is not None
     tokenizer = model.tokenizer
     component_ids = model._component_inventory_token_ids()
@@ -389,6 +392,7 @@ def test_visible_semantic_roles_gate_unmatched_learned_slot_bias() -> None:
     from types import MethodType
 
     model = _model(
+        slot_component_loss_weight=1.0,
         slot_component_decode_weight=2.0,
         semantic_role_decode_weight=4.0,
     )
@@ -432,6 +436,7 @@ def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> N
     from types import MethodType
 
     model = _model(
+        slot_component_loss_weight=1.0,
         slot_component_decode_weight=2.0,
         semantic_role_decode_weight=4.0,
     )
@@ -4129,7 +4134,10 @@ def test_component_inventory_supervision_trains_prompt_level_component_set() -> 
 
 
 def test_component_inventory_bias_only_scores_compiler_legal_components() -> None:
-    model = _model(component_inventory_decode_weight=2.0)
+    model = _model(
+        component_inventory_loss_weight=1.0,
+        component_inventory_decode_weight=2.0,
+    )
     assert model.component_inventory_head is not None
     tokenizer = model.tokenizer
     card = tokenizer.token_to_id["Card"]
@@ -4179,7 +4187,10 @@ def test_component_plan_supervises_root_role_and_bound_counts() -> None:
 
 
 def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
-    model = _model(component_plan_decode_weight=2.0)
+    model = _model(
+        component_plan_loss_weight=1.0,
+        component_plan_decode_weight=2.0,
+    )
     assert model.component_plan_head is not None
     tokenizer = model.tokenizer
     card = tokenizer.token_to_id["Card"]

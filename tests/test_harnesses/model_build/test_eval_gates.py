@@ -22,7 +22,10 @@ from slm_training.harnesses.model_build.eval_runner import (
     evaluate_suites,
     structural_similarity,
 )
-from slm_training.harnesses.model_build.data import load_suite_records
+from slm_training.harnesses.model_build.data import (
+    load_suite_records,
+    load_train_records,
+)
 from slm_training.harnesses.model_build.plugin import GenerationRequest, StubModel
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
@@ -90,6 +93,44 @@ def test_suite_loader_falls_back_when_manifest_path_is_checkout_relative(
     # stays hermetic even when a real outputs/data/eval/v1 has been built.
     monkeypatch.chdir(tmp_path)
     assert load_suite_records(tmp_path, "smoke") == [record]
+
+
+def test_train_loader_rejects_free_form_targets_before_a_run_exists(
+    tmp_path: Path,
+) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="forbidden",
+                prompt="CTA",
+                openui='root = Button("Save now")',
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="symbol-only output contract"):
+        load_train_records(train_dir)
+
+
+def test_suite_loader_rejects_free_form_completion_targets(tmp_path: Path) -> None:
+    suite_dir = tmp_path / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    write_jsonl(
+        suite_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="forbidden",
+                prompt="CTA",
+                openui='root = Button("Save now")',
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="symbol-only output contract"):
+        load_suite_records(tmp_path, "smoke")
 
 
 def test_structural_similarity_partial() -> None:

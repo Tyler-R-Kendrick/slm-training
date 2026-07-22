@@ -88,6 +88,27 @@ def _attrs(record: dict) -> dict:
     return out
 
 
+def test_free_form_target_fails_before_run_artifacts(tmp_path: Path) -> None:
+    train_dir = tmp_path / "invalid_data"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="free-form",
+                prompt="CTA",
+                openui='root = Button("Save now")',
+                split="train",
+            )
+        ],
+    )
+    config = _cfg(train_dir, tmp_path, "must-not-exist")
+
+    with pytest.raises(ValueError, match="symbol-only output contract"):
+        train(config)
+    assert not config.run_dir.exists()
+
+
 def test_progress_heartbeat_emitted_inside_run_trace(
     train_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

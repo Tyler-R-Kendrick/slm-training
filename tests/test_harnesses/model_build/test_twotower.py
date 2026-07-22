@@ -798,6 +798,7 @@ def test_opaque_projection_keeps_marker_names_out_of_scoring() -> None:
             context_layers=1,
             denoiser_layers=1,
             compiler_decode_mode="tree",
+            slot_component_loss_weight=1.0,
             slot_component_decode_weight=1.0,
             slot_contract_in_context=True,
         ),

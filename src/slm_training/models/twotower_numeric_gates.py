@@ -14,7 +14,7 @@ from typing import Any, Iterable, Sequence
 
 from slm_training.levers import (
     MAX_RUN_MINUTES,
-    incompatible_lever_requirements,
+    lever_configuration_errors,
 )
 
 
@@ -281,7 +281,12 @@ def _type_is_numeric_scalar(field_type: str) -> bool:
     return "float" in field_type or "int" in field_type
 
 
-def validate_numeric_config(cfg: Any, *, context: str = "config") -> NumericScheduleValidationReportV1:
+def validate_numeric_config(
+    cfg: Any,
+    *,
+    context: str = "config",
+    require_trained_decode: bool = False,
+) -> NumericScheduleValidationReportV1:
     """Validate every weight/schedule/numeric field on ``cfg``.
 
     Uses dataclass field introspection so new *_weight fields are gated
@@ -453,13 +458,14 @@ def validate_numeric_config(cfg: Any, *, context: str = "config") -> NumericSche
         if mn is not None and mx is not None and mn > mx:
             report.record("mask_min/max", False, "mask_min must be <= mask_max")
 
-    incompatible = incompatible_lever_requirements(cfg)
-    if incompatible:
+    lever_errors = lever_configuration_errors(
+        cfg, require_trained_decode=require_trained_decode
+    )
+    if lever_errors:
         report.record(
             "lever_capability_compatibility",
             False,
-            f"unsupported enabled levers: {', '.join(incompatible)}; "
-            "inspect `python -m slm_training.levers` for supported configurations",
+            "; ".join(lever_errors),
         )
 
     if not report.valid:
@@ -481,4 +487,6 @@ def validate_twotower_config(cfg: Any) -> NumericScheduleValidationReportV1:
     ``validate_recursive_depth_supervision`` in the model owner so that the
     architecture-specific capability gate stays with the denoiser code.
     """
-    return validate_numeric_config(cfg, context="TwoTowerConfig")
+    return validate_numeric_config(
+        cfg, context="TwoTowerConfig", require_trained_decode=True
+    )

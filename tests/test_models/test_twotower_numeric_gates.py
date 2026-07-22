@@ -245,6 +245,26 @@ def test_model_build_config_accepts_lexer_levers_with_tree_decode() -> None:
     assert cfg.binder_arity_decode_weight == 1.0
 
 
+def test_twotower_rejects_untrained_root_arity_decode_head() -> None:
+    with pytest.raises(ValueError, match="requires a trained checkpoint objective"):
+        _valid_twotower_config(
+            output_tokenizer="lexer",
+            compiler_decode_mode="tree",
+            root_reference_arity_decode_weight=1.0,
+            root_reference_arity_loss_weight=0.0,
+        )
+
+
+def test_twotower_accepts_trained_root_arity_decode_head() -> None:
+    cfg = _valid_twotower_config(
+        output_tokenizer="lexer",
+        compiler_decode_mode="tree",
+        root_reference_arity_decode_weight=1.0,
+        root_reference_arity_loss_weight=1.0,
+    )
+    assert cfg.root_reference_arity_decode_weight == 1.0
+
+
 def test_model_build_config_normalizes_tree_decode_to_atomic_strict_policy(
     tmp_path: Path,
 ) -> None:
