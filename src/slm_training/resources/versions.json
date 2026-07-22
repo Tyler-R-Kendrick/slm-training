@@ -4091,7 +4091,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v237",
+      "version": "v238",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4115,6 +4115,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v238",
+          "date": "2026-07-22",
+          "note": "Prefer schema-certified inline item components over unresolved binders at planned typed-array starts while retaining legal forward references"
+        },
         {
           "version": "v237",
           "date": "2026-07-22",

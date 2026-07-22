@@ -467,7 +467,7 @@ def test_completion_forest_restricts_typed_array_binder_references() -> None:
     assert "<BIND_2>" not in candidates
 
 
-def test_completion_forest_rejects_untyped_forward_reference_in_typed_array() -> None:
+def test_completion_forest_keeps_untyped_forward_reference_in_typed_array() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
@@ -482,7 +482,7 @@ def test_completion_forest_rejects_untyped_forward_reference_in_typed_array() ->
 
     candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}
     assert "TabItem" in candidates
-    assert not candidates.intersection(
+    assert candidates.intersection(
         tokenizer.id_to_token[token_id] for token_id in tokenizer.kind_ids("bind")
     )
 

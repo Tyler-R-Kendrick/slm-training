@@ -2526,6 +2526,7 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
         state.advance_token(tokenizer, token_id)
     card_id = tokenizer.token_to_id["Card"]
     close_id = tokenizer.token_to_id["]"]
+    binder_id = tokenizer.token_to_id["<BIND_1>"]
     stack_id = tokenizer.token_to_id["Stack"]
     model._semantic_plan_action_counts = [{card_id: 1}]
     model._slot_contracts = [[":hero.title"]]
@@ -2534,12 +2535,12 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
         0,
         state,
         prefix,
-        (close_id, stack_id),
-        torch.tensor([8.0, 1.0]),
+        (close_id, binder_id, stack_id),
+        torch.tensor([8.0, 9.0, 1.0]),
     )
 
     assert bias is not None
-    assert bias.tolist() == [0.0, 9.0]
+    assert bias.tolist() == [0.0, 0.0, 10.0]
 
     monkeypatch.setattr(
         model,

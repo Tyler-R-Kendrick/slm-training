@@ -7357,7 +7357,10 @@ class TwoTowerModel(nn.Module):
         if max(margin, typed_margin) <= 0.0 or not slot_contract:
             return None
         if not choice_codec:
-            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                _active_call,
+                _schema_component_refs,
+            )
             from slm_training.dsl.lang_core import library_schema
 
             active = _active_call(getattr(state, "engine", state))
@@ -7402,7 +7405,20 @@ class TwoTowerModel(nn.Module):
             ]
             if not targets:
                 return None
-            target = max(targets, key=lambda position: float(scores[position].item()))
+            root_schema = library_schema()
+            allowed_components = _schema_component_refs(
+                dict(schema["items"]), root_schema
+            )
+            typed_targets = [
+                position
+                for position in targets
+                if str(self.tokenizer.id_to_token.get(candidate_ids[position], ""))
+                in allowed_components
+            ]
+            ranked_targets = typed_targets or targets
+            target = max(
+                ranked_targets, key=lambda position: float(scores[position].item())
+            )
             bias = scores.new_zeros(len(candidate_ids))
             bias[target] = max(
                 0.0,
