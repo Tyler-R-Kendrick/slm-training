@@ -5530,3 +5530,18 @@ focused registry/config tests pass 37/37.
 
 Evidence: [narrative](iter-e726-root-arity-compatibility-symbol-only-20260722.md)
 and [JSON](iter-e726-root-arity-compatibility-symbol-only-20260722.json).
+
+## E727 symbol-only binder-reference arity
+
+E727 combines E723's slot-owner identity signal with the lexer-native
+binder-reference arity objective. A 140-step local CPU run completes in 77.46
+seconds under `max_wall_minutes=2`; final arity loss is 0.7852 with 0.80
+accuracy across 10 active rows. On smoke and held-out, weight 1 applies seven
+times but changes zero choices; every output and quality metric is identical to
+weight 0. Smoke weight 2 is also identical after three applications. Preserve
+E723's metrics, reject the checkpoint, and close binder-arity weights 0/1/2.
+An earlier compiler-off smoke scoreboard is documented and excluded from the
+causal comparison.
+
+Evidence: [narrative](iter-e727-binder-arity-symbol-only-20260722.md) and
+[JSON](iter-e727-binder-arity-symbol-only-20260722.json).

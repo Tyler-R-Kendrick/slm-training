@@ -49,6 +49,7 @@ it fails semantic gates and is not promoted. See
 | E723 slot-owner diagnostic | `e723-symbol-only-slot-owner140-r1/last.pt` | `outputs/runs/…` (local) | Causal smoke + held-out gains; smoke meaning-v1 0.6667 / structure 0.5614, but strict-v2 0.0 — lever retained, checkpoint rejected |
 | E725 cumulative inventory diagnostic | `e725-symbol-only-component-inventory130-r1/last.pt` | `outputs/runs/…` (local) | Inventory head learned, but weight 1/0 decode is identical and smoke meaning-v1/strict-v2 0.0 — rejected, not ship |
 | E726 invalid root-arity attempt | `e726-symbol-only-root-arity140-r1/last.pt` | `outputs/runs/…` (local) | Choice-only arity lever was unavailable on lexer; tensors match E723 exactly — invalidated, never evaluate/sync/serve |
+| E727 binder-arity diagnostic | `e727-symbol-only-binder-arity140-r1/last.pt` | `outputs/runs/…` (local) | Arity head learned, but weights 1/2 change no smoke or held-out choices and strict-v2 remains 0.0 — rejected |
 | Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5; wiring only |
 | Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Local DirectML verify | `local_directml_adreno_20260714/last.pt` | `outputs/runs/…` (local) | Adreno GPU train/checkpoint OK; 5-step wiring run, not evaluated or ship |
