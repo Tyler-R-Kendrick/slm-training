@@ -6352,3 +6352,14 @@ decontamination hits, sanitizer fallbacks, recommendations, or experiment
 candidates. Retain E899 as a focused input mixed with the E851 base through
 replay; admission alone is not model or ship evidence. Full evidence:
 [focused typed-role corpus](iter-e899-typed-role-focus-20260722.md).
+
+# E900-E901 — focused typed-role continuation (2026-07-22)
+
+E900 `r1` fails closed before training because focus-primary shape 256 cannot
+load E891's 308-position context checkpoint. Corrected `r2` completes 20 steps
+with 61 E851 base and 19 E899 focused examples. E901 held-out `n=5` then
+catastrophically regresses versus E892: parse 0.8→0.2, meaning-v1 0.8→0,
+strict-v2 0.2→0, structure 0.3298→0.0293, recall 0.7143→0.0667, and timeouts
+1→4; AgentV is 0/1. Reject E900 without smoke, retain only E891 as parent, and
+test parent-weight retention before any further focused exposure. Full evidence:
+[focused continuation results](iter-e900-e901-focused-role-continuation-20260722.md).
