@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-22",
+          "note": "Expose active-schema visible-slot role binding on lexer compiler paths"
+        },
         {
           "version": "v10",
           "date": "2026-07-22",
@@ -2657,7 +2662,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v40",
+      "version": "v41",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2667,6 +2672,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v41",
+          "date": "2026-07-22",
+          "note": "Persist every ModelBuildConfig decode weight from the canonical field registry instead of a partial hand-maintained list"
+        },
         {
           "version": "v40",
           "date": "2026-07-21",
@@ -3764,7 +3774,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v203",
+      "version": "v204",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3786,6 +3796,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v204",
+          "date": "2026-07-22",
+          "note": "Rank lexer template symbols by the active grammar call and public schema property at every compiler trie edge"
+        },
         {
           "version": "v203",
           "date": "2026-07-22",
