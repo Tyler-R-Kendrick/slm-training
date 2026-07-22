@@ -49,5 +49,6 @@ def test_newest_honest_boards_are_visible() -> None:
         "choice-design-dropout-results-iter-e295-20260717.json",
         "iter-e864-e865-opaque-marker-validity-20260722.json",
         "iter-e866-e867-semantic-contrast-opaque-slots-20260722.json",
+        "iter-e868-e878-hard-tail-warmstart-20260722.json",
     ):
         assert f"docs/design/{name}" in sources, name

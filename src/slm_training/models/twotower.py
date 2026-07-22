@@ -13204,7 +13204,13 @@ class TwoTowerModel(nn.Module):
         )
         torch.save(payload, path)
 
-    def load(self, path: Path | str, *, allow_tie_migration: bool = False) -> None:
+    def load(
+        self,
+        path: Path | str,
+        *,
+        allow_tie_migration: bool = False,
+        preserve_tokenizers: bool = False,
+    ) -> None:
         path = Path(path)
         payload = torch.load(path, map_location=self.device_name, weights_only=True)
         if payload.get("kind") != "twotower":
@@ -13215,9 +13221,23 @@ class TwoTowerModel(nn.Module):
             payload.get("config") or {},
             allow_tie_migration=allow_tie_migration,
         )
+        state_dict = dict(payload["state_dict"])
+        tok_path = path.with_suffix(".tokenizer.json")
+        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+        if preserve_tokenizers and "context.encoder.tok.weight" in state_dict:
+            source_context_tokenizer = load_tokenizer_sidecar(
+                ctx_tok_path if ctx_tok_path.exists() else tok_path
+            )
+            source_weight = state_dict["context.encoder.tok.weight"]
+            target_weight = self.context.encoder.tok.weight.detach().clone()
+            for token, target_id in self.context_tokenizer.token_to_id.items():
+                source_id = source_context_tokenizer.token_to_id.get(token)
+                if source_id is not None:
+                    target_weight[target_id] = source_weight[source_id]
+            state_dict["context.encoder.tok.weight"] = target_weight
         _load_checkpoint_state(
             self,
-            payload["state_dict"],
+            state_dict,
             allow_missing_auxiliary_heads=True,
         )
         source_config = payload.get("config") or {}
@@ -13242,14 +13262,13 @@ class TwoTowerModel(nn.Module):
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
         self.output_contract_version = int(payload.get("output_contract_version", 0))
-        tok_path = path.with_suffix(".tokenizer.json")
-        if tok_path.exists():
-            self.tokenizer = load_tokenizer_sidecar(tok_path)
-        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
-        if ctx_tok_path.exists():
-            self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
-        else:
-            self.context_tokenizer = self.tokenizer
+        if not preserve_tokenizers:
+            if tok_path.exists():
+                self.tokenizer = load_tokenizer_sidecar(tok_path)
+            if ctx_tok_path.exists():
+                self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
+            else:
+                self.context_tokenizer = self.tokenizer
 
     @classmethod
     def from_checkpoint(

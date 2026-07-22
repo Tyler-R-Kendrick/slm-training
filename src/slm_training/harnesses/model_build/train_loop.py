@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -315,7 +316,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
             if plugin_config is not None and hasattr(plugin_config, field_name)
         }
-        loader(initialize_path)
+        load_kwargs = {}
+        if "preserve_tokenizers" in inspect.signature(loader).parameters:
+            load_kwargs["preserve_tokenizers"] = True
+        loader(initialize_path, **load_kwargs)
         initialized_from = str(initialize_path)
         initialized_prior_fields = list(getattr(plugin, "initialized_prior_fields", ()))
         # These priors are deterministic corpus statistics, not learned weights.

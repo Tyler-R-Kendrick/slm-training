@@ -104,13 +104,13 @@ def test_lexical_engine_reported_with_default_threshold() -> None:
     assert vectors.shape[0] == 1
 
 
-def test_deliberate_variant_families_are_exempt() -> None:
+def test_prohibited_named_variant_is_not_exempt() -> None:
     base = _record("a1_base", _BASE_PROMPT, _BASE_OPENUI)
     augmented = _record("a2_ns", _BASE_PROMPT, _BASE_OPENUI.replace(":member.", ":acme."))
     augmented.meta = {"source_family": "namespace_augment"}
     kept, dropped = apply_semantic_dedup([base, augmented], threshold=0.9)
-    assert {record.id for record in kept} == {"a1_base", "a2_ns"}
-    assert not dropped
+    assert len(kept) == 1
+    assert len(dropped) == 1
 
 
 def test_requested_embeddings_without_extra_fails_closed(

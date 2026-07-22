@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e878-e877-v51-smoke-n3-r1",
+  "experiment_id": "E868-E878",
+  "date": "2026-07-22",
+  "decision": "retain_harness_fixes_reject_checkpoint",
+  "data": {
+    "snapshot": "src/slm_training/resources/data/train/e872_e851_hard80_v2",
+    "source_records": 351,
+    "difficulty_scored": 351,
+    "retained_records": 281,
+    "selection_dropped": 70,
+    "verifier_rejected": 0,
+    "quality_rejected": 0,
+    "synthesis_recommendations": 0,
+    "content_fingerprint": "d4f908f134206743264a4f87dfc4c2a6a54febb939f2396c1bb42b6592f724fc",
+    "completion_contract": "grammar/AST symbols plus canonical opaque :slot_N markers only"
+  },
+  "runs": [
+    {
+      "run_id": "e868-e852-record-nll-clone-r1",
+      "status": "diagnostic_only",
+      "steps": 0,
+      "elapsed_wall_seconds": 52.3309,
+      "initialized_weight_rms_drift": 0.0,
+      "checkpoint_sha256": "4f97fd5f2fbf3ad3d5d3090940e92e0a113c13eaddc4a0bf1d32ac249fe07f4e"
+    },
+    {
+      "run_id": "e873-e872-hard80-scratch600-r1",
+      "status": "invalid_no_summary_or_checkpoint",
+      "observed_steps": 14
+    },
+    {
+      "run_id": "e874-e852-hard80-continue300-r1",
+      "status": "failed_before_training_context_vocab_shape_mismatch"
+    },
+    {
+      "run_id": "e875-e872-hard80-scratch300-r1",
+      "status": "invalid_wall_budget_stop",
+      "steps_completed": 37,
+      "steps_requested": 300,
+      "elapsed_wall_seconds": 95.9455,
+      "checkpoint_sha256": "34cd1e55a5e78ef3b1a6dcfbbd9b691d63422cb989a36568a7257bc0a38bf452"
+    },
+    {
+      "run_id": "e876-e872-hard80-fast600-r1",
+      "status": "invalid_wall_budget_stop",
+      "steps_completed": 43,
+      "steps_requested": 600,
+      "elapsed_wall_seconds": 96.3188,
+      "checkpoint_sha256": "3d83cbc86ce4026117dd00782d0948e4f7f78b389ad174fc2d0bf7b5233485e2"
+    },
+    {
+      "run_id": "e877-e852-hard80-warm20-r1",
+      "status": "completed_rejected",
+      "steps": 20,
+      "elapsed_wall_seconds": 52.7125,
+      "last_loss": 6.4177,
+      "initialized_from": "e852-e826-typed-supplement-scratch600-r1",
+      "checkpoint_sha256": "a1072b6ae3f64203266d12150e4f5eb2007752efd4a92390b636ae11494fe440"
+    }
+  ],
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6666666666666666,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_validity": 0.9500000000000001,
+      "placeholder_fidelity_normalized": 0.9166666666666666,
+      "structural_similarity": 0.46249999999999997,
+      "component_type_recall": 0.3333333333333333,
+      "reward_score": 0.9359999999999999,
+      "decode_timeout_count": 0,
+      "fallback_count": 0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "failed": 1,
+    "execution_errors": 0
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "evaluation_policy": "strict_compiler_tree",
+    "suite": "smoke",
+    "n": 3,
+    "diagnostic_subset": true,
+    "decode_timeout_seconds": 12.0,
+    "max_wall_minutes": 1.5833333333333333,
+    "checkpoint_sync": "disabled_local_scratch"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "892c93bfb6d2df28a10647efefbe172d6c61ed41",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v24",
+      "harness.train_data": "v22",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v234"
+    },
+    "stamped_at": "2026-07-22T20:23:45.744242+00:00"
+  }
+}

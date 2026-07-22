@@ -291,6 +291,49 @@ def test_initialize_from_resets_state_for_new_corpus(
     assert retained["recipe"]["initialization_weight_retention"] == 1.0
 
 
+def test_initialize_from_remaps_context_vocab_for_filtered_corpus(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    source = train(_cfg(train_dir, tmp_path, "vocab_source", 0))
+    source_checkpoint = Path(source["checkpoint"])
+    filtered_dir = tmp_path / "filtered_train"
+    filtered_dir.mkdir()
+    write_jsonl(
+        filtered_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="filtered",
+                prompt="Novel filtered vocabulary",
+                openui=CTA,
+                split="train",
+                placeholders=[":slot_0"],
+            )
+        ],
+    )
+
+    initialized = train(
+        _cfg(
+            filtered_dir,
+            tmp_path,
+            "vocab_initialized",
+            0,
+            initialize_from=source_checkpoint,
+        )
+    )
+    source_model = TwoTowerModel.from_checkpoint(source_checkpoint)
+    initialized_model = TwoTowerModel.from_checkpoint(Path(initialized["checkpoint"]))
+
+    assert "Novel" in initialized_model.context_tokenizer.token_to_id
+    assert "Hero" not in initialized_model.context_tokenizer.token_to_id
+    for token in ("<pad>", "<bos>", "<eos>", "<mask>", "<unk>"):
+        source_id = source_model.context_tokenizer.token_to_id[token]
+        initialized_id = initialized_model.context_tokenizer.token_to_id[token]
+        torch.testing.assert_close(
+            source_model.context.encoder.tok.weight[source_id],
+            initialized_model.context.encoder.tok.weight[initialized_id],
+        )
+
+
 def test_initialize_from_cannot_mix_with_resume(
     train_dir: Path, tmp_path: Path
 ) -> None:

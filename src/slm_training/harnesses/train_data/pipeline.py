@@ -70,7 +70,6 @@ class TrainDataConfig:
     max_openui_chars: int | None = None
     max_components: int | None = None
     curriculum: bool = False
-    namespace_augment: bool = False
     # Make the declared slot contract visible to production-like training
     # prompts; this is intentionally opt-in so historical snapshots remain
     # immutable and comparable.
@@ -79,9 +78,6 @@ class TrainDataConfig:
     # opt-in because it is a stronger contract than ordinary user prompts.
     prompt_component_contract: bool = False
     prompt_component_contract_mode: str = "counts"
-    # Group visible placeholder namespaces into semantic roles and annotate
-    # schema-compatible owners from the already-visible component type set.
-    prompt_semantic_role_contract: bool = False
     # Deterministic target sanitization (D2 canonicalization + schema-checked
     # AST optimization + content-literal templatization) applied inside
     # _normalize_record before the official validate. off | audit | enforce;
@@ -1128,11 +1124,20 @@ def _records_from_existing(
         raise ValueError("source 'existing' requires --derive-from")
     if not Path(path).is_file():
         raise ValueError(f"derivation source does not exist: {path}")
+    refreshed_contract_ids: set[str] = set()
+    if config.include_language_contract:
+        from slm_training.data.language_contract import iter_positives
+
+        refreshed_contract_ids = {
+            record.id for record in iter_positives(config.require_split)
+        }
     records: list[ExampleRecord] = []
     errors: list[dict] = []
     for record in load_jsonl(path):
-        family = str((record.meta or {}).get("program_family_id") or "")
-        if config.include_language_contract and family.startswith("language_contract:"):
+        # Current canonical contract rows are refreshed below. Preserve derived
+        # rows in the same family: silently dropping them makes --derive-from
+        # non-conservative and discards valid hard examples.
+        if record.id in refreshed_contract_ids:
             continue
         if record.split != config.require_split:
             errors.append(
@@ -1365,16 +1370,6 @@ def build_train_data(
                             detail={"error": str(exc)},
                         )
                     )
-        if config.namespace_augment and seed.target_kind == "document":
-            from slm_training.harnesses.train_data.synth import (
-                NamespaceAugmentSynthesizer,
-            )
-
-            ns = NamespaceAugmentSynthesizer()
-            extra: list[ExampleRecord] = []
-            for candidate in list(candidates):
-                extra.extend(ns.expand(candidate))
-            candidates.extend(extra)
         for candidate in candidates:
             candidate = _apply_governance_gate(candidate)
             lineage_index[candidate.id] = lineage_entry(candidate)
@@ -1712,17 +1707,28 @@ def build_train_data(
     )
     _mirror_drops("exposure", parent_cap_dropped)
     deduped.sort(key=lambda r: r.id)
+
+    from slm_training.data.selection import (
+        attach_curation_scores,
+        load_record_nll,
+        select_difficult_records,
+    )
+
+    nll_by_id: dict[str, float] | None = None
+    difficulty_dropped: list[dict] = []
+    difficulty_scored_count = 0
+    if config.difficulty_from:
+        nll_by_id = load_record_nll(config.difficulty_from)
+        difficulty_scored_count = sum(record.id in nll_by_id for record in deduped)
+    attach_curation_scores(deduped, nll_by_id=nll_by_id)
+    if nll_by_id:
+        deduped, difficulty_dropped = select_difficult_records(deduped, nll_by_id)
+        _mirror_drops("selection", difficulty_dropped)
+
     source_families = family_stats(deduped)
     from slm_training.data.dedup import cluster_exposure_stats
 
     source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
-
-    from slm_training.data.selection import attach_curation_scores, load_record_nll
-
-    nll_by_id: dict[str, float] | None = None
-    if config.difficulty_from:
-        nll_by_id = load_record_nll(config.difficulty_from)
-    attach_curation_scores(deduped, nll_by_id=nll_by_id)
 
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
@@ -1922,9 +1928,6 @@ def build_train_data(
         "prompt_slot_contract": bool(config.prompt_slot_contract),
         "prompt_component_contract": bool(config.prompt_component_contract),
         "prompt_component_contract_mode": config.prompt_component_contract_mode,
-        "prompt_semantic_role_contract": bool(
-            config.prompt_semantic_role_contract
-        ),
         "sanitize_mode": sanitize_mode,
         "sanitize": sanitization_section,
         "structure_reserved_rejected": len(structure_reserved_rejected),
@@ -1951,11 +1954,9 @@ def build_train_data(
         "difficulty_from": (
             str(config.difficulty_from) if config.difficulty_from else None
         ),
-        "difficulty_scored": (
-            sum(1 for r in deduped if "record_nll" in (r.meta or {}))
-            if nll_by_id
-            else 0
-        ),
+        "difficulty_scored": difficulty_scored_count,
+        "difficulty_dropped": len(difficulty_dropped),
+        "difficulty_dropped_samples": difficulty_dropped[:20],
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None

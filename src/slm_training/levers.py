@@ -47,6 +47,10 @@ DEFAULT_CONTEXT_BACKEND: Final = "scratch"
 # policy beside every other user-facing lever so there is one discoverable
 # source of truth for training and decode configuration.
 TEMPLATE_MARKERS_ARE_OPAQUE: Final = True
+# A difficulty-scored rebuild is a hard-example selection operation, not a
+# metadata-only annotation. Records in the easiest NLL tail are rejected by
+# the data harness before training.
+DIFFICULTY_EASY_TAIL_FRACTION: Final = 0.2
 DEFAULT_OUTPUT_TOKENIZER: Final = "lexer"
 DEFAULT_DECODE_TIMEOUT_SECONDS: Final = 12.0
 CHECKPOINT_DECLARED_POLICY: Final = "checkpoint_declared"

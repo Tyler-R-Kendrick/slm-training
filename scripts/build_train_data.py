@@ -346,8 +346,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "record_nll.jsonl from a trained run (train_model "
-            "--emit-record-nll); discounts the trivially-easy NLL tail in "
-            "curation scores."
+            "--emit-record-nll); rejects the trivially-easy NLL tail and "
+            "stamps difficulty evidence on retained records."
         ),
     )
     parser.add_argument(

@@ -136,12 +136,42 @@ def test_component_contract_can_expose_types_without_counts(tmp_path: Path) -> N
     assert result["stats"]["prompt_component_contract_mode"] == "types"
 
 
-def test_semantic_role_contract_is_prohibited(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="template markers are opaque"):
-        TrainDataConfig(
-            seed_path=_seed_file(tmp_path),
-            prompt_semantic_role_contract=True,
-        )
+def test_semantic_role_contract_is_absent_from_data_config(tmp_path: Path) -> None:
+    config = TrainDataConfig(seed_path=_seed_file(tmp_path))
+    assert not hasattr(config, "prompt_semantic_role_contract")
+
+
+def test_existing_source_refreshes_contract_bases_without_dropping_derivatives(
+    tmp_path: Path,
+) -> None:
+    from slm_training.harnesses.train_data.pipeline import _records_from_existing
+
+    base = ExampleRecord(
+        id="lc_forward_reference",
+        prompt="stale base",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        meta={"program_family_id": "language_contract:forward_reference"},
+    )
+    derivative = ExampleRecord(
+        id="lc_forward_reference_aug_dir",
+        prompt="derived hard case",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        meta={"program_family_id": "language_contract:forward_reference"},
+    )
+    roots = tmp_path / "records.jsonl"
+    write_jsonl(roots, [base, derivative])
+
+    records, errors = _records_from_existing(
+        TrainDataConfig(source="existing", derive_from=roots)
+    )
+
+    assert errors == []
+    assert [record.id for record in records] == [derivative.id]
+    assert records[0].meta["derivation_source"] == str(roots)
 
 
 @pytest.mark.skipif(

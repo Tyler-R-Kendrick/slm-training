@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-22",
+          "note": "Centralize the difficulty easy-tail selection fraction so scored rebuilds have one discoverable policy value"
+        },
         {
           "version": "v24",
           "date": "2026-07-22",
@@ -3123,13 +3128,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-22",
+          "note": "Warm-start filtered corpora by remapping shared context-token embeddings while preserving the current corpus tokenizer"
+        },
         {
           "version": "v21",
           "date": "2026-07-22",
@@ -3448,17 +3458,24 @@
       ]
     },
     "harness.train_data": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
         "src/slm_training/data/mixture.py",
+        "src/slm_training/data/dedup.py",
+        "src/slm_training/data/semantic_dedup.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-22",
+          "note": "Delete semantic namespace paths; preserve derived contract rows; make difficulty-scored rebuilds reject the easy NLL tail as selection instead of writing unused metadata or false producer feedback"
+        },
         {
           "version": "v21",
           "date": "2026-07-22",
@@ -4054,7 +4071,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v234",
+      "version": "v235",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4078,6 +4095,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v235",
+          "date": "2026-07-22",
+          "note": "Warm-start across filtered corpus vocabularies by remapping shared context embedding rows and preserving the current tokenizer"
+        },
         {
           "version": "v234",
           "date": "2026-07-22",

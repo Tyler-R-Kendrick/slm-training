@@ -15,6 +15,7 @@ from slm_training.harnesses.train_data.catalog import (
     family_stats,
     resolve_lineage,
 )
+from slm_training.harnesses.train_data.synth import get_synthesizer
 
 pytestmark_bridge = pytest.mark.skipif(
     not bridge_available(),
@@ -54,8 +55,7 @@ def test_classify_source_family() -> None:
         )
         == "prompt_paraphrase"
     )
-    # Outermost transformation wins for stacked lineages.
-    assert (
+    with pytest.raises(ValueError, match="namespace_augment is prohibited"):
         classify_source_family(
             _record(
                 "a_syn_0_ns",
@@ -64,19 +64,22 @@ def test_classify_source_family() -> None:
                 parent_id="a_syn_0",
             )
         )
-        == "namespace_augment"
-    )
+
+
+def test_namespace_synthesizer_is_not_available() -> None:
+    with pytest.raises(ValueError, match="unknown synthesizer"):
+        get_synthesizer("namespace_augment")
 
 
 def test_resolve_lineage_walks_to_root() -> None:
     index = {
         "a": (None, None),
         "a_syn_0": ("a", "template"),
-        "a_syn_0_ns": ("a_syn_0", "namespace_augment"),
+        "a_syn_0_layout": ("a_syn_0", "layout_augment"),
     }
-    root, lineage = resolve_lineage("a_syn_0_ns", index)
+    root, lineage = resolve_lineage("a_syn_0_layout", index)
     assert root == "a"
-    assert lineage == ["template", "namespace_augment"]
+    assert lineage == ["template", "layout_augment"]
     root, lineage = resolve_lineage("a", index)
     assert root == "a"
     assert lineage == []
@@ -162,16 +165,15 @@ def test_pipeline_manifest_source_families(tmp_path: Path) -> None:
             ),
         ],
     )
-    with pytest.raises(ValueError, match="namespace_augment is prohibited"):
-        TrainDataConfig(
-            seed_path=seeds,
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "out",
-            version="vfam",
-            synthesizer="quality",
-            namespace_augment=True,
-        )
+    config = TrainDataConfig(
+        seed_path=seeds,
+        rico_path=None,
+        source="fixture",
+        output_root=tmp_path / "out",
+        version="vfam",
+        synthesizer="quality",
+    )
+    assert not hasattr(config, "namespace_augment")
 
 
 @pytestmark_bridge
