@@ -2522,15 +2522,15 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     tokenizer = model.tokenizer
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode("root = Tabs([", add_special=False),
+        *tokenizer.encode('root = SwitchGroup(":group", [', add_special=False),
     ]
     state = make_grammar_state()
     for token_id in prefix[1:]:
         state.advance_token(tokenizer, token_id)
     binder_id = tokenizer.token_to_id["<BIND_1>"]
-    tabs_id = tokenizer.token_to_id["Tabs"]
-    item_id = tokenizer.token_to_id["TabItem"]
-    model._semantic_plan_action_counts = [{tabs_id: 1}]
+    group_id = tokenizer.token_to_id["SwitchGroup"]
+    item_id = tokenizer.token_to_id["SwitchItem"]
+    model._semantic_plan_action_counts = [{group_id: 1}]
     model._slot_contracts = [[":hero.title"]]
 
     bias = model._semantic_plan_typed_array_nonempty_bias(
@@ -2567,6 +2567,37 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     )
 
     assert selected == paths[1].token_ids
+
+
+def test_lexer_typed_item_margin_abstains_for_recursive_unique_item() -> None:
+    model = _model(
+        semantic_plan_margin_decode_weight=2.0,
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Tabs([", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    binder_id = tokenizer.token_to_id["<BIND_1>"]
+    tabs_id = tokenizer.token_to_id["Tabs"]
+    item_id = tokenizer.token_to_id["TabItem"]
+    model._semantic_plan_action_counts = [{tabs_id: 1}]
+    model._slot_contracts = [[":tab", ":content"]]
+
+    assert (
+        model._semantic_plan_typed_array_nonempty_bias(
+            0,
+            state,
+            prefix,
+            (binder_id, item_id),
+            torch.tensor([9.0, 1.0]),
+        )
+        is None
+    )
 
 
 def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> None:

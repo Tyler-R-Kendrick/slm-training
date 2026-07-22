@@ -7407,10 +7407,28 @@ class TwoTowerModel(nn.Module):
                 .removeprefix("+")
                 in allowed_components
             }
+            unique_component = (
+                next(iter(allowed_components))
+                if len(allowed_components) == 1
+                else None
+            )
+            unique_definition = (
+                (root_schema.get("$defs") or {}).get(unique_component) or {}
+                if unique_component is not None
+                else {}
+            )
+            unique_properties = unique_definition.get("properties") or {}
+            unique_required = unique_definition.get("required") or ()
+            unique_item_is_closed_leaf = unique_component is not None and all(
+                not _schema_component_refs(
+                    dict(unique_properties.get(name) or {}), root_schema
+                )
+                for name in unique_required
+            )
             unique_schema_item_ids = {
                 token_id
                 for token_id in self._component_inventory_token_ids()
-                if len(allowed_components) == 1
+                if unique_item_is_closed_leaf
                 and str(self.tokenizer.id_to_token.get(token_id, ""))
                 .removeprefix("COMP:")
                 .removeprefix("+")
@@ -7419,6 +7437,8 @@ class TwoTowerModel(nn.Module):
             preferred_item_ids = planned_item_ids | (
                 unique_schema_item_ids if typed_margin > 0.0 else set()
             )
+            if typed_margin > 0.0 and allowed_components and not preferred_item_ids:
+                return None
             if (
                 family_id is None
                 or (
