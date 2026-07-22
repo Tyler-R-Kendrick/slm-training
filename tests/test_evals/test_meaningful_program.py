@@ -53,6 +53,27 @@ def test_unknown_prompt_contract_never_scores_positive() -> None:
     assert any(check.status is CheckStatus.UNKNOWN for check in report.checks)
 
 
+def test_compact_prompt_equivalent_can_pass_v2_but_fail_gold_relative_v1() -> None:
+    prediction = 'root = Button(":cta.label")'
+    record = ExampleRecord(
+        id="compact-equivalent",
+        prompt="Build a Button. Placeholders: :cta.label",
+        openui=(
+            "root = Card([button, copy])\n"
+            'button = Button(":cta.label")\n'
+            'copy = TextContent("Reference-only decoration")'
+        ),
+        placeholders=[":cta.label"],
+    )
+
+    report = binding_aware_meaningful_v2(prediction, record=record)
+    assert report.verdict is True
+
+    ok, reason, _ = meaningful_program_v1(prediction, gold=record)
+    assert ok is False
+    assert reason == "low_component_recall:0.33"
+
+
 def test_free_form_output_string_fails_both_meaningfulness_metrics() -> None:
     source = 'root = Button(":cta.label", "submit")'
     record = ExampleRecord(
