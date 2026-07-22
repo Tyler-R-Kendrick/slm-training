@@ -5627,3 +5627,26 @@ decode-authority experiment.
 
 Evidence: [narrative](iter-e734-root-arity-rank-calibration-20260722.md) and
 [JSON](iter-e734-root-arity-rank-calibration-20260722.json).
+
+## E735 full-head root-arity supervision
+
+E735 fixes the train/inference mismatch exposed by E734. Training previously
+sliced root-arity logits to each row's feasible classes, leaving the full
+inference head's high tail without negative gradients. E731 consequently
+predicts impossible arity class 41 on all three smoke prompts. Full-head
+cross-entropy changes those argmax predictions to class 1, with top classes
+1/2/3/0/4, while preserving the symbol-only contract.
+
+The matched 140-step local CPU train completes in 82.07 seconds under the
+two-minute cap. Strict smoke weights 0 and 1 remain prediction- and
+metric-identical at parse 1.0, meaning-v1 0.6667, strict-v2 0.0, fidelity
+0.5278, structure 0.5614, recall 0.4167, reward 0.8073, and AgentV 0/1. Weight
+1 applies six times, changes zero choices, and no record times out.
+
+Retain `model.twotower` v198 because training and inference now cover the same
+class head and impossible tail logits receive suppressing gradients. Reject
+the scratch checkpoint because it produces no quality gain; do not sync or
+promote it.
+
+Evidence: [narrative](iter-e735-root-arity-full-head-20260722.md) and
+[JSON](iter-e735-root-arity-full-head-20260722.json).
