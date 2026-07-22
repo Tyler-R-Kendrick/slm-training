@@ -5685,3 +5685,18 @@ checkpoint creation, remote compute, sync, or serving change occurred.
 
 Evidence: [narrative](iter-e738-lexer-planned-subtree-nonempty-20260722.md)
 and [JSON](iter-e738-lexer-planned-subtree-nonempty-20260722.json).
+
+## E739 lexer active-schema role binding
+
+E739 makes the existing schema-role slot lever executable on lexer compiler
+paths and routes choice/tree/restricted decoding through one shared row adapter.
+On the matched local CPU smoke pair (`n=3`, E735 checkpoint, strict compiler
+tree, plan 4 / margin 2), role weight 2 removes the only
+`placeholder_semantic_role_mismatch`, improves fidelity 0.7222 → 0.8056,
+validity 0.8333 → 0.8833, and reward 0.8537 → 0.8787. Parse remains 1.0;
+strict-v2 and AgentV remain zero because duplicate template-symbol spam and
+missing required families persist. Retain the generalized fix; reject promotion
+and ship claims. A v203 exact-command replay also proves the default-off change
+is neutral and exposed incomplete historical recipe persistence; eval harness
+v41 now serializes all decode weights from `ModelBuildConfig`. Evidence: [JSON](iter-e739-lexer-active-schema-role-binding-20260722.json)
+and [notes](iter-e739-lexer-active-schema-role-binding-20260722.md).

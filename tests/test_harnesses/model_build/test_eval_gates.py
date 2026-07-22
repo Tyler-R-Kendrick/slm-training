@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -64,6 +65,8 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
             allow_unconstrained_fallback=True,
             gen_steps=8,
             grammar_ltr_max_tokens=256,
+            component_plan_decode_weight=3.0,
+            root_reference_arity_decode_weight=2.0,
         )
     )
     policy = _effective_evaluation_policy(config, plugin)
@@ -71,6 +74,13 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     assert policy["context_backend"] == "scratch"
     assert policy["grammar_constrained"] is True
     assert policy["grammar_ltr_primary"] is False
+    assert policy["component_plan_decode_weight"] == 3.0
+    assert policy["root_reference_arity_decode_weight"] == 2.0
+    assert {
+        field.name
+        for field in fields(ModelBuildConfig)
+        if field.name.endswith("_decode_weight")
+    } <= policy.keys()
 
 
 def test_structural_similarity_identical() -> None:

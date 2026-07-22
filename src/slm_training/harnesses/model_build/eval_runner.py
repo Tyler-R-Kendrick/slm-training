@@ -8,6 +8,7 @@ import math
 import re
 import signal
 import time
+from dataclasses import fields
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -383,71 +384,13 @@ def _effective_evaluation_policy(
         "slot_contract_constrained_decode": bool(
             value("slot_contract_constrained_decode")
         ),
-        "semantic_role_decode_weight": float(
-            value("semantic_role_decode_weight") or 0.0
-        ),
+        **{
+            field.name: float(value(field.name) or 0.0)
+            for field in fields(ModelBuildConfig)
+            if field.name.endswith("_decode_weight")
+        },
         "semantic_role_schema_candidates": bool(
             value("semantic_role_schema_candidates")
-        ),
-        "slot_coverage_close_decode_weight": float(
-            value("slot_coverage_close_decode_weight") or 0.0
-        ),
-        "schema_value_decode_weight": float(
-            value("schema_value_decode_weight") or 0.0
-        ),
-        "schema_enum_close_decode_weight": float(
-            value("schema_enum_close_decode_weight") or 0.0
-        ),
-        "schema_open_decode_weight": float(
-            value("schema_open_decode_weight") or 0.0
-        ),
-        "schema_opaque_decode_weight": float(
-            value("schema_opaque_decode_weight") or 0.0
-        ),
-        "schema_opaque_close_decode_weight": float(
-            value("schema_opaque_close_decode_weight") or 0.0
-        ),
-        "schema_role_slot_decode_weight": float(
-            value("schema_role_slot_decode_weight") or 0.0
-        ),
-        "required_slot_margin_decode_weight": float(
-            value("required_slot_margin_decode_weight") or 0.0
-        ),
-        "semantic_plan_decode_weight": float(
-            value("semantic_plan_decode_weight") or 0.0
-        ),
-        "semantic_plan_margin_decode_weight": float(
-            value("semantic_plan_margin_decode_weight") or 0.0
-        ),
-        "semantic_plan_seed_decode_weight": float(
-            value("semantic_plan_seed_decode_weight") or 0.0
-        ),
-        "semantic_plan_inline_decode_weight": float(
-            value("semantic_plan_inline_decode_weight") or 0.0
-        ),
-        "semantic_plan_binding_decode_weight": float(
-            value("semantic_plan_binding_decode_weight") or 0.0
-        ),
-        "semantic_plan_root_decode_weight": float(
-            value("semantic_plan_root_decode_weight") or 0.0
-        ),
-        "semantic_plan_root_margin_decode_weight": float(
-            value("semantic_plan_root_margin_decode_weight") or 0.0
-        ),
-        "semantic_plan_repeated_array_close_margin_decode_weight": float(
-            value("semantic_plan_repeated_array_close_margin_decode_weight") or 0.0
-        ),
-        "semantic_plan_repeated_slot_margin_decode_weight": float(
-            value("semantic_plan_repeated_slot_margin_decode_weight") or 0.0
-        ),
-        "semantic_plan_typed_array_nonempty_margin_decode_weight": float(
-            value("semantic_plan_typed_array_nonempty_margin_decode_weight") or 0.0
-        ),
-        "semantic_plan_typed_array_item_margin_decode_weight": float(
-            value("semantic_plan_typed_array_item_margin_decode_weight") or 0.0
-        ),
-        "visible_reference_decode_weight": float(
-            value("visible_reference_decode_weight") or 0.0
         ),
         "honest_slot_contract": bool(value("honest_slot_contract")),
         "grammar_skip_exact_stream_probe": optional_bool(
