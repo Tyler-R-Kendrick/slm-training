@@ -439,9 +439,9 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
               columns={[
                 { key: "suite", label: "suite" },
                 { key: "syntax_rate", label: "syntax", align: "right" },
-                { key: "meaningful_rate", label: "meaningful", align: "right" },
-                { key: "structural_similarity", label: "struct", align: "right" },
-                { key: "placeholder_fidelity", label: "fidelity", align: "right" },
+                { key: "meaningful_rate", label: "meaningful v1", align: "right" },
+                { key: "structural_similarity", label: "gold struct", align: "right" },
+                { key: "placeholder_fidelity", label: "slot fidelity", align: "right" },
                 { key: "reward_score", label: "reward", align: "right" },
                 { key: "n", label: "n", align: "right" },
               ]}
