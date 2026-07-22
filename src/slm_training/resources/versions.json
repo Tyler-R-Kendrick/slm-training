@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v27",
+      "version": "v28",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v28",
+          "date": "2026-07-22",
+          "note": "Compact Vercel bundle exclusions within the platform's 256-character function-glob limit"
+        },
         {
           "version": "v27",
           "date": "2026-07-22",

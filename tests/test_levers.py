@@ -41,9 +41,9 @@ def test_run_policy_is_derived_from_one_value() -> None:
         == INTERRUPT_AFTER_SECONDS
     )
     assert "docs/design/**" in VERCEL_FUNCTION_INCLUDE_FILES
-    assert "src/slm_training/resources/data/train/e214_schema_role_judge_v3/**" in (
-        VERCEL_FUNCTION_EXCLUDE_FILES
-    )
+    vercel_exclude_glob = "{" + ",".join(VERCEL_FUNCTION_EXCLUDE_FILES) + "}"
+    assert "e214_schema_role_judge_v3" in vercel_exclude_glob
+    assert len(vercel_exclude_glob) <= 256
     config = ModelBuildConfig(train_dir=Path("outputs/data/train"))
     assert config.output_tokenizer == DEFAULT_OUTPUT_TOKENIZER == "lexer"
     assert config.decode_timeout_seconds == DEFAULT_DECODE_TIMEOUT_SECONDS == 12.0
