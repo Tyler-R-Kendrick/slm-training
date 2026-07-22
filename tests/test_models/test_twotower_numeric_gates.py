@@ -260,7 +260,9 @@ def test_model_build_config_normalizes_tree_decode_to_atomic_strict_policy(
 
     assert cfg.evaluation_policy == "strict_compiler_tree"
     assert cfg.slot_contract_constrained_decode is True
-    assert cfg.slot_contract_in_context is True
+    assert cfg.schema_in_context is False
+    assert cfg.slot_contract_in_context is False
+    assert cfg.design_md_in_context is None
     assert cfg.allow_unconstrained_fallback is False
     assert not cfg.run_dir.exists()
 

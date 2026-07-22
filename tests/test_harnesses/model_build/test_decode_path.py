@@ -86,6 +86,8 @@ def test_exact_or_compiler_preserves_representation_per_codec() -> None:
     assert choice["compiler_decode_mode"] == "off"
     assert choice["allow_unconstrained_fallback"] is False
     assert choice["slot_contract_constrained_decode"] is True
+    assert "schema_in_context" not in choice
+    assert "slot_contract_in_context" not in choice
     # Surface/lexer -> compiler-tree greedy.
     lexer = spec.resolve_config_overrides("lexer")
     assert lexer["compiler_decode_mode"] == "tree"
