@@ -6161,3 +6161,13 @@ sanitizer fallbacks, and zero named target markers; invalid fixture
 normalization is fatal instead of silently omitted. The centralized eval lever
 now points to E842. No model evaluation or ship claim occurred. Full evidence:
 [harness-owned slot-contract results](iter-e842-harness-owned-slot-contract-20260722.md).
+
+# E843 — harness-owned slot smoke (2026-07-22)
+
+The unchanged E832 checkpoint replayed on the E842 canonical eval default with
+the E837 semantic-plan recipe. Smoke `n=3` exactly matched E837 quality: parse,
+meaning-v1, strict meaning-v2, and fidelity 1.0; structure 0.6033; component
+recall 0.6667; reward 0.9490; and zero timeout/fallback. AgentV remained 0/1,
+so retain the harness correction without making a ship or checkpoint claim.
+Full evidence:
+[harness-owned slot smoke](iter-e843-harness-owned-slot-smoke-20260722.md).
