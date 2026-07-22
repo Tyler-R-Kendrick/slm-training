@@ -679,12 +679,17 @@
       ]
     },
     "harness.core": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-22",
+          "note": "reject canonical experiment records with missing root suites instead of promoting nested diagnostic metric blocks"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",

@@ -5739,6 +5739,10 @@ effective model-config fields, and cache identity hashes that complete policy.
 The accepted E741 arms are byte-identical after removing their single tested
 coverage-close weight. E740 remains visible as incomplete-recipe diagnostic
 evidence rather than being hidden or used as a reproducible baseline.
+Canonical committed records now fail closed when their root `suites` board is
+missing, preventing nested replay/remediation metrics from being promoted as a
+primary scoreboard. E741 explicitly publishes the accepted treatment as its
+smoke suite.
 
 Evidence: [JSON](iter-e741-lexer-slot-coverage-close-20260722.json) and
 [notes](iter-e741-lexer-slot-coverage-close-20260722.md).
