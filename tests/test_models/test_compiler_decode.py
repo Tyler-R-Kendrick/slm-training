@@ -20,6 +20,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     build_completion_forest,
     gold_compiler_decisions,
     gold_compiler_decision_positions,
+    root_declaration_reference_arity_target,
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -4262,6 +4263,58 @@ def test_binder_reference_arities_follow_grammar_token_roles() -> None:
     )
     prefix = tokenizer.encode("root = Card([title,", add_special=False)
     assert active_declaration_reference_count(tokenizer, prefix) == 1
+    assert root_declaration_reference_arity_target(tokenizer, ids) == (2, 3)
+
+
+def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
+    model = _model(
+        root_reference_arity_loss_weight=1.0,
+        root_reference_arity_decode_weight=2.0,
+    )
+    record = ExampleRecord(
+        id="lexer-root-arity",
+        prompt="card with title and body",
+        openui=(
+            'root = Card([title, body])\n'
+            'title = TextContent(":hero.title")\n'
+            'body = TextContent(":hero.body")'
+        ),
+        placeholders=[":hero.title", ":hero.body"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+
+    assert model.root_reference_arity_head is not None
+    assert model.root_reference_arity_head.weight.grad is not None
+    assert model.root_reference_arity_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["root_reference_arity_rows"] == 1
+    assert model.last_training_metrics["root_reference_arity_classes_mean"] == 3.0
+
+    tokenizer = model.tokenizer
+    with torch.no_grad():
+        model.root_reference_arity_head.weight.zero_()
+        model.root_reference_arity_head.bias.zero_()
+        model.root_reference_arity_head.bias[2] = 4.0
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    stop = CompletionPath((tokenizer.token_to_id["]"],), "grammar_rsqb")
+    continued = CompletionPath((tokenizer.bind_id(2),), "bind_reference")
+    one_ref = tokenizer.encode("root = Card([title,", add_special=False)
+    two_refs = tokenizer.encode("root = Card([title, body,", add_special=False)
+
+    continue_bias = model._root_reference_arity_path_bias(
+        ctx, ctx_pad, one_ref, (stop, continued)
+    )
+    stop_bias = model._root_reference_arity_path_bias(
+        ctx, ctx_pad, two_refs, (stop, continued)
+    )
+    assert continue_bias is not None and continue_bias[1] > continue_bias[0]
+    assert stop_bias is not None and stop_bias[0] > stop_bias[1]
 
 
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:

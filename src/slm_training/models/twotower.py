@@ -1500,11 +1500,18 @@ class TwoTowerModel(nn.Module):
             isolated_aux_init(
                 lambda: nn.Linear(
                     self.config.d_model,
-                    int(getattr(tokenizer, "ref_slots", 64)) + 1,
+                    int(
+                        getattr(
+                            tokenizer,
+                            "ref_slots",
+                            getattr(tokenizer, "bind_slots", 64),
+                        )
+                    )
+                    + 1,
                 ),
                 108,
             )
-            if root_reference_arity_enabled and _is_choice_output(self.config)
+            if root_reference_arity_enabled
             else None
         )
         root_reference_identity_enabled = (
@@ -3512,9 +3519,27 @@ class TwoTowerModel(nn.Module):
             getattr(self.config, "root_reference_arity_loss_weight", 0.0) or 0.0
         )
         if root_arity_w > 0.0 and self.root_reference_arity_head is not None:
-            from slm_training.models.choice_tokenizer import (
-                structural_root_reference_arity_target,
-            )
+            if _is_choice_output(self.config):
+                from slm_training.models.choice_tokenizer import (
+                    structural_root_reference_arity_target,
+                )
+
+                def root_target(row: int, record: Any) -> tuple[int, int] | None:
+                    return structural_root_reference_arity_target(
+                        self.tokenizer,
+                        target_ids[row].tolist(),
+                        slot_count=len(record.placeholders or ()),
+                    )
+
+            else:
+                from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                    root_declaration_reference_arity_target,
+                )
+
+                def root_target(row: int, _record: Any) -> tuple[int, int] | None:
+                    return root_declaration_reference_arity_target(
+                        self.tokenizer, target_ids[row].tolist()
+                    )
 
             root_logits = self.root_reference_arity_head(
                 self._pool_context(ctx, ctx_pad).detach()
@@ -3523,11 +3548,7 @@ class TwoTowerModel(nn.Module):
             root_hits: list[torch.Tensor] = []
             root_class_counts: list[int] = []
             for row, record in enumerate(batch):
-                target_and_bound = structural_root_reference_arity_target(
-                    self.tokenizer,
-                    target_ids[row].tolist(),
-                    slot_count=len(record.placeholders or ()),
-                )
+                target_and_bound = root_target(row, record)
                 if target_and_bound is None:
                     continue
                 target, section_count = target_and_bound
@@ -8240,6 +8261,52 @@ class TwoTowerModel(nn.Module):
             for index in range(len(paths))
         ]
 
+    def _root_reference_arity_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+    ) -> list[float] | None:
+        """Learned continue/stop bias for lexer-native root-list paths."""
+        weight = float(
+            getattr(self.config, "root_reference_arity_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.root_reference_arity_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_declaration_binder_id,
+            active_declaration_reference_count,
+        )
+
+        try:
+            is_root = active_declaration_binder_id(
+                self.tokenizer, prefix
+            ) == self.tokenizer.bind_id(0)
+            close_id = int(self.tokenizer.token_to_id["]"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+        if not is_root:
+            return None
+        stops = [close_id in path.token_ids for path in paths]
+        if not any(stops) or all(stops):
+            return None
+        emitted = active_declaration_reference_count(self.tokenizer, prefix)
+        if emitted is None:
+            return None
+        logits = self.root_reference_arity_head(self._pool_context(ctx, ctx_pad))[0]
+        split = min(int(emitted) + 1, logits.numel())
+        stop_score = logits[:split].max()
+        continue_score = (
+            logits[split:].max()
+            if split < logits.numel()
+            else logits.new_tensor(-1e4)
+        )
+        return [
+            weight * float(stop_score if stops[index] else continue_score)
+            for index in range(len(paths))
+        ]
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -8373,6 +8440,17 @@ class TwoTowerModel(nn.Module):
                     stats.binder_topology_applications += 1
                     stats.binder_topology_choice_changes += int(
                         int(scores.argmax().item()) != before_topology
+                    )
+            root_arity_bias = self._root_reference_arity_path_bias(
+                ctx, ctx_pad, prefix, paths
+            )
+            if root_arity_bias is not None:
+                before_root_arity = int(scores.argmax().item())
+                scores = scores + scores.new_tensor(root_arity_bias)
+                if stats is not None:
+                    stats.root_reference_arity_applications += 1
+                    stats.root_reference_arity_choice_changes += int(
+                        int(scores.argmax().item()) != before_root_arity
                     )
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
@@ -8547,6 +8625,21 @@ class TwoTowerModel(nn.Module):
                 stats.binder_arity_applications += 1
                 stats.binder_arity_choice_changes += int(
                     max(range(len(paths)), key=path_scores.__getitem__) != before_arity
+                )
+        root_arity_bias = self._root_reference_arity_path_bias(
+            ctx, ctx_pad, prefix, paths
+        )
+        if root_arity_bias is not None:
+            before_root_arity = max(range(len(paths)), key=path_scores.__getitem__)
+            path_scores = [
+                score + root_arity_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+            if stats is not None:
+                stats.root_reference_arity_applications += 1
+                stats.root_reference_arity_choice_changes += int(
+                    max(range(len(paths)), key=path_scores.__getitem__)
+                    != before_root_arity
                 )
         if bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)
