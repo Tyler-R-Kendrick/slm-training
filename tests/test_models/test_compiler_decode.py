@@ -2524,11 +2524,10 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     state = make_grammar_state()
     for token_id in prefix[1:]:
         state.advance_token(tokenizer, token_id)
-    card_id = tokenizer.token_to_id["Card"]
     close_id = tokenizer.token_to_id["]"]
     binder_id = tokenizer.token_to_id["<BIND_1>"]
     stack_id = tokenizer.token_to_id["Stack"]
-    model._semantic_plan_action_counts = [{card_id: 1}]
+    model._semantic_plan_action_counts = [{stack_id: 1}]
     model._slot_contracts = [[":hero.title"]]
 
     bias = model._semantic_plan_typed_array_nonempty_bias(

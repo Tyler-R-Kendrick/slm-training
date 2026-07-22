@@ -4091,7 +4091,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v238",
+      "version": "v239",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4115,6 +4115,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v239",
+          "date": "2026-07-22",
+          "note": "Activate lexer typed-array item margins from planned schema item families instead of requiring the container family itself"
+        },
         {
           "version": "v238",
           "date": "2026-07-22",

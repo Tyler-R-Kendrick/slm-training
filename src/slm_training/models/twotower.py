@@ -7388,11 +7388,31 @@ class TwoTowerModel(nn.Module):
                 ),
                 None,
             )
+            root_schema = library_schema()
+            allowed_components = _schema_component_refs(
+                dict(schema["items"]), root_schema
+            )
+            plan_counts = (
+                self._semantic_plan_action_counts[row]
+                if self._semantic_plan_action_counts
+                and row < len(self._semantic_plan_action_counts)
+                else {}
+            )
+            planned_item_ids = {
+                token_id
+                for token_id, count in plan_counts.items()
+                if count > 0
+                and str(self.tokenizer.id_to_token.get(token_id, ""))
+                .removeprefix("COMP:")
+                .removeprefix("+")
+                in allowed_components
+            }
             if (
                 family_id is None
-                or not self._semantic_plan_action_counts
-                or row >= len(self._semantic_plan_action_counts)
-                or self._semantic_plan_action_counts[row].get(family_id, 0) <= 0
+                or (
+                    plan_counts.get(family_id, 0) <= 0
+                    and not planned_item_ids
+                )
             ):
                 return None
             close_id = self.tokenizer.token_to_id.get("]")
@@ -7405,15 +7425,10 @@ class TwoTowerModel(nn.Module):
             ]
             if not targets:
                 return None
-            root_schema = library_schema()
-            allowed_components = _schema_component_refs(
-                dict(schema["items"]), root_schema
-            )
             typed_targets = [
                 position
                 for position in targets
-                if str(self.tokenizer.id_to_token.get(candidate_ids[position], ""))
-                in allowed_components
+                if candidate_ids[position] in planned_item_ids
             ]
             ranked_targets = typed_targets or targets
             target = max(
