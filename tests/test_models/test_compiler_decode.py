@@ -212,6 +212,36 @@ def test_compiler_singleton_bypass_requires_complete_coverage(
     assert stats.forced_tokens == expected_forced
 
 
+def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    model = _model()
+    forest = CompletionForest((), "complete", terminals=("NAME",))
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_a, **_k: forest
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+
+    with collect_decode_stats() as stats:
+        model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 8, mode="tree", slot_contract=None
+        )
+
+    assert stats.compiler_fallbacks == 1
+    assert stats.constrained_dead_ends == 1
+    assert stats.constrained_dead_end_last_position == 1
+    assert stats.constrained_dead_end_traces == [
+        {
+            "phase": "compiler_tree",
+            "reason": "empty_completion_forest",
+            "position": 1,
+            "prefix_text": "",
+            "prefix_tokens": ["<bos>"],
+            "terminals": ["NAME"],
+        }
+    ]
+
+
 def test_choice_gold_decisions_classify_component_roles() -> None:
     from slm_training.models.choice_tokenizer import ChoiceTokenizer
 
@@ -4688,13 +4718,13 @@ def test_gold_decisions_follow_compiler_forest() -> None:
         if decision.kind.startswith("grammar_")
     )
     empty = tokenizer.encode("root=Stack([])", add_special=True)
-    assert "grammar_rsqb_root_empty" in {
+    assert "grammar_rsqb_root_empty" not in {
         decision.kind for decision in gold_compiler_decisions(tokenizer, empty)
     }
     bound_empty = tokenizer.encode(
         "root=Stack([child])\nchild=Stack([])", add_special=True
     )
-    assert "grammar_rsqb_bound_empty" in {
+    assert "grammar_rsqb_bound_empty" not in {
         decision.kind
         for decision in gold_compiler_decisions(tokenizer, bound_empty)
     }

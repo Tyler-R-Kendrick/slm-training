@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from scripts import check_changed
 from scripts.check_changed import hook_test_targets, select_changed_tests, select_tests
 
@@ -96,3 +98,54 @@ def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
             "--",
         ]
     ]
+
+
+def test_changed_tests_are_collected_once_and_partitioned_by_node(monkeypatch) -> None:
+    commands = []
+
+    def fake_collect(command, **kwargs):
+        assert command == [
+            check_changed.sys.executable,
+            "-m",
+            "pytest",
+            "--collect-only",
+            "-q",
+            "tests/test_a.py",
+            "tests/test_b.py",
+        ]
+        return SimpleNamespace(
+            returncode=0,
+            stdout="tests/test_a.py::test_one\ntests/test_a.py::test_two\ntests/test_b.py::test_three\n",
+            stderr="",
+        )
+
+    def fake_run(command):
+        commands.append(command)
+        return 0
+
+    monkeypatch.setattr(check_changed, "CHANGED_TEST_WORKERS", 2)
+    monkeypatch.setattr(check_changed.subprocess, "run", fake_collect)
+    monkeypatch.setattr(check_changed, "_run", fake_run)
+
+    assert check_changed._run_changed_tests_parallel(
+        ["tests/test_a.py", "tests/test_b.py"]
+    ) == 0
+    assert sorted(commands) == sorted(
+        [
+            [
+                check_changed.sys.executable,
+                "-m",
+                "pytest",
+                "-q",
+                "tests/test_a.py::test_one",
+                "tests/test_b.py::test_three",
+            ],
+            [
+                check_changed.sys.executable,
+                "-m",
+                "pytest",
+                "-q",
+                "tests/test_a.py::test_two",
+            ],
+        ]
+    )

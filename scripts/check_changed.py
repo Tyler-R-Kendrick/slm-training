@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import subprocess
 import sys
@@ -135,6 +136,7 @@ SUITES_BY_PREFIX = (
 )
 CODE_SUFFIXES = {".c", ".css", ".html", ".js", ".json", ".mjs", ".py", ".ts", ".tsx", ".yaml", ".yml"}
 HOOK_TEST_FILE_LIMIT = 100
+CHANGED_TEST_WORKERS = 4
 
 
 def changed_files(*, staged: bool, base_ref: str | None = None) -> list[str]:
@@ -234,7 +236,10 @@ def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = 
         return 1
     if python_paths and _run([sys.executable, "-m", "py_compile", *python_paths]):
         return 1
-    if tests and _run([sys.executable, "-m", "pytest", "-q", *tests]):
+    if tests and changed_tests_only and len(tests) > 1:
+        if _run_changed_tests_parallel(tests):
+            return 1
+    elif tests and _run([sys.executable, "-m", "pytest", "-q", *tests]):
         return 1
     return 0
 
@@ -260,6 +265,36 @@ def _remove_nested_targets(targets: set[str]) -> list[str]:
 def _run(command: list[str]) -> int:
     print("+", " ".join(command))
     return subprocess.run(command, cwd=ROOT, check=False).returncode
+
+
+def _run_changed_tests_parallel(tests: list[str]) -> int:
+    collected = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", *tests],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if collected.returncode:
+        print(collected.stdout, end="")
+        print(collected.stderr, end="", file=sys.stderr)
+        return collected.returncode
+    nodes = [line for line in collected.stdout.splitlines() if "::" in line]
+    if len(nodes) < 2:
+        return _run([sys.executable, "-m", "pytest", "-q", *tests])
+    batches = [
+        nodes[index::CHANGED_TEST_WORKERS]
+        for index in range(CHANGED_TEST_WORKERS)
+    ]
+    commands = [
+        [sys.executable, "-m", "pytest", "-q", *batch]
+        for batch in batches
+        if batch
+    ]
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=CHANGED_TEST_WORKERS
+    ) as executor:
+        return int(any(executor.map(_run, commands)))
 
 
 def main(argv: list[str] | None = None) -> int:

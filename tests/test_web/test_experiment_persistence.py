@@ -607,3 +607,22 @@ def test_e764_held_out_fallback_repair_persists_without_outputs(
     assert "e764-declared-fallback-heldout-n5-r1" not in {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
+
+
+def test_e780_schema_closed_decoder_persists_without_outputs(tmp_path: Path) -> None:
+    readers = Readers(Path(__file__).parents[2])
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    run_id = "e780-schema-closed-heldout-n5-r1"
+    run = readers.run(run_id)
+
+    assert run["provenance"] == "committed"
+    held_out = run["scoreboard"]["suites"]["held_out"]
+    assert held_out["placeholder_fidelity"] == 1.0
+    assert held_out["fallback_count"] == 0
+    assert held_out["structural_similarity"] == 0.39211999999999997
+    assert run["train_summary"] is None
+    assert run_id not in {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }

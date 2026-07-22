@@ -178,9 +178,10 @@ def test_fixture_settings_schema_consistency() -> None:
     train_line = Path("src/slm_training/resources/train_seeds.jsonl").read_text(encoding="utf-8").splitlines()[15]
     test_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(test_line)))
     train_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(train_line)))
-    assert 'SwitchItem(' in test_rec.openui and '"notify"' in test_rec.openui
-    assert 'Slider("volume", "continuous"' in test_rec.openui
-    assert 'Slider("volume", "continuous"' in train_rec.openui
+    assert ':held.settings.notify.name' in test_rec.openui
+    assert 'Slider(":held.settings.volume.name", "continuous"' in test_rec.openui
+    assert ':settings.notify.name' in train_rec.openui
+    assert 'Slider(":settings.volume.name", "continuous"' in train_rec.openui
 
 
 def test_normalize_full_slider_signature_from_generated_schema() -> None:

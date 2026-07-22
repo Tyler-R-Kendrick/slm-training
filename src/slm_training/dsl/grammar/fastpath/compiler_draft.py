@@ -282,6 +282,59 @@ def _references_resolved(tokenizer: Any, prefix_ids: list[int]) -> bool:
     return set(references) <= set(declarations)
 
 
+def _binder_component_types(tokenizer: Any, prefix_ids: list[int]) -> dict[int, str]:
+    """Return binder-to-component types certified by completed declarations."""
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    component_ids = set(tokenizer.kind_ids("component"))
+    equal_id = int(tokenizer.token_to_id["="])
+    return {
+        int(prefix_ids[index]): _token_piece(tokenizer, int(prefix_ids[index + 2]))
+        for index in range(max(0, len(prefix_ids) - 2))
+        if int(prefix_ids[index]) in bind_ids
+        and int(prefix_ids[index + 1]) == equal_id
+        and int(prefix_ids[index + 2]) in component_ids
+    }
+
+
+def _binder_dependencies(tokenizer: Any, prefix_ids: list[int]) -> dict[int, set[int]]:
+    """Return declaration-reference edges present in the generated prefix."""
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    equal_id = int(tokenizer.token_to_id["="])
+    newline_id = tokenizer.token_to_id.get("NL")
+    dependencies: dict[int, set[int]] = {}
+    active: int | None = None
+    for index, raw_token_id in enumerate(prefix_ids):
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            active = None
+            continue
+        if token_id not in bind_ids:
+            continue
+        if index + 1 < len(prefix_ids) and int(prefix_ids[index + 1]) == equal_id:
+            active = token_id
+            dependencies.setdefault(active, set())
+        elif active is not None:
+            dependencies.setdefault(active, set()).add(token_id)
+    return dependencies
+
+
+def _binder_reference_would_cycle(
+    source: int, target: int, dependencies: dict[int, set[int]]
+) -> bool:
+    """Whether adding ``source -> target`` closes a declaration cycle."""
+    pending = [target]
+    visited: set[int] = set()
+    while pending:
+        current = pending.pop()
+        if current == source:
+            return True
+        if current in visited:
+            continue
+        visited.add(current)
+        pending.extend(dependencies.get(current, ()))
+    return False
+
+
 def _active_declaration_scope(tokenizer: Any, prefix_ids: list[int]) -> str | None:
     """Classify the live declaration by typed root/bound binder identity."""
     _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
@@ -541,6 +594,98 @@ def _official_schema() -> dict[str, Any] | None:
     return None
 
 
+def _schema_accepts_symbol(
+    value_schema: dict[str, Any], root_schema: dict[str, Any]
+) -> bool:
+    """Whether a positional property can consume a declared text symbol."""
+    reference = value_schema.get("$ref")
+    if isinstance(reference, str) and reference.startswith("#/$defs/"):
+        target = (root_schema.get("$defs") or {}).get(reference.rsplit("/", 1)[-1])
+        return isinstance(target, dict) and _schema_accepts_symbol(target, root_schema)
+    if value_schema.get("type") == "string":
+        return not value_schema.get("enum") and "const" not in value_schema
+    return any(
+        isinstance(branch, dict) and _schema_accepts_symbol(branch, root_schema)
+        for keyword in ("anyOf", "oneOf", "allOf")
+        for branch in value_schema.get(keyword) or ()
+    ) or (
+        value_schema.get("type") == "array"
+        and isinstance(value_schema.get("items"), dict)
+        and _schema_accepts_symbol(value_schema["items"], root_schema)
+    )
+
+
+def _schema_requires_symbol(
+    value_schema: dict[str, Any],
+    root_schema: dict[str, Any],
+    seen_refs: frozenset[str] = frozenset(),
+) -> bool:
+    """Whether every valid nonempty value needs a declared text symbol."""
+    reference = value_schema.get("$ref")
+    if isinstance(reference, str) and reference.startswith("#/$defs/"):
+        name = reference.rsplit("/", 1)[-1]
+        if name in seen_refs:
+            return False
+        target = (root_schema.get("$defs") or {}).get(name)
+        return isinstance(target, dict) and _schema_requires_symbol(
+            target, root_schema, seen_refs | {name}
+        )
+    if value_schema.get("type") == "string":
+        return not value_schema.get("enum") and "const" not in value_schema
+    if value_schema.get("type") == "array":
+        items = value_schema.get("items")
+        return isinstance(items, dict) and _schema_requires_symbol(
+            items, root_schema, seen_refs
+        )
+    branches = [
+        branch
+        for keyword in ("anyOf", "oneOf")
+        for branch in value_schema.get(keyword) or ()
+        if isinstance(branch, dict)
+    ]
+    if branches:
+        return all(
+            _schema_requires_symbol(branch, root_schema, seen_refs)
+            for branch in branches
+        )
+    all_of = [
+        branch
+        for branch in value_schema.get("allOf") or ()
+        if isinstance(branch, dict)
+    ]
+    if all_of and any(
+        _schema_requires_symbol(branch, root_schema, seen_refs)
+        for branch in all_of
+    ):
+        return True
+    properties = value_schema.get("properties") or {}
+    return any(
+        isinstance(properties.get(name), dict)
+        and _schema_requires_symbol(properties[name], root_schema, seen_refs)
+        for name in value_schema.get("required") or ()
+    )
+
+
+@lru_cache(maxsize=None)
+def _component_requires_available_content(component: str) -> bool:
+    """Whether a component opens text or child-node content."""
+    schema = _official_schema() or {}
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    properties = definition.get("properties") or {}
+    return _schema_requires_symbol(definition, schema) or any(
+        isinstance(property_schema, dict)
+        and (
+            _schema_accepts_symbol(property_schema, schema)
+            or bool(_schema_component_refs(property_schema, schema))
+            or (
+                property_name == "children"
+                and property_schema.get("type") == "array"
+            )
+        )
+        for property_name, property_schema in properties.items()
+    )
+
+
 @lru_cache(maxsize=2048)
 def _generated_ast_is_complete(prefix_text: str) -> bool:
     """Ask the official AST parser whether the current document is complete."""
@@ -674,6 +819,54 @@ def _schema_slot_name(state: Any, schema: dict[str, Any]) -> str | None:
     definition = (schema.get("$defs") or {}).get(component) or {}
     names = list(definition.get("properties") or {})
     return str(names[index]) if index < len(names) else None
+
+
+def _schema_component_refs(
+    value_schema: dict[str, Any], root_schema: dict[str, Any]
+) -> frozenset[str]:
+    """Resolve component names admitted by a local schema reference/union."""
+    names: set[str] = set()
+    reference = value_schema.get("$ref")
+    if isinstance(reference, str) and reference.startswith("#/$defs/"):
+        name = reference.rsplit("/", 1)[-1]
+        if name in set(root_schema.get("properties") or {}):
+            names.add(name)
+        else:
+            target = (root_schema.get("$defs") or {}).get(name)
+            if isinstance(target, dict):
+                names.update(_schema_component_refs(target, root_schema))
+    for keyword in ("anyOf", "oneOf", "allOf"):
+        for branch in value_schema.get(keyword) or ():
+            if isinstance(branch, dict):
+                names.update(_schema_component_refs(branch, root_schema))
+    items = value_schema.get("items")
+    if isinstance(items, dict):
+        names.update(_schema_component_refs(items, root_schema))
+    return frozenset(names)
+
+
+def _schema_array_item_components(
+    state: Any, schema: dict[str, Any]
+) -> frozenset[str]:
+    """Component types admitted by the active array property."""
+    active = _active_call(state)
+    if active is None:
+        return frozenset()
+    component, index, _ = active
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    properties = definition.get("properties") or {}
+    names = list(properties)
+    if index >= len(names):
+        return frozenset()
+    items = (properties.get(names[index]) or {}).get("items") or {}
+    return _schema_component_refs(items, schema)
+
+
+def _active_array_is_empty(state: Any) -> bool:
+    parser = getattr(state, "_ip", None)
+    parser_state = getattr(parser, "parser_state", None)
+    values = list(getattr(parser_state, "value_stack", ()) or ())
+    return bool(values) and str(getattr(values[-1], "type", "")) == "LSQB"
 
 
 def _schema_call_arity(
@@ -906,6 +1099,24 @@ def build_completion_forest(
             or _token_piece(tokenizer, token_id) in component_names
         }
     _record_excluded(ConstraintStage.SCHEMA, "schema_component_not_in_library", before_stage)
+    if schema is not None and slot_contract and "COMPONENT" in terminals:
+        from slm_training.models.grammar import contract_allowed_token_ids
+
+        if contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract) == set():
+            before_stage = _snapshot()
+            candidates = {
+                token_id
+                for token_id in candidates
+                if _semantic_kind(tokenizer, token_id) != "component"
+                or not _component_requires_available_content(
+                    _token_piece(tokenizer, token_id)
+                )
+            }
+            _record_excluded(
+                ConstraintStage.SLOT_CONTRACT,
+                "component_requires_unavailable_symbol",
+                before_stage,
+            )
     enum_sequences = (
         _schema_enum_sequences(tokenizer, engine, schema) if schema else None
     )
@@ -943,11 +1154,53 @@ def build_completion_forest(
                 pass
             _record_excluded(ConstraintStage.SLOT_CONTRACT, "slot_contract_restricted", before_stage)
 
-    if schema_type == "array" and schema_slot == "children" and current_started:
+    array_item_components = (
+        _schema_array_item_components(engine, schema)
+        if schema_type == "array" and schema is not None
+        else frozenset()
+    )
+    if (
+        schema_type == "array"
+        and current_started
+        and (schema_slot == "children" or array_item_components)
+    ):
         before_stage = _snapshot()
         node_terminals = frozenset({"NAME", "COMPONENT", "COMMA", "RSQB", "RPAR"})
         node_ids = allowed_id_set(tokenizer, node_terminals) or set()
         candidates &= node_ids
+        if array_item_components:
+            bind_ids = set(tokenizer.kind_ids("bind"))
+            binder_components = _binder_component_types(tokenizer, prefix_ids)
+            typed_binders = {
+                binder
+                for binder, component in binder_components.items()
+                if component in array_item_components
+            }
+            from slm_training.models.grammar import contract_allowed_token_ids
+
+            unused_symbols = contract_allowed_token_ids(
+                tokenizer, prefix_ids, slot_contract
+            )
+            unknown_binders = (
+                bind_ids - set(binder_components)
+                if unused_symbols is None or bool(unused_symbols)
+                else set()
+            )
+            candidates = {
+                token_id
+                for token_id in candidates
+                if (
+                    _semantic_kind(tokenizer, token_id) != "component"
+                    or _token_piece(tokenizer, token_id) in array_item_components
+                )
+                and (
+                    token_id not in bind_ids
+                    or token_id in typed_binders
+                    or token_id in unknown_binders
+                )
+            }
+        if _active_array_is_empty(engine):
+            candidates -= allowed_id_set(tokenizer, frozenset({"RSQB"})) or set()
         _record_excluded(ConstraintStage.SCHEMA, "schema_array_children", before_stage)
 
     if arity is not None:
@@ -1008,6 +1261,15 @@ def build_completion_forest(
             elif declarations:
                 declared = set(declarations)
                 reusable = declared - {int(active_declaration or -1), tokenizer.bind_id(0)}
+                if active_declaration is not None:
+                    dependencies = _binder_dependencies(tokenizer, prefix_ids)
+                    reusable = {
+                        token_id
+                        for token_id in reusable
+                        if not _binder_reference_would_cycle(
+                            int(active_declaration), token_id, dependencies
+                        )
+                    }
                 unresolved = set(references) - declared
                 used = declared | set(references)
                 next_slot = next(

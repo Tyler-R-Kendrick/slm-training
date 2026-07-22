@@ -192,6 +192,33 @@ def dsl_tok() -> DSLNativeTokenizer:
     return DSLNativeTokenizer.build()
 
 
+def _encodable_dsl_sources(
+    tokenizer: DSLNativeTokenizer,
+) -> list[tuple[str, str, list[str]]]:
+    """Return only symbol/enum targets accepted by the hard output contract."""
+    accepted: list[tuple[str, str, list[str]]] = []
+    for case in _all_sources():
+        _name, source, placeholders = case
+        table = SymbolTable.from_placeholders(
+            placeholders, max_slots=tokenizer.sym_slots
+        )
+        try:
+            tokenizer.encode(source, add_special=False, table=table)
+        except ValueError as exc:
+            assert "free-form output string is forbidden" in str(exc)
+        else:
+            accepted.append(case)
+    return accepted
+
+
+def test_dsl_native_rejects_free_form_targets(dsl_tok: DSLNativeTokenizer) -> None:
+    accepted = {name for name, _source, _slots in _encodable_dsl_sources(dsl_tok)}
+    rejected = {name for name, _source, _slots in _all_sources()} - accepted
+
+    assert "escaped_name" in rejected
+    assert rejected
+
+
 def test_dsl_native_canonicalize_agrees_with_langcore_serializer(
     dsl_tok: DSLNativeTokenizer,
 ) -> None:
@@ -203,7 +230,7 @@ def test_dsl_native_canonicalize_agrees_with_langcore_serializer(
     serializer preserves — so any spacing/order drift in ``_pretty_print``
     breaks the fixed point and fails here.
     """
-    for name, source, placeholders in _all_sources():
+    for name, source, placeholders in _encodable_dsl_sources(dsl_tok):
         canonical = _canonical(source)
         table = SymbolTable.from_placeholders(
             placeholders, max_slots=dsl_tok.sym_slots
@@ -216,7 +243,7 @@ def test_dsl_native_ids_are_fixed_point_of_decode(
     dsl_tok: DSLNativeTokenizer,
 ) -> None:
     """Training-target ids re-encode from their own decode (loss space fixed)."""
-    for name, source, placeholders in _all_sources():
+    for name, source, placeholders in _encodable_dsl_sources(dsl_tok):
         table = SymbolTable.from_placeholders(
             placeholders, max_slots=dsl_tok.sym_slots
         )
@@ -231,7 +258,7 @@ def test_dsl_native_ids_are_fixed_point_of_decode(
 def test_dsl_native_roundtrip_is_canonical_equal_modulo_alpha(
     dsl_tok: DSLNativeTokenizer,
 ) -> None:
-    for name, source, placeholders in _all_sources():
+    for name, source, placeholders in _encodable_dsl_sources(dsl_tok):
         table = SymbolTable.from_placeholders(
             placeholders, max_slots=dsl_tok.sym_slots
         )
@@ -282,7 +309,13 @@ def test_lexer_targets_from_normalized_records_are_decode_fixed(
         table = SymbolTable.from_placeholders(
             normalized.placeholders, max_slots=dsl_tok.sym_slots
         )
-        ids = dsl_tok.encode(normalized.openui, add_special=False, table=table)
+        try:
+            ids = dsl_tok.encode(
+                normalized.openui, add_special=False, table=table
+            )
+        except ValueError as exc:
+            assert "free-form output string is forbidden" in str(exc), record.id
+            continue
         decoded = dsl_tok.decode(ids, table=table)
         fresh = SymbolTable.from_placeholders(
             normalized.placeholders, max_slots=dsl_tok.sym_slots

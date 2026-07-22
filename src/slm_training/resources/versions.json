@@ -2718,16 +2718,22 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v44",
+      "version": "v45",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
         "src/slm_training/harnesses/model_build/eval_runner.py",
         "src/slm_training/harnesses/model_build/eval_policy.py",
+        "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v45",
+          "date": "2026-07-22",
+          "note": "Count certified finalization fallbacks in decode telemetry and honest fallback gates"
+        },
         {
           "version": "v44",
           "date": "2026-07-22",
@@ -3320,16 +3326,22 @@
       ]
     },
     "harness.train_data": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
         "src/slm_training/data/mixture.py",
+        "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-22",
+          "note": "Templatize every OpenUI pack-generator target before record emission and remove stale free-form settings names from canonical train seeds"
+        },
         {
           "version": "v10",
           "date": "2026-07-21",
@@ -3850,7 +3862,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v222",
+      "version": "v223",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3874,6 +3886,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v223",
+          "date": "2026-07-22",
+        "note": "Derive component-array boundaries, nonempty typed children, available-content closure, typed binder compatibility, and acyclic references from schema so constrained decode cannot enter impossible continuations"
+        },
         {
           "version": "v222",
           "date": "2026-07-22",

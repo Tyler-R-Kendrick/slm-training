@@ -1067,6 +1067,7 @@ def evaluate(
                 "compiler_fallbacks",
                 "seeded_fallbacks",
                 "template_fallback_count",
+                "certified_fallbacks",
             )
         )
     else:
