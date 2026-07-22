@@ -5461,3 +5461,16 @@ Reject the checkpoint and decode lever; retain only non-causal syntax evidence.
 
 Evidence: [narrative](iter-e721-component-plan-symbol-only-20260721.md) and
 [JSON](iter-e721-component-plan-symbol-only-20260721.json).
+
+## E722 symbol-only component edges
+
+E722 trains the existing resolved-AST component-edge objective alongside E721's
+role/count plan. A 150-step local CPU run completes in 77.52 seconds under
+`max_wall_minutes=2`. Smoke parse is 1.0, structure 0.2861, recall 0.5, and
+reward 0.8313, but strict-v2 meaning remains 0.0. Edge weight 1 records nine
+applications and zero choice changes; the edge-off control has identical
+outputs and aggregate metrics. Reject the causal lever and checkpoint; retain
+only the non-semantic Pareto observation.
+
+Evidence: [narrative](iter-e722-component-edge-symbol-only-20260721.md) and
+[JSON](iter-e722-component-edge-symbol-only-20260721.json).
