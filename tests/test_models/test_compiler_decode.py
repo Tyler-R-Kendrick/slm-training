@@ -2292,8 +2292,8 @@ def test_lexer_semantic_role_ranks_compiler_component_family(monkeypatch) -> Non
         ),
     )
     paths = (
-        CompletionPath((button, tokenizer.token_to_id["("]), "component_bound"),
-        CompletionPath((text, tokenizer.token_to_id["("]), "component_bound"),
+        CompletionPath((button, tokenizer.token_to_id["("]), "component"),
+        CompletionPath((text, tokenizer.token_to_id["("]), "component"),
     )
     ctx, ctx_pad = model._encode_context(["Single button."])
 

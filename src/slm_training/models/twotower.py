@@ -5026,10 +5026,11 @@ class TwoTowerModel(nn.Module):
             getattr(self.config, "semantic_role_decode_weight", 0.0) or 0.0
         )
         learned_enabled = learned_weight > 0.0 and self.slot_component_head is not None
+        bound_component_kinds = {"component", "component_bound"}
         if (
             (not learned_enabled and role_weight <= 0.0)
             or not slot_contract
-            or "component_bound" not in candidate_kinds
+            or not bound_component_kinds.intersection(candidate_kinds)
         ):
             return None
         remaining_slots: list[str] = []
@@ -5093,7 +5094,7 @@ class TwoTowerModel(nn.Module):
             zip(candidate_ids, candidate_kinds, strict=True)
         ):
             index = component_index.get(token_id)
-            if index is None or kind != "component_bound":
+            if index is None or kind not in bound_component_kinds:
                 continue
             slot_content_count = getattr(self.tokenizer, "slot_content_count", None)
             required = (
