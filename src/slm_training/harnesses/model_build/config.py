@@ -160,6 +160,8 @@ class ModelBuildConfig:
     rico_eval_limit: int | None = None
     # Optional cap for every eval suite; diagnostic-only when explicitly set.
     eval_limit: int | None = None
+    # Skip this many records before applying eval_limit (diagnostic sampling).
+    eval_offset: int = 0
     # Accelerator / throughput
     use_amp: bool = False
     use_compile: bool = False

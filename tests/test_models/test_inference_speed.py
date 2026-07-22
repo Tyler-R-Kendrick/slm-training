@@ -207,7 +207,7 @@ def test_greedy_ltr_exact_bypass_matches_model_ranked_output(monkeypatch) -> Non
         ),
         device="cpu",
     )
-    root_id = model.tokenizer.token_to_id["root"]
+    first_symbol_id = model.tokenizer.encode(SAMPLE)[1]
     forward_batches: list[int] = []
 
     def forward(ids, *_args):
@@ -217,16 +217,16 @@ def test_greedy_ltr_exact_bypass_matches_model_ranked_output(monkeypatch) -> Non
             -10.0,
             device=ids.device,
         )
-        logits[..., root_id] = 10.0
+        logits[..., first_symbol_id] = 10.0
         return logits
 
     monkeypatch.setattr(
         "slm_training.models.twotower.force_emit_token_id",
-        lambda *_args, **_kwargs: root_id,
+        lambda *_args, **_kwargs: first_symbol_id,
     )
     monkeypatch.setattr(
         "slm_training.models.twotower.exact_forced_token_id",
-        lambda *_args, **_kwargs: root_id,
+        lambda *_args, **_kwargs: first_symbol_id,
     )
     monkeypatch.setattr(model, "_denoiser_forward", forward)
     ctx, ctx_pad = model._encode_context(["hero card"])

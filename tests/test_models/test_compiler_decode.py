@@ -3445,9 +3445,7 @@ def test_semantic_plan_role_obligations_keep_reachable_roles_nested() -> None:
     )
 
     assert counts == Counter({"Card": 2})
-    assert bindings == {
-        "TextContent": (":dashboard.m1.value", ":dashboard.m2.value")
-    }
+    assert bindings == {}
 
 
 def test_semantic_plan_role_obligations_do_not_add_reachable_joint_carrier() -> None:
@@ -3464,9 +3462,7 @@ def test_semantic_plan_role_obligations_do_not_add_reachable_joint_carrier() -> 
     )
 
     assert counts == Counter({"Card": 5})
-    assert bindings == {
-        "TextContent": (":cards.title", ":cards.body"),
-    }
+    assert bindings == {}
 
 
 def test_semantic_plan_role_obligations_add_unowned_namespace_sibling() -> None:
@@ -3487,7 +3483,7 @@ def test_semantic_plan_role_obligations_add_unowned_namespace_sibling() -> None:
 
     assert counts == Counter({"Card": 5, "TextContent": 1})
     assert bindings == {
-        "TextContent": tuple(slots),
+        "TextContent": (":toolbar.text",),
     }
 
 
@@ -5600,6 +5596,21 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
     assert (
         model._required_slot_margin_bias(prefix, candidates, scores, None) is None
     )
+
+
+def test_native_slot_contract_excludes_already_emitted_marker() -> None:
+    from slm_training.models.grammar import contract_allowed_token_ids
+
+    model = _model()
+    tokenizer = model.tokenizer
+    slot0 = tokenizer.sym_id(0)
+    slot1 = tokenizer.sym_id(1)
+
+    assert contract_allowed_token_ids(
+        tokenizer,
+        [tokenizer.bos_id, slot0],
+        [":status.title", ":status.body"],
+    ) == {slot1}
 
 
 def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:

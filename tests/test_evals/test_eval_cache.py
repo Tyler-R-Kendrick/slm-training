@@ -132,6 +132,23 @@ def test_suite_result_key_includes_all_dependencies() -> None:
     assert key.checkpoint_sha256 == "ckpt"
 
 
+def test_suite_result_key_distinguishes_eval_offset() -> None:
+    common = {
+        "suite": "rico_held",
+        "checkpoint_sha256": "ckpt",
+        "eval_data_manifest_sha": "data",
+        "eval_suite_manifest_sha": "suite",
+        "eval_limit": 9,
+        "evaluation_policy": {},
+        "component_versions": {},
+    }
+
+    prefix = suite_result_key(**common, extra={"eval_offset": 0})
+    shifted = suite_result_key(**common, extra={"eval_offset": 40})
+
+    assert prefix.fingerprint() != shifted.fingerprint()
+
+
 def test_request_generation_key_and_metric_key_differ() -> None:
     gen_key = request_generation_key(
         checkpoint_sha256="ckpt",

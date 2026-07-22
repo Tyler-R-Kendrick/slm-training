@@ -8,7 +8,11 @@ from pathlib import Path
 import torch
 
 from slm_training.dsl.schema import load_jsonl
-from slm_training.models.tokenizer import OpenUITokenizer, TOKENIZER_VERSION
+from slm_training.models.tokenizer import (
+    OpenUITokenizer,
+    TOKENIZER_VERSION,
+    load_tokenizer_sidecar,
+)
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 
@@ -224,7 +228,7 @@ def migrate_to_shared_recursive_denoiser(
     tokenizer_path = old_path.with_suffix(".tokenizer.json")
     if not tokenizer_path.exists():
         raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tokenizer_path}")
-    tokenizer = OpenUITokenizer.load(tokenizer_path, allow_legacy=True)
+    tokenizer = load_tokenizer_sidecar(tokenizer_path, allow_legacy=True)
 
     raw_cfg = dict(payload.get("config") or {})
     if isinstance(raw_cfg.get("grammar_ltr_stages"), list):

@@ -120,6 +120,61 @@ def test_suite_loader_falls_back_when_manifest_path_is_checkout_relative(
     assert load_suite_records(tmp_path, "smoke") == [record]
 
 
+def test_evaluate_applies_offset_before_limit(
+    tmp_path: Path,
+) -> None:
+    test_dir = tmp_path / "eval"
+    suite_dir = test_dir / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    records = [
+        ExampleRecord(
+            id=f"s{index}",
+            prompt=f"Prompt {index}",
+            openui='root = TextContent(":value")',
+            split="smoke",
+            meta={"suite": "smoke"},
+        )
+        for index in range(4)
+    ]
+    write_jsonl(suite_dir / "records.jsonl", records)
+    config = ModelBuildConfig(
+        train_dir=tmp_path / "train",
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="offset",
+        model_name="stub",
+        eval_offset=2,
+        eval_limit=1,
+    )
+
+    metrics = evaluate(config, model=StubModel(), publish_agentv=False)
+
+    assert metrics["n"] == 1
+    assert metrics["eval_offset"] == 2
+    assert metrics["eval_limit"] == 1
+    assert metrics["details"][0]["id"] == "s2"
+
+
+def test_evaluate_rejects_negative_offset(tmp_path: Path) -> None:
+    test_dir = tmp_path / "eval"
+    suite_dir = test_dir / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    write_jsonl(
+        suite_dir / "records.jsonl",
+        [ExampleRecord(id="s0", prompt="p", openui="root = Stack([])")],
+    )
+    config = ModelBuildConfig(
+        train_dir=tmp_path / "train",
+        test_dir=test_dir,
+        suite="smoke",
+        eval_offset=-1,
+    )
+
+    with pytest.raises(ValueError, match="eval_offset must be non-negative"):
+        evaluate(config, model=StubModel(), publish_agentv=False)
+
+
 def test_train_loader_rejects_free_form_targets_before_a_run_exists(
     tmp_path: Path,
 ) -> None:

@@ -577,11 +577,19 @@ def evaluate(
         raise ValueError("test_dir is required for evaluation")
 
     records = load_suite_records(config.test_dir, config.suite)
+    suite_offset = int(config.eval_offset)
+    if suite_offset < 0:
+        raise ValueError("eval_offset must be non-negative")
     suite_limit = getattr(config, "eval_limit", None)
     if suite_limit is None and config.suite == "rico_held":
         suite_limit = getattr(config, "rico_eval_limit", None)
-    if suite_limit is not None:
-        records = records[: max(0, int(suite_limit))]
+    records = records[
+        suite_offset : (
+            suite_offset + max(0, int(suite_limit))
+            if suite_limit is not None
+            else None
+        )
+    ]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:
@@ -670,6 +678,7 @@ def evaluate(
             "eval_data_manifest_sha": eval_data_manifest_sha,
             "eval_suite_manifest_sha": eval_suite_manifest_sha,
             "suite_limit": suite_limit,
+            "suite_offset": suite_offset,
             "evaluation_policy": evaluation_policy,
             "component_versions": component_versions,
         }
@@ -681,6 +690,7 @@ def evaluate(
             eval_limit=suite_limit,
             evaluation_policy=evaluation_policy,
             component_versions=component_versions,
+            extra={"eval_offset": suite_offset},
         )
         if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
             cached_metrics = cache.get(cache_key)
@@ -1082,7 +1092,8 @@ def evaluate(
         "document_n": document_n,
         "fragment_n": n - document_n,
         "eval_limit": suite_limit,
-        "diagnostic_subset": suite_limit is not None,
+        "eval_offset": suite_offset,
+        "diagnostic_subset": suite_limit is not None or suite_offset > 0,
         # Persist the effective decode policy beside every scoreboard.  This
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout

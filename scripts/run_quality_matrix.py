@@ -1293,13 +1293,17 @@ def _strict_compiler_tree_policy() -> dict[str, Any]:
     )
     return dict(
         runtime_override_fields=runtime_fields,
+        design_md_in_context=False,
         **STRICT_COMPILER_TREE_POLICY,
     )
 
 
 def _v9_experiments(train_dir: Path) -> list[Experiment]:
     """E240-E247: eval-only compiler-lattice search campaign."""
-    base = dict(**_strict_compiler_tree_policy(), initialization="eval_only")
+    base = dict(
+        **_strict_compiler_tree_policy(),
+        initialization="eval_only",
+    )
     return [
         Experiment("E240", "qx_e240_compiler_tree_control", "Corrected greedy compiler-tree control", train_dir, **base),
         Experiment("E241", "qx_e241_lattice_rollback", "Hard/soft lattice with bounded rollback", train_dir, compiler_search_mode="lattice", **base),

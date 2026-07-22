@@ -242,27 +242,31 @@ def _archetypes() -> list[dict[str, Any]]:
             "id": "switch",
             "prompt": (
                 "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc. "
-                "Placeholders: :settings.caption :settings.desc"
+                "and description :settings.desc using name :settings.name. "
+                "Placeholders: :settings.caption :settings.desc :settings.name"
             ),
             "positive": (
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", ":settings.name")\n'
             ),
-            "slot_contract": (":settings.caption", ":settings.desc"),
+            "slot_contract": (
+                ":settings.caption",
+                ":settings.desc",
+                ":settings.name",
+            ),
         },
         {
             "id": "tabs",
             "prompt": (
-                "Build tabs with a tab item whose trigger is :tab.trigger "
+                "Build tabs with a tab item whose value is :tab.value, trigger is :tab.trigger "
                 "and content is :tab.content. "
-                "Placeholders: :tab.trigger :tab.content"
+                "Placeholders: :tab.value :tab.trigger :tab.content"
             ),
             "positive": (
                 'root = Tabs([tab1])\n'
-                'tab1 = TabItem("tab1", ":tab.trigger", [TextContent(":tab.content")])\n'
+                'tab1 = TabItem(":tab.value", ":tab.trigger", [TextContent(":tab.content")])\n'
             ),
-            "slot_contract": (":tab.trigger", ":tab.content"),
+            "slot_contract": (":tab.value", ":tab.trigger", ":tab.content"),
         },
         {
             "id": "button",
@@ -1170,22 +1174,24 @@ def build_canary_canonical_equivalent_positive_cases(seed: int = 0) -> list[Metr
             slice=SLICE_CANARY_CANONICAL_EQUIVALENT_POSITIVE,
             prompt=(
                 "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc. Placeholders: :settings.caption :settings.desc"
+                "and description :settings.desc using name :settings.name. "
+                "Placeholders: :settings.caption :settings.desc :settings.name"
             ),
             pred_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", ":settings.name")\n'
             ),
             request=_request(
                 "Build a switch item for notifications with caption :settings.caption "
-                "and description :settings.desc. Placeholders: :settings.caption :settings.desc",
-                (":settings.caption", ":settings.desc"),
+                "and description :settings.desc using name :settings.name. "
+                "Placeholders: :settings.caption :settings.desc :settings.name",
+                (":settings.caption", ":settings.desc", ":settings.name"),
             ),
             expected_verdict=True,
             expected_reason_substrings=(),
             gold_openui=(
                 'root = Stack([s])\n'
-                's = SwitchItem(":settings.caption", ":settings.desc", "notifications")\n'
+                's = SwitchItem(":settings.caption", ":settings.desc", ":settings.name")\n'
             ),
             transform="stack_wrapped_switch",
             notes="SwitchItem wrapped in a Stack remains a valid switch item.",

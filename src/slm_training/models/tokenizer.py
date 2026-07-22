@@ -34,6 +34,21 @@ UNK = "<unk>"
 SPECIAL = [PAD, BOS, EOS, MASK, UNK]
 
 
+def load_tokenizer_sidecar(path: Path | str, *, allow_legacy: bool = False):
+    """Load a tokenizer sidecar using its persisted kind/schema markers."""
+    path = Path(path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if raw.get("kind") == "choice_codec":
+        from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+        return ChoiceTokenizer.load(path)
+    if raw.get("kind") == "dsl_native" or "id_to_kind" in raw:
+        from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+        return DSLNativeTokenizer.load(path)
+    return OpenUITokenizer.load(path, allow_legacy=allow_legacy)
+
+
 def _decompose_quoted_placeholder(token: str) -> list[str] | None:
     """Split a quoted placeholder literal into compositional subtokens."""
     if len(token) < 4 or not (token.startswith('"') and token.endswith('"')):

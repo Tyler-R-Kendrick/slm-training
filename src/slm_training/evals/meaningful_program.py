@@ -26,7 +26,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 METRIC_NAME = "binding_aware_meaningful_v2"
-METRIC_VERSION = "2.12.0"
+METRIC_VERSION = "2.13.0"
 _ASSIGNMENT_RE = re.compile(
     r"(?m)^\s*(\$?[A-Za-z_][A-Za-z0-9_]*)\s*="
 )
@@ -387,6 +387,16 @@ def _inventory_check(
     contract: PromptContractV2,
 ) -> SemanticCheckV2:
     present_slots = {str(row["placeholder"]) for row in placeholders}
+    slot_counts = Counter(str(row["placeholder"]) for row in placeholders)
+    duplicate_slots = (
+        sorted(
+            slot
+            for slot, count in slot_counts.items()
+            for _ in range(max(0, count - 1))
+        )
+        if contract.placeholder_coverage_known
+        else []
+    )
     present_components = Counter(str(row["type"]) for row in components)
     missing_slots = sorted(set(contract.required_placeholders) - present_slots)
     unexpected_slots = (
@@ -420,11 +430,19 @@ def _inventory_check(
     missing_components = (
         missing_components if contract.component_coverage_known else []
     )
-    if missing_slots or unexpected_slots or missing_components or role_mismatches:
+    if (
+        missing_slots
+        or unexpected_slots
+        or duplicate_slots
+        or missing_components
+        or role_mismatches
+    ):
         evidence = tuple(
             _evidence("prompt.placeholders", value) for value in missing_slots
         ) + tuple(
             _evidence("root.placeholders", value) for value in unexpected_slots
+        ) + tuple(
+            _evidence("root.placeholders", value) for value in duplicate_slots
         ) + tuple(
             _evidence("prompt.components", value) for value in missing_components
         ) + tuple(
@@ -438,6 +456,7 @@ def _inventory_check(
                 for code, values in (
                     ("required_placeholder_missing", missing_slots),
                     ("unexpected_placeholder_identity", unexpected_slots),
+                    ("duplicate_placeholder_identity", duplicate_slots),
                     ("required_component_missing", missing_components),
                     ("placeholder_semantic_role_mismatch", role_mismatches),
                 )

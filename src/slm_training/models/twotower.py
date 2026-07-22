@@ -102,7 +102,11 @@ from slm_training.dsl.action_shortlist import (
     retrieve_then_rerank,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
-from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
+from slm_training.models.tokenizer import (
+    OpenUITokenizer,
+    load_tokenizer_sidecar,
+    tokenize_text,
+)
 
 _OPAQUE_PROJECTION_MODELS: ContextVar[frozenset[int]] = ContextVar(
     "twotower_opaque_projection_models",
@@ -164,21 +168,6 @@ def _is_choice_output(config: "TwoTowerConfig | None") -> bool:
         "choices",
         "choice_codec",
     }
-
-
-def _load_any_tokenizer(path: Path | str):
-    """Load compositional, lexer-native, or choice-codec tokenizer from sidecar."""
-    path = Path(path)
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    if raw.get("kind") == "choice_codec":
-        from slm_training.models.choice_tokenizer import ChoiceTokenizer
-
-        return ChoiceTokenizer.load(path)
-    if raw.get("kind") == "dsl_native" or "id_to_kind" in raw:
-        from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-
-        return DSLNativeTokenizer.load(path)
-    return OpenUITokenizer.load(path)
 
 
 def _require_symbol_only_tokenizer(tokenizer: object) -> None:
@@ -5502,6 +5491,7 @@ class TwoTowerModel(nn.Module):
                     None,
                 )
                 if family is not None:
+                    added_direct = False
                     exhausted_direct = any(
                         direct in planned
                         and not TwoTowerModel._semantic_role_family_has_capacity(
@@ -5518,8 +5508,10 @@ class TwoTowerModel(nn.Module):
                     if exhausted_direct and family not in schema_descendants:
                         completed[family] += 1
                         planned.add(family)
+                        added_direct = True
                     coverage[reachable_family].append(slot)
-                    bindings[family].append(slot)
+                    if added_direct:
+                        bindings[family].append(slot)
                     continue
             nested_candidates = tuple(
                 family for family in candidates if family in schema_descendants
@@ -13268,10 +13260,10 @@ class TwoTowerModel(nn.Module):
         self.output_contract_version = int(payload.get("output_contract_version", 0))
         tok_path = path.with_suffix(".tokenizer.json")
         if tok_path.exists():
-            self.tokenizer = _load_any_tokenizer(tok_path)
+            self.tokenizer = load_tokenizer_sidecar(tok_path)
         ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
         if ctx_tok_path.exists():
-            self.context_tokenizer = _load_any_tokenizer(ctx_tok_path)
+            self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
         else:
             self.context_tokenizer = self.tokenizer
 
@@ -13297,10 +13289,10 @@ class TwoTowerModel(nn.Module):
         tok_path = path.with_suffix(".tokenizer.json")
         if not tok_path.exists():
             raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tok_path}")
-        tokenizer = _load_any_tokenizer(tok_path)
+        tokenizer = load_tokenizer_sidecar(tok_path)
         ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
         context_tokenizer = (
-            _load_any_tokenizer(ctx_tok_path) if ctx_tok_path.exists() else tokenizer
+            load_tokenizer_sidecar(ctx_tok_path) if ctx_tok_path.exists() else tokenizer
         )
         raw_cfg = dict(payload.get("config") or {})
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):

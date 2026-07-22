@@ -478,8 +478,8 @@ def contract_allowed_token_ids(
     When building a quoted placeholder, return allowed next token ids from the
     slot contract inventory. None means no contract filter applies.
 
-    For lexer-native tokenizers with a symbol table, this returns the set of
-    ``<SYM_i>`` ids corresponding to the inventory (prefix-independent).
+    For lexer-native tokenizers with a symbol table, this returns the unused
+    ``<SYM_i>`` ids corresponding to the inventory.
     """
     if not slot_contract:
         return None
@@ -496,8 +496,10 @@ def contract_allowed_token_ids(
             )
             allowed: set[int] = set()
             for i, _ph in enumerate(table.placeholders):
-                allowed.add(tokenizer.sym_id(i))
-            return allowed or None
+                token_id = tokenizer.sym_id(i)
+                if token_id not in prefix_ids:
+                    allowed.add(token_id)
+            return allowed
     except Exception:  # noqa: BLE001
         pass
 
