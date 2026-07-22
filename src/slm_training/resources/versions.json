@@ -156,13 +156,18 @@
       ]
     },
     "data.test_build": {
-      "version": "v3",
+      "version": "v4",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
         "src/slm_training/harnesses/test_data/"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-22",
+          "note": "Stamp test-data build evidence and resolve train-manifest records from the owning checkout"
+        },
         {
           "version": "v3",
           "date": "2026-07-22",

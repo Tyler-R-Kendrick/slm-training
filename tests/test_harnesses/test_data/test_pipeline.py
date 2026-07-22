@@ -10,6 +10,7 @@ import pytest
 from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import output_contract_violations
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.data.leakage import load_train_fingerprints
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
@@ -65,7 +66,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
     out_dir = Path(result["output_dir"])
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["suite_counts"]["smoke"] == 1
-    assert manifest["version_stamp"]["components"] == {"data.test_build": "v3"}
+    assert manifest["version_stamp"]["components"] == {"data.test_build": "v4"}
     assert result["stats"]["version_stamp"] == manifest["version_stamp"]
     assert (out_dir / "suites" / "smoke" / "records.jsonl").exists()
 
@@ -342,3 +343,37 @@ def test_test_builder_templatizes_or_rejects_free_form_targets(tmp_path: Path) -
             )
         )
     assert not rejected_root.exists()
+
+
+def test_train_manifest_records_resolve_from_owning_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkout = tmp_path / "owner"
+    dataset = checkout / "outputs" / "data" / "train" / "fixture"
+    dataset.mkdir(parents=True)
+    write_jsonl(
+        dataset / "records.jsonl",
+        [
+            ExampleRecord(
+                id="train_record",
+                prompt="Button.",
+                openui='root = Button(":button.label")',
+                split="train",
+            )
+        ],
+    )
+    manifest = dataset / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "records": "outputs/data/train/fixture/records.jsonl",
+                "ids": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+
+    assert load_train_fingerprints(manifest)["ids"] == {"train_record"}
