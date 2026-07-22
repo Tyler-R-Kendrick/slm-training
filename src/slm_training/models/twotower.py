@@ -5135,6 +5135,31 @@ class TwoTowerModel(nn.Module):
             )
         return bias if applied else None
 
+    def _slot_component_bias_for_row(
+        self,
+        row: int,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        slot_contract: list[str] | None = None,
+    ) -> torch.Tensor | None:
+        """Apply learned and declared slot-family scores for one decode row."""
+
+        def row_value(values: list[Any] | None) -> Any:
+            return values[row] if values and row < len(values) else None
+
+        return self._slot_component_bias(
+            ctx,
+            ctx_pad,
+            prefix,
+            candidate_ids,
+            candidate_kinds,
+            slot_contract if slot_contract is not None else row_value(self._slot_contracts),
+            row_value(self._semantic_role_candidates),
+        )
+
     def _semantic_plan_covered_counts(
         self,
         state: Any,
@@ -8512,7 +8537,8 @@ class TwoTowerModel(nn.Module):
                     stats.component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_plan
                     )
-            slot_bias = self._slot_component_bias(
+            slot_bias = self._slot_component_bias_for_row(
+                plan_row,
                 ctx,
                 ctx_pad,
                 prefix,
@@ -8676,7 +8702,8 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
                             )
-                    slot_bias = self._slot_component_bias(
+                    slot_bias = self._slot_component_bias_for_row(
+                        plan_row,
                         ctx,
                         ctx_pad,
                         prefix,
@@ -9643,23 +9670,13 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
                             )
-                    slot_bias = self._slot_component_bias(
+                    slot_bias = self._slot_component_bias_for_row(
+                        row,
                         ctx[row : row + 1],
                         ctx_pad[row : row + 1],
                         ids[row, :position].tolist(),
                         candidate_ids,
                         candidate_kinds,
-                        (
-                            self._slot_contracts[row]
-                            if self._slot_contracts and row < len(self._slot_contracts)
-                            else None
-                        ),
-                        (
-                            self._semantic_role_candidates[row]
-                            if self._semantic_role_candidates
-                            and row < len(self._semantic_role_candidates)
-                            else None
-                        ),
                     )
                     if slot_bias is not None:
                         before_slot = int(scores.argmax().item())

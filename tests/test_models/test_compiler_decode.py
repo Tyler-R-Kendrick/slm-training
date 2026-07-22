@@ -2273,6 +2273,44 @@ def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> 
     assert selected == paths[0].token_ids
 
 
+def test_lexer_semantic_role_ranks_compiler_component_family(monkeypatch) -> None:
+    model = _model(semantic_role_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    button = tokenizer.token_to_id["Button"]
+    text = tokenizer.token_to_id["TextContent"]
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root = Stack([", add_special=False)]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._slot_contracts = [[":cta.label"]]
+    model._semantic_role_candidates = [{":cta.label": ("Button",)}]
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [2.0 if token_id == text else 1.0 for token_id in candidate_ids]
+        ),
+    )
+    paths = (
+        CompletionPath((button, tokenizer.token_to_id["("]), "component_bound"),
+        CompletionPath((text, tokenizer.token_to_id["("]), "component_bound"),
+    )
+    ctx, ctx_pad = model._encode_context(["Single button."])
+
+    selected = model._select_compiler_path(
+        prefix,
+        paths,
+        ctx,
+        ctx_pad,
+        32,
+        tree=True,
+        slot_contract=model._slot_contracts[0],
+        state=state,
+    )
+
+    assert selected == paths[0].token_ids
+
+
 def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     from slm_training.data.semantic_plan import OpenUISemanticPlanCompiler
     from slm_training.models.template_fill import prompt_semantic_plan
