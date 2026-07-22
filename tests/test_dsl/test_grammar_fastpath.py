@@ -477,7 +477,7 @@ def test_completion_forest_keeps_untyped_forward_reference_in_typed_array() -> N
         tokenizer,
         prefix,
         state=make_grammar_state(),
-        slot_contract=[":tab", ":body"],
+        slot_contract=[":slot_0", ":slot_1"],
     )
 
     candidates = {tokenizer.id_to_token[token_id] for token_id in forest.candidate_ids}

@@ -4740,14 +4740,14 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
 def test_completion_forest_closes_max_arity_after_array_argument() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=TabItem(":value",":label",[TextContent(":content")]',
+        'root=TabItem(":slot_0",":slot_1",[TextContent(":slot_2")]',
         add_special=False,
     )
 
     forest = build_completion_forest(
         tokenizer,
         prefix,
-        slot_contract=[":value", ":label", ":content"],
+        slot_contract=[":slot_0", ":slot_1", ":slot_2"],
         enforce_schema_component_types=True,
     )
 
@@ -4758,8 +4758,10 @@ def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
     from slm_training.models.dsl_tokenizer import TokenKind
 
     tokenizer = DSLNativeTokenizer.build()
-    contract = [":value", ":label"]
-    prefix = tokenizer.encode('root=RadioItem(":value",":label",', add_special=False)
+    contract = [":slot_0", ":slot_1"]
+    prefix = tokenizer.encode(
+        'root=RadioItem(":slot_0",":slot_1",', add_special=False
+    )
     forest = build_completion_forest(tokenizer, prefix, slot_contract=contract)
 
     assert "LIT_STR" not in tokenizer.token_to_id
@@ -4939,11 +4941,11 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
     resolved = [
         tokenizer.bos_id,
         *tokenizer.encode(
-            'root=Stack([b1],"column")\nb1=TextContent(":hero.title")',
+            'root=Stack([b1],"column")\nb1=TextContent(":slot_0")',
             add_special=False,
         ),
     ]
-    forest = build_completion_forest(tokenizer, resolved, slot_contract=[":hero.title"])
+    forest = build_completion_forest(tokenizer, resolved, slot_contract=[":slot_0"])
     assert tokenizer.eos_id in forest.candidate_ids
 
 
@@ -4990,9 +4992,9 @@ def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> 
 @pytest.mark.parametrize(
     ("prefix_text", "allowed", "rejected"),
     [
-        ('root=Form(":name",', "Buttons", "Button"),
+        ('root=Form(":slot_0",', "Buttons", "Button"),
         (
-            'root=Form(":name",Buttons([]),[FormControl(":label",',
+            'root=Form(":slot_0",Buttons([]),[FormControl(":slot_1",',
             "Input",
             "TextContent",
         ),
@@ -5029,7 +5031,8 @@ def test_completion_forest_enforces_direct_component_property_schema(
 def test_completion_forest_propagates_direct_component_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form(":name",b1,[FormControl(":label",Input("email"))])\nb1=',
+        'root=Form(":slot_0",b1,[FormControl(":slot_1",'
+        'Input("email",":slot_2"))])\nb1=',
         add_special=True,
     )[:-1]
 
