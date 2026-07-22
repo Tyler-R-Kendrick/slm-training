@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from slm_training.harnesses.model_build import ModelBuildConfig, build_model, train
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, DEFAULT_TRAIN_DATA_DIR
 from slm_training.harnesses.model_build.data import load_train_records
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.eval_policy import (
@@ -2648,13 +2649,13 @@ def _run_sde5_floor_escape(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
+    parser.add_argument("--train-dir", type=Path, default=DEFAULT_TRAIN_DATA_DIR)
     parser.add_argument(
         "--curriculum-dir",
         type=Path,
-        default=Path("outputs/data/train/v1_curriculum"),
+        default=DEFAULT_TRAIN_DATA_DIR,
     )
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
+    parser.add_argument("--test-dir", type=Path, default=DEFAULT_EVAL_DATA_DIR)
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(
         "--docs-out",
@@ -2780,7 +2781,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--namespace-dir",
         type=Path,
-        default=Path("outputs/data/train/v1_namespace"),
+        default=DEFAULT_TRAIN_DATA_DIR,
     )
     parser.add_argument(
         "--matrix",
@@ -2884,8 +2885,8 @@ def main(argv: list[str] | None = None) -> int:
     # snapshot; use the requested corpus unless a curriculum path was also
     # explicitly selected.
     if (
-        args.train_dir != Path("outputs/data/train/v1")
-        and args.curriculum_dir == Path("outputs/data/train/v1_curriculum")
+        args.train_dir != DEFAULT_TRAIN_DATA_DIR
+        and args.curriculum_dir == DEFAULT_TRAIN_DATA_DIR
     ):
         args.curriculum_dir = args.train_dir
     args.suites = tuple(

@@ -11,6 +11,8 @@ import tempfile
 import uuid
 from dataclasses import fields, replace
 from pathlib import Path
+
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, DEFAULT_TRAIN_DATA_DIR
 from typing import Any
 
 from slm_training.lineage.data_cycle import snapshot_directory
@@ -1331,9 +1333,9 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--run-id", required=True)
     evaluate.add_argument("--report-id")
     evaluate.add_argument(
-        "--train-dir", type=Path, default=Path("outputs/data/train/v1")
+        "--train-dir", type=Path, default=DEFAULT_TRAIN_DATA_DIR
     )
-    evaluate.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
+    evaluate.add_argument("--test-dir", type=Path, default=DEFAULT_EVAL_DATA_DIR)
     evaluate.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     evaluate.add_argument("--device", default="cpu")
     evaluate.add_argument("--scoreboard")

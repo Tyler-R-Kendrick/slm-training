@@ -9,6 +9,8 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, DEFAULT_TRAIN_DATA_DIR
 from typing import Any
 
 from slm_training.harnesses.model_build import ModelBuildConfig, train
@@ -97,8 +99,8 @@ def run_seed(args: argparse.Namespace, seed: int) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
+    parser.add_argument("--train-dir", type=Path, default=DEFAULT_TRAIN_DATA_DIR)
+    parser.add_argument("--test-dir", type=Path, default=DEFAULT_EVAL_DATA_DIR)
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--context-backend", choices=("scratch", "hf"), default="scratch")

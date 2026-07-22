@@ -33,6 +33,15 @@ VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
 
+# Active, source-controlled corpora. Historical snapshots remain immutable
+# evidence but fail the canonical marker guard and are never CLI defaults.
+DEFAULT_TRAIN_DATA_DIR: Final = Path(
+    "src/slm_training/resources/data/train/e826_target_slots_only_v4"
+)
+DEFAULT_EVAL_DATA_DIR: Final = Path(
+    "src/slm_training/resources/data/eval/e827_target_slots_only_v4"
+)
+
 # Template markers are codec identities, never semantic supervision.  Keep this
 # policy beside every other user-facing lever so there is one discoverable
 # source of truth for training and decode configuration.
@@ -397,6 +406,18 @@ def lever_catalog() -> dict[str, dict[str, Any]]:
         "default": TEMPLATE_MARKERS_ARE_OPAQUE,
         "type": "bool",
         "source": "slm_training.levers.TEMPLATE_MARKERS_ARE_OPAQUE",
+    }
+    catalog["default_train_data_dir"] = {
+        "category": "data",
+        "default": str(DEFAULT_TRAIN_DATA_DIR),
+        "type": "Path",
+        "source": "slm_training.levers.DEFAULT_TRAIN_DATA_DIR",
+    }
+    catalog["default_eval_data_dir"] = {
+        "category": "data",
+        "default": str(DEFAULT_EVAL_DATA_DIR),
+        "type": "Path",
+        "source": "slm_training.levers.DEFAULT_EVAL_DATA_DIR",
     }
     from slm_training.harnesses.model_build.eval_policy import EVALUATION_POLICIES
 

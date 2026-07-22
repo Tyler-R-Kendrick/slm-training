@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v20",
+      "version": "v21",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-22",
+          "note": "Centralize the only eligible default train and eval corpus paths beside all other run levers"
+        },
         {
           "version": "v20",
           "date": "2026-07-22",
@@ -181,7 +186,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v7",
+      "version": "v8",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -189,6 +194,11 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-22",
+          "note": "Default test-data builds to the canonical opaque-marker train manifest"
+        },
         {
           "version": "v7",
           "date": "2026-07-22",
@@ -2753,7 +2763,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v48",
+      "version": "v49",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2764,6 +2774,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-07-22",
+          "note": "Default evaluation and tokenizer rebuilds to source-controlled opaque-marker corpora"
+        },
         {
           "version": "v48",
           "date": "2026-07-22",
@@ -3591,12 +3606,17 @@
       ]
     },
     "matrix.grammar": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_grammar_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Default every grammar-matrix data arm to canonical opaque-marker corpora"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -3605,12 +3625,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Default performance evaluation to the canonical opaque-marker eval corpus"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -3619,12 +3644,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v5",
+      "version": "v6",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-22",
+          "note": "Default every quality-matrix data arm to canonical opaque-marker corpora"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -3942,7 +3972,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v231",
+      "version": "v232",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3966,6 +3996,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v232",
+          "date": "2026-07-22",
+          "note": "Default training to the canonical source-controlled opaque-marker corpus"
+        },
         {
           "version": "v231",
           "date": "2026-07-22",

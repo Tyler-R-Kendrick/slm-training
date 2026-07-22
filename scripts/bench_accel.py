@@ -8,6 +8,8 @@ import json
 import time
 from pathlib import Path
 
+from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+
 from slm_training.runtime.accel import detect_device, maybe_compile, sync_device
 from slm_training.dsl.schema import load_jsonl
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
@@ -96,7 +98,7 @@ def _micro_variant(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
+    parser.add_argument("--train-dir", type=Path, default=DEFAULT_TRAIN_DATA_DIR)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--gen-rounds", type=int, default=3)

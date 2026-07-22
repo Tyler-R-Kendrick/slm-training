@@ -7,6 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, DEFAULT_TRAIN_DATA_DIR
+
 from slm_training.evals.agentv import publish_agentv_evaluation
 from slm_training.harnesses.model_build.diagnostic import run_full_diagnostic
 
@@ -16,12 +18,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/data/train/v1"),
+        default=DEFAULT_TRAIN_DATA_DIR,
     )
     parser.add_argument(
         "--test-dir",
         type=Path,
-        default=Path("outputs/data/eval/v1"),
+        default=DEFAULT_EVAL_DATA_DIR,
     )
     parser.add_argument(
         "--out",

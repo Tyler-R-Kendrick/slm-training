@@ -7,6 +7,8 @@ import hashlib
 import json
 from collections import Counter
 from pathlib import Path
+
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR
 from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
@@ -740,7 +742,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--capture-replay-bundle", type=Path)
     parser.add_argument("--unavailable-set", action="append", type=_parse_note, default=[])
     parser.add_argument("--gaming-corpus", type=Path)
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
+    parser.add_argument("--test-dir", type=Path, default=DEFAULT_EVAL_DATA_DIR)
     parser.add_argument("--minimum-frontier-sets", type=int, default=10)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--run-dir", type=Path)

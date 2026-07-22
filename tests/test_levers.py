@@ -8,7 +8,9 @@ from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.levers import (
     CHANGED_TEST_WORKERS,
     DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_EVAL_DATA_DIR,
     DEFAULT_OUTPUT_TOKENIZER,
+    DEFAULT_TRAIN_DATA_DIR,
     HF_JOB_TIMEOUT,
     HARNESS_FINALIZATION_RESERVE_SECONDS,
     INTERRUPT_AFTER_SECONDS,
@@ -42,6 +44,8 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert lever_catalog()["decode_timeout_seconds"]["default"] == 12.0
     assert "docs/MODEL_CARD.md" in VERCEL_FUNCTION_INCLUDE_FILES
     assert CHANGED_TEST_WORKERS > 0
+    assert DEFAULT_TRAIN_DATA_DIR.is_dir()
+    assert DEFAULT_EVAL_DATA_DIR.is_dir()
 
 
 def test_catalog_discovers_build_levers_and_context_differences() -> None:
@@ -59,6 +63,10 @@ def test_catalog_discovers_build_levers_and_context_differences() -> None:
         "type": "int",
         "source": "slm_training.levers.CHANGED_TEST_WORKERS",
     }
+    assert catalog["default_train_data_dir"]["default"] == str(
+        DEFAULT_TRAIN_DATA_DIR
+    )
+    assert catalog["default_eval_data_dir"]["default"] == str(DEFAULT_EVAL_DATA_DIR)
     assert catalog["semantic_plan_decode_weight"]["category"] == "decode"
     assert catalog["context_backend"]["contexts_diverge"] is True
     assert catalog["context_backend"]["checkpoint_default"] == "scratch"

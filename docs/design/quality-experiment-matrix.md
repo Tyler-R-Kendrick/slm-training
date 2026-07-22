@@ -6138,3 +6138,15 @@ two rows timed out, fidelity fell to 0.3333, structure to 0.1263, recall to
 move next to structured plan/schema reachability for repeated typed
 collections. Full evidence:
 [all-path margin results](iter-e839-e840-all-path-plan-margin-20260722.md).
+
+# E841 — canonical corpus defaults (2026-07-22)
+
+A tracked-resource audit found 11,029 persisted record rows: 1,345 canonical
+opaque-marker rows and 9,684 historical named-marker rows that the shared
+loader rejects. Historical snapshots remain immutable provenance, not eligible
+training data. The centralized lever registry now makes E826 (350 train rows)
+and E827 (23 eval rows) the only CLI defaults across the canonical train, eval,
+matrix, phase, autoresearch, benchmark, diagnosis, migration, and model-cycle
+entrypoints. This prevents missing `outputs/data/*/v1` paths or legacy named
+corpora from being selected implicitly. Full evidence:
+[canonical corpus default audit](iter-e841-canonical-corpus-defaults-20260722.md).

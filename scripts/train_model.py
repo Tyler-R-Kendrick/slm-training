@@ -9,7 +9,7 @@ from pathlib import Path
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
-from slm_training.levers import DEFAULT_OUTPUT_TOKENIZER
+from slm_training.levers import DEFAULT_OUTPUT_TOKENIZER, DEFAULT_TRAIN_DATA_DIR
 
 
 def _probability(value: str) -> float:
@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/data/train/v1"),
+        default=DEFAULT_TRAIN_DATA_DIR,
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(

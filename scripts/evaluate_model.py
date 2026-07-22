@@ -22,7 +22,9 @@ from slm_training.harnesses.model_build.ship_gates import (
 )
 from slm_training.levers import (
     DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_EVAL_DATA_DIR,
     DEFAULT_EVALUATION_POLICY,
+    DEFAULT_TRAIN_DATA_DIR,
 )
 
 
@@ -69,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--test-dir",
         type=Path,
-        default=Path("outputs/data/eval/v1"),
+        default=DEFAULT_EVAL_DATA_DIR,
     )
     parser.add_argument("--suite", default="smoke")
     parser.add_argument(
@@ -97,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/data/train/v1"),
+        default=DEFAULT_TRAIN_DATA_DIR,
         help="Used to rebuild vocab when loading TwoTower without sidecar tokenizer.",
     )
     parser.add_argument(
