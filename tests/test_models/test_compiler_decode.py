@@ -4652,6 +4652,29 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
     assert set(after_number.candidate_ids) == {tokenizer.token_to_id[","]}
 
 
+def test_completion_forest_enforces_primitive_array_item_schema() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":value"]
+    prefix = tokenizer.encode(
+        'root=Slider(":value","continuous",0,100,1,[', add_special=False
+    )
+    item = build_completion_forest(tokenizer, prefix, slot_contract=contract)
+    assert tokenizer.token_to_id["LIT_NUM"] in item.candidate_ids
+    assert tokenizer.token_to_id["SwitchGroup"] not in item.candidate_ids
+
+    completed = build_completion_forest(
+        tokenizer,
+        tokenizer.encode(
+            'root=Slider(":value","continuous",0,100,1,[40', add_special=False
+        ),
+        slot_contract=contract,
+    )
+    assert set(completed.candidate_ids) == {
+        tokenizer.token_to_id[","],
+        tokenizer.token_to_id["]"],
+    }
+
+
 def test_completion_forest_rejects_enum_absent_from_fixed_schema_vocabulary(
     monkeypatch,
 ) -> None:

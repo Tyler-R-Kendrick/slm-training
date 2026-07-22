@@ -870,6 +870,32 @@ def _active_array_is_empty(state: Any) -> bool:
     return bool(values) and str(getattr(values[-1], "type", "")) == "LSQB"
 
 
+def _active_array_position(state: Any) -> str | None:
+    """Return the schema array's item position from incremental parser state."""
+    parser = getattr(state, "_ip", None)
+    parser_state = getattr(parser, "parser_state", None)
+    values = list(getattr(parser_state, "value_stack", ()) or ())
+    call_at = next(
+        (
+            index
+            for index in range(len(values) - 1, -1, -1)
+            if str(getattr(values[index], "type", "")) == "LPAR"
+        ),
+        -1,
+    )
+    brackets: list[int] = []
+    for index, value in enumerate(values[call_at + 1 :], start=call_at + 1):
+        token_type = str(getattr(value, "type", ""))
+        if token_type == "LSQB":
+            brackets.append(index)
+        elif token_type == "RSQB" and brackets:
+            brackets.pop()
+    if not brackets:
+        return None
+    tail_type = str(getattr(values[-1], "type", ""))
+    return "item_start" if tail_type in {"LSQB", "COMMA"} else "item_end"
+
+
 def _schema_call_arity(
     state: Any, schema: dict[str, Any]
 ) -> tuple[int, int, int, bool] | None:
@@ -1160,6 +1186,41 @@ def build_completion_forest(
         if schema_type == "array" and schema is not None
         else frozenset()
     )
+    active_array_position = (
+        _active_array_position(engine)
+        if schema_type == "array" and current_started
+        else None
+    )
+    if active_array_position is not None and schema is not None:
+        active = _active_call(engine)
+        if active is not None:
+            component, index, _arg_count = active
+            definition = (schema.get("$defs") or {}).get(component) or {}
+            names = list(definition.get("properties") or {})
+            value = (
+                (definition.get("properties") or {}).get(names[index]) or {}
+                if index < len(names)
+                else {}
+            )
+            items = value.get("items") or {}
+            item_terminals = _schema_type_terminals(items.get("type"))
+            if item_terminals is not None:
+                before_stage = _snapshot()
+                if active_array_position == "item_start":
+                    typed_ids = allowed_id_set(tokenizer, item_terminals) or set()
+                    close_ids = allowed_id_set(
+                        tokenizer, frozenset({"RSQB"})
+                    ) or set()
+                    candidates &= typed_ids | close_ids
+                else:
+                    candidates &= allowed_id_set(
+                        tokenizer, frozenset({"COMMA", "RSQB"})
+                    ) or set()
+                _record_excluded(
+                    ConstraintStage.SCHEMA,
+                    "schema_array_item_type",
+                    before_stage,
+                )
     if (
         schema_type == "array"
         and current_started
@@ -1213,7 +1274,9 @@ def build_completion_forest(
         if arg_count < minimum:
             rpar_ids = allowed_id_set(tokenizer, frozenset({"RPAR"})) or set()
             candidates -= rpar_ids
-        if arg_count >= maximum:
+        if arg_count >= maximum and not (
+            schema_type == "array" and current_started
+        ):
             comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
             candidates -= comma_ids
         _record_excluded(ConstraintStage.SCHEMA, "schema_arity", before_stage)
