@@ -5870,3 +5870,16 @@ topology before changing weights or training.
 
 Evidence: [JSON](iter-e747-e751-symbol-only-rico-ownership-20260722.json) and
 [notes](iter-e747-e751-symbol-only-rico-ownership-20260722.md).
+
+## E752 repeated Card sibling topology
+
+Model v213 removes inline role metadata from component cardinality and prevents
+implicit repeated-family self-nesting. The matched local CPU RICO replay turns
+the E751 six-deep Card chain into sibling Cards and cuts p95 6974→4634 ms, but
+the parent array closes after two of five planned Cards. Fidelity is 0.4545,
+structure 0.5025, strict-v2 0, and AgentV 0/1. Retain the topology repair but do
+not promote; next carry the existing semantic-plan margin across the lexer
+delimiter decision. No checkpoint was created or synced.
+
+Evidence: [JSON](iter-e752-repeated-card-siblings-20260722.json) and
+[notes](iter-e752-repeated-card-siblings-20260722.md).

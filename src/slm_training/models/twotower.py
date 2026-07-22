@@ -5679,6 +5679,28 @@ class TwoTowerModel(nn.Module):
                         )
                         forbidden_self_nesting.add(position)
                         applied = True
+                remaining_families = {
+                    family
+                    for family, token_id in family_token_ids.items()
+                    if family != active_family
+                    and remaining_counts.get(token_id, 0) > 0
+                }
+                comma_id = self.tokenizer.token_to_id.get(",")
+                close_id = self.tokenizer.token_to_id.get("]")
+                if (
+                    margin > 0.0
+                    and remaining_families
+                    and comma_id in candidate_ids
+                    and close_id in candidate_ids
+                ):
+                    target = candidate_ids.index(comma_id)
+                    bias[target] = max(
+                        float(bias[target].item()),
+                        float(candidate_scores.max().item())
+                        + margin
+                        - float(candidate_scores[target].item()),
+                    )
+                    applied = True
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
         ):

@@ -3819,7 +3819,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v213",
+      "version": "v214",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3841,6 +3841,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v214",
+          "date": "2026-07-22",
+          "note": "Carry the semantic-plan margin across lexer array delimiters while sibling component requirements remain"
+        },
         {
           "version": "v213",
           "date": "2026-07-22",
