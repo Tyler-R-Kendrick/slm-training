@@ -8271,8 +8271,9 @@ class TwoTowerModel(nn.Module):
         ctx_pad: torch.Tensor | None,
         prefix: list[int],
         paths: tuple,
+        path_scores: list[float],
     ) -> list[float] | None:
-        """Learned continue/stop bias for lexer-native root-list paths."""
+        """Interpolate lexer root-list ranking toward the learned arity class."""
         weight = float(
             getattr(self.config, "root_reference_arity_decode_weight", 0.0) or 0.0
         )
@@ -8306,10 +8307,13 @@ class TwoTowerModel(nn.Module):
             if split < logits.numel()
             else logits.new_tensor(-1e4)
         )
-        return [
-            weight * float(stop_score if stops[index] else continue_score)
-            for index in range(len(paths))
-        ]
+        prefer_stop = bool(stop_score >= continue_score)
+        preferred = [index for index, stop in enumerate(stops) if stop == prefer_stop]
+        other = [index for index, stop in enumerate(stops) if stop != prefer_stop]
+        preferred_best = max(path_scores[index] for index in preferred)
+        other_best = max(path_scores[index] for index in other)
+        shift = min(weight, 1.0) * max(0.0, other_best - preferred_best + 1e-4)
+        return [shift if index in preferred else 0.0 for index in range(len(paths))]
 
     def _select_compiler_path(
         self,
@@ -8446,7 +8450,11 @@ class TwoTowerModel(nn.Module):
                         int(scores.argmax().item()) != before_topology
                     )
             root_arity_bias = self._root_reference_arity_path_bias(
-                ctx, ctx_pad, prefix, paths
+                ctx,
+                ctx_pad,
+                prefix,
+                paths,
+                [float(score) for score in scores.detach().cpu().tolist()],
             )
             if root_arity_bias is not None:
                 before_root_arity = int(scores.argmax().item())
@@ -8631,7 +8639,7 @@ class TwoTowerModel(nn.Module):
                     max(range(len(paths)), key=path_scores.__getitem__) != before_arity
                 )
         root_arity_bias = self._root_reference_arity_path_bias(
-            ctx, ctx_pad, prefix, paths
+            ctx, ctx_pad, prefix, paths, path_scores
         )
         if root_arity_bias is not None:
             before_root_arity = max(range(len(paths)), key=path_scores.__getitem__)

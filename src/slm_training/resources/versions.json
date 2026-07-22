@@ -3754,7 +3754,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v195",
+      "version": "v196",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3776,6 +3776,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v196",
+          "date": "2026-07-22",
+          "note": "Calibrate lexer root-reference arity weight one as interpolation to the trained continue-or-stop class"
+        },
         {
           "version": "v195",
           "date": "2026-07-22",

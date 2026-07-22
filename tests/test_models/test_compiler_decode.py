@@ -4319,13 +4319,15 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
     two_refs = tokenizer.encode("root = Card([title, body,", add_special=False)
 
     continue_bias = model._root_reference_arity_path_bias(
-        ctx, ctx_pad, one_ref, (stop, continued)
+        ctx, ctx_pad, one_ref, (stop, continued), [2.0, 1.0]
     )
     stop_bias = model._root_reference_arity_path_bias(
-        ctx, ctx_pad, two_refs, (stop, continued)
+        ctx, ctx_pad, two_refs, (stop, continued), [1.0, 2.0]
     )
-    assert continue_bias is not None and continue_bias[1] > continue_bias[0]
-    assert stop_bias is not None and stop_bias[0] > stop_bias[1]
+    assert continue_bias is not None
+    assert 1.0 + continue_bias[1] > 2.0 + continue_bias[0]
+    assert stop_bias is not None
+    assert 1.0 + stop_bias[0] > 2.0 + stop_bias[1]
 
 
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
