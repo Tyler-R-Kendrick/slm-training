@@ -23,7 +23,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
+          # The torch-heavy pip cache is about 3 GB and takes roughly 40 seconds
+          # to restore, which consumes a third of this job's hard wall budget.
+          # Install the constrained binary wheels directly instead.
       - name: Install Python and Node dependencies
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
