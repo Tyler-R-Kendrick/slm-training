@@ -106,15 +106,24 @@ def test_vercel_policy_is_generated_from_canonical_run_levers(tmp_path: Path) ->
         '{"maxDuration":180,"includeFiles":"old/**"}}}\n',
         encoding="utf-8",
     )
+    ignore = tmp_path / ".vercelignore"
+    ignore.write_text("manual/**\n", encoding="utf-8")
 
-    assert len(validate_vercel_run_policy(root=tmp_path)) == 3
-    assert sync_run_policy(root=tmp_path) == [config]
+    assert len(validate_vercel_run_policy(root=tmp_path)) == 4
+    assert sync_run_policy(root=tmp_path) == [config, ignore]
     assert validate_vercel_run_policy(root=tmp_path) == []
     generated = json.loads(config.read_text(encoding="utf-8"))
     function = generated["functions"]["src/slm_training/web/vercel.py"]
     assert function["maxDuration"] == 120
     assert function["includeFiles"] == "{docs/design/**,docs/MODEL_CARD.md}"
     assert function["excludeFiles"] == "{outputs/**,tests/**}"
+    assert ignore.read_text(encoding="utf-8") == (
+        "manual/**\n\n"
+        "# BEGIN GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES\n"
+        "outputs/**\n"
+        "tests/**\n"
+        "# END GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES\n"
+    )
 
 
 def test_former_root_buckets_cannot_return() -> None:

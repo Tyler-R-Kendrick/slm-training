@@ -115,6 +115,20 @@ def _vercel_exclude_glob(*, root: Path = ROOT) -> str:
     return "{" + ",".join(canonical_vercel_exclude_files(root=root)) + "}"
 
 
+_VERCELIGNORE_START = "# BEGIN GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES"
+_VERCELIGNORE_END = "# END GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES"
+
+
+def _vercelignore_block(*, root: Path = ROOT) -> str:
+    return "\n".join(
+        (
+            _VERCELIGNORE_START,
+            *canonical_vercel_exclude_files(root=root),
+            _VERCELIGNORE_END,
+        )
+    )
+
+
 def validate_top_level(paths: Iterable[str]) -> list[str]:
     roots = {path.split("/", 1)[0] for path in paths if path}
     return [
@@ -264,6 +278,14 @@ def validate_vercel_run_policy(*, root: Path = ROOT) -> list[str]:
             "Vercel bundle exclusions differ from canonical levers; run "
             "`python -m scripts.repo_policy --sync-run-policy`"
         )
+    ignore_path = root / ".vercelignore"
+    if not ignore_path.is_file() or _vercelignore_block(root=root) not in (
+        ignore_path.read_text(encoding="utf-8")
+    ):
+        errors.append(
+            "Vercel upload exclusions differ from canonical levers; run "
+            "`python -m scripts.repo_policy --sync-run-policy`"
+        )
     return errors
 
 
@@ -285,6 +307,19 @@ def sync_run_policy(*, root: Path = ROOT) -> list[Path]:
     if after != before:
         path.write_text(after, encoding="utf-8")
         changed.append(path)
+    ignore_path = root / ".vercelignore"
+    if ignore_path.is_file():
+        before = ignore_path.read_text(encoding="utf-8")
+        block = _vercelignore_block(root=root)
+        if _VERCELIGNORE_START in before and _VERCELIGNORE_END in before:
+            prefix, remainder = before.split(_VERCELIGNORE_START, 1)
+            _, suffix = remainder.split(_VERCELIGNORE_END, 1)
+            after = prefix.rstrip() + "\n\n" + block + suffix
+        else:
+            after = before.rstrip() + "\n\n" + block + "\n"
+        if after != before:
+            ignore_path.write_text(after, encoding="utf-8")
+            changed.append(ignore_path)
     return changed
 
 
