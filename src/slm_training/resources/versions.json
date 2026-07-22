@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-22",
+          "note": "Make structural AST-plan decode weights atomic members of the strict compiler-tree evaluation policy so callers cannot silently omit them"
+        },
         {
           "version": "v25",
           "date": "2026-07-22",
@@ -4071,7 +4076,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v235",
+      "version": "v236",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4095,6 +4100,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v236",
+          "date": "2026-07-22",
+          "note": "Union parent and current scratch context vocabularies during warm-start so filtered corpora cannot discard learned token rows"
+        },
         {
           "version": "v235",
           "date": "2026-07-22",

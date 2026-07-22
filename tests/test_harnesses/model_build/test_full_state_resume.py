@@ -291,7 +291,7 @@ def test_initialize_from_resets_state_for_new_corpus(
     assert retained["recipe"]["initialization_weight_retention"] == 1.0
 
 
-def test_initialize_from_remaps_context_vocab_for_filtered_corpus(
+def test_initialize_from_unions_context_vocab_for_filtered_corpus(
     train_dir: Path, tmp_path: Path
 ) -> None:
     source = train(_cfg(train_dir, tmp_path, "vocab_source", 0))
@@ -324,7 +324,11 @@ def test_initialize_from_remaps_context_vocab_for_filtered_corpus(
     initialized_model = TwoTowerModel.from_checkpoint(Path(initialized["checkpoint"]))
 
     assert "Novel" in initialized_model.context_tokenizer.token_to_id
-    assert "Hero" not in initialized_model.context_tokenizer.token_to_id
+    assert "Hero" in initialized_model.context_tokenizer.token_to_id
+    assert set(initialized_model.context_tokenizer.token_to_id) == (
+        set(source_model.context_tokenizer.token_to_id)
+        | {"Novel", " ", "filtered", "vocabulary"}
+    )
     for token in ("<pad>", "<bos>", "<eos>", "<mask>", "<unk>"):
         source_id = source_model.context_tokenizer.token_to_id[token]
         initialized_id = initialized_model.context_tokenizer.token_to_id[token]

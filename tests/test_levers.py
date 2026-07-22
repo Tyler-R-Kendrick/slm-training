@@ -22,6 +22,7 @@ from slm_training.levers import (
     VERCEL_FUNCTION_INCLUDE_FILES,
     MAX_RUN_SECONDS,
     PROHIBITED_TEMPLATE_SEMANTIC_LEVERS,
+    STRICT_COMPILER_TREE_POLICY,
     TRAINED_DECODE_REQUIREMENTS,
     lever_catalog,
     missing_lever_companions,
@@ -44,6 +45,8 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert config.decode_timeout_seconds == DEFAULT_DECODE_TIMEOUT_SECONDS == 12.0
     assert lever_catalog()["output_tokenizer"]["default"] == "lexer"
     assert lever_catalog()["decode_timeout_seconds"]["default"] == 12.0
+    assert STRICT_COMPILER_TREE_POLICY["semantic_plan_decode_weight"] == 4.0
+    assert STRICT_COMPILER_TREE_POLICY["semantic_plan_margin_decode_weight"] == 2.0
     assert "docs/MODEL_CARD.md" in VERCEL_FUNCTION_INCLUDE_FILES
     assert CHANGED_TEST_WORKERS > 0
     assert DEFAULT_TRAIN_DATA_DIR.is_dir()

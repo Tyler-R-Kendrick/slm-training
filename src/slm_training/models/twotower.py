@@ -13228,6 +13228,42 @@ class TwoTowerModel(nn.Module):
             source_context_tokenizer = load_tokenizer_sidecar(
                 ctx_tok_path if ctx_tok_path.exists() else tok_path
             )
+            source_tokens = sorted(
+                source_context_tokenizer.token_to_id,
+                key=source_context_tokenizer.token_to_id.get,
+            )
+            current_tokens = sorted(
+                self.context_tokenizer.token_to_id,
+                key=self.context_tokenizer.token_to_id.get,
+            )
+            merged_tokens = source_tokens + [
+                token for token in current_tokens if token not in source_context_tokenizer.token_to_id
+            ]
+            merged_token_to_id = {
+                token: index for index, token in enumerate(merged_tokens)
+            }
+            current_embedding = self.context.encoder.tok
+            merged_embedding = nn.Embedding(
+                len(merged_tokens),
+                current_embedding.embedding_dim,
+                device=current_embedding.weight.device,
+                dtype=current_embedding.weight.dtype,
+            )
+            with torch.no_grad():
+                for token, current_id in self.context_tokenizer.token_to_id.items():
+                    merged_id = merged_token_to_id[token]
+                    merged_embedding.weight[merged_id].copy_(
+                        current_embedding.weight[current_id]
+                    )
+            self.context.encoder.tok = merged_embedding
+            self.context_tokenizer = OpenUITokenizer(
+                token_to_id=merged_token_to_id,
+                id_to_token={index: token for token, index in merged_token_to_id.items()},
+                version=max(
+                    source_context_tokenizer.version,
+                    self.context_tokenizer.version,
+                ),
+            )
             source_weight = state_dict["context.encoder.tok.weight"]
             target_weight = self.context.encoder.tok.weight.detach().clone()
             for token, target_id in self.context_tokenizer.token_to_id.items():

@@ -70,6 +70,10 @@ STRICT_COMPILER_TREE_POLICY: Final = {
     **STRICT_EVALUATION_POLICY,
     "output_tokenizer": DEFAULT_OUTPUT_TOKENIZER,
     "compiler_decode_mode": "tree",
+    # Structural AST-plan scoring is part of the policy, not a caller-owned
+    # pair of optional flags. This consumes no marker names or free-form text.
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
 }
 PROHIBITED_TEMPLATE_SEMANTIC_LEVERS: Final = {
     "namespace_augment": "renames opaque markers into user-defined namespaces",

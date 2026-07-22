@@ -4,7 +4,7 @@
   "run_id": "e878-e877-v51-smoke-n3-r1",
   "experiment_id": "E868-E878",
   "date": "2026-07-22",
-  "decision": "retain_harness_fixes_reject_checkpoint",
+  "decision": "retain_data_harness_fixes_eval_unmatched",
   "data": {
     "snapshot": "src/slm_training/resources/data/train/e872_e851_hard80_v2",
     "source_records": 351,
@@ -53,7 +53,7 @@
     },
     {
       "run_id": "e877-e852-hard80-warm20-r1",
-      "status": "completed_rejected",
+      "status": "completed_pending_matched_eval",
       "steps": 20,
       "elapsed_wall_seconds": 52.7125,
       "last_loss": 6.4177,
@@ -62,7 +62,7 @@
     }
   ],
   "suites": {
-    "smoke": {
+    "smoke_unmatched_invalid": {
       "n": 3,
       "parse_rate": 1.0,
       "meaningful_program_rate": 0.6666666666666666,
@@ -87,6 +87,9 @@
     "context_backend": "scratch",
     "output_tokenizer": "lexer",
     "evaluation_policy": "strict_compiler_tree",
+    "semantic_plan_decode_weight": 0.0,
+    "semantic_plan_margin_decode_weight": 0.0,
+    "comparison_status": "invalid_unmatched_against_E865_weights_4_and_2",
     "suite": "smoke",
     "n": 3,
     "diagnostic_subset": true,
