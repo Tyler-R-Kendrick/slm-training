@@ -6632,3 +6632,16 @@ already-curated snapshot: strict recomposition shrinks E937 from 524 rows to
 bounded exposure-targeted sampling, but E1013 held strict/fidelity/structure
 fall to 0/0.47/0.2457 with six fallbacks. Reject E1011 and generic rare-action
 exposure for this failure. See `iter-e1009-e1013-topology-exposure-20260722.md`.
+
+E1014 isolates 59 Form/Tabs `component_bound` decisions over 17 unique
+surfaces, each with 32 legal component candidates. Binder topology/arity do not
+supervise those labels. The first full replay times out and is invalid; the
+focused replay completes in 19.5s. E1015 is an invalid 59/100 wall-budget
+partial. E1016 restarts from scratch and completes 80 batch-2 binder-component
+steps in 58.58s. Matched E1018 smoke regresses to parse/strict/recall
+0.6667/0.3333/0.3333 with one timeout. E1019 held reaches only
+strict/fidelity/structure/recall 0.4/0.5/0.2290/0.4286. The single changed held
+choice recovers Tabs with fidelity and recall 1.0, but Form still collapses.
+Reject E1016, retain the narrow causal signal, and optimize shared compiler
+supervision before another full-corpus arm. See
+`iter-e1014-e1019-binder-component-plan-20260722.md`.
