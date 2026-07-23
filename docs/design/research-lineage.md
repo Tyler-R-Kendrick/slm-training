@@ -1593,6 +1593,22 @@ fails closed if a positive E803 claim or unsupported benefit is substituted.
 Evidence and scope:
 [`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).
 
+## Staged DSL capability baseline (DSH0-01 / SLM-345)
+
+**Fidelity label: repository contract.** The staged vocabulary introduces no
+paper-derived model mechanism. It separates certified capability
+(`CAP0_GRAMMAR`, `CAP1_SEMANTICS`, `CAP2_TRANSFORM`) from supervision source,
+evaluation source, task difficulty, and the existing authored-request L0-L5
+abstraction ladder.
+
+The baseline pins the clean repository, negative DSH3-17 frontier,
+symbol-only output contract, checkpoint implementation generation, cited
+artifact hashes, and canonical reuse map. Distillation remains a supervision
+process and trace mining remains an evidence process; neither is a capability.
+Missing evidence stays `unknown` or `invalid`, never numeric zero. No train,
+eval, checkpoint, certificate, or ship claim was produced. Evidence:
+[`dsh0-01-staged-harness-baseline-20260723.md`](dsh0-01-staged-harness-baseline-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
