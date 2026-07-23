@@ -780,6 +780,40 @@ def _component_requires_available_content(component: str) -> bool:
     )
 
 
+@lru_cache(maxsize=None)
+def _component_requires_direct_symbol(component: str) -> bool:
+    """Whether constructing the component consumes a required content symbol."""
+    schema = _official_schema() or {}
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    properties = definition.get("properties") or {}
+    return any(
+        isinstance(properties.get(name), dict)
+        and _schema_accepts_symbol(properties[name], schema)
+        for name in definition.get("required") or ()
+    )
+
+
+def _pending_direct_symbol_reservations(
+    tokenizer: Any,
+    prefix_ids: list[int],
+    schema: dict[str, Any],
+    *,
+    active_declaration: int | None,
+) -> int:
+    """Count undeclared typed binders proven to require one content symbol."""
+    declarations, _references, _active = _binder_scope(tokenizer, prefix_ids)
+    requirements = _forward_binder_component_requirements(
+        tokenizer, prefix_ids, schema
+    )
+    return sum(
+        binder != active_declaration
+        and binder not in declarations
+        and bool(components)
+        and all(_component_requires_direct_symbol(component) for component in components)
+        for binder, components in requirements.items()
+    )
+
+
 @lru_cache(maxsize=2048)
 def _generated_ast_is_complete(prefix_text: str) -> bool:
     """Ask the official AST parser whether the current document is complete."""
@@ -1375,7 +1409,10 @@ def build_completion_forest(
     if schema is not None and slot_contract and "COMPONENT" in terminals:
         from slm_training.models.grammar import contract_allowed_token_ids
 
-        if contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract) == set():
+        unused_symbols = contract_allowed_token_ids(
+            tokenizer, prefix_ids, slot_contract
+        )
+        if unused_symbols == set():
             before_stage = _snapshot()
             candidates = {
                 token_id
@@ -1390,6 +1427,28 @@ def build_completion_forest(
                 "component_requires_unavailable_symbol",
                 before_stage,
             )
+        elif enforce_schema_component_types and unused_symbols is not None:
+            reservations = _pending_direct_symbol_reservations(
+                tokenizer,
+                prefix_ids,
+                schema,
+                active_declaration=active_declaration,
+            )
+            if len(unused_symbols) <= reservations:
+                before_stage = _snapshot()
+                candidates = {
+                    token_id
+                    for token_id in candidates
+                    if _semantic_kind(tokenizer, token_id) != "component"
+                    or not _component_requires_direct_symbol(
+                        _token_piece(tokenizer, token_id)
+                    )
+                }
+                _record_excluded(
+                    ConstraintStage.SLOT_CONTRACT,
+                    "component_reserves_pending_typed_symbols",
+                    before_stage,
+                )
     enum_sequences = (
         _schema_enum_sequences(tokenizer, engine, schema) if schema else None
     )

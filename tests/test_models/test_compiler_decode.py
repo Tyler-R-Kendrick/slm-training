@@ -5175,6 +5175,43 @@ def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
     )
 
 
+def test_completion_forest_reserves_slots_for_pending_typed_binders() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":slot_0", ":slot_1"]
+    root_prefix = tokenizer.encode(
+        'root=Stack([Form("$0",b1,[b2,b3]),', add_special=True
+    )[:-1]
+
+    root_forest = build_completion_forest(
+        tokenizer,
+        root_prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+
+    assert tokenizer.token_to_id["Button"] not in root_forest.candidate_ids
+    assert tokenizer.token_to_id["Card"] in root_forest.candidate_ids
+    assert any(
+        evidence.reason_code == "component_reserves_pending_typed_symbols"
+        and evidence.candidate_id == tokenizer.token_to_id["Button"]
+        for evidence in root_forest.evidence
+    )
+
+    declaration_prefix = tokenizer.encode(
+        'root=Form("$0",b1,[b2,b3])\nb1=Buttons([])\nb2=',
+        add_special=True,
+    )[:-1]
+    declaration_forest = build_completion_forest(
+        tokenizer,
+        declaration_prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+    )
+
+    assert tokenizer.token_to_id["FormControl"] in declaration_forest.candidate_ids
+
+
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(

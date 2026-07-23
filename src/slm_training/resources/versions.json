@@ -4187,7 +4187,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v259",
+      "version": "v260",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4212,6 +4212,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v260",
+          "date": "2026-07-22",
+          "note": "Reserve required content-slot capacity for undeclared binders with proven official-schema component obligations"
+        },
         {
           "version": "v259",
           "date": "2026-07-22",
