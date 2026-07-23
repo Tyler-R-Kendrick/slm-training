@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -174,10 +172,18 @@ def test_normalize_switchitem_and_slider_signatures() -> None:
 
 
 def test_fixture_settings_schema_consistency() -> None:
-    test_line = Path("src/slm_training/resources/test_seeds.jsonl").read_text(encoding="utf-8").splitlines()[7]
-    train_line = Path("src/slm_training/resources/train_seeds.jsonl").read_text(encoding="utf-8").splitlines()[15]
-    test_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(test_line)))
-    train_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(train_line)))
+    test_rec = next(
+        record
+        for record in load_jsonl("src/slm_training/resources/test_seeds.jsonl")
+        if record.id == "held_out_settings_01"
+    )
+    train_rec = next(
+        record
+        for record in load_jsonl("src/slm_training/resources/train_seeds.jsonl")
+        if record.id == "train_settings_01"
+    )
+    test_rec = normalize_example_record(test_rec)
+    train_rec = normalize_example_record(train_rec)
     assert ':held.settings.notify.name' in test_rec.openui
     assert 'Slider(":held.settings.volume.name", "continuous"' in test_rec.openui
     assert ':settings.notify.name' in train_rec.openui
