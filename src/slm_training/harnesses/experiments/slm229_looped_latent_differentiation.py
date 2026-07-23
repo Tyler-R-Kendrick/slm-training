@@ -17,13 +17,18 @@ report when the verdict is ``authorize_minimal_probe``.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from slm_training.versioning import UNKNOWN, build_version_stamp, git_commit
+from slm_training.harnesses.experiments.semantic_floor_gate import (
+    DEFAULT_GATE_PATH,
+    load_semantic_floor_gate,
+    require_floor_gate,
+)
 
 __all__ = [
     "MATRIX_SET",
@@ -337,6 +342,9 @@ class LoopedLatentDifferentiationReport:
     evidence_cutoff: str
     reviewed_refs: tuple[str, ...]
     generated_at: str
+    floor_gate_ref: str
+    floor_gate_hash: str
+    floor_gate_verdict: str
     mechanism_comparison: tuple[MechanismComparisonRow, ...]
     target_support_audit: tuple[TargetSupportRow, ...]
     oracle_intervention_ceiling: OracleInterventionCeiling
@@ -364,6 +372,9 @@ class LoopedLatentDifferentiationReport:
             "evidence_cutoff": self.evidence_cutoff,
             "reviewed_refs": list(self.reviewed_refs),
             "generated_at": self.generated_at,
+            "floor_gate_ref": self.floor_gate_ref,
+            "floor_gate_hash": self.floor_gate_hash,
+            "floor_gate_verdict": self.floor_gate_verdict,
             "mechanism_comparison": [m.to_dict() for m in self.mechanism_comparison],
             "target_support_audit": [t.to_dict() for t in self.target_support_audit],
             "oracle_intervention_ceiling": self.oracle_intervention_ceiling.to_dict(),
@@ -402,6 +413,9 @@ class LoopedLatentDifferentiationReport:
             evidence_cutoff=data.get("evidence_cutoff", UNKNOWN),
             reviewed_refs=tuple(data.get("reviewed_refs", [])),
             generated_at=data.get("generated_at", ""),
+            floor_gate_ref=data.get("floor_gate_ref", DEFAULT_GATE_PATH),
+            floor_gate_hash=data.get("floor_gate_hash", ""),
+            floor_gate_verdict=data.get("floor_gate_verdict", "inconclusive"),
             mechanism_comparison=tuple(
                 MechanismComparisonRow.from_dict(m) for m in data.get("mechanism_comparison", [])
             ),
@@ -451,6 +465,7 @@ REVIEWED_REFS: tuple[str, ...] = (
     "SLM-145",
     "SLM-146",
     "SLM-160",
+    DEFAULT_GATE_PATH,
     "docs/design/research-lineage.md",
     "docs/design/iter-slm138-recursive-denoiser-20260720.md",
     "docs/design/iter-slm138-recursive-denoiser-20260720.json",
@@ -944,7 +959,9 @@ def build_oracle_intervention_ceiling() -> OracleInterventionCeiling:
     )
 
 
-def build_scale_regime_audit() -> ScaleRegimeAudit:
+def build_scale_regime_audit(
+    semantic_floor_status: str = "SemanticFloorGateV1 status not supplied to this builder."
+) -> ScaleRegimeAudit:
     """Return the scale/regime audit; floor and recurrence status are mandatory."""
     return ScaleRegimeAudit(
         lotus_scale_notes=(
@@ -971,14 +988,7 @@ def build_scale_regime_audit() -> ScaleRegimeAudit:
             "families=8, roles=4); SLM-146 fixture: n=13 synthetic records per "
             "arm. Both are toy-scale; no non-fixture step count exists."
         ),
-        semantic_floor_status=(
-            "UNDEFINED IN REPO — a repo-wide grep of docs/design/*.md for "
-            "'semantic floor' / 'semantic_floor' returns zero hits. No "
-            "canonical threshold or gate named 'semantic floor' exists today "
-            "for this memo to check against; the floor-escape prerequisite "
-            "named in differentiator 7 has no resolved status because the "
-            "gate itself has not yet been defined elsewhere in the repo."
-        ),
+        semantic_floor_status=semantic_floor_status,
         recursive_regime_status=(
             "FAILED (documented) — SLM-139's closeout explicitly states "
             "gate_1_recursive_base (issue SLM-138) failed: 'wiring_only "
@@ -1285,6 +1295,7 @@ def _build_version_stamp() -> dict[str, Any]:
         return build_version_stamp(
             "harness.experiments",
             "harness.experiments.slm229_looped_latent_differentiation",
+            "harness.experiments.semantic_floor_gate",
         )
     except KeyError:
         base = build_version_stamp("harness.experiments")
@@ -1302,7 +1313,22 @@ def run_differentiation_audit(
     if repo_root is None:
         repo_root = _repo_root()
 
+    floor_gate = load_semantic_floor_gate(repo_root / DEFAULT_GATE_PATH)
+    try:
+        require_floor_gate(floor_gate, "learned_latent")
+        floor_ready = True
+    except PermissionError:
+        floor_ready = False
     differentiators = build_differentiators()
+    differentiators[-1] = replace(
+        differentiators[-1],
+        satisfied=floor_ready and differentiators[-1].satisfied,
+        evidence=(
+            f"SemanticFloorGateV1 `{floor_gate.gate_hash}` resolves the floor half "
+            f"as `{floor_gate.verdict}`; learned-latent claims remain blocked. "
+            "The recurrence half also remains failed by SLM-139."
+        ),
+    )
     differentiator_map = {d.differentiator_id: d.satisfied for d in differentiators}
 
     verdict = evaluate_verdict(
@@ -1313,7 +1339,7 @@ def run_differentiation_audit(
         predicts_topology_bindings_externally=False,
         target_support_adequate=True,
         scale_identifiable=None,
-        floor_ready=False,
+        floor_ready=floor_ready,
         recurrence_ready=False,
     )
 
@@ -1323,10 +1349,10 @@ def run_differentiation_audit(
         "docs/design/iter-slm139-stochastic-recursive-width-20260720.json "
         "(gate_1_recursive_base = failed, decision "
         "no_supported_probabilistic_regime) is the resolving evidence for "
-        "differentiator 7's recurrence half. No resolving evidence exists yet "
-        "for the floor half because no 'semantic floor' gate has been "
-        "defined in this repo; defining that gate is a prerequisite for any "
-        "future re-audit of this proposal."
+        "differentiator 7's recurrence half. "
+        f"{DEFAULT_GATE_PATH} (hash {floor_gate.gate_hash}, verdict "
+        f"{floor_gate.verdict}) resolves the floor half and does not authorize "
+        "learned-latent claims."
     )
     if missing_refs:
         resolving_evidence += (
@@ -1346,10 +1372,16 @@ def run_differentiation_audit(
         evidence_cutoff=git_commit(),
         reviewed_refs=REVIEWED_REFS,
         generated_at=_now(),
+        floor_gate_ref=DEFAULT_GATE_PATH,
+        floor_gate_hash=floor_gate.gate_hash,
+        floor_gate_verdict=floor_gate.verdict,
         mechanism_comparison=tuple(build_mechanism_comparison()),
         target_support_audit=tuple(build_target_support_audit()),
         oracle_intervention_ceiling=build_oracle_intervention_ceiling(),
-        scale_regime_audit=build_scale_regime_audit(),
+        scale_regime_audit=build_scale_regime_audit(
+            f"SemanticFloorGateV1 `{floor_gate.gate_hash}` verdict is "
+            f"`{floor_gate.verdict}`; learned-latent claims are blocked."
+        ),
         prior_art_audit=tuple(build_prior_art_audit()),
         differentiators=tuple(differentiators),
         verdict=verdict,
@@ -1406,6 +1438,9 @@ def render_markdown(report: LoopedLatentDifferentiationReport) -> str:
         f"**Generated at:** {report.generated_at}",
         "",
         f"**Verdict:** `{report.verdict.value}`",
+        "",
+        f"**Semantic floor gate:** `{report.floor_gate_hash}` "
+        f"(`{report.floor_gate_verdict}`; `{report.floor_gate_ref}`)",
         "",
         "## Reviewed references",
         "",

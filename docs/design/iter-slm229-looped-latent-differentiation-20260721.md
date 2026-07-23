@@ -10,11 +10,13 @@
 
 **Claim class:** wiring / zero-compute differentiation and authorization audit only. No model or data implementation, no training run, no checkpoint.
 
-**Source commit / evidence cutoff:** `42bbc610182c787e439e59599a2e38f7095d9f76`
+**Source commit / evidence cutoff:** `c74ceb7601f5e8b9dea960970d5313cc2ace2f40`
 
-**Generated at:** 2026-07-21T06:08:44.544187Z
+**Generated at:** 2026-07-23T07:10:01.729003Z
 
 **Verdict:** `blocked_by_recurrence`
+
+**Semantic floor gate:** `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` (`inconclusive`; `docs/design/semantic-floor-gate-v1.json`)
 
 ## Reviewed references
 
@@ -24,6 +26,7 @@
 - `SLM-145`
 - `SLM-146`
 - `SLM-160`
+- `docs/design/semantic-floor-gate-v1.json`
 - `docs/design/research-lineage.md`
 - `docs/design/iter-slm138-recursive-denoiser-20260720.md`
 - `docs/design/iter-slm138-recursive-denoiser-20260720.json`
@@ -84,7 +87,7 @@ NOT RUN (spec only, for a future RSC3 issue, conditional on differentiator 7's g
 - **Current model params:** SLM-138 toy fixture: stacked_params=64994 vs recursive_params=74242 at d_model=32, [batch=2, seq=6]. No production-scale (non-fixture) recursive-denoiser parameter count exists in the reviewed evidence.
 - **Target tokens/decisions:** No real-corpus target-token or decision counts exist for root_contract/component_inventory supervision; SLM-144's fixture corpus is the only reviewed sizing evidence.
 - **Unique records/steps:** SLM-144 fixture: train=51, val=13 unique records (archetypes=5, families=8, roles=4); SLM-146 fixture: n=13 synthetic records per arm. Both are toy-scale; no non-fixture step count exists.
-- **Semantic floor status:** UNDEFINED IN REPO — a repo-wide grep of docs/design/*.md for 'semantic floor' / 'semantic_floor' returns zero hits. No canonical threshold or gate named 'semantic floor' exists today for this memo to check against; the floor-escape prerequisite named in differentiator 7 has no resolved status because the gate itself has not yet been defined elsewhere in the repo.
+- **Semantic floor status:** SemanticFloorGateV1 `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` verdict is `inconclusive`; learned-latent claims are blocked.
 - **Recursive regime status:** FAILED (documented) — SLM-139's closeout explicitly states gate_1_recursive_base (issue SLM-138) failed: 'wiring_only fixture; no GPU matched-block evaluation or recursive_core_positive verdict.' No non-vacuous recursive regime has been established for SharedRecursiveDenoiserTower.
 - **Identifiability verdict:** NOT EVALUABLE from current evidence: no non-toy recursive training run exists to assess whether 1-2 slots plus the proposed root_contract/component_inventory supervision would be statistically identifiable. This question is moot until the recurrence and floor prerequisites in differentiator 7 clear; it is not being asserted as scale_not_identifiable in its own right, only as unresolved.
 - **Expected extra cost:** If built on top of the existing SharedRecursiveDenoiserTower, the incremental cost is expected to be small (a few slot read/write linear projections at d_model, no new recursion depth, no new transformer blocks) — but this is an expectation, not a measurement: no implementation exists and none should be built before differentiator 7 clears.
@@ -109,7 +112,7 @@ NOT RUN (spec only, for a future RSC3 issue, conditional on differentiator 7's g
 | 4 | minimal_scope | True | `slot_kinds` | `test_differentiator_4_rejects_topology_binding_pointer_scope_creep` | Specifiable: restricting slot_kinds to {root_contract, component_inventory} avoids SLM-145's blocked topology/cardinality/pointer scope (topology_head, cardinality_head, live_symbol_pointer_head were never implemented and remain closed pending SPV0-02 ceiling evidence) and avoids SLM-146's plan-compiler/seed machinery entirely. |
 | 5 | builtin_interventions | True | `interventions` | `test_differentiator_5_rejects_proposal_missing_interventions` | Specifiable: the contract's interventions field is required to enumerate gold/zero/swap/wrong/detached from the first fixture, unlike SLM-138 (no ablation ever run on z) and unlike SLM-146 (whose oracle arms test the external consumer only). |
 | 6 | no_hard_authority | True | `compiler_verifier_authority_boundary` | `test_differentiator_6_rejects_proposal_that_can_prune_legal_actions` | Specifiable: the contract's authority-boundary field must forbid altering compiler legal membership, verifier truth, certified restrictions, or UNKNOWN handling — mirroring SLM-146's own EvidenceKind.COMPILER_AUTHORED_CERTIFIED fail-closed pattern (allow_unsafe_predicted_hard_control=False by default), reused conceptually for the internal path. |
-| 7 | conditional_execution | False | `required_recurrence_gate` | `test_differentiator_7_gates_are_mandatory_and_currently_unmet` | UNMET today on both prerequisites: (a) recursive regime — SLM-139 explicitly closed gate_1_recursive_base as failed ('no_supported_probabilistic_regime'; no recursive_core_positive verdict); (b) semantic floor — no 'semantic floor' gate is defined anywhere in docs/design (zero grep hits), so there is no threshold to escape yet. This is the differentiator that blocks the overall verdict. |
+| 7 | conditional_execution | False | `required_recurrence_gate` | `test_differentiator_7_gates_are_mandatory_and_currently_unmet` | SemanticFloorGateV1 `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` resolves the floor half as `inconclusive`; learned-latent claims remain blocked. The recurrence half also remains failed by SLM-139. |
 
 ## Allowed implementation scope
 
@@ -121,7 +124,7 @@ Do not duplicate: SemanticPlanV1 export/serialization (src/slm_training/data/pro
 
 ## Resolving evidence
 
-docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. No resolving evidence exists yet for the floor half because no 'semantic floor' gate has been defined in this repo; defining that gate is a prerequisite for any future re-audit of this proposal.
+docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. docs/design/semantic-floor-gate-v1.json (hash 6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a, verdict inconclusive) resolves the floor half and does not authorize learned-latent claims.
 
 ## MinimalCompilerLatentContractV1
 

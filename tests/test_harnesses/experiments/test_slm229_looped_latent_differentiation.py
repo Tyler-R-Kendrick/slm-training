@@ -57,6 +57,8 @@ def test_report_round_trip_serialization(repo_root: Path) -> None:
     assert restored.verdict == report.verdict
     assert len(restored.mechanism_comparison) == len(report.mechanism_comparison)
     assert len(restored.differentiators) == len(report.differentiators)
+    assert restored.floor_gate_hash == report.floor_gate_hash
+    assert restored.floor_gate_verdict == "inconclusive"
 
 
 def test_minimal_contract_round_trip_serialization() -> None:

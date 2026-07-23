@@ -26,6 +26,10 @@ from slm_training.harnesses.experiments.slm215_spectral_atlas import (
     render_markdown,
     run_spectral_atlas_fixture,
 )
+from slm_training.harnesses.experiments.semantic_floor_gate import (
+    DEFAULT_GATE_PATH,
+    load_semantic_floor_gate,
+)
 from slm_training.versioning import build_version_stamp
 
 _DESIGN_JSON = "docs/design/iter-slm215-spectral-atlas-20260721.json"
@@ -63,6 +67,8 @@ Claim class: wiring / fixture only. No model-quality or promotion claim.
 
 
 def _build_plan_only_payload(command: str) -> dict[str, Any]:
+    root = Path(__file__).resolve().parents[1]
+    floor_gate = load_semantic_floor_gate(root / DEFAULT_GATE_PATH)
     return {
         "schema": "SpectralAtlasReportV1",
         "matrix_set": MATRIX_SET,
@@ -85,6 +91,9 @@ def _build_plan_only_payload(command: str) -> dict[str, Any]:
         "role_summaries": {},
         "signal": {},
         "atlas_hash": "",
+        "floor_gate_ref": DEFAULT_GATE_PATH,
+        "floor_gate_hash": floor_gate.gate_hash,
+        "floor_gate_verdict": floor_gate.verdict,
         "disposition": "inconclusive",
         "disposition_rationale": "Plan-only manifest; run `python -m scripts.build_spectral_atlas --mode fixture` to execute.",
         "honest_caveats": [
@@ -95,6 +104,7 @@ def _build_plan_only_payload(command: str) -> dict[str, Any]:
             "harness.experiments",
             "harness.experiments.slm215_spectral_atlas",
             "harness.experiments.slm214_spectral_snapshot",
+            "harness.experiments.semantic_floor_gate",
         ),
         "timestamp": _now(),
     }

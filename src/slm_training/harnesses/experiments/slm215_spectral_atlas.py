@@ -22,6 +22,10 @@ from slm_training.harnesses.experiments.slm214_spectral_snapshot import (
     SpectralSnapshotReport,
     SpectralSnapshotV1,
 )
+from slm_training.harnesses.experiments.semantic_floor_gate import (
+    DEFAULT_GATE_PATH,
+    require_floor_gate,
+)
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
@@ -106,6 +110,7 @@ class SpectralAtlasV1:
     weighted_nll: float | None = None
     parse_rate: float | None = None
     meaningful_rate: float | None = None
+    strict_meaning_v2_rate: float | None = None
     fidelity: float | None = None
     structure: float | None = None
     reward: float | None = None
@@ -133,6 +138,7 @@ class SpectralAtlasV1:
             "weighted_nll": self.weighted_nll,
             "parse_rate": self.parse_rate,
             "meaningful_rate": self.meaningful_rate,
+            "strict_meaning_v2_rate": self.strict_meaning_v2_rate,
             "fidelity": self.fidelity,
             "structure": self.structure,
             "reward": self.reward,
@@ -162,6 +168,7 @@ class SpectralAtlasV1:
             weighted_nll=data.get("weighted_nll"),
             parse_rate=data.get("parse_rate"),
             meaningful_rate=data.get("meaningful_rate"),
+            strict_meaning_v2_rate=data.get("strict_meaning_v2_rate"),
             fidelity=data.get("fidelity"),
             structure=data.get("structure"),
             reward=data.get("reward"),
@@ -188,6 +195,9 @@ def _load_run_outcomes(run_dir: Path) -> dict[str, Any]:
         smoke = suites.get("smoke", {})
         outcomes["parse_rate"] = smoke.get("parse_rate")
         outcomes["meaningful_rate"] = smoke.get("meaningful_program_rate")
+        outcomes["strict_meaning_v2_rate"] = smoke.get(
+            "binding_aware_meaningful_v2_rate_strict"
+        )
         outcomes["fidelity"] = smoke.get("placeholder_fidelity")
         outcomes["structure"] = smoke.get("structural_similarity")
         outcomes["reward"] = smoke.get("reward_score")
@@ -220,6 +230,7 @@ def _join_snapshot(
         weighted_nll=outcomes.get("weighted_nll"),
         parse_rate=outcomes.get("parse_rate"),
         meaningful_rate=outcomes.get("meaningful_rate"),
+        strict_meaning_v2_rate=outcomes.get("strict_meaning_v2_rate"),
         fidelity=outcomes.get("fidelity"),
         structure=outcomes.get("structure"),
         reward=outcomes.get("reward"),
@@ -432,6 +443,7 @@ def run_spectral_atlas_fixture(
     *,
     synthetic_runs: int = 4,
     run_id: str | None = None,
+    floor_gate_path: Path | None = None,
 ) -> SpectralAtlasReport:
     """Build a SpectralAtlasV1 report from existing reports or synthetic fixtures."""
     rows: list[SpectralAtlasV1] = []
@@ -457,6 +469,8 @@ def run_spectral_atlas_fixture(
     }
     atlas_hash = _sha256(_canonical_json(payload))
 
+    gate_path = floor_gate_path or Path(__file__).resolve().parents[4] / DEFAULT_GATE_PATH
+    gate = require_floor_gate(gate_path, "diagnostic")
     return SpectralAtlasReport(
         run_id=run_id or f"{EXPERIMENT_ID}-{_today_yyyymmdd()}",
         rows=tuple(rows),
@@ -468,12 +482,16 @@ def run_spectral_atlas_fixture(
         role_summaries=role_summaries,
         signal=signal,
         atlas_hash=atlas_hash,
+        floor_gate_ref=DEFAULT_GATE_PATH,
+        floor_gate_hash=gate.gate_hash,
+        floor_gate_verdict=gate.verdict,
         disposition=disposition,
         disposition_rationale=rationale,
         version_stamp=build_version_stamp(
             "harness.experiments",
             "harness.experiments.slm215_spectral_atlas",
             "harness.experiments.slm214_spectral_snapshot",
+            "harness.experiments.semantic_floor_gate",
         ),
     )
 
@@ -500,6 +518,9 @@ class SpectralAtlasReport:
     role_summaries: dict[str, dict[str, Any]] = field(default_factory=dict)
     signal: dict[str, Any] = field(default_factory=dict)
     atlas_hash: str = ""
+    floor_gate_ref: str = DEFAULT_GATE_PATH
+    floor_gate_hash: str = ""
+    floor_gate_verdict: str = "inconclusive"
     disposition: str = "inconclusive"
     disposition_rationale: str = ""
     honest_caveats: tuple[str, ...] = _HONEST_CAVEATS
@@ -526,6 +547,9 @@ class SpectralAtlasReport:
             "role_summaries": dict(self.role_summaries),
             "signal": dict(self.signal),
             "atlas_hash": self.atlas_hash,
+            "floor_gate_ref": self.floor_gate_ref,
+            "floor_gate_hash": self.floor_gate_hash,
+            "floor_gate_verdict": self.floor_gate_verdict,
             "disposition": self.disposition,
             "disposition_rationale": self.disposition_rationale,
             "honest_caveats": list(self.honest_caveats),
@@ -561,6 +585,9 @@ class SpectralAtlasReport:
             role_summaries=dict(data.get("role_summaries", {})),
             signal=dict(data.get("signal", {})),
             atlas_hash=str(data.get("atlas_hash", "")),
+            floor_gate_ref=str(data.get("floor_gate_ref", DEFAULT_GATE_PATH)),
+            floor_gate_hash=str(data.get("floor_gate_hash", "")),
+            floor_gate_verdict=str(data.get("floor_gate_verdict", "inconclusive")),
             disposition=str(data.get("disposition", "inconclusive")),
             disposition_rationale=str(data.get("disposition_rationale", "")),
             honest_caveats=tuple(data.get("honest_caveats", _HONEST_CAVEATS)),
@@ -579,6 +606,7 @@ def render_markdown(report: SpectralAtlasReport) -> str:
         f"**Claim class:** {report.claim_class}",
         f"**Disposition:** {report.disposition} — {report.disposition_rationale}",
         f"**Atlas hash:** `{report.atlas_hash[:16]}...`",
+        f"**Semantic floor gate:** `{report.floor_gate_hash}` ({report.floor_gate_verdict}; `{report.floor_gate_ref}`)",
         "",
         "## Honest caveats",
         "",

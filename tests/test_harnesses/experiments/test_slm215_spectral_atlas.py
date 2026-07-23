@@ -22,6 +22,8 @@ def test_fixture_generates_rows_and_signal() -> None:
     assert report.signal["status"] == "evaluated"
     assert "spearman_alpha_z_vs_parse" in report.signal
     assert report.atlas_hash
+    assert report.floor_gate_hash
+    assert report.floor_gate_verdict == "inconclusive"
 
 
 def test_report_round_trip() -> None:

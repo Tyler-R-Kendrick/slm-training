@@ -23,6 +23,17 @@ and ship-gate evidence to the pre-start `ExperimentCampaignV1` digest. A model
 file or passing partial board cannot bypass this requirement. See
 [experiment-campaign-governance.md](design/experiment-campaign-governance.md).
 
+Semantic prediction/control claims have an additional fail-closed prerequisite:
+[`SemanticFloorGateV1`](design/semantic-floor-gate-v1.json), currently
+`inconclusive` at gate hash
+`6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a`.
+The SDE5 bundle contains fixture/proxy evidence but no durable checkpoint,
+preregistered strict meaning-v2 evaluation, executed anti-gaming result, paired
+semantic statistics, or AgentV bundle. Spectral and recurrent/latent work may
+continue as explicitly scoped diagnostics; `semantic_prediction`,
+`semantic_causal`, and `learned_latent` claims remain blocked. See the
+[generated closeout](design/semantic-floor-gate-v1.md).
+
 Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 [checkpoint-provenance.md](design/checkpoint-provenance.md),
 [adversarial-review.md](design/adversarial-review.md),

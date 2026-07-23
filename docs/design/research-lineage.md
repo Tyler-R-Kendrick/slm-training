@@ -1124,6 +1124,24 @@ power as success evidence, or permission to rewrite historical scoreboards.
 Evidence:
 [`slm286-ship-gate-evidence-census-20260723.md`](slm286-ship-gate-evidence-census-20260723.md).
 
+## Semantic-floor claim authorization (SDE5-06 / SLM-213)
+
+[`SemanticFloorGateV1`](semantic-floor-gate-v1.json) is the single
+machine-readable prerequisite for semantic prediction, semantic causal, and
+learned-latent claims. It loads and hashes the registered SLM-208–212 artifacts
+and the canonical meaning-v2, anti-gaming, and AgentV owners; missing identities
+fail closed instead of being inferred from fixture filenames.
+
+The current verdict is **`inconclusive`** at gate hash
+`6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a`.
+Constraint-debt, structural, spectral, and recurrent/latent diagnostics remain
+allowed as proxies, but NCS/RSC manifests must carry this hash and cannot make
+semantic prediction/control claims. The SLM-215 spectral atlas and SLM-229
+looped-latent audit now consume the gate directly; SLM-229 remains
+`blocked_by_recurrence` as well. No new training, decoder experiment, metric
+change, or promotion was performed. Generated narrative:
+[`semantic-floor-gate-v1.md`](semantic-floor-gate-v1.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

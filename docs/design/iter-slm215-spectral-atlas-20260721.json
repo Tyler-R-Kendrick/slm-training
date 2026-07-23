@@ -1,10 +1,13 @@
 {
-  "atlas_hash": "6d8414399256736c50ade29926bcc9be310380a4926db9961b0f00214aa040b4",
+  "atlas_hash": "f68f2da944a995319637905e9bfd690f667c6c438a65230eafa9b8380432f46e",
   "claim_class": "wiring",
   "disposition": "fixture_signal",
   "disposition_rationale": "Observed Spearman correlation 0.876 between alpha_z and parse_rate.",
   "experiment_id": "slm215-spectral-atlas",
   "falsifier": "After holding out complete experiment families, calibrated spectral features add no descriptive value beyond simple baselines, or effects vanish after controlling for matrix shape, role, and training budget.",
+  "floor_gate_hash": "6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a",
+  "floor_gate_ref": "docs/design/semantic-floor-gate-v1.json",
+  "floor_gate_verdict": "inconclusive",
   "honest_caveats": [
     "Fixture/wiring evidence only: no trained model, checkpoint promotion, or GPU run.",
     "This harness uses existing SpectralSnapshotV1 reports and synthetic or local outcome fixtures; it does not resolve the full historical checkpoint history.",
@@ -83,6 +86,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 200,
+      "strict_meaning_v2_rate": null,
       "structure": 0.38002517396382407,
       "weighted_nll": 1.8216135494366894
     },
@@ -112,6 +116,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 200,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4038570888250971,
       "weighted_nll": 1.8191382425674332
     },
@@ -141,6 +146,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 200,
+      "strict_meaning_v2_rate": null,
       "structure": 0.3899190184308166,
       "weighted_nll": 1.8325438026217793
     },
@@ -170,6 +176,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 200,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4287475705626259,
       "weighted_nll": 1.7015045239801998
     },
@@ -199,6 +206,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 200,
+      "strict_meaning_v2_rate": null,
       "structure": 0.42671706271628945,
       "weighted_nll": 1.7630486707183197
     },
@@ -228,6 +236,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 200,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4375637561828589,
       "weighted_nll": 1.7202335669398696
     },
@@ -257,6 +266,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 300,
+      "strict_meaning_v2_rate": null,
       "structure": 0.5061704314723402,
       "weighted_nll": 1.668989342193083
     },
@@ -286,6 +296,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 300,
+      "strict_meaning_v2_rate": null,
       "structure": 0.5066452152496336,
       "weighted_nll": 1.6826509786944537
     },
@@ -315,6 +326,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 300,
+      "strict_meaning_v2_rate": null,
       "structure": 0.09221495546081511,
       "weighted_nll": 2.192991813332828
     },
@@ -344,6 +356,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 300,
+      "strict_meaning_v2_rate": null,
       "structure": 0.5087946611286895,
       "weighted_nll": 1.7003601150580658
     },
@@ -373,6 +386,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 300,
+      "strict_meaning_v2_rate": null,
       "structure": 0.39709660823941767,
       "weighted_nll": 1.8129365769504426
     },
@@ -402,6 +416,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 300,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4963387839695593,
       "weighted_nll": 1.7042379313811336
     },
@@ -431,6 +446,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 400,
+      "strict_meaning_v2_rate": null,
       "structure": 0.31380303977123936,
       "weighted_nll": 1.89404781978294
     },
@@ -460,6 +476,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 400,
+      "strict_meaning_v2_rate": null,
       "structure": 0.33402381579093693,
       "weighted_nll": 1.8375173356496077
     },
@@ -489,6 +506,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 400,
+      "strict_meaning_v2_rate": null,
       "structure": 0.5021319860889326,
       "weighted_nll": 1.6847289726795456
     },
@@ -518,6 +536,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 400,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4714865510872674,
       "weighted_nll": 1.5860482533836757
     },
@@ -547,6 +566,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 400,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4969661417710207,
       "weighted_nll": 1.6570656364025136
     },
@@ -576,6 +596,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 400,
+      "strict_meaning_v2_rate": null,
       "structure": 0.39747977059496126,
       "weighted_nll": 1.8473388247220506
     },
@@ -605,6 +626,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 500,
+      "strict_meaning_v2_rate": null,
       "structure": 0.43390689716061204,
       "weighted_nll": 1.7070048348340296
     },
@@ -634,6 +656,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 500,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4917143172965522,
       "weighted_nll": 1.657158966027627
     },
@@ -663,6 +686,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 500,
+      "strict_meaning_v2_rate": null,
       "structure": 0.23558938765466353,
       "weighted_nll": 1.908519448597711
     },
@@ -692,6 +716,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 500,
+      "strict_meaning_v2_rate": null,
       "structure": 0.40290102240297987,
       "weighted_nll": 1.8851604618287776
     },
@@ -721,6 +746,7 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 500,
+      "strict_meaning_v2_rate": null,
       "structure": 0.4803734835926605,
       "weighted_nll": 1.7607953581200295
     },
@@ -750,11 +776,12 @@
       "spectral_entropy": 2.0,
       "stable_rank": 32.0,
       "steps": 500,
+      "strict_meaning_v2_rate": null,
       "structure": 0.47253859725798397,
       "weighted_nll": 1.7589460026888688
     }
   ],
-  "run_id": "slm215-spectral-atlas-20260721",
+  "run_id": "slm215-spectral-atlas-20260723",
   "schema": "SpectralAtlasReportV1",
   "signal": {
     "leave_one_family_out": [
@@ -777,17 +804,18 @@
     "<synthetic_fixture>"
   ],
   "status": "fixture",
-  "timestamp": "2026-07-21T02:11:25.555474Z",
+  "timestamp": "2026-07-23T07:08:22.584678Z",
   "unresolvable_local_history": [],
   "version_stamp": {
-    "code_commit": "560bb83586d4ffaa8f3a132f80b966018e4ef847",
+    "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
     "code_dirty": true,
     "components": {
-      "harness.experiments": "v54",
-      "harness.experiments.slm214_spectral_snapshot": "v1",
-      "harness.experiments.slm215_spectral_atlas": "v1"
+      "harness.experiments": "v64",
+      "harness.experiments.semantic_floor_gate": "sde5-06-v1",
+      "harness.experiments.slm214_spectral_snapshot": "v2",
+      "harness.experiments.slm215_spectral_atlas": "v2"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-21T02:11:25.555427+00:00"
+    "stamped_at": "2026-07-23T07:08:22.584644+00:00"
   }
 }
