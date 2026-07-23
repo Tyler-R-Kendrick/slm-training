@@ -6715,3 +6715,14 @@ parse/strict/fidelity/structure/recall/reward
 0.8/0.6/0.6667/0.3762/0.5333/0.7132 with one timeout and three fallbacks, but
 remain below E996. Retain v270 and reject the checkpoint; never use it as a
 parent. See `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
+
+### E1052-E1057: typed binder without arity decode (rejected)
+
+Disabling binder-arity decode preserves smoke strict-v2 1.0 and recall 0.75,
+but five held diagnostics regress to
+parse/strict/fidelity/structure/recall/reward
+0.6/0.6/0.6/0.3562/0.5333/0.5646 with two timeouts and two fallbacks. Settings
+becomes strict-valid while Dual Card changes from strict-valid to a timeout.
+Reject global arity disablement; calibrate or condition arity by typed
+declaration context next. See
+`iter-e1045-e1051-typed-binder-candidates-20260722.md`.

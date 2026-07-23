@@ -75,6 +75,48 @@
       "binder_arity_applications_non_timeout_rows": 30,
       "binder_arity_choice_changes_non_timeout_rows": 12,
       "agentv": "0/5"
+    },
+    "E1052": {
+      "status": "completed_rejected_by_held",
+      "run_id": "e1052_v270_typed_binder_no_arity_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 1.0,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5716666666666667,
+      "component_recall": 0.75,
+      "reward": 0.957,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "agentv": "0/1"
+    },
+    "E1053_E1057": {
+      "status": "completed_rejected_diagnostic_subsets",
+      "run_ids": [
+        "e1053_v270_typed_binder_no_arity_form",
+        "e1054_v270_typed_binder_no_arity_dual_card",
+        "e1055_v270_typed_binder_no_arity_input",
+        "e1056_v270_typed_binder_no_arity_tabs",
+        "e1057_v270_typed_binder_no_arity_settings"
+      ],
+      "suite": "held_out",
+      "subset_protocol": "five completed one-row diagnostic subsets under identical no-arity policy",
+      "canonical_full_suite_scoreboard": false,
+      "n": 5,
+      "parse": 0.6,
+      "meaning_v1": 0.6,
+      "strict_v2": 0.6,
+      "fidelity": 0.6,
+      "structural_similarity": 0.35622,
+      "component_recall": 0.5333333333333333,
+      "reward": 0.5646,
+      "decode_timeouts": 2,
+      "fallback_count": 2,
+      "binder_component_plan_applications_non_timeout_rows": 20,
+      "binder_component_plan_choice_changes": 0,
+      "agentv": "0/5"
     }
   },
   "disposition": {
@@ -82,7 +124,8 @@
     "checkpoint_promoted": false,
     "checkpoint_parentable": false,
     "checkpoint_synced": false,
-    "next_hypothesis": "isolate remaining untyped rows or binder-arity interaction"
+    "no_arity_decode_accepted": false,
+    "next_hypothesis": "calibrate or condition binder arity by typed declaration context"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

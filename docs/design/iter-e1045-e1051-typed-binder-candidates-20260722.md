@@ -41,3 +41,17 @@ below the E996 retained baseline on every held headline metric. Never sync,
 promote, serve, resume, or use it as a parent. The next experiment should
 isolate the remaining untyped rows or binder-arity interaction rather than
 return to open-string supervision.
+
+## E1052-E1057 arity isolation
+
+E1052 disables only binder-arity decode. Smoke remains strict-v2 1.0 with
+recall 0.75 and structure rises slightly to 0.5717. Five held one-row
+diagnostics then reach parse/strict/fidelity/structure/recall/reward
+0.6/0.6/0.6/0.3562/0.5333/0.5646 with two timeouts and two fallbacks. Settings
+improves from a one-`TextContent` collapse to a strict-valid Slider/Switch
+layout, but Dual Card changes from strict-valid to a timeout. All six runs emit
+AgentEvals JSONL and pinned AgentV bundles (`0/6`).
+
+Reject the no-arity decode policy. Arity helps declaration reachability even
+while harming particular rows, so the next arm needs calibrated or
+typed-conditional arity rather than a global on/off switch.
