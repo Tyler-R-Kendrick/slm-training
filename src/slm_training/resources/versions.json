@@ -4133,6 +4133,23 @@
         }
       ]
     },
+    "harness.capability_artifacts": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/capability_artifacts.py",
+        "tests/test_harnesses/test_capability_artifacts.py",
+        "docs/design/dsh0-04-capability-artifacts-20260723.json",
+        "docs/design/dsh0-04-capability-artifacts-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial content-addressed answer, question, QA-set, derivation, validation, and capability-certificate schemas with publication lineage checks"
+        }
+      ]
+    },
     "harness.solver_bench": {
       "version": "v1",
       "kind": "harness",

@@ -55,13 +55,13 @@
       {
         "path": "src/slm_training/resources/versions.json",
         "identity": "model.twotower/v227+harness.staged/v1",
-        "sha256": "a88baafd9bd3a84c569f2fb2baddf26207a599c773b09cf6e26cc8a10df994f8",
+        "sha256": "1a15bf703f2fb6c71145901939f03ec1ac3a9fe48d9a5824340284a1bfdb2a1d",
         "status": "verified",
         "reason": null
       }
     ]
   },
-  "baseline_sha": "40b93dee036b0a7c84d9aff19f6764dd7c7af3ce57f5ded5b6e32d2d3caca889",
+  "baseline_sha": "93b9df3085de51996841a794b1eaded816e48ea6a787e2586fdb537386b95f3e",
   "reuse_map": [
     {
       "seam": "dsl_pack",
