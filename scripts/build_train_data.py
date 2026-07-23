@@ -34,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
             "awwwards",
             "rico+awwwards",
             "existing",
+            "staged",
             "programspec",
             "language_contract",
             "deconstruct",
