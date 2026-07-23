@@ -6679,3 +6679,16 @@ parse/strict/fidelity/structure/recall/reward
 than both the E991 arity-only diagnostic and E996 retained baseline. Reject
 E1029, close this combination, and target declaration actions directly. See
 `iter-e1029-e1031-joint-binder-plans-20260722.md`.
+
+### E1032-E1038: pre-declaration binder-component plan (rejected)
+
+v269 reuses the E1029 binder-component head at the earlier typed
+bind-reference-versus-inline-component choice. E1032 smoke proves reachability:
+15 applications and one changed choice, but its metrics are unchanged from
+E1030. The canonical E1033 five-row command exceeded its outer cap and is
+invalid. Five completed one-row held diagnostics (E1034-E1038) reconstruct the
+same parse 0.6 / strict-v2 0.4 / fidelity 0.44 / structure 0.2395 / recall 0.4 /
+reward 0.5106 as E1031, with 26 non-timeout applications and zero component-head
+choice changes. Reject the decode arm and leave its weight disabled; retain
+only the guarded diagnostic capability. See
+`iter-e1032-e1038-predeclaration-binder-plan-20260722.md`.

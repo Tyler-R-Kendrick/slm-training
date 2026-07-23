@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1032-E1038",
+  "date": "2026-07-22",
+  "decision": "reject_predeclaration_binder_plan_decode_arm",
+  "checkpoint": {
+    "run_id": "e1029_v268_joint_binder_plans",
+    "sha256": "41955a281910afeb17ec60fe2b7f529d465e5d4c8810032418430ec4881b9f2f",
+    "promoted": false,
+    "synced": false,
+    "parentable": false
+  },
+  "policy": {
+    "compiler_decode_mode": "tree",
+    "compiler_schema_component_types": true,
+    "binder_component_plan_decode_weight": 1.0,
+    "binder_arity_decode_weight": 1.0,
+    "skip_exact_stream_probe": true,
+    "allow_unconstrained_fallback": false,
+    "decode_timeout_seconds": 12.0,
+    "run_class": "scratch_matrix"
+  },
+  "runs": {
+    "E1032": {
+      "status": "completed_rejected",
+      "run_id": "e1032_v269_predeclaration_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5290666666666667,
+      "component_recall": 0.5833333333333334,
+      "reward": 0.957,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "binder_component_plan_applications": 15,
+      "binder_component_plan_choice_changes": 1,
+      "binder_arity_applications": 15,
+      "binder_arity_choice_changes": 2,
+      "agentv": "0/1"
+    },
+    "E1033": {
+      "status": "invalid_outer_timeout",
+      "run_id": "e1033_v269_predeclaration_held",
+      "suite": "held_out",
+      "n_requested": 5,
+      "outer_timeout_seconds": 110,
+      "scoreboard_valid": false
+    },
+    "E1034_E1038": {
+      "status": "completed_rejected_diagnostic_subsets",
+      "run_ids": [
+        "e1034_v269_predeclaration_form",
+        "e1035_v269_predeclaration_dual_card",
+        "e1036_v269_predeclaration_input",
+        "e1037_v269_predeclaration_tabs",
+        "e1038_v269_predeclaration_settings"
+      ],
+      "suite": "held_out",
+      "subset_protocol": "five completed one-row diagnostic subsets under identical policy",
+      "canonical_full_suite_scoreboard": false,
+      "n": 5,
+      "parse": 0.6,
+      "meaning_v1": 0.4,
+      "strict_v2": 0.4,
+      "fidelity": 0.44000000000000006,
+      "structural_similarity": 0.2395,
+      "component_recall": 0.4,
+      "reward": 0.5105999999999999,
+      "decode_timeouts": 2,
+      "fallback_count": 3,
+      "binder_component_plan_applications_non_timeout_rows": 26,
+      "binder_component_plan_choice_changes": 0,
+      "binder_arity_applications_non_timeout_rows": 26,
+      "binder_arity_choice_changes_non_timeout_rows": 3,
+      "agentv": "0/5"
+    }
+  },
+  "disposition": {
+    "decode_arm_accepted": false,
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "v269_capability_retained_inactive_by_default": true,
+    "next_hypothesis": "improve the declaration decision signal rather than relocate the same weak classifier"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "637a7dc506f0648d0ba67492bbeaa787ae8f05f0",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v39",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v269"
+    }
+  }
+}
