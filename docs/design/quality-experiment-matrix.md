@@ -6231,3 +6231,19 @@ and the only committed bridge corpus is a non-publishable four-row fixture over
 two targets. Confirmation fails closed. AgentV passes all 5/5 structural and
 honesty cases; no checkpoint or ship claim changed. Full evidence:
 [`iter-slm197-direct-bridge-policy-20260723.md`](iter-slm197-direct-bridge-policy-20260723.md).
+
+# VFA0-03 — bridge curriculum and target-balance ablation (2026-07-23)
+
+Reject curriculum selection on the available fixture while retaining the
+target-first sampler and exposure contract. The seven arms use the frozen
+SLM-197 4,769-parameter direct scorer, five seeds, eight epochs, identical
+decision support, exact candidate membership, and isolated train/dev target
+clusters. AgentV passes 5/5 contract and honesty cases.
+
+The result is wiring-only: the train split has two rows from one target, every
+bridge has length two, and dependency capsules are empty. All arms reach dev
+top-1 positive rate 1.0 and free-running target exactness 0/2. Uniform-target
+balance and staged ordering are therefore scientifically indistinguishable;
+no arm is selected, confirmation fails closed, and no checkpoint or ship claim
+changes. Full evidence:
+[`iter-slm198-bridge-curriculum-20260723.md`](iter-slm198-bridge-curriculum-20260723.md).

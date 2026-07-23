@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bridge_curriculum_fixture_contract", "failures": [], "result": {"balanced_target_exposure_equal": true, "candidate_tokens_equal": true, "final_support_equal": true, "parameter_count_equal": true, "parameter_counts": [4769], "row_exposure_equal": true, "split_safe": true, "target_first_explicit": true}}

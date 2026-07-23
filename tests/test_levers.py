@@ -26,7 +26,8 @@ def test_run_policy_is_derived_from_one_value() -> None:
     assert MAX_RUN_SECONDS == MAX_RUN_MINUTES * 60
     assert INTERRUPT_AFTER_SECONDS + KILL_GRACE_SECONDS == MAX_RUN_SECONDS
     assert HF_JOB_TIMEOUT == f"{MAX_RUN_MINUTES}m"
-    assert "docs/design/**" in VERCEL_FUNCTION_INCLUDE_FILES
+    assert "docs/design/*.json" in VERCEL_FUNCTION_INCLUDE_FILES
+    assert "docs/design/**" not in VERCEL_FUNCTION_INCLUDE_FILES
     assert "docs/MODEL_CARD.md" in VERCEL_FUNCTION_INCLUDE_FILES
     assert CHANGED_TEST_WORKERS > 0
 

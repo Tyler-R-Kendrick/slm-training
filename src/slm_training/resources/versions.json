@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-23",
+          "note": "Narrow the canonical Vercel evidence bundle to top-level design JSON consumed by the deployed observability reader"
+        },
         {
           "version": "v19",
           "date": "2026-07-23",
@@ -3263,7 +3268,37 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append SLM-198 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "initial registration; SLM-197 exact-candidate direct policy, set-mass loss, matched time encodings, checkpoint migration, free-running decode, and honest D0-D5 fixture matrix"
+        }
+      ]
+    },
+    "harness.experiments.slm198_bridge_curriculum": {
+      "version": "v2",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm198_bridge_curriculum.py",
+        "scripts/run_bridge_curriculum_matrix.py",
+        "tests/test_harnesses/experiments/test_slm198_bridge_curriculum.py",
+        "tests/test_scripts/test_run_bridge_curriculum_matrix.py",
+        "docs/design/iter-slm198-bridge-curriculum-20260723.json",
+        "docs/design/iter-slm198-bridge-curriculum-20260723.md",
+        "docs/design/iter-slm198-bridge-curriculum-agentv-20260723/"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Deduplicate per-seed manifests, retain decode trace digests instead of repeated traces, and compact deployable evidence without changing measured metrics"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-198 target-first bridge curriculum manifest, deterministic scheduling features, exposure proofs, resumable sampler, and honest fixture matrix"
         }
       ]
     },
