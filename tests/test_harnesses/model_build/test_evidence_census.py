@@ -53,6 +53,19 @@ def test_extract_scoreboards_uses_canonical_nested_and_legacy_fallbacks() -> Non
     assert set(legacy[0][1]) == {"smoke"}
 
 
+def test_extract_scoreboards_preserves_root_legacy_pointer() -> None:
+    rows = extract_scoreboards(
+        {
+            "suite": "smoke",
+            "n": 20,
+            "meaningful_program_rate": 1.0,
+            "structural_similarity": 0.8,
+        }
+    )
+    assert rows[0][0] == ""
+    assert set(rows[0][1]) == {"smoke"}
+
+
 def _candidate(path: str, file_sha: str = "a", pointer: str = "/suites") -> dict:
     return {
         "source": {
@@ -92,6 +105,12 @@ def test_append_adjudications_normalizes_legacy_slot_pointers() -> None:
         [_candidate("b", "new", "/results/0/suites")], result_first
     )
     assert result_second[-1]["supersedes_event_id"] == result_first[0]["event_id"]
+
+    normalized_first = append_adjudications(
+        [_candidate("c", "old", "/normalized")]
+    )
+    root_second = append_adjudications([_candidate("c", "new", "")], normalized_first)
+    assert root_second[-1]["supersedes_event_id"] == normalized_first[0]["event_id"]
 
 
 def test_verify_adjudication_chain_rejects_tampering() -> None:

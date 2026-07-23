@@ -103,6 +103,12 @@ def test_plan_binomial_rate_test_rejects_invalid_seeds(seeds: tuple[object, ...]
         plan_binomial_rate_test(null_rate=0.5, target_delta=0.1, seeds=seeds)
 
 
+@pytest.mark.parametrize("sides", [True, False, 1.0, 2.0])
+def test_plan_binomial_rate_test_rejects_non_integer_sides(sides: object) -> None:
+    with pytest.raises(ValueError, match="sides must be 1 or 2"):
+        plan_binomial_rate_test(null_rate=0.5, target_delta=0.1, sides=sides)
+
+
 def test_exact_binomial_interval_basic() -> None:
     result = exact_binomial_interval(50, 100)
     assert result["n"] == 100

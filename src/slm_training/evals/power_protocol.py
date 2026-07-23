@@ -133,7 +133,7 @@ def plan_binomial_rate_test(
         raise ValueError("alpha must be in (0, 1)")
     if not 0.0 < target_power < 1.0:
         raise ValueError("target_power must be in (0, 1)")
-    if sides not in (1, 2):
+    if isinstance(sides, bool) or not isinstance(sides, int) or sides not in (1, 2):
         raise ValueError("sides must be 1 or 2")
     normalized_seeds = tuple(seeds)
     if not normalized_seeds:

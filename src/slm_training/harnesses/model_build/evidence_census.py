@@ -79,7 +79,11 @@ def extract_scoreboards(
         return []
     return [
         (
-            str(record.get("source_pointer") or "/normalized"),
+            (
+                str(record["source_pointer"])
+                if record.get("source_pointer") is not None
+                else "/normalized"
+            ),
             suites,
             record["board_context"],
         )
@@ -234,7 +238,7 @@ def append_adjudications(
     }
     def slot(row: dict[str, Any]) -> tuple[str, str]:
         pointer = row["source"]["json_pointer"]
-        if pointer == "":
+        if pointer in {"", "/normalized"}:
             pointer = "/suites"
         elif re.fullmatch(r"/results/\d+", pointer):
             pointer += "/suites"
