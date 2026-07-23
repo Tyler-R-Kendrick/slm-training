@@ -1,0 +1,817 @@
+{
+  "candidate_set_digest": "fd47a7ccb6acf4953acb15c1de5e8124e4d83fca20c03f885085b5f01b4f202b",
+  "candidates": [
+    {
+      "candidate_id": "edit_1d36e7bc06d75deda616ae30",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_1d36e7bc06d75deda616ae30",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Button",
+        "slot": ":cta.label",
+        "target_name": "cta"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 2,
+        "production": "Button",
+        "slot_pointer": 0,
+        "successor_fingerprint": "be847048c1d680f18e7df27a4a19ae647bc39c026e4f0e83b0d0de9fac878d06"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "be847048c1d680f18e7df27a4a19ae647bc39c026e4f0e83b0d0de9fac878d06",
+      "transition_certificate": {
+        "certificate_digest": "30ee13664f1b289fda98f949b720324a97df6a559f364166599e38dbd96b7b92",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_1d36e7bc06d75deda616ae30",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Button",
+          "slot": ":cta.label",
+          "target_name": "cta"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "be847048c1d680f18e7df27a4a19ae647bc39c026e4f0e83b0d0de9fac878d06",
+        "target_program": "title = TextContent(\":cta.title\")\ncta = Button(\":cta.label\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_4adabca067138c3ec3ca1843",
+      "edit": {
+        "action": "SetEnum",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "row",
+        "edit_id": "edit_4adabca067138c3ec3ca1843",
+        "index": null,
+        "inverse_action": "SetEnum",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "root"
+      },
+      "features": {
+        "action_kind": "SetEnum",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": "row",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 3,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "f0fd3febb02670bba4af41c503c26d278742c3197c3bd658b824ce976234d217"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "f0fd3febb02670bba4af41c503c26d278742c3197c3bd658b824ce976234d217",
+      "transition_certificate": {
+        "certificate_digest": "974b118eb84e2808eaca5f491292e684056eaeeffe94d0c702bdf7c37d9b1a39",
+        "edit": {
+          "action": "SetEnum",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "row",
+          "edit_id": "edit_4adabca067138c3ec3ca1843",
+          "index": null,
+          "inverse_action": "SetEnum",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "root"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "f0fd3febb02670bba4af41c503c26d278742c3197c3bd658b824ce976234d217",
+        "target_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"row\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_5363bd70fc06777163fcb30b",
+      "edit": {
+        "action": "ReplaceProduction",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_5363bd70fc06777163fcb30b",
+        "index": null,
+        "inverse_action": "ReplaceProduction",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Button",
+        "slot": null,
+        "target_name": "title"
+      },
+      "features": {
+        "action_kind": "ReplaceProduction",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 4,
+        "production": "Button",
+        "slot_pointer": null,
+        "successor_fingerprint": "b9e6581d63bd3c32dcc6684f797c6cb7088a57acf5b8e9244edd49fe3e2b3c40"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "b9e6581d63bd3c32dcc6684f797c6cb7088a57acf5b8e9244edd49fe3e2b3c40",
+      "transition_certificate": {
+        "certificate_digest": "fd4cdceb1ce09150e3b5e4d4441aad91e1f7dd85f021870bc758a66e8fc8012f",
+        "edit": {
+          "action": "ReplaceProduction",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_5363bd70fc06777163fcb30b",
+          "index": null,
+          "inverse_action": "ReplaceProduction",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Button",
+          "slot": null,
+          "target_name": "title"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "b9e6581d63bd3c32dcc6684f797c6cb7088a57acf5b8e9244edd49fe3e2b3c40",
+        "target_program": "title = Button(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_6c13a76514f13836a516ee0c",
+      "edit": {
+        "action": "DeleteChild",
+        "affected_node_ids": [],
+        "child_name": "title",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_6c13a76514f13836a516ee0c",
+        "index": null,
+        "inverse_action": "InsertChild",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "root"
+      },
+      "features": {
+        "action_kind": "DeleteChild",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 3,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "c0f28db4197c7967777f34a5f748800f351e33f99f73ffed59af3ca4935b0c47"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "c0f28db4197c7967777f34a5f748800f351e33f99f73ffed59af3ca4935b0c47",
+      "transition_certificate": {
+        "certificate_digest": "66351891ba3f6aa743c578479d65f319d2cba1d99d01af1c71e729792e67925f",
+        "edit": {
+          "action": "DeleteChild",
+          "affected_node_ids": [],
+          "child_name": "title",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_6c13a76514f13836a516ee0c",
+          "index": null,
+          "inverse_action": "InsertChild",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "root"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "c0f28db4197c7967777f34a5f748800f351e33f99f73ffed59af3ca4935b0c47",
+        "target_program": "title = TextContent(\":cta.title\")\nroot = Stack([], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_80445b72007b12901311ce77",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_80445b72007b12901311ce77",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "TextContent",
+        "slot": ":cta.label",
+        "target_name": "cta"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 2,
+        "production": "TextContent",
+        "slot_pointer": 0,
+        "successor_fingerprint": "07fe1b86f79a4ebc455567054d4e828d673084689dba86ef432ac62389dd7b4e"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "07fe1b86f79a4ebc455567054d4e828d673084689dba86ef432ac62389dd7b4e",
+      "transition_certificate": {
+        "certificate_digest": "2f8894cc4cec519e4a03e8d9a5631b19a1ff7f0ee9fc32ba007cc3f6151f3a18",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_80445b72007b12901311ce77",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "TextContent",
+          "slot": ":cta.label",
+          "target_name": "cta"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "07fe1b86f79a4ebc455567054d4e828d673084689dba86ef432ac62389dd7b4e",
+        "target_program": "title = TextContent(\":cta.title\")\ncta = TextContent(\":cta.label\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_a2770b6daf1704ac56aa4600",
+      "edit": {
+        "action": "DeleteStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_a2770b6daf1704ac56aa4600",
+        "index": null,
+        "inverse_action": "InsertStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": null,
+        "target_name": "title"
+      },
+      "features": {
+        "action_kind": "DeleteStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 4,
+        "production": null,
+        "slot_pointer": null,
+        "successor_fingerprint": "246bc8fc020a23e2f3ac60fd0ef078b27e4c71e151926834512c08a1e4abbab9"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "246bc8fc020a23e2f3ac60fd0ef078b27e4c71e151926834512c08a1e4abbab9",
+      "transition_certificate": {
+        "certificate_digest": "a2d403aa40aa832ff87399b2349180e1c2be30a042cecc474c638c1bb6e08eb1",
+        "edit": {
+          "action": "DeleteStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_a2770b6daf1704ac56aa4600",
+          "index": null,
+          "inverse_action": "InsertStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": null,
+          "target_name": "title"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "246bc8fc020a23e2f3ac60fd0ef078b27e4c71e151926834512c08a1e4abbab9",
+        "target_program": "root = Stack([], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_b3960760e171dc700e42895f",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_b3960760e171dc700e42895f",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "TextContent",
+        "slot": ":cta.title",
+        "target_name": "cta"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 2,
+        "production": "TextContent",
+        "slot_pointer": 1,
+        "successor_fingerprint": "04015bacb89775da5f5cf2977d78886e9611665af3343880c9bf3d4415c3403a"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "04015bacb89775da5f5cf2977d78886e9611665af3343880c9bf3d4415c3403a",
+      "transition_certificate": {
+        "certificate_digest": "4692e71c3e96482897ac10af4fbe77c47e180c0c9b5f1f7d867acca0889ed179",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_b3960760e171dc700e42895f",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "TextContent",
+          "slot": ":cta.title",
+          "target_name": "cta"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "04015bacb89775da5f5cf2977d78886e9611665af3343880c9bf3d4415c3403a",
+        "target_program": "title = TextContent(\":cta.title\")\ncta = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_c7665e1cb9534035dc9fd4b9",
+      "edit": {
+        "action": "BindSlotPointer",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_c7665e1cb9534035dc9fd4b9",
+        "index": null,
+        "inverse_action": "BindSlotPointer",
+        "preconditions": [],
+        "previous_index": null,
+        "production": null,
+        "slot": ":cta.label",
+        "target_name": "title"
+      },
+      "features": {
+        "action_kind": "BindSlotPointer",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 4,
+        "production": null,
+        "slot_pointer": 0,
+        "successor_fingerprint": "77c9a1d0d48b126ee468b7e328ba76a20006496f9b5dcecdf13d3ec64bed4cd0"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "77c9a1d0d48b126ee468b7e328ba76a20006496f9b5dcecdf13d3ec64bed4cd0",
+      "transition_certificate": {
+        "certificate_digest": "317f4bef9840626d376799be945a3a53c39180f6307caa892bb7bcd0e34a303b",
+        "edit": {
+          "action": "BindSlotPointer",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_c7665e1cb9534035dc9fd4b9",
+          "index": null,
+          "inverse_action": "BindSlotPointer",
+          "preconditions": [],
+          "previous_index": null,
+          "production": null,
+          "slot": ":cta.label",
+          "target_name": "title"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "77c9a1d0d48b126ee468b7e328ba76a20006496f9b5dcecdf13d3ec64bed4cd0",
+        "target_program": "title = TextContent(\":cta.label\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_f12f4f970f8e25e21095abee",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": "title",
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": "column",
+        "edit_id": "edit_f12f4f970f8e25e21095abee",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Stack",
+        "slot": null,
+        "target_name": "cta"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 1,
+        "cardinality": 1,
+        "enum_value": "column",
+        "frame": null,
+        "literal_kind": null,
+        "node_pointer": 2,
+        "production": "Stack",
+        "slot_pointer": null,
+        "successor_fingerprint": "82948c8e670af2bbb565919ae162506cb13abdeb8c296372d84a2138cc19316e"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "82948c8e670af2bbb565919ae162506cb13abdeb8c296372d84a2138cc19316e",
+      "transition_certificate": {
+        "certificate_digest": "10ff7825e212d4eaab6e77425ec46f6d4491d744375ec0b890bd65382924b54f",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": "title",
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": "column",
+          "edit_id": "edit_f12f4f970f8e25e21095abee",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Stack",
+          "slot": null,
+          "target_name": "cta"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "82948c8e670af2bbb565919ae162506cb13abdeb8c296372d84a2138cc19316e",
+        "target_program": "title = TextContent(\":cta.title\")\ncta = Stack([title], \"column\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    },
+    {
+      "candidate_id": "edit_fdb8f806737e4542aa9ac94d",
+      "edit": {
+        "action": "InsertStatement",
+        "affected_node_ids": [],
+        "child_name": null,
+        "cost": {
+          "edits": 1,
+          "nodes_touched": 1,
+          "serialization_delta": 0,
+          "verifier_calls": 1
+        },
+        "coverage_tier": "complete",
+        "dependency_footprint": [],
+        "direction": null,
+        "edit_id": "edit_fdb8f806737e4542aa9ac94d",
+        "index": null,
+        "inverse_action": "DeleteStatement",
+        "preconditions": [],
+        "previous_index": null,
+        "production": "Button",
+        "slot": ":cta.title",
+        "target_name": "cta"
+      },
+      "features": {
+        "action_kind": "InsertStatement",
+        "arity": 0,
+        "cardinality": 1,
+        "enum_value": null,
+        "frame": null,
+        "literal_kind": "slot",
+        "node_pointer": 2,
+        "production": "Button",
+        "slot_pointer": 1,
+        "successor_fingerprint": "db198cb07cf7955883c720c8fb55f75e44a0bdc119b5a92c703ee265af1b926c"
+      },
+      "schema": "LegalEditCandidateV1",
+      "successor_fingerprint": "db198cb07cf7955883c720c8fb55f75e44a0bdc119b5a92c703ee265af1b926c",
+      "transition_certificate": {
+        "certificate_digest": "298de99558dd6c5d4a6461770d2effc53cca10a74c66b641bd014517893cc94f",
+        "edit": {
+          "action": "InsertStatement",
+          "affected_node_ids": [],
+          "child_name": null,
+          "cost": {
+            "edits": 1,
+            "nodes_touched": 1,
+            "serialization_delta": 0,
+            "verifier_calls": 1
+          },
+          "coverage_tier": "complete",
+          "dependency_footprint": [],
+          "direction": null,
+          "edit_id": "edit_fdb8f806737e4542aa9ac94d",
+          "index": null,
+          "inverse_action": "DeleteStatement",
+          "preconditions": [],
+          "previous_index": null,
+          "production": "Button",
+          "slot": ":cta.title",
+          "target_name": "cta"
+        },
+        "schema": "TransitionCertificateV1",
+        "source_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288",
+        "source_program": "title = TextContent(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "target_fingerprint": "db198cb07cf7955883c720c8fb55f75e44a0bdc119b5a92c703ee265af1b926c",
+        "target_program": "title = TextContent(\":cta.title\")\ncta = Button(\":cta.title\")\nroot = Stack([title], \"column\")",
+        "verifier_accepted": true,
+        "verifier_detail": "canonical_parse_replay_ok",
+        "verifier_profile": "statement/canonical",
+        "version_pins": {
+          "canonicalizer": "d2",
+          "codec": "production_codec/v1",
+          "compiler": "openui_statement/v0.5",
+          "coupling": "canonical_greedy",
+          "pack": "openui/v0.5",
+          "planner": "slm189/v1",
+          "verifier": "statement/canonical"
+        }
+      }
+    }
+  ],
+  "schema": "ExactLegalEditCandidateSetV1",
+  "state_fingerprint": "2adc5807c37b92db5bfdad8d473d72fe7b59c77871a370c2167d4a73f9997288"
+}

@@ -1,0 +1,83 @@
+{
+  "claim_class": "wiring_fixture",
+  "command": "PYTHONPATH=src .venv/bin/python -m scripts.build_legal_edit_bridges --fixture",
+  "diagnostics": {
+    "bridge_length_histogram": {
+      "2": 4
+    },
+    "candidate_set_size": {
+      "histogram": {
+        "9": 1,
+        "10": 1,
+        "16": 1,
+        "19": 1
+      },
+      "max": 19,
+      "mean": 13.5,
+      "min": 9
+    },
+    "coverage_comparison": {
+      "solver_traces": {
+        "delta": null,
+        "status": "unavailable"
+      },
+      "x22_local_corruption": {
+        "delta": null,
+        "status": "unavailable"
+      }
+    },
+    "edit_family_coverage": {
+      "InsertChild": 2,
+      "InsertStatement": 2
+    },
+    "independent_targets": 2,
+    "multi_positive_rate": 1.0,
+    "paths": 2,
+    "planner_failures": 0,
+    "rows": 4,
+    "singleton_ratio": 0.0,
+    "source_policy_breakdown": {
+      "declared_request_contract": 4
+    },
+    "target_clusters": 2,
+    "unique_candidate_sets": 4,
+    "unique_states": 4,
+    "unknown_prevalence": 0.24074074074074073
+  },
+  "disposition": "fixture_pass_production_blocked",
+  "falsifier": "Bridge states add little unique coverage, planner failures exceed the frozen threshold, or one neutral exact-candidate interface cannot represent every live edit.",
+  "fixture_manifest": "src/slm_training/resources/data/train/slm196_legal_edit_bridge_fixture/manifest.json",
+  "hypothesis": "Complete valid seed-to-target bridges expand useful supervision while multi-positive exact candidate sets avoid arbitrary one-hot planner bias.",
+  "matrix_set": "slm196_legal_edit_bridge",
+  "recipe": {
+    "backend": "canonical statement edit algebra",
+    "device": "CPU",
+    "honesty_mode": "development fixture; no confirmation; no model or checkpoint",
+    "records": 2,
+    "steps": 0,
+    "wall_cap_minutes": 3
+  },
+  "run_id": "slm196-legal-edit-bridge-fixture-20260723",
+  "schema": "LegalEditBridgeExperimentResultV1",
+  "status": "complete",
+  "validation": {
+    "candidate_reconstruction_rate": 1.0,
+    "confirmation_rows": 0,
+    "forbidden_model_input_fields": 0,
+    "reachability_rate": 1.0,
+    "rejected_records": 0,
+    "replay_rate": 1.0,
+    "split_safe": true,
+    "unknown_is_negative": false
+  },
+  "version_stamp": {
+    "code_commit": "efa1a26dcfca5076008b194fc94842054c76f26c",
+    "code_dirty": true,
+    "components": {
+      "data.flow.legal_edit_bridge_corpus": "v2",
+      "model.legal_edit_batch": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T00:00:00+00:00"
+  }
+}
