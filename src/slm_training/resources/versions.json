@@ -3748,7 +3748,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -3773,6 +3773,11 @@
         "docs/design/iter-slm279-depth-supervision-correction-20260723.md"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "SLM-282 (LAR0-02) diagnostics foundation: add opt-in RecursiveDepthDiagnosticsV1 records with detached per-example y/z states, actual updates, norms, pre-state update ratios, and masked CE/accuracy/entropy/KL curves; add a diagnostics-gated fixture-only residual_delta transition mode while preserving the historical as_is forward path and all production constructor/forward defaults"
+        },
         {
           "version": "v11",
           "date": "2026-07-23",

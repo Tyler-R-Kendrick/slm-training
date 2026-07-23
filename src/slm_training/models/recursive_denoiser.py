@@ -142,6 +142,40 @@ from slm_training.models.blocks import DenoiserTower, RMSNorm, TransformerBlock
 #: point of a matched-control campaign that needs *no* z-state parameters for
 #: arms C/D.
 Z_STATE_MODES: tuple[str, ...] = ("full", "y_only", "parameter_free")
+RECURSIVE_DIAGNOSTIC_UPDATE_MODES: tuple[str, ...] = ("as_is", "residual_delta")
+
+
+@dataclass(frozen=True)
+class RecursiveDepthDiagnosticsV1:
+    """Detached, per-example recurrence health at one logical depth.
+
+    State/update tensors have shape ``[B, T, D]``. Norms are per-example
+    Frobenius norms over ``[T, D]``; each update/state ratio divides the update
+    norm by the corresponding *pre-update* state norm (clamped at machine
+    epsilon). Task metrics are per-example masked-token means. KL uses
+    ``KL(p_depth || p_reference)``; the final depth therefore has zero
+    ``kl_to_final`` and no ``kl_to_next``.
+    """
+
+    contract_version: str
+    step: int
+    update_mode: str
+    y: torch.Tensor
+    z: torch.Tensor | None
+    y_update: torch.Tensor
+    z_update: torch.Tensor | None
+    y_norm: torch.Tensor
+    z_norm: torch.Tensor | None
+    y_update_norm: torch.Tensor
+    z_update_norm: torch.Tensor | None
+    y_update_state_ratio: torch.Tensor
+    z_update_state_ratio: torch.Tensor | None
+    target_count: torch.Tensor | None
+    cross_entropy: torch.Tensor | None
+    accuracy: torch.Tensor | None
+    entropy: torch.Tensor | None
+    kl_to_next: torch.Tensor | None
+    kl_to_final: torch.Tensor | None
 
 
 class SharedRecursiveDenoiserTower(nn.Module):
@@ -303,7 +337,11 @@ class SharedRecursiveDenoiserTower(nn.Module):
         return_hidden: bool = False,
         return_attn: bool = False,
         return_step_boundaries: bool = False,
-    ) -> dict[str, torch.Tensor | list[torch.Tensor]]:
+        diagnostics: bool = False,
+        diagnostic_update_mode: str = "as_is",
+        diagnostic_targets: torch.Tensor | None = None,
+        diagnostic_mask: torch.Tensor | None = None,
+    ) -> dict[str, Any]:
         """
         Run the full recursive recurrence and expose per-depth outputs.
 
@@ -323,10 +361,65 @@ class SharedRecursiveDenoiserTower(nn.Module):
             actually reaches that point (arm B/G: yes; arm H: no, once the
             detach has replaced what the *next* step actually consumes).
             Never used by ``forward``/``encode`` -- opt-in and additive only.
+          - ``diagnostics``: (only if ``diagnostics=True``) detached
+            :class:`RecursiveDepthDiagnosticsV1` records. ``"as_is"`` uses
+            the historical residualized block output as the outer update.
+            Fixture-only ``"residual_delta"`` instead subtracts each layer
+            stack's input from its output before the existing outer addition.
+            Targets enable per-example masked CE, accuracy, entropy, and KL
+            curves; an omitted mask selects every non-pad target.
         """
+        if not isinstance(diagnostics, bool):
+            raise TypeError("diagnostics must be a bool")
+        if diagnostic_update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES:
+            raise ValueError(
+                f"diagnostic_update_mode={diagnostic_update_mode!r} is not one of "
+                f"{RECURSIVE_DIAGNOSTIC_UPDATE_MODES!r}"
+            )
+        if not diagnostics and (
+            diagnostic_update_mode != "as_is"
+            or diagnostic_targets is not None
+            or diagnostic_mask is not None
+        ):
+            raise ValueError(
+                "diagnostic update modes, targets, and masks require diagnostics=True"
+            )
+        if diagnostic_mask is not None and diagnostic_targets is None:
+            raise ValueError("diagnostic_mask requires diagnostic_targets")
+        if diagnostic_targets is not None:
+            if diagnostic_targets.shape != noisy_ids.shape:
+                raise ValueError(
+                    "diagnostic_targets shape must match noisy_ids: "
+                    f"{tuple(diagnostic_targets.shape)} != {tuple(noisy_ids.shape)}"
+                )
+            if diagnostic_targets.dtype != torch.long:
+                raise TypeError("diagnostic_targets must have dtype torch.long")
+            if diagnostic_targets.device != noisy_ids.device:
+                raise ValueError("diagnostic_targets must be on noisy_ids.device")
+            vocab_size = self.lm_head.weight.size(0)
+            if diagnostic_targets.numel() and (
+                diagnostic_targets.min().item() < 0
+                or diagnostic_targets.max().item() >= vocab_size
+            ):
+                raise ValueError(f"diagnostic_targets must be in [0, {vocab_size})")
+            if diagnostic_mask is not None:
+                if diagnostic_mask.shape != noisy_ids.shape:
+                    raise ValueError(
+                        "diagnostic_mask shape must match noisy_ids: "
+                        f"{tuple(diagnostic_mask.shape)} != {tuple(noisy_ids.shape)}"
+                    )
+                if diagnostic_mask.dtype != torch.bool:
+                    raise TypeError("diagnostic_mask must have dtype torch.bool")
+                if diagnostic_mask.device != noisy_ids.device:
+                    raise ValueError("diagnostic_mask must be on noisy_ids.device")
+
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
             noisy_ids = noisy_ids[:, : self.max_len]
+            if diagnostic_targets is not None:
+                diagnostic_targets = diagnostic_targets[:, : self.max_len]
+            if diagnostic_mask is not None:
+                diagnostic_mask = diagnostic_mask[:, : self.max_len]
             seq = self.max_len
         pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
 
@@ -370,8 +463,20 @@ class SharedRecursiveDenoiserTower(nn.Module):
         depth_logits: list[torch.Tensor] = []
         attn: torch.Tensor | None = None
         step_boundaries: list[dict[str, Any]] = []
+        diagnostic_states: list[
+            tuple[
+                torch.Tensor,
+                torch.Tensor | None,
+                torch.Tensor,
+                torch.Tensor | None,
+                torch.Tensor,
+                torch.Tensor | None,
+            ]
+        ] = []
 
         for r in range(1, self.recursive_steps + 1):
+            y_before = y
+            z_before = z
             if z is None:
                 # "y_only" (arm C): both the F- and G-update layers run on
                 # the same ``y`` state -- there is no separate z variable to
@@ -381,7 +486,8 @@ class SharedRecursiveDenoiserTower(nn.Module):
                     f_in, self._f_layers, self_pad, context, ctx_pad_mask
                 )
                 assert isinstance(f_out, torch.Tensor)
-                y = y + f_out
+                f_update = f_out if diagnostic_update_mode == "as_is" else f_out - f_in
+                y = y + f_update
                 g_in = self.norm(y)
             else:
                 # z_r = z_{r-1} + F_theta(norm(z_{r-1} + y_{r-1}), context)
@@ -390,7 +496,8 @@ class SharedRecursiveDenoiserTower(nn.Module):
                     f_in, self._f_layers, self_pad, context, ctx_pad_mask
                 )
                 assert isinstance(f_out, torch.Tensor)
-                z = z + f_out
+                f_update = f_out if diagnostic_update_mode == "as_is" else f_out - f_in
+                z = z + f_update
                 g_in = self.norm(y + z)
 
             # y_r = y_{r-1} + G_theta(norm(y_{r-1} + z_r), context)
@@ -407,11 +514,24 @@ class SharedRecursiveDenoiserTower(nn.Module):
                 g_out, attn = g_out
             else:
                 assert isinstance(g_out, torch.Tensor)
-            y = y + g_out
+            g_update = g_out if diagnostic_update_mode == "as_is" else g_out - g_in
+            y = y + g_update
 
             h = self.norm(y)
             depth_hiddens.append(h)
             depth_logits.append(self.project(h))
+
+            if diagnostics:
+                diagnostic_states.append(
+                    (
+                        y.detach(),
+                        None if z is None else z.detach(),
+                        (y - y_before).detach(),
+                        None if z is None else (z - z_before).detach(),
+                        y_before.detach(),
+                        None if z_before is None else z_before.detach(),
+                    )
+                )
 
             if return_step_boundaries:
                 # Captured before any detach below -- the real, graph-
@@ -432,7 +552,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
         final_hidden = depth_hiddens[-1]
         final_logits = depth_logits[-1]
 
-        result: dict[str, torch.Tensor | list[torch.Tensor]] = {
+        result: dict[str, Any] = {
             "logits": final_logits,
             "depth_hiddens": depth_hiddens,
             "depth_logits": depth_logits,
@@ -443,6 +563,121 @@ class SharedRecursiveDenoiserTower(nn.Module):
             result["attn"] = attn
         if return_step_boundaries:
             result["step_boundaries"] = step_boundaries
+        if diagnostics:
+            mask: torch.Tensor | None = None
+            counts: torch.Tensor | None = None
+            task_metrics: list[
+                tuple[
+                    torch.Tensor,
+                    torch.Tensor,
+                    torch.Tensor,
+                    torch.Tensor | None,
+                    torch.Tensor,
+                ]
+                | None
+            ] = [None] * len(depth_logits)
+            if diagnostic_targets is not None:
+                mask = (
+                    diagnostic_targets.ne(pad_id)
+                    if diagnostic_mask is None
+                    else diagnostic_mask
+                )
+                counts = mask.sum(dim=1)
+                if torch.any(counts == 0):
+                    raise ValueError(
+                        "diagnostic_mask must select at least one target per example"
+                    )
+                weights = mask.to(torch.float32)
+                denominators = counts.to(torch.float32)
+                log_probs = [
+                    F.log_softmax(logits.detach().float(), dim=-1)
+                    for logits in depth_logits
+                ]
+                final_log_probs = log_probs[-1]
+                for index, current_log_probs in enumerate(log_probs):
+                    token_ce = F.nll_loss(
+                        current_log_probs.transpose(1, 2),
+                        diagnostic_targets,
+                        reduction="none",
+                    )
+                    token_accuracy = current_log_probs.argmax(dim=-1).eq(
+                        diagnostic_targets
+                    )
+                    probabilities = current_log_probs.exp()
+                    token_entropy = -(probabilities * current_log_probs).sum(dim=-1)
+
+                    def _masked_mean(values: torch.Tensor) -> torch.Tensor:
+                        return (values * weights).sum(dim=1) / denominators
+
+                    def _kl(reference: torch.Tensor) -> torch.Tensor:
+                        token_kl = (
+                            probabilities * (current_log_probs - reference)
+                        ).sum(dim=-1)
+                        return _masked_mean(token_kl)
+
+                    next_kl = (
+                        None
+                        if index + 1 == len(log_probs)
+                        else _kl(log_probs[index + 1])
+                    )
+                    task_metrics[index] = (
+                        _masked_mean(token_ce),
+                        _masked_mean(token_accuracy.to(torch.float32)),
+                        _masked_mean(token_entropy),
+                        next_kl,
+                        _kl(final_log_probs),
+                    )
+
+            records: list[RecursiveDepthDiagnosticsV1] = []
+
+            def _batch_l2(value: torch.Tensor) -> torch.Tensor:
+                return value.float().flatten(1).norm(dim=1)
+
+            for index, (
+                y_state,
+                z_state,
+                y_update,
+                z_update,
+                y_before,
+                z_before,
+            ) in enumerate(diagnostic_states):
+                y_norm = _batch_l2(y_state)
+                y_update_norm = _batch_l2(y_update)
+                y_before_norm = _batch_l2(y_before)
+                z_norm = None if z_state is None else _batch_l2(z_state)
+                z_update_norm = None if z_update is None else _batch_l2(z_update)
+                z_before_norm = None if z_before is None else _batch_l2(z_before)
+                metrics = task_metrics[index]
+                records.append(
+                    RecursiveDepthDiagnosticsV1(
+                        contract_version="RecursiveDepthDiagnosticsV1",
+                        step=index + 1,
+                        update_mode=diagnostic_update_mode,
+                        y=y_state,
+                        z=z_state,
+                        y_update=y_update,
+                        z_update=z_update,
+                        y_norm=y_norm,
+                        z_norm=z_norm,
+                        y_update_norm=y_update_norm,
+                        z_update_norm=z_update_norm,
+                        y_update_state_ratio=y_update_norm
+                        / y_before_norm.clamp_min(torch.finfo(torch.float32).eps),
+                        z_update_state_ratio=(
+                            None
+                            if z_update_norm is None or z_before_norm is None
+                            else z_update_norm
+                            / z_before_norm.clamp_min(torch.finfo(torch.float32).eps)
+                        ),
+                        target_count=None if counts is None else counts.detach(),
+                        cross_entropy=None if metrics is None else metrics[0],
+                        accuracy=None if metrics is None else metrics[1],
+                        entropy=None if metrics is None else metrics[2],
+                        kl_to_next=None if metrics is None else metrics[3],
+                        kl_to_final=None if metrics is None else metrics[4],
+                    )
+                )
+            result["diagnostics"] = records
         return result
 
     def encode(

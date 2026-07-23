@@ -18,6 +18,7 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.recursive_denoiser import (
     ArchitectureComparisonReportV1,
+    RecursiveDepthDiagnosticsV1,
     SharedRecursiveDenoiserTower,
     StackedMatchedStateDenoiserTower,
     compare_denoiser_architectures,
@@ -504,6 +505,205 @@ def test_weight_sharing_across_recursions() -> None:
     assert len(depth_logits) == 3
     # All computation flows through the same object-identity layers each step.
     assert len(f_ids) + len(g_ids) == len(tower.layers)
+
+
+def test_recursive_diagnostics_as_is_is_bit_identical_and_deterministic() -> None:
+    torch.manual_seed(282)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=3,
+    )
+    tower.eval()
+    noisy = torch.randint(1, 23, (2, 5))
+    targets = torch.randint(1, 23, (2, 5))
+    mask = torch.tensor(
+        [[True, True, False, True, False], [True, False, True, True, True]]
+    )
+    ctx = torch.randn(2, 3, 16)
+
+    with torch.no_grad():
+        baseline = tower.recursive_outputs(noisy, ctx, pad_id=0)
+        first = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets, diagnostic_mask=mask,
+        )
+        second = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets, diagnostic_mask=mask,
+        )
+
+    assert "diagnostics" not in baseline
+    assert torch.equal(baseline["logits"], first["logits"])
+    for expected, actual in zip(
+        baseline["depth_logits"], first["depth_logits"], strict=True
+    ):
+        assert torch.equal(expected, actual)
+    assert len(first["diagnostics"]) == len(second["diagnostics"]) == 3
+    for left, right in zip(
+        first["diagnostics"], second["diagnostics"], strict=True
+    ):
+        assert isinstance(left, RecursiveDepthDiagnosticsV1)
+        for field_name in left.__dataclass_fields__:
+            left_value = getattr(left, field_name)
+            right_value = getattr(right, field_name)
+            if isinstance(left_value, torch.Tensor):
+                assert torch.equal(left_value, right_value)
+            else:
+                assert left_value == right_value
+
+
+def test_recursive_diagnostics_schema_shapes_metrics_and_ratios() -> None:
+    torch.manual_seed(282)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2,
+    )
+    noisy = torch.randint(1, 23, (2, 5))
+    targets = torch.randint(1, 23, (2, 5))
+    mask = torch.tensor(
+        [[True, True, False, True, False], [True, False, True, True, True]]
+    )
+    out = tower.recursive_outputs(
+        noisy, torch.randn(2, 3, 16), pad_id=0, diagnostics=True,
+        diagnostic_targets=targets, diagnostic_mask=mask,
+    )
+
+    records = out["diagnostics"]
+    assert len(records) == 2
+    for step, record in enumerate(records, start=1):
+        assert isinstance(record, RecursiveDepthDiagnosticsV1)
+        assert record.contract_version == "RecursiveDepthDiagnosticsV1"
+        assert record.step == step
+        assert record.update_mode == "as_is"
+        assert record.y.shape == record.y_update.shape == (2, 5, 16)
+        assert record.z is not None and record.z.shape == (2, 5, 16)
+        assert record.z_update is not None
+        assert record.z_update.shape == (2, 5, 16)
+        assert torch.equal(record.target_count, mask.sum(dim=1))
+        tensor_fields = (
+            record.y, record.z, record.y_update, record.z_update,
+            record.y_norm, record.z_norm, record.y_update_norm,
+            record.z_update_norm, record.y_update_state_ratio,
+            record.z_update_state_ratio, record.cross_entropy, record.accuracy,
+            record.entropy, record.kl_to_final,
+        )
+        assert all(value is not None for value in tensor_fields)
+        assert all(torch.isfinite(value).all() for value in tensor_fields)
+        assert all(not value.requires_grad for value in tensor_fields)
+        y_before = record.y - record.y_update
+        expected_ratio = record.y_update.float().flatten(1).norm(dim=1) / (
+            y_before.float().flatten(1).norm(dim=1).clamp_min(
+                torch.finfo(torch.float32).eps
+            )
+        )
+        torch.testing.assert_close(record.y_update_state_ratio, expected_ratio)
+    assert records[0].kl_to_next is not None
+    assert torch.isfinite(records[0].kl_to_next).all()
+    assert records[-1].kl_to_next is None
+    torch.testing.assert_close(
+        records[-1].kl_to_final, torch.zeros(2), atol=1e-6, rtol=0
+    )
+    expected_ce = F.cross_entropy(
+        out["depth_logits"][0].detach().float().transpose(1, 2),
+        targets,
+        reduction="none",
+    )
+    expected_ce = (expected_ce * mask).sum(dim=1) / mask.sum(dim=1)
+    torch.testing.assert_close(records[0].cross_entropy, expected_ce)
+
+
+def test_recursive_residual_delta_removes_empty_f_layer_identity_update() -> None:
+    torch.manual_seed(282)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=1,
+    )
+    tower.eval()
+    noisy = torch.randint(1, 23, (2, 5))
+    ctx = torch.randn(2, 3, 16)
+    with torch.no_grad():
+        as_is = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True
+        )["diagnostics"][0]
+        residual_delta = tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_update_mode="residual_delta",
+        )["diagnostics"][0]
+
+    # One transition layer leaves F empty, so its layer stack is identity.
+    assert residual_delta.z_update is not None
+    assert torch.equal(
+        residual_delta.z_update, torch.zeros_like(residual_delta.z_update)
+    )
+    assert as_is.z_update is not None and torch.any(as_is.z_update != 0)
+    assert not torch.equal(as_is.y, residual_delta.y)
+
+
+def test_recursive_diagnostics_y_only_uses_nullable_z_fields() -> None:
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2, z_state_mode="y_only",
+    )
+    out = tower.recursive_outputs(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 16), pad_id=0,
+        diagnostics=True,
+    )
+    for record in out["diagnostics"]:
+        assert record.z is None
+        assert record.z_update is None
+        assert record.z_norm is None
+        assert record.z_update_norm is None
+        assert record.z_update_state_ratio is None
+        assert record.target_count is None
+        assert record.cross_entropy is None
+        assert record.accuracy is None
+        assert record.entropy is None
+        assert record.kl_to_next is None
+        assert record.kl_to_final is None
+
+
+def test_recursive_diagnostics_reject_invalid_inputs() -> None:
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+    )
+    noisy = torch.randint(1, 23, (2, 5))
+    ctx = torch.randn(2, 3, 16)
+    targets = torch.randint(1, 23, (2, 5))
+    with pytest.raises(ValueError, match="require diagnostics=True"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostic_update_mode="residual_delta"
+        )
+    with pytest.raises(ValueError, match="not one of"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_update_mode="unknown",
+        )
+    with pytest.raises(ValueError, match="requires diagnostic_targets"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_mask=torch.ones_like(noisy, dtype=torch.bool),
+        )
+    with pytest.raises(ValueError, match="shape must match"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets[:, :-1],
+        )
+    with pytest.raises(TypeError, match="dtype torch.long"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets.float(),
+        )
+    with pytest.raises(TypeError, match="dtype torch.bool"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets, diagnostic_mask=torch.ones_like(targets),
+        )
+    with pytest.raises(ValueError, match="at least one target per example"):
+        tower.recursive_outputs(
+            noisy, ctx, pad_id=0, diagnostics=True,
+            diagnostic_targets=targets,
+            diagnostic_mask=torch.zeros_like(targets, dtype=torch.bool),
+        )
 
 
 def test_runtime_symbol_features_sliced_projection() -> None:
