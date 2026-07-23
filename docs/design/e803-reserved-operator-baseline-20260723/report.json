@@ -1,0 +1,622 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "output-dir://agentv/e803-reserved-operator-baseline/benchmark.json",
+      "indexPath": "output-dir://agentv/e803-reserved-operator-baseline/index.jsonl",
+      "runDir": "output-dir://agentv/e803-reserved-operator-baseline",
+      "timingPath": "output-dir://agentv/e803-reserved-operator-baseline/timing.json"
+    },
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "output-dir://agentv/e803-reserved-operator-baseline.eval.jsonl",
+    "summary": {
+      "durationMs": 18,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 5,
+      "total": 5
+    }
+  },
+  "corpora": {
+    "held_out": {
+      "content_fingerprint": "37b1fefce66c216ec287286be42c3fc4ce2fe8d018d300779858fbc9dfe4a1a1",
+      "record_count": 18,
+      "root_count": 2
+    },
+    "train": {
+      "content_fingerprint": "2c963a3d014dde28599eb4e080cff99e8f035b7e13c0a3f5e6e089dd891ec9e0",
+      "record_count": 60,
+      "root_count": 4
+    }
+  },
+  "result": {
+    "acceptance": {
+      "cap0_retention": {
+        "available": true,
+        "pass": true,
+        "reason": "default_off_path_is_unchanged"
+      },
+      "cap1_retention": {
+        "available": false,
+        "dependency_issue": "SLM-379",
+        "pass": null,
+        "reason": "CERT_CAP1_unavailable"
+      },
+      "causal_change_rate_at_least_0_05": false,
+      "correct_changes_exceed_wrong_changes": false,
+      "held_out_result_ast_improves_across_seeds": false,
+      "zero_false_legal_admissions": true
+    },
+    "accepted": false,
+    "ambiguity": {
+      "note": "Canonical symbolic questions expose state and legal-set identity but no edit intent; each state therefore has multiple gold rows.",
+      "visible_intent_available": false
+    },
+    "arms": {
+      "OPERATOR_ONLY": [
+        {
+          "arm": "OPERATOR_ONLY",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.1828670501709,
+          "held_out_n": 4,
+          "initial_loss": 22.18163299560547,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 11,
+          "steps": 8
+        },
+        {
+          "arm": "OPERATOR_ONLY",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.182035446166992,
+          "held_out_n": 4,
+          "initial_loss": 22.18276023864746,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 29,
+          "steps": 8
+        },
+        {
+          "arm": "OPERATOR_ONLY",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.185026168823242,
+          "held_out_n": 4,
+          "initial_loss": 22.182016372680664,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 47,
+          "steps": 8
+        }
+      ],
+      "OPERATOR_PLUS_RESULT": [
+        {
+          "arm": "OPERATOR_PLUS_RESULT",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.186330795288086,
+          "held_out_n": 4,
+          "initial_loss": 22.182538986206055,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 11,
+          "steps": 8
+        },
+        {
+          "arm": "OPERATOR_PLUS_RESULT",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.181737899780273,
+          "held_out_n": 4,
+          "initial_loss": 22.183061599731445,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 29,
+          "steps": 8
+        },
+        {
+          "arm": "OPERATOR_PLUS_RESULT",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.194934844970703,
+          "held_out_n": 4,
+          "initial_loss": 22.180940628051758,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 47,
+          "steps": 8
+        }
+      ],
+      "RESULT_AST_ONLY": [
+        {
+          "arm": "RESULT_AST_ONLY",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.21476936340332,
+          "held_out_n": 4,
+          "initial_loss": 22.187496185302734,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 11,
+          "steps": 8
+        },
+        {
+          "arm": "RESULT_AST_ONLY",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.188308715820312,
+          "held_out_n": 4,
+          "initial_loss": 22.184810638427734,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 29,
+          "steps": 8
+        },
+        {
+          "arm": "RESULT_AST_ONLY",
+          "exact_action_accuracy": 0.5,
+          "false_legal_admissions": 0,
+          "final_loss": 22.20466423034668,
+          "held_out_n": 4,
+          "initial_loss": 22.18313217163086,
+          "learning_rate": 0.03,
+          "operator_id_accuracy": 0.75,
+          "parameter_count": 34913,
+          "predictions": [
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "91716558892bf8632d366e55f881dad05f6e589c3243436ac1a4623bb2a5725c",
+              "gold_application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+              "operator_correct": true,
+              "result_ast_correct": false,
+              "selected_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "a3b1eafef95d504e8a716f298353e773ef342054c4263574e5eff0ff3c501096",
+              "gold_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24"
+            },
+            {
+              "candidate_count": 2,
+              "correct": false,
+              "decision_id": "940ceaac0a9c897f8633f8cb16c514a977957c4e9d5f6aa706025877f47a5dbc",
+              "gold_application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+              "operator_correct": false,
+              "result_ast_correct": false,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            },
+            {
+              "candidate_count": 2,
+              "correct": true,
+              "decision_id": "f716a25a8d711e9e796b7824885914209cf854cb88c9a8db1193fffa4135bb07",
+              "gold_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+              "operator_correct": true,
+              "result_ast_correct": true,
+              "selected_application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889"
+            }
+          ],
+          "result_ast_accuracy": 0.5,
+          "seed": 47,
+          "steps": 8
+        }
+      ]
+    },
+    "causal_changes_vs_result_ast_only": {
+      "OPERATOR_ONLY": [
+        {
+          "change_rate": 0.0,
+          "changed": 0,
+          "correct_changes": 0,
+          "eligible": 4,
+          "wrong_changes": 0
+        },
+        {
+          "change_rate": 0.0,
+          "changed": 0,
+          "correct_changes": 0,
+          "eligible": 4,
+          "wrong_changes": 0
+        },
+        {
+          "change_rate": 0.5,
+          "changed": 2,
+          "correct_changes": 1,
+          "eligible": 4,
+          "wrong_changes": 1
+        }
+      ],
+      "OPERATOR_PLUS_RESULT": [
+        {
+          "change_rate": 0.5,
+          "changed": 2,
+          "correct_changes": 1,
+          "eligible": 4,
+          "wrong_changes": 1
+        },
+        {
+          "change_rate": 0.0,
+          "changed": 0,
+          "correct_changes": 0,
+          "eligible": 4,
+          "wrong_changes": 0
+        },
+        {
+          "change_rate": 0.5,
+          "changed": 2,
+          "correct_changes": 1,
+          "eligible": 4,
+          "wrong_changes": 1
+        }
+      ]
+    },
+    "control_mean_result_ast_accuracy": 0.5,
+    "experiment_id": "E803",
+    "held_out_decision_n": 4,
+    "learning_rate": 0.03,
+    "mean_result_ast_accuracy": {
+      "OPERATOR_ONLY": 0.5,
+      "OPERATOR_PLUS_RESULT": 0.5,
+      "RESULT_AST_ONLY": 0.5
+    },
+    "schema": "reserved_operator_baseline/v1",
+    "seeds": [
+      11,
+      29,
+      47
+    ],
+    "steps_per_arm": 8,
+    "train_decision_n": 16,
+    "verdict": "reject"
+  },
+  "run": {
+    "backend": "hashed_token_scorer",
+    "checkpoint": null,
+    "device": "cpu",
+    "elapsed_seconds": 13.015646254993044,
+    "experiment_id": "E803",
+    "max_wall_minutes": 3,
+    "peak_memory_bytes": 345001984,
+    "ship_claim": false
+  },
+  "schema": "reserved_operator_baseline_report/v1",
+  "version_stamp": {
+    "code_commit": "5cd5b8b6222b5a99c0bebdd43775f2aefb494165",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.reserved_tokens": "v1",
+      "evals.cap2_operator": "v1",
+      "harness.experiments.reserved_operator_baseline": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T18:41:53.727868+00:00"
+  }
+}

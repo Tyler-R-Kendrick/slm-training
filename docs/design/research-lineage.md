@@ -1551,6 +1551,28 @@ This freezes evaluator wiring and does not certify a learned CAP2 model.
 Evidence and scope:
 [`dsh3-13-cap2-operator-eval-20260723.md`](dsh3-13-cap2-operator-eval-20260723.md).
 
+## Reserved discrete-operator token baseline (DSH3-14 / SLM-382 / E803)
+
+**Fidelity label: adapted repository experiment.**
+[Tarlow et al., 2019](https://arxiv.org/abs/1911.01205) motivates explicit
+edit operations with structured locations. The reserved OpenUI framing,
+default-off checkpoint contract, compiler legal-set membership, matched
+hashed-token scorer, causal-change accounting, and stop rule are
+repository-specific and do not reproduce that paper.
+
+| | |
+| --- | --- |
+| **Arms** | result AST only, reserved operator only, and reserved operator plus result AST |
+| **Authority** | closed v1 framing; exact live `OperatorLegalSetV1` membership; pack-owned compiler application |
+| **Compatibility** | feature disabled by default; missing/schema/config-mismatched checkpoint metadata fails closed when enabled |
+| **Matched result** | every arm 0.50 exact action/result AST and 0.75 operator ID across three seeds; zero false admissions |
+| **Decision** | reject model-visible tokens: causal changes are absent or balanced correct/wrong, with no held-out improvement |
+
+The ambiguity is part of the measured result: symbolic questions expose state
+and legal-set identity but no edit intent, so the experiment does not add a
+hidden target channel to make the treatment pass. Evidence and scope:
+[`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
