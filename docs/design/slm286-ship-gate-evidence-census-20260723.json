@@ -24429,6 +24429,404 @@
       "suite_count": 5,
       "suite_rows_below_min_n": 5,
       "supersedes_event_id": "0b805f867ca6ce2f34af1b7273dc0f747a227a94fb46a0d1e9d92e52d7581666"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "b16bbbd66a2110818daf79e48c663f92599ca7c8bd732d14fd5024eb20d2a175",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 1
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "feeb0a2198d18d0255218dd06b56d2b3abeda8d6f23a8e697734dd1cb13e56aa",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "a5dea9d3d0c69a560037d9f09644b854e9841d13cf4206d05a6cc642d49f1f05",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold",
+        "runtime"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "af649dd2a1e4683eff31c935fd61581bf1dcd555a8a106df4a1b763f92469131",
+        "json_pointer": "",
+        "path": "docs/design/iter-constrained-evaluation-override-feedback-20260715.json",
+        "scoreboard_sha256": "2954362a90bfcac5c08a8eec8957a631bc76e96aac68f5f2df418a4d9cbea5f4"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "01bba489df636e627b27282698caf86af5bbf697f07852439949aaa611003b24"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": null,
+      "event_id": "9be5517eb7b3895e00af72bbdad02b5304ce771ba9681adc3329737b0600624c",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 3,
+        "quality_threshold_failures": 3,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "a2c2387827a1aef5a7e30ad91883d27e596c074e40cf456212e8049c75c075d3",
+      "original_verdict": null,
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "b16bbbd66a2110818daf79e48c663f92599ca7c8bd732d14fd5024eb20d2a175",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "649a18a4bfd11acecb2ff0e56046ed0d939f868a04efd54bc72e7e71bebb660d",
+        "json_pointer": "",
+        "path": "docs/design/iter-e41-judged-20260715.json",
+        "scoreboard_sha256": "20f2b78202aabfa00e3c82bd74143e85b9ce44115ed4cedb7c40075afe02a76a"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "1234ce4d349e772c6bd2136a2ce4350736cf902b2747e6014107eb533c9b5d8d"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": null,
+      "event_id": "3e4edf11c1afa6e60b21b3fd3d56599375f0bcbb28e920579efbc5b42422751b",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 5,
+        "quality_threshold_failures": 1,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "10f7651ecb5abdc32cc362fee5c69fb800afdb493a9e3c62651f26995097520f",
+      "original_verdict": null,
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "9be5517eb7b3895e00af72bbdad02b5304ce771ba9681adc3329737b0600624c",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "7bee0cd0335946904e497971e8b9d655283d18541bdd4f4d10ed6c68013f5234",
+        "json_pointer": "",
+        "path": "docs/design/iter-e41-judged-strict-constrained-20260715.json",
+        "scoreboard_sha256": "1a8cbc06ecc0232ddf1aa1df80cd04447dabfe215e035880f9c6d245fc4a7149"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "5c880dcad82d7f1f32a1b465d5a6a014f64c6cb0c1048d9745a6e77f650d8283"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": null,
+      "event_id": "404f437a6447e7162da2193e16fe76861482b0e515f764fe72a938cd3413d1d4",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 3,
+        "quality_threshold_failures": 3,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "a2c2387827a1aef5a7e30ad91883d27e596c074e40cf456212e8049c75c075d3",
+      "original_verdict": null,
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "3e4edf11c1afa6e60b21b3fd3d56599375f0bcbb28e920579efbc5b42422751b",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "4ca0e878b9c0076fad8025757e7fd11227b0234151609373e29733d07b762c85",
+        "json_pointer": "",
+        "path": "docs/design/iter-e41-ltr-primary-feedback-20260715.json",
+        "scoreboard_sha256": "08f865b414507ae94c71f1f1d84398d9fa62ab31df424b90e1582f6b5d25f5f5"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "990c21d28997b5da8954cd84205efea88a23a00a2e15978009e79e07d92b0619"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": null,
+      "event_id": "b0dd670a0111f0c25eefa47195761e1da968efd9ad8680542a1d8e56a0c390b6",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 3,
+        "quality_threshold_failures": 3,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "a2c2387827a1aef5a7e30ad91883d27e596c074e40cf456212e8049c75c075d3",
+      "original_verdict": null,
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "404f437a6447e7162da2193e16fe76861482b0e515f764fe72a938cd3413d1d4",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "4005b7ff0aa121512614a7653a3c6308462a709d5e5833c0c0f3d56172b585cb",
+        "json_pointer": "",
+        "path": "docs/design/iter-e46-best-ship-constrained-feedback-20260715.json",
+        "scoreboard_sha256": "2b3fd5636a85f1dc8aa8c760904d99101a73cb01deddf976f88c1575d80402ed"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "0e4d47fac5a745b08d6da0eb8ca213c5c0d64b370d1cb0fa70ca3b0a878ea704"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": null,
+      "event_id": "0827c4b7b72acb432369e59c74a73ef24ae6822206f424be1223c8b8b7b98db6",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 3,
+        "quality_threshold_failures": 3,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "a2c2387827a1aef5a7e30ad91883d27e596c074e40cf456212e8049c75c075d3",
+      "original_verdict": null,
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "b0dd670a0111f0c25eefa47195761e1da968efd9ad8680542a1d8e56a0c390b6",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "748ddf9963c8e422914360656ad1d27313f2f7cb34afd0027d7305e8a99abb01",
+        "json_pointer": "",
+        "path": "docs/design/iter-e46-best-ship-native-feedback-20260715.json",
+        "scoreboard_sha256": "70c91993fe51e042c71d59129e81758e6197ce658b99bdf6dd8772f146fce693"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "1044f09ac8d49fbcda4047321e2fa27a76123ac02c7f8ad127da1eb3ea72a3e0"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "eeb9a3655efcf4a6b137eb8aa3506c3f9dca821440fc5f8420f7010472788b06",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "b61c67e0063e3d04290d3bb6ee8515b2bc9cd5a5cd53300b1c3f9177f4621538",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "0827c4b7b72acb432369e59c74a73ef24ae6822206f424be1223c8b8b7b98db6",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "4a82ed06ee7c4a89ce59fb95e2c8e2e0a0b50e35e4f2358c64217c8c4ae1abc1",
+        "json_pointer": "",
+        "path": "docs/design/iter-published-remediated-cap3-ltr4-feedback-20260715.json",
+        "scoreboard_sha256": "a8f62da9a76206c8953af5873559f09efe36f8db2bfc09eaccfc8e489d8972f6"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "48c6e6878cd0a9ae5267c5bdb1a8d1b8b56f86686c741fef4842a0b8f03723dc"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "f2865b6826477963dc0e49781744150398c02dba09ce0191cc8efb97cb3956bd",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "b737807fc1161b2444dd9c45153bbfed578a1136019506e64d745876a2bc9496",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "eeb9a3655efcf4a6b137eb8aa3506c3f9dca821440fc5f8420f7010472788b06",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "7784dc03354f0c8d736f9783f3f40ca0900ce5b9728da7a29bac15f671b946c3",
+        "json_pointer": "",
+        "path": "docs/design/iter-published-remediated-firsttoken-ltr-feedback-20260715.json",
+        "scoreboard_sha256": "18e55e2cf88727943d3d4c8ebbea604ebe9b1a314c255c002373d20472f8094c"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "bd3e6321b476e3eb46073770d8f362c3cb231ff2bf418653f14fa829ae9c9332"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "bd5162ac0a4783ef6b5048ae82c8e923b0a1b1514e83d2e5ff8872aa107c8f29",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 1
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "feeb0a2198d18d0255218dd06b56d2b3abeda8d6f23a8e697734dd1cb13e56aa",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "f2865b6826477963dc0e49781744150398c02dba09ce0191cc8efb97cb3956bd",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold",
+        "runtime"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "7fcabcb4a133e81f627115860a6dedacb27cb4253aaa2d2a4a38832c333baf4d",
+        "json_pointer": "",
+        "path": "docs/design/iter-published-remediated-lexer-constrained-feedback-20260715.json",
+        "scoreboard_sha256": "74773e968b0c3473616776ccc1af81d2f7c7f59773dc6d5e333e3f0bf560bb52"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "24ed1b8d8f1062a030551b962832e7e10104e778ec4e6db80a87c245691a63b3"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "fa57f5ef9719ce418cd3d73d9428274d081b1271b7febb52793f7c5e95e95a5b",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "b737807fc1161b2444dd9c45153bbfed578a1136019506e64d745876a2bc9496",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "bd5162ac0a4783ef6b5048ae82c8e923b0a1b1514e83d2e5ff8872aa107c8f29",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "6a164f2b0b58b11b9a4598db5f925573e269bccd1bc7cf16dd3aa2bf8dd83c42",
+        "json_pointer": "",
+        "path": "docs/design/iter-published-remediated-ltr8-constrained-feedback-20260715.json",
+        "scoreboard_sha256": "84e9cc5992dfae3494bedb425eda070d0153e06c0a7910c9a5ea8702c429ec4b"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "0681159d310c63a25e95e28b7a03dba60c7d914fd7f43ad861a93a77bcf7e76c"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "ac6d23ed2f75740e49bd202f18af751223a641b3d8e91b0f951ac770e6c52b26",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "b737807fc1161b2444dd9c45153bbfed578a1136019506e64d745876a2bc9496",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "fa57f5ef9719ce418cd3d73d9428274d081b1271b7febb52793f7c5e95e95a5b",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "93c882397999f33622f4a101ee679e8e8174e5b166c1bbd51a1bfb60974e319c",
+        "json_pointer": "",
+        "path": "docs/design/iter-published-remediated-organic-balanced-feedback-20260715.json",
+        "scoreboard_sha256": "7d32a4f000bf439670082204250f4a7f435dc7f167c7bfe48a8c605ff7bd7aa1"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "500208b6eb38deb8a5cb96134ea05538cc8c38aa5e2ed9fb50fc8d3a1e3aa165"
+    },
+    {
+      "actor": "repository_census",
+      "adjudicated_verdict": "invalid/confounded",
+      "claim_direction": "negative",
+      "event_id": "20824cd26e1169a80dc5757b5dc68fe2f2fb07b028cc7c3b8e8ee86236d8e0fa",
+      "failure_counts": {
+        "evidence_volume_failures": 5,
+        "measurement_integrity_failures": 2,
+        "quality_threshold_failures": 4,
+        "runtime_failures": 0
+      },
+      "gate_pass": false,
+      "gate_replay_sha256": "b737807fc1161b2444dd9c45153bbfed578a1136019506e64d745876a2bc9496",
+      "original_verdict": "reject",
+      "paired_interval_overlap": null,
+      "previous_event_sha256": "ac6d23ed2f75740e49bd202f18af751223a641b3d8e91b0f951ac770e6c52b26",
+      "reason_codes": [
+        "evidence_volume",
+        "measurement_integrity",
+        "quality_threshold"
+      ],
+      "recorded_at": "2026-07-23T00:14:29-05:00",
+      "source": {
+        "commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
+        "file_sha256": "e96644af040bc0eeaaa0166cb9ce4b3273baf7d619d51217e0f545eed7f037d4",
+        "json_pointer": "",
+        "path": "docs/design/iter-published-remediated-unfused-ltr-feedback-20260715.json",
+        "scoreboard_sha256": "829bc191d1ef2fba782ee696d0cbfa16606e3a047a537be33ea672372c7dbcd3"
+      },
+      "suite_count": 1,
+      "suite_rows_below_min_n": 1,
+      "supersedes_event_id": "5ad9243ba8415f8ec340d382bf62b454fef8d10ea913f29e25ffc68d067745fb"
     }
   ],
   "policy": {
@@ -24453,7 +24851,7 @@
     "paths": "committed docs/design/*.json",
     "requires_numeric_n_for_every_suite": false
   },
-  "source_revision": "8c20bce30842588c5b2ca9b410f68606dfc162e8",
+  "source_revision": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
   "summary": {
     "adjudication_counts": {
       "inconclusive_until_powered": 101,
@@ -24464,23 +24862,24 @@
     "claimed_verdicts_found": 306,
     "claimed_verdicts_interval_assessable": 0,
     "exclusions": {
+      "self_generated_census": 1,
       "unsupported_or_no_scoreboard": 379
     },
     "interval_overlap_note": "Overlap is computed only for declared control/candidate-style pairs whose selected rate evidence carries exact binomial counts and interval bounds. It is descriptive, never a significance test.",
-    "json_artifacts_scanned": 780,
+    "json_artifacts_scanned": 781,
     "scoreboards_all_present_rows_below_min_n": 408,
     "scoreboards_replayed": 439,
     "suite_rows_below_min_n_before_quality": 869,
     "suite_rows_replayed": 904
   },
   "version_stamp": {
-    "code_commit": "8c20bce30842588c5b2ca9b410f68606dfc162e8",
+    "code_commit": "3b5fb08e5c57f50d1a5f702348949fe8ae9b879b",
     "code_dirty": false,
     "components": {
       "gates.ship": "openui_ship_gates_v2",
-      "harness.gate_census": "v7"
+      "harness.gate_census": "v8"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-22T23:59:31-05:00"
+    "stamped_at": "2026-07-23T00:14:29-05:00"
   }
 }

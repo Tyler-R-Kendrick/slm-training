@@ -1,8 +1,8 @@
 # SLM-286 ship-gate evidence census
 
-- Source revision: `8c20bce30842588c5b2ca9b410f68606dfc162e8`
-- Census implementation revision: `8c20bce30842588c5b2ca9b410f68606dfc162e8`
-- Committed JSON artifacts scanned: `780`
+- Source revision: `3b5fb08e5c57f50d1a5f702348949fe8ae9b879b`
+- Census implementation revision: `3b5fb08e5c57f50d1a5f702348949fe8ae9b879b`
+- Committed JSON artifacts scanned: `781`
 - Scoreboards replayed: `439`
 - Suite rows replayed: `904`
 - Suite rows below `DEFAULT_MIN_SUITE_N` before reading quality: `869`

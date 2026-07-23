@@ -6071,8 +6071,8 @@ the historical flat failure list and pass decision while partitioning failures
 into evidence volume, measurement integrity, quality threshold, and runtime.
 
 The deterministic no-write census replayed 439 scoreboards and 904 suite rows
-from 401 of 780 committed `docs/design/*.json` artifacts at revision
-`8c20bce30842588c5b2ca9b410f68606dfc162e8`. Before reading quality, 869/904
+from 401 of 781 committed `docs/design/*.json` artifacts at revision
+`3b5fb08e5c57f50d1a5f702348949fe8ae9b879b`. Before reading quality, 869/904
 suite rows were below the evidence minimum and 408/439 scoreboards had every
 present suite below it. Hash-bound append-only adjudications classify 101 rows
 as `inconclusive_until_powered` and 338 as `invalid/confounded`; none qualified
