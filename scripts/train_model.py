@@ -48,6 +48,29 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("outputs/data/train/v1"),
     )
+    parser.add_argument(
+        "--requested-capability",
+        choices=("CAP0_GRAMMAR", "CAP1_SEMANTICS", "CAP2_TRANSFORM"),
+        default=None,
+        help="Enable fail-closed staged-capability authorization.",
+    )
+    parser.add_argument(
+        "--capability-plan",
+        type=Path,
+        help="Exact checked-in synthesis plan bound by the staged dataset manifest.",
+    )
+    parser.add_argument(
+        "--capability-certificate",
+        action="append",
+        type=Path,
+        default=[],
+        help="Prior-stage progression certificate JSON (repeat in stage order).",
+    )
+    parser.add_argument(
+        "--capability-distillation",
+        action="store_true",
+        help="Request separately certified distillation/teacher permission.",
+    )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(
         "--train-version",
@@ -1088,6 +1111,10 @@ def main(argv: list[str] | None = None) -> int:
 
     config = ModelBuildConfig(
         train_dir=args.train_dir,
+        requested_capability=args.requested_capability,
+        capability_plan=args.capability_plan,
+        capability_certificates=tuple(args.capability_certificate),
+        capability_distillation=bool(args.capability_distillation),
         test_dir=args.test_dir,
         suite=args.eval_suite,
         run_root=args.run_root,

@@ -765,6 +765,9 @@ def build_model(
     records: list[ExampleRecord],
     checkpoint: Path | None = None,
 ) -> Any:
+    from slm_training.harnesses.capability_gates import require_training_authorized
+
+    require_training_authorized(config)
     try:
         from slm_training.models.grammar import set_active_dsl
 

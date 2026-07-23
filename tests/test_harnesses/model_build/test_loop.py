@@ -97,7 +97,10 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
     )
     summary = train(config)
     assert summary["steps"] == 2
-    assert set(summary["version_stamp"]["components"]) == {"harness.model_build.train"}
+    assert set(summary["version_stamp"]["components"]) == {
+        "harness.experiment_feature_flags",
+        "harness.model_build.train",
+    }
     assert summary["eval_history"]
     final_suite = summary["final_eval"]
     assert final_suite["meaningful_program_v1_rate"] == final_suite[

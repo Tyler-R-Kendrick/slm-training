@@ -13,6 +13,8 @@ from dataclasses import MISSING, fields
 from pathlib import Path
 from typing import Any, Final
 
+from slm_training.harnesses.staged import Capability
+
 
 # The CI changed-test fan-out includes dependency setup; three minutes is the
 # repository-wide hard ceiling and lets that completed test suite report cleanly.
@@ -27,6 +29,47 @@ VERCEL_FUNCTION_INCLUDE_FILES: Final = (
     "docs/MODEL_CARD.md",
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
+
+# Capability profiles are deliberately expressed as deviations from the
+# model-build defaults. A default-off lever is harmless; activating it requires
+# the listed certificate stage.
+CAPABILITY_LEVER_MINIMUMS: Final = {
+    # CAP1 introduces authored schema / natural-language conditioning.
+    "design_md_in_context": (False, Capability.CAP1_SEMANTICS),
+    "schema_in_context": (False, Capability.CAP1_SEMANTICS),
+    "semantic_connector": ("none", Capability.CAP1_SEMANTICS),
+    # CAP2 introduces operator identity, retrieval, and action-space mutation.
+    "action_embedding_init": ("none", Capability.CAP2_TRANSFORM),
+    "action_alias_mode": ("canonical", Capability.CAP2_TRANSFORM),
+    "action_alias_manifest": (None, Capability.CAP2_TRANSFORM),
+    "action_shortlist_mode": ("off", Capability.CAP2_TRANSFORM),
+    "train_scope": ("current", Capability.CAP2_TRANSFORM),
+}
+
+
+def require_capability_lever_profile(config: Any, capability: Capability) -> None:
+    """Reject active levers introduced above the requested capability."""
+
+    rank = tuple(Capability).index(capability)
+    blocked: list[str] = []
+    for name, (inactive, minimum) in CAPABILITY_LEVER_MINIMUMS.items():
+        if not hasattr(config, name):
+            continue
+        value = getattr(config, name)
+        # ``None`` means preserve-checkpoint for the tri-state design flag and
+        # is therefore inactive at training construction time.
+        if name == "design_md_in_context" and value is None:
+            value = False
+        if value != inactive and rank < tuple(Capability).index(minimum):
+            blocked.append(f"{name} requires {minimum.value}")
+    if bool(getattr(config, "teacher_init_embeddings", False)) and not bool(
+        getattr(config, "capability_distillation", False)
+    ):
+        blocked.append("teacher_init_embeddings requires distillation permission")
+    if blocked:
+        raise ValueError(
+            f"{capability.value} lever profile violation: " + "; ".join(blocked)
+        )
 
 # Applicability lives beside discovery so CLIs and harness validation cannot
 # drift from the human-visible lever catalog. Each tuple is an OR of complete

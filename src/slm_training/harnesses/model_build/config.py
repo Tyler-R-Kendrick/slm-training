@@ -23,6 +23,13 @@ class ModelBuildConfig:
     # Honesty label stamped into every eval payload (see evals.record_schema
     # RUN_CLASSES): fixture_demo | scratch_matrix | ship_eval.
     run_class: str = "scratch_matrix"
+    # Optional staged-capability preflight. Legacy runs remain unclassified;
+    # classified runs fail before corpus or checkpoint loading unless every
+    # prior-stage certificate and lever permission is valid.
+    requested_capability: str | None = None
+    capability_plan: Path | None = None
+    capability_certificates: tuple[Path, ...] = ()
+    capability_distillation: bool = False
     run_root: Path = Path("outputs/runs")
     run_id: str = "latest"
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.

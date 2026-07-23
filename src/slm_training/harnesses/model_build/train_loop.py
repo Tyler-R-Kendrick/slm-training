@@ -167,6 +167,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     )
 
     config, flag_snapshot = resolve(config, phase="training")
+    from slm_training.harnesses.capability_gates import require_training_authorized
+
+    require_training_authorized(config)
 
     campaign_governance = None
     if bool(getattr(config, "register_promoted", False)):
