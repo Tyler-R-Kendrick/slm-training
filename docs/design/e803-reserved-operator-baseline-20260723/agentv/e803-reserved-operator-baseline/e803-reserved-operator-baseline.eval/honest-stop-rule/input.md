@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bounded_symbolic_baseline_rejected_not_ship", "failures": [], "result": {"acceptance": {"cap0_retention": {"available": true, "pass": true, "reason": "default_off_path_is_unchanged"}, "cap1_retention": {"available": false, "dependency_issue": "SLM-379", "pass": null, "reason": "CERT_CAP1_unavailable"}, "causal_change_rate_at_least_0_05": false, "correct_changes_exceed_wrong_changes": false, "held_out_result_ast_improves_across_seeds": false, "zero_false_legal_admissions": true}, "verdict": "reject"}}

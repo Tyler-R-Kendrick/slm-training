@@ -6108,3 +6108,26 @@ passes all 6 evidence cases with zero execution errors. This freezes a
 discriminative evaluator contract only: no learned model, checkpoint, strict
 ship suite, promotion, or CAP2 certificate was evaluated. Full evidence:
 [`dsh3-13-cap2-operator-eval-20260723.md`](dsh3-13-cap2-operator-eval-20260723.md).
+
+# E803 — reserved discrete-operator token baseline (2026-07-23)
+
+Reject the model-visible reserved-token line on the current symbolic corpus;
+retain only its default-off codec, checkpoint guard, and exact compiler
+membership boundary. The matched CPU run used four train roots, two frozen
+held-out CAP2 roots, three seeds, eight updates per arm, and the same 34,913
+parameters for `RESULT_AST_ONLY`, `OPERATOR_ONLY`, and
+`OPERATOR_PLUS_RESULT`.
+
+Every arm reaches exact-action/result-AST accuracy 0.50 and operator-ID accuracy
+0.75 on all three seeds, with zero false legal admissions. Operator-only changes
+0/4, 0/4, and 2/4 choices versus result-only; operator-plus-result changes 2/4,
+0/4, and 2/4. Every nonzero arm ties correct and wrong changes at 1/1. Thus the
+5% all-seed causal-change gate, correct-over-wrong gate, and held-out
+improvement gate fail. The canonical symbolic question exposes no edit-intent
+channel, so multiple different transformations remain gold for one visible
+state; the experiment does not add a leaked intent hint.
+
+The valid run completed in 13.02 seconds, AgentV passed 5/5 evidence cases, and
+no checkpoint or ship claim was produced. CAP0 is unchanged because the path is
+default-off; CAP1 is unavailable pending CERT_CAP1/SLM-379. Full evidence:
+[`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).

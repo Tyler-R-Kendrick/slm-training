@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bounded_symbolic_baseline_rejected_not_ship", "failures": [], "result": {"held_out_decision_n": 4, "seeds": [11, 29, 47], "steps_per_arm": 8, "train_decision_n": 16}}
