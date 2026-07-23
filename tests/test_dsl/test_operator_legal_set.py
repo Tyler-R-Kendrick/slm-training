@@ -112,7 +112,9 @@ def _fixture(
     return pack, library, state, table, provenance, calls
 
 
-def _enumerate(fixture, *, maximum: int = 10_000, ordinary=()):
+def _enumerate(
+    fixture, *, maximum: int = 10_000, rejection_samples: int = 8, ordinary=()
+):
     pack, library, state, table, provenance, _ = fixture
     return enumerate_operator_legal_set(
         pack=pack,
@@ -122,6 +124,7 @@ def _enumerate(fixture, *, maximum: int = 10_000, ordinary=()):
         provenance=provenance,
         ordinary_nonoperator_actions=ordinary,
         max_combinations_per_operator=maximum,
+        max_rejection_samples_per_operator=rejection_samples,
     )
 
 
@@ -158,6 +161,33 @@ def test_exact_small_legal_set_matches_independent_brute_force() -> None:
         .succeeded
         for action in result.operator_actions
     )
+    entry = result.entries[0]
+    assert dict(entry.rejection_counts) == {"fixture.not_legal": 2}
+    assert len(entry.rejection_samples) == 2
+    assert all(not sample.succeeded for sample in entry.rejection_samples)
+    assert all(
+        sample.rejection is not None
+        and sample.rejection.compiler_result_digest
+        and sample.operator_fingerprint == entry.operator_fingerprint
+        for sample in entry.rejection_samples
+    )
+
+
+def test_rejection_evidence_is_deterministic_and_bounded() -> None:
+    fixture = _fixture(count=6, allowed_indices=frozenset())
+    first = _enumerate(fixture, rejection_samples=2)
+    second = _enumerate(fixture, rejection_samples=2)
+    entry = first.entries[0]
+    assert dict(entry.rejection_counts) == {"fixture.not_legal": 6}
+    assert len(entry.rejection_samples) == 2
+    assert [sample.application_id for sample in entry.rejection_samples] == [
+        sample.application_id for sample in second.entries[0].rejection_samples
+    ]
+    assert first.max_rejection_samples_per_operator == 2
+
+    none = _enumerate(fixture, rejection_samples=0)
+    assert dict(none.entries[0].rejection_counts) == {"fixture.not_legal": 6}
+    assert none.entries[0].rejection_samples == ()
 
 
 def test_complete_empty_domain_is_exactly_hard_prunable() -> None:

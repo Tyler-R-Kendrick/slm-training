@@ -1484,6 +1484,28 @@ permits exact composition but never authorizes branch selection or heuristic
 repair. Evidence and scope:
 [`dsh3-09-bounded-branch-merge-20260723.md`](dsh3-09-bounded-branch-merge-20260723.md).
 
+## Verified symbolic operator corpus (DSH3-10 / SLM-378)
+
+**Fidelity label: adapted repository contract.** The explicit edit framing in
+[Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205) and the
+syntax-tree generation framing in
+[Gong et al., 2024](https://arxiv.org/abs/2405.20519) motivate structured
+transformation data. The OpenUI legal-set sampling, closed QA schemas,
+conversation transitions, rejection ledger, and replay boundary are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **Targets** | operator-only, result-AST-only, dual, and immutable fork-history views |
+| **Authority** | exact pack-owned legal set and registry application; no LLM-defined semantics |
+| **Replay evidence** | before/after AST, effect, proof, preference, source record, and immutable conversation trace |
+| **Negative coverage** | complete rejection counts plus bounded typed rejected applications; zero illegal targets |
+| **Fixture result** | 20 records from two roots; 27 legal successes, 533 rejected combinations, zero invalid families |
+
+The measured result is fixture wiring evidence, not a full-corpus, learned-model,
+or ship claim. Evidence and scope:
+[`dsh3-10-symbolic-operator-corpus-20260723.md`](dsh3-10-symbolic-operator-corpus-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

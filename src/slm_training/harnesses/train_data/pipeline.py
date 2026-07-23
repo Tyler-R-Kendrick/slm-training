@@ -142,6 +142,13 @@ class TrainDataConfig:
     scope_canonical_pairs_per_scope: int = 3
     scoped_repairs_per_scope: int = 2
     typed_lexical_per_program: int = 4
+    # DSH3/CAP2 symbolic operator sibling artifact (never coerced into the
+    # OpenUI-only ExampleRecord target schema).
+    include_operator_corpus: bool = False
+    operator_corpus_max_roots: int = 8
+    operator_corpus_actions_per_state: int = 4
+    operator_corpus_max_combinations: int = 64
+    operator_corpus_sibling_forks: bool = True
     # Canonical-bias ranking pairs written to preference_pairs.jsonl.
     emit_preference_pairs: bool = True
     include_design_md_contrastive: bool = True
@@ -1814,6 +1821,32 @@ def build_train_data(
     from slm_training.versioning import build_version_stamp
 
     version_stamp = build_version_stamp("harness.train_data")
+    operator_corpus_result: dict[str, Any] | None = None
+    if config.include_operator_corpus:
+        operator_version_stamp = build_version_stamp(
+            "harness.train_data",
+            "dsl.operators.contracts",
+            "dsl.operators.legal_set",
+        )
+        from slm_training.harnesses.train_data.operator_corpus import (
+            OperatorCorpusConfig,
+            build_symbolic_operator_corpus,
+        )
+
+        operator_corpus_result = build_symbolic_operator_corpus(
+            records=deduped,
+            output_dir=out_dir,
+            version=config.version,
+            version_stamp=operator_version_stamp,
+            config=OperatorCorpusConfig(
+                max_roots=config.operator_corpus_max_roots,
+                actions_per_state=config.operator_corpus_actions_per_state,
+                max_combinations_per_operator=(
+                    config.operator_corpus_max_combinations
+                ),
+                sibling_forks=config.operator_corpus_sibling_forks,
+            ),
+        )
     from slm_training.harnesses.train_data.sanitize import aggregate_sanitization
 
     sanitization_section = (
@@ -1970,7 +2003,27 @@ def build_train_data(
             "scope_canonical_pairs_per_scope": config.scope_canonical_pairs_per_scope,
             "scoped_repairs_per_scope": config.scoped_repairs_per_scope,
             "typed_lexical_per_program": config.typed_lexical_per_program,
+            "operator_corpus": bool(config.include_operator_corpus),
+            "operator_corpus_max_roots": config.operator_corpus_max_roots,
+            "operator_corpus_actions_per_state": (
+                config.operator_corpus_actions_per_state
+            ),
+            "operator_corpus_max_combinations": (
+                config.operator_corpus_max_combinations
+            ),
+            "operator_corpus_sibling_forks": (
+                config.operator_corpus_sibling_forks
+            ),
         },
+        "operator_corpus": (
+            {
+                key: value
+                for key, value in operator_corpus_result.items()
+                if key != "report"
+            }
+            if operator_corpus_result is not None
+            else None
+        ),
         "preference_pairs": len(scope_preference_pairs),
         "preference_pairs_path": (
             str(preference_pairs_path) if preference_pairs_path else None
@@ -2028,6 +2081,15 @@ def build_train_data(
         "mixture": str(mixture_path.as_posix()) if mixture_path else None,
         "synthesis_telemetry": str(synthesis_telemetry_path.as_posix()),
         "synthesis_telemetry_sha256": _file_sha(synthesis_telemetry_path),
+        "operator_corpus": (
+            {
+                key: value
+                for key, value in operator_corpus_result.items()
+                if key != "report"
+            }
+            if operator_corpus_result is not None
+            else None
+        ),
         "diffusion_online": (
             asdict(_diffusion_config()) if config.diffusion_online else None
         ),
@@ -2043,6 +2105,7 @@ def build_train_data(
         "stats": stats,
         "quality_report": quality_report,
         "synthesis_feedback": synthesis_feedback,
+        "operator_corpus": operator_corpus_result,
         "governance": {name: str(path) for name, path in governance_paths.items()},
     }
 
