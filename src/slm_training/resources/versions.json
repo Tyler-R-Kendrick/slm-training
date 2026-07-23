@@ -3771,6 +3771,11 @@
       "history": [
         {
           "version": "v10",
+          "date": "2026-07-23",
+          "note": "no-bump: extract the behavior-identical normalized recursive-depth loss reduction into a pure helper and make the production objective plus exact arithmetic and gradient-isolation tests share it"
+        },
+        {
+          "version": "v10",
           "date": "2026-07-21",
           "note": "no-bump: updated tests/test_models/test_recursive_denoiser.py to expect the SLM-242 construction-time validation raise instead of a training_loss-time raise; the fail-closed invariant and error message content are unchanged, only the call site that triggers the error moved earlier"
         },
@@ -3896,6 +3901,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v225",
+          "date": "2026-07-23",
+          "note": "no-bump: extract the existing normalized recursive-depth loss arithmetic into a pure reducer without changing objective semantics or telemetry"
+        },
         {
           "version": "v225",
           "date": "2026-07-22",

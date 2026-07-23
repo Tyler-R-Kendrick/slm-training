@@ -875,6 +875,34 @@ class ValidatedDepthSupervision:
         return self.enabled and self.mode in ("all_depths", "legacy_all_depths")
 
 
+def reduce_weighted_recursive_depth_losses(
+    depth_losses: tuple[torch.Tensor, ...],
+    supervision: ValidatedDepthSupervision,
+) -> tuple[tuple[torch.Tensor, ...], torch.Tensor]:
+    """Apply validated normalized weights to scalar per-depth losses.
+
+    The caller owns masked cross-entropy construction; this pure reducer owns
+    the weighting arithmetic so production and gradient tests exercise the
+    same implementation. Disabled supervision has no valid reduction: callers
+    should preserve their primary-only objective instead.
+    """
+    if not supervision.enabled:
+        raise ValueError("cannot reduce losses with disabled depth supervision")
+    if len(depth_losses) != len(supervision.weights):
+        raise ValueError(
+            f"got {len(depth_losses)} depth losses for "
+            f"{len(supervision.weights)} validated weights"
+        )
+    if any(loss.ndim != 0 for loss in depth_losses):
+        raise ValueError("recursive depth losses must be scalar tensors")
+
+    contributions = tuple(
+        weight * loss
+        for weight, loss in zip(supervision.normalized(), depth_losses)
+    )
+    return contributions, torch.stack(contributions).sum()
+
+
 def validate_recursive_depth_supervision(
     *,
     weights: tuple[float, ...],
@@ -2768,14 +2796,13 @@ class TwoTowerModel(nn.Module):
             final_depth_aux_contribution = mask_loss.new_zeros(())
             if depth_logits is not None and validated_ds.enabled:
                 cfg_weights = validated_ds.weights
-                norm_weights = validated_ds.normalized()
                 total_w = validated_ds.weight_sum
                 final_depth_index = validated_ds.num_depths - 1
                 self.last_training_metrics["recursive_depth_supervision_weight_sum"] = (
                     total_w
                 )
-                contributions: list[torch.Tensor] = []
-                for d, (cfg_w, norm_w) in enumerate(zip(cfg_weights, norm_weights)):
+                raw_depth_losses: list[torch.Tensor] = []
+                for d, cfg_w in enumerate(cfg_weights):
                     # SLM-238: `d` only ever ranges over
                     # `range(len(validated_ds.weights))`, which the validator
                     # sized to exactly depths 0..R-2 for "intermediate_only" --
@@ -2786,14 +2813,17 @@ class TwoTowerModel(nn.Module):
                     d_flat = d_logits.reshape(-1, d_logits.size(-1))
                     d_ce = F.cross_entropy(d_flat, flat_targets, reduction="none")
                     raw_depth_loss = (d_ce * weights)[mask_flat].mean()
-                    weighted_contribution = norm_w * raw_depth_loss
-                    contributions.append(weighted_contribution)
+                    raw_depth_losses.append(raw_depth_loss)
                     self.last_training_metrics[f"recursive_depth_loss_{d}"] = float(
                         raw_depth_loss.detach().cpu()
                     )
                     self.last_training_metrics[f"recursive_depth_weight_{d}"] = float(
                         cfg_w
                     )
+                contributions, unweighted_aux = reduce_weighted_recursive_depth_losses(
+                    tuple(raw_depth_losses), validated_ds
+                )
+                for d, weighted_contribution in enumerate(contributions):
                     self.last_training_metrics[
                         f"recursive_depth_weighted_contribution_{d}"
                     ] = float(weighted_contribution.detach().cpu())
@@ -2803,7 +2833,6 @@ class TwoTowerModel(nn.Module):
                         intermediate_aux_sum = (
                             intermediate_aux_sum + weighted_contribution
                         )
-                unweighted_aux = torch.stack(contributions).sum()
                 recursive_depth_supervision_loss = (
                     validated_ds.aux_weight * unweighted_aux
                 )
