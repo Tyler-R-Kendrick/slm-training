@@ -523,6 +523,21 @@
         }
       ]
     },
+    "dsl.symbolic_surface": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/language_contract.py",
+        "tests/test_dsl/test_language_contract.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial pack-authoritative SymbolicSurfacePolicyV1 with declared runtime markers, typed spans and decisions, and alpha/opaque-ID permutation controls"
+        }
+      ]
+    },
     "dsl.solver.topology": {
       "version": "v1",
       "kind": "harness",

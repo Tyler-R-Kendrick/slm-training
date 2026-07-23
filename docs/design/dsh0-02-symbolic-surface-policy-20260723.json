@@ -1,0 +1,132 @@
+{
+  "schema": "dsh0_02_symbolic_surface_policy/v1",
+  "issue": "SLM-346",
+  "base_commit": "8d3e3b23e678e5680c6fa44e63126ef11805feef",
+  "run_class": "fixture_demo",
+  "policy": {
+    "version": "symbolic_surface_policy/v1",
+    "categories": [
+      "grammar_keyword_or_punctuation",
+      "closed_enum_or_primitive",
+      "open_string",
+      "open_number",
+      "binder",
+      "external_ref",
+      "state_ref",
+      "comment_or_prose",
+      "undeclared_identifier"
+    ],
+    "decisions": [
+      "template",
+      "reject"
+    ],
+    "marker_roles_reused": [
+      "alpha_binder",
+      "fresh_binder",
+      "external_entity",
+      "state"
+    ],
+    "new_marker_families": []
+  },
+  "source_identities": [
+    {
+      "path": "src/slm_training/dsl/language_contract.py",
+      "sha256": "6cb40e7640d784cdc78ba069e2d1219fc2bb6a39afc51414b55c8c2a6f6d4b08"
+    },
+    {
+      "path": "tests/test_dsl/test_language_contract.py",
+      "sha256": "0ecad9354ec87b463fa5200af517dbd6a1e4c873a1ac9c9bf1fa839639430f11"
+    },
+    {
+      "path": "src/slm_training/resources/versions.json",
+      "sha256": "9e8d4e046e61f5e49c150fc440a9a8dc044202cb1b0e79e4127589bb2b96979c"
+    },
+    {
+      "path": "src/slm_training/dsl/pack.py",
+      "sha256": "267bd5e6b333a8d3b5a194facf62f9c4908d39ce411c1aa868d347fa8018fb7b"
+    },
+    {
+      "path": "src/slm_training/data/contract.py",
+      "sha256": "0925351745f002d05daed1bbc18e8ca73a9ca35232df63366bf4118f9060f064"
+    },
+    {
+      "path": "src/slm_training/dsl/scope_env.py",
+      "sha256": "dc89c812f9e70877dc18a894b28a76063293f5690d891bb93d1f4750198eecec"
+    },
+    {
+      "path": "docs/design/symbol-only-output-contract.md",
+      "sha256": "1a7c7c7bad85d8e9f852fa205e4e51994a78bf34d804400a5dab13a9471061fc"
+    }
+  ],
+  "fixture_results": [
+    {
+      "id": "openui_closed_and_declared",
+      "pack_id": "openui",
+      "pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d",
+      "source_sha256": "7fcbe81599eb07cf0c855a3f9a03d6af08158ec2d1d3ab52f51160ffe3e72567",
+      "admitted": true,
+      "violations": []
+    },
+    {
+      "id": "openui_open_surfaces",
+      "pack_id": "openui",
+      "pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d",
+      "source_sha256": "d58f7f16c7171cdd7eb7176c6af255f7de5d8a482331cbd42de4411ba6dbd656",
+      "admitted": false,
+      "violations": [
+        {
+          "span": {
+            "start": 26,
+            "end": 35
+          },
+          "category": "open_string",
+          "decision": "template",
+          "suggested_marker_role": "external_entity"
+        },
+        {
+          "span": {
+            "start": 49,
+            "end": 55
+          },
+          "category": "comment_or_prose",
+          "decision": "reject",
+          "suggested_marker_role": null
+        },
+        {
+          "span": {
+            "start": 67,
+            "end": 68
+          },
+          "category": "open_number",
+          "decision": "reject",
+          "suggested_marker_role": null
+        }
+      ]
+    },
+    {
+      "id": "graphql_schema_and_declared_variable",
+      "pack_id": "graphql",
+      "pack_version": "1799d60a6041fe5abcd969c87c48f012eba3a9e8c40cd935ad24574e13c1b947",
+      "source_sha256": "723a6593b7f2fe1da6408466ebba4e8b563a86469be5d3b06fbacfc65fb40d80",
+      "admitted": true,
+      "violations": []
+    }
+  ],
+  "acceptance": {
+    "free_form_target_content_admitted": 0,
+    "undeclared_markers_admitted": 0,
+    "required_closed_openui_fixture_admitted": true,
+    "required_closed_graphql_fixture_admitted": true,
+    "alpha_rename_canonical_equal": true,
+    "marker_permutation_opaque_identity_equal": true,
+    "policy_component": "dsl.symbolic_surface/v1"
+  },
+  "disposition": {
+    "decision": "adopt",
+    "next_issue": "SLM-347",
+    "experiment_run": false,
+    "checkpoint_created": false,
+    "certificate_issued": false,
+    "ship_claim": false
+  }
+}

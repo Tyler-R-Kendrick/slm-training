@@ -1609,6 +1609,20 @@ Missing evidence stays `unknown` or `invalid`, never numeric zero. No train,
 eval, checkpoint, certificate, or ship claim was produced. Evidence:
 [`dsh0-01-staged-harness-baseline-20260723.md`](dsh0-01-staged-harness-baseline-20260723.md).
 
+## Staged symbolic surface policy (DSH0-02 / SLM-346)
+
+**Fidelity label: repository contract.** The policy adds no learned mechanism.
+It turns the symbol-only target boundary into a typed, pack-authoritative
+staged admission report over existing runtime-marker roles and opaque scope
+identities.
+
+OpenUI and offline GraphQL fixtures retain required closed terminals, while
+open strings/numbers require templating and comments, undeclared identifiers,
+or undeclared markers fail closed. Alpha-renaming and marker-alias permutation
+controls preserve canonical/opaque meaning. No corpus, model, checkpoint,
+certificate, or ship claim was produced. Evidence:
+[`dsh0-02-symbolic-surface-policy-20260723.md`](dsh0-02-symbolic-surface-policy-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
