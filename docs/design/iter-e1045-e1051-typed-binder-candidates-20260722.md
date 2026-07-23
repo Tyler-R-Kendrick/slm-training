@@ -227,3 +227,16 @@ This partial is not quality evidence and must not be evaluated, synced,
 promoted, served, or used as a parent. Resume only its own serialized full state
 for the remaining 17 steps, then document the completed checkpoint before
 strict smoke.
+
+The own-state continuation completes the remaining 17 steps in 5.03 seconds.
+E1075 ends exactly at 395 steps / 1,580 examples and 100.16 cumulative train
+seconds. Final root-identity
+loss/exact/positive-recall/negative-accuracy/classes are
+0.5937/0.6667/1.0/0.25/4.33. Binder-component
+loss/accuracy/candidates are 0.9040/0.7692/15.46 and binder-arity
+loss/accuracy are 1.0203/0.6154, exactly matching E1071 at step 395; the
+detached isolated identity objective did not perturb those base objectives.
+The completed checkpoint SHA is
+`9e03575396dba1aa971e2aa29224023ed9bfbc053a83f48414ef14eb872122c7`.
+It remains local, unsynced, non-parentable, and pending strict smoke with
+root-identity decode enabled.

@@ -6802,4 +6802,8 @@ sampler finds 220/524 genuine nonempty strict-subset rows. A fresh matched
 cleanly on its internal wall budget. Final identity
 loss/exact/positive-recall/negative-accuracy are 0.6189/0.3333/1.0/0.0.
 This partial is not evaluated; resume only its own full-state checkpoint for
-the remaining 17 steps.
+the remaining 17 steps. That continuation completes in 5.03 seconds, reaching
+exactly 395 steps / 1,580 examples and 100.16 cumulative train seconds. Final
+identity loss/exact/positive-recall/negative-accuracy are
+0.5937/0.6667/1.0/0.25. Binder-component and binder-arity metrics exactly
+match E1071 at step 395. The checkpoint remains pending strict smoke.
