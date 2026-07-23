@@ -27,13 +27,23 @@
       ]
     },
     "config.levers": {
-      "version": "v37",
+      "version": "v39",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v39",
+          "date": "2026-07-22",
+          "note": "Withdraw component-parent-scoped binder ownership after E995 introduced a Tabs timeout"
+        },
+        {
+          "version": "v38",
+          "date": "2026-07-22",
+          "note": "Advertise opt-in component-parent-scoped binder ownership on lexer compiler decode"
+        },
         {
           "version": "v37",
           "date": "2026-07-22",
@@ -2875,7 +2885,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v54",
+      "version": "v56",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2886,6 +2896,16 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v56",
+          "date": "2026-07-22",
+          "note": "Withdraw the scoped binder ownership evaluation switch after E995 rejection"
+        },
+        {
+          "version": "v55",
+          "date": "2026-07-22",
+          "note": "Expose and record the component-parent-scoped binder ownership evaluation switch"
+        },
         {
           "version": "v54",
           "date": "2026-07-22",
@@ -4207,7 +4227,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v264",
+      "version": "v266",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4232,6 +4252,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v266",
+          "date": "2026-07-22",
+          "note": "Withdraw component-parent-scoped binder filtering after E995 regressed held strict quality"
+        },
+        {
+          "version": "v265",
+          "date": "2026-07-22",
+          "note": "Filter binder reuse only when lexical component-parent stacks differ, preserving same-parent references"
+        },
         {
           "version": "v264",
           "date": "2026-07-22",

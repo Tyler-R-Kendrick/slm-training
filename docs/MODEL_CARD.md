@@ -298,6 +298,9 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e996-e951-withdrawn-scoped-binders-v266-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — strict-v2 0.8 / three fallbacks, AgentV 0/1; exact E994/E979 rollback parity |
+| held_out (`e995-e951-scoped-binder-parents-v265-r1`) | 5 | 0.8 | 0.6333 | 0.3914 | 0.6960 | No — strict-v2 0.6 / one timeout / two fallbacks, AgentV 0/2 campaign; treatment withdrawn |
+| smoke (`e995-e951-scoped-binder-parents-v265-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667, AgentV 0/2 campaign; exact baseline but treatment withdrawn |
 | held_out (`e994-e951-withdrawn-unique-binders-held-v264-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — strict-v2 0.8 / three fallbacks, AgentV 0/1; exact E979 rollback parity |
 | held_out (`e992-e951-unique-binders-v263-r1`) | 5 | 1.0 | 0.6667 | 0.5554 | 0.8310 | No — strict-v2 0.4 / four fallbacks, AgentV 0/2 campaign; treatment withdrawn |
 | smoke (`e992-e951-unique-binders-v263-r1`) | 3 | 1.0 | 0.7222 | 0.6573 | 0.8537 | No — strict-v2 0.3333 / one fallback, AgentV 0/2 campaign; treatment withdrawn |

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E994",
+  "experiment_id": "E939-E996",
   "date": "2026-07-22",
-  "decision": "retain_v264_rollback_reject_binder_arity_and_unique_reference_treatments",
+  "decision": "retain_v266_rollback_reject_binder_arity_and_reference_ownership_treatments",
   "train_data": "e937_role_safe_all_targets_v2",
   "eval_data": "e938_role_safe_all_targets_v2",
   "runs": {
@@ -58,7 +58,9 @@
     "E991": {"status": "completed_rejected_schema_matched", "evaluated_model_version": "v263", "binder_arity_decode_weight": 1.0, "compiler_schema_component_types": true, "smoke_parse": 1.0, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.75, "smoke_structural_similarity": 0.4347, "smoke_component_recall": 0.5833333333333334, "smoke_reward": 0.868, "smoke_decode_timeouts": 0, "smoke_fallback_count": 2, "held_out_parse": 0.8, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.8, "held_out_structural_similarity": 0.4748, "held_out_component_recall": 0.8, "held_out_reward": 0.7736, "held_out_decode_timeouts": 1, "held_out_fallback_count": 0, "agentv": "0/2"},
     "E992": {"status": "completed_rejected_unique_binder_filter", "evaluated_model_version": "v263", "smoke_parse": 1.0, "smoke_meaning_v1": 1.0, "smoke_strict_v2": 0.3333333333333333, "smoke_fidelity": 0.7222222222222222, "smoke_structural_similarity": 0.6572666666666667, "smoke_component_recall": 0.5, "smoke_reward": 0.8536666666666667, "smoke_decode_timeouts": 0, "smoke_fallback_count": 1, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.4, "held_out_fidelity": 0.6666666666666666, "held_out_structural_similarity": 0.5554, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.831, "held_out_decode_timeouts": 0, "held_out_fallback_count": 4, "agentv": "0/2", "disposition": "withdraw"},
     "E993": {"status": "completed_runtime_variance_not_parity", "evaluated_model_version": "v264", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 0.8, "held_out_strict_v2": 0.6, "held_out_decode_timeouts": 1, "agentv": "0/2"},
-    "E994": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v264", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E979"}
+    "E994": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v264", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E979"},
+    "E995": {"status": "completed_rejected_scoped_binder_ownership", "evaluated_model_version": "v265", "smoke_parse": 1.0, "smoke_meaning_v1": 1.0, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_structural_similarity": 0.6517666666666667, "smoke_component_recall": 0.6666666666666666, "smoke_reward": 0.891, "smoke_decode_timeouts": 0, "smoke_fallback_count": 0, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.6333333333333333, "held_out_structural_similarity": 0.39136000000000004, "held_out_component_recall": 0.5619047619047619, "held_out_reward": 0.696, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "agentv": "0/2", "disposition": "withdraw"},
+    "E996": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v266", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E994"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
@@ -74,12 +76,12 @@
     "code_dirty": true,
     "components": {
       "harness.model_build.train": "v22",
-      "harness.model_build.eval": "v54",
+      "harness.model_build.eval": "v56",
       "harness.train_data": "v26",
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v15",
-      "model.twotower": "v264",
-      "config.levers": "v37"
+      "model.twotower": "v266",
+      "config.levers": "v39"
     }
   }
 }

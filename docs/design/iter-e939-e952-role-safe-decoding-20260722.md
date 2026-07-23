@@ -1,4 +1,4 @@
-# E939-E994: role-safe decoding, aligned training, and bounded nesting
+# E939-E996: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -76,6 +76,9 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E993 | E951 withdrawal v264 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E993 | E951 withdrawal v264 / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6333 | 0.3914 | 0.5619 | 0.6960 | 1 / 2 | 0/2 campaign |
 | E994 | E951 withdrawal v264 / held_out retry | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/1 |
+| E995 | E951 scoped binder parents v265 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E995 | E951 scoped binder parents v265 / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6333 | 0.3914 | 0.5619 | 0.6960 | 1 / 2 | 0/2 campaign |
+| E996 | E951 scoped-filter withdrawal v266 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/1 |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -273,3 +276,11 @@ fallbacks rise from three to four; smoke strict falls to 0.3333. Reject and
 withdraw v263. E993's smoke is exact E979 parity, while one transient held
 timeout prevents campaign parity. The isolated E994 held retry exactly matches
 all E979 aggregates and three fallbacks, establishing v264 rollback parity.
+
+E995 narrows global uniqueness to lexical component-parent stacks: same-parent
+references remain legal, while `Stack` to nested `Tabs` reuse is filtered. It
+preserves smoke exactly but makes Tabs time out; held parse falls to 0.8,
+strict to 0.6, fidelity to 0.6333, recall to 0.5619, and reward to 0.696.
+Lexical parent identity still lacks enough semantic information at the choice
+point. Reject and withdraw v265. E996 exactly matches E994/E979 held metrics
+and three fallbacks, establishing v266 rollback parity.
