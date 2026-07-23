@@ -41,6 +41,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -427,15 +428,16 @@ def _run_fixture(
     }
 
     # (6) Round-trip save/load for the recursive model.
-    tmp = Path("outputs/runs/slm138-recursive-denoiser-tmp")
-    tmp.mkdir(parents=True, exist_ok=True)
-    ckpt = tmp / "recursive.pt"
-    recursive.save(ckpt)
-    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
-    loaded_ok = (
-        loaded.config.denoiser_arch == "shared_recursive"
-        and isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
-    )
+    # Changed-test CI shards this fixture across processes. A fixed checkpoint
+    # path lets one process read another's partially written zip archive.
+    with tempfile.TemporaryDirectory(prefix="slm138-recursive-") as tmp_dir:
+        ckpt = Path(tmp_dir) / "recursive.pt"
+        recursive.save(ckpt)
+        loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+        loaded_ok = (
+            loaded.config.denoiser_arch == "shared_recursive"
+            and isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
+        )
 
     version_stamp = build_version_stamp("model.recursive_denoiser")
     code_dirty = version_stamp.get("code_dirty")
