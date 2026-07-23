@@ -3748,7 +3748,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v12",
+      "version": "v13",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -3773,6 +3773,11 @@
         "docs/design/iter-slm279-depth-supervision-correction-20260723.md"
       ],
       "history": [
+        {
+          "version": "v13",
+          "date": "2026-07-23",
+          "note": "SLM-282 (LAR0-02) recurrence-health audit: add the fixed as_is versus fixture-only residual_delta matched-control runner at logical depths 1/2/4 and two disjoint corruption schedules, canonical final-depth-only training with a separate evaluation draw, actual target/noisy/mask digest matching, one-forward anytime curves, seeded detached finite-difference directional gains, exact preregistered disposition, raw failure persistence, and AgentV fixture-not-ship publication"
+        },
         {
           "version": "v12",
           "date": "2026-07-23",

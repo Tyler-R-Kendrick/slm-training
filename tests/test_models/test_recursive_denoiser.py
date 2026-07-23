@@ -7,6 +7,7 @@ deep-supervision objective and its fail-closed
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import pytest
@@ -1512,6 +1513,9 @@ from scripts.run_slm138_recursive_denoiser_fixture import (
     _canonical_json,
     _clean_tree_gate,
     _compare_reports,
+    _evaluate_recurrence_preregistration,
+    _recurrence_health_corruption_schedule,
+    _run_recurrence_health_pair,
     _run_fixture,
 )
 
@@ -1815,6 +1819,213 @@ def test_rsc_a03_determinism_report_verdict_bit_exact_and_namespace_isolated() -
     assert report["verdict"] == "bit_exact"
     assert report["namespace_isolation_ok"] is True
     assert report["different_training_corruption_seed_unexpected_changes"] == {}
+
+
+def test_slm282_recurrence_health_pair_is_matched_anytime_finite_and_deterministic() -> (
+    None
+):
+    first_matched, first_curves = _run_recurrence_health_pair(
+        seed=282, recursive_steps=2, optimizer_steps=1
+    )
+    second_matched, second_curves = _run_recurrence_health_pair(
+        seed=282, recursive_steps=2, optimizer_steps=1
+    )
+
+    assert first_matched == second_matched
+    assert first_curves == second_curves
+    assert first_matched["matched"] is True
+    assert first_matched["mismatches"] == []
+    assert (
+        first_matched["contracts"]["as_is"]
+        == first_matched["contracts"]["residual_delta"]
+    )
+    assert [curve["arm"] for curve in first_curves] == [
+        "as_is",
+        "residual_delta",
+    ]
+    for curve in first_curves:
+        assert curve["anytime_evaluation"] == {
+            "denoiser_forward_calls": 1,
+            "available_depths": [1, 2],
+        }
+        assert len(curve["depths"]) == 2
+        assert all(depth["all_finite"] for depth in curve["depths"])
+        assert all(depth["ratios_finite"] for depth in curve["depths"])
+        for depth in curve["depths"]:
+            assert len(depth["examples"]) == 2
+            assert all(
+                math.isfinite(
+                    example[
+                        "finite_difference_initial_state_directional_gain"
+                    ]
+                )
+                for example in depth["examples"]
+            )
+
+
+def test_slm282_train_and_evaluation_corruption_schedules_are_disjoint() -> None:
+    first_train, first_eval = _recurrence_health_corruption_schedule(
+        seed=0, optimizer_steps=4
+    )
+    second_train, second_eval = _recurrence_health_corruption_schedule(
+        seed=1, optimizer_steps=4
+    )
+
+    assert not set(first_train).intersection(second_train)
+    assert first_eval not in first_train
+    assert second_eval not in second_train
+    assert first_eval not in second_train
+    assert second_eval not in first_train
+
+
+def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
+    def curve(
+        arm: str,
+        seed: int,
+        recursive_steps: int,
+        ces: list[float],
+        *,
+        finite: bool = True,
+    ) -> dict:
+        return {
+            "arm": arm,
+            "seed": seed,
+            "recursive_steps": recursive_steps,
+            "depths": [
+                {
+                    "step": step,
+                    "token_weighted_cross_entropy": ce,
+                    "ratios_finite": finite,
+                    "all_finite": finite,
+                }
+                for step, ce in enumerate(ces, start=1)
+            ],
+        }
+
+    curves = []
+    for arm in ("as_is", "residual_delta"):
+        for seed in (0, 1):
+            curves.extend(
+                [
+                    curve(arm, seed, 1, [4.0]),
+                    curve(arm, seed, 2, [4.0, 3.0]),
+                    curve(arm, seed, 4, [4.0, 3.5, 3.0, 2.5]),
+                ]
+            )
+    controls = [{"matched": True, "batches_matched": True} for _ in range(6)]
+    positive, failures = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+    )
+    assert positive["disposition"] == "recursive_core_positive"
+    assert failures == []
+
+    # Make every primary R=4 final depth regress while the fixture-only
+    # residual_delta arm remains positive. No cross-seed/depth average and no
+    # counterfactual arm may rescue the primary disposition.
+    for row in curves:
+        if row["arm"] == "as_is" and row["recursive_steps"] == 4:
+            row["depths"][-1]["token_weighted_cross_entropy"] = 5.0
+    negative, failures = _evaluate_recurrence_preregistration(
+        curves,
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+    )
+    assert negative["disposition"] == "recursive_core_negative"
+    assert negative["residual_delta_can_promote"] is False
+    assert {(failure["arm"], failure["seed"]) for failure in failures} == {
+        ("as_is", 0),
+        ("as_is", 1),
+    }
+
+    incomplete, _ = _evaluate_recurrence_preregistration(
+        curves[:-1],
+        seeds=(0, 1),
+        recursive_steps=(1, 2, 4),
+        matched_controls=controls,
+    )
+    assert incomplete["disposition"] == "inconclusive_fixture"
+
+
+def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import scripts.run_slm138_recursive_denoiser_fixture as fixture_mod
+
+    calls = []
+
+    def fake_pair(
+        *,
+        seed: int,
+        recursive_steps: int,
+        optimizer_steps: int,
+        epsilon: float = 1e-3,
+    ) -> tuple[dict, list[dict]]:
+        calls.append((seed, recursive_steps, optimizer_steps, epsilon))
+        curves = []
+        for arm in ("as_is", "residual_delta"):
+            curves.append(
+                {
+                    "arm": arm,
+                    "seed": seed,
+                    "recursive_steps": recursive_steps,
+                    "depths": [
+                        {
+                            "step": step,
+                            "token_weighted_cross_entropy": 5.0 - step,
+                            "ratios_finite": True,
+                            "all_finite": True,
+                        }
+                        for step in range(1, recursive_steps + 1)
+                    ],
+                }
+            )
+        return {"matched": True, "batches_matched": True}, curves
+
+    published = {}
+
+    def fake_publish(run_dir, *, name, claim, cases):
+        published.update(
+            run_dir=run_dir, name=name, claim=claim, cases=cases
+        )
+        return {
+            "format": "AgentEvals JSONL",
+            "sdk": "@agentv/core",
+            "summary": {"passed": len(cases), "executionErrors": 0},
+        }
+
+    monkeypatch.setattr(
+        fixture_mod, "_run_recurrence_health_pair", fake_pair
+    )
+    monkeypatch.setattr(
+        fixture_mod, "publish_agentv_evaluation", fake_publish
+    )
+    report = fixture_mod._run_recurrence_health(
+        output_dir=tmp_path, base_seed=9, optimizer_steps=1
+    )
+
+    assert calls == [
+        (seed, recursive_steps, 1, 1e-3)
+        for seed in (9, 10)
+        for recursive_steps in (1, 2, 4)
+    ]
+    assert report["summary"]["disposition"] == "recursive_core_positive"
+    assert published["run_dir"] == tmp_path
+    assert published["name"] == "slm282-recurrence-health"
+    assert published["claim"] == "fixture_recurrence_health_not_ship"
+    assert [case["id"] for case in published["cases"]] == [
+        "matched-controls",
+        "finite-complete-telemetry",
+        "as-is-seed-9",
+        "as-is-seed-10",
+    ]
+    assert (
+        report["version_stamp"]["components"]["model.recursive_denoiser"]
+        == "v13"
+    )
 
 
 # ---------------------------------------------------------------------------
