@@ -199,11 +199,15 @@ def normalize_experiment_record(
         )
 
     # Records that declare the canonical writer contract must not fall back to
-    # mining arbitrary nested metric blocks. A malformed canonical record is
-    # safer to reject than to publish a diagnostic replay as its primary suite.
+    # mining arbitrary nested metric blocks. The first v1 records, however,
+    # persisted their single-suite evidence explicitly in ``result`` before
+    # canonical writers introduced root ``suites``. Keep that named historical
+    # contract visible; a malformed canonical record is still safer to reject
+    # than to publish an arbitrary diagnostic replay as its primary suite.
+    legacy_result = payload.get("result")
     if payload.get("schema_version") == SCHEMA_VERSION and payload.get(
         "run_class"
-    ) in RUN_CLASSES:
+    ) in RUN_CLASSES and not _is_metric_block(legacy_result):
         return None, "canonical_missing_suites"
 
     # Single-suite blocks (eval / observed / metrics / top-level …): pick the

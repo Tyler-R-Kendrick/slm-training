@@ -1193,12 +1193,17 @@
       ]
     },
     "harness.core": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "Keep explicit historical result blocks visible while rejecting arbitrary nested metrics from malformed canonical records"
+        },
         {
           "version": "v6",
           "date": "2026-07-23",
