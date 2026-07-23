@@ -16,7 +16,7 @@ Machine-readable evidence:
 | output contract | `output_contract/v2` (symbol-only) |
 | checkpoint implementation | `model.twotower/v227` |
 | staged contract | `staged_harness_baseline/v1`, component `harness.staged/v1` |
-| baseline SHA | `8ce4ffd0285a45ec76ba1729a604b30dfd109f449e414fa88e4d47155eaec00f` |
+| baseline SHA | `40b93dee036b0a7c84d9aff19f6764dd7c7af3ce57f5ded5b6e32d2d3caca889` |
 | run class | `fixture_demo` |
 
 The baseline records the repository state before this DSH0 contract lands.

@@ -81,6 +81,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--version", default="v1")
     parser.add_argument(
+        "--synthesis-plan",
+        type=Path,
+        default=None,
+        help=(
+            "Checked-in SynthesisPlanV1 JSON/YAML to validate before loading "
+            "any producer; independent of --curriculum."
+        ),
+    )
+    parser.add_argument(
         "--immutable",
         action="store_true",
         help="Fail instead of overwriting an existing versioned snapshot.",
@@ -417,6 +426,7 @@ def main(argv: list[str] | None = None) -> int:
         derive_from=args.derive_from,
         output_root=args.output_root,
         version=args.version,
+        synthesis_plan_path=args.synthesis_plan,
         immutable=args.immutable,
         synthesizer=args.synthesizer,
         rico_hf_split=args.rico_hf_split,

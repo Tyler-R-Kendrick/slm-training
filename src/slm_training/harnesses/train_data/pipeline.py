@@ -57,6 +57,9 @@ class TrainDataConfig:
     derive_from: Path | None = None
     output_root: Path = Path("outputs/data/train")
     version: str = "v1"
+    # Optional checked-in SynthesisPlanV1. It is validated before any producer
+    # or model/data artifact is loaded; None preserves the historical path.
+    synthesis_plan_path: Path | None = None
     synthesizer: str = "quality"
     require_split: str = "train"
     rico_hf_split: str | None = None
@@ -1183,6 +1186,12 @@ def build_train_data(
     synthesizer: PromptSynthesizer | None = None,
 ) -> dict:
     """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
+    synthesis_plan = None
+    if config.synthesis_plan_path is not None:
+        from slm_training.harnesses.synthesis_plan import SynthesisPlanV1
+
+        synthesis_plan = SynthesisPlanV1.load(config.synthesis_plan_path)
+        synthesis_plan.require_executable()
     config = resolve_profile(config)
     from slm_training.harnesses.train_data.sanitize import (
         SANITIZE_MODES,
@@ -2097,6 +2106,18 @@ def build_train_data(
         "built_at": stats["built_at"],
         "version_stamp": version_stamp,
     }
+    if synthesis_plan is not None:
+        manifest["synthesis_plan"] = {
+            "plan_id": synthesis_plan.plan_id,
+            "sha256": synthesis_plan.sha,
+            "schema_version": synthesis_plan.schema_version,
+            "dsl_pack_id": synthesis_plan.dsl_pack_id,
+            "dsl_pack_version": synthesis_plan.dsl_pack_version,
+            "surface_policy_version": synthesis_plan.surface_policy_version,
+            "generators": [item.to_dict() for item in synthesis_plan.generators],
+            "validators": [item.to_dict() for item in synthesis_plan.validators],
+            "gate_spec": synthesis_plan.gate_spec.to_dict(),
+        }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
