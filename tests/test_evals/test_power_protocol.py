@@ -15,6 +15,7 @@ from slm_training.evals.power_protocol import (
     classify_power,
     cluster_bootstrap_ci,
     exact_binomial_interval,
+    holm_bonferroni,
     intraclass_correlation,
     mde_simulation,
     plan_binomial_rate_test,
@@ -236,6 +237,87 @@ def test_benjamini_hochberg_preserves_order() -> None:
     result = benjamini_hochberg(p_values)
     assert result[0]["p_value"] == 0.5
     assert result[1]["p_value"] == 0.001
+
+
+@pytest.mark.parametrize(
+    "hypotheses,expected",
+    [
+        (
+            [("h1", 0.01), ("h2", 0.04), ("h3", 0.03), ("h4", 0.20)],
+            [
+                ("h1", 1, 0.0125, 0.04, True),
+                ("h2", 3, 0.025, 0.09, False),
+                ("h3", 2, 0.05 / 3, 0.09, False),
+                ("h4", 4, 0.05, 0.20, False),
+            ],
+        ),
+        (
+            [("primary", 0.03), ("control", 0.001), ("secondary", 0.01)],
+            [
+                ("primary", 3, 0.05, 0.03, True),
+                ("control", 1, 0.05 / 3, 0.003, True),
+                ("secondary", 2, 0.025, 0.02, True),
+            ],
+        ),
+    ],
+)
+def test_holm_bonferroni_golden_vectors(
+    hypotheses: list[tuple[str, float]],
+    expected: list[tuple[str, int, float, float, bool]],
+) -> None:
+    result = holm_bonferroni(hypotheses)
+    assert [entry["hypothesis_id"] for entry in result] == [
+        item[0] for item in expected
+    ]
+    assert [entry["rank"] for entry in result] == [item[1] for item in expected]
+    assert [entry["threshold"] for entry in result] == pytest.approx(
+        [item[2] for item in expected]
+    )
+    assert [entry["adjusted_p_value"] for entry in result] == pytest.approx(
+        [item[3] for item in expected]
+    )
+    assert [entry["rejected"] for entry in result] == [item[4] for item in expected]
+
+
+def test_holm_bonferroni_preserves_order_and_breaks_ties_by_id() -> None:
+    result = holm_bonferroni([("b", 0.01), ("a", 0.01), ("c", 0.5)])
+    assert [entry["hypothesis_id"] for entry in result] == ["b", "a", "c"]
+    assert [entry["rank"] for entry in result] == [2, 1, 3]
+
+
+@pytest.mark.parametrize(
+    "hypotheses",
+    [
+        [("same", 0.01), ("same", 0.02)],
+        [("", 0.01)],
+        [(1, 0.01)],
+    ],
+)
+def test_holm_bonferroni_rejects_invalid_ids(
+    hypotheses: list[tuple[object, float]],
+) -> None:
+    with pytest.raises(ValueError, match="hypothesis identifiers"):
+        holm_bonferroni(hypotheses)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("p_value", [math.nan, math.inf, -math.inf, -0.01, 1.01])
+def test_holm_bonferroni_rejects_nonfinite_or_out_of_range_p_values(
+    p_value: float,
+) -> None:
+    with pytest.raises(ValueError, match="p-values must be finite and in"):
+        holm_bonferroni([("h1", p_value)])
+
+
+@pytest.mark.parametrize("p_value", [True, "0.01", None])
+def test_holm_bonferroni_rejects_non_numeric_p_values(p_value: object) -> None:
+    with pytest.raises(TypeError, match="p-values must be numeric"):
+        holm_bonferroni([("h1", p_value)])  # type: ignore[list-item]
+
+
+@pytest.mark.parametrize("alpha", [math.nan, math.inf, -math.inf, 0.0, 1.0])
+def test_holm_bonferroni_rejects_invalid_alpha(alpha: float) -> None:
+    with pytest.raises(ValueError, match="alpha must be finite and in"):
+        holm_bonferroni([("h1", 0.01)], alpha=alpha)
 
 
 @pytest.mark.parametrize(
