@@ -4187,7 +4187,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v261",
+      "version": "v262",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4212,6 +4212,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v262",
+          "date": "2026-07-22",
+          "note": "Withdraw typed-binder slot reservation after E977-E978 regressed strict quality and preserve v259 decoder behavior"
+        },
         {
           "version": "v261",
           "date": "2026-07-22",
