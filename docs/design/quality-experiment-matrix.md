@@ -6670,3 +6670,12 @@ prediction-identical to E1021-E1022: held remains
 two timeouts, and the head applies zero times. Retain v268 safety, reject
 E1026, and diagnose bound-declaration reachability before further head tuning.
 See `iter-e1026-e1028-detached-binder-component-20260722.md`.
+
+E1029 combines detached binder-arity and binder-component losses at weight 1
+for 450 fresh E937 steps. Arity applies 26 times and changes three held choices,
+but binder-component still applies zero times. E1031 held regresses to
+parse/strict/fidelity/structure/recall/reward
+0.6/0.4/0.44/0.2395/0.4/0.5106 with two timeouts and three fallbacks, worse
+than both the E991 arity-only diagnostic and E996 retained baseline. Reject
+E1029, close this combination, and target declaration actions directly. See
+`iter-e1029-e1031-joint-binder-plans-20260722.md`.
