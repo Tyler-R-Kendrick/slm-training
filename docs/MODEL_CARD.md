@@ -296,6 +296,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e974-e951-visible-reference4-v258-r1`) | 5 | 1.0 | 0.6833 | 0.4207 | 0.8324 | No — meaning-v1 / strict-v2 0.6 / zero timeouts / four certified fallbacks, AgentV 0/2; weight 4 rejected |
+| smoke (`e974-e951-visible-reference4-v258-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667 / zero timeout/fallback, AgentV 0/2 campaign; diagnostic subset |
 | held_out (`e973-e972-mixture450-v256-r1`) | 5 | 1.0 | 0.8333 | 0.3961 | 0.9152 | No — meaning-v1 0.8 / strict-v2 0.4 / zero timeouts and role violations / two certified fallbacks, AgentV 0/2 |
 | smoke (`e973-e972-mixture450-v256-r1`) | 3 | 1.0 | 1.0000 | 0.5978 | 0.9730 | No — strict-v2 1.0 / zero timeout/fallback, AgentV 0/2 campaign; diagnostic subset |
 | held_out (`e968-e951-training-boundary-v256-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — meaning-v1 0.8 / strict-v2 0.8 / zero timeouts and role violations / three certified fallbacks, AgentV 0/2 |
