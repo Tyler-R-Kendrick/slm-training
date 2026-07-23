@@ -269,13 +269,18 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
         "tests/test_dsl/test_operator_contracts.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "export the exact topology and template-alias operator context and composed library APIs"
+        },
         {
           "version": "v4",
           "date": "2026-07-23",
@@ -335,7 +340,7 @@
       ]
     },
     "dsl.operators.local": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/local.py",
@@ -343,9 +348,29 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "expose core registered entries for composition into the pack-owned topology library"
+        },
+        {
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial exact OpenUI add, remove, replace, property, and child-order operator family"
+        }
+      ]
+    },
+    "dsl.operators.topology": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/topology.py",
+        "tests/test_dsl/test_topology_operators.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial exact move, reparent, wrap, unwrap, duplicate, expand, and contract operator family"
         }
       ]
     },

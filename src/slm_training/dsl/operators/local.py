@@ -901,13 +901,16 @@ def build_openui_local_operator_context(
 def build_openui_local_operator_library(
     context: OpenUILocalOperatorContextV1,
 ) -> OperatorLibraryV1:
-    return OperatorLibraryV1(
-        tuple(
-            RegisteredOperatorV1(
-                declaration, _executor(declaration.operator_id, context)
-            )
-            for declaration in _declarations()
-        )
+    return OperatorLibraryV1(openui_local_registered_operators(context))
+
+
+def openui_local_registered_operators(
+    context: OpenUILocalOperatorContextV1,
+) -> tuple[RegisteredOperatorV1, ...]:
+    """Return the core entries for composition into a larger pack library."""
+    return tuple(
+        RegisteredOperatorV1(declaration, _executor(declaration.operator_id, context))
+        for declaration in _declarations()
     )
 
 
@@ -926,4 +929,5 @@ __all__ = [
     "ast_diff_paths",
     "build_openui_local_operator_context",
     "build_openui_local_operator_library",
+    "openui_local_registered_operators",
 ]
