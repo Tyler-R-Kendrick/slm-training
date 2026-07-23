@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E1000",
+  "experiment_id": "E939-E1003",
   "date": "2026-07-22",
   "decision": "retain_v266_rollback_reject_binder_arity_and_reference_ownership_treatments",
   "train_data": "e937_role_safe_all_targets_v2",
@@ -64,7 +64,10 @@
     "E997": {"status": "completed_rejected_lattice_recovery", "evaluated_model_version": "v266", "compiler_search_mode": "lattice", "compiler_search_trigger": "bottom", "compiler_search_width": 2, "smoke_parse": 0.6666666666666666, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.6666666666666666, "smoke_structural_similarity": 0.3833333333333333, "smoke_component_recall": 0.5, "smoke_reward": 0.6406666666666666, "smoke_decode_timeouts": 1, "smoke_fallback_count": 0, "held_out_parse": 0.8, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.8, "held_out_structural_similarity": 0.4748, "held_out_component_recall": 0.8, "held_out_reward": 0.7736, "held_out_decode_timeouts": 1, "held_out_fallback_count": 0, "agentv": "0/2"},
     "E998": {"status": "completed_rejected_timeout_diagnostic", "evaluated_model_version": "v266", "suite": "held_out", "eval_limit": 1, "decode_timeout_seconds": 60, "latency_ms": 11909.02, "parse": 1.0, "meaning_v1": 0.0, "strict_v2": 0.0, "fidelity": 0.16666666666666666, "structural_similarity": 0.1148, "component_recall": 0.14285714285714285, "reward": 0.657, "decode_timeouts": 0, "fallback_count": 2, "agentv": "0/1", "prediction": "root = TextContent(\":slot_0\")"},
     "E999": {"status": "failed_before_evaluation", "reason": "required_slot_margin_decode_weight requires slot_contract_in_context plus slot_contract_constrained_decode or template_fill_decode", "agentv": null},
-    "E1000": {"status": "completed_rejected_required_slot_margin", "evaluated_model_version": "v266", "required_slot_margin_decode_weight": 2.0, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "smoke_parse": 1.0, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.75, "smoke_structural_similarity": 0.4347, "smoke_component_recall": 0.5833333333333334, "smoke_reward": 0.868, "smoke_decode_timeouts": 0, "smoke_fallback_count": 2, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.65, "held_out_structural_similarity": 0.3316, "held_out_component_recall": 0.6666666666666667, "held_out_reward": 0.713, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "agentv": "0/2"}
+    "E1000": {"status": "completed_rejected_required_slot_margin", "evaluated_model_version": "v266", "required_slot_margin_decode_weight": 2.0, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "smoke_parse": 1.0, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.75, "smoke_structural_similarity": 0.4347, "smoke_component_recall": 0.5833333333333334, "smoke_reward": 0.868, "smoke_decode_timeouts": 0, "smoke_fallback_count": 2, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.65, "held_out_structural_similarity": 0.3316, "held_out_component_recall": 0.6666666666666667, "held_out_reward": 0.713, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "agentv": "0/2"},
+    "E1001": {"status": "invalid_wall_budget_partial", "requested_steps": 150, "reached_steps": 139, "elapsed_wall_seconds": 96.04748119100259, "last_loss": 9.620988845825195, "checkpoint_sha256": "c546b9908858aecbac8bb4e09a59bdd332785128658878c8fb819bbe0173a0b1", "checkpoint_sync": "disabled_scratch", "binder_arity_loss_weight": 1.0, "binder_topology_loss_weight": 1.0, "agentv": null},
+    "E1002": {"status": "completed_rejected", "steps": 100, "elapsed_wall_seconds": 89.22238548200039, "last_loss": 6.161282539367676, "checkpoint_sha256": "5eec07fa66a09e5249cfa799a2aef9327d4cc74e65881e38c2b25d1f466d823a", "checkpoint_sync": "disabled_scratch", "mixture_id": "e937_role_safe_all_targets_v2-base", "binder_arity_loss_weight": 1.0, "binder_topology_loss_weight": 1.0},
+    "E1003": {"status": "completed_rejected_joint_topology_arity", "evaluated_model_version": "v266", "binder_arity_decode_weight": 1.0, "binder_topology_decode_weight": 1.0, "smoke_parse": 0.6666666666666666, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.3333333333333333, "smoke_fidelity": 0.6666666666666666, "smoke_structural_similarity": 0.31, "smoke_component_recall": 0.5, "smoke_reward": 0.6406666666666666, "smoke_decode_timeouts": 1, "smoke_fallback_count": 0, "held_out_parse": 1.0, "held_out_meaning_v1": 0.4, "held_out_strict_v2": 0.2, "held_out_fidelity": 0.55, "held_out_structural_similarity": 0.21532, "held_out_component_recall": 0.49523809523809526, "held_out_reward": 0.796, "held_out_decode_timeouts": 0, "held_out_fallback_count": 6, "agentv": "0/2"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
@@ -72,7 +75,9 @@
     "E963": "local_only_rejected_never_promote_or_parent",
     "E972": "local_only_rejected_never_promote_or_parent",
     "E980": "local_only_rejected_never_promote_or_parent",
-    "E988": "local_only_rejected_never_promote_or_parent"
+    "E988": "local_only_rejected_never_promote_or_parent",
+    "E1001": "invalid_partial_never_evaluate_or_parent",
+    "E1002": "local_only_rejected_never_promote_or_parent"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

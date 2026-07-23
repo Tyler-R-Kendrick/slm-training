@@ -1,4 +1,4 @@
-# E939-E1000: role-safe decoding, aligned training, and bounded nesting
+# E939-E1003: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -84,6 +84,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E998 | E980 Form-only 60s diagnostic | 1 | 1.0000 | 0.0000 | 0.0000 | 0.1667 | 0.1148 | 0.1429 | 0.6570 | 0 / 2 | 0/1 |
 | E1000 | E980 arity + schema + slot margin 2 / smoke | 3 | 1.0000 | 0.6667 | 0.6667 | 0.7500 | 0.4347 | 0.5833 | 0.8680 | 0 / 2 | 0/2 campaign |
 | E1000 | E980 arity + schema + slot margin 2 / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3316 | 0.6667 | 0.7130 | 1 / 2 | 0/2 campaign |
+| E1003 | E1002 topology + arity / smoke | 3 | 0.6667 | 0.6667 | 0.3333 | 0.6667 | 0.3100 | 0.5000 | 0.6407 | 1 / 0 | 0/2 campaign |
+| E1003 | E1002 topology + arity / held_out | 5 | 1.0000 | 0.4000 | 0.2000 | 0.5500 | 0.2153 | 0.4952 | 0.7960 | 0 / 6 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -307,3 +309,13 @@ evidence. E1000 supplies that supported configuration using opaque ordinal
 slots only. Form still times out and Tabs collapses to one slot; versus E991,
 held fidelity falls from 0.8 to 0.65, structure to 0.3316, recall to 0.6667,
 reward to 0.713, and fallbacks rise to two. Reject slot margin 2.
+
+E1001 attempts 150 clean joint binder-topology/arity steps but stops on the
+harness wall budget at 139/150 after 96.05 seconds. Its serialized SHA
+`c546b990...3a0b1` is invalid evidence and must never be evaluated, resumed,
+synced, promoted, served, or used as a parent. E1002 retries from scratch at
+100 steps and completes in 89.22 seconds at loss 6.1613, local-only SHA
+`5eec07fa...6d823a`. E1003 activates both learned heads at weight 1. Smoke
+strict falls to 0.3333 with one timeout; held strict is 0.2, fidelity 0.55,
+structure 0.2153, recall 0.4952, and fallbacks rise to six. Form, Tabs, and
+Settings collapse to one-slot TextContent. Reject E1002; never use as a parent.
