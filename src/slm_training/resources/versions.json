@@ -4150,6 +4150,25 @@
         }
       ]
     },
+    "harness.artifact_graph": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/train_data/artifact_graph.py",
+        "src/slm_training/harnesses/train_data/split_policy.py",
+        "scripts/explain_artifact_overlaps.py",
+        "tests/test_harnesses/train_data/test_artifact_graph.py",
+        "docs/design/dsh0-05-artifact-graph-20260723.json",
+        "docs/design/dsh0-05-artifact-graph-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial append-only dataset artifact graph, root-family split inheritance, cross-split leakage quarantine, traversal, and explain CLI"
+        }
+      ]
+    },
     "harness.solver_bench": {
       "version": "v1",
       "kind": "harness",
@@ -4198,7 +4217,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -4209,6 +4228,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-23",
+          "note": "add staged dataset artifact-graph sidecars and root-family cross-split leakage firewall"
+        },
         {
           "version": "v15",
           "date": "2026-07-23",
