@@ -1656,6 +1656,17 @@ No data build, model, checkpoint, capability certificate, or ship claim was
 produced. Evidence:
 [`dsh0-04-capability-artifacts-20260723.md`](dsh0-04-capability-artifacts-20260723.md).
 
+## Root-family derivation DAG and leakage firewall (DSH0-05 / SLM-349)
+
+**Fidelity label: repository contract.** The dataset-sidecar DAG applies
+content-addressed lineage and root-before-expansion splitting without adding a
+learned mechanism. Descendants inherit one root family and split; mixed-split
+composition fails closed. Exact, alpha-equivalent, canonical-AST,
+source-parent, and near-template cross-split candidates are persisted with
+typed quarantine evidence, never silently dropped. No staged corpus, model,
+checkpoint, certificate, or ship claim was produced. Evidence:
+[`dsh0-05-artifact-graph-20260723.md`](dsh0-05-artifact-graph-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
