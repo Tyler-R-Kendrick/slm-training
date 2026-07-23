@@ -26,6 +26,16 @@ HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\
 CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 
 
+@pytest.fixture(autouse=True)
+def _stub_agentv_publisher(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep stub-model unit tests independent of the external Node SDK."""
+
+    monkeypatch.setattr(
+        "slm_training.evals.agentv.publish_model_evaluation",
+        lambda *_args, **_kwargs: {"status": "fixture_stub"},
+    )
+
+
 def _prepare_artifacts(tmp_path: Path) -> tuple[Path, Path]:
     train_seeds = tmp_path / "train.jsonl"
     write_jsonl(
