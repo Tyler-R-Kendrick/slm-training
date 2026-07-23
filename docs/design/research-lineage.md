@@ -1373,6 +1373,29 @@ No text-replacement fallback or learned legality path exists. Evidence and
 scope:
 [`dsh3-04-core-local-operators-20260723.md`](dsh3-04-core-local-operators-20260723.md).
 
+## Topology and template operators (DSH3-05 / SLM-373)
+
+**Fidelity label: adapted executable contract.** Move/reparent, wrapper,
+duplication, and exact template aliases adapt graph-edit action structure from
+[Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205) and the
+repository's
+[grammar topology diffusion](grammar-topology-diffusion.md) direction. This is
+not an implementation or evaluation of
+[Graph DiT](https://arxiv.org/abs/2405.20519), and no diffusion model is changed.
+
+| | |
+| --- | --- |
+| **Inventory** | move/reparent, wrap/unwrap, duplicate subtree, expand/contract template |
+| **Topology proof boundary** | inline capture-free subtrees, schema-owned destination roles, ordered-parent index refs, cycle prevention |
+| **Template authority** | immutable pack/source/lowering manifest; exact expanded/contracted AST identity; ordinary production-codec lowering |
+| **Controls** | inverse identity, ordinary-construction equivalence, explicit provenance, cycle/capture/cardinality/partial-pack failures |
+
+Binding-graph rewrites and capture-sensitive moves remain unsupported until the
+pack exposes exact rename/reference-graph proof. Missing template aliases omit
+the dependent operators rather than synthesizing a fallback. Evidence and
+scope:
+[`dsh3-05-topology-template-operators-20260723.md`](dsh3-05-topology-template-operators-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
