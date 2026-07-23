@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from slm_training.harnesses.experiments.slm215_spectral_atlas import (
@@ -49,6 +50,7 @@ def test_custom_floor_gate_path_is_recorded() -> None:
         floor_gate_path=gate_path,
     )
     assert report.floor_gate_ref == gate_path.as_posix()
+    assert report.floor_gate_hash == json.loads(gate_path.read_text())["gate_hash"]
 
 
 def test_role_summaries_present() -> None:
