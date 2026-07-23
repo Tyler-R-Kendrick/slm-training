@@ -13,6 +13,7 @@ from slm_training.dsl.operators.contracts import (
     BoundArgumentV1,
     IndexRef,
     NodeRef,
+    OperatorApplicationV1,
     OperatorRef,
     RefKind,
     RoleRef,
@@ -127,7 +128,8 @@ class OperatorLegalEntryV1:
     evaluated_combinations: int
     total_combinations: int
     rejection_counts: tuple[tuple[str, int], ...]
-    schema: str = "operator_legal_entry/v1"
+    rejection_samples: tuple[OperatorApplicationV1, ...] = ()
+    schema: str = "operator_legal_entry/v2"
 
     def __post_init__(self) -> None:
         _require_identifier(self.operator_id, "operator_id")
@@ -144,12 +146,29 @@ class OperatorLegalEntryV1:
             raise ValueError("evaluated combinations exceed the declared product")
         if any(action.operator_id != self.operator_id for action in self.legal_actions):
             raise ValueError("legal action belongs to another operator")
+        if any(
+            sample.succeeded
+            or sample.operator_fingerprint != self.operator_fingerprint
+            for sample in self.rejection_samples
+        ):
+            raise ValueError("rejection sample is not a rejected application")
         if len({code for code, _ in self.rejection_counts}) != len(
             self.rejection_counts
         ):
             raise ValueError("rejection reason codes must be unique")
         if any(count <= 0 for _, count in self.rejection_counts):
             raise ValueError("rejection reason counts must be positive")
+        rejection_codes = {code for code, _ in self.rejection_counts}
+        if any(
+            sample.rejection is None
+            or sample.rejection.code not in rejection_codes
+            for sample in self.rejection_samples
+        ):
+            raise ValueError("rejection sample is absent from rejection counts")
+        if len(self.rejection_samples) > sum(
+            count for _, count in self.rejection_counts
+        ):
+            raise ValueError("rejection samples exceed rejected combinations")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -163,6 +182,9 @@ class OperatorLegalEntryV1:
             "evaluated_combinations": self.evaluated_combinations,
             "total_combinations": self.total_combinations,
             "rejection_counts": dict(self.rejection_counts),
+            "rejection_samples": [
+                sample.to_dict() for sample in self.rejection_samples
+            ],
         }
 
 
@@ -175,7 +197,8 @@ class OperatorLegalSetV1:
     ordinary_nonoperator_actions: tuple[str, ...]
     coverage: LegalSetCoverage
     max_combinations_per_operator: int
-    schema: str = "operator_legal_set/v1"
+    max_rejection_samples_per_operator: int
+    schema: str = "operator_legal_set/v2"
 
     def __post_init__(self) -> None:
         _require_digest(self.state_fingerprint, "state_fingerprint")
@@ -185,8 +208,15 @@ class OperatorLegalSetV1:
         _require_digest(self.registry_fingerprint, "registry_fingerprint")
         if self.max_combinations_per_operator <= 0:
             raise ValueError("max_combinations_per_operator must be positive")
+        if self.max_rejection_samples_per_operator < 0:
+            raise ValueError("max_rejection_samples_per_operator cannot be negative")
         if len({entry.operator_id for entry in self.entries}) != len(self.entries):
             raise ValueError("operator legal-set entries must be unique")
+        if any(
+            len(entry.rejection_samples) > self.max_rejection_samples_per_operator
+            for entry in self.entries
+        ):
+            raise ValueError("entry exceeds the rejection-sample bound")
         expected = (
             LegalSetCoverage.COMPLETE
             if all(
@@ -266,6 +296,9 @@ class OperatorLegalSetV1:
             "ordinary_nonoperator_actions": list(self.ordinary_nonoperator_actions),
             "coverage": self.coverage.value,
             "max_combinations_per_operator": self.max_combinations_per_operator,
+            "max_rejection_samples_per_operator": (
+                self.max_rejection_samples_per_operator
+            ),
         }
 
 
@@ -391,10 +424,13 @@ def enumerate_operator_legal_set(
     provenance: ApplicationProvenanceV1,
     ordinary_nonoperator_actions: tuple[str, ...] = (),
     max_combinations_per_operator: int = 10_000,
+    max_rejection_samples_per_operator: int = 8,
 ) -> OperatorLegalSetV1:
     """Dry-run exact tuples; budget truncation stays UNKNOWN, never unsupported."""
     if max_combinations_per_operator <= 0:
         raise ValueError("max_combinations_per_operator must be positive")
+    if max_rejection_samples_per_operator < 0:
+        raise ValueError("max_rejection_samples_per_operator cannot be negative")
     if reference_table.state_digest != state.state_digest:
         raise ValueError("reference table is stale for operator state")
     if reference_table.request_id != provenance.request_id:
@@ -428,6 +464,7 @@ def enumerate_operator_legal_set(
         budget = min(total, max_combinations_per_operator)
         actions: list[LegalOperatorActionV1] = []
         rejection_counts: dict[str, int] = {}
+        rejection_samples: list[OperatorApplicationV1] = []
         evaluated = 0
         for arguments in itertools.islice(
             iter_operator_argument_tuples(domains), budget
@@ -465,6 +502,8 @@ def enumerate_operator_legal_set(
                 assert application.rejection is not None
                 code = application.rejection.code
                 rejection_counts[code] = rejection_counts.get(code, 0) + 1
+                if len(rejection_samples) < max_rejection_samples_per_operator:
+                    rejection_samples.append(application)
         coverage = (
             LegalSetCoverage.COMPLETE
             if evaluated == total
@@ -488,6 +527,7 @@ def enumerate_operator_legal_set(
                 evaluated_combinations=evaluated,
                 total_combinations=total,
                 rejection_counts=tuple(sorted(rejection_counts.items())),
+                rejection_samples=tuple(rejection_samples),
             )
         )
     entries.sort(key=lambda entry: entry.operator_id)
@@ -510,6 +550,7 @@ def enumerate_operator_legal_set(
         ordinary_nonoperator_actions=ordinary_nonoperator_actions,
         coverage=coverage,
         max_combinations_per_operator=max_combinations_per_operator,
+        max_rejection_samples_per_operator=max_rejection_samples_per_operator,
     )
 
 

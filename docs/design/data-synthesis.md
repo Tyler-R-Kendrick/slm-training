@@ -326,3 +326,23 @@ fingerprint); reserved-structure decontamination reserves both raw and
 sanitized fingerprint families so the test firewall never weakens. Measured
 evidence, gate-interaction analysis, and follow-ups:
 [train-target-sanitization-20260719.md](train-target-sanitization-20260719.md).
+
+## Verified symbolic operator sibling corpus (DSH3-10 / SLM-378)
+
+The strict train-data pipeline now optionally emits a separate closed-schema
+operator corpus from admitted document roots. Successful targets are sampled
+only from the exact pack-owned legal set and persist before/after ASTs, effects,
+proofs, preferences, and replayable conversation traces. Typed rejected
+applications remain bounded coverage evidence and are never emitted as target
+actions.
+
+The fixture evidence run produced 20 records from two roots: 12 single-turn,
+six next-turn, and two sibling-fork records. It retained 27 legal successes and
+533 rejected combinations in coverage, emitted zero illegal targets, and
+replayed every application and trace. This is fixture wiring evidence, not a
+full-corpus or ship claim.
+
+The strict parent build admitted 19/20 records with mean quality 1.0. Its only
+rejection was the reserved `test_fixture_structure` firewall; no gate changed.
+The emitted `human_curated` source-audit experiment is filed as SLM-392. See
+[DSH3-10 evidence](dsh3-10-symbolic-operator-corpus-20260723.md).

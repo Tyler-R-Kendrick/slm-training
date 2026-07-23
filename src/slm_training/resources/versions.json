@@ -269,13 +269,18 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
         "tests/test_dsl/test_operator_contracts.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "persist bounded typed rejection applications with exact legal-set evidence for symbolic operator corpus generation"
+        },
         {
           "version": "v9",
           "date": "2026-07-23",
@@ -410,13 +415,18 @@
       ]
     },
     "dsl.operators.legal_set": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/legal_set.py",
         "tests/test_dsl/test_operator_legal_set.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "retain bounded deterministic rejected application samples alongside complete rejection counts"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -3988,7 +3998,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v11",
+      "version": "v12",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3999,6 +4009,16 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "no-bump: pin operator contract and legal-set component versions in the sibling report stamp; generated corpus behavior is unchanged"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "generate replay-verified symbolic single-turn, next-turn, and sibling-fork operator datasets from admitted exact AST roots"
+        },
         {
           "version": "v11",
           "date": "2026-07-22",

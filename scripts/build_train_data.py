@@ -182,6 +182,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scoped-repairs-per-scope", type=int, default=2)
     parser.add_argument("--typed-lexical-per-program", type=int, default=4)
     parser.add_argument(
+        "--operator-corpus",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Emit verified symbolic operator QA and coverage artifacts beside "
+            "the admitted OpenUI records."
+        ),
+    )
+    parser.add_argument("--operator-corpus-max-roots", type=int, default=8)
+    parser.add_argument(
+        "--operator-corpus-actions-per-state", type=int, default=4
+    )
+    parser.add_argument(
+        "--operator-corpus-max-combinations", type=int, default=64
+    )
+    parser.add_argument(
+        "--operator-corpus-sibling-forks",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
         "--preference-pairs",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -452,6 +473,17 @@ def main(argv: list[str] | None = None) -> int:
         scope_canonical_pairs_per_scope=args.scope_canonical_pairs_per_scope,
         scoped_repairs_per_scope=args.scoped_repairs_per_scope,
         typed_lexical_per_program=args.typed_lexical_per_program,
+        include_operator_corpus=args.operator_corpus,
+        operator_corpus_max_roots=args.operator_corpus_max_roots,
+        operator_corpus_actions_per_state=(
+            args.operator_corpus_actions_per_state
+        ),
+        operator_corpus_max_combinations=(
+            args.operator_corpus_max_combinations
+        ),
+        operator_corpus_sibling_forks=(
+            args.operator_corpus_sibling_forks
+        ),
         emit_preference_pairs=args.preference_pairs,
         diffusion_online=args.diffusion_online,
         governance_artifacts=args.governance_artifacts,
