@@ -116,7 +116,7 @@ def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
     # here was historical failure mode #6 (silently ignored pre-fix); the
     # fail-closed validator now correctly rejects that combination, so this
     # fixture only sets the weights for "shared_recursive".
-    ds_weights = (0.5, 1.0) if arch == "shared_recursive" else ()
+    ds_weights = (1.0,) if arch == "shared_recursive" else ()
     return TwoTowerModel.from_records(
         _fixture_records(),
         config=TwoTowerConfig(
@@ -128,7 +128,8 @@ def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
             recursive_steps=2,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=ds_weights,
-            recursive_depth_aux_mode=("legacy_all_depths" if ds_weights else None),
+            recursive_depth_aux_mode=("intermediate_only" if ds_weights else None),
+            recursive_depth_aux_weight=1.0,
             grammar_constrained=False,
             gen_steps=2,
             seed=seed,
@@ -423,8 +424,57 @@ def _run_fixture(
 
     # Deep-supervision metrics: the pre-update decomposition (matches the
     # metrics whose gradient was actually backpropagated in phase 4).
+    decomposition_keys = {
+        "primary_final_reconstruction_loss",
+        "recursive_intermediate_aux_loss",
+        "recursive_final_depth_aux_contribution",
+        "combined_training_loss",
+        "recursive_objective_contract",
+    }
     deep_metrics = {
-        k: v for k, v in recursive_pre_metrics.items() if k.startswith("recursive_depth")
+        k: v
+        for k, v in recursive_pre_metrics.items()
+        if k.startswith("recursive_depth") or k in decomposition_keys
+    }
+
+    # SLM-279 correction-only arithmetic. The pre-fix implementation ignored
+    # the multipliers in the historical (0.5, 1.0) all-depth configuration
+    # and divided the unweighted sum by sum(weights). Reconstruct both that
+    # buggy scalar and its corrected weighted counterpart from this fixture's
+    # actual intermediate/final raw losses. The current canonical objective is
+    # reported separately; it uses final-depth CE as the primary term and only
+    # depth 0 as auxiliary supervision.
+    intermediate_raw = float(recursive_pre_metrics["recursive_depth_loss_0"])
+    final_raw = float(recursive_pre_metrics["primary_final_reconstruction_loss"])
+    historical_weight_sum = 1.5
+    arithmetic_correction = {
+        "claim_class": "correction_only",
+        "quality_claim": False,
+        "historical_all_depth_weights": [0.5, 1.0],
+        "raw_depth_losses": [intermediate_raw, final_raw],
+        "old_buggy_unweighted_sum_divided_by_weight_sum": (
+            intermediate_raw + final_raw
+        )
+        / historical_weight_sum,
+        "corrected_historical_weighted_mean": (
+            0.5 * intermediate_raw + final_raw
+        )
+        / historical_weight_sum,
+        "canonical_current": {
+            "mode": "intermediate_only",
+            "aux_weight": 1.0,
+            "weights": [1.0],
+            "primary_final_reconstruction_loss": final_raw,
+            "recursive_intermediate_aux_loss": float(
+                recursive_pre_metrics["recursive_intermediate_aux_loss"]
+            ),
+            "recursive_final_depth_aux_contribution": float(
+                recursive_pre_metrics["recursive_final_depth_aux_contribution"]
+            ),
+            "combined_training_loss": float(
+                recursive_pre_metrics["combined_training_loss"]
+            ),
+        },
     }
 
     # (6) Round-trip save/load for the recursive model.
@@ -439,7 +489,9 @@ def _run_fixture(
             and isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
         )
 
-    version_stamp = build_version_stamp("model.recursive_denoiser")
+    version_stamp = build_version_stamp(
+        "model.twotower", "model.recursive_denoiser"
+    )
     code_dirty = version_stamp.get("code_dirty")
     gate = _clean_tree_gate(code_dirty=code_dirty, allow_dirty=allow_dirty)
     diff_hash = _diff_hash() if code_dirty else None
@@ -489,6 +541,16 @@ def _run_fixture(
         "control_arms_deferred": list(DEFERRED_ARM_IDS),
         "arm_f_dual_view": arm_f_dual_view,
         "deep_supervision_metrics": deep_metrics,
+        "depth_supervision_arithmetic_correction": arithmetic_correction,
+        "recipe": {
+            "device": "cpu",
+            "backend": "scratch",
+            "optimizer": "AdamW",
+            "optimizer_steps": 1,
+            "suite_n": len(records),
+            "data": "synthetic_fixture",
+            "honesty_mode": "wiring_only_correction",
+        },
         "checkpoint_roundtrip_ok": loaded_ok,
         "rng_contract": {
             "version": RNG_CONTRACT_VERSION,
@@ -536,7 +598,9 @@ def _plan_only_report() -> dict[str, Any]:
         "claim_class": "wiring",
         "denoiser_architectures": ["stacked", "shared_recursive"],
         "note": "plan-only: no models instantiated or trained",
-        "version_stamp": build_version_stamp("model.recursive_denoiser"),
+        "version_stamp": build_version_stamp(
+            "model.twotower", "model.recursive_denoiser"
+        ),
     }
 
 
@@ -650,6 +714,7 @@ def _determinism_report(*, base_seed: int = 0) -> dict[str, Any]:
         "losses",
         "post_update_verification",
         "deep_supervision_metrics",
+        "depth_supervision_arithmetic_correction",
         "rng_contract",
     }
     corruption_changed_expected = corruption_classification.get("losses") != "exact"
@@ -701,7 +766,9 @@ def _determinism_report(*, base_seed: int = 0) -> dict[str, Any]:
             "namespace-isolation defect, listed in "
             "different_training_corruption_seed_unexpected_changes."
         ),
-        "version_stamp": build_version_stamp("model.recursive_denoiser"),
+        "version_stamp": build_version_stamp(
+            "model.twotower", "model.recursive_denoiser"
+        ),
     }
 
 
@@ -926,6 +993,29 @@ def _render_markdown(report: dict[str, Any]) -> str:
             lines.append(f"- `{k}`: {v}")
         lines.append("")
 
+    correction = report.get("depth_supervision_arithmetic_correction")
+    if correction:
+        current = correction["canonical_current"]
+        lines.extend(
+            [
+                "## SLM-279 depth-supervision arithmetic correction",
+                "",
+                "Correction-only evidence; this fixture does not support a "
+                "quality, readiness, or ship claim.",
+                "",
+                f"- Historical raw depth losses: `{correction['raw_depth_losses']}`",
+                f"- Old buggy `sum(L_d) / sum(w_d)`: "
+                f"`{correction['old_buggy_unweighted_sum_divided_by_weight_sum']}`",
+                f"- Corrected historical `sum(w_d * L_d) / sum(w_d)`: "
+                f"`{correction['corrected_historical_weighted_mean']}`",
+                f"- Canonical current mode: `{current['mode']}`; final primary "
+                "plus intermediate-only auxiliary under explicit coefficient "
+                f"`{current['aux_weight']}`",
+                f"- Canonical combined loss: `{current['combined_training_loss']}`",
+                "",
+            ]
+        )
+
     rng = report.get("rng_contract")
     if rng:
         lines.extend(
@@ -977,6 +1067,79 @@ def _render_markdown(report: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def _slm279_correction_report(report: dict[str, Any]) -> dict[str, Any]:
+    """Project the fixture into SLM-279's correction-only evidence contract."""
+    return {
+        "issue": "SLM-279",
+        "run_id": "slm279_depth_supervision_correction_fixture",
+        "status": "correction_only",
+        "claim_class": "correctness",
+        "quality_claim": False,
+        "ship_gate_claim": False,
+        "recipe": report["recipe"],
+        "objective_decomposition": report["deep_supervision_metrics"],
+        "arithmetic_correction": report[
+            "depth_supervision_arithmetic_correction"
+        ],
+        "evidence_gate": report["evidence_gate"],
+        "provenance_hashes": report["provenance_hashes"],
+        "source_fixture_run_id": report["run_id"],
+        "version_stamp": report["version_stamp"],
+    }
+
+
+def _render_slm279_correction_markdown(report: dict[str, Any]) -> str:
+    correction = report["arithmetic_correction"]
+    current = correction["canonical_current"]
+    metrics = report["objective_decomposition"]
+    recipe = report["recipe"]
+    return "\n".join(
+        [
+            "# SLM-279 recursive depth-supervision arithmetic correction",
+            "",
+            "Verdict: **corrected; correction-only fixture evidence**. This is "
+            "not a quality, readiness, or ship-gate result.",
+            "",
+            "## Recipe",
+            "",
+            f"- Device/backend: `{recipe['device']}` / `{recipe['backend']}`",
+            f"- Optimizer/steps: `{recipe['optimizer']}` / `{recipe['optimizer_steps']}`",
+            f"- Data/suite n: `{recipe['data']}` / `{recipe['suite_n']}`",
+            f"- Honesty mode: `{recipe['honesty_mode']}`",
+            "",
+            "## Historical arithmetic correction",
+            "",
+            f"- Raw intermediate/final losses: `{correction['raw_depth_losses']}`",
+            f"- Historical weights: `{correction['historical_all_depth_weights']}`",
+            f"- Old buggy `sum(L_d) / sum(w_d)`: "
+            f"`{correction['old_buggy_unweighted_sum_divided_by_weight_sum']}`",
+            f"- Corrected `sum(w_d * L_d) / sum(w_d)`: "
+            f"`{correction['corrected_historical_weighted_mean']}`",
+            "",
+            "## Canonical objective",
+            "",
+            f"- Mode: `{current['mode']}`",
+            f"- Auxiliary coefficient: `{current['aux_weight']}`",
+            f"- Primary final reconstruction: `{metrics['primary_final_reconstruction_loss']}`",
+            f"- Intermediate auxiliary: `{metrics['recursive_intermediate_aux_loss']}`",
+            f"- Final-depth auxiliary contribution: "
+            f"`{metrics['recursive_final_depth_aux_contribution']}`",
+            f"- Combined loss: `{metrics['combined_training_loss']}`",
+            "",
+            "The final recursion supplies the primary reconstruction term and is "
+            "structurally excluded from the auxiliary loop. Only depths `0..R-2` "
+            "receive the normalized auxiliary weighting.",
+            "",
+            "## Compatibility",
+            "",
+            "Persisted configs that predate `recursive_depth_aux_mode` migrate to "
+            "`legacy_all_depths`, preserving their old corrected all-depth behavior. "
+            "New weighted configs must name their semantics explicitly.",
+            "",
+        ]
+    )
 
 
 def _render_determinism_markdown(report: dict[str, Any]) -> str:
@@ -1102,6 +1265,21 @@ def main(argv: list[str] | None = None) -> int:
         design_json.parent.mkdir(parents=True, exist_ok=True)
         design_json.write_text(report_text, encoding="utf-8")
         design_md.write_text(markdown, encoding="utf-8")
+        if args.mode == "fixture":
+            correction = _slm279_correction_report(report)
+            correction_json = Path(
+                f"docs/design/iter-slm279-depth-supervision-correction-{_today_slug()}.json"
+            )
+            correction_md = Path(
+                f"docs/design/iter-slm279-depth-supervision-correction-{_today_slug()}.md"
+            )
+            correction_json.write_text(
+                json.dumps(correction, indent=2, sort_keys=True, default=str) + "\n",
+                encoding="utf-8",
+            )
+            correction_md.write_text(
+                _render_slm279_correction_markdown(correction), encoding="utf-8"
+            )
 
     print(markdown)
     print(f"\nReport JSON: {report_path}")

@@ -7,7 +7,6 @@ deep-supervision objective and its fail-closed
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 import pytest
@@ -940,28 +939,31 @@ def test_fixture_architecture_comparison_delta_reproduced_from_formula() -> None
 
 
 def test_fixture_metrics_agree_with_manual_calculation() -> None:
-    """The committed fixture's deep-supervision metrics (weights=(0.5, 1.0))
-    match the manual weighted-mean calculation from its own recorded raw
-    per-depth losses."""
+    """The fixture reports canonical intermediate-only and correction math."""
     from scripts.run_slm138_recursive_denoiser_fixture import _run_fixture
 
     report = _run_fixture()
     metrics = report["deep_supervision_metrics"]
-    expected = (
-        0.5 * metrics["recursive_depth_loss_0"] + 1.0 * metrics["recursive_depth_loss_1"]
-    ) / 1.5
+    assert metrics["recursive_depth_aux_mode"] == "intermediate_only"
     assert metrics["recursive_depth_supervision_loss"] == pytest.approx(
-        expected, rel=1e-5
+        metrics["recursive_depth_loss_0"], rel=1e-6
     )
-    # The historical defective formula was sum(L_d) / sum(w_d) -- the
-    # unweighted mean -- which this fixture's own recorded values must no
-    # longer reproduce (would only coincide by chance if L0 == L1).
-    defective = (
-        metrics["recursive_depth_loss_0"] + metrics["recursive_depth_loss_1"]
-    ) / 1.5
-    assert metrics["recursive_depth_supervision_loss"] != pytest.approx(
-        defective, rel=1e-9
-    ) or math.isclose(metrics["recursive_depth_loss_0"], metrics["recursive_depth_loss_1"])
+    assert metrics["recursive_final_depth_aux_contribution"] == 0.0
+    assert metrics["combined_training_loss"] == pytest.approx(
+        metrics["primary_final_reconstruction_loss"]
+        + metrics["recursive_intermediate_aux_loss"],
+        rel=1e-6,
+    )
+
+    correction = report["depth_supervision_arithmetic_correction"]
+    l0, final = correction["raw_depth_losses"]
+    assert correction["old_buggy_unweighted_sum_divided_by_weight_sum"] == pytest.approx(
+        (l0 + final) / 1.5
+    )
+    assert correction["corrected_historical_weighted_mean"] == pytest.approx(
+        (0.5 * l0 + final) / 1.5
+    )
+    assert correction["quality_claim"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -1463,6 +1465,7 @@ def test_rsc_a03_different_training_corruption_seed_changes_only_corruption_fiel
         "losses",
         "post_update_verification",
         "deep_supervision_metrics",
+        "depth_supervision_arithmetic_correction",
     }
     unexpected = {
         k: v

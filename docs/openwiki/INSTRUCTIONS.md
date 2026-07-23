@@ -9,6 +9,9 @@ Prioritize:
 5. Repository organization: `docs/repository-organization.md`, canonical skills, `git mv`, and the repo-policy hooks/CI gate.
 6. Agent surface: `AGENTS.md`, `.agents/skills/`, token-efficiency stack, OpenWiki itself.
 7. Source map: `src/slm_training/`, `scripts/`, `docs/design/`, playground / Vercel entrypoints.
+8. Recursive-denoiser objective semantics: final-depth primary versus explicit
+   intermediate/all-depth auxiliary modes, checkpoint migration boundaries, and
+   the correction-only SLM-279 evidence under `docs/design/`.
 
 Ground pages in repository structure and measured results under `docs/design/`. Prefer practical navigation over generic summaries. Prefer linking existing design docs over rewriting them.
 
