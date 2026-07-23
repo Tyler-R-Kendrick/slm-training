@@ -49,6 +49,7 @@ from typing import (
     Mapping,
     Protocol,
     Sequence,
+    TYPE_CHECKING,
     runtime_checkable,
 )
 
@@ -59,6 +60,9 @@ from slm_training.dsl.placeholders import (
     extract_placeholders,
     is_placeholder,
 )
+
+if TYPE_CHECKING:
+    from slm_training.dsl.grammar_capabilities import GrammarCapabilityAuthorityV1
 
 
 class PackSlotUnavailable(NotImplementedError):
@@ -121,6 +125,7 @@ class DslPack:
     fragment_parser: Callable[..., Any] | None = None
     region_splicer: Callable[..., Any] | None = None
     operator_library: OperatorLibrary | None = None
+    grammar_capability_authority: GrammarCapabilityAuthorityV1 | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
         return tuple(f.name for f in fields(self) if getattr(self, f.name) is not None)
@@ -232,6 +237,28 @@ def _openui_engine() -> Any:
     return OpenUIIncrementalEngine()
 
 
+def _openui_completion_frontier(prefix: str) -> frozenset[str]:
+    engine = _openui_engine()
+    if not engine.set_prefix(prefix):
+        return frozenset()
+    return engine.next_terminals()
+
+
+def _openui_grammar_capability_authority() -> GrammarCapabilityAuthorityV1:
+    from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
+    from slm_training.dsl.grammar_capabilities import lark_authority
+
+    backend = get_backend("openui")
+    return lark_authority(
+        grammar_path=GRAMMARS_DIR / "openui.lark",
+        start_symbols=("start",),
+        canonical_serialize=_openui_canonicalize,
+        static_validate=backend.validate,
+        scope_policy=_openui_scope_extractor,
+        completion_frontier=_openui_completion_frontier,
+    )
+
+
 def _openui_slot_contract(
     source: str, *, declared: Iterable[str] | None = None
 ) -> tuple[str, ...]:
@@ -314,6 +341,7 @@ def _ensure_builtin_packs() -> None:
             prop_order=_openui_prop_order,
             incremental_engine=_openui_engine,
             opaque_region_extractor=_openui_opaque_region_extractor,
+            grammar_capability_authority=_openui_grammar_capability_authority(),
         )
     )
     # Partial pack: toy-layout genuinely fills grammar, scope rules,

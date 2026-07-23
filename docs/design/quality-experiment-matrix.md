@@ -6170,3 +6170,18 @@ schema, root-family split, materialization, progression-gate, and lever-profile
 identities recorded in the typed JSON. Proceed to SLM-353. This is not a model
 evaluation, `CERT_CAP0`, checkpoint, or ship claim. Full evidence:
 [`dsh0-08-foundation-disposition-20260723.md`](dsh0-08-foundation-disposition-20260723.md).
+
+# DSH1-01 — declared grammar capability adapter (2026-07-23)
+
+Support the grammar capability boundary at the contract-fixture level. OpenUI
+and an independent complete mini-DSL pass the same conformance suite; the
+partial `toy-layout` pack returns typed `UNSUPPORTED` values and cannot report
+complete. Exact productions come only from pack-declared grammar authority:
+fake grammar-like corpus examples do not alter them, while an authority
+mutation changes the grammar and combined fingerprints.
+
+The focused pack/adapter run passed 27/27 tests, with Ruff, compileall, and
+diff checks passing. This did not run a train, model eval, benchmark, corpus
+synthesis, or checkpoint workflow and makes no certificate or ship claim.
+Full evidence:
+[`dsh1-01-grammar-capability-adapter-20260723.md`](dsh1-01-grammar-capability-adapter-20260723.md).
