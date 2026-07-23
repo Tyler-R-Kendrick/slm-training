@@ -1330,6 +1330,27 @@ recorded application identity. OpenUI receives no placeholder production
 operators, and partial packs remain unsupported. Evidence and scope:
 [`dsh3-02-pack-operator-registry-20260723.md`](dsh3-02-pack-operator-registry-20260723.md).
 
+## Permutation-invariant operator references (DSH3-03 / SLM-371)
+
+**Fidelity label: adapted representation contract.** Inspired by
+[Yin and Neubig, 2021](https://aclanthology.org/2021.acl-long.284/), this
+repository contract uses compiler-derived structural fingerprints and opaque
+request/branch-local surfaces. It does not expose learned pointer embeddings as
+identity and does not claim the paper's model architecture.
+
+| | |
+| --- | --- |
+| **Persistent identity** | canonical structure + parent fingerprint + hashed branch-local disambiguator |
+| **Descriptor scope** | inference-visible kind/type/fact IDs; current parent/order/position only for `IndexRef` |
+| **Resolution boundary** | exact request, state, branch, kind, unique membership, and current ordered parent |
+| **Controls** | opaque-ID permutation, candidate-order permutation, descriptor-input order, alpha-normalized structure, stale/cross-branch/type/missing/duplicate cases |
+
+Pure opaque-ID and candidate-order permutation preserves resolved semantic
+fingerprints and canonical fixture results. Stale state, cross-branch use, and
+conflicting parent-order edits fail with stable codes before operator
+execution. Evidence and scope:
+[`dsh3-03-permutation-invariant-references-20260723.md`](dsh3-03-permutation-invariant-references-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
