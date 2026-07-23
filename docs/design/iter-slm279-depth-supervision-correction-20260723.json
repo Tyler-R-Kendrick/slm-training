@@ -1,0 +1,90 @@
+{
+  "arithmetic_correction": {
+    "canonical_current": {
+      "aux_weight": 1.0,
+      "combined_training_loss": 55.97819519042969,
+      "mode": "intermediate_only",
+      "primary_final_reconstruction_loss": 27.8798885345459,
+      "recursive_final_depth_aux_contribution": 0.0,
+      "recursive_intermediate_aux_loss": 28.09830665588379,
+      "weights": [
+        1.0
+      ]
+    },
+    "claim_class": "correction_only",
+    "corrected_historical_weighted_mean": 27.952694574991863,
+    "historical_all_depth_weights": [
+      0.5,
+      1.0
+    ],
+    "old_buggy_unweighted_sum_divided_by_weight_sum": 37.31879679361979,
+    "quality_claim": false,
+    "raw_depth_losses": [
+      28.09830665588379,
+      27.8798885345459
+    ]
+  },
+  "claim_class": "correctness",
+  "evidence_gate": {
+    "allow_dirty": false,
+    "claim_grade": true,
+    "code_dirty": false,
+    "comparable": true,
+    "diff_hash": null
+  },
+  "issue": "SLM-279",
+  "objective_decomposition": {
+    "combined_training_loss": 55.97819519042969,
+    "primary_final_reconstruction_loss": 27.8798885345459,
+    "recursive_depth_aux_mode": "intermediate_only",
+    "recursive_depth_aux_weight": 1.0,
+    "recursive_depth_loss_0": 28.09830665588379,
+    "recursive_depth_supervision_enabled": true,
+    "recursive_depth_supervision_loss": 28.09830665588379,
+    "recursive_depth_supervision_weight_sum": 1.0,
+    "recursive_depth_weight_0": 1.0,
+    "recursive_depth_weighted_contribution_0": 28.09830665588379,
+    "recursive_final_depth_aux_contribution": 0.0,
+    "recursive_intermediate_aux_loss": 28.09830665588379,
+    "recursive_objective_contract": {
+      "aux_weight": 1.0,
+      "combined_training_loss": 55.97819519042969,
+      "contract_version": "RecursiveObjectiveContractV2",
+      "mode": "intermediate_only",
+      "primary_final_reconstruction_loss": 27.8798885345459,
+      "recursive_depth_supervision_loss": 28.09830665588379,
+      "recursive_final_depth_aux_contribution": 0.0,
+      "recursive_intermediate_aux_loss": 28.09830665588379
+    }
+  },
+  "provenance_hashes": {
+    "config_hash": "24c108d7b3d33e3b484eba83fb5987de1e7bc2c8d7ef71b069c3aa50e74129d5",
+    "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+    "recursive_config_hash": "0e7cfeaa411bb975fd274602f37637c3307b47386460fc2de134fb4b499e8fc6",
+    "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+  },
+  "quality_claim": false,
+  "recipe": {
+    "backend": "scratch",
+    "data": "synthetic_fixture",
+    "device": "cpu",
+    "honesty_mode": "wiring_only_correction",
+    "optimizer": "AdamW",
+    "optimizer_steps": 1,
+    "suite_n": 2
+  },
+  "run_id": "slm279_depth_supervision_correction_fixture",
+  "ship_gate_claim": false,
+  "source_fixture_run_id": "slm138_recursive_denoiser_fixture",
+  "status": "correction_only",
+  "version_stamp": {
+    "code_commit": "e1e4bc7a3e8d1af0ad1cc29c1c80af0ababbbe67",
+    "code_dirty": false,
+    "components": {
+      "model.recursive_denoiser": "v11",
+      "model.twotower": "v226"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T02:21:22.866122+00:00"
+  }
+}

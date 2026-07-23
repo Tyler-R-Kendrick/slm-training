@@ -3766,9 +3766,18 @@
         "docs/design/iter-rsc-a04-parity-claim-correction-20260721.md",
         "src/slm_training/models/recursive_control_arms.py",
         "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.json",
-        "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
+        "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md",
+        "docs/design/iter-slm138-recursive-denoiser-20260723.json",
+        "docs/design/iter-slm138-recursive-denoiser-20260723.md",
+        "docs/design/iter-slm279-depth-supervision-correction-20260723.json",
+        "docs/design/iter-slm279-depth-supervision-correction-20260723.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "no-bump: register the clean committed SLM-138 rerun and dedicated SLM-279 correction-only JSON and markdown produced by the v11 fixture contract"
+        },
         {
           "version": "v11",
           "date": "2026-07-23",

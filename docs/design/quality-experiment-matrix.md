@@ -5162,6 +5162,27 @@ Evidence: [narrative](iter-e699-role-capacity-revisit-20260721.md) and
 
 ## RSC-A02 final-depth double-counting semantics (SLM-238) — semantics + bounded calibration, no quality claim
 
+## SLM-279 recursive depth-supervision objective correction — correctness only, no quality claim
+
+The canonical new configuration is now explicit: final-depth reconstruction is
+the primary term, and `recursive_depth_aux_mode="intermediate_only"` applies a
+normalized auxiliary loss only to depths `0..R-2` under
+`recursive_depth_aux_weight`. `all_depths` remains an explicit experimental
+choice; `legacy_all_depths` is reserved for deterministic migration of configs
+that predate the mode field.
+
+The clean CPU scratch fixture (`n=2`, one AdamW step) reconstructed the old
+buggy historical `(0.5, 1.0)` arithmetic as `37.31879679361979` and the corrected
+weighted mean as `27.952694574991863`. Its canonical current decomposition was
+primary final `27.8798885345459` + intermediate auxiliary
+`28.09830665588379` + final-depth auxiliary `0.0` = combined
+`55.97819519042969`. These are correction/wiring numbers, not architecture
+quality comparisons or ship-gate evidence.
+
+Evidence: [narrative](iter-slm279-depth-supervision-correction-20260723.md) and
+[JSON](iter-slm279-depth-supervision-correction-20260723.json). The refreshed
+SLM-138 fixture is [also recorded](iter-slm138-recursive-denoiser-20260723.md).
+
 ## E639 a decode-time margin that floors still-missing required slots directly
 
 ## E640 root-causing why margin=6 hijacks Dashboard's root

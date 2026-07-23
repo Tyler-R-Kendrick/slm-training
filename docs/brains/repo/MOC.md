@@ -41,6 +41,8 @@ reads this section to seed the autotrain hypothesis loop and prunes it as
 
 - _(seed)_ Does discrete flow matching add anything beyond the legal-edit state
   space + complete bridge supervision? (see valid-edit flow project)
+- [[recursive-depth-supervision-objective]] — arithmetic/compatibility contract
+  is supported; real-suite mode selection remains open.
 
 ## Dead ends (do not re-propose)
 
