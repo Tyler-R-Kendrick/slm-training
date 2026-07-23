@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E956 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E957 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6518,3 +6518,6 @@ no ship claim. E956 adds schema component types: held strict-v2 rises 0.2→0.6,
 structure 0.3876→0.4434, and recall 0.6524→0.6952, with zero timeouts and role
 violations; fallback rises 0→3 and AgentV remains 0/2, so it is retained as a
 decoder capability only. Full evidence: [role-safe decoding results](iter-e939-e952-role-safe-decoding-20260722.md).
+E957 then makes opaque structural IDs unique within each component/property
+role, matching all 582 E937 targets. Held strict-v2 rises 0.6→0.8 with every
+other aggregate metric unchanged and zero role violations; retain v255.

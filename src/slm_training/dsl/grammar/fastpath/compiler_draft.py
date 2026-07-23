@@ -915,6 +915,38 @@ def _schema_slot_name(state: Any, schema: dict[str, Any]) -> str | None:
     return str(names[index]) if index < len(names) else None
 
 
+def _completed_call_string_values(
+    state: Any, component: str, index: int
+) -> frozenset[str]:
+    """Return completed string arguments already used in one schema role."""
+    parser = getattr(state, "_ip", None)
+    parser_state = getattr(parser, "parser_state", None)
+    values = list(getattr(parser_state, "value_stack", ()) or ())
+    found: set[str] = set()
+
+    def walk(value: Any) -> None:
+        if str(getattr(value, "data", "")) == "call":
+            children = list(getattr(value, "children", ()) or ())
+            call_name = children[0] if children else None
+            name_children = list(getattr(call_name, "children", ()) or ())
+            if name_children and str(name_children[0]) == component:
+                arg_list = children[1] if len(children) > 1 else None
+                args = list(getattr(arg_list, "children", ()) or ())
+                if index < len(args) and str(getattr(args[index], "type", "")) == "STRING":
+                    try:
+                        decoded = json.loads(str(args[index]))
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        decoded = None
+                    if isinstance(decoded, str):
+                        found.add(decoded)
+        for child in getattr(value, "children", ()) or ():
+            walk(child)
+
+    for value in values:
+        walk(value)
+    return frozenset(found)
+
+
 def _schema_component_refs(
     value_schema: dict[str, Any], root_schema: dict[str, Any]
 ) -> frozenset[str]:
@@ -1399,6 +1431,17 @@ def build_completion_forest(
                         candidates &= contract_ids
                 elif schema_slot in STRUCTURAL_ID_PROPS:
                     candidates &= structural_ids
+                    active = _active_call(engine)
+                    if slot_contract and active is not None:
+                        component, index, _ = active
+                        reused = _completed_call_string_values(
+                            engine, component, index
+                        )
+                        candidates -= {
+                            int(tokenizer.token_to_id[f"STR:{value}"])
+                            for value in reused
+                            if f"STR:{value}" in tokenizer.token_to_id
+                        }
                 elif slot_contract:
                     candidates.clear()
             except Exception:  # noqa: BLE001

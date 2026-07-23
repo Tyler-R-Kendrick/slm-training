@@ -5084,6 +5084,39 @@ def test_completion_forest_propagates_direct_component_binder_type() -> None:
     assert tokenizer.token_to_id["Button"] not in forest.candidate_ids
 
 
+def test_completion_forest_rejects_reused_structural_id_in_same_role() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Card([ImageBlock("$0"),ImageBlock(',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[":slot_0"],
+    )
+
+    assert tokenizer.token_to_id["STR:$0"] not in forest.candidate_ids
+    assert tokenizer.token_to_id["STR:$1"] in forest.candidate_ids
+
+
+def test_completion_forest_allows_structural_id_across_distinct_roles() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Stack([SwitchGroup("$0",[]),Input(',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[":slot_0"],
+    )
+
+    assert tokenizer.token_to_id["STR:$0"] in forest.candidate_ids
+
+
 def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(

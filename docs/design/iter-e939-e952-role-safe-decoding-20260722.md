@@ -1,4 +1,4 @@
-# E939-E956: role-safe decoding, aligned training, and bounded nesting
+# E939-E957: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -33,6 +33,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E955 | E951 depth-3 bound / held_out | 5 | 1.0000 | 0.8000 | 0.2000 | 0.7833 | 0.3876 | 0.6524 | 0.8936 | 0 / 0 | 0/2 campaign |
 | E956 | E951 depth-3 + schema types / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E956 | E951 depth-3 + schema types / held_out | 5 | 1.0000 | 0.8000 | 0.6000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
+| E957 | E951 role-unique + schema types / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E957 | E951 role-unique + schema types / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -65,3 +67,10 @@ decoder capability rather than a ship claim. Raw-position role auditing finds
 zero violations across all eight predictions; the earlier apparent
 `Stack.gap="center"` violation was an audit bug caused by stripping the style
 argument before mapping positional properties.
+
+E957 observes that none of E937's 582 targets reuse one opaque structural ID in
+the same component/property role. v255 therefore rejects same-role reuse while
+preserving cross-role identity relationships. The matched run is otherwise
+byte-identical to E956, but changes the repeated `ImageBlock("$44")` to fresh
+role-local IDs and raises held strict-v2 0.6→0.8. All eight outputs remain
+role-safe; AgentV remains 0/2 and three fallback events remain, so no ship claim.

@@ -4162,7 +4162,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v254",
+      "version": "v255",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4187,6 +4187,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v255",
+          "date": "2026-07-22",
+          "note": "Reject reuse of an opaque structural identifier within the same component property role during slot-contracted compiler decode"
+        },
         {
           "version": "v254",
           "date": "2026-07-22",
