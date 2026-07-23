@@ -9,13 +9,34 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
+from slm_training.harness_core.checkpoint_reference import sha256_file
 from slm_training.harness_core.lineage.records import canonical_json, content_sha
 from slm_training.harness_core.record_schema import RUN_CLASSES
 
 SCHEMA_VERSION = "staged_harness_baseline/v1"
 UNKNOWN = "UNKNOWN"
+FOUNDATION_CLAIMS = (
+    "symbolic_surface_exactness",
+    "plan_state_machine_enforcement",
+    "artifact_identity",
+    "root_family_split_isolation",
+    "materialization_no_plan_parity",
+    "certificate_lever_fail_closed",
+)
+
+
+def _require_exact_keys(
+    value: dict[str, Any], expected: set[str], context: str
+) -> None:
+    if set(value) != expected:
+        raise ValueError(
+            f"{context} keys must be exact: "
+            f"missing={sorted(expected - set(value))}, "
+            f"extra={sorted(set(value) - expected)}"
+        )
 
 
 class Capability(str, Enum):
@@ -49,6 +70,285 @@ class EvidenceStatus(str, Enum):
     VERIFIED = "verified"
     UNKNOWN = "unknown"
     INVALID = "invalid"
+
+
+class FoundationClaimStatus(str, Enum):
+    SUPPORTED = "supported"
+    REJECTED = "rejected"
+    UNKNOWN = "unknown"
+    INVALID = "invalid"
+
+
+class FoundationEvidenceClass(str, Enum):
+    CONTRACT_FIXTURE = "contract_fixture"
+    POWERED = "powered"
+
+
+@dataclass(frozen=True)
+class FoundationArtifactV1:
+    path: str
+    sha256: str
+
+    def __post_init__(self) -> None:
+        if (
+            not self.path
+            or Path(self.path).is_absolute()
+            or ".." in Path(self.path).parts
+        ):
+            raise ValueError("foundation artifact path must be repository-relative")
+        if len(self.sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in self.sha256
+        ):
+            raise ValueError("foundation artifact sha256 must be lowercase hexadecimal")
+
+    def to_dict(self) -> dict[str, str]:
+        return {"path": self.path, "sha256": self.sha256}
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> FoundationArtifactV1:
+        _require_exact_keys(value, {"path", "sha256"}, "foundation artifact")
+        return cls(path=str(value["path"]), sha256=str(value["sha256"]))
+
+
+@dataclass(frozen=True)
+class FoundationClaimV1:
+    name: str
+    status: FoundationClaimStatus
+    evidence_class: FoundationEvidenceClass
+    artifacts: tuple[FoundationArtifactV1, ...]
+    commands: tuple[str, ...]
+    blockers: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.name not in FOUNDATION_CLAIMS:
+            raise ValueError(f"unknown foundation claim {self.name!r}")
+        if not self.artifacts or not self.commands:
+            raise ValueError(f"{self.name} requires artifacts and exact commands")
+        if any(not command.strip() for command in self.commands):
+            raise ValueError(f"{self.name} commands must be non-empty")
+        paths = [artifact.path for artifact in self.artifacts]
+        if len(paths) != len(set(paths)):
+            raise ValueError(f"{self.name} artifact paths must be unique")
+        if self.status is FoundationClaimStatus.SUPPORTED and self.blockers:
+            raise ValueError("supported foundation claims cannot carry blockers")
+        if self.status is not FoundationClaimStatus.SUPPORTED and not self.blockers:
+            raise ValueError("non-supported foundation claims require blockers")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "status": self.status.value,
+            "evidence_class": self.evidence_class.value,
+            "artifacts": [artifact.to_dict() for artifact in self.artifacts],
+            "commands": list(self.commands),
+            "blockers": list(self.blockers),
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> FoundationClaimV1:
+        _require_exact_keys(
+            value,
+            {
+                "name",
+                "status",
+                "evidence_class",
+                "artifacts",
+                "commands",
+                "blockers",
+            },
+            "foundation claim",
+        )
+        return cls(
+            name=str(value["name"]),
+            status=FoundationClaimStatus(value["status"]),
+            evidence_class=FoundationEvidenceClass(value["evidence_class"]),
+            artifacts=tuple(
+                FoundationArtifactV1.from_dict(item) for item in value["artifacts"]
+            ),
+            commands=tuple(str(item) for item in value["commands"]),
+            blockers=tuple(str(item) for item in value.get("blockers", ())),
+        )
+
+
+@dataclass(frozen=True)
+class FrozenFoundationIdentityV1:
+    name: str
+    version: str
+    identity_sha256: str
+    source: FoundationArtifactV1
+
+    def __post_init__(self) -> None:
+        if not self.name or not self.version:
+            raise ValueError("frozen identity name and version are required")
+        if len(self.identity_sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in self.identity_sha256
+        ):
+            raise ValueError("frozen identity sha256 must be lowercase hexadecimal")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "version": self.version,
+            "identity_sha256": self.identity_sha256,
+            "source": self.source.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> FrozenFoundationIdentityV1:
+        _require_exact_keys(
+            value,
+            {"name", "version", "identity_sha256", "source"},
+            "frozen foundation identity",
+        )
+        return cls(
+            name=str(value["name"]),
+            version=str(value["version"]),
+            identity_sha256=str(value["identity_sha256"]),
+            source=FoundationArtifactV1.from_dict(value["source"]),
+        )
+
+
+@dataclass(frozen=True)
+class StagedHarnessFoundationDispositionV1:
+    source_commit: str
+    claims: tuple[FoundationClaimV1, ...]
+    frozen_identities: tuple[FrozenFoundationIdentityV1, ...]
+    next_work_item: str
+    version_stamp: dict[str, Any]
+    run_class: str = "fixture_demo"
+    schema_version: str = "staged_harness_foundation_disposition/v1"
+
+    def __post_init__(self) -> None:
+        if self.schema_version != "staged_harness_foundation_disposition/v1":
+            raise ValueError("unsupported foundation disposition schema")
+        if len(self.source_commit) != 40 or any(
+            char not in "0123456789abcdef" for char in self.source_commit
+        ):
+            raise ValueError("source_commit must be a full lowercase Git SHA")
+        if not self.next_work_item:
+            raise ValueError("source_commit and next_work_item are required")
+        if self.version_stamp.get(
+            "stamp_schema"
+        ) != "version_stamp/v1" or not isinstance(
+            self.version_stamp.get("components"), dict
+        ):
+            raise ValueError("foundation disposition requires a version_stamp/v1")
+        if self.run_class != "fixture_demo":
+            raise ValueError("foundation disposition is contract-fixture evidence")
+        names = tuple(claim.name for claim in self.claims)
+        if len(names) != len(set(names)) or set(names) != set(FOUNDATION_CLAIMS):
+            raise ValueError(
+                "foundation disposition must cover every claim exactly once"
+            )
+        frozen_names = [identity.name for identity in self.frozen_identities]
+        if len(frozen_names) != len(set(frozen_names)):
+            raise ValueError("frozen foundation identity names must be unique")
+        if self.is_supported and not self.frozen_identities:
+            raise ValueError(
+                "supported foundation disposition requires frozen identities"
+            )
+
+    @property
+    def is_supported(self) -> bool:
+        return all(
+            claim.status is FoundationClaimStatus.SUPPORTED for claim in self.claims
+        )
+
+    def blocking_reasons(self, repo_root: Path | None = None) -> tuple[str, ...]:
+        reasons = [
+            f"{claim.name}: {claim.status.value}: {', '.join(claim.blockers)}"
+            for claim in self.claims
+            if claim.status is not FoundationClaimStatus.SUPPORTED
+        ]
+        if repo_root is not None:
+            artifacts = {
+                (artifact.path, artifact.sha256)
+                for claim in self.claims
+                for artifact in claim.artifacts
+            }
+            artifacts.update(
+                (identity.source.path, identity.source.sha256)
+                for identity in self.frozen_identities
+            )
+            for path, expected in sorted(artifacts):
+                candidate = repo_root / path
+                if not candidate.is_file():
+                    reasons.append(f"{path}: missing")
+                elif sha256_file(candidate) != expected:
+                    reasons.append(f"{path}: sha256 mismatch")
+        return tuple(reasons)
+
+    def require_supported(self, repo_root: Path | None = None) -> None:
+        reasons = self.blocking_reasons(repo_root)
+        if reasons:
+            raise ValueError("CAP0 foundation is blocked: " + "; ".join(reasons))
+
+    def to_dict(self, *, include_sha: bool = True) -> dict[str, Any]:
+        value = {
+            "schema_version": self.schema_version,
+            "source_commit": self.source_commit,
+            "run_class": self.run_class,
+            "decision": "supported" if self.is_supported else "blocked",
+            "claims": [claim.to_dict() for claim in self.claims],
+            "frozen_identities": [
+                identity.to_dict() for identity in self.frozen_identities
+            ],
+            "next_work_item": self.next_work_item,
+            "version_stamp": self.version_stamp,
+        }
+        if include_sha:
+            value["disposition_sha256"] = self.sha
+        return value
+
+    @property
+    def sha(self) -> str:
+        return content_sha(self.to_dict(include_sha=False))
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> StagedHarnessFoundationDispositionV1:
+        _require_exact_keys(
+            value,
+            {
+                "schema_version",
+                "source_commit",
+                "run_class",
+                "decision",
+                "claims",
+                "frozen_identities",
+                "next_work_item",
+                "version_stamp",
+                "disposition_sha256",
+            },
+            "foundation disposition",
+        )
+        disposition = cls(
+            schema_version=str(value["schema_version"]),
+            source_commit=str(value["source_commit"]),
+            run_class=str(value["run_class"]),
+            claims=tuple(FoundationClaimV1.from_dict(item) for item in value["claims"]),
+            frozen_identities=tuple(
+                FrozenFoundationIdentityV1.from_dict(item)
+                for item in value["frozen_identities"]
+            ),
+            next_work_item=str(value["next_work_item"]),
+            version_stamp=dict(value["version_stamp"]),
+        )
+        if value.get("decision") != (
+            "supported" if disposition.is_supported else "blocked"
+        ):
+            raise ValueError("foundation decision does not match claim statuses")
+        if value.get("disposition_sha256") != disposition.sha:
+            raise ValueError("foundation disposition sha256 does not match its body")
+        return disposition
+
+    @classmethod
+    def load(cls, path: Path) -> StagedHarnessFoundationDispositionV1:
+        import json
+
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            raise ValueError("foundation disposition must be a JSON object")
+        return cls.from_dict(value)
 
 
 @dataclass(frozen=True)
@@ -172,12 +472,8 @@ class StagedHarnessBaselineV1:
             "checkpoint_generation": self.checkpoint_generation,
             "run_class": self.run_class,
             "capabilities": [value.value for value in self.capabilities],
-            "supervision_sources": [
-                value.value for value in self.supervision_sources
-            ],
-            "evaluation_sources": [
-                value.value for value in self.evaluation_sources
-            ],
+            "supervision_sources": [value.value for value in self.supervision_sources],
+            "evaluation_sources": [value.value for value in self.evaluation_sources],
             "difficulties": [value.value for value in self.difficulties],
             "artifacts": [artifact.to_dict() for artifact in self.artifacts],
         }

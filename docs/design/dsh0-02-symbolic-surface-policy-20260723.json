@@ -38,10 +38,6 @@
       "sha256": "0ecad9354ec87b463fa5200af517dbd6a1e4c873a1ac9c9bf1fa839639430f11"
     },
     {
-      "path": "src/slm_training/resources/versions.json",
-      "sha256": "9e8d4e046e61f5e49c150fc440a9a8dc044202cb1b0e79e4127589bb2b96979c"
-    },
-    {
       "path": "src/slm_training/dsl/pack.py",
       "sha256": "267bd5e6b333a8d3b5a194facf62f9c4908d39ce411c1aa868d347fa8018fb7b"
     },

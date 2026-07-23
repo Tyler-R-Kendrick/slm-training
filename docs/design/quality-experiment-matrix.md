@@ -6147,3 +6147,26 @@ evidence item. AgentV passes 4/4 integrity cases with mean 1.0 and zero executio
 errors. No checkpoint, model-card roster, production default, or ship claim
 changed. Full evidence:
 [`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).
+
+# DSH0-08 — G0 staged-harness foundation disposition (2026-07-23)
+
+Support the G0 foundation at the contract-fixture evidence level and authorize
+CAP0 data generation. All six required claims—symbolic surface, plan/state
+machine, artifact identity, root-family split isolation, materialization
+no-plan parity, and certificate/lever control—are explicitly supported with
+exact commands and current artifact hashes. Any unknown, invalid, or rejected
+claim blocks the typed disposition.
+
+The first audit run passed 54 checks and exposed one stale evidence assertion;
+follow-up whole-foundation verification found the same issue in the historical
+quality-matrix citation. DSH0-01/02 had pinned mutable append-only aggregate
+files as though they were invariant sources. Removing only those volatile
+hashes, while preserving normalized component/frontier identities and stable
+source hashes, made the exact rerun pass 55/55. The disposition verifier and
+its fail-closed contract pass 10/10.
+
+Freeze the CAP0 plan, OpenUI pack surface, symbolic-surface policy, artifact
+schema, root-family split, materialization, progression-gate, and lever-profile
+identities recorded in the typed JSON. Proceed to SLM-353. This is not a model
+evaluation, `CERT_CAP0`, checkpoint, or ship claim. Full evidence:
+[`dsh0-08-foundation-disposition-20260723.md`](dsh0-08-foundation-disposition-20260723.md).

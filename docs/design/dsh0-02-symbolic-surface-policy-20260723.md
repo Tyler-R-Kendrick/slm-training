@@ -61,6 +61,13 @@ The fixture suite passes 15/15 focused tests. Full delivery also checks the
 pack, tokenizer, sanitization, runtime-symbol, version, repository-policy, and
 static suites. No staged data was built and no model was run.
 
+The G0 foundation audit removed the repository-wide `versions.json` byte hash
+from this historical source list: that append-only registry changes whenever
+any unrelated component advances and therefore cannot be a stable identity for
+the unchanged surface contract. The policy's normalized component version
+(`dsl.symbolic_surface/v1`) remains the authority; all implementation,
+test, pack, runtime-symbol, scope, and contract source hashes remain exact.
+
 ## Next disposition
 
 Proceed to SLM-347 by making `SynthesisPlanV1` require this policy version and

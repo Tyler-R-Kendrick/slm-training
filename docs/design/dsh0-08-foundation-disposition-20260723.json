@@ -1,0 +1,222 @@
+{
+  "schema_version": "staged_harness_foundation_disposition/v1",
+  "source_commit": "0b0c4bcff1a40c3148abe6ce9bcfc6f70dd6a277",
+  "run_class": "fixture_demo",
+  "decision": "supported",
+  "claims": [
+    {
+      "name": "symbolic_surface_exactness",
+      "status": "supported",
+      "evidence_class": "contract_fixture",
+      "artifacts": [
+        {
+          "path": "docs/design/dsh0-02-symbolic-surface-policy-20260723.json",
+          "sha256": "12466aab22e64c25fd456f7537f3da28887e00ddbe705cde275e21efbac0ca0c"
+        },
+        {
+          "path": "src/slm_training/dsl/language_contract.py",
+          "sha256": "6cb40e7640d784cdc78ba069e2d1219fc2bb6a39afc51414b55c8c2a6f6d4b08"
+        }
+      ],
+      "commands": [
+        "python -m pytest -q tests/test_dsl/test_language_contract.py"
+      ],
+      "blockers": []
+    },
+    {
+      "name": "plan_state_machine_enforcement",
+      "status": "supported",
+      "evidence_class": "contract_fixture",
+      "artifacts": [
+        {
+          "path": "docs/design/dsh0-03-synthesis-plan-20260723.json",
+          "sha256": "da6a4aa1ba0db7b1bac61fa80d9c6fc3256dbb9e45699154a58ff546e7e75f77"
+        },
+        {
+          "path": "src/slm_training/harnesses/synthesis_plan.py",
+          "sha256": "f72aeeab1e0d98e3a719143a9150552a5a9ce1da7da5773140d36275e60b900a"
+        },
+        {
+          "path": "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json",
+          "sha256": "5165330d3c3a37093e5dd2c90910d380d2615141d3a9eece1bbb6f8352c29b60"
+        }
+      ],
+      "commands": [
+        "python -m pytest -q tests/test_harnesses/test_synthesis_plan.py"
+      ],
+      "blockers": []
+    },
+    {
+      "name": "artifact_identity",
+      "status": "supported",
+      "evidence_class": "contract_fixture",
+      "artifacts": [
+        {
+          "path": "docs/design/dsh0-04-capability-artifacts-20260723.json",
+          "sha256": "2f693842fa5dcdd32bf5f37c6a080caae7824ff1458947302aed585e883d62c7"
+        },
+        {
+          "path": "src/slm_training/harnesses/capability_artifacts.py",
+          "sha256": "8dab5f0f627eb84b6164f74e24c729ee2f760202f6cbbc3ce629839c8b3ce89c"
+        }
+      ],
+      "commands": [
+        "python -m pytest -q tests/test_harnesses/test_capability_artifacts.py"
+      ],
+      "blockers": []
+    },
+    {
+      "name": "root_family_split_isolation",
+      "status": "supported",
+      "evidence_class": "contract_fixture",
+      "artifacts": [
+        {
+          "path": "docs/design/dsh0-05-artifact-graph-20260723.json",
+          "sha256": "c9b796f111e5df5ca5ece793c2ad1ec69699d1e0733ac47e917be5d7a1ab2fbb"
+        },
+        {
+          "path": "src/slm_training/harnesses/train_data/artifact_graph.py",
+          "sha256": "7693fa552cacd889ba57e3d0519c2af32c604ff1b90f1d3230bddc69eb77df6c"
+        }
+      ],
+      "commands": [
+        "python -m pytest -q tests/test_harnesses/train_data/test_artifact_graph.py"
+      ],
+      "blockers": []
+    },
+    {
+      "name": "materialization_no_plan_parity",
+      "status": "supported",
+      "evidence_class": "contract_fixture",
+      "artifacts": [
+        {
+          "path": "docs/design/dsh0-06-synthesis-materialization-20260723.json",
+          "sha256": "9904485977dffa1f4ce685378d55d2118e57c90251426719592cfc7624de9695"
+        },
+        {
+          "path": "src/slm_training/harnesses/train_data/staged_materialization.py",
+          "sha256": "e2617ffde441c9517f97b64f5acb904d20cb60082044dd4a8a680d6b093187e0"
+        }
+      ],
+      "commands": [
+        "python -m pytest -q tests/test_harnesses/train_data/test_staged_materialization.py"
+      ],
+      "blockers": []
+    },
+    {
+      "name": "certificate_lever_fail_closed",
+      "status": "supported",
+      "evidence_class": "contract_fixture",
+      "artifacts": [
+        {
+          "path": "docs/design/dsh0-07-capability-gates-20260723.md",
+          "sha256": "1536bd9ec85aff2d59cbc2ae63b29a585aeb05e45835e20a5569f35765d357ff"
+        },
+        {
+          "path": "src/slm_training/harnesses/capability_gates.py",
+          "sha256": "2e5207431acae264d5c059f2b82b2b6cb6f39e71a34035e9cccc060de18f3495"
+        },
+        {
+          "path": "src/slm_training/levers.py",
+          "sha256": "d6ab158421b6fdf45e640bedae19195ca483d652b4795b207066a1f1b32b4500"
+        }
+      ],
+      "commands": [
+        "python -m pytest -q tests/test_harnesses/test_capability_gates.py"
+      ],
+      "blockers": []
+    }
+  ],
+  "frozen_identities": [
+    {
+      "name": "cap0.plan",
+      "version": "synthesis_plan/v1",
+      "identity_sha256": "f0778bd88005687242a73626bdf8b4239750bbc9f6d10c06fae92a6240c9daa1",
+      "source": {
+        "path": "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json",
+        "sha256": "5165330d3c3a37093e5dd2c90910d380d2615141d3a9eece1bbb6f8352c29b60"
+      }
+    },
+    {
+      "name": "cap0.pack_surface",
+      "version": "openui",
+      "identity_sha256": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d",
+      "source": {
+        "path": "src/slm_training/dsl/packs/openui.py",
+        "sha256": "6627c31a3ba485a653f3de50e47b0fb8cd943eae962ef0fda96f1194d18903a0"
+      }
+    },
+    {
+      "name": "cap0.symbolic_surface",
+      "version": "symbolic_surface_policy/v1",
+      "identity_sha256": "68954d579b07d7f987e5e8151450d573f7e2c8e5d06d64769d885c4718155acb",
+      "source": {
+        "path": "src/slm_training/dsl/language_contract.py",
+        "sha256": "6cb40e7640d784cdc78ba069e2d1219fc2bb6a39afc51414b55c8c2a6f6d4b08"
+      }
+    },
+    {
+      "name": "cap0.artifact_schema",
+      "version": "capability_artifacts/v1",
+      "identity_sha256": "8dab5f0f627eb84b6164f74e24c729ee2f760202f6cbbc3ce629839c8b3ce89c",
+      "source": {
+        "path": "src/slm_training/harnesses/capability_artifacts.py",
+        "sha256": "8dab5f0f627eb84b6164f74e24c729ee2f760202f6cbbc3ce629839c8b3ce89c"
+      }
+    },
+    {
+      "name": "cap0.split_policy",
+      "version": "root_family_split/v1",
+      "identity_sha256": "7693fa552cacd889ba57e3d0519c2af32c604ff1b90f1d3230bddc69eb77df6c",
+      "source": {
+        "path": "src/slm_training/harnesses/train_data/artifact_graph.py",
+        "sha256": "7693fa552cacd889ba57e3d0519c2af32c604ff1b90f1d3230bddc69eb77df6c"
+      }
+    },
+    {
+      "name": "cap0.materialization",
+      "version": "harness.train_data/v17",
+      "identity_sha256": "e2617ffde441c9517f97b64f5acb904d20cb60082044dd4a8a680d6b093187e0",
+      "source": {
+        "path": "src/slm_training/harnesses/train_data/staged_materialization.py",
+        "sha256": "e2617ffde441c9517f97b64f5acb904d20cb60082044dd4a8a680d6b093187e0"
+      }
+    },
+    {
+      "name": "cap0.capability_gates",
+      "version": "capability_gate/v1",
+      "identity_sha256": "2e5207431acae264d5c059f2b82b2b6cb6f39e71a34035e9cccc060de18f3495",
+      "source": {
+        "path": "src/slm_training/harnesses/capability_gates.py",
+        "sha256": "2e5207431acae264d5c059f2b82b2b6cb6f39e71a34035e9cccc060de18f3495"
+      }
+    },
+    {
+      "name": "cap0.lever_profile",
+      "version": "config.levers/v19",
+      "identity_sha256": "d6ab158421b6fdf45e640bedae19195ca483d652b4795b207066a1f1b32b4500",
+      "source": {
+        "path": "src/slm_training/levers.py",
+        "sha256": "d6ab158421b6fdf45e640bedae19195ca483d652b4795b207066a1f1b32b4500"
+      }
+    }
+  ],
+  "next_work_item": "SLM-353",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0b0c4bcff1a40c3148abe6ce9bcfc6f70dd6a277",
+    "code_dirty": true,
+    "components": {
+      "harness.staged": "v2",
+      "dsl.symbolic_surface": "v1",
+      "harness.synthesis_plan": "v2",
+      "harness.capability_artifacts": "v1",
+      "harness.artifact_graph": "v1",
+      "harness.train_data": "v17",
+      "harness.capability_gates": "v1",
+      "config.levers": "v19"
+    },
+    "stamped_at": "2026-07-23T21:14:14.538095+00:00"
+  },
+  "disposition_sha256": "33f5179a608c67dcca39cae59e513fb072ba0969af1db1abc522a169079da558"
+}
