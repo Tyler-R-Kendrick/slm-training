@@ -1,4 +1,4 @@
-# E939-E997: role-safe decoding, aligned training, and bounded nesting
+# E939-E998: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -81,6 +81,7 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E996 | E951 scoped-filter withdrawal v266 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/1 |
 | E997 | E980 arity + schema + lattice 2 / smoke | 3 | 0.6667 | 0.6667 | 0.6667 | 0.6667 | 0.3833 | 0.5000 | 0.6407 | 1 / 0 | 0/2 campaign |
 | E997 | E980 arity + schema + lattice 2 / held_out | 5 | 0.8000 | 0.8000 | 0.6000 | 0.8000 | 0.4748 | 0.8000 | 0.7736 | 1 / 0 | 0/2 campaign |
+| E998 | E980 Form-only 60s diagnostic | 1 | 1.0000 | 0.0000 | 0.0000 | 0.1667 | 0.1148 | 0.1429 | 0.6570 | 0 / 2 | 0/1 |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -291,3 +292,9 @@ E997 applies width-2 bottom-triggered lattice search to the schema-matched E980
 arity arm. Held-out is exactly equal to E991, including its timeout, while
 smoke adds a timeout and falls to parse 0.6667 and reward 0.6407. Search does
 not recover the compiler dead end and worsens runtime stability; reject it.
+
+E998 gives E991's timed-out Form row a 60-second diagnostic budget. It
+finishes in 11.91 seconds only by emitting `root = TextContent(":slot_0")`:
+one of six slots, one of seven component types, strict meaning 0, and two
+fallbacks. The short result is not semantically equivalent minification; its
+low fidelity and recall are correct. Raising the timeout does not repair E980.
