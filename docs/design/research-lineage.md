@@ -1417,6 +1417,28 @@ coverage across the combined ordinary and operator action set. Evidence and
 scope:
 [`dsh3-06-operator-legal-set-20260723.md`](dsh3-06-operator-legal-set-20260723.md).
 
+## Semantic-first operator preference (DSH3-07 / SLM-375)
+
+**Fidelity label: repository contract.** The ranking contract separates
+compiler eligibility from canonical and sequence preference. The
+source/follow-up framing of
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) supplies only
+general metamorphic-control motivation; this is not an implementation or
+evaluation of that work.
+
+| | |
+| --- | --- |
+| **Non-tradeable boundary** | complete required semantics + verifier validity precede every brevity or sequence cost |
+| **Comparison scope** | exactly one `SemanticFrame` fingerprint and intended equivalence-class fingerprint |
+| **Structural direction** | minimize for simplification, maximize for explicit expansion, ignore for preserve intent |
+| **Sequence safety** | reject or explicitly penalize no-ops, cycles, repeated applications, and compiler-proven redundancy |
+| **Outputs** | deterministic tie tiers, strict preference pairs, final-AST groups, semantic-sequence groups |
+
+Operator-specific costs bind to successful application evidence and the exact
+declaration fingerprint; preference-pair generation is explicitly bounded.
+Evidence and scope:
+[`dsh3-07-semantic-operator-preference-20260723.md`](dsh3-07-semantic-operator-preference-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
