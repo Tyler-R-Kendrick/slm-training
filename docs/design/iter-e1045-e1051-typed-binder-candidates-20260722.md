@@ -250,3 +250,9 @@ are unchanged, reward rises from 0.957, and structure falls from 0.5717, so
 this is a mixed but reachable intervention rather than a smoke-quality
 promotion. AgentV is `0/1`. Proceed only to the targeted Dual Card and Settings
 rows before disposition.
+
+E1077 evaluates the targeted Dual Card row. It still reaches the canonical
+12-second decode timeout and produces an empty prediction, exactly matching
+E1073 at parse/strict 0.0. AgentV is `0/1`; root identity does not repair the
+failure-defining row. Run only the matched Settings diagnostic before rejecting
+or retaining the checkpoint.

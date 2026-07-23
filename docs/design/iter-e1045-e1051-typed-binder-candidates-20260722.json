@@ -465,6 +465,20 @@
         "evals.scoring": "v15",
         "model.twotower": "v272"
       }
+    },
+    "E1077": {
+      "status": "completed_targeted_timeout",
+      "run_id": "e1077_v272_root_identity_395_dual_card",
+      "suite": "held_out",
+      "eval_limit": 1,
+      "eval_offset": 1,
+      "id": "held_out_dual_card_01",
+      "parse": 0.0,
+      "strict_v2": 0.0,
+      "decode_timeouts": 1,
+      "prediction": "",
+      "matches_e1073_failure": true,
+      "agentv": "0/1"
     }
   },
   "disposition": {
@@ -488,6 +502,7 @@
     "e1075_pending_own_resume": false,
     "e1075_pending_eval": false,
     "e1075_pending_targeted_held": true,
+    "e1077_completed": true,
     "e1075_checkpoint_rejected": false,
     "next_hypothesis": "complete matched v272 lexer-native root-identity exposure, then test strict smoke before any targeted held rows"
   },

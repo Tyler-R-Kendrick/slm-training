@@ -6810,4 +6810,6 @@ match E1071 at step 395. E1076 strict smoke preserves
 parse/meaning-v1/strict-v2/fidelity 1.0 and recall 0.75 with no timeout or
 fallback. Identity applies 15 times and changes two repeated references to
 unused binders. Reward rises 0.957→0.965 while structure falls
-0.5717→0.5396, so proceed only to targeted Dual Card and Settings rows.
+0.5717→0.5396. E1077 then shows the targeted Dual Card row still times out to
+an empty prediction at 12 seconds, exactly matching E1073. Run only the matched
+Settings row before disposition.
