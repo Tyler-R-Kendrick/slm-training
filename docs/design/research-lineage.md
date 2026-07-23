@@ -1439,6 +1439,29 @@ declaration fingerprint; preference-pair generation is explicitly bounded.
 Evidence and scope:
 [`dsh3-07-semantic-operator-preference-20260723.md`](dsh3-07-semantic-operator-preference-20260723.md).
 
+## Immutable conversation state graph (DSH3-08 / SLM-376)
+
+**Fidelity label: adapted repository contract.** Explicit successful edit
+records are adapted from the structured edit framing in
+[Yin et al., 2019](https://arxiv.org/abs/1810.13337). The source/follow-up
+language of
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) supplies only
+general testing motivation. The immutable graph and history semantics are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **State identity** | parent + branch + canonical state/AST digests + branch-local reference-table fingerprint |
+| **AST edge** | exactly one successful pack-owned application record and exact output state |
+| **History edge** | explicit undo parent, redo child, checkout target, or deterministic fork; no AST mutation |
+| **Branch isolation** | fork-remapped semantic/runtime fingerprints and reallocated opaque refs; one next state per parent/branch |
+| **Replay** | root-to-cursor provenance, application, intermediate authority, fork reconstruction, and orphan audit |
+
+State-specific authority resolution supports compiler contexts rebuilt from
+each immutable node without introducing an ambient mutable cursor. Evidence and
+scope:
+[`dsh3-08-conversation-state-graph-20260723.md`](dsh3-08-conversation-state-graph-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
