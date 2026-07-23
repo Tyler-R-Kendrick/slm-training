@@ -69,6 +69,7 @@ def test_symbolic_operator_corpus_is_closed_replayable_and_deterministic(
     )
     assert first["content_fingerprint"] == second["content_fingerprint"]
     assert first["record_count"] == 10
+    assert first["collapsed_record_count"] == 1
     assert first["report"]["invalid_family_count"] == 0
     assert first["report"]["coverage_gaps"]
     assert first["report"]["version_stamp"] == STAMP
@@ -82,6 +83,12 @@ def test_symbolic_operator_corpus_is_closed_replayable_and_deterministic(
     assert any(
         gap["rejection_samples"] for gap in first["report"]["coverage_gaps"]
     )
+    assert first["report"]["collapse"] == {
+        "symbolic_only": True,
+        "nl_available": False,
+        "nl_unavailable_reason": "CERT_CAP1_unavailable",
+        "hard_negative_count": 1,
+    }
 
     rows = [
         json.loads(line)
@@ -114,6 +121,21 @@ def test_symbolic_operator_corpus_is_closed_replayable_and_deterministic(
     assert all(row["application"]["effect"] for row in successful)
     assert all(row["canonical_preference"]["steps"] for row in successful)
     assert all(row["conversation_trace"]["turns"] for row in rows)
+    collapsed = [
+        json.loads(line)
+        for line in (tmp_path / "first" / "operator_collapsed_records.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert len(collapsed) == 1
+    assert collapsed[0]["question"]["opcode"] == "APPLY_OPERATOR_SEQUENCE"
+    assert len(collapsed[0]["answer"]["operators"]) == 2
+    assert collapsed[0]["answer"]["result_ast"]
+    assert collapsed[0]["nl_available"] is False
+    assert collapsed[0]["collapse"]["hard_negatives"]
+    assert collapsed[0]["collapse"]["final_state_id"] == (
+        collapsed[0]["conversation_trace"]["current_state_id"]
+    )
 
 
 @pytest.mark.skipif(
@@ -172,6 +194,8 @@ def test_train_build_registers_operator_sibling_artifacts(tmp_path: Path) -> Non
     out_dir = Path(result["output_dir"])
     assert (out_dir / "operator_records.jsonl").is_file()
     assert (out_dir / "operator_coverage.json").is_file()
+    assert (out_dir / "operator_collapsed_records.jsonl").is_file()
     assert result["manifest"]["operator_corpus"]["record_count"] >= 4
     assert result["stats"]["operator_corpus"]["content_fingerprint"]
     assert result["operator_corpus"]["report"]["invalid_family_count"] == 0
+    assert result["operator_corpus"]["collapsed_record_count"] == 1

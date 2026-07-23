@@ -10,6 +10,7 @@ from slm_training.dsl.operators import (
     ApplicationProvenanceV1,
     AstOperatorV1,
     CompilerCoverage,
+    CollapseRejectionKind,
     ConversationOperation,
     ConversationStateNodeV1,
     ConversationTraceError,
@@ -25,9 +26,11 @@ from slm_training.dsl.operators import (
     branch_fingerprint,
     build_reference_table,
     checkout_conversation_state,
+    collapse_conversation_trace,
     create_conversation_trace,
     fork_conversation,
     redo_conversation,
+    replay_collapsed_instruction,
     replay_conversation_trace,
     resolve_branch_reference,
     undo_conversation,
@@ -239,6 +242,74 @@ def test_trace_construction_and_replay_are_deterministic() -> None:
     assert replay_conversation_trace(
         pack=first_pack, library=first_library, trace=first
     ).state_id == first.current_state_id
+
+
+def test_two_turn_trace_collapses_with_ordered_replay() -> None:
+    pack, library, root = _fixture()
+    first, first_application = _append(pack, library, root)
+    second, second_application = _append(pack, library, first, seed=3)
+    decision = collapse_conversation_trace(
+        pack=pack,
+        authority_resolver=lambda _node: (pack, library),
+        trace=second,
+    )
+    assert decision.rejection is None
+    assert decision.collapse is not None
+    collapsed = decision.collapse
+    assert collapsed.root_state_id == root.root_state_id
+    assert collapsed.final_state_id == second.current_state_id
+    assert collapsed.root_ast_digest == root.current.state.ast_digest
+    assert collapsed.final_ast_digest == second.current.state.ast_digest
+    assert collapsed.application_ids == (
+        first_application.application_id,
+        second_application.application_id,
+    )
+    assert collapsed.to_dict()["required_order"] == [0, 1]
+    assert collapsed.nl_available is False
+    # Both argument-free applications invoke the same transition, so swapping
+    # them is equivalent and must not be mislabeled as a hard negative.
+    assert collapsed.hard_negatives == ()
+    assert replay_collapsed_instruction(
+        authority_resolver=lambda _node: (pack, library),
+        trace=second,
+        collapse=collapsed,
+    ).state_id == second.current_state_id
+    assert collapse_conversation_trace(
+        pack=pack,
+        authority_resolver=lambda _node: (pack, library),
+        trace=second,
+    ).to_dict() == decision.to_dict()
+
+
+def test_collapse_rejects_short_history_and_cycle_traces() -> None:
+    pack, library, root = _fixture()
+    first, _ = _append(pack, library, root)
+    assert collapse_conversation_trace(
+        pack=pack,
+        authority_resolver=lambda _node: (pack, library),
+        trace=first,
+    ).rejection is CollapseRejectionKind.TOO_SHORT
+
+    undone = undo_conversation(
+        first, provenance=_provenance(first.current.state)
+    )
+    history = collapse_conversation_trace(
+        pack=pack,
+        authority_resolver=lambda _node: (pack, library),
+        trace=undone,
+    )
+    assert history.rejection is CollapseRejectionKind.HISTORY_OPERATION
+    assert history.rejected_step_indices == (1,)
+
+    second, _ = _append(pack, library, first, seed=3)
+    third, _ = _append(pack, library, second, seed=4)
+    cycle = collapse_conversation_trace(
+        pack=pack,
+        authority_resolver=lambda _node: (pack, library),
+        trace=third,
+    )
+    assert cycle.rejection is CollapseRejectionKind.CYCLE
+    assert cycle.rejected_step_indices == (2,)
 
 
 def test_one_same_branch_next_turn_requires_explicit_sibling_fork() -> None:

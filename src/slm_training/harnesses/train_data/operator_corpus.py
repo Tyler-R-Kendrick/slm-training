@@ -23,13 +23,14 @@ from slm_training.dsl.operators import (
     branch_fingerprint,
     build_openui_local_operator_context,
     build_openui_local_operator_library,
+    collapse_conversation_trace,
     create_conversation_trace,
     enumerate_operator_legal_set,
     fork_conversation,
     replay_conversation_trace,
     append_operator_turn,
 )
-from slm_training.dsl.operators.contracts import _fingerprint
+from slm_training.dsl.operators.contracts import _fingerprint, _require_digest
 from slm_training.dsl.pack import DslPack, get_pack
 from slm_training.dsl.schema import ExampleRecord
 
@@ -61,6 +62,70 @@ class OperatorCorpusConfig:
             or self.max_combinations_per_operator <= 0
         ):
             raise ValueError("operator corpus bounds must be positive")
+
+
+@dataclass(frozen=True)
+class CollapsedOperatorExampleV1:
+    example_id: str
+    source_record_id: str
+    question: dict[str, Any]
+    answer: dict[str, Any]
+    collapse: dict[str, Any]
+    conversation_trace: dict[str, Any]
+    nl_available: bool = False
+    nl_unavailable_reason: str = "CERT_CAP1_unavailable"
+    schema: str = "symbolic_collapsed_operator_example/v1"
+
+    def __post_init__(self) -> None:
+        _require_digest(self.example_id, "example_id")
+        if not self.source_record_id:
+            raise ValueError("collapsed operator source identity is required")
+        if set(self.question) != {"opcode", "state_ast", "required_order"}:
+            raise ValueError("collapsed operator question keys are not closed")
+        if self.question["opcode"] != "APPLY_OPERATOR_SEQUENCE":
+            raise ValueError("collapsed operator opcode is not symbolic")
+        if set(self.answer) != {"operators", "result_ast"}:
+            raise ValueError("collapsed operator answer keys are not closed")
+        applications = self.collapse.get("applications", ())
+        expected_order = list(range(len(applications)))
+        if len(applications) < 2:
+            raise ValueError("collapsed operator example requires multiple turns")
+        if self.question["required_order"] != expected_order:
+            raise ValueError("collapsed operator order must remain explicit")
+        if len(self.answer["operators"]) != len(applications):
+            raise ValueError("collapsed operator target sequence length drifted")
+        if self.collapse.get("required_order") != expected_order:
+            raise ValueError("collapse artifact order disagrees with the question")
+        if self.collapse.get("final_state_id") != self.conversation_trace.get(
+            "current_state_id"
+        ):
+            raise ValueError("collapsed operator final state is not trace-authoritative")
+        current_id = self.conversation_trace.get("current_state_id")
+        current_nodes = [
+            node
+            for node in self.conversation_trace.get("state_nodes", ())
+            if node.get("state_id") == current_id
+        ]
+        if (
+            len(current_nodes) != 1
+            or self.answer["result_ast"] != current_nodes[0]["state"]["source"]
+        ):
+            raise ValueError("collapsed operator result AST drifted from the trace")
+        if self.nl_available:
+            raise ValueError("NL collapse requires the unavailable CERT_CAP1 path")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": self.schema,
+            "example_id": self.example_id,
+            "source_record_id": self.source_record_id,
+            "question": self.question,
+            "answer": self.answer,
+            "collapse": self.collapse,
+            "conversation_trace": self.conversation_trace,
+            "nl_available": self.nl_available,
+            "nl_unavailable_reason": self.nl_unavailable_reason,
+        }
 
 
 @dataclass(frozen=True)
@@ -386,6 +451,7 @@ def build_symbolic_operator_corpus(
     """Build only after every generated transition and trace replays exactly."""
     base_pack = get_pack("openui")
     examples: list[SymbolicOperatorExampleV1] = []
+    collapsed_records: list[CollapsedOperatorExampleV1] = []
     legal_sets: list[dict[str, Any]] = []
     gaps: list[dict[str, Any]] = []
     legal_successes = 0
@@ -479,6 +545,7 @@ def build_symbolic_operator_corpus(
         )
         first_trace: ConversationTraceV1 | None = None
         first_output_authority = None
+        first_action: LegalOperatorActionV1 | None = None
         for action_index, action in enumerate(selected):
             result = library.apply(
                 pack,
@@ -535,6 +602,7 @@ def build_symbolic_operator_corpus(
             )
             if first_trace is None:
                 first_trace = action_trace
+                first_action = action
                 first_output_authority = (
                     output_pack,
                     output_library,
@@ -542,7 +610,11 @@ def build_symbolic_operator_corpus(
                     result.state,
                 )
 
-        if first_trace is not None and first_output_authority is not None:
+        if (
+            first_trace is not None
+            and first_output_authority is not None
+            and first_action is not None
+        ):
             output_pack, output_library, output_context, output_state = (
                 first_output_authority
             )
@@ -602,6 +674,44 @@ def build_symbolic_operator_corpus(
                     trace=next_trace,
                 ) != next_trace.current:
                     raise ValueError("operator corpus multi-turn trace drifted")
+                collapse_decision = collapse_conversation_trace(
+                    pack=base_pack,
+                    authority_resolver=lambda node: authorities[node.state_id],
+                    trace=next_trace,
+                )
+                if collapse_decision.collapse is None:
+                    raise ValueError(
+                        "verified multi-turn trace failed symbolic collapse"
+                    )
+                collapsed = collapse_decision.collapse
+                collapsed_records.append(
+                    CollapsedOperatorExampleV1(
+                        example_id=_fingerprint(
+                            {
+                                "schema": "symbolic_collapsed_operator_example_id/v1",
+                                "source_record_id": record.id,
+                                "collapse_id": collapsed.collapse_id,
+                            }
+                        ),
+                        source_record_id=record.id,
+                        question={
+                            "opcode": "APPLY_OPERATOR_SEQUENCE",
+                            "state_ast": state.source,
+                            "required_order": list(
+                                range(len(collapsed.applications))
+                            ),
+                        },
+                        answer={
+                            "operators": [
+                                first_action.serialized,
+                                next_action.serialized,
+                            ],
+                            "result_ast": next_result.state.source,
+                        },
+                        collapse=collapsed.to_dict(),
+                        conversation_trace=next_trace.to_dict(),
+                    )
+                )
                 next_state_size, next_scope_complexity, _ = _state_strata(
                     base_pack, output_state.source
                 )
@@ -688,7 +798,9 @@ def build_symbolic_operator_corpus(
     if not examples:
         raise ValueError("operator corpus produced no symbolic examples")
     examples.sort(key=lambda item: item.example_id)
+    collapsed_records.sort(key=lambda item: item.example_id)
     records_path = output_dir / "operator_records.jsonl"
+    collapsed_path = output_dir / "operator_collapsed_records.jsonl"
     report_path = output_dir / "operator_coverage.json"
     counts = {
         "kind": Counter(item.kind.value for item in examples),
@@ -708,6 +820,7 @@ def build_symbolic_operator_corpus(
         "schema": "symbolic_operator_corpus_report/v1",
         "version": version,
         "record_count": len(examples),
+        "collapsed_record_count": len(collapsed_records),
         "root_count": len(roots),
         "config": {
             "max_roots": config.max_roots,
@@ -728,19 +841,36 @@ def build_symbolic_operator_corpus(
         "coverage_gaps": gaps,
         "legal_sets": legal_sets,
         "invalid_family_count": 0,
+        "collapse": {
+            "symbolic_only": True,
+            "nl_available": False,
+            "nl_unavailable_reason": "CERT_CAP1_unavailable",
+            "hard_negative_count": sum(
+                len(item.collapse["hard_negatives"])
+                for item in collapsed_records
+            ),
+        },
         "version_stamp": version_stamp,
     }
     _write_jsonl(records_path, (item.to_dict() for item in examples))
+    _write_jsonl(
+        collapsed_path, (item.to_dict() for item in collapsed_records)
+    )
     _write_json(report_path, report)
     return {
         "records_path": str(records_path.as_posix()),
         "report_path": str(report_path.as_posix()),
+        "collapsed_records_path": str(collapsed_path.as_posix()),
         "record_count": len(examples),
+        "collapsed_record_count": len(collapsed_records),
         "root_count": len(roots),
         "content_fingerprint": _fingerprint(
             {
                 "schema": "symbolic_operator_corpus_content/v1",
                 "examples": [item.to_dict() for item in examples],
+                "collapsed_records": [
+                    item.to_dict() for item in collapsed_records
+                ],
             }
         ),
         "report": report,
@@ -748,6 +878,7 @@ def build_symbolic_operator_corpus(
 
 
 __all__ = [
+    "CollapsedOperatorExampleV1",
     "OperatorCorpusConfig",
     "OperatorExampleKind",
     "OperatorTargetView",
