@@ -149,6 +149,24 @@ export const toolProvider: Record<string, QueryFn> = {
   },
 
   // ---- Experiments --------------------------------------------------------
+  experiment_flags: async () => {
+    const d: any = await getJSON("/api/experiment-flags");
+    return {
+      provenance: d.provenance,
+      meta: {
+        count: String(d.count ?? 0),
+        boolean_count: String(d.boolean_count ?? 0),
+        history_runs: String(d.history_runs ?? 0),
+        revision: String(d.revision ?? "—").slice(0, 8),
+      },
+      rows: (d.flags ?? []).map((flag: any) => ({
+        label: flag.field ?? flag.label,
+        key: flag.key,
+        type: flag.type,
+        default: typeof flag.default === "object" ? JSON.stringify(flag.default) : String(flag.default),
+      })),
+    };
+  },
   scoreboard: async (args) => {
     const kind = String(args.kind || "quality");
     const d: any = await getJSON(`/api/scoreboards/${kind}`);

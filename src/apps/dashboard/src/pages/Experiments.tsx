@@ -21,6 +21,7 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const [kind, setKind] = useState("research");
   const [jobId, setJobId] = useState<string | null>(null);
   const board = usePoll<any>(`/api/scoreboards/${kind}`, 30000);
+  const flags = usePoll<any>("/api/experiment-flags", 15000);
 
   const results = board.data?.results ?? [];
   const metricColumns = board.data?.metric_columns ?? [];
@@ -55,6 +56,33 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
       </div>
 
       <ErrorNote error={board.error} />
+      <ErrorNote error={flags.error} />
+
+      <Grid min="190px">
+        <StatTile label="Feature flags" value={flags.data?.count ?? "—"} accent="moss" />
+        <StatTile label="Boolean flags" value={flags.data?.boolean_count ?? "—"} />
+        <StatTile label="Historical runs" value={flags.data?.history_runs ?? "—"} />
+        <StatTile label="Registry" value={flags.data?.revision?.slice(0, 8) ?? "—"} />
+      </Grid>
+
+      <Card title="All feature flags" right={<ProvenanceBadge provenance={flags.data?.provenance} />}>
+        <DataTable
+          searchable
+          searchPlaceholder="Search feature flags"
+          columns={[
+            { key: "label", label: "lever" },
+            { key: "key", label: "OpenFeature key" },
+            { key: "type", label: "type" },
+            { key: "default", label: "default" },
+          ]}
+          rows={flags.data?.flags ?? []}
+          render={{
+            label: (r) => <span className="mono">{r.field}</span>,
+            key: (r) => <span className="mono">{r.key}</span>,
+            default: (r) => <span className="mono">{typeof r.default === "object" ? JSON.stringify(r.default) : fmt(r.default)}</span>,
+          }}
+        />
+      </Card>
 
       <Grid min="190px">
         <StatTile label="Experiments" value={results.length} accent="moss" />

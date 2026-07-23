@@ -470,6 +470,7 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     return {
         "pass": gates.get("pass"),
         "failures": gates.get("failures"),
+        "feature_flags": board.get("feature_flags"),
         "suites": slim,
     }
 
@@ -969,6 +970,7 @@ def main(argv: list[str] | None = None) -> int:
         "evaluation_source_commit": evaluation_source_commit,
         "version_stamp": build_version_stamp(
             "matrix.grammar",
+            "harness.experiment_feature_flags",
             "harness.model_build.eval",
             "evals.meaningful_program",
             "gates.ship",

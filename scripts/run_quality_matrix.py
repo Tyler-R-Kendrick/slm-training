@@ -36,7 +36,6 @@ from slm_training.evals.judge_resolution import (
     apply_resolution_manifest,
 )
 
-
 SUITES = ["smoke", "held_out", "adversarial", "ood", "rico_held"]
 
 
@@ -2272,6 +2271,7 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
             "sdk": (board.get("agentv") or {}).get("sdk"),
             "summary": (board.get("agentv") or {}).get("summary"),
         },
+        "feature_flags": board.get("feature_flags"),
         "suites": slim,
     }
 
@@ -3243,6 +3243,7 @@ def main(argv: list[str] | None = None) -> int:
         "results": results,
         "version_stamp": build_version_stamp(
             "matrix.quality",
+            "harness.experiment_feature_flags",
             "harness.model_build.eval",
             "evals.meaningful_program",
             "gates.ship",

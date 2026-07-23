@@ -111,6 +111,11 @@ def scoreboards(request: Request) -> dict[str, Any]:
     return {"scoreboards": _readers(request).scoreboards()}
 
 
+@observability_router.get("/experiment-flags")
+def experiment_flags(request: Request) -> dict[str, Any]:
+    return _readers(request).experiment_flags()
+
+
 @observability_router.get("/scoreboards/{kind}")
 def scoreboard(request: Request, kind: str) -> dict[str, Any]:
     board = _readers(request).scoreboard(kind)
