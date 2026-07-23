@@ -5634,6 +5634,38 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
     assert bias[1] > bias[0]
 
 
+def test_binder_component_targets_match_compiler_bound_component_decisions() -> None:
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        active_declaration_binder_id,
+        binder_component_targets,
+    )
+
+    tokenizer = DSLNativeTokenizer.build()
+    for target in (
+        (
+            'root = Form("$0", b1, [b2])\n'
+            'b1 = Buttons([Button(":slot_0")])\n'
+            'b2 = FormControl(":slot_1", Input("$1"))'
+        ),
+        (
+            'root = Tabs([b1])\n'
+            'b1 = TabItem("$0", ":slot_0", [TextContent(":slot_1")])'
+        ),
+    ):
+        token_ids = tokenizer.encode(target, add_special=True)
+        compiler_targets = tuple(
+            (
+                active_declaration_binder_id(
+                    tokenizer, token_ids[: decision.position]
+                ),
+                token_ids[decision.position],
+            )
+            for decision in gold_compiler_decisions(tokenizer, token_ids)
+            if decision.kind == "component_bound"
+        )
+        assert binder_component_targets(tokenizer, token_ids) == compiler_targets
+
+
 def test_binder_topology_supervises_and_biases_legal_references() -> None:
     model = _model(
         binder_topology_loss_weight=1.0,

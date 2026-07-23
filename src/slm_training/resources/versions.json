@@ -4232,7 +4232,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v266",
+      "version": "v267",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4257,6 +4257,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v267",
+          "date": "2026-07-22",
+          "note": "Extract binder-component training targets with a linear grammar-token declaration scan instead of replaying the full compiler forest; focused parity tests cover Form and Tabs while decode behavior and candidate labels remain unchanged"
+        },
         {
           "version": "v266",
           "date": "2026-07-22",

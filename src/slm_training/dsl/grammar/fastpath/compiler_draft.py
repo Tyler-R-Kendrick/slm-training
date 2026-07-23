@@ -460,6 +460,42 @@ def emitted_component_count(tokenizer: Any, prefix_ids: list[int]) -> int:
     return sum(1 for token_id in prefix_ids if int(token_id) in component_ids)
 
 
+def binder_component_targets(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[tuple[int, int], ...]:
+    """Return bound declaration binder/component pairs from grammar token roles."""
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    component_ids = set(tokenizer.kind_ids("component"))
+    root_id = int(tokenizer.bind_id(0))
+    equal_id = int(tokenizer.token_to_id["="])
+    newline_id = tokenizer.token_to_id.get("NL")
+    statements: list[list[int]] = []
+    current: list[int] = []
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            if current:
+                statements.append(current)
+            current = []
+        else:
+            current.append(token_id)
+    if current:
+        statements.append(current)
+
+    targets: list[tuple[int, int]] = []
+    for statement in statements:
+        for index, binder_id in enumerate(statement[:-2]):
+            if (
+                binder_id in bind_ids
+                and binder_id != root_id
+                and statement[index + 1] == equal_id
+                and statement[index + 2] in component_ids
+            ):
+                targets.append((binder_id, statement[index + 2]))
+                break
+    return tuple(targets)
+
+
 def binder_reference_arities(
     tokenizer: Any, token_ids: list[int] | tuple[int, ...]
 ) -> tuple[tuple[int, int], ...]:
@@ -1905,6 +1941,7 @@ __all__ = [
     "active_declaration_reference_count",
     "root_declaration_reference_arity_target",
     "active_parent_component_ids",
+    "binder_component_targets",
     "binder_reference_arities",
     "CompletionForest",
     "CompletionPath",

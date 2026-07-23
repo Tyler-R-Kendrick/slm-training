@@ -3824,8 +3824,7 @@ class TwoTowerModel(nn.Module):
         )
         if binder_plan_w > 0.0 and self.binder_component_plan_head is not None:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
-                active_declaration_binder_id,
-                gold_compiler_decisions,
+                binder_component_targets,
             )
 
             binder_ids = self._binder_component_token_ids()
@@ -3842,44 +3841,22 @@ class TwoTowerModel(nn.Module):
             plan_losses: list[torch.Tensor] = []
             plan_hits: list[torch.Tensor] = []
             candidate_counts: list[int] = []
-            for row, record in enumerate(batch):
+            for row in range(len(batch)):
                 target_key = tuple(
                     int(token_id) for token_id in target_ids[row].tolist()
                 )
-                contract_key = tuple(record.placeholders or ())
-                cache_key = (target_key, contract_key)
-                decisions = self._compiler_decision_cache.get(cache_key)
-                if decisions is None:
-                    decisions = gold_compiler_decisions(
-                        self.tokenizer,
-                        target_key,
-                        slot_contract=list(contract_key),
-                    )
-                    self._compiler_decision_cache[cache_key] = decisions
-                for decision in decisions:
-                    if decision.kind != "component_bound":
-                        continue
-                    position = int(decision.position)
-                    binder_id = active_declaration_binder_id(
-                        self.tokenizer, list(target_key[:position])
-                    )
+                for binder_id, child_id in binder_component_targets(
+                    self.tokenizer, target_key
+                ):
                     binder = binder_index.get(binder_id)
-                    child = component_index.get(int(target_ids[row, position]))
-                    candidates = [
-                        component_index[token_id]
-                        for token_id in decision.candidate_ids
-                        if token_id in component_index
-                    ]
-                    if binder is None or child is None or child not in candidates:
+                    child = component_index.get(child_id)
+                    if binder is None or child is None:
                         continue
-                    candidate_tensor = torch.as_tensor(candidates, device=ctx.device)
-                    scores = plan_logits[row, binder].index_select(0, candidate_tensor)
-                    target = torch.as_tensor(
-                        [candidates.index(child)], device=ctx.device
-                    )
+                    scores = plan_logits[row, binder]
+                    target = torch.as_tensor([child], device=ctx.device)
                     plan_losses.append(F.cross_entropy(scores[None, :], target))
                     plan_hits.append(scores.argmax().eq(target[0]).float())
-                    candidate_counts.append(len(candidates))
+                    candidate_counts.append(len(component_ids))
             binder_plan_loss = (
                 torch.stack(plan_losses).mean()
                 if plan_losses
