@@ -4232,7 +4232,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v267",
+      "version": "v268",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4257,6 +4257,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v268",
+          "date": "2026-07-22",
+          "note": "Detach binder-component auxiliary inputs from pooled prompt features so the uncalibrated planner trains its own head without changing base-model gradients"
+        },
         {
           "version": "v267",
           "date": "2026-07-22",

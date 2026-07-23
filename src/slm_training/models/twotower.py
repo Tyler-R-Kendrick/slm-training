@@ -3836,7 +3836,9 @@ class TwoTowerModel(nn.Module):
                 token_id: index for index, token_id in enumerate(component_ids)
             }
             plan_logits = self.binder_component_plan_head(
-                self._pool_context(ctx, ctx_pad)
+                # Train this auxiliary planner without rewriting the shared
+                # prompt representation before its ranking is calibrated.
+                self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(component_ids))
             plan_losses: list[torch.Tensor] = []
             plan_hits: list[torch.Tensor] = []

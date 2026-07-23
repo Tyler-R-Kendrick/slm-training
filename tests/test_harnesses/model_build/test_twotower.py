@@ -565,6 +565,58 @@ def test_auxiliary_loss_does_not_change_base_gradients() -> None:
     assert arity.binder_arity_head.weight.grad is not None
 
 
+def test_binder_component_plan_does_not_change_base_gradients() -> None:
+    records = [
+        ExampleRecord(
+            id="binder-plan",
+            prompt="Card with title and body",
+            openui=(
+                "root = Card([title, body])\n"
+                'title = TextContent(":slot_0")\n'
+                'body = TextContent(":slot_1")'
+            ),
+            placeholders=[":slot_0", ":slot_1"],
+            split="train",
+            source="fixture",
+        )
+    ]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    planned = model(binder_component_plan_loss_weight=1.0)
+    rng_state = baseline._rng.getstate()
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    baseline._rng.setstate(rng_state)
+    planned._rng.setstate(rng_state)
+    torch.manual_seed(456)
+    planned.training_loss(records).backward()
+
+    planned_parameters = dict(planned.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        other = planned_parameters[name]
+        if parameter.grad is None or other.grad is None:
+            assert parameter.grad is other.grad
+        else:
+            assert torch.equal(parameter.grad, other.grad), name
+    assert planned.binder_component_plan_head is not None
+    assert planned.binder_component_plan_head.weight.grad is not None
+    assert planned.binder_component_plan_head.weight.grad.abs().sum() > 0
+
+
 def test_surface_syntax_repair_preserves_string_literals() -> None:
     damaged = (
         'root===Stack([cta, card, =])\ncta==Button(":cta=a==b")\ncard==Card([cta, =])'
