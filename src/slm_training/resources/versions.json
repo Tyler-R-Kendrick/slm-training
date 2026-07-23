@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "Raise the canonical run cap to the permitted three minutes so changed-test CI can complete after dependency setup"
+        },
         {
           "version": "v17",
           "date": "2026-07-22",

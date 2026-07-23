@@ -11,7 +11,10 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    # Dependency setup plus the changed-test fan-out can pass just after the
+    # former two-minute deadline. Keep the repository-wide three-minute cap
+    # while allowing Actions to report the completed test result.
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,7 +88,7 @@ jobs:
 
   python-static:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
         with:
@@ -116,7 +119,7 @@ jobs:
 
   data-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
         with:
