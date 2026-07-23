@@ -37,8 +37,8 @@ all bridges have length two, and dependency capsules are empty.
 - Epochs/seeds: `8` / `[0, 1, 2, 3, 4]`
 - Train/dev rows: `2` / `2`
 - Train/dev independent targets: `1` / `1`
-- Wall: `7.005s` (cap `2.8m`)
-- AgentV: `{'total': 5, 'passed': 5, 'failed': 0, 'executionErrors': 0, 'durationMs': 18, 'meanScore': 1}`
+- Wall: `6.810s` (cap `2.8m`)
+- AgentV: `{'total': 5, 'passed': 5, 'failed': 0, 'executionErrors': 0, 'durationMs': 23, 'meanScore': 1}`
 
 No checkpoint was written or promoted, so the model card and README
 checkpoint summary do not change.

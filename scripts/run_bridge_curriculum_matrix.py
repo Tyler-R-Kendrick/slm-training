@@ -209,7 +209,9 @@ def _write(report: dict[str, Any], output_dir: Path) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(report, indent=2) + "\n"
     (output_dir / "report.json").write_text(payload, encoding="utf-8")
-    DESIGN_JSON.write_text(payload, encoding="utf-8")
+    DESIGN_JSON.write_text(
+        json.dumps(report, separators=(",", ":")) + "\n", encoding="utf-8"
+    )
     DESIGN_MD.write_text(_markdown(report), encoding="utf-8")
     return report
 

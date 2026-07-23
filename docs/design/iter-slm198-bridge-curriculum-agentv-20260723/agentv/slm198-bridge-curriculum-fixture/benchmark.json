@@ -1,7 +1,7 @@
 {
   "metadata": {
     "eval_file": "agentv-dir:///agentv/slm198-bridge-curriculum-fixture.eval.jsonl",
-    "timestamp": "2026-07-23T23:27:21.432Z",
+    "timestamp": "2026-07-23T23:42:01.364Z",
     "targets": [
       "custom-task"
     ],

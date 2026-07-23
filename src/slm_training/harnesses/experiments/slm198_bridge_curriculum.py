@@ -533,6 +533,7 @@ def run_matrix(
     difficulty = {**train_difficulty, **dev_difficulty}
     records = _records(records_path)
     arms = {}
+    manifest_templates: dict[str, Any] = {}
     identities = set()
     for arm in ARMS:
         runs = []
@@ -556,14 +557,37 @@ def run_matrix(
             )
             identity = policy.scorer.artifact_identity()
             identities.add(identity["param_count"])
+            if arm not in manifest_templates:
+                manifest_templates[arm] = manifest.to_dict()
+            free_running = _free_running(policy, records, seed=seed)
+            traces = free_running.pop("traces")
+            free_running["trace_digest"] = _digest(traces)
             runs.append(
                 {
                     "seed": seed,
-                    "manifest": manifest.to_dict(),
+                    "manifest": {
+                        "schema": manifest.schema,
+                        "arm": manifest.arm,
+                        "seed": manifest.seed,
+                        "total_exposures": manifest.total_exposures,
+                        "target_first": manifest.target_first,
+                        "final_support_digest": manifest.final_support_digest,
+                        "final_target_support_digest": (
+                            manifest.final_target_support_digest
+                        ),
+                        "source_content_fingerprint": (
+                            manifest.source_content_fingerprint
+                        ),
+                        "manifest_digest": _digest(manifest.to_dict()),
+                    },
                     "training": training,
                     "evaluation": _evaluate(policy, dev_rows, candidate_sets, arm="D2"),
-                    "free_running": _free_running(policy, records, seed=seed),
-                    "artifact_identity": identity,
+                    "free_running": free_running,
+                    "artifact_identity": {
+                        "schema": identity["schema"],
+                        "param_count": identity["param_count"],
+                        "scorer_id": identity["config"]["scorer_id"],
+                    },
                 }
             )
         arms[arm] = {
@@ -599,6 +623,7 @@ def run_matrix(
         "status": "upstream_blocked",
         "honest_verdict": "reject_curriculum_fixture_indistinguishable",
         "arms": arms,
+        "manifest_templates": manifest_templates,
         "difficulty": {
             row_id: value.to_dict() for row_id, value in sorted(difficulty.items())
         },

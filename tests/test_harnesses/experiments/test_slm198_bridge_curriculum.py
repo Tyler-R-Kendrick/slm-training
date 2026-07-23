@@ -142,6 +142,8 @@ def test_matrix_reconciles_exposure_and_rejects_fixture_claim() -> None:
         run = report["arms"][arm]["runs"][0]
         assert run["training"]["exposures"] == report["recipe"]["train_rows"]
         assert run["evaluation"]["candidate_membership"]["exact"]
+        assert "traces" not in run["free_running"]
+        assert len(run["free_running"]["trace_digest"]) == 64
 
 
 def test_matrix_rejects_over_cap() -> None:
