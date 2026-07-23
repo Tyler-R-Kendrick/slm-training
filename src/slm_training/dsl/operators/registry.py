@@ -28,6 +28,15 @@ class OperatorReplayError(ValueError):
     """Recorded application evidence did not reproduce exactly."""
 
 
+class OperatorRejectedError(ValueError):
+    """Executor rejection with a stable code and optional failed precondition."""
+
+    def __init__(self, code: str, failed_precondition: str | None = None) -> None:
+        self.code = code
+        self.failed_precondition = failed_precondition
+        super().__init__(code)
+
+
 def _digest_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -307,7 +316,11 @@ class OperatorLibraryV1:
                 raise OperatorAuthorityError(
                     "operator mutated its input state"
                 ) from exc
-            if isinstance(exc, OperatorAuthorityError):
+            failed_precondition = None
+            if isinstance(exc, OperatorRejectedError):
+                rejection_code = exc.code
+                failed_precondition = exc.failed_precondition
+            elif isinstance(exc, OperatorAuthorityError):
                 rejection_code = "operator.authority_rejected"
             elif isinstance(exc, ValueError):
                 rejection_code = "operator.arguments_rejected"
@@ -319,6 +332,7 @@ class OperatorLibraryV1:
                 arguments,
                 provenance,
                 rejection_code,
+                failed_precondition,
             )
 
     @staticmethod
@@ -328,10 +342,11 @@ class OperatorLibraryV1:
         arguments: tuple[BoundArgumentV1, ...],
         provenance: ApplicationProvenanceV1,
         code: str,
+        failed_precondition: str | None = None,
     ) -> OperatorApplyResultV1:
         rejection = OperatorRejectionV1(
             code=code,
-            failed_precondition=None,
+            failed_precondition=failed_precondition,
             compiler_result_digest=_fingerprint(
                 {"code": code, "state": state.state_digest}
             ),
