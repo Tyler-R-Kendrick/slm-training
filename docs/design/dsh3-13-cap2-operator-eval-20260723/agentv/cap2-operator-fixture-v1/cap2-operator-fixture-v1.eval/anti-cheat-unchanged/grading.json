@@ -1,0 +1,59 @@
+{
+  "assertions": [
+    {
+      "text": "Output is valid JSON",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "openui-domain-gate",
+      "passed": true,
+      "evidence": ""
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "is-json",
+      "type": "is-json",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "Output is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "inline-assert-0",
+      "type": "inline-assert",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "openui-domain-gate",
+          "passed": true
+        }
+      ],
+      "details": {
+        "claim": "frozen_cap2_symbolic_fixture_contract_not_ship",
+        "failures": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,507 @@
+{
+  "cases": [
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "collapse:7db8d7ba8e26f931714a697741e2e467b8be42a8f4e76d8d7c6ed45268e1e874",
+      "evidence": {
+        "collapse_id": "7494a77f4752ad591c9c3d5cd89193f1fac8c84b2826e7ac3dccbd5db52b9943",
+        "operator_ids": [
+          "openui.replace_node",
+          "openui.remove_node"
+        ],
+        "trace_fingerprint": "dbbcc9c2c4a3279f35c0a06fdc155aa83eec5285474fe0372efc1b1d6f2646b5",
+        "turn_ids": [
+          "3911d8a55fad216f71d33e869413a984383a42c5ec7ac35c801168e6693a6d2e",
+          "d07579814442119a6cd6d1da5c8e9d0df6bc52b0c647af455dfe661e7f13322a"
+        ]
+      },
+      "gold": {
+        "final_state_id": "52aa07dbc8ed276e044e7823fcc4a0f9e5cdbc140c91ec22e6ff905596f48567",
+        "intermediate_legal": true,
+        "operator_count": 2,
+        "required_order": [
+          0,
+          1
+        ],
+        "result_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "sequential_vs_collapsed"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "collapse:7eeead43fbfffd3a7e85b9ab9d47a4517db7c8bcce18019f5dcd87e502a73c78",
+      "evidence": {
+        "collapse_id": "26d71342e906ca9db08d2a72cd9be24f0e4d7e2327a07241bb3b8846dfa7d830",
+        "operator_ids": [
+          "openui.replace_node",
+          "openui.remove_node"
+        ],
+        "trace_fingerprint": "a1d06a0f97b5937d596d9f273f81d69b3ba43efac9a635f3304fa390c8785713",
+        "turn_ids": [
+          "7744907f71d971c82f2e94907a2dc2c9df1dc32a6142291216e77ba26d4a41af",
+          "b2d901addb15d10225b592d389b5fb19cd5fe638c824cd0dab40968dd5efa3b6"
+        ]
+      },
+      "gold": {
+        "final_state_id": "17732eb79a6babfe2636ba4fd78f7420efe398fc46693bf1339caabdf3f83562",
+        "intermediate_legal": true,
+        "operator_count": 2,
+        "required_order": [
+          0,
+          1
+        ],
+        "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "sequential_vs_collapsed"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "history:77d650ce809507639bbf1d0310e70e79cb159422aedc82365b6c6e92d122233b",
+      "evidence": {
+        "final_state_id": "a632e674a9c0f10d7701f515006cf76b249fd452bfb0af34b9ea83a4dce644c5",
+        "root_state_id": "ea81702ff4ee144bf544a5d0d86cf535b420c77a04f2999e4cf42a95743e1ccb",
+        "trace_fingerprint": "24726aa19fb1b70d4793671083876e69a8c5fabc09ed085f945a78592ab42429"
+      },
+      "gold": {
+        "branch_digest": "66679b1cd588a4b9cc50706123e26843f9a43b3b6d73edf7a1a59a08f934224e",
+        "branch_isolated": true,
+        "history_operation": "FORK",
+        "history_state_id": "a632e674a9c0f10d7701f515006cf76b249fd452bfb0af34b9ea83a4dce644c5",
+        "intermediate_legal": true,
+        "operator_count": 0,
+        "result_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "history_branch_isolation"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "history:f4a41dc5472e3b93bc4d2a85d91bbb6f4873346d3270b4d1f688565e1e1ad529",
+      "evidence": {
+        "final_state_id": "2c7a7c54800975646eeb737af89602e0cdbb3024bfd88a345e7d492c4514f69c",
+        "root_state_id": "8705a1c2a9fd019082dcd2f47dfb21dbda3dffae0fdb81bb35664d39027ffd00",
+        "trace_fingerprint": "31fc796c032125f16876e940bc5bff21c09c73b8457ea849ce343421a4544e6a"
+      },
+      "gold": {
+        "branch_digest": "e741a1fbe02f54ae4db4f6482a251570b5056ea5bac7d4b9fcde0c8d37505f1b",
+        "branch_isolated": true,
+        "history_operation": "FORK",
+        "history_state_id": "2c7a7c54800975646eeb737af89602e0cdbb3024bfd88a345e7d492c4514f69c",
+        "intermediate_legal": true,
+        "operator_count": 0,
+        "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "history_branch_isolation"
+    },
+    {
+      "before_ast": "",
+      "case_id": "merge:replay-success",
+      "evidence": {
+        "authority": "replay_branch_merge",
+        "contract": "branch_merge/v1"
+      },
+      "gold": {
+        "merge_replay": true,
+        "operator_count": 2,
+        "order_invariant": true
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "cap2_contract",
+      "stratum": "merge_replay"
+    },
+    {
+      "before_ast": "",
+      "case_id": "merge:typed-conflict",
+      "evidence": {
+        "contract": "merge_conflict/v1",
+        "kinds": [
+          "same_node",
+          "delete_modify",
+          "role_cardinality",
+          "child_order",
+          "scope_binder",
+          "stale_ref",
+          "unsupported_effect"
+        ]
+      },
+      "gold": {
+        "conflict_typed": true,
+        "operator_count": 0,
+        "state_mutated": false
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "cap2_contract",
+      "stratum": "merge_conflict"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "permutation:transition:51b5410820b371233acceabaeb7fa6f77b92eff39e586102499977162c7eb919",
+      "evidence": {
+        "legal_set_fingerprint": "426e41cb0d141ba90ef66bec6aa05a60d5b6156ff1cf520095224ef0658c8252",
+        "opaque_serialization_is_not_gold": true
+      },
+      "gold": {
+        "marker_invariant": true,
+        "operator_count": 1,
+        "permutation_seed": 97,
+        "result_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.header\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "semantic_action_id": "1b097a601acf6054568806db5a550df14ea11bbd1b8427a337ffbec920463940"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "marker_permutation"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([Button(\":held.form.submit\")]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "permutation:transition:87c96f1b7e49022fc35c77afb682961df144283d942a0725c69033abbaf90210",
+      "evidence": {
+        "legal_set_fingerprint": "640ebc57fb20f2846501c49fb72bf881dfe9976b955e7798f3b588a3edcd7e1a",
+        "opaque_serialization_is_not_gold": true
+      },
+      "gold": {
+        "marker_invariant": true,
+        "operator_count": 1,
+        "permutation_seed": 97,
+        "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "semantic_action_id": "6a1fa85b11b5fe45a7e291d4fbafc12ddf154db36cee451f22d24e6f52590c74"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "marker_permutation"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "reordered:7db8d7ba8e26f931714a697741e2e467b8be42a8f4e76d8d7c6ed45268e1e874:0",
+      "evidence": {
+        "application_ids": [
+          "374209b97f8004ff79c2e15993d8adce58709d57f8ba900a8094d9eef406b892",
+          "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24"
+        ],
+        "swapped_step_indices": [
+          0,
+          1
+        ]
+      },
+      "gold": {
+        "expected_outcome": "conflict",
+        "illegal_action_mass_max": 0.0,
+        "operator_count": 2,
+        "rejection_code": "ref.missing",
+        "required_order": [
+          0,
+          1
+        ]
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "reordered_noncommuting"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "reordered:7eeead43fbfffd3a7e85b9ab9d47a4517db7c8bcce18019f5dcd87e502a73c78:0",
+      "evidence": {
+        "application_ids": [
+          "c2ae8e9ec5af00d45cd6e90c766523813925c757e51aff8e41c0a802946190da",
+          "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+        ],
+        "swapped_step_indices": [
+          0,
+          1
+        ]
+      },
+      "gold": {
+        "expected_outcome": "conflict",
+        "illegal_action_mass_max": 0.0,
+        "operator_count": 2,
+        "rejection_code": "ref.missing",
+        "required_order": [
+          0,
+          1
+        ]
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "reordered_noncommuting"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "stale:reordered:7db8d7ba8e26f931714a697741e2e467b8be42a8f4e76d8d7c6ed45268e1e874:0",
+      "evidence": {
+        "application_ids": [
+          "374209b97f8004ff79c2e15993d8adce58709d57f8ba900a8094d9eef406b892",
+          "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24"
+        ],
+        "stale_reference_source": "reordered_application",
+        "swapped_step_indices": [
+          0,
+          1
+        ]
+      },
+      "gold": {
+        "expected_outcome": "conflict",
+        "illegal_action_mass_max": 0.0,
+        "operator_count": 0,
+        "rejection_code": "ref.missing"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "stale_reference"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "stale:reordered:7eeead43fbfffd3a7e85b9ab9d47a4517db7c8bcce18019f5dcd87e502a73c78:0",
+      "evidence": {
+        "application_ids": [
+          "c2ae8e9ec5af00d45cd6e90c766523813925c757e51aff8e41c0a802946190da",
+          "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6"
+        ],
+        "stale_reference_source": "reordered_application",
+        "swapped_step_indices": [
+          0,
+          1
+        ]
+      },
+      "gold": {
+        "expected_outcome": "conflict",
+        "illegal_action_mass_max": 0.0,
+        "operator_count": 0,
+        "rejection_code": "ref.missing"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "stale_reference"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "transition:51b5410820b371233acceabaeb7fa6f77b92eff39e586102499977162c7eb919",
+      "evidence": {
+        "application_id": "630d34482491ce8436c66bb68a4db3847bc5928ef1570de7e5eee6d5104fb7f0",
+        "intermediate_replay": true,
+        "legal_set_fingerprint": "426e41cb0d141ba90ef66bec6aa05a60d5b6156ff1cf520095224ef0658c8252",
+        "trace_fingerprint": "d47640f95e9212b31cd53be5adc9ae03b9453041d30e9abef74a19f666de3d6d"
+      },
+      "gold": {
+        "accepted_legal_action": true,
+        "argument_fingerprint": "84a2ea9c82bdd1bf0424b5ad7c8abba9bec13176dc5f81d51abe9f8938eb28e3",
+        "effect_fingerprint": "9f64663af3fa84944a6960d37a2e2eb8ec5c1c5fdf89e5ff309e541da2a20e4b",
+        "final_state_id": "643fd5658675e15497f593814f1173db21ad0d747fd25df70873922d428fefdb",
+        "locality_violations": 0,
+        "operator_count": 1,
+        "operator_id": "openui.replace_node",
+        "result_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.header\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "semantic_action_id": "1b097a601acf6054568806db5a550df14ea11bbd1b8427a337ffbec920463940",
+        "unintended_edits": 0
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "held_out_transition"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([Button(\":held.form.submit\")]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "transition:87c96f1b7e49022fc35c77afb682961df144283d942a0725c69033abbaf90210",
+      "evidence": {
+        "application_id": "c2ae8e9ec5af00d45cd6e90c766523813925c757e51aff8e41c0a802946190da",
+        "intermediate_replay": true,
+        "legal_set_fingerprint": "640ebc57fb20f2846501c49fb72bf881dfe9976b955e7798f3b588a3edcd7e1a",
+        "trace_fingerprint": "a1d06a0f97b5937d596d9f273f81d69b3ba43efac9a635f3304fa390c8785713"
+      },
+      "gold": {
+        "accepted_legal_action": true,
+        "argument_fingerprint": "cde57ff26fd62517cc832619bff21b4e3c944a4e2e236d3b4107f4851ad6ab8e",
+        "effect_fingerprint": "c5c43c9cabf33adfad23d810ac079535d2eb8472d9b37e731f53477bc4834148",
+        "final_state_id": "17732eb79a6babfe2636ba4fd78f7420efe398fc46693bf1339caabdf3f83562",
+        "locality_violations": 0,
+        "operator_count": 1,
+        "operator_id": "openui.remove_node",
+        "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "semantic_action_id": "6a1fa85b11b5fe45a7e291d4fbafc12ddf154db36cee451f22d24e6f52590c74",
+        "unintended_edits": 0
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "held_out_composition"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "transition:999ad51ec4f2e6364f68a2c80fdc77c3b62b4982f33da324bd071312df6a8437",
+      "evidence": {
+        "application_id": "dbc02111e875607948391467748f1a79afe1198e1875428027c6c00513cd9b24",
+        "intermediate_replay": true,
+        "legal_set_fingerprint": "426e41cb0d141ba90ef66bec6aa05a60d5b6156ff1cf520095224ef0658c8252",
+        "trace_fingerprint": "4580b7d960f84de80d14282d080093189081a2d628f815cb6f7d00e0ee607d9b"
+      },
+      "gold": {
+        "accepted_legal_action": true,
+        "argument_fingerprint": "ccc5a2e9f4b08233cd48209baeadc4d28fd77f050adbf3770029d39787dff879",
+        "effect_fingerprint": "e67ce410da3ab91a4fa91a80085f9fb2a652b77cc7ae2c51ae34d9861eea5b53",
+        "final_state_id": "d2cc5e1b16ffa97f0f93dd56910b7d72213d8d981086964696900bad20c2814e",
+        "locality_violations": 0,
+        "operator_count": 1,
+        "operator_id": "openui.replace_node",
+        "result_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\"), TextContent(\":held.col.left.body\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "semantic_action_id": "045008a289f7d6ecd11564cf3a161999056ba6be47b7604aa92d0bccb0bb414a",
+        "unintended_edits": 0
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "held_out_transition"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\"), TextContent(\":held.col.left.body\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "transition:9d633f12251e3e8db39cabd29ce297b8e71c35297f3c6a417084e6ef1fc938ef",
+      "evidence": {
+        "application_id": "374209b97f8004ff79c2e15993d8adce58709d57f8ba900a8094d9eef406b892",
+        "intermediate_replay": true,
+        "legal_set_fingerprint": "ce4432a23675bab88585a8671f917a51e767975c106b544b89e0c92f0a3234c0",
+        "trace_fingerprint": "dbbcc9c2c4a3279f35c0a06fdc155aa83eec5285474fe0372efc1b1d6f2646b5"
+      },
+      "gold": {
+        "accepted_legal_action": true,
+        "argument_fingerprint": "55d055ca86c84a7d4bb84ec657d4cdd4dcf0840d6079b2b7184517898d6ab0ec",
+        "effect_fingerprint": "66e486205587e43119bf4d2f5540d4656c7cca639d5f6352ca9c67ee724fcfdf",
+        "final_state_id": "52aa07dbc8ed276e044e7823fcc4a0f9e5cdbc140c91ec22e6ff905596f48567",
+        "locality_violations": 0,
+        "operator_count": 1,
+        "operator_id": "openui.remove_node",
+        "result_ast": "root = Stack([v0, v1, v8])\nv0 = Stack([TextContent(\":held.col.header\"), Separator(), Stack([Card([TextContent(\":held.col.left.title\")]), Card([TextContent(\":held.col.right.title\"), TextContent(\":held.col.right.body\")])], \"row\")])\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+        "semantic_action_id": "37d99b2194775ceedce9fa1d8013f01360cc03eeb7101538d514c1c646e0bd9f",
+        "unintended_edits": 0
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "held_out_composition"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "transition:a164f260e551fc57379d32c85d3e3be9e2795d78b1cc1ab54b986bf397c32096",
+      "evidence": {
+        "application_id": "fd3a246470ce2ffb26e0a7a198c8dcadb9d66caba00c8789d9da5701b1312889",
+        "intermediate_replay": true,
+        "legal_set_fingerprint": "c5c00f0f2f8670458ab27c76c7ecc77dcda242a648bc2721ff0b139302435bbe",
+        "trace_fingerprint": "014c7f97773983c7ee79dce271a9ebb509ce9ebeeaa28e28007bddfa242f6d42"
+      },
+      "gold": {
+        "accepted_legal_action": true,
+        "argument_fingerprint": "d852084d7e4c7bafc92db89ff76c7a5d608f3d59643e4d2b89b5e18a9eb7ced1",
+        "effect_fingerprint": "bed98b55da70802444ad67139c9fbce7eaf8e3d5ee25fe4ecd2db90eac17cc56",
+        "final_state_id": "083ba395c380b29d75a24b34fc21b76e253e5f21e2ee49e06a7c52e186511a47",
+        "locality_violations": 0,
+        "operator_count": 1,
+        "operator_id": "openui.set_property",
+        "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4, \":held.form.email\")\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "semantic_action_id": "386703455d3086f38b4a6bd254a7933069e775e8ebec1bb0e60b2c22344c5bba",
+        "unintended_edits": 0
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "held_out_transition"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "transition:efbfa6d11f1bff42d223df837b184a41204dc7a56f695002aa269f0ba7dcef8f",
+      "evidence": {
+        "application_id": "5d574c2d8bd592507abefa64e076f77c886c591b29ae1392db2443b046b35dc6",
+        "intermediate_replay": true,
+        "legal_set_fingerprint": "c5c00f0f2f8670458ab27c76c7ecc77dcda242a648bc2721ff0b139302435bbe",
+        "trace_fingerprint": "9fa766083d3e09bda9fdc012faeec1715bae8d323239ece14f261938a17a70b2"
+      },
+      "gold": {
+        "accepted_legal_action": true,
+        "argument_fingerprint": "eb424f412d3087932810234ecb85e7d4f1188fbaf9f9bdd2dd0a46eaa0330082",
+        "effect_fingerprint": "2e82097af711a6f4f33b16ad978417888025a8cbffbb3bfac5109caf388d65fc",
+        "final_state_id": "51615e1d1b418f6e90078459b90185a00e5ecc1094909b4e9a9acabe0281d996",
+        "locality_violations": 0,
+        "operator_count": 1,
+        "operator_id": "openui.replace_node",
+        "result_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Stack([TextContent(\":held.form.title\"), Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\"), Form(\":held.form.name\", Buttons([Button(\":held.form.submit\")]), [FormControl(\":held.form.email.label\", Input(\"email\", \":held.form.email\"))])])\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+        "semantic_action_id": "164af790af78247ad58bad4dbab079555bf4dfe45d0d1fd6cdb988b43087b365",
+        "unintended_edits": 0
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "held_out_transition"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v8])\nv0 = TextContent(\":held.col.header\")\nv1 = Separator()\nv2 = TextContent(\":held.col.left.title\")\nv3 = TextContent(\":held.col.left.body\")\nv4 = Card([v2, v3])\nv5 = TextContent(\":held.col.right.title\")\nv6 = TextContent(\":held.col.right.body\")\nv7 = Card([v5, v6])\nv8 = Stack([v4, v7], \"row\")",
+      "case_id": "undo-redo:history:77d650ce809507639bbf1d0310e70e79cb159422aedc82365b6c6e92d122233b",
+      "evidence": {
+        "exact_parent_child_identity": true,
+        "trace_fingerprint": "24726aa19fb1b70d4793671083876e69a8c5fabc09ed085f945a78592ab42429"
+      },
+      "gold": {
+        "intermediate_legal": true,
+        "operator_count": 0,
+        "redo_state_id": "a632e674a9c0f10d7701f515006cf76b249fd452bfb0af34b9ea83a4dce644c5",
+        "undo_state_id": "ea81702ff4ee144bf544a5d0d86cf535b420c77a04f2999e4cf42a95743e1ccb"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_dual_card_01",
+      "stratum": "history_undo_redo"
+    },
+    {
+      "before_ast": "root = Stack([v0, v1, v6])\nv0 = TextContent(\":held.form.title\")\nv1 = Callout(\"info\", \":held.form.hint.title\", \":held.form.hint.body\")\nv2 = Button(\":held.form.submit\")\nv3 = Buttons([v2])\nv4 = Input(\"email\", \":held.form.email\")\nv5 = FormControl(\":held.form.email.label\", v4)\nv6 = Form(\":held.form.name\", v3, [v5])",
+      "case_id": "undo-redo:history:f4a41dc5472e3b93bc4d2a85d91bbb6f4873346d3270b4d1f688565e1e1ad529",
+      "evidence": {
+        "exact_parent_child_identity": true,
+        "trace_fingerprint": "31fc796c032125f16876e940bc5bff21c09c73b8457ea849ce343421a4544e6a"
+      },
+      "gold": {
+        "intermediate_legal": true,
+        "operator_count": 0,
+        "redo_state_id": "2c7a7c54800975646eeb737af89602e0cdbb3024bfd88a345e7d492c4514f69c",
+        "undo_state_id": "8705a1c2a9fd019082dcd2f47dfb21dbda3dffae0fdb81bb35664d39027ffd00"
+      },
+      "schema": "cap2_operator_case/v1",
+      "source_record_id": "held_out_form_01",
+      "stratum": "history_undo_redo"
+    }
+  ],
+  "contract_inventory": {
+    "branch_isolation": "branch-local reference tables and state IDs",
+    "cap0_retention": "diagnostic until a learned checkpoint is supplied",
+    "cap1_retention": "unavailable until CERT_CAP1 exists",
+    "intermediate_legality": "conversation_trace/v1 replay",
+    "marker_permutation": "semantic action identity under opaque marker permutation",
+    "merge_conflict": "typed merge_conflict/v1 refusal",
+    "merge_success": "branch_merge/v1 replay",
+    "sequential_vs_collapsed": "collapsed_instruction/v1 replay",
+    "stale_reference": "typed ref.stale_state/ref.missing refusal",
+    "undo_redo": "exact parent/child state identity"
+  },
+  "nl": {
+    "available": false,
+    "dependency_issue": "SLM-379",
+    "reason": "CERT_CAP1_unavailable"
+  },
+  "operator_corpus_fingerprint": "5ee0d27141a3fa72be35bedbdec347f97f513c0e7af672ca4be580e5b982682e",
+  "schema": "cap2_operator_suite/v1",
+  "source_records_fingerprint": "f18b2fa1d9e271fcb8789c766cbb3717262353d1bbddfd37c5a1b85bca16a00e",
+  "suite_hash": "16f210786bac7fd5f5edb64d13888c3cc7d634330a81b5065150e7a41fcb1d4d",
+  "suite_version": "cap2_operator_v1",
+  "thresholds": {
+    "accepted_legal_action_mass_min": 0.9,
+    "case_wilson_lower_min": 0.75,
+    "dimension_wilson_lower_min": 0.2
+  },
+  "version_stamp": {
+    "code_commit": "8a29de4b81da07393ec3acb3b906376baa593145",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.collapse": "v1",
+      "dsl.operators.contracts": "v11",
+      "dsl.operators.conversation": "v2",
+      "dsl.operators.legal_set": "v2",
+      "dsl.operators.merge": "v1",
+      "evals.cap2_operator": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T18:13:42.589754+00:00"
+  }
+}

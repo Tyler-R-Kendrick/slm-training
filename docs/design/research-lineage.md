@@ -1528,6 +1528,29 @@ This is fixture wiring evidence, not a learned planning or ship claim. Evidence
 and scope:
 [`dsh3-12-collapsed-operator-traces-20260723.md`](dsh3-12-collapsed-operator-traces-20260723.md).
 
+## Frozen CAP2 operator evaluation (DSH3-13 / SLM-381)
+
+**Fidelity label: adapted repository contract.**
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) motivates
+systematic metamorphic source/follow-up construction, while
+[Tarlow et al., 2019](https://arxiv.org/abs/1911.01205) motivates precise AST
+diff prediction with pointer-like locations. The OpenUI multi-axis scores,
+history/merge/collapse strata, opaque-marker control, anti-cheat policies,
+confidence thresholds, frozen hashes, and AgentV envelope are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **Gold authority** | canonical legal-set generation plus exact application, conversation, and collapse replay |
+| **Model-facing scores** | legal mass, operator, typed arguments, AST, effect, locality, unintended edits, final state |
+| **Metamorphic strata** | history/branch, undo-redo, merge/conflict, collapse equality, reorder, stale ref, marker permutation |
+| **Anti-cheat controls** | unchanged 0/20; generic valid AST 0/20; constant operator 1/20 |
+| **Fixture result** | oracle 20/20; Wilson lower 0.8389; AgentV 6/6; zero NL rows |
+
+This freezes evaluator wiring and does not certify a learned CAP2 model.
+Evidence and scope:
+[`dsh3-13-cap2-operator-eval-20260723.md`](dsh3-13-cap2-operator-eval-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
