@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E977 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E978 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6567,3 +6567,6 @@ smoke/held aggregate. The opaque training-fixture cleanup remains retained.
 E977 reserves slots before direct required-slot components, but optional
 CardHeader fields still consume them. Held strict regresses to 0.6 and Form
 still dead-ends; reject v260 as incomplete.
+E978 reserves the actual symbol tokens, but Form and Tabs both collapse to the
+one-slot fallback and held strict remains 0.6 with four fallbacks. Withdraw the
+complete reservation treatment.

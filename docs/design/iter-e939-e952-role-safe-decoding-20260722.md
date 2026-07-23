@@ -1,4 +1,4 @@
-# E939-E977: role-safe decoding, aligned training, and bounded nesting
+# E939-E978: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -59,6 +59,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E976 | E951 withdrawn penalty v259 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 | E977 | E951 typed-slot reservation v260 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E977 | E951 typed-slot reservation v260 / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.7333 | 0.4354 | 0.6286 | 0.8534 | 0 / 3 | 0/2 campaign |
+| E978 | E951 symbol-slot reservation v261 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E978 | E951 symbol-slot reservation v261 / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -205,3 +207,10 @@ smoke baseline and three held fallbacks, but optional CardHeader properties can
 still consume the reserved symbols. Form still reaches a compiler dead end,
 Tabs loses two slots, and held strict regresses from 0.8 to 0.6. Reject v260 as
 incomplete; reservation must apply where symbol tokens are consumed.
+
+E978 applies the reservation at actual symbol-token consumption. Form and Tabs
+both collapse to the one-slot certified fallback; held strict remains 0.6,
+fidelity falls to 0.6833, recall to 0.6286, reward to 0.8324, and fallbacks rise
+to four. Reject and withdraw the complete reservation treatment; constraining
+downstream capacity changes the earlier compiler trajectory without resolving
+the underlying binder overcommit.
