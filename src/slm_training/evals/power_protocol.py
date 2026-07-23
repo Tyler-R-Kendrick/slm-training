@@ -17,6 +17,7 @@ import numpy as np
 __all__ = [
     "wilson_interval",
     "binomial_rate_evidence",
+    "plan_binomial_rate_test",
     "exact_binomial_interval",
     "bootstrap_paired_ci",
     "cluster_bootstrap_ci",
@@ -103,6 +104,68 @@ def binomial_rate_evidence(
             ),
         },
         "evidence_class": evidence_class,
+    }
+
+
+def plan_binomial_rate_test(
+    *,
+    null_rate: float,
+    target_delta: float,
+    alpha: float = 0.05,
+    target_power: float = 0.8,
+    sides: int = 2,
+    seeds: Sequence[int] = (0,),
+) -> dict[str, Any]:
+    """Prospectively plan a one-proportion rate test.
+
+    This score-normal approximation accepts design inputs only. Observed
+    outcomes are deliberately absent: post-hoc power is not success evidence.
+    Seeds are reported separately and never multiplied into the sample size.
+    """
+    if not 0.0 < null_rate < 1.0:
+        raise ValueError("null_rate must be in (0, 1)")
+    if target_delta == 0.0:
+        raise ValueError("target_delta must be non-zero")
+    target_rate = null_rate + target_delta
+    if not 0.0 < target_rate < 1.0:
+        raise ValueError("null_rate + target_delta must be in (0, 1)")
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must be in (0, 1)")
+    if not 0.0 < target_power < 1.0:
+        raise ValueError("target_power must be in (0, 1)")
+    if sides not in (1, 2):
+        raise ValueError("sides must be 1 or 2")
+    normalized_seeds = tuple(seeds)
+    if not normalized_seeds:
+        raise ValueError("seeds must not be empty")
+    if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in normalized_seeds):
+        raise TypeError("seeds must contain only integer identifiers")
+    if len(set(normalized_seeds)) != len(normalized_seeds):
+        raise ValueError("seeds must be unique")
+
+    z_alpha = NormalDist().inv_cdf(1.0 - alpha / sides)
+    z_power = NormalDist().inv_cdf(target_power)
+    null_sd = math.sqrt(null_rate * (1.0 - null_rate))
+    target_sd = math.sqrt(target_rate * (1.0 - target_rate))
+    required_n = math.ceil(
+        ((z_alpha * null_sd + z_power * target_sd) / abs(target_delta)) ** 2
+    )
+    return {
+        "schema": "binomial_power_preregistration/v1",
+        "method": "one_proportion_score_normal_approximation",
+        "null_rate": null_rate,
+        "target_delta": target_delta,
+        "target_rate": target_rate,
+        "alpha": alpha,
+        "target_power": target_power,
+        "sides": sides,
+        "confidence_level": 1.0 - alpha,
+        "planned_sample_size_per_seed": required_n,
+        "required_n": required_n,
+        "seeds": list(normalized_seeds),
+        "seed_count": len(normalized_seeds),
+        "seed_aggregation": "report_separately_no_pooling",
+        "use": "preregistration_only_not_post_hoc_success_evidence",
     }
 
 

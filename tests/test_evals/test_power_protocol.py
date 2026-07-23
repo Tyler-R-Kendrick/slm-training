@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 
 import numpy as np
@@ -16,6 +17,7 @@ from slm_training.evals.power_protocol import (
     exact_binomial_interval,
     intraclass_correlation,
     mde_simulation,
+    plan_binomial_rate_test,
     wilson_interval,
 )
 
@@ -78,6 +80,27 @@ def test_binomial_rate_evidence_discloses_counts_and_seed_class() -> None:
     assert evidence["seed_count"] == 1
     assert evidence["interval"]["method"] == "wilson_score"
     assert evidence["evidence_class"] == "fixture_under_minimum_n"
+
+
+def test_plan_binomial_rate_test_is_prospective_and_seed_separate() -> None:
+    plan = plan_binomial_rate_test(
+        null_rate=0.5,
+        target_delta=0.1,
+        alpha=0.05,
+        target_power=0.8,
+        seeds=(0, 1, 2),
+    )
+    assert plan["required_n"] == plan["planned_sample_size_per_seed"]
+    assert plan["seed_count"] == 3
+    assert plan["seed_aggregation"] == "report_separately_no_pooling"
+    assert "observed" not in json.dumps(plan)
+    assert plan["use"] == "preregistration_only_not_post_hoc_success_evidence"
+
+
+@pytest.mark.parametrize("seeds", [(0, 0), (True,), (1.5,)])
+def test_plan_binomial_rate_test_rejects_invalid_seeds(seeds: tuple[object, ...]) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        plan_binomial_rate_test(null_rate=0.5, target_delta=0.1, seeds=seeds)
 
 
 def test_exact_binomial_interval_basic() -> None:
