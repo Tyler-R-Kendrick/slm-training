@@ -51,6 +51,7 @@ def test_custom_floor_gate_path_is_recorded() -> None:
     )
     assert report.floor_gate_ref == gate_path.as_posix()
     assert report.floor_gate_hash == json.loads(gate_path.read_text())["gate_hash"]
+    assert report.floor_gate_verdict == "inconclusive"
 
 
 def test_role_summaries_present() -> None:

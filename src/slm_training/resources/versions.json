@@ -2910,6 +2910,11 @@
         {
           "version": "v3",
           "date": "2026-07-23",
+          "note": "no-bump: pin the custom gate-path regression to the current honest verdict"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
           "note": "no-bump: assert that custom gate references and hashes identify the same loaded artifact"
         },
         {
