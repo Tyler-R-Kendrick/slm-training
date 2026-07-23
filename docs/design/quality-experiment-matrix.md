@@ -6792,3 +6792,14 @@ all predictions exactly match E1063. E1073 Dual Card still times out, while
 E1074 Settings is strict-valid with fidelity/recall 1.0 and structure 0.60,
 exactly reproducing E1064-E1065. Reject E1071 without a redundant full-held
 run; retain v271 ownership and close the exposure sweep.
+
+### E1075: lexer-native root-reference identity (own resume pending)
+
+v272 adds structural root-reference identity supervision and path ranking for
+lexer-native binder slots; no prompt or string surface is a target. The E937
+sampler finds 220/524 genuine nonempty strict-subset rows. A fresh matched
+395-step run reaches 378 steps / 1,512 examples in 95.13 seconds and stops
+cleanly on its internal wall budget. Final identity
+loss/exact/positive-recall/negative-accuracy are 0.6189/0.3333/1.0/0.0.
+This partial is not evaluated; resume only its own full-state checkpoint for
+the remaining 17 steps.

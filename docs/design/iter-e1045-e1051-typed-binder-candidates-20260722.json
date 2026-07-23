@@ -410,6 +410,33 @@
         }
       },
       "finding": "395-step exposure restores smoke but leaves the same Dual Card timeout and Settings success as E1064-E1065"
+    },
+    "E1075": {
+      "status": "partial_pending_own_resume",
+      "run_id": "e1075_v272_root_identity_395",
+      "steps_requested": 395,
+      "steps_completed": 378,
+      "stopped_on": "wall_time_budget",
+      "elapsed_wall_seconds": 95.13351005599907,
+      "examples": 1512,
+      "last_loss": 8.116142272949219,
+      "root_reference_identity_loss_last": 0.61887127161026,
+      "root_reference_identity_exact_accuracy_last": 0.3333333432674408,
+      "root_reference_identity_positive_recall_last": 1.0,
+      "root_reference_identity_negative_accuracy_last": 0.0,
+      "root_reference_identity_classes_mean_last": 3.6666666666666665,
+      "root_reference_identity_strict_subset_records": 220,
+      "binder_component_plan_loss_last": 1.8367233276367188,
+      "binder_component_plan_accuracy_last": 0.3333333432674408,
+      "binder_component_plan_candidate_count_last": 35.0,
+      "binder_arity_loss_last": 0.21370814740657806,
+      "binder_arity_accuracy_last": 0.9090909361839294,
+      "checkpoint_sha256": "ffd06d4fcc7e76ab7ea80c7f801266e114b5e3188d3c2a9e55284f61d3792a2e",
+      "checkpoint_sync": "disabled_scratch",
+      "model_version": "v272",
+      "lever_version": "v40",
+      "train_harness_version": "v23",
+      "next_action": "resume only own full-state checkpoint for remaining 17 steps; do not evaluate partial"
     }
   },
   "disposition": {
@@ -430,7 +457,10 @@
     "e1071_pending_eval": false,
     "e1071_pending_targeted_held": false,
     "e1071_checkpoint_rejected": true,
-    "next_hypothesis": "improve root-list construction through a representation other than generic binder arity, scalar calibration, or exposure"
+    "e1075_pending_own_resume": true,
+    "e1075_pending_eval": true,
+    "e1075_checkpoint_rejected": false,
+    "next_hypothesis": "complete matched v272 lexer-native root-identity exposure, then test strict smoke before any targeted held rows"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

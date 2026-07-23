@@ -200,3 +200,30 @@ resume, or use it as a parent. Retain v271's ownership correction because it
 prevents the Settings collapse, but the next quality arm must improve root-list
 construction through a different representation rather than generic binder
 arity or another scalar/exposure sweep.
+
+## E1075 v272 lexer-native root identity
+
+v272 generalizes the detached root-reference identity target and learned
+re-ranking path from choice sections to lexer-native binder slots. It normalizes
+`bind1` to identity 0 and never derives targets from prompt or string surface
+text. The active E937 loader remains fail-closed for every primary and alternate
+target; its 524 train rows plus all 50 E938 eval rows pass the durable role-safe
+loader test. The lexer-native strict-subset audit finds 220/524 train records
+whose root uses a nonempty proper subset of declared binders, so this objective
+has observed positive and negative supervision.
+
+E1075 starts fresh with the E1071 recipe and 395 requested steps: CPU scratch,
+batch 4, audited E937 data, compiler-tree decode, typed binder-component loss
+1, bound-only binder-arity loss 1, and the new root-identity loss 1. The first
+bounded invocation stops cleanly on its internal wall budget at 378 steps /
+1,512 examples in 95.13 seconds. Final root-identity
+loss/exact/positive-recall/negative-accuracy/classes are
+0.6189/0.3333/1.0/0.0/3.67; binder-component
+loss/accuracy/candidates are 1.8367/0.3333/35.0, and binder-arity
+loss/accuracy are 0.2137/0.9091. The partial serving checkpoint SHA is
+`ffd06d4fcc7e76ab7ea80c7f801266e114b5e3188d3c2a9e55284f61d3792a2e`.
+
+This partial is not quality evidence and must not be evaluated, synced,
+promoted, served, or used as a parent. Resume only its own serialized full state
+for the remaining 17 steps, then document the completed checkpoint before
+strict smoke.
