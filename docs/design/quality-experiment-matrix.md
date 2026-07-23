@@ -6645,3 +6645,13 @@ choice recovers Tabs with fidelity and recall 1.0, but Form still collapses.
 Reject E1016, retain the narrow causal signal, and optimize shared compiler
 supervision before another full-corpus arm. See
 `iter-e1014-e1019-binder-component-plan-20260722.md`.
+
+E1020 uses the v267 linear grammar-token target extractor. It completes 450
+fresh E937 steps in 61.04s, a 12.08x example-throughput gain over E1015's
+compiler-replay path. E1021 smoke reaches parse/strict/fidelity 1.0 with no
+timeout or fallback. E1022 held nevertheless regresses to
+parse/strict/fidelity/structure/recall/reward
+0.6/0.4/0.4333/0.3050/0.2952/0.5062 with two timeouts, and the binder head
+applies zero times. Retain v267 performance, reject the checkpoint and the
+weight-1 shared-gradient recipe. See
+`iter-e1020-e1022-fast-binder-component-20260722.md`.
