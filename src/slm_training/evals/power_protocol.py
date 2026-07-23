@@ -24,6 +24,7 @@ __all__ = [
     "intraclass_correlation",
     "mde_simulation",
     "benjamini_hochberg",
+    "holm_bonferroni",
     "classify_power",
 ]
 
@@ -544,6 +545,63 @@ def benjamini_hochberg(
     # Restore original order
     entries.sort(key=lambda e: e["index"])
     return entries
+
+
+def holm_bonferroni(
+    hypotheses: Sequence[tuple[str, float]], *, alpha: float = 0.05
+) -> list[dict[str, Any]]:
+    """Apply Holm's step-down family-wise error correction.
+
+    The family must be declared prospectively as ``(hypothesis_id, p_value)``
+    pairs. Results retain caller order while rank ties are resolved by stable
+    hypothesis identifier.
+    """
+    if not math.isfinite(alpha) or not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must be finite and in (0, 1)")
+    ids = [item[0] for item in hypotheses]
+    if any(not isinstance(item, str) or not item for item in ids):
+        raise ValueError("hypothesis identifiers must be non-empty strings")
+    if len(ids) != len(set(ids)):
+        raise ValueError("hypothesis identifiers must be unique")
+    entries: list[dict[str, Any]] = []
+    for index, (hypothesis_id, raw_p) in enumerate(hypotheses):
+        if isinstance(raw_p, bool) or not isinstance(raw_p, (int, float)):
+            raise TypeError("p-values must be numeric")
+        p_value = float(raw_p)
+        if not math.isfinite(p_value) or not 0.0 <= p_value <= 1.0:
+            raise ValueError("p-values must be finite and in [0, 1]")
+        entries.append(
+            {
+                "index": index,
+                "hypothesis_id": hypothesis_id,
+                "p_value": p_value,
+                "rank": 0,
+                "threshold": 0.0,
+                "adjusted_p_value": 0.0,
+                "rejected": False,
+            }
+        )
+    family_size = len(entries)
+    ordered = sorted(entries, key=lambda item: (item["p_value"], item["hypothesis_id"]))
+    prior_adjusted = 0.0
+    still_rejecting = True
+    for rank, entry in enumerate(ordered, start=1):
+        remaining = family_size - rank + 1
+        threshold = alpha / remaining
+        adjusted = min(1.0, max(prior_adjusted, remaining * entry["p_value"]))
+        rejected = still_rejecting and entry["p_value"] <= threshold
+        if not rejected:
+            still_rejecting = False
+        entry.update(
+            {
+                "rank": rank,
+                "threshold": threshold,
+                "adjusted_p_value": adjusted,
+                "rejected": rejected,
+            }
+        )
+        prior_adjusted = adjusted
+    return sorted(entries, key=lambda item: item["index"])
 
 
 def classify_power(

@@ -17,12 +17,15 @@ from slm_training.lineage.records import content_sha
 def assess_rl_readiness(evaluation: Path | str | dict[str, Any]) -> RLReadinessReport:
     """Require frozen full-suite competence, AgentV, and useful reward variance."""
     if isinstance(evaluation, (str, Path)):
-        raw = Path(evaluation).read_bytes()
+        evaluation_path = Path(evaluation)
+        raw = evaluation_path.read_bytes()
         payload = json.loads(raw)
         evaluation_sha = hashlib.sha256(raw).hexdigest()
+        evaluation_uri = str(evaluation_path.resolve())
     else:
         payload = dict(evaluation)
         evaluation_sha = content_sha(payload)
+        evaluation_uri = None
 
     suites = payload.get("suites") or payload.get("scoreboard", {}).get("suites") or {}
     snapshot = payload.get("evaluation_snapshot") or payload.get("snapshot") or {}
@@ -79,6 +82,7 @@ def assess_rl_readiness(evaluation: Path | str | dict[str, Any]) -> RLReadinessR
         reward_variance=variance,
         approved=not failures,
         failures=tuple(failures),
+        evaluation_uri=evaluation_uri,
     )
 
 
@@ -86,7 +90,11 @@ def load_rl_readiness(path: Path | str) -> RLReadinessReport:
     return RLReadinessReport.model_validate_json(Path(path).read_text(encoding="utf-8"))
 
 
-def assert_rl_ready(report: RLReadinessReport | Path | str | None) -> RLReadinessReport:
+def assert_rl_ready(
+    report: RLReadinessReport | Path | str | None,
+    *,
+    evaluation: Path | str | dict[str, Any] | None = None,
+) -> RLReadinessReport:
     if report is None:
         raise ValueError(
             "RL is locked: provide an approved --rl-readiness-report produced from "
@@ -104,6 +112,19 @@ def assert_rl_ready(report: RLReadinessReport | Path | str | None) -> RLReadines
         and resolved.reward_variance > 0
     ):
         raise ValueError("RL is locked: readiness report is internally inconsistent")
+    evidence = evaluation or resolved.evaluation_uri
+    if evidence is None:
+        raise ValueError(
+            "RL is locked: readiness report is not bound to a verifiable evaluation"
+        )
+    verified = assess_rl_readiness(evidence)
+    if (
+        not verified.approved
+        or verified.evaluation_sha256 != resolved.evaluation_sha256
+        or verified.model_dump(exclude={"evaluation_uri", "created_at"})
+        != resolved.model_dump(exclude={"evaluation_uri", "created_at"})
+    ):
+        raise ValueError("RL is locked: readiness evidence does not match report")
     return resolved
 
 

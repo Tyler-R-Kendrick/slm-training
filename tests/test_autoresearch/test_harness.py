@@ -17,6 +17,17 @@ from slm_training.autoresearch.engine import (
     validate_experiment,
     validate_hypothesis_matrix,
 )
+from slm_training.autoresearch.experiment_campaign import (
+    ArtifactRequirementV1,
+    CampaignArmV1,
+    CampaignControlV1,
+    CampaignDeviationV1,
+    CampaignEndpointV1,
+    CampaignGateV1,
+    ExperimentCampaignV1,
+    MultiplicityFamilyV1,
+    campaign_manifest_sha256,
+)
 from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
 from slm_training.levers import MAX_RUN_MINUTES, MAX_RUN_SECONDS
@@ -56,6 +67,82 @@ def campaign() -> CampaignSpec:
         primary_metric="held_out.structural_similarity",
         researcher_mode="fixture",
     )
+
+
+def experiment_campaign(**overrides) -> ExperimentCampaignV1:
+    payload = {
+        "campaign_id": "test-campaign",
+        "experiment_id": "hyp-0",
+        "hypothesis": "More supervised steps improve held-out structure.",
+        "decision": "Promote only after the declared endpoint clears its gate.",
+        "endpoints": (
+            CampaignEndpointV1(
+                endpoint_id="primary",
+                metric="binder_reference_f1",
+                role="primary",
+                direction="increase",
+                minimum_effect=0.01,
+            ),
+        ),
+        "arms": (
+            CampaignArmV1(
+                arm_id="control",
+                role="control",
+                config_sha256="a" * 64,
+            ),
+            CampaignArmV1(
+                arm_id="candidate",
+                role="candidate",
+                config_sha256="b" * 64,
+            ),
+        ),
+        "seeds": (7, 11),
+        "budget": CampaignBudget(
+            max_experiments=1,
+            max_wall_minutes=MAX_RUN_MINUTES,
+        ),
+        "stopping_rules": ("Stop after both declared seeds finish.",),
+        "controls": (
+            CampaignControlV1(
+                control_id="matched-control",
+                description="Matched baseline with the same evaluation recipe.",
+                kind="negative",
+            ),
+        ),
+        "negative_controls": ("Matched baseline must not improve spuriously.",),
+        "multiplicity_families": (
+            MultiplicityFamilyV1(
+                family_id="primary-family",
+                hypothesis_ids=("candidate-vs-control",),
+                alpha=0.05,
+            ),
+        ),
+        "promotion_gates": (
+            CampaignGateV1(
+                gate_id="promote-primary",
+                endpoint_id="primary",
+                operator="ge",
+                threshold=0.01,
+            ),
+        ),
+        "rollback_gates": (
+            CampaignGateV1(
+                gate_id="rollback-primary",
+                endpoint_id="primary",
+                operator="lt",
+                threshold=0,
+            ),
+        ),
+        "artifact_requirements": (
+            ArtifactRequirementV1(kind="version_stamp"),
+        ),
+        "claim_class": "diagnostic",
+        "source_commit": "c" * 40,
+        "source_dirty": False,
+        "author": "test",
+    }
+    payload.update(overrides)
+    return ExperimentCampaignV1(**payload)
 
 
 def experiment(**overrides) -> ExperimentSpec:
@@ -390,6 +477,109 @@ def test_campaign_store_is_content_addressed_and_chained(tmp_path: Path) -> None
     assert (store.root / "results.tsv").is_file()
 
 
+def test_campaign_store_locks_manifest_idempotently(tmp_path: Path) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    manifest = experiment_campaign()
+
+    first = store.lock_experiment_campaign(manifest)
+    second = store.lock_experiment_campaign(manifest)
+
+    assert first == second
+    assert second.manifest_sha256 == campaign_manifest_sha256(manifest)
+    lock_events = [
+        event
+        for event in store.verify_event_chain()
+        if event["event_type"] == "experiment_campaign_locked"
+    ]
+    assert len(lock_events) == 1
+
+
+def test_campaign_store_rejects_different_relock_and_artifact_mutation(
+    tmp_path: Path,
+) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    manifest = experiment_campaign()
+    store.lock_experiment_campaign(manifest)
+
+    with pytest.raises(FileExistsError, match="different content"):
+        store.lock_experiment_campaign(
+            manifest.model_copy(update={"hypothesis": "A different preregistered hypothesis."})
+        )
+
+    lock_event = next(
+        event
+        for event in store.verify_event_chain()
+        if event["event_type"] == "experiment_campaign_locked"
+    )
+    lock_path = (
+        store.root
+        / "artifacts"
+        / "experiment_campaigns"
+        / f"{lock_event['artifact_sha256']}.json"
+    )
+    payload = json.loads(lock_path.read_text())
+    payload["manifest"]["hypothesis"] = "A post-result mutation is invalid."
+    lock_path.write_text(json.dumps(payload))
+    with pytest.raises(RuntimeError, match="content digest mismatch"):
+        store.load_experiment_campaign(manifest.experiment_id)
+
+
+def test_campaign_store_requires_lock_before_experiment_start(tmp_path: Path) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    store.append_event(
+        "experiment_started",
+        experiment_id="hyp-0",
+        status="running",
+    )
+
+    with pytest.raises(RuntimeError, match="after experiment start"):
+        store.lock_experiment_campaign(experiment_campaign())
+
+
+def test_campaign_store_detects_event_chain_tampering(tmp_path: Path) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    store.lock_experiment_campaign(experiment_campaign())
+    events_path = store.root / "events.jsonl"
+    events = [json.loads(line) for line in events_path.read_text().splitlines()]
+    events[-1]["status"] = "edited"
+    events_path.write_text("\n".join(json.dumps(event) for event in events) + "\n")
+
+    with pytest.raises(RuntimeError, match="event_id digest mismatch"):
+        store.verify_event_chain()
+
+
+def test_campaign_deviation_is_exploratory_and_does_not_replace_lock(
+    tmp_path: Path,
+) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    manifest = experiment_campaign()
+    lock = store.lock_experiment_campaign(manifest)
+    deviation = CampaignDeviationV1(
+        campaign_id="test-campaign",
+        experiment_id="hyp-0",
+        manifest_sha256=lock.manifest_sha256,
+        changed_field="budget.max_experiments",
+        old_value=1,
+        new_value=2,
+        reason="Preserve the unexpected follow-up as exploratory evidence.",
+        author="test",
+        outcome_accessed=True,
+    )
+
+    deviation_path = store.append_campaign_deviation(deviation)
+
+    assert deviation_path.is_file()
+    assert store.load_experiment_campaign("hyp-0") == lock
+    event = store.verify_event_chain()[-1]
+    assert event["event_type"] == "campaign_deviation_appended"
+    assert event["status"] == "exploratory"
+
+
 def test_run_requires_exact_member_of_latest_hypothesis_matrix(tmp_path: Path) -> None:
     from scripts.autoresearch import _require_hypothesis_matrix
 
@@ -437,6 +627,59 @@ def test_run_defaults_to_matrix_recommendation(tmp_path: Path) -> None:
     assert events["experiment_id"] == matrix.recommended_experiment_id
 
 
+def test_run_execution_requires_lock_and_dry_plan_binds_manifest(
+    tmp_path: Path,
+) -> None:
+    from scripts.autoresearch import cmd_run
+
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    matrix = hypothesis_matrix()
+    matrix_path = store.write_artifact("hypothesis_matrices", matrix)
+    store.append_event(
+        "hypothesis_matrix_formed",
+        artifact_sha256=matrix_path.stem,
+        status="planned",
+    )
+    with pytest.raises(ValueError, match="requires a preregistered"):
+        cmd_run(
+            SimpleNamespace(
+                campaign_id="test-campaign",
+                root=tmp_path,
+                experiment=None,
+                campaign_manifest=None,
+                execute=True,
+                trackio=False,
+            )
+        )
+
+    manifest = experiment_campaign()
+    manifest_path = tmp_path / "campaign-manifest.json"
+    manifest_path.write_text(manifest.model_dump_json())
+    assert (
+        cmd_run(
+            SimpleNamespace(
+                campaign_id="test-campaign",
+                root=tmp_path,
+                experiment=None,
+                campaign_manifest=manifest_path,
+                execute=False,
+                trackio=False,
+            )
+        )
+        == 0
+    )
+    plan_event = store.verify_event_chain()[-1]
+    plan_path = (
+        store.root
+        / "artifacts"
+        / "execution_plans"
+        / f"{plan_event['artifact_sha256']}.json"
+    )
+    plan = json.loads(plan_path.read_text())
+    assert plan["campaign_manifest_sha256"] == campaign_manifest_sha256(manifest)
+
+
 def test_execution_budget_counts_started_experiments_not_matrix_rows(
     tmp_path: Path,
 ) -> None:
@@ -456,6 +699,7 @@ def test_execution_budget_counts_started_experiments_not_matrix_rows(
     store.append_event(
         "experiment_started", experiment_id="already-ran", status="running"
     )
+    store.lock_experiment_campaign(experiment_campaign())
     with pytest.raises(ValueError, match="execution budget exhausted"):
         cmd_run(
             SimpleNamespace(
@@ -1405,9 +1649,12 @@ def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
 
 
 def test_rl_readiness_is_fail_closed() -> None:
-    report = assess_rl_readiness(passing_evaluation())
+    evaluation = passing_evaluation()
+    report = assess_rl_readiness(evaluation)
     assert report.approved
-    assert_rl_ready(report)
+    assert_rl_ready(report, evaluation=evaluation)
+    with pytest.raises(ValueError, match="not bound"):
+        assert_rl_ready(report)
     failed = assess_rl_readiness({"suites": {}, "reward_samples": [1, 1]})
     assert not failed.approved
     with pytest.raises(ValueError, match="RL is locked"):
