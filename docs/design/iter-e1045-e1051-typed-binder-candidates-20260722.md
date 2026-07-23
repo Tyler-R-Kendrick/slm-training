@@ -55,3 +55,20 @@ AgentEvals JSONL and pinned AgentV bundles (`0/6`).
 Reject the no-arity decode policy. Arity helps declaration reachability even
 while harming particular rows, so the next arm needs calibrated or
 typed-conditional arity rather than a global on/off switch.
+
+## E1058-E1062 arity calibration
+
+E1058 tests binder-arity weight 0.5. Smoke is prediction-identical to arity-off:
+the head applies 15 times but changes no choices. E1059-E1060 probe only the
+two held rows that flip under arity on/off. Dual Card still times out, while
+Settings remains strict-valid with structure 0.41 and full component recall.
+
+E1061-E1062 repeat those rows at weight 0.75. The policy crosses both decision
+thresholds: Dual Card reproduces the strict-valid weight-1 result, while
+Settings reproduces the one-`TextContent` collapse. All five runs emit
+AgentEvals JSONL and pinned AgentV bundles (`0/5`).
+
+Close the scalar sweep. No global arity weight serves both rows. The grammar
+already has a dedicated root-reference arity head, so the next minimal
+representation arm will isolate binder arity to bound declarations instead of
+letting it compete for root-list ownership.

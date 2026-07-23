@@ -117,6 +117,71 @@
       "binder_component_plan_applications_non_timeout_rows": 20,
       "binder_component_plan_choice_changes": 0,
       "agentv": "0/5"
+    },
+    "E1058": {
+      "status": "completed_diagnostic",
+      "run_id": "e1058_v270_typed_binder_arity05_smoke",
+      "suite": "smoke",
+      "binder_arity_decode_weight": 0.5,
+      "n": 3,
+      "parse": 1.0,
+      "strict_v2": 1.0,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5716666666666667,
+      "component_recall": 0.75,
+      "reward": 0.957,
+      "binder_arity_applications": 15,
+      "binder_arity_choice_changes": 0,
+      "agentv": "0/1"
+    },
+    "E1059_E1060": {
+      "status": "completed_rejected_targeted_subsets",
+      "binder_arity_decode_weight": 0.5,
+      "runs": {
+        "dual_card": {
+          "run_id": "e1059_v270_typed_binder_arity05_dual_card",
+          "parse": 0.0,
+          "strict_v2": 0.0,
+          "decode_timeouts": 1,
+          "agentv": "0/1"
+        },
+        "settings": {
+          "run_id": "e1060_v270_typed_binder_arity05_settings",
+          "parse": 1.0,
+          "strict_v2": 1.0,
+          "fidelity": 1.0,
+          "structural_similarity": 0.41,
+          "component_recall": 1.0,
+          "reward": 0.937,
+          "agentv": "0/1"
+        }
+      }
+    },
+    "E1061_E1062": {
+      "status": "completed_rejected_targeted_subsets",
+      "binder_arity_decode_weight": 0.75,
+      "runs": {
+        "dual_card": {
+          "run_id": "e1061_v270_typed_binder_arity075_dual_card",
+          "parse": 1.0,
+          "strict_v2": 1.0,
+          "fidelity": 1.0,
+          "structural_similarity": 0.7308,
+          "component_recall": 1.0,
+          "reward": 0.973,
+          "agentv": "0/1"
+        },
+        "settings": {
+          "run_id": "e1062_v270_typed_binder_arity075_settings",
+          "parse": 1.0,
+          "strict_v2": 0.0,
+          "fidelity": 0.3333333333333333,
+          "structural_similarity": 0.06,
+          "component_recall": 0.0,
+          "reward": 0.707,
+          "agentv": "0/1"
+        }
+      }
     }
   },
   "disposition": {
@@ -125,7 +190,8 @@
     "checkpoint_parentable": false,
     "checkpoint_synced": false,
     "no_arity_decode_accepted": false,
-    "next_hypothesis": "calibrate or condition binder arity by typed declaration context"
+    "arity_scalar_sweep_closed": true,
+    "next_hypothesis": "isolate binder arity to bound declarations because root reference arity has a dedicated owner"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

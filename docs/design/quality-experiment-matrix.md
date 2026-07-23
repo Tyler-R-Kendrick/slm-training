@@ -6726,3 +6726,13 @@ becomes strict-valid while Dual Card changes from strict-valid to a timeout.
 Reject global arity disablement; calibrate or condition arity by typed
 declaration context next. See
 `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
+
+### E1058-E1062: binder-arity scalar calibration (closed)
+
+Arity weight 0.5 is prediction-identical to arity-off on smoke. Targeted held
+probes show Dual Card still times out while Settings is strict-valid. At 0.75,
+Dual Card becomes strict-valid but Settings collapses to one `TextContent`,
+matching weight 1. No global scalar serves both rows. Close the sweep and
+isolate binder arity to bound declarations; root-list arity already has a
+dedicated head. See
+`iter-e1045-e1051-typed-binder-candidates-20260722.md`.
