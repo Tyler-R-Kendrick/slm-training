@@ -14,7 +14,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from slm_training.harnesses.model_build.feature_flags import SNAPSHOT_SCHEMA, catalog
+from slm_training.harnesses.model_build.feature_flags import (
+    SNAPSHOT_SCHEMA,
+    catalog,
+    flag_key_for_config_field,
+    feature_flags,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "src/slm_training/resources/experiment_feature_flag_history.json"
@@ -78,7 +83,9 @@ def _normalize(recipe: dict[str, Any], known: set[str]) -> tuple[dict[str, Any],
         if key in INVERTED_ALIASES:
             name, value = INVERTED_ALIASES[key], not bool(value)
         if name in known:
-            values[name] = value
+            flag_key = flag_key_for_config_field(name)
+            if flag_key is not None:
+                values[flag_key] = value
         elif key not in {"honesty_mode", "record_count", "n", "suite", "suites"}:
             unknown.append(key)
     return values, sorted(unknown)
@@ -86,7 +93,7 @@ def _normalize(recipe: dict[str, Any], known: set[str]) -> tuple[dict[str, Any],
 
 def build() -> dict[str, Any]:
     registry = catalog()
-    known = {row["field"] for row in registry["flags"]}
+    known = {flag.config_field for flag in feature_flags()}
     entries: dict[str, dict[str, Any]] = {}
     for path in sorted((ROOT / "docs/design").glob("*.json")):
         payload = _read(path)

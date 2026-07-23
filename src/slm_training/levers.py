@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any, Final
 
 
-MAX_RUN_MINUTES: Final = 2
+# The CI changed-test fan-out includes dependency setup; three minutes is the
+# repository-wide hard ceiling and lets that completed test suite report cleanly.
+MAX_RUN_MINUTES: Final = 3
 KILL_GRACE_SECONDS: Final = 10
 MAX_RUN_SECONDS: Final = MAX_RUN_MINUTES * 60
 INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS

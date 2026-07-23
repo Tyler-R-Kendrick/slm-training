@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "Raise the canonical run cap to the permitted three minutes so changed-test CI can complete after dependency setup"
+        },
         {
           "version": "v17",
           "date": "2026-07-22",
@@ -984,19 +989,35 @@
       ]
     },
     "features.openfeature": {
-      "version": "v4",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
         "src/slm_training/features/defaults.py",
         "src/slm_training/features/levers.py",
         "src/slm_training/features/runtime.py",
+        "src/slm_training/web/observability.py",
         "src/slm_training/web/routes.py",
         "src/apps/dashboard/src/features/keys.ts",
         "src/apps/dashboard/src/features/runtime.ts",
+        "src/apps/dashboard/src/interpret/library.tsx",
+        "src/apps/dashboard/src/interpret/toolProvider.ts",
+        "src/apps/dashboard/src/main.tsx",
+        "src/apps/dashboard/src/pages/Experiments.tsx",
+        "src/apps/dashboard/src/pages/ExperimentFlagDetail.tsx",
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Add OpenFeature flag detail evidence, source excerpts, and outcome comparisons to the experiment dashboard"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "Use canonical OpenFeature keys in product feature metadata and bootstrap payloads"
+        },
         {
           "version": "v4",
           "date": "2026-07-23",
@@ -1177,12 +1198,17 @@
       ]
     },
     "harness.core": {
-      "version": "v6",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "Keep explicit historical result blocks visible while rejecting arbitrary nested metrics from malformed canonical records"
+        },
         {
           "version": "v6",
           "date": "2026-07-23",
@@ -3494,7 +3520,7 @@
       ]
     },
     "harness.experiment_feature_flags": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/feature_flags.py",
@@ -3502,6 +3528,11 @@
         "src/slm_training/resources/experiment_feature_flag_history.json"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Persist experiment feature snapshots and historical evidence by canonical OpenFeature key"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

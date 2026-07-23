@@ -86,26 +86,24 @@ def _type_name(annotation: Any, default: Any) -> str:
 
 
 @dataclass(frozen=True)
-class Lever:
+class FeatureFlag:
     key: str
-    field: str
+    config_field: str
     type: Literal["boolean", "number", "string", "object"]
     default: Any
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "key": self.key,
-            "field": self.field,
-            "label": self.field.replace("_", " "),
             "type": self.type,
             "default": _json_value(self.default),
         }
 
 
-def levers() -> tuple[Lever, ...]:
+def feature_flags() -> tuple[FeatureFlag, ...]:
     """Return the generated catalog in stable field-name order."""
     hints = get_type_hints(ModelBuildConfig)
-    rows: list[Lever] = []
+    rows: list[FeatureFlag] = []
     for item in fields(ModelBuildConfig):
         if item.name in _NON_LEVER_FIELDS:
             continue
@@ -117,25 +115,30 @@ def levers() -> tuple[Lever, ...]:
             else item.default_factory()  # type: ignore[misc]
         )
         rows.append(
-            Lever(
+            FeatureFlag(
                 key=f"slm.{item.name}",
-                field=item.name,
+                config_field=item.name,
                 type=_type_name(hints.get(item.name), default),
                 default=default,
             )
         )
-    return tuple(sorted(rows, key=lambda row: row.field))
+    return tuple(sorted(rows, key=lambda row: row.key))
+
+
+def flag_key_for_config_field(field: str) -> str | None:
+    """Return the canonical OpenFeature key for an internal config field."""
+    return next((row.key for row in feature_flags() if row.config_field == field), None)
 
 
 def registry_revision() -> str:
-    payload = [row.to_dict() for row in levers()]
+    payload = [row.to_dict() for row in feature_flags()]
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()[:16]
 
 
 def catalog() -> dict[str, Any]:
-    rows = [lever.to_dict() for lever in levers()]
+    rows = [flag.to_dict() for flag in feature_flags()]
     return {
         "schema": SNAPSHOT_SCHEMA,
         "revision": registry_revision(),
@@ -167,8 +170,8 @@ def _domain(config: ModelBuildConfig, phase: str, values: dict[str, Any]) -> str
 
 def resolve(config: ModelBuildConfig, *, phase: str) -> tuple[ModelBuildConfig, dict[str, Any]]:
     """Evaluate the complete config through OpenFeature and return its snapshot."""
-    catalog_rows = levers()
-    raw = {row.key: _json_value(getattr(config, row.field)) for row in catalog_rows}
+    catalog_rows = feature_flags()
+    raw = {row.key: _json_value(getattr(config, row.config_field)) for row in catalog_rows}
     domain = _domain(config, phase, raw)
     provider = InMemoryProvider(
         {
@@ -190,7 +193,7 @@ def resolve(config: ModelBuildConfig, *, phase: str) -> tuple[ModelBuildConfig, 
         envelope = client.get_object_value(lever.key, {"value": default})
         value = envelope.get("value", default) if isinstance(envelope, dict) else default
         coerced = _coerce(value, lever.default)
-        resolved[lever.field] = coerced
+        resolved[lever.config_field] = coerced
         rows.append(
             {
                 **lever.to_dict(),

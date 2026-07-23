@@ -36,6 +36,7 @@ from slm_training.harnesses.model_build.ship_gates import (
 )
 from slm_training.harnesses.model_build.feature_flags import (
     catalog as feature_flag_catalog,
+    feature_flags as model_build_feature_flags,
 )
 from slm_training.harnesses.model_build.feature_flags import load_snapshot
 from slm_training.autoresearch.run_insights import (
@@ -852,6 +853,8 @@ class Readers:
     def _feature_history(self) -> dict[str, dict[str, Any]]:
         payload = _read_json(self.feature_flag_history) or {}
         rows = payload.get("runs") if isinstance(payload, dict) else []
+        if not isinstance(rows, list):
+            rows = []
         return {
             str(row["run_id"]): row
             for row in rows
@@ -868,6 +871,163 @@ class Readers:
 
         return self._fresh("experiment_flags", [self.feature_flag_history], compute)
 
+    def _flag_description(self, config_field: str) -> str:
+        """Use the config's nearby prose; never maintain a second lever registry."""
+        path = self.root / "src/slm_training/harnesses/model_build/config.py"
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        field_line = next(
+            (
+                index
+                for index, line in enumerate(lines)
+                if re.match(rf"\s*{re.escape(config_field)}\s*:", line)
+            ),
+            None,
+        )
+        if field_line is not None:
+            comments: list[str] = []
+            for line in reversed(lines[:field_line]):
+                stripped = line.strip()
+                if stripped.startswith("#"):
+                    comments.append(stripped.removeprefix("#").strip())
+                    continue
+                if not stripped:
+                    continue
+                break
+            if comments:
+                return " ".join(reversed(comments))
+        return (
+            f"Controls the {config_field.replace('_', ' ')} model-build setting. "
+            "OpenFeature resolves it before training and evaluation."
+        )
+
+    def _flag_implementation(self, config_field: str) -> list[dict[str, Any]]:
+        """Return small, local source excerpts for the selected flag on demand."""
+        paths = (
+            "src/slm_training/harnesses/model_build/config.py",
+            "src/slm_training/harnesses/model_build/feature_flags.py",
+            "src/slm_training/harnesses/model_build/factory.py",
+            "src/slm_training/harnesses/model_build/eval_runner.py",
+            "src/slm_training/harnesses/model_build/train_loop.py",
+            "src/slm_training/harnesses/model_build/decode_path.py",
+        )
+        match = re.compile(rf"\b{re.escape(config_field)}\b")
+        locations: list[dict[str, Any]] = []
+        for relative in paths:
+            path = self.root / relative
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                continue
+            for index, line in enumerate(lines):
+                if not match.search(line):
+                    continue
+                start, end = max(0, index - 2), min(len(lines), index + 3)
+                locations.append(
+                    {
+                        "path": relative,
+                        "line": index + 1,
+                        "snippet": "\n".join(
+                            f"{number + 1}: {text}"
+                            for number, text in enumerate(lines[start:end], start)
+                        ),
+                    }
+                )
+                if len(locations) >= 8:
+                    return locations
+        return locations
+
+    @staticmethod
+    def _comparison_outcomes(
+        baseline: dict[str, Any], treatment: dict[str, Any]
+    ) -> list[str]:
+        metrics = (
+            "meaningful_program_rate",
+            "syntax_parse_rate",
+            "parse_rate",
+            "structural_similarity",
+            "placeholder_fidelity",
+            "reward_score",
+        )
+        baseline_suites = baseline.get("suites") or {}
+        treatment_suites = treatment.get("suites") or {}
+        outcomes: list[str] = []
+        for suite in sorted(set(baseline_suites) & set(treatment_suites)):
+            before = baseline_suites.get(suite) or {}
+            after = treatment_suites.get(suite) or {}
+            for metric in metrics:
+                left, right = before.get(metric), after.get(metric)
+                if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                    outcomes.append(f"{suite} {metric}: {right - left:+.3f}")
+        return outcomes
+
+    def experiment_flag(self, key: str) -> dict[str, Any] | None:
+        """Detail for one canonical OpenFeature key and its recorded evidence."""
+        flag = next((row for row in model_build_feature_flags() if row.key == key), None)
+        if flag is None:
+            return None
+        history = self._feature_history()
+        run_index = {str(row.get("run_id")): row for row in self.runs()["runs"]}
+        evidence: list[dict[str, Any]] = []
+        for run_id, record in history.items():
+            values = record.get("values") or {}
+            if key not in values:
+                continue
+            run = run_index.get(run_id)
+            value = values[key]
+            evidence.append(
+                {
+                    "run_id": run_id,
+                    "date": (run or {}).get("date"),
+                    "value": value,
+                    "state": self._flag_state(value, flag.default, flag.type),
+                    "pass": (run or {}).get("pass"),
+                    "suites": (run or {}).get("suites") or {},
+                    "sources": [source.get("path") for source in record.get("sources") or [] if isinstance(source, dict)],
+                }
+            )
+        evidence.sort(key=lambda row: (str(row.get("date") or ""), row["run_id"]))
+
+        def baseline(row: dict[str, Any]) -> bool:
+            return not bool(row["value"]) if flag.type == "boolean" else row["value"] == flag.default
+
+        comparisons: list[dict[str, Any]] = []
+        previous_baseline: dict[str, Any] | None = None
+        for row in evidence:
+            if baseline(row):
+                previous_baseline = row
+                continue
+            if previous_baseline is None:
+                continue
+            outcomes = self._comparison_outcomes(previous_baseline, row)
+            comparisons.append(
+                {
+                    "baseline_run_id": previous_baseline["run_id"],
+                    "baseline_value": previous_baseline["value"],
+                    "run_id": row["run_id"],
+                    "value": row["value"],
+                    "date": row.get("date"),
+                    "outcomes": outcomes,
+                    "outcome_summary": "; ".join(outcomes) or "No shared numeric suite metrics recorded.",
+                }
+            )
+        return {
+            "key": key,
+            "type": flag.type,
+            "default": flag.default,
+            "description": self._flag_description(flag.config_field),
+            "implementation": self._flag_implementation(flag.config_field),
+            "evidence": list(reversed(evidence[-100:])),
+            "comparisons": list(reversed(comparisons[-50:])),
+            "comparison_note": (
+                "Each row compares a recorded enabled or overridden value with the previous "
+                "recorded disabled or default value. Other settings may differ; this is not causal evidence."
+            ),
+            "provenance": "committed" if history else "missing",
+        }
+
     @staticmethod
     def _flag_state(value: Any, default: Any, kind: str) -> str:
         if kind == "boolean":
@@ -882,7 +1042,7 @@ class Readers:
         phases = ["training", "evaluation"] if snapshots else ["historical"]
         rows: list[dict[str, Any]] = []
         for flag in registry["flags"]:
-            field = str(flag["field"])
+            key = str(flag["key"])
             cells: dict[str, dict[str, Any]] = {}
             for phase in phases:
                 source = snapshots.get(phase, {}) if isinstance(snapshots, dict) else {}
@@ -891,7 +1051,7 @@ class Readers:
                     (
                         item
                         for item in source_rows
-                        if isinstance(item, dict) and item.get("field") == field
+                        if isinstance(item, dict) and item.get("key") == key
                     ),
                     None,
                 )
@@ -905,15 +1065,15 @@ class Readers:
                 elif phase == "historical" and isinstance(history, dict):
                     conflicts = history.get("conflicts") or {}
                     values = history.get("values") or {}
-                    if field in conflicts:
+                    if key in conflicts:
                         cells[phase] = {
                             "recorded": False,
                             "value": None,
                             "state": "conflict",
                             "source": "committed",
                         }
-                    elif field in values:
-                        value = values[field]
+                    elif key in values:
+                        value = values[key]
                         cells[phase] = {
                             "recorded": True,
                             "value": value,

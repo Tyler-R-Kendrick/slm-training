@@ -19,9 +19,8 @@ export interface FeatureBootstrap {
   defaults: Record<string, JsonValue>;
   evaluated: Record<string, JsonValue>;
   targeting_key: string;
-  levers: Array<{
-    lever_id: string;
-    flag_key: string;
+  flags: Array<{
+    key: string;
     kind: string;
     description: string;
     matrix_ref: string | null;

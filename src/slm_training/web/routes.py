@@ -34,7 +34,7 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
-from slm_training.features.levers import lever_registry_payload
+from slm_training.features.levers import feature_flag_registry_payload
 
 observability_router = APIRouter(prefix="/api")
 actions_router = APIRouter(prefix="/api")
@@ -98,7 +98,7 @@ def features_bootstrap(
 
 @observability_router.get("/features/levers")
 def features_levers() -> dict[str, Any]:
-    return lever_registry_payload()
+    return feature_flag_registry_payload()
 
 
 @observability_router.get("/overview")
@@ -114,6 +114,14 @@ def scoreboards(request: Request) -> dict[str, Any]:
 @observability_router.get("/experiment-flags")
 def experiment_flags(request: Request) -> dict[str, Any]:
     return _readers(request).experiment_flags()
+
+
+@observability_router.get("/experiment-flags/{key}")
+def experiment_flag(request: Request, key: str) -> dict[str, Any]:
+    detail = _readers(request).experiment_flag(key)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="unknown experiment feature flag")
+    return detail
 
 
 @observability_router.get("/scoreboards/{kind}")

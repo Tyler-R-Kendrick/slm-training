@@ -2987,12 +2987,19 @@ def test_features_bootstrap_returns_evaluated_defaults(ro_client: TestClient) ->
     assert payload["provider"] == "in_memory"
     assert payload["evaluated"]["dashboard.default-renderer"] == "interpreted"
     assert payload["targeting_key"] == "test"
-    assert any(row["lever_id"] == "dashboard-renderer" for row in payload["levers"])
+    assert any(row["key"] == "dashboard.default-renderer" for row in payload["flags"])
 
 
 def test_features_levers_registry(ro_client: TestClient) -> None:
     payload = ro_client.get("/api/features/levers").json()
-    assert any(row["flag_key"] == "dashboard.default-renderer" for row in payload["levers"])
+    assert any(row["key"] == "dashboard.default-renderer" for row in payload["flags"])
+
+
+def test_experiment_feature_flag_detail_endpoint(ro_client: TestClient) -> None:
+    response = ro_client.get("/api/experiment-flags/slm.schema_in_context")
+    assert response.status_code == 200
+    assert response.json()["key"] == "slm.schema_in_context"
+    assert ro_client.get("/api/experiment-flags/slm.not-a-flag").status_code == 404
 
 
 def test_read_only_blocks_execution(ro_client: TestClient) -> None:
