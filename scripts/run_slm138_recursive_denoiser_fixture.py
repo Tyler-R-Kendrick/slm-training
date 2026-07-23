@@ -95,6 +95,29 @@ def _today_slug() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d")
 
 
+def _portable_agentv_paths(
+    report: dict[str, Any], *, output_dir: Path
+) -> dict[str, Any]:
+    """Keep runtime-absolute AgentV paths out of durable design records."""
+
+    resolved_output_dir = output_dir.resolve()
+
+    def portable(value: str) -> str:
+        path = Path(value).resolve()
+        try:
+            return str(path.relative_to(ROOT))
+        except ValueError:
+            return f"output-dir://{path.relative_to(resolved_output_dir)}"
+
+    value = report.get("spec")
+    if value:
+        report["spec"] = portable(value)
+    for key, value in report.get("artifacts", {}).items():
+        if value:
+            report["artifacts"][key] = portable(value)
+    return report
+
+
 def _fixture_records() -> list[ExampleRecord]:
     return [
         ExampleRecord(id="a", prompt="Hero layout", openui=HERO, split="train"),
@@ -935,11 +958,12 @@ def _run_recurrence_health(
         ),
     }
     summary_case = summary["schedule_complete"] and summary["telemetry_finite"]
-    report["agentv"] = publish_agentv_evaluation(
-        output_dir,
-        name="slm282-recurrence-health",
-        claim="fixture_recurrence_health_not_ship",
-        cases=[
+    report["agentv"] = _portable_agentv_paths(
+        publish_agentv_evaluation(
+            output_dir,
+            name="slm282-recurrence-health",
+            claim="fixture_recurrence_health_not_ship",
+            cases=[
             {
                 "id": "matched-controls",
                 "criteria": "All recurrence-health arms use matched controls.",
@@ -976,7 +1000,9 @@ def _run_recurrence_health(
                 }
                 for result in summary["seed_results"]
             ],
-        ],
+            ],
+        ),
+        output_dir=output_dir,
     )
     return report
 

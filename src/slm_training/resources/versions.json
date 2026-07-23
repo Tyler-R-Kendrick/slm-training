@@ -3748,7 +3748,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v13",
+      "version": "v14",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -3773,6 +3773,16 @@
         "docs/design/iter-slm279-depth-supervision-correction-20260723.md"
       ],
       "history": [
+        {
+          "version": "v14",
+          "date": "2026-07-23",
+          "note": "no-bump: preserve external --output-dir support by using output-dir URIs when AgentV artifacts are outside the repository; this completes the v14 portable-path correction without changing experiment semantics"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-23",
+          "note": "SLM-282 evidence-writer correction: serialize AgentV spec and artifact paths relative to the repository before mirroring recurrence-health reports into docs/design, while retaining absolute paths for the runtime SDK invocation"
+        },
         {
           "version": "v13",
           "date": "2026-07-23",
