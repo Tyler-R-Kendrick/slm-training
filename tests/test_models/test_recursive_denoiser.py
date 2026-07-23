@@ -8,6 +8,7 @@ deep-supervision objective and its fail-closed
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -1886,7 +1887,9 @@ def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
         ces: list[float],
         *,
         finite: bool = True,
+        second_example_ces: list[float] | None = None,
     ) -> dict:
+        second = second_example_ces or ces
         return {
             "arm": arm,
             "seed": seed,
@@ -1897,6 +1900,10 @@ def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
                     "token_weighted_cross_entropy": ce,
                     "ratios_finite": finite,
                     "all_finite": finite,
+                    "examples": [
+                        {"id": "a", "cross_entropy": ce},
+                        {"id": "b", "cross_entropy": second[step - 1]},
+                    ],
                 }
                 for step, ce in enumerate(ces, start=1)
             ],
@@ -1912,42 +1919,95 @@ def test_slm282_preregistration_uses_only_raw_primary_arm_seed_curves() -> None:
                     curve(arm, seed, 4, [4.0, 3.5, 3.0, 2.5]),
                 ]
             )
-    controls = [{"matched": True, "batches_matched": True} for _ in range(6)]
+    controls = [
+        {
+            "seed": seed,
+            "recursive_steps": depth,
+            "matched": True,
+            "batches_matched": True,
+        }
+        for seed in (0, 1)
+        for depth in (1, 2, 4)
+    ]
     positive, failures = _evaluate_recurrence_preregistration(
         curves,
         seeds=(0, 1),
         recursive_steps=(1, 2, 4),
         matched_controls=controls,
+        expected_example_ids=("a", "b"),
     )
     assert positive["disposition"] == "recursive_core_positive"
     assert failures == []
 
-    # Make every primary R=4 final depth regress while the fixture-only
-    # residual_delta arm remains positive. No cross-seed/depth average and no
-    # counterfactual arm may rescue the primary disposition.
+    # Make one raw example regress while the other improves enough that the
+    # aggregate still improves. No example average or counterfactual arm may
+    # rescue the primary disposition.
     for row in curves:
-        if row["arm"] == "as_is" and row["recursive_steps"] == 4:
-            row["depths"][-1]["token_weighted_cross_entropy"] = 5.0
+        if (
+            row["arm"] == "as_is"
+            and row["seed"] == 1
+            and row["recursive_steps"] == 4
+        ):
+            row["depths"][-1]["examples"][0]["cross_entropy"] = 4.0
+            row["depths"][-1]["examples"][1]["cross_entropy"] = 1.0
+            row["depths"][-1]["token_weighted_cross_entropy"] = 2.5
     negative, failures = _evaluate_recurrence_preregistration(
         curves,
         seeds=(0, 1),
         recursive_steps=(1, 2, 4),
         matched_controls=controls,
+        expected_example_ids=("a", "b"),
     )
     assert negative["disposition"] == "recursive_core_negative"
     assert negative["residual_delta_can_promote"] is False
-    assert {(failure["arm"], failure["seed"]) for failure in failures} == {
-        ("as_is", 0),
-        ("as_is", 1),
-    }
+    assert negative["passed_seed_count"] == 1
+    assert [
+        (failure["arm"], failure["seed"], failure["example_id"])
+        for failure in failures
+    ] == [("as_is", 1, "a")]
 
     incomplete, _ = _evaluate_recurrence_preregistration(
         curves[:-1],
         seeds=(0, 1),
         recursive_steps=(1, 2, 4),
         matched_controls=controls,
+        expected_example_ids=("a", "b"),
     )
     assert incomplete["disposition"] == "inconclusive_fixture"
+
+    malformed_cases = []
+
+    missing_depth = deepcopy(curves)
+    missing_depth[4]["depths"].pop(1)
+    malformed_cases.append((missing_depth, controls))
+
+    duplicate_depth = deepcopy(curves)
+    duplicate_depth[4]["depths"].insert(
+        1, deepcopy(duplicate_depth[4]["depths"][0])
+    )
+    malformed_cases.append((duplicate_depth, controls))
+
+    missing_example = deepcopy(curves)
+    missing_example[4]["depths"][0]["examples"].pop()
+    malformed_cases.append((missing_example, controls))
+
+    duplicate_example = deepcopy(curves)
+    duplicate_example[4]["depths"][0]["examples"][1] = deepcopy(
+        duplicate_example[4]["depths"][0]["examples"][0]
+    )
+    malformed_cases.append((duplicate_example, controls))
+
+    malformed_cases.append((deepcopy(curves), controls[:-1]))
+
+    for malformed_curves, malformed_controls in malformed_cases:
+        malformed, _ = _evaluate_recurrence_preregistration(
+            malformed_curves,
+            seeds=(0, 1),
+            recursive_steps=(1, 2, 4),
+            matched_controls=malformed_controls,
+            expected_example_ids=("a", "b"),
+        )
+        assert malformed["disposition"] == "inconclusive_fixture"
 
 
 def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
@@ -1978,12 +2038,24 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
                             "token_weighted_cross_entropy": 5.0 - step,
                             "ratios_finite": True,
                             "all_finite": True,
+                            "examples": [
+                                {
+                                    "id": example_id,
+                                    "cross_entropy": 5.0 - step,
+                                }
+                                for example_id in ("a", "b")
+                            ],
                         }
                         for step in range(1, recursive_steps + 1)
                     ],
                 }
             )
-        return {"matched": True, "batches_matched": True}, curves
+        return {
+            "seed": seed,
+            "recursive_steps": recursive_steps,
+            "matched": True,
+            "batches_matched": True,
+        }, curves
 
     published = {}
 
@@ -2034,7 +2106,7 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     ]
     assert (
         report["version_stamp"]["components"]["model.recursive_denoiser"]
-        == "v14"
+        == "v15"
     )
 
 
