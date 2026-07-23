@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v20",
+          "date": "2026-07-23",
+          "note": "Narrow the canonical Vercel evidence bundle to top-level design JSON consumed by the deployed observability reader"
+        },
         {
           "version": "v19",
           "date": "2026-07-23",

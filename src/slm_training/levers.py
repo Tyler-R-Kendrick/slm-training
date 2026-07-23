@@ -25,7 +25,7 @@ INTERRUPT_AFTER_SECONDS: Final = MAX_RUN_SECONDS - KILL_GRACE_SECONDS
 HF_JOB_TIMEOUT: Final = f"{MAX_RUN_MINUTES}m"
 CHANGED_TEST_WORKERS: Final = 4
 VERCEL_FUNCTION_INCLUDE_FILES: Final = (
-    "docs/design/**",
+    "docs/design/*.json",
     "docs/MODEL_CARD.md",
     "src/slm_training/resources/checkpoints/playground_demo/**",
 )
