@@ -938,12 +938,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v67",
+      "version": "v68",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v68",
+          "date": "2026-07-23",
+          "note": "add SLM-219 deterministic prefix checkpoint trajectory, canonical spectral diagnostics, pinned WeightWatcher comparison, and fail-closed warning retrospective"
+        },
         {
           "version": "v67",
           "date": "2026-07-23",
@@ -2881,7 +2886,7 @@
       ]
     },
     "harness.experiments.slm214_spectral_snapshot": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py",
@@ -2893,6 +2898,11 @@
         ".agents/skills/autotrain/references/inspect.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "expose canonical scale-invariant spectral trap projection for SLM-219 without a parallel SVD owner"
+        },
         {
           "version": "v3",
           "date": "2026-07-23",
@@ -3008,6 +3018,28 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial CrossAttentionRetentionReportV1 geometry and fail-closed family coverage"
+        }
+      ]
+    },
+    "harness.experiments.slm219_correlation_traps": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm219_correlation_traps.py",
+        "scripts/collect_correlation_trap_evidence.py",
+        "scripts/run_correlation_trap_retrospective.py",
+        "tests/test_harnesses/experiments/test_slm219_correlation_traps.py",
+        "tests/test_scripts/test_run_correlation_trap_retrospective.py",
+        "docs/design/iter-slm219-correlation-trap-evidence-20260723.json",
+        "docs/design/iter-slm219-correlation-trap-agentv-20260723/",
+        "docs/design/iter-slm219-correlation-trap-20260723.json",
+        "docs/design/iter-slm219-correlation-trap-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial CorrelationTrapReportV1 with deterministic six-checkpoint prefix evidence, independent collapse preregistration, confirmation-timed warnings, native and WeightWatcher controls, and fail-closed decision"
         }
       ]
     },

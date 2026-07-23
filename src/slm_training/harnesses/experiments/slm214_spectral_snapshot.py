@@ -37,6 +37,7 @@ __all__ = [
     "render_markdown",
     "run_spectral_snapshot_fixture",
     "sample_null_summary",
+    "spectral_trap_statistics",
 ]
 
 MATRIX_VERSION = "ncs0-01-v1"
@@ -338,6 +339,64 @@ def _svd_stats(singular_values: torch.Tensor) -> dict[str, float]:
         "stable_rank": stable,
         "effective_rank": eff_rank,
         "spectral_entropy": entropy,
+    }
+
+
+def spectral_trap_statistics(
+    matrix: torch.Tensor,
+    *,
+    null_draws: int = 24,
+    seed: int = 0,
+) -> dict[str, float | int]:
+    """Return scale-invariant outlier statistics using the canonical SVD owner.
+
+    SLM-219 consumes this small projection instead of maintaining a second
+    spectral implementation beside :class:`SpectralSnapshotV1`.
+    """
+    if matrix.ndim != 2 or min(matrix.shape) < 2:
+        raise ValueError(
+            "trap metrics require a two-dimensional matrix with rank dimension >= 2"
+        )
+    if null_draws < 3:
+        raise ValueError("null_draws must be at least 3")
+
+    observed = torch.linalg.svdvals(matrix.detach().cpu().double())
+    if observed.numel() < 2 or float(observed[1]) <= 0:
+        raise ValueError(
+            "trap metrics require nonzero first and second singular values"
+        )
+    stats = _svd_stats(observed)
+    energy = observed.square()
+    outlier = float(energy[0] / energy.sum())
+
+    generator = torch.Generator(device="cpu").manual_seed(seed)
+    scale = float(matrix.detach().cpu().double().std(unbiased=False)) or 1.0
+    null_outliers: list[float] = []
+    for _ in range(null_draws):
+        null = (
+            torch.randn(
+                matrix.shape,
+                generator=generator,
+                dtype=torch.float64,
+            )
+            * scale
+        )
+        singular = torch.linalg.svdvals(null)
+        null_energy = singular.square()
+        null_outliers.append(float(null_energy[0] / null_energy.sum()))
+    null_values = torch.tensor(null_outliers, dtype=torch.float64)
+    null_mean = float(null_values.mean())
+    null_sd = float(null_values.std(unbiased=True))
+    return {
+        "top_gap_ratio": float(observed[0] / observed[1]),
+        "outlier_energy_fraction": outlier,
+        "stable_rank": stats["stable_rank"],
+        "effective_rank": stats["effective_rank"],
+        "spectral_entropy": stats["spectral_entropy"] / math.log(len(observed)),
+        "trap_z": (outlier - null_mean) / null_sd if null_sd > 0 else 0.0,
+        "null_draws": null_draws,
+        "null_mean_outlier_energy": null_mean,
+        "null_sd_outlier_energy": null_sd,
     }
 
 

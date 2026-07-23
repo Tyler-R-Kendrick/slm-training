@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "eval_file": "docs/design/iter-slm219-correlation-trap-agentv-20260723/t4000-spec.jsonl",
+    "timestamp": "2026-07-23T15:07:34.982Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "smoke"
+    ],
+    "experiment": "openui-model-ship-gates-2026-07-23t15-07-34-597035-00-00"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 0.5,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "is-json:is-json": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "inline-assert-0:inline-assert": {
+      "mean": 0,
+      "stddev": 0
+    }
+  },
+  "notes": []
+}

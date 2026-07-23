@@ -1225,6 +1225,40 @@ No cross-attention bottleneck or retention target is nominated; no semantic,
 causal, optimizer, promotion, or ship claim is made. Evidence:
 [`iter-slm218-cross-attention-retention-20260723.md`](iter-slm218-cross-attention-retention-20260723.md).
 
+## Correlation-trap early-warning retrospective (NCS1-03 / SLM-219)
+
+**Fidelity label: adapted diagnostic.** The study uses repository-native SVD
+observables—top gap, outlier energy, stable/effective rank, entropy, and a
+same-shape null z-score—to test the correlation-trap hypothesis without making
+WeightWatcher heuristics authoritative.
+
+| | |
+| --- | --- |
+| **Historical scope** | E501–E504 endpoint inventory plus a hash-verified six-checkpoint E396→E500 reproduction on historical commit `f2ab01f8` |
+| **Collapse rule** | structure ≤ 0.15 and duplicate-subtree prevalence ≥ 1/3 for one snapshot, derived from published E501/E502 outcome evidence; no spectral field participates |
+| **Warning rule** | trap z ≥ 2.0 or outlier-energy delta ≥ 0.10 for two snapshots |
+| **Controls** | three matrix roles, same-shape Gaussian nulls, scalar rescaling, bulk/spike/rank-collapse fixtures, time shuffle, train-loss/RMS baselines, WeightWatcher 0.7.5 parity |
+| **Code** | `src/slm_training/harnesses/experiments/slm219_correlation_traps.py`, `scripts/collect_correlation_trap_evidence.py`, `scripts/run_correlation_trap_retrospective.py` |
+
+The result is **`inconclusive`** at report hash
+`0340c57d223df0304bb520da638c56b7af786668620f38ac490ca4574d36fffa`.
+E501–E504 expose 17 final endpoints but zero resolvable pre-collapse checkpoint
+sequences. SLM-219 therefore downloaded and hash-verified the durable E396
+parent, then used the historical code revision that originally admitted the
+committed E500 corpus to create five deterministic prefix checkpoints from one
+parent, seed, and uniform sample order. The trajectory met the independently
+outcome-only collapse rule transiently at 4,007 target tokens. The native
+warning preceded that point for one of three dependent matrix roles; reversing
+the spectral series produced the same result, and there is no independent
+non-collapse trajectory from which to estimate FPR. WeightWatcher stable rank
+matched the native owner numerically, but one seed/family cannot make its alpha
+trajectory predictive. Historical telemetry did not retain held-out NLL or
+gradient norms; that absence remains explicit.
+Correlation-trap language is not authorized for early stopping, scratch
+checkpoints were rejected without sync or promotion, no recommendation artifact
+was emitted, and production behavior is unchanged. Evidence:
+[`iter-slm219-correlation-trap-20260723.md`](iter-slm219-correlation-trap-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
