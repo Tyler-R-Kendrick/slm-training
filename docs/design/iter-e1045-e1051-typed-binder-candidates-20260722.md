@@ -172,3 +172,11 @@ are 0.5220/0.8182. The partial checkpoint SHA is
 `0dbeed6453e64e3a28ce38661f0f80b2c2851fd468cc6b529313186136935832`.
 It is not evidence for the 395-step hypothesis; resume only its own full-state
 checkpoint for the remaining 53 steps before evaluation.
+
+The own-checkpoint continuation completes those 53 steps in 11.96 seconds.
+E1071 ends exactly at 395 steps after 1,580 examples and 107.13 cumulative
+train seconds. Final binder-component loss/accuracy/candidates are
+0.9040/0.7692/15.46, closely reproducing E1045; bound-only binder-arity
+loss/accuracy are 1.0203/0.6154. The completed checkpoint SHA is
+`0d2c4c4806d7815906a110aff4ec0d9029823d202447ba87de40b641dc6f9a12`.
+It is pending strict smoke and remains local, unsynced, and non-parentable.

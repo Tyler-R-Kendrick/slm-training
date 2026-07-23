@@ -6783,4 +6783,7 @@ behavior-neutral when its decode head is off. Reject the control.
 E1071 starts fresh with v271 bound-only arity and typed binder-component loss.
 Its first bounded invocation reaches 342/395 steps in 95.18 seconds. This
 partial checkpoint does not test the 395-step hypothesis; resume only its own
-full-state checkpoint for the remaining 53 steps before evaluation.
+full-state checkpoint for the remaining 53 steps before evaluation. The
+continuation completes in 11.96 seconds, reaching exactly 395 steps and 107.13
+cumulative train seconds. Final binder-component loss/accuracy/candidates are
+0.9040/0.7692/15.46; strict smoke is pending.
