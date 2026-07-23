@@ -237,21 +237,22 @@ def test_train_loader_rejects_user_defined_marker_names(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "openui,placeholders,reason",
     [
+        # Closed DSL atoms exercise wrong-role rejection without content strings.
         (
             'root = Input(":slot_0")',
             [":slot_0"],
             "placeholder ':slot_0' in non-content property Input.name",
         ),
         (
-            'root = Input("row", ":slot_0", "email")',
+            'root = Input("column", ":slot_0", "text")',
             [":slot_0"],
-            "open string 'row' in property Input.name",
+            "open string 'column' in property Input.name",
         ),
         (
-            'root = Slider("row", "continuous", '
+            'root = Slider("column", "continuous", '
             '0, 100, 1, [40], ":slot_0")',
             [":slot_0"],
-            "open string 'row' in property Slider.name",
+            "open string 'column' in property Slider.name",
         ),
     ],
 )
@@ -288,7 +289,7 @@ def test_train_loader_accepts_opaque_structural_ids(tmp_path: Path) -> None:
             ExampleRecord(
                 id="role-safe",
                 prompt="Input",
-                openui='root = Input("$0", ":slot_0", "email")',
+                openui='root = Input("$0", ":slot_0", "text")',
                 placeholders=[":slot_0"],
             )
         ],
