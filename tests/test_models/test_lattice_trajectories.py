@@ -7,8 +7,8 @@ def _model() -> TwoTowerModel:
     record = ExampleRecord(
         id="trajectory",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")\n',
-        placeholders=[":hero.title"],
+        openui='root = Card([b1])\nb1 = TextContent(":slot_0")\n',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )

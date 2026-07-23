@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v33",
+      "version": "v34",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v34",
+          "date": "2026-07-22",
+          "note": "Advertise visible-reference decode weighting on both choice and lexer compiler paths"
+        },
         {
           "version": "v33",
           "date": "2026-07-22",
@@ -2739,6 +2744,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-22",
+          "note": "no-bump: replace named test-only training markers and binders with opaque ordinals; output-head behavior is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-211 SDE5-04 default-on output-head tying control, copy-init untied arm, explicit checkpoint migration, optimizer deduplication, and spectral/Cactus metadata"
         }
@@ -4172,7 +4182,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v256",
+      "version": "v258",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4197,6 +4207,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v258",
+          "date": "2026-07-22",
+          "note": "Allow the visible-reference lever through the honest lexer-compiler runtime guard after capability validation"
+        },
+        {
+          "version": "v257",
+          "date": "2026-07-22",
+          "note": "Extend visible-reference ranking to lexer compiler paths as a soft repeated-child penalty without removing legal topology supervision"
+        },
         {
           "version": "v256",
           "date": "2026-07-22",

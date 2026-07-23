@@ -5528,6 +5528,22 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
     assert stop_bias is not None and stop_bias[0] > stop_bias[1]
 
 
+def test_lexer_visible_reference_bias_softly_penalizes_reused_children() -> None:
+    model = _model(visible_reference_decode_weight=4.0)
+    tokenizer = model.tokenizer
+    prefix = tokenizer.encode(
+        "root = Stack([b1, b2])\nb1 = Stack([b3])\nb2 = Stack([",
+        add_special=False,
+    )
+    reused = CompletionPath((tokenizer.bind_id(3),), "bind_reference_bound_children")
+    fresh = CompletionPath((tokenizer.bind_id(4),), "bind_reference_bound_children")
+    close = CompletionPath((tokenizer.token_to_id["]"],), "grammar_rsqb")
+
+    bias = model._visible_reference_path_bias(prefix, (reused, fresh, close))
+
+    assert bias == [-4.0, 0.0, 0.0]
+
+
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     model = _model(
         component_edge_loss_weight=1.0,
