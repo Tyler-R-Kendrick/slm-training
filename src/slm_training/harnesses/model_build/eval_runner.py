@@ -32,7 +32,6 @@ from slm_training.evals.eval_cache import (
     EvalCacheMode,
     suite_result_key,
 )
-from slm_training.evals.power_protocol import binomial_rate_evidence
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_MIN_SUITE_N,
     DEFAULT_SHIP_GATES,
@@ -1079,17 +1078,21 @@ def evaluate(
         fallback_count = None
 
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
-    evidence_class = (
-        "diagnostic_subset"
-        if suite_limit is not None or suite_offset > 0
-        else (
-            "ship_gate_eligible"
-            if document_n >= DEFAULT_MIN_SUITE_N
-            else "fixture_under_minimum_n"
-        )
-    )
-
+    from slm_training.evals.power_protocol import binomial_rate_evidence
     def _rate_evidence(successes: int, total: int) -> dict[str, Any]:
+        evidence_class = (
+            "unmeasured"
+            if total == 0
+            else (
+                "diagnostic_subset"
+                if suite_limit is not None or suite_offset > 0
+                else (
+                    "meets_default_suite_n"
+                    if total >= DEFAULT_MIN_SUITE_N
+                    else "fixture_under_minimum_n"
+                )
+            )
+        )
         return binomial_rate_evidence(
             successes,
             total,
@@ -1162,6 +1165,7 @@ def evaluate(
             "syntax_parse_rate": syntax_rate_evidence,
             "raw_syntax_validity": _rate_evidence(raw_syntax_ok, document_n),
             "meaningful_program_rate": meaningful_rate_evidence,
+            "exact_match": _rate_evidence(int(sum(exact_vals)), len(exact_vals)),
             "residual_mask_rate": unmeasured_rate_evidence,
             "oov_rate": unmeasured_rate_evidence,
         },
@@ -1240,11 +1244,15 @@ def evaluate(
     metrics.update(
         {
             "meaningful_program_v1_rate": metrics["meaningful_program_rate"],
-            "binding_aware_meaningful_v2_rate_strict": meaning_v2["strict_rate"],
-            "binding_aware_meaningful_v2_rate_coverage_conditioned": meaning_v2[
-                "coverage_conditioned_rate"
-            ],
-            "binding_aware_meaningful_v2_coverage": meaning_v2["coverage"],
+            "binding_aware_meaningful_v2_rate_strict": (
+                meaning_v2["strict_rate"] if semantic_meaning_reports_v2 else None
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": (
+                meaning_v2["coverage_conditioned_rate"] if covered_n else None
+            ),
+            "binding_aware_meaningful_v2_coverage": (
+                meaning_v2["coverage"] if semantic_meaning_reports_v2 else None
+            ),
             "meaningful_metric_primary": "meaningful_program_v1",
             "meaningful_metric_versions": {
                 "meaningful_program_v1": "1.0.0",
@@ -1372,12 +1380,14 @@ def evaluate(
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
         retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
-        metrics["rate_evidence"]["constrained_fallback_rate"] = binomial_rate_evidence(
-            retries,
-            len(decode_stats_rows),
-            seed_count=1,
-            evidence_class="decode_attempt_telemetry",
-        )
+        metrics["rate_evidence"]["constrained_fallback_rate"] = {
+            "schema": "rate_evidence/v1",
+            "numerator": retries,
+            "denominator": len(decode_stats_rows),
+            "seed_count": 1,
+            "interval": None,
+            "evidence_class": "decode_batch_telemetry_non_binomial",
+        }
 
     # Metrics the active decode policy enforces by construction: consumers must
     # not read them as learned model skill (e.g. constrained decode guarantees

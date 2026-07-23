@@ -413,6 +413,39 @@ def test_ship_gate_failure_categories_partition_flat_failures() -> None:
     assert sorted(categories) == sorted(result["failures"])
 
 
+def test_ship_gate_runtime_failures_include_decode_timeouts() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["decode_timeout_count"] = 1
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert result["runtime_failures"] == [
+        "smoke:decode_timeout_count actual=1 need=0"
+    ]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("n", True),
+        ("n", float("nan")),
+        ("fallback_count", 0.9),
+        ("fallback_count", "bad"),
+        ("meaningful_program_rate", True),
+        ("meaningful_program_rate", "0.9"),
+        ("meaningful_program_rate", float("inf")),
+        ("meaningful_program_rate", float("nan")),
+    ],
+)
+def test_ship_gate_malformed_measurements_fail_integrity(
+    field: str, value: object
+) -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"][field] = value
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert result["measurement_integrity_failures"]
+
+
 def test_ship_gates_min_n_overridable_per_suite_policy() -> None:
     # A custom policy may set its own evidence floor; it is a policy knob,
     # never treated as a metric bar.
@@ -512,6 +545,9 @@ def test_evaluate_suites_scoreboard(
     assert rate_evidence["seed_count"] == 1
     assert rate_evidence["interval"]["method"] == "wilson_score"
     assert rate_evidence["evidence_class"] == "fixture_under_minimum_n"
+    exact_evidence = metrics["rate_evidence"]["exact_match"]
+    assert exact_evidence["numerator"] == 1
+    assert exact_evidence["denominator"] == 1
     assert metrics["n"] == 1
     # Every eval output pins the exact dataset it scored against.
     assert metrics["test_dir"] == str(test_dir)

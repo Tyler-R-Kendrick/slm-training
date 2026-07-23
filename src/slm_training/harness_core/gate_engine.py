@@ -10,6 +10,7 @@ the per-suite metric normalizer, and the evidence floor.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Callable, Mapping
 
 SuiteNormalizer = Callable[[Mapping[str, Any]], dict[str, Any]]
@@ -48,6 +49,16 @@ def run_gate_checks(
         failures.append(message)
         categories[category].append(message)
 
+    def finite_real(value: Any) -> bool:
+        return (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(float(value))
+        )
+
+    def integral_count(value: Any) -> bool:
+        return finite_real(value) and float(value).is_integer() and float(value) >= 0
+
     for suite_name, mins in policy.items():
         metrics = suites.get(suite_name)
         if metrics is None:
@@ -59,47 +70,56 @@ def run_gate_checks(
         actual[suite_name] = slim
         fallback_count = metrics.get("fallback_count")
         fallback_key = f"{suite_name}:certified_fallback"
-        if fallback_count is None:
+        if not integral_count(fallback_count):
             # Unmeasured must never certify: a board without fallback telemetry
             # cannot claim learned (fallback-free) quality.
             checks[fallback_key] = False
+            detail = (
+                "unmeasured (fallback_count absent)"
+                if fallback_count is None
+                else f"invalid (fallback_count={fallback_count!r})"
+            )
             fail(
-                f"{fallback_key} unmeasured (fallback_count absent) need=0 "
+                f"{fallback_key} {detail} need=0 "
                 "for learned-quality claims",
                 "measurement_integrity_failures",
             )
         else:
-            fallback_count = int(fallback_count)
-            checks[fallback_key] = fallback_count == 0
-            if fallback_count:
+            normalized_fallback_count = int(fallback_count)
+            checks[fallback_key] = normalized_fallback_count == 0
+            if normalized_fallback_count:
                 fail(
-                    f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims",
+                    f"{fallback_key} actual={normalized_fallback_count} "
+                    "need=0 for learned-quality claims",
                     "measurement_integrity_failures",
                 )
         min_n = int(mins.get("min_n", default_min_n))
         n_value = metrics.get("n")
         n_key = f"{suite_name}:insufficient_n"
-        n_ok = isinstance(n_value, (int, float)) and int(n_value) >= min_n
+        n_valid = integral_count(n_value)
+        n_ok = n_valid and int(n_value) >= min_n
         checks[n_key] = n_ok
         if not n_ok:
             fail(
                 f"{n_key} actual={n_value!r} need>={min_n}",
-                "evidence_volume_failures",
+                (
+                    "evidence_volume_failures"
+                    if n_valid
+                    else "measurement_integrity_failures"
+                ),
             )
         for metric, minimum in mins.items():
             if metric == "min_n":
                 continue
             key = f"{suite_name}:{metric}"
             value = slim.get(metric, metrics.get(metric))
-            try:
-                ok = value is not None and float(value) >= float(minimum)
-            except (TypeError, ValueError):
-                ok = False
+            value_valid = finite_real(value)
+            ok = value_valid and float(value) >= float(minimum)
             checks[key] = ok
             if not ok:
                 category = (
                     "measurement_integrity_failures"
-                    if value is None or not isinstance(value, (int, float))
+                    if not value_valid
                     else "quality_threshold_failures"
                 )
                 fail(

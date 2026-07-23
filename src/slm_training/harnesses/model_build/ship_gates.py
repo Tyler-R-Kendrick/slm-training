@@ -148,6 +148,22 @@ def evaluate_ship_gates(
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
     )
+    for suite_name in policy:
+        metrics = suites.get(suite_name)
+        if metrics is None:
+            continue
+        timeout_count = metrics.get("decode_timeout_count")
+        if (
+            isinstance(timeout_count, (int, float))
+            and not isinstance(timeout_count, bool)
+            and timeout_count > 0
+        ):
+            key = f"{suite_name}:decode_timeout_count"
+            message = f"{key} actual={timeout_count!r} need=0"
+            checks[key] = False
+            failures.append(message)
+            categorized["runtime_failures"].append(message)
+
     return {
         "policy": policy,
         "meaningful_metric_policy": _meaningful_metric_policy(
