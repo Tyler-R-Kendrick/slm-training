@@ -8868,70 +8868,6 @@ class TwoTowerModel(nn.Module):
             for index in range(len(paths))
         ]
 
-    def _visible_reference_path_bias(
-        self,
-        prefix: list[int],
-        paths: tuple,
-    ) -> list[float] | None:
-        """Softly penalize reusing a bound element when a compiler path branches."""
-        weight = float(
-            getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
-        )
-        if weight <= 0.0:
-            return None
-        try:
-            bind_ids = set(self.tokenizer.kind_ids("bind"))
-            equal_id = int(self.tokenizer.token_to_id["="])
-            newline_id = self.tokenizer.token_to_id.get("NL")
-        except (AttributeError, KeyError, TypeError, ValueError):
-            return None
-
-        statements: list[list[int]] = []
-        statement: list[int] = []
-        for raw_token_id in prefix:
-            token_id = int(raw_token_id)
-            if newline_id is not None and token_id == int(newline_id):
-                if statement:
-                    statements.append(statement)
-                statement = []
-                continue
-            statement.append(token_id)
-        if statement:
-            statements.append(statement)
-
-        used: set[int] = set()
-        for statement in statements:
-            declaration_at = next(
-                (
-                    index
-                    for index, item in enumerate(statement[:-1])
-                    if item in bind_ids and statement[index + 1] == equal_id
-                ),
-                None,
-            )
-            for index, token_id in enumerate(statement):
-                if token_id in bind_ids and index != declaration_at:
-                    used.add(token_id)
-
-        penalties: list[float] = []
-        applied = False
-        for path in paths:
-            reference = next(
-                (
-                    int(token_id)
-                    for token_id in path.token_ids
-                    if int(token_id) in bind_ids
-                ),
-                None,
-            )
-            repeated = bool(
-                str(getattr(path, "kind", "")).startswith("bind_reference")
-                and reference in used
-            )
-            penalties.append(-weight if repeated else 0.0)
-            applied = applied or repeated
-        return penalties if applied else None
-
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -9107,15 +9043,6 @@ class TwoTowerModel(nn.Module):
                     stats.root_reference_arity_applications += 1
                     stats.root_reference_arity_choice_changes += int(
                         int(scores.argmax().item()) != before_root_arity
-                    )
-            reference_bias = self._visible_reference_path_bias(prefix, paths)
-            if reference_bias is not None:
-                before_reference = int(scores.argmax().item())
-                scores = scores + scores.new_tensor(reference_bias)
-                if stats is not None:
-                    stats.visible_reference_applications += 1
-                    stats.visible_reference_choice_changes += int(
-                        int(scores.argmax().item()) != before_reference
                     )
             semantic_plan_bias = self._semantic_plan_bias(
                 plan_row,
@@ -9401,19 +9328,6 @@ class TwoTowerModel(nn.Module):
                 stats.root_reference_arity_choice_changes += int(
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_root_arity
-                )
-        reference_bias = self._visible_reference_path_bias(prefix, paths)
-        if reference_bias is not None:
-            before_reference = max(range(len(paths)), key=path_scores.__getitem__)
-            path_scores = [
-                score + reference_bias[index]
-                for index, score in enumerate(path_scores)
-            ]
-            if stats is not None:
-                stats.visible_reference_applications += 1
-                stats.visible_reference_choice_changes += int(
-                    max(range(len(paths)), key=path_scores.__getitem__)
-                    != before_reference
                 )
         coverage_close_bias = self._slot_coverage_close_path_bias(
             prefix, paths, slot_contract, path_scores
@@ -12050,19 +11964,14 @@ class TwoTowerModel(nn.Module):
         reference_weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
-        compiler_reference_constrained = bool(
-            use_grammar
-            and str(getattr(self.config, "compiler_decode_mode", "off"))
-            in {"restricted", "tree"}
-        )
         if reference_weight > 0.0 and (
-            not (choice_constrained or compiler_reference_constrained)
+            not choice_constrained
             or not honest
             or not bool(getattr(self.config, "slot_contract_constrained_decode", False))
         ):
             raise ValueError(
-                "visible_reference_decode_weight requires honest choice-codec or "
-                "lexer-compiler slot-constrained decode"
+                "visible_reference_decode_weight requires honest choice-codec "
+                "slot-constrained decode"
             )
         ctx_prompts = self._context_prompts(
             prompts,

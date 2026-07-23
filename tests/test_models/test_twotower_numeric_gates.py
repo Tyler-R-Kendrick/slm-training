@@ -207,15 +207,6 @@ def test_model_build_config_accepts_reference_weights_for_choice() -> None:
     assert cfg.root_reference_arity_loss_weight == 1.0
 
 
-def test_model_build_config_accepts_visible_reference_weight_for_lexer() -> None:
-    cfg = _valid_build_config(
-        output_tokenizer="lexer",
-        compiler_decode_mode="tree",
-        visible_reference_decode_weight=1.0,
-    )
-    assert cfg.visible_reference_decode_weight == 1.0
-
-
 def test_model_build_config_rejects_reference_weights_for_other_models() -> None:
     with pytest.raises(ValueError, match="unsupported enabled levers"):
         _valid_build_config(

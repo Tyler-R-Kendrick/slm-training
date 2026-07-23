@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v34",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-07-22",
+          "note": "Withdraw lexer visible-reference capability after E974-E975 showed its first choice flip regressed strict quality"
+        },
         {
           "version": "v34",
           "date": "2026-07-22",
@@ -4182,7 +4187,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v258",
+      "version": "v259",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4207,6 +4212,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v259",
+          "date": "2026-07-22",
+          "note": "Remove the disproven generic lexer binder-reuse penalty while retaining opaque training-fixture cleanup"
+        },
         {
           "version": "v258",
           "date": "2026-07-22",
