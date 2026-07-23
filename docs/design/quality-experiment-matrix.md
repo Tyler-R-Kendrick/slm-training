@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E958 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E959 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6524,3 +6524,6 @@ other aggregate metric unchanged and zero role violations; retain v255.
 E958's attempt to inline every slot-consuming typed-array item regresses held
 meaning/strict to 0.6 and increases fallback 3→4 without rescuing Form. Revert
 that v256 treatment and keep E957/v255.
+E959's width-2 bottom-triggered lattice performs 16 held rollbacks but leaves
+all quality metrics and fallbacks unchanged while p95 latency worsens to 6.89s;
+reject wider search as the Form remedy.

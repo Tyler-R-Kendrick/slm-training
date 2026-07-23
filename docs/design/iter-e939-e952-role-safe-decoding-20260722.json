@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E958",
+  "experiment_id": "E939-E959",
   "date": "2026-07-22",
   "decision": "retain_role_and_depth_constraints_keep_e951_diagnostic_only",
   "train_data": "e937_role_safe_all_targets_v2",
@@ -22,7 +22,8 @@
     "E955": {"status": "completed_retained_decoder_treatment", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.2, "held_out_fidelity": 0.7833333333333333, "held_out_structural_similarity": 0.38756, "held_out_component_recall": 0.6523809523809524, "held_out_reward": 0.8936, "held_out_decode_timeouts": 0, "prediction_role_violations": 0, "agentv": "0/2"},
     "E956": {"status": "completed_retained_schema_type_treatment", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2"},
     "E957": {"status": "completed_retained_role_scoped_identity_treatment", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2"},
-    "E958": {"status": "completed_rejected_inline_typed_items", "evaluated_model_version": "v256", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.6833333333333333, "held_out_structural_similarity": 0.42069999999999996, "held_out_component_recall": 0.6285714285714286, "held_out_reward": 0.8324, "held_out_decode_timeouts": 0, "held_out_fallback_count": 4, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "reverted_keep_v255"}
+    "E958": {"status": "completed_rejected_inline_typed_items", "evaluated_model_version": "v256", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.6833333333333333, "held_out_structural_similarity": 0.42069999999999996, "held_out_component_recall": 0.6285714285714286, "held_out_reward": 0.8324, "held_out_decode_timeouts": 0, "held_out_fallback_count": 4, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "reverted_keep_v255"},
+    "E959": {"status": "completed_rejected_lattice_bottom_w2", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "held_out_lattice_rollbacks": 16, "held_out_lattice_budget_exhaustions": 2, "held_out_latency_ms_p95": 6888.31, "prediction_role_violations": 0, "agentv": "0/2"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",

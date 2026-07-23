@@ -1,4 +1,4 @@
-# E939-E958: role-safe decoding, aligned training, and bounded nesting
+# E939-E959: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -37,6 +37,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E957 | E951 role-unique + schema types / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 | E958 | E951 inline typed items / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E958 | E951 inline typed items / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
+| E959 | E951 lattice-bottom width 2 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E959 | E951 lattice-bottom width 2 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -83,3 +85,9 @@ not rescue Form and collapsed the previously strict Tabs row to the certified
 minimal fallback. Held meaning/strict fell 0.8→0.6, fidelity 0.8333→0.6833,
 structure 0.4434→0.4207, recall 0.6952→0.6286, reward 0.8834→0.8324, and
 fallback rose 3→4. The v256 treatment was reverted; retain v255/E957.
+
+E959 applies the existing width-2 lattice only when greedy decoding reaches a
+bottom. Held decoding performs 16 rollbacks and exhausts the search budget
+twice, but Form still takes the same certified fallback and every quality
+aggregate is unchanged from E957. Held p95 latency worsens 5252.52→6888.31 ms.
+Reject the search treatment; earlier feasibility accounting is required.
