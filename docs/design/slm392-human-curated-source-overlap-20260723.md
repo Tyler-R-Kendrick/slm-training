@@ -73,3 +73,12 @@ The hypothesis passes. The source contamination is removed without weakening a
 gate, changing admitted content, creating a checkpoint, or making a model or
 ship claim. Machine-readable evidence:
 [`slm392-human-curated-source-overlap-20260723.json`](slm392-human-curated-source-overlap-20260723.json).
+
+## CI dependency note
+
+The first PR runs installed newly released Ruff 0.16.0 under the previous
+`ruff>=0.9,<1` range. That release changed the unconfigured default rule set and
+reported 2,278 unrelated repository-wide findings. The project and both CI
+install sites now pin the established lint contract to `ruff>=0.9,<0.16`.
+Ruff 0.15.21 passes the full repository locally; this pin does not change train
+data, gates, or experiment behavior.

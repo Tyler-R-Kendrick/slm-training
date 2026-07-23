@@ -81,6 +81,11 @@
     "checkpoint_created": false,
     "model_or_ship_claim": false
   },
+  "ci_dependency_resolution": {
+    "observed_failure": "Ruff 0.16.0 changed the unconfigured default rule set and reported 2278 unrelated repository-wide findings.",
+    "resolution": "Pin the existing project and CI lint contract to ruff>=0.9,<0.16.",
+    "behavior_change": false
+  },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
     "code_commit": "ee1a35752379de7b64ff9e10ceeb85c30ecf1658",
