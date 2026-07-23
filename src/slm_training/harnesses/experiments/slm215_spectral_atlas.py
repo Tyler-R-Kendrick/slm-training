@@ -482,7 +482,11 @@ def run_spectral_atlas_fixture(
         role_summaries=role_summaries,
         signal=signal,
         atlas_hash=atlas_hash,
-        floor_gate_ref=DEFAULT_GATE_PATH,
+        floor_gate_ref=(
+            Path(floor_gate_path).as_posix()
+            if floor_gate_path is not None
+            else DEFAULT_GATE_PATH
+        ),
         floor_gate_hash=gate.gate_hash,
         floor_gate_verdict=gate.verdict,
         disposition=disposition,

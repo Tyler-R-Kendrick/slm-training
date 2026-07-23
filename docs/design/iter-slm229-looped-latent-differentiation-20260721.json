@@ -54,19 +54,19 @@
     {
       "contract_field": "required_recurrence_gate",
       "differentiator_id": 7,
-      "evidence": "SemanticFloorGateV1 `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` resolves the floor half as `inconclusive`; learned-latent claims remain blocked. The recurrence half also remains failed by SLM-139.",
+      "evidence": "SemanticFloorGateV1 `7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d` resolves the floor half as `inconclusive` and does not authorize learned-latent claims. The recurrence half also remains failed by SLM-139.",
       "name": "conditional_execution",
       "satisfied": false,
       "test_ref": "test_differentiator_7_gates_are_mandatory_and_currently_unmet"
     }
   ],
-  "evidence_cutoff": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
+  "evidence_cutoff": "d0876ca4236f8b127092c1b72842496c4be97ab9",
   "experiment_id": "slm229-looped-latent-differentiation",
-  "floor_gate_hash": "6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a",
+  "floor_gate_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
   "floor_gate_ref": "docs/design/semantic-floor-gate-v1.json",
   "floor_gate_verdict": "inconclusive",
   "forbidden_duplicate_scope": "Do not duplicate: SemanticPlanV1 export/serialization (src/slm_training/data/progspec/semantic_plan.py), the archetype/role-set/topology/cardinality/pointer predictor heads (src/slm_training/models/semantic_plan_predictor.py), the plan compiler / seed builder / soft-action-feature / certified-restriction machinery (src/slm_training/data/semantic_plan/compiler.py, seed.py), or any topology/binding/pointer/cardinality target (SLM-145's blocked scope).",
-  "generated_at": "2026-07-23T07:10:01.729003Z",
+  "generated_at": "2026-07-23T07:23:35.641214Z",
   "matrix_set": "slm229_looped_latent_differentiation",
   "matrix_version": "rsc0-01-v1",
   "mechanism_comparison": [
@@ -216,7 +216,7 @@
       "topic": "causal representation interventions"
     }
   ],
-  "resolving_evidence": "docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. docs/design/semantic-floor-gate-v1.json (hash 6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a, verdict inconclusive) resolves the floor half and does not authorize learned-latent claims.",
+  "resolving_evidence": "docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. docs/design/semantic-floor-gate-v1.json (hash 7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d, verdict inconclusive) resolves the floor half and does not authorize learned-latent claims.",
   "reviewed_refs": [
     "SLM-138",
     "SLM-139",
@@ -253,12 +253,12 @@
     "identifiability_verdict": "NOT EVALUABLE from current evidence: no non-toy recursive training run exists to assess whether 1-2 slots plus the proposed root_contract/component_inventory supervision would be statistically identifiable. This question is moot until the recurrence and floor prerequisites in differentiator 7 clear; it is not being asserted as scale_not_identifiable in its own right, only as unresolved.",
     "lotus_scale_notes": "Not independently verified in this environment (no live web access). LOTUS ('looped transformer reasoning', arXiv:2606.31779) is presumed, from title framing only, to operate at a materially larger parameter/data/task scale than this repo's scratch TwoTower models; no specific number is asserted.",
     "recursive_regime_status": "FAILED (documented) \u2014 SLM-139's closeout explicitly states gate_1_recursive_base (issue SLM-138) failed: 'wiring_only fixture; no GPU matched-block evaluation or recursive_core_positive verdict.' No non-vacuous recursive regime has been established for SharedRecursiveDenoiserTower.",
-    "semantic_floor_status": "SemanticFloorGateV1 `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` verdict is `inconclusive`; learned-latent claims are blocked.",
+    "semantic_floor_status": "SemanticFloorGateV1 `7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d` verdict is `inconclusive` and does not authorize learned-latent claims.",
     "target_tokens_decisions_notes": "No real-corpus target-token or decision counts exist for root_contract/component_inventory supervision; SLM-144's fixture corpus is the only reviewed sizing evidence.",
     "unique_records_steps_notes": "SLM-144 fixture: train=51, val=13 unique records (archetypes=5, families=8, roles=4); SLM-146 fixture: n=13 synthetic records per arm. Both are toy-scale; no non-fixture step count exists."
   },
   "schema": "LoopedLatentDifferentiationV1",
-  "source_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
+  "source_commit": "d0876ca4236f8b127092c1b72842496c4be97ab9",
   "status": "fixture",
   "target_support_audit": [
     {
@@ -280,17 +280,17 @@
       "target_id": "component_inventory"
     }
   ],
-  "timestamp": "2026-07-23T07:10:01.729890Z",
+  "timestamp": "2026-07-23T07:23:35.653992Z",
   "verdict": "blocked_by_recurrence",
   "version_stamp": {
-    "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
+    "code_commit": "d0876ca4236f8b127092c1b72842496c4be97ab9",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v64",
-      "harness.experiments.semantic_floor_gate": "sde5-06-v1",
-      "harness.experiments.slm229_looped_latent_differentiation": "v2"
+      "harness.experiments.semantic_floor_gate": "v1",
+      "harness.experiments.slm229_looped_latent_differentiation": "v3"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-23T07:10:01.729466+00:00"
+    "stamped_at": "2026-07-23T07:23:35.653181+00:00"
   }
 }

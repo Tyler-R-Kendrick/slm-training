@@ -5,7 +5,7 @@
   "disposition_rationale": "Observed Spearman correlation 0.876 between alpha_z and parse_rate.",
   "experiment_id": "slm215-spectral-atlas",
   "falsifier": "After holding out complete experiment families, calibrated spectral features add no descriptive value beyond simple baselines, or effects vanish after controlling for matrix shape, role, and training budget.",
-  "floor_gate_hash": "6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a",
+  "floor_gate_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
   "floor_gate_ref": "docs/design/semantic-floor-gate-v1.json",
   "floor_gate_verdict": "inconclusive",
   "honest_caveats": [
@@ -804,18 +804,18 @@
     "<synthetic_fixture>"
   ],
   "status": "fixture",
-  "timestamp": "2026-07-23T07:08:22.584678Z",
+  "timestamp": "2026-07-23T07:23:32.065383Z",
   "unresolvable_local_history": [],
   "version_stamp": {
-    "code_commit": "c74ceb7601f5e8b9dea960970d5313cc2ace2f40",
+    "code_commit": "d0876ca4236f8b127092c1b72842496c4be97ab9",
     "code_dirty": true,
     "components": {
       "harness.experiments": "v64",
-      "harness.experiments.semantic_floor_gate": "sde5-06-v1",
+      "harness.experiments.semantic_floor_gate": "v1",
       "harness.experiments.slm214_spectral_snapshot": "v2",
-      "harness.experiments.slm215_spectral_atlas": "v2"
+      "harness.experiments.slm215_spectral_atlas": "v3"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-23T07:08:22.584644+00:00"
+    "stamped_at": "2026-07-23T07:23:32.065350+00:00"
   }
 }

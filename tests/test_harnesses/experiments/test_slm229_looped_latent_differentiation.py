@@ -399,6 +399,8 @@ def test_fixture_audit_produces_blocked_by_recurrence(repo_root: Path) -> None:
     assert report.verdict == LoopedLatentVerdict.BLOCKED_BY_RECURRENCE
     assert report.minimal_contract is None
     assert report.contract_hash is None
+    assert "does not authorize learned-latent claims" in report.resolving_evidence
+    assert "does not authorize learned-latent claims" in report.scale_regime_audit.semantic_floor_status
 
 
 def test_fixture_audit_has_version_stamp(repo_root: Path) -> None:

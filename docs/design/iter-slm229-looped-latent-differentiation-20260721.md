@@ -10,13 +10,13 @@
 
 **Claim class:** wiring / zero-compute differentiation and authorization audit only. No model or data implementation, no training run, no checkpoint.
 
-**Source commit / evidence cutoff:** `c74ceb7601f5e8b9dea960970d5313cc2ace2f40`
+**Source commit / evidence cutoff:** `d0876ca4236f8b127092c1b72842496c4be97ab9`
 
-**Generated at:** 2026-07-23T07:10:01.729003Z
+**Generated at:** 2026-07-23T07:23:35.641214Z
 
 **Verdict:** `blocked_by_recurrence`
 
-**Semantic floor gate:** `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` (`inconclusive`; `docs/design/semantic-floor-gate-v1.json`)
+**Semantic floor gate:** `7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d` (`inconclusive`; `docs/design/semantic-floor-gate-v1.json`)
 
 ## Reviewed references
 
@@ -87,7 +87,7 @@ NOT RUN (spec only, for a future RSC3 issue, conditional on differentiator 7's g
 - **Current model params:** SLM-138 toy fixture: stacked_params=64994 vs recursive_params=74242 at d_model=32, [batch=2, seq=6]. No production-scale (non-fixture) recursive-denoiser parameter count exists in the reviewed evidence.
 - **Target tokens/decisions:** No real-corpus target-token or decision counts exist for root_contract/component_inventory supervision; SLM-144's fixture corpus is the only reviewed sizing evidence.
 - **Unique records/steps:** SLM-144 fixture: train=51, val=13 unique records (archetypes=5, families=8, roles=4); SLM-146 fixture: n=13 synthetic records per arm. Both are toy-scale; no non-fixture step count exists.
-- **Semantic floor status:** SemanticFloorGateV1 `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` verdict is `inconclusive`; learned-latent claims are blocked.
+- **Semantic floor status:** SemanticFloorGateV1 `7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d` verdict is `inconclusive` and does not authorize learned-latent claims.
 - **Recursive regime status:** FAILED (documented) — SLM-139's closeout explicitly states gate_1_recursive_base (issue SLM-138) failed: 'wiring_only fixture; no GPU matched-block evaluation or recursive_core_positive verdict.' No non-vacuous recursive regime has been established for SharedRecursiveDenoiserTower.
 - **Identifiability verdict:** NOT EVALUABLE from current evidence: no non-toy recursive training run exists to assess whether 1-2 slots plus the proposed root_contract/component_inventory supervision would be statistically identifiable. This question is moot until the recurrence and floor prerequisites in differentiator 7 clear; it is not being asserted as scale_not_identifiable in its own right, only as unresolved.
 - **Expected extra cost:** If built on top of the existing SharedRecursiveDenoiserTower, the incremental cost is expected to be small (a few slot read/write linear projections at d_model, no new recursion depth, no new transformer blocks) — but this is an expectation, not a measurement: no implementation exists and none should be built before differentiator 7 clears.
@@ -112,7 +112,7 @@ NOT RUN (spec only, for a future RSC3 issue, conditional on differentiator 7's g
 | 4 | minimal_scope | True | `slot_kinds` | `test_differentiator_4_rejects_topology_binding_pointer_scope_creep` | Specifiable: restricting slot_kinds to {root_contract, component_inventory} avoids SLM-145's blocked topology/cardinality/pointer scope (topology_head, cardinality_head, live_symbol_pointer_head were never implemented and remain closed pending SPV0-02 ceiling evidence) and avoids SLM-146's plan-compiler/seed machinery entirely. |
 | 5 | builtin_interventions | True | `interventions` | `test_differentiator_5_rejects_proposal_missing_interventions` | Specifiable: the contract's interventions field is required to enumerate gold/zero/swap/wrong/detached from the first fixture, unlike SLM-138 (no ablation ever run on z) and unlike SLM-146 (whose oracle arms test the external consumer only). |
 | 6 | no_hard_authority | True | `compiler_verifier_authority_boundary` | `test_differentiator_6_rejects_proposal_that_can_prune_legal_actions` | Specifiable: the contract's authority-boundary field must forbid altering compiler legal membership, verifier truth, certified restrictions, or UNKNOWN handling — mirroring SLM-146's own EvidenceKind.COMPILER_AUTHORED_CERTIFIED fail-closed pattern (allow_unsafe_predicted_hard_control=False by default), reused conceptually for the internal path. |
-| 7 | conditional_execution | False | `required_recurrence_gate` | `test_differentiator_7_gates_are_mandatory_and_currently_unmet` | SemanticFloorGateV1 `6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a` resolves the floor half as `inconclusive`; learned-latent claims remain blocked. The recurrence half also remains failed by SLM-139. |
+| 7 | conditional_execution | False | `required_recurrence_gate` | `test_differentiator_7_gates_are_mandatory_and_currently_unmet` | SemanticFloorGateV1 `7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d` resolves the floor half as `inconclusive` and does not authorize learned-latent claims. The recurrence half also remains failed by SLM-139. |
 
 ## Allowed implementation scope
 
@@ -124,7 +124,7 @@ Do not duplicate: SemanticPlanV1 export/serialization (src/slm_training/data/pro
 
 ## Resolving evidence
 
-docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. docs/design/semantic-floor-gate-v1.json (hash 6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a, verdict inconclusive) resolves the floor half and does not authorize learned-latent claims.
+docs/design/iter-slm139-stochastic-recursive-width-20260720.json (gate_1_recursive_base = failed, decision no_supported_probabilistic_regime) is the resolving evidence for differentiator 7's recurrence half. docs/design/semantic-floor-gate-v1.json (hash 7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d, verdict inconclusive) resolves the floor half and does not authorize learned-latent claims.
 
 ## MinimalCompilerLatentContractV1
 

@@ -1319,13 +1319,18 @@ def run_differentiation_audit(
         floor_ready = True
     except PermissionError:
         floor_ready = False
+    floor_authorization = (
+        "authorizes learned-latent claims"
+        if floor_ready
+        else "does not authorize learned-latent claims"
+    )
     differentiators = build_differentiators()
     differentiators[-1] = replace(
         differentiators[-1],
         satisfied=floor_ready and differentiators[-1].satisfied,
         evidence=(
             f"SemanticFloorGateV1 `{floor_gate.gate_hash}` resolves the floor half "
-            f"as `{floor_gate.verdict}`; learned-latent claims remain blocked. "
+            f"as `{floor_gate.verdict}` and {floor_authorization}. "
             "The recurrence half also remains failed by SLM-139."
         ),
     )
@@ -1351,8 +1356,7 @@ def run_differentiation_audit(
         "no_supported_probabilistic_regime) is the resolving evidence for "
         "differentiator 7's recurrence half. "
         f"{DEFAULT_GATE_PATH} (hash {floor_gate.gate_hash}, verdict "
-        f"{floor_gate.verdict}) resolves the floor half and does not authorize "
-        "learned-latent claims."
+        f"{floor_gate.verdict}) resolves the floor half and {floor_authorization}."
     )
     if missing_refs:
         resolving_evidence += (
@@ -1380,7 +1384,7 @@ def run_differentiation_audit(
         oracle_intervention_ceiling=build_oracle_intervention_ceiling(),
         scale_regime_audit=build_scale_regime_audit(
             f"SemanticFloorGateV1 `{floor_gate.gate_hash}` verdict is "
-            f"`{floor_gate.verdict}`; learned-latent claims are blocked."
+            f"`{floor_gate.verdict}` and {floor_authorization}."
         ),
         prior_art_audit=tuple(build_prior_art_audit()),
         differentiators=tuple(differentiators),

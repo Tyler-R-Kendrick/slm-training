@@ -40,7 +40,9 @@ def main(argv: list[str] | None = None) -> int:
         generated_at=existing.generated_at if existing else None,
     )
     if existing is not None:
-        gate = replace(gate, version_stamp=existing.version_stamp)
+        version_stamp = dict(existing.version_stamp)
+        version_stamp["components"] = gate.version_stamp["components"]
+        gate = replace(gate, version_stamp=version_stamp)
     failures = validate_gate_references(gate, repo_root=root)
     if failures:
         raise ValueError("; ".join(failures))
