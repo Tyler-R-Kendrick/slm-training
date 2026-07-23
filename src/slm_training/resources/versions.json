@@ -564,6 +564,22 @@
         }
       ]
     },
+    "evals.cap2_disposition": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/cap2_disposition.py",
+        "scripts/publish_cap2_disposition.py",
+        "tests/test_evals/test_cap2_disposition.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial typed terminal CAP2 capability ledger with exact evidence identities, CERT_CAP2 rejection, and DSH4 action-distillation closure"
+        }
+      ]
+    },
     "evals.judge_resolution": {
       "version": "v1",
       "kind": "metric",
@@ -755,12 +771,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v21",
+      "version": "v22",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-23",
+          "note": "Add the terminal CAP2 capability disposition and fail-closed certificate decision"
+        },
         {
           "version": "v21",
           "date": "2026-07-23",

@@ -181,6 +181,13 @@ it fails semantic gates and is not promoted. See
 | CAP5 evidence package | `cap5-03-evidence` | `docs/design/calculated-arity-adaptive-precision-results.md` | Reproducible evidence package for CAP0–CAP4 exact calculations and controlled fixtures; not a checkpoint or ship claim ([results](docs/design/calculated-arity-adaptive-precision-results.md)) |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
+**CAP2 capability certificate:** `CERT_CAP2` is not issued. The terminal
+SLM-385 ledger records compiler-contract-only symbolic transform and merge
+support, rejects learned discrete-token action benefit, and leaves the
+CAP1-dependent and conditional branches unavailable or unrun. DSH4 action
+distillation is closed; no checkpoint or ship claim changed. See the
+[disposition](docs/design/dsh3-17-cap2-disposition-20260723/summary.md).
+
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
 `HF_TOKEN`, then `train_model --context-backend hf` (auto-uploads). Details,
 eval tables, and history live in the model card.

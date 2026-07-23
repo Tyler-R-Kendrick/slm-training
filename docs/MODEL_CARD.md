@@ -224,6 +224,15 @@ scratch baseline.
 | CAP5 evidence package | `cap5-03-evidence` | CAP0–CAP4 reproducible evidence package | `docs/design/calculated-arity-adaptive-precision-results.md` | Reproducible exact-calculation fixtures, claim ledger, artifact index, and negative-result registry; **not a checkpoint or ship claim** ([results](design/calculated-arity-adaptive-precision-results.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
+### CAP2 capability certificate
+
+`CERT_CAP2` is **not issued**. The terminal SLM-385 ledger classifies symbolic
+transform and bounded merge as compiler-contract-only, rejects learned
+discrete-token action benefit from E803, and records the remaining capabilities
+as unavailable or unrun conditionals. DSH4 action distillation is closed.
+No checkpoint roster, promotion, or ship claim changed. Full evidence:
+[`dsh3-17-cap2-disposition-20260723/summary.md`](design/dsh3-17-cap2-disposition-20260723/summary.md).
+
 Update the table in place when a checkpoint is written or superseded. Keep
 invalidated / superseded rows in **Checkpoint history** below.
 
