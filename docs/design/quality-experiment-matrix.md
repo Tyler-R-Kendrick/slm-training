@@ -6736,3 +6736,13 @@ matching weight 1. No global scalar serves both rows. Close the sweep and
 isolate binder arity to bound declarations; root-list arity already has a
 dedicated head. See
 `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
+
+### E1063-E1065: bound-declaration arity ownership (harness retained)
+
+v271 removes root declarations from the generic binder-arity head while
+preserving the dedicated root-reference owner. Smoke remains strict-v2 1.0
+with structure 0.5717 and recall 0.75. The targeted held probes still split:
+Dual Card times out, while Settings is strict-valid with fidelity/recall 1.0
+and structure 0.60. Retain the ownership correction, reject this policy for
+the E1045 checkpoint, and keep the checkpoint non-parentable. See
+`iter-e1045-e1051-typed-binder-candidates-20260722.md`.

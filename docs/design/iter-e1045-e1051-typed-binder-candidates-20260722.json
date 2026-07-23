@@ -182,16 +182,66 @@
           "agentv": "0/1"
         }
       }
+    },
+    "E1063_E1065": {
+      "status": "completed_rejected_targeted_subsets",
+      "model_component_version": "v271",
+      "policy": "generic binder arity applies only to bound declarations",
+      "runs": {
+        "smoke": {
+          "run_id": "e1063_v271_bound_only_arity_smoke",
+          "n": 3,
+          "parse": 1.0,
+          "strict_v2": 1.0,
+          "fidelity": 1.0,
+          "structural_similarity": 0.5716666666666667,
+          "component_recall": 0.75,
+          "reward": 0.957,
+          "decode_timeouts": 0,
+          "agentv": "0/1"
+        },
+        "dual_card": {
+          "run_id": "e1064_v271_bound_only_arity_dual_card",
+          "parse": 0.0,
+          "strict_v2": 0.0,
+          "decode_timeouts": 1,
+          "agentv": "0/1"
+        },
+        "settings": {
+          "run_id": "e1065_v271_bound_only_arity_settings",
+          "parse": 1.0,
+          "strict_v2": 1.0,
+          "fidelity": 1.0,
+          "structural_similarity": 0.6,
+          "component_recall": 1.0,
+          "reward": 0.937,
+          "decode_timeouts": 0,
+          "agentv": "0/1"
+        }
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "e31b1c5947916cd49ec520c599ae9435c08d302f",
+        "components": {
+          "config.levers": "v39",
+          "harness.model_build.eval": "v56",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v271"
+        }
+      }
     }
   },
   "disposition": {
     "v270_capability_retained": true,
+    "v271_bound_declaration_ownership_retained": true,
     "checkpoint_promoted": false,
     "checkpoint_parentable": false,
     "checkpoint_synced": false,
     "no_arity_decode_accepted": false,
     "arity_scalar_sweep_closed": true,
-    "next_hypothesis": "isolate binder arity to bound declarations because root reference arity has a dedicated owner"
+    "bound_only_arity_decode_accepted": false,
+    "next_hypothesis": "model root-list identity and cardinality through the dedicated root-reference owner without overlapping generic supervision"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

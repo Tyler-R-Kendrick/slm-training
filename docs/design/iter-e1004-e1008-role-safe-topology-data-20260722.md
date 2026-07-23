@@ -7,11 +7,12 @@ repository wall cap. The checkpoint was a fresh scratch train with explicit
 ## Finding
 
 The suspicious natural-language-looking fixtures were not model supervision.
-The historical `Slider("email", "default", ...)` row was an intentionally
-invalid loader test, and the historical positive completion-forest fixture was
-subsequently corrected to use `$N` structural identifiers and `:slot_N`
-content slots. A direct audit found zero role violations across all 582 E937
-primary/alternate targets and all 50 E938 targets.
+The historical role-invalid Slider-name row was an intentionally invalid
+loader test and now uses a closed DSL atom as its rejected value. The
+historical positive completion-forest fixture was corrected to use `$N`
+structural identifiers and `:slot_N` content slots. A direct audit found zero
+role violations across all 582 E937 primary/alternate targets and all 50 E938
+targets.
 
 E1004-E1005 tested the narrower data hypothesis that Form and Tabs failures came
 from insufficient repeated-topology coverage. Both proposed source targets were

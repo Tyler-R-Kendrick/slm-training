@@ -72,3 +72,22 @@ Close the scalar sweep. No global arity weight serves both rows. The grammar
 already has a dedicated root-reference arity head, so the next minimal
 representation arm will isolate binder arity to bound declarations instead of
 letting it compete for root-list ownership.
+
+## E1063-E1065 bound-declaration ownership
+
+v271 excludes the root declaration from the generic binder-arity training and
+decode rows; the dedicated root-reference arity head remains the sole owner of
+root-list cardinality. E1063 confirms that the generic arity head abstains on
+all smoke choices: smoke is prediction-identical to the arity-off arm at
+strict-v2 1.0, structure 0.5717, recall 0.75, and reward 0.957.
+
+The two opposed held rows remain opposed. E1064 Dual Card times out to an empty
+prediction, while E1065 Settings is strict-valid with fidelity 1.0, structure
+0.60, recall 1.0, and reward 0.937. Each run emits AgentEvals JSONL and a pinned
+AgentV bundle (`0/3`).
+
+Retain v271 as an ownership correction, but reject this decode policy and keep
+E1045 non-parentable. The Dual Card gain at higher global arity weights came
+from root-list pressure, not reusable bound-declaration evidence. A subsequent
+arm must model root-list identity/cardinality through its dedicated owner
+rather than restoring overlapping generic supervision.
