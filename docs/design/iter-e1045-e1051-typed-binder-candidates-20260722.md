@@ -108,6 +108,14 @@ loss/accuracy/candidate count are 2.0869/0.2857/28.43. Checkpoint SHA is
 `51ffed4a5ede84a8422a5402b14688adda3bc51d83bc9c58ebc270d281b8ff22`.
 
 This is a completed bounded diagnostic checkpoint, not a production or
-step-matched result. Its disposition remains pending strict smoke and targeted
-held evaluation; it must not be synced, promoted, served, resumed, or used as a
-parent before those results.
+step-matched result.
+
+E1067 evaluates strict smoke with all three matching decode heads at weight 1.
+Parse and meaningful-v1 remain 1.0, but strict-v2/fidelity/structure/recall/
+reward are 0.6667/0.9167/0.6675/0.6667/0.9320. The Hero row omits a required
+placeholder. There are no timeouts or fallbacks, and the run emits AgentEvals
+JSONL plus a pinned AgentV bundle (`0/1`).
+
+Reject E1066 without held evaluation. Its structure gain over E1063 does not
+offset the smoke contract and component-recall regressions. Never sync,
+promote, serve, resume, or use it as a parent.

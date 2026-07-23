@@ -232,7 +232,7 @@
       }
     },
     "E1066": {
-      "status": "completed_pending_eval",
+      "status": "completed_rejected_by_smoke",
       "run_id": "e1066_v271_dedicated_root_arity",
       "steps_requested": 450,
       "steps_completed": 331,
@@ -264,6 +264,34 @@
           "harness.model_build.train": "v22"
         }
       }
+    },
+    "E1067": {
+      "status": "completed_rejected",
+      "run_id": "e1067_v271_dedicated_root_arity_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 0.9166666666666666,
+      "structural_similarity": 0.6675,
+      "component_recall": 0.6666666666666666,
+      "reward": 0.9319999999999999,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "failure": "smoke_hero_01 omitted one required placeholder",
+      "agentv": "0/1",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "b3549e822826970d73b02162d401c7086de4bd97",
+        "components": {
+          "config.levers": "v39",
+          "harness.model_build.eval": "v56",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v271"
+        }
+      }
     }
   },
   "disposition": {
@@ -275,8 +303,9 @@
     "no_arity_decode_accepted": false,
     "arity_scalar_sweep_closed": true,
     "bound_only_arity_decode_accepted": false,
-    "e1066_pending_eval": true,
-    "next_hypothesis": "model root-list identity and cardinality through the dedicated root-reference owner without overlapping generic supervision"
+    "e1066_pending_eval": false,
+    "e1066_checkpoint_rejected": true,
+    "next_hypothesis": "root-list arity alone is insufficient; diagnose required-placeholder loss without restoring overlapping generic supervision"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

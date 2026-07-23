@@ -6747,12 +6747,14 @@ and structure 0.60. Retain the ownership correction, reject this policy for
 the E1045 checkpoint, and keep the checkpoint non-parentable. See
 `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
 
-### E1066: dedicated root-reference arity (evaluation pending)
+### E1066-E1067: dedicated root-reference arity (rejected)
 
 E1066 trains fresh on 524 audited E937 rows with typed binder-component,
 bound-only binder-arity, and dedicated root-reference arity losses, all at
 weight 1. It completes 331/450 requested CPU steps in 95.24 seconds. Final
 root-reference arity loss/accuracy are 1.2019/0.50; last-50 means are
-1.3583/0.5367. This local no-sync checkpoint is diagnostic and pending strict
-smoke plus targeted held evaluation; it is not parentable or promotable. See
+1.3583/0.5367. E1067 strict smoke keeps parse 1.0 but regresses strict-v2 to
+0.6667, fidelity to 0.9167, recall to 0.6667, and reward to 0.9320 because the
+Hero row omits a required placeholder. Reject without held evaluation; this
+local no-sync checkpoint is not parentable or promotable. See
 `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
