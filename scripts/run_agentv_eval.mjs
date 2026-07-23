@@ -17,25 +17,6 @@ const experiment = option("--experiment");
 const result = await evaluate({
   specFile,
   task: async (input) => input,
-  assert: [({ output }) => {
-    try {
-      const payload = JSON.parse(output);
-      return {
-        name: "openui-domain-gate",
-        score: payload.agentv_pass === true ? 1 : 0,
-        metadata: {
-          claim: payload.claim ?? "unspecified",
-          failures: payload.failures ?? [],
-        },
-      };
-    } catch (error) {
-      return {
-        name: "openui-domain-gate",
-        score: 0,
-        metadata: { error: String(error) },
-      };
-    }
-  }],
   threshold: 1,
   workers: 1,
   cache: false,
@@ -46,6 +27,18 @@ const result = await evaluate({
 console.log(JSON.stringify({
   summary: result.summary,
   artifacts: result.artifacts,
+  results: result.results.map((item) => ({
+    testId: item.testId,
+    score: item.score,
+    executionStatus: item.executionStatus,
+    scores: (item.scores ?? []).map((score) => ({
+      name: score.name,
+      type: score.type,
+      score: score.score,
+      assertions: score.assertions,
+      details: score.details,
+    })),
+  })),
 }));
 
 if (result.summary.executionErrors > 0) {

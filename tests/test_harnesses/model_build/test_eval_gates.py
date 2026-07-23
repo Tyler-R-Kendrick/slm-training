@@ -473,13 +473,56 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
 def test_write_ship_gates_stamps_payload(tmp_path: Path) -> None:
     import json
 
-    payload = write_ship_gates(tmp_path, {})
+    payload = write_ship_gates(
+        tmp_path,
+        {},
+        evals_result={
+            "format": "AgentEvals JSONL",
+            "criteria": {
+                "pass": False,
+                "results": [
+                    {"id": f"{suite}:missing_suite", "pass": False}
+                    for suite in DEFAULT_SHIP_GATES
+                ],
+            },
+            "runner": {"name": "AgentV", "execution_errors": 0},
+        },
+    )
+    assert payload["authority"] == "AgentEvals assertions"
     assert set(payload["version_stamp"]["components"]) == {
         "gates.ship",
+        "harness.core",
         "evals.meaningful_program",
     }
     on_disk = json.loads((tmp_path / "gates.json").read_text(encoding="utf-8"))
     assert on_disk["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+
+
+def test_write_ship_gates_binds_verdict_to_raw_agentevals_criteria(
+    tmp_path: Path,
+) -> None:
+    from slm_training.evals.agentv import model_ship_gate_cases
+
+    suites = _full_suite_metrics()
+    results = [
+        {**criterion, "pass": True}
+        for case in model_ship_gate_cases(suites)
+        for criterion in case["assertions"]
+    ]
+    evals_result = {
+        "format": "AgentEvals JSONL",
+        "authority": "AgentEvals assertions",
+        "criteria": {"pass": True, "results": results},
+        "runner": {"name": "AgentV", "execution_errors": 0},
+    }
+    assert write_ship_gates(
+        tmp_path / "valid", suites, evals_result=evals_result
+    )["pass"] is True
+
+    results[0]["actual"] = 99
+    assert write_ship_gates(
+        tmp_path / "tampered", suites, evals_result=evals_result
+    )["pass"] is False
 
 
 def test_evaluate_suites_scoreboard(

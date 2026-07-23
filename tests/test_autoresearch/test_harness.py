@@ -248,7 +248,14 @@ def passing_evaluation() -> dict:
                 "fallback_count": 0,
             },
         },
-        "agentv": {"passed": True},
+        "evals": {
+            "criteria": {"pass": True, "total": 1},
+            "runner": {"name": "AgentV", "execution_errors": 0},
+        },
+        "gates": {
+            "authority": "AgentEvals assertions",
+            "pass": True,
+        },
         "reward_samples": [0.1, 0.4, 0.8],
     }
 

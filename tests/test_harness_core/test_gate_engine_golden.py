@@ -2,10 +2,9 @@
 
 The inputs and expected payloads below were captured from
 ``evaluate_ship_gates`` on 2026-07-19 *before* the generic check loop moved to
-``slm_training.harness_core.gate_engine``. The OpenUI policy owner
-(``slm_training.harnesses.model_build.ship_gates``) must keep producing these
-payloads byte-for-byte; any diff means the extraction stopped being purely
-structural (docs/design/harness-core.md).
+``slm_training.harness_core.gate_engine``. The v2 expectation adds only the
+explicit preview authority and policy-version marker; gate checks, failures,
+and values remain byte-pinned (docs/design/harness-core.md).
 """
 
 from __future__ import annotations
@@ -163,6 +162,7 @@ CASES = json.loads(r"""
 EXPECTED = json.loads(r"""
 {
   "default_mixed": {
+    "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
     "policy": {
       "smoke": {
         "meaningful_program_rate": 0.66,
@@ -267,6 +267,7 @@ EXPECTED = json.loads(r"""
     "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   },
   "default_fallback_and_legacy": {
+    "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
     "policy": {
       "smoke": {
         "meaningful_program_rate": 0.66,
@@ -430,6 +431,7 @@ EXPECTED = json.loads(r"""
     "note": "Honest ship gates require all policy suites and score structure only (meaningful_program_rate / structural_similarity / component_type_recall / placeholder_fidelity / reward_score). component_type_recall is the semantic-density floor: shorter-but-emptier output cannot pass on syntax alone. Syntax parse is reported separately and is not a learned-quality substitute. DESIGN.md style lint is never a ship gate. See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
   },
   "custom_thresholds": {
+    "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
     "policy": {
       "smoke": {
         "meaningful_program_rate": 0.5,

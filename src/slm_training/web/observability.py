@@ -678,12 +678,16 @@ class Readers:
             raw_gate_pass = gate_pass
             if claim_class == "branch_only_diagnostic":
                 gate_pass = False
-            agentv = (
-                payload.get("agentv")
-                or evaluation.get("agentv")
-                or context.get("agentv")
+            evals = (
+                payload.get("evals")
+                or evaluation.get("evals")
+                or context.get("evals")
             )
-            agentv = agentv if isinstance(agentv, dict) else {}
+            evals = evals if isinstance(evals, dict) else {}
+            eval_criteria = evals.get("criteria")
+            eval_criteria = (
+                eval_criteria if isinstance(eval_criteria, dict) else {}
+            )
             scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
             run_dir = (
                 str(Path(scoreboard_path).parent)
@@ -708,7 +712,7 @@ class Readers:
                     "claim_class": claim_class,
                     "suites": record["suites"],
                     "source_schema": record["source_schema"],
-                    "agentv": agentv,
+                    "eval_criteria": eval_criteria,
                     "trace_id": train_result.get("trace_id") or train.get("trace_id"),
                     "run_dir": run_dir,
                     "source": f"docs/design/{path.name}",
@@ -885,6 +889,12 @@ class Readers:
                 )
                 if not normalized_suites:
                     continue
+                matched_evals = matched.get("evals") or payload.get("evals") or {}
+                matched_criteria = (
+                    matched_evals.get("criteria")
+                    if isinstance(matched_evals, dict)
+                    else {}
+                )
                 rows.append(
                     {
                         "id": run_id,
@@ -895,7 +905,11 @@ class Readers:
                         or _stem_date(path.stem),
                         "pass": gate_pass,
                         "suites": normalized_suites,
-                        "agentv": matched.get("agentv") or payload.get("agentv"),
+                        "eval_criteria": (
+                            matched_criteria
+                            if isinstance(matched_criteria, dict)
+                            else {}
+                        ),
                         "source_schema": "matched_runs@experiment",
                         "checkpoint": matched.get("checkpoint_sha256"),
                         "source": f"docs/design/{path.name}",

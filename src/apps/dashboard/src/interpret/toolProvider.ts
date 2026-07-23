@@ -173,7 +173,7 @@ export const toolProvider: Record<string, QueryFn> = {
         { key: "description", label: "experiment" },
         { key: "pass_status", label: "gate" },
         ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" })),
-        { key: "agentv", label: "AgentV", align: "right" },
+        { key: "eval_criteria", label: "Eval criteria", align: "right" },
         { key: "trace", label: "trace", align: "right" },
       ],
       rows: rows.map((r: any) => ({
@@ -191,7 +191,7 @@ export const toolProvider: Record<string, QueryFn> = {
           const legacy = c.metric === "meaningful_program_rate" && values.meaningful_source === "parse_rate_legacy";
           return [c.key, `${f(v, 2)}${legacy ? "*" : ""}`];
         })),
-        agentv: r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+        eval_criteria: r.eval_criteria?.total === undefined ? "—" : `${r.eval_criteria.passed ?? 0}/${r.eval_criteria.total}`,
         trace: r.trace_id ? String(r.trace_id).slice(0, 12) : "—",
       })),
     };

@@ -17,7 +17,6 @@ from slm_training.harnesses.model_build.eval_policy import (
 )
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
-    evaluate_ship_gates,
     write_ship_gates,
 )
 
@@ -815,13 +814,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.ship_gates:
-            gates = scoreboard.get("gates") or write_ship_gates(
-                config.run_dir, scoreboard["suites"]
-            )
-            # Re-read full payload when only summary was embedded.
-            if "pass" not in gates or "failures" not in gates:
-                gates = evaluate_ship_gates(scoreboard["suites"])
-                write_ship_gates(config.run_dir, scoreboard["suites"])
+            gates = scoreboard.get("gates")
+            if not gates or "pass" not in gates:
+                gates = write_ship_gates(
+                    config.run_dir,
+                    scoreboard["suites"],
+                    evals_result=scoreboard["evals"],
+                )
             return 0 if gates.get("pass") else 8
         # Legacy: fail-under applies to every listed suite (not smoke-only).
         for suite_name in suites:

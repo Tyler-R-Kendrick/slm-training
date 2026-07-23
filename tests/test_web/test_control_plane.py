@@ -2743,7 +2743,9 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
                 "train_result": {"trace_id": "a" * 32},
                 "suites": suites,
                 "ship_gates": {"pass": False},
-                "agentv": {"total": 5, "passed": 1},
+                "evals": {
+                    "criteria": {"total": 5, "passed": 1, "pass": False}
+                },
                 "scoreboard": "outputs/autoresearch/e9-current/runs/e9-run/scoreboard.json",
             }
         ),
@@ -2767,7 +2769,11 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
     readers = Readers(tmp_path)
     research = readers.scoreboard("research")
     assert research["results"][0]["run_id"] == "e9-run"
-    assert research["results"][0]["agentv"] == {"total": 5, "passed": 1}
+    assert research["results"][0]["eval_criteria"] == {
+        "total": 5,
+        "passed": 1,
+        "pass": False,
+    }
     assert any(row["run_id"] == "e9-run" for row in readers.runs()["runs"])
     detail = readers.run("e9-run")
     assert detail["provenance"] == "live"
@@ -2864,7 +2870,9 @@ def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None
                 "evaluation": {
                     "suites": suites,
                     "failed_gates": 4,
-                    "agentv": {"total": 5, "passed": 1},
+                    "evals": {
+                        "criteria": {"total": 5, "passed": 1, "pass": False}
+                    },
                 },
             }
         ),
@@ -2875,7 +2883,11 @@ def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None
     assert result["run_id"] == "e230-diverse-roots-32step"
     assert result["pass"] is False
     assert result["suites"] == suites
-    assert result["agentv"] == {"total": 5, "passed": 1}
+    assert result["eval_criteria"] == {
+        "total": 5,
+        "passed": 1,
+        "pass": False,
+    }
     assert result["trace_id"] == "b" * 32
     assert result["run_dir"].endswith("e230-diverse-roots-32step")
 
@@ -2915,7 +2927,8 @@ def test_committed_sde0_evidence_is_visible_on_research_scoreboard() -> None:
     )
 
     assert result["pass"] is False
-    assert result["agentv"] == {"total": 5, "passed": 0, "execution_errors": 0}
+    # Historical AgentV execution summaries are not re-labeled as criteria.
+    assert result["eval_criteria"] == {}
     assert set(result["suites"]) == {
         "smoke",
         "held_out",
@@ -2937,7 +2950,7 @@ def test_committed_e498_evidence_is_visible_on_research_scoreboard() -> None:
 
     assert result["pass"] is False
     assert result["claim_class"] == "diagnostic"
-    assert result["agentv"]["passed"] == 0
+    assert result["eval_criteria"] == {}
     assert result["suites"]["smoke"]["slot_component_applications"] == 20
 
 

@@ -568,7 +568,7 @@ class RLReadinessReport(StrictModel):
     required_suites: tuple[str, ...]
     suite_sizes: dict[str, int]
     ship_gates_pass: bool
-    agentv_pass: bool
+    eval_criteria_pass: bool
     reward_sample_count: int = Field(ge=0)
     reward_variance: float = Field(ge=0)
     approved: bool

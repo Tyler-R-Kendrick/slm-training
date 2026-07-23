@@ -56,8 +56,20 @@ def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
         "ood",
         "rico_held",
     ]
-    assert cases[0]["pass"] is True
-    assert all(case["pass"] is False for case in cases[1:])
+    assert "pass" not in cases[0]
+    assert cases[0]["assertions"][0]["actual"] == 0
+    assert all(
+        case["assertions"] == [
+            {
+                "id": f"{case['id']}:missing_suite",
+                "suite": case["id"],
+                "actual": None,
+                "operator": "present",
+                "expected": True,
+            }
+        ]
+        for case in cases[1:]
+    )
 
 
 def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
@@ -74,12 +86,22 @@ def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
             }
         ],
     )
-    spec = tmp_path / "agentv" / "sdk-wiring.eval.jsonl"
+    spec = tmp_path / "evals" / "sdk-wiring.eval.jsonl"
     row = json.loads(spec.read_text(encoding="utf-8"))
-    assert row["assert"] == [{"required": True, "type": "is-json"}]
-    assert json.loads(row["input"])["agentv_pass"] is True
+    assert row["assert"][0]["type"] == "code-grader"
+    assert row["assert"][0]["required"] is True
+    assert row["assert"][0]["config"] == {
+        "actual": True,
+        "expected": True,
+        "id": "case-1:domain_criterion",
+        "operator": "eq",
+    }
+    assert "agentv_pass" not in json.loads(row["input"])
     assert Path(published["spec"]).is_absolute()
-    assert published["sdk"] == "@agentv/core"
+    assert published["authority"] == "AgentEvals assertions"
+    assert published["runner"]["sdk"] == "@agentv/core"
+    assert published["criteria"]["pass"] is True
+    assert published["criteria"]["passed"] == 1
     assert published["summary"]["passed"] == 1
     assert published["summary"]["executionErrors"] == 0
 
@@ -102,3 +124,5 @@ def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
     )
     assert published["summary"]["passed"] == 1
     assert published["summary"]["failed"] == 4
+    assert published["criteria"]["passed"] == 7
+    assert published["criteria"]["failed"] == 4

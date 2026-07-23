@@ -1,4 +1,4 @@
-"""AgentEvals JSONL authoring and AgentV SDK result publication."""
+"""AgentEvals criteria authoring with AgentV runner publication."""
 
 from __future__ import annotations
 
@@ -29,33 +29,46 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     )
 
 
-def publish_agentv_evaluation(
+def publish_agentevals_evaluation(
     run_dir: Path | str,
     *,
     name: str,
     claim: str,
     cases: Sequence[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Write AgentEvals JSONL and evaluate it with the pinned AgentV SDK."""
+    """Write authoritative AgentEvals assertions and run them with AgentV."""
     slug = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
     if not slug or not cases:
-        raise ValueError("AgentV evaluation requires a name and at least one case")
+        raise ValueError("AgentEvals evaluation requires a name and at least one case")
 
     # AgentV may execute from the Git common checkout while artifacts belong to
     # an isolated worktree. Absolute paths keep publication attached to the run.
-    root = (Path(run_dir) / "agentv").resolve()
+    root = (Path(run_dir) / "evals").resolve()
     root.mkdir(parents=True, exist_ok=True)
     spec_path = root / f"{slug}.eval.jsonl"
     output_dir = root / slug
+    repo_root = Path(__file__).resolve().parents[3]
+    grader = repo_root / "scripts" / "grade_eval_criterion.py"
     rows = []
     for case in cases:
         case_id = str(case["id"])
         payload = {
-            "agentv_pass": case.get("pass") is True,
             "claim": claim,
-            "failures": list(case.get("failures") or []),
             "result": case.get("result"),
         }
+        criteria = list(case.get("assertions") or [])
+        if not criteria:
+            # Compatibility for non-ship diagnostic publishers. Their domain
+            # harness supplies the raw boolean, but AgentEvals still owns the
+            # required assertion and final verdict.
+            criteria = [
+                {
+                    "id": f"{case_id}:domain_criterion",
+                    "actual": case.get("pass"),
+                    "operator": "eq",
+                    "expected": True,
+                }
+            ]
         rows.append(
             json.dumps(
                 {
@@ -66,14 +79,23 @@ def publish_agentv_evaluation(
                         "claim": claim,
                         **dict(case.get("metadata") or {}),
                     },
-                    "assert": [{"type": "is-json", "required": True}],
+                    "assert": [
+                        {
+                            "name": str(criterion["id"]),
+                            "type": "code-grader",
+                            "command": ["python3", str(grader)],
+                            "required": True,
+                            "min_score": 1,
+                            "config": dict(criterion),
+                        }
+                        for criterion in criteria
+                    ],
                 },
                 sort_keys=True,
             )
         )
     spec_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
-    repo_root = Path(__file__).resolve().parents[3]
     runner, runtime_root = _agentv_runtime(repo_root)
     completed = subprocess.run(
         [
@@ -93,31 +115,77 @@ def publish_agentv_evaluation(
     )
     if completed.returncode:
         detail = (completed.stderr or completed.stdout).strip()
-        raise RuntimeError(f"AgentV SDK evaluation failed: {detail}")
+        raise RuntimeError(f"AgentV runner failed: {detail}")
     try:
         published = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError(
-            f"AgentV SDK returned invalid JSON: {completed.stdout!r}"
+            f"AgentV runner returned invalid JSON: {completed.stdout!r}"
         ) from exc
+    criterion_results = [
+        {
+            "id": score.get("details", {}).get("criterion_id", score.get("name")),
+            "pass": score.get("score") == 1,
+            **dict(score.get("details") or {}),
+        }
+        for result in published.get("results", [])
+        for score in result.get("scores", [])
+    ]
+    passed = sum(item["pass"] for item in criterion_results)
+    execution_errors = int(published.get("summary", {}).get("executionErrors", 0))
     return {
         "format": "AgentEvals JSONL",
+        "authority": "AgentEvals assertions",
         "sdk": "@agentv/core",
+        "criteria": {
+            "pass": bool(criterion_results)
+            and passed == len(criterion_results)
+            and execution_errors == 0,
+            "passed": passed,
+            "failed": len(criterion_results) - passed,
+            "total": len(criterion_results),
+            "failures": [
+                str(item["id"]) for item in criterion_results if not item["pass"]
+            ],
+            "results": criterion_results,
+        },
+        "runner": {
+            "name": "AgentV",
+            "sdk": "@agentv/core",
+            "execution_errors": execution_errors,
+        },
         "spec": str(spec_path),
         **published,
     }
 
 
+def publish_agentv_evaluation(
+    run_dir: Path | str,
+    *,
+    name: str,
+    claim: str,
+    cases: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    """Compatibility alias for diagnostic publishers using the AgentV runner."""
+    return publish_agentevals_evaluation(
+        run_dir,
+        name=name,
+        claim=claim,
+        cases=cases,
+    )
+
+
 def model_ship_gate_cases(
     suites: dict[str, dict[str, Any]], *, include_missing_suites: bool = True
 ) -> list[dict[str, Any]]:
-    """Lower ship gates to AgentV cases for a full or selected suite set."""
+    """Lower ship policy evidence to raw AgentEvals assertion cases."""
     from slm_training.harnesses.model_build.ship_gates import (
+        DEFAULT_MIN_SUITE_N,
         DEFAULT_SHIP_GATES,
-        evaluate_ship_gates,
+        _slim_suite,
     )
+    from slm_training.harness_core.gate_engine import build_gate_criteria
 
-    gates = evaluate_ship_gates(suites)
     cases = []
     selected = (
         DEFAULT_SHIP_GATES
@@ -128,14 +196,14 @@ def model_ship_gate_cases(
             if suite in DEFAULT_SHIP_GATES
         }
     )
+    actual, criteria = build_gate_criteria(
+        suites,
+        selected,
+        normalize_suite=_slim_suite,
+        default_min_n=DEFAULT_MIN_SUITE_N,
+    )
     for suite, thresholds in selected.items():
-        prefix = f"{suite}:"
-        checks = {
-            key: passed
-            for key, passed in gates["gates"].items()
-            if key.startswith(prefix)
-        }
-        failures = [item for item in gates["failures"] if item.startswith(prefix)]
+        assertions = [item for item in criteria if item["suite"] == suite]
         cases.append(
             {
                 "id": suite,
@@ -143,14 +211,16 @@ def model_ship_gate_cases(
                     f"Meet the canonical honest ship thresholds for {suite}; "
                     "a production claim still requires every policy suite."
                 ),
-                "pass": bool(checks) and all(checks.values()),
-                "failures": failures,
+                "assertions": assertions,
                 "result": {
-                    "actual": gates["actual"].get(suite),
-                    "checks": checks,
+                    "actual": actual.get(suite),
                     "thresholds": thresholds,
                 },
-                "metadata": {"suite": suite, "honesty": "canonical_ship_gates"},
+                "metadata": {
+                    "suite": suite,
+                    "honesty": "canonical_ship_gates",
+                    "gate_authority": "AgentEvals assertions",
+                },
             }
         )
     return cases
@@ -170,7 +240,7 @@ def publish_model_evaluation(
         ),
         "run",
     )
-    return publish_agentv_evaluation(
+    return publish_agentevals_evaluation(
         run_dir,
         name=f"openui-model-ship-gates-{stamp}",
         claim="honest_multi_suite_ship_gate",

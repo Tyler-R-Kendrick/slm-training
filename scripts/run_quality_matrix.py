@@ -2267,10 +2267,11 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
         "failures": gates.get("failures"),
         "checkpoint_sha256": board.get("checkpoint_sha256"),
         "evaluated_at": board.get("evaluated_at"),
-        "agentv": {
-            "format": (board.get("agentv") or {}).get("format"),
-            "sdk": (board.get("agentv") or {}).get("sdk"),
-            "summary": (board.get("agentv") or {}).get("summary"),
+        "evals": {
+            "format": (board.get("evals") or {}).get("format"),
+            "authority": (board.get("evals") or {}).get("authority"),
+            "criteria": (board.get("evals") or {}).get("criteria"),
+            "runner": (board.get("evals") or {}).get("runner"),
         },
         "suites": slim,
     }

@@ -440,12 +440,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v15",
+      "version": "v16",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-23",
+          "note": "Publish raw AgentEvals assertions as the canonical gate authority and retain AgentV only as the pinned execution and artifact runner"
+        },
         {
           "version": "v15",
           "date": "2026-07-23",
@@ -634,13 +639,18 @@
       ]
     },
     "gates.ship": {
-      "version": "openui_ship_gates_v2",
+      "version": "openui_ship_gates_v3",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v3",
+          "date": "2026-07-23",
+          "note": "Make raw AgentEvals assertions the canonical ship-gate authority while preserving strict measurement-integrity and runtime failure policy; AgentV is only the pinned runner and publisher"
+        },
         {
           "version": "openui_ship_gates_v2",
           "date": "2026-07-23",
@@ -755,12 +765,17 @@
       ]
     },
     "harness.core": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Expose raw deterministic gate criteria so AgentEvals and the compatibility Python preview share one strict policy lowering without precomputed pass booleans"
+        },
         {
           "version": "v5",
           "date": "2026-07-23",
@@ -2763,7 +2778,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v47",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2774,6 +2789,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v48",
+          "date": "2026-07-23",
+          "note": "Publish canonical AgentEvals criteria before writing gates.json and derive the durable ship verdict from AgentEvals assertion results"
+        },
         {
           "version": "v47",
           "date": "2026-07-23",
@@ -3594,12 +3614,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v5",
+      "version": "v6",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Report AgentEvals criterion totals instead of treating AgentV runner summaries as gate results"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",

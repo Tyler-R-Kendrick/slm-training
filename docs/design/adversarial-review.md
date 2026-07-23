@@ -62,6 +62,15 @@ All evaluated suites must be checked. Defaults (CLI `--ship-gates`):
 
 Smoke is a **canary**, not proof of generalization. Ship pass requires held_out + adversarial + ood + rico_held bars as well.
 
+The v2 gate contract makes AgentEvals assertions the verdict authority. The
+table above remains the policy source, but each raw metric, evidence floor,
+fallback count, and missing-suite check is emitted as a required
+`actual/operator/expected` assertion. AgentV only executes and publishes that
+spec. Python `evaluate_ship_gates()` output is a preview; durable
+`gates.json` must record `authority: "AgentEvals assertions"` and is derived
+from those assertion results. Historical AgentV pass counts are runner
+summaries and must not be relabeled as eval-criteria results.
+
 `component_type_recall` is the **semantic-density floor** (E2): the fraction of
 the gold's component types the prediction recovers. It collapses toward 0 for
 the trivial/empty program, so a compression- or decode-driven change cannot

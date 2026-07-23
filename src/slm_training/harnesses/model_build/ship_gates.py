@@ -7,7 +7,12 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from slm_training.harness_core.gate_engine import run_gate_checks
+from slm_training.harness_core.gate_engine import (
+    build_gate_criteria,
+    criterion_failure,
+    criterion_failure_category,
+    run_gate_checks,
+)
 
 # Per-suite minimums. Smoke is a canary; generalization requires the rest.
 #
@@ -148,23 +153,8 @@ def evaluate_ship_gates(
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
     )
-    for suite_name in policy:
-        metrics = suites.get(suite_name)
-        if metrics is None:
-            continue
-        timeout_count = metrics.get("decode_timeout_count")
-        if (
-            isinstance(timeout_count, (int, float))
-            and not isinstance(timeout_count, bool)
-            and timeout_count > 0
-        ):
-            key = f"{suite_name}:decode_timeout_count"
-            message = f"{key} actual={timeout_count!r} need=0"
-            checks[key] = False
-            failures.append(message)
-            categorized["runtime_failures"].append(message)
-
     return {
+        "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
         "policy": policy,
         "meaningful_metric_policy": _meaningful_metric_policy(
             policy, custom=bool(thresholds)
@@ -191,13 +181,67 @@ def write_ship_gates(
     suites: dict[str, dict[str, Any]],
     *,
     thresholds: dict[str, dict[str, float]] | None = None,
+    evals_result: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Write gates.json under the run directory; return the payload."""
+    """Write the AgentEvals-authoritative gates.json payload."""
     from slm_training.versioning import build_version_stamp
 
     payload = evaluate_ship_gates(suites, thresholds=thresholds)
+    policy = thresholds or DEFAULT_SHIP_GATES
+    _, raw_criteria = build_gate_criteria(
+        suites,
+        policy,
+        normalize_suite=_slim_suite,
+        default_min_n=DEFAULT_MIN_SUITE_N,
+    )
+    observed = {
+        str(item.get("id")): item
+        for item in (evals_result.get("criteria") or {}).get("results", [])
+    }
+    checks = {
+        str(item["id"]): (
+            observed.get(str(item["id"]), {}).get("pass") is True
+            and all(
+                observed[str(item["id"])].get(field) == item.get(field)
+                for field in ("actual", "operator", "expected")
+            )
+        )
+        for item in raw_criteria
+    }
+    failed_criteria = [
+        item for item in raw_criteria if not checks[str(item["id"])]
+    ]
+    categorized = {
+        "evidence_volume_failures": [],
+        "measurement_integrity_failures": [],
+        "quality_threshold_failures": [],
+        "runtime_failures": [],
+    }
+    for item in failed_criteria:
+        categorized[criterion_failure_category(item)].append(criterion_failure(item))
+    payload.update(
+        {
+            "authority": "AgentEvals assertions",
+            "gates": checks,
+            "failures": [criterion_failure(item) for item in failed_criteria],
+            **categorized,
+            "pass": bool(checks)
+            and all(checks.values())
+            and evals_result.get("authority") == "AgentEvals assertions"
+            and (evals_result.get("criteria") or {}).get("pass") is True
+            and int((evals_result.get("runner") or {}).get("execution_errors") or 0)
+            == 0,
+            "evals": {
+                "format": evals_result.get("format"),
+                "spec": evals_result.get("spec"),
+                "criteria": evals_result.get("criteria"),
+                "runner": evals_result.get("runner"),
+            },
+        }
+    )
     payload["version_stamp"] = build_version_stamp(
         "gates.ship",
+        "harness.core",
         "evals.meaningful_program",
     )
     run_dir = Path(run_dir)
