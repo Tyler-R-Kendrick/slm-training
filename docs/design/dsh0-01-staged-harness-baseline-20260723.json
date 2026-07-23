@@ -1,0 +1,167 @@
+{
+  "schema": "dsh0_01_staged_harness_baseline/v1",
+  "issue": "SLM-345",
+  "baseline": {
+    "schema_version": "staged_harness_baseline/v1",
+    "repo_commit": "820e5f2ba9054d286395980473b6dd66831a228b",
+    "repo_dirty": false,
+    "quality_matrix_frontier": "DSH3-17:CERT_CAP2_REJECTED",
+    "output_contract_generation": "output_contract/v2",
+    "checkpoint_generation": "model.twotower/v227",
+    "run_class": "fixture_demo",
+    "capabilities": [
+      "CAP0_GRAMMAR",
+      "CAP1_SEMANTICS",
+      "CAP2_TRANSFORM"
+    ],
+    "supervision_sources": [
+      "SUP_COMPILER",
+      "SUP_PARAPHRASE",
+      "SUP_DISTILL"
+    ],
+    "evaluation_sources": [
+      "EVAL_STATIC",
+      "EVAL_PROPERTY",
+      "EVAL_TRACE"
+    ],
+    "difficulties": [
+      "atomic",
+      "compositional",
+      "contextual",
+      "adversarial"
+    ],
+    "artifacts": [
+      {
+        "path": "docs/design/quality-experiment-matrix.md",
+        "identity": "DSH3-17 terminal frontier",
+        "sha256": "614cb99b8290945c69f88099c0feab412e792dddad87f3b9551c7528e38f220e",
+        "status": "verified",
+        "reason": null
+      },
+      {
+        "path": "docs/design/dsh3-17-cap2-disposition-20260723/report.json",
+        "identity": "CERT_CAP2 rejected",
+        "sha256": "494d875835aa927ea9b18a3fe2fd25c48876b772bb24d4aa3d260914cc7b212d",
+        "status": "verified",
+        "reason": null
+      },
+      {
+        "path": "docs/design/symbol-only-output-contract.md",
+        "identity": "output_contract/v2",
+        "sha256": "2ec6a7bf204eef536683ba6258e0a311463c92818032b3a20b5374de494b297d",
+        "status": "verified",
+        "reason": null
+      },
+      {
+        "path": "src/slm_training/resources/versions.json",
+        "identity": "model.twotower/v227+harness.staged/v1",
+        "sha256": "965b8463be23fa0474de0e0cafd9cdd4c023a656acf88c2bb9bc2ead30e11950",
+        "status": "verified",
+        "reason": null
+      }
+    ]
+  },
+  "baseline_sha": "8ce4ffd0285a45ec76ba1729a604b30dfd109f449e414fa88e4d47155eaec00f",
+  "reuse_map": [
+    {
+      "seam": "dsl_pack",
+      "owner": "src/slm_training/dsl/pack.py",
+      "sha256": "267bd5e6b333a8d3b5a194facf62f9c4908d39ce411c1aa868d347fa8018fb7b",
+      "relation": "reuse",
+      "later_work": "extend DslPack fail-closed slots; do not create another pack registry"
+    },
+    {
+      "seam": "example_record",
+      "owner": "src/slm_training/dsl/schema.py",
+      "sha256": "9cc1a83151dc36997c105f5139939e05757417f44730c62edf4822754117bbf3",
+      "relation": "reuse",
+      "later_work": "materialize staged examples through ExampleRecord"
+    },
+    {
+      "seam": "runtime_symbols",
+      "owner": "src/slm_training/data/contract.py",
+      "sha256": "0925351745f002d05daed1bbc18e8ca73a9ca35232df63366bf4118f9060f064",
+      "relation": "reuse",
+      "later_work": "extend RuntimeSymbol authority; never add hidden gold channels"
+    },
+    {
+      "seam": "completion_forest",
+      "owner": "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
+      "sha256": "abe58bff446bff12f4dbc1a8a3f7293402441bf86e3f110e18b8098c756de652",
+      "relation": "reuse",
+      "later_work": "derive legal prefixes from complete compiler evidence"
+    },
+    {
+      "seam": "verified_scope_solver",
+      "owner": "src/slm_training/dsl/solver/support.py",
+      "sha256": "d60c87974c2db00ab7452127a2fe5bc349c8586184c2353eb75634589b636a4e",
+      "relation": "reuse",
+      "later_work": "consume exact tri-state support and certificates"
+    },
+    {
+      "seam": "topology",
+      "owner": "src/slm_training/models/grammar_diffusion.py",
+      "sha256": "f3c3d9f17a78e40558af2d62ddd6b19d997f833abee716604da43d7282f7da66",
+      "relation": "reuse",
+      "later_work": "keep typed topology machinery default-off until certified"
+    },
+    {
+      "seam": "templates",
+      "owner": "src/slm_training/models/template_fill.py",
+      "sha256": "0ad692927082c2a67c403f3b9f7c9ee16e419ff43a2b23052bebc5b044698328",
+      "relation": "reuse",
+      "later_work": "reuse template-plus-bindings ownership boundary"
+    },
+    {
+      "seam": "legal_actions",
+      "owner": "src/slm_training/dsl/operators/legal_set.py",
+      "sha256": "84f4c182c3c4c1b26860704262034f7fcc8cef576ef19eaf491248d3c6421b40",
+      "relation": "reuse",
+      "later_work": "reuse compiler-owned legal-set enumeration"
+    },
+    {
+      "seam": "legal_action_fixture",
+      "owner": "src/slm_training/resources/evals/cap2_operator_v1.json",
+      "sha256": "ae42bf23e73946c28582af52e5e9704686e59108443318513dee80ee7fd6ea11",
+      "relation": "reuse",
+      "later_work": "retain as frozen CAP2 evaluation evidence, not CAP0 training data"
+    },
+    {
+      "seam": "abstraction_ladder",
+      "owner": "docs/design/abstraction-house-style.md",
+      "sha256": "4b481a3ddc2c48fe50a0ece109faebcc20e9fb927927555fb6ba4e8c9156b5bd",
+      "relation": "separate_axis",
+      "later_work": "preserve authored-request L0-L5 names; never alias them to CAP0-CAP2"
+    },
+    {
+      "seam": "generic_cap1_contract",
+      "owner": "SLM-343",
+      "sha256": "UNKNOWN",
+      "relation": "dependency",
+      "later_work": "CAP1 contract remains blocked on CERT_CAP0"
+    },
+    {
+      "seam": "ambiguity_aware_cap1_data",
+      "owner": "SLM-344",
+      "sha256": "UNKNOWN",
+      "relation": "dependency",
+      "later_work": "extend the generic CAP1 contract after SLM-343"
+    }
+  ],
+  "missing_evidence_policy": {
+    "allowed_states": [
+      "unknown",
+      "invalid"
+    ],
+    "numeric_default": null,
+    "coerce_to_zero": false
+  },
+  "disposition": {
+    "decision": "adopt",
+    "next_issue": "SLM-346",
+    "certificates_issued": [],
+    "checkpoint_created": false,
+    "experiment_run": false,
+    "ship_claim": false
+  }
+}
