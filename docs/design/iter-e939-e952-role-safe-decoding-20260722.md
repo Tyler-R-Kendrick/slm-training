@@ -1,4 +1,4 @@
-# E939-E967: role-safe decoding, aligned training, and bounded nesting
+# E939-E968: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -47,6 +47,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E964 | E963 clean scratch / held_out | 5 | 0.8000 | 0.4000 | 0.4000 | 0.4733 | 0.1404 | 0.4952 | 0.6540 | 1 / 5 | 0/2 campaign |
 | E965 | E951 global binder-symbol reservation / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E965 | E951 global binder-symbol reservation / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3977 | 0.6000 | 0.7010 | 1 / 2 | 0/2 campaign |
+| E968 | E951 fail-closed training boundary v256 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E968 | E951 fail-closed training boundary v256 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -145,3 +147,10 @@ earlier primary-plus-alternate audit remains 632/632. The literal `"email"`
 appears only as the official `Input.type` enum in the accepted test; the
 role-unsafe `Slider.name` negative fixture now uses schema atom `"row"` and is
 required to fail before model access.
+
+E968 re-evaluates E951 under the retained v256 training boundary. Every smoke
+and held quality aggregate is identical to E957, including held parse 1.0,
+strict 0.8, fidelity 0.8333, structure 0.4434, recall 0.6952, reward 0.8834,
+zero timeouts, and three certified fallbacks. The boundary is decode-neutral.
+AgentV remains 0/2; E951 remains diagnostic-only because its weights descend
+from pre-role-safe E891.

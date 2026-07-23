@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E967 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E968 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6545,3 +6545,6 @@ training entrypoints over the same opaque-marker and role-safe contract as the
 loaders, fixes the OpenUI pack producer, and locks the active 524-train / 50-eval
 corpora behind a loader regression test. Retain model v256, train-data v26, and
 recursive-fixture v11; no checkpoint or ship claim.
+E968 confirms v256 is decode-neutral: every E957 smoke/held aggregate is
+unchanged, including held strict 0.8 and reward 0.8834. Three certified
+fallbacks and AgentV 0/2 still block any learned-quality claim.
