@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from typing import (
     Any,
     Callable,
@@ -244,19 +244,121 @@ def _openui_completion_frontier(prefix: str) -> frozenset[str]:
     return engine.next_terminals()
 
 
+def _openui_witness_candidates() -> tuple[Any, ...]:
+    from slm_training.data.contract import RuntimeSymbol
+    from slm_training.dsl.grammar_capabilities import GrammarWitnessCandidateV1
+
+    base = 'root = TextContent(":w.text")'
+    two_statements = (
+        'item = TextContent(":w.text")\nroot = Stack([item], "column")'
+    )
+    sources = [
+        base,
+        f"{base}\n",
+        f"\n\n{base}",
+        "root = Separator()",
+        two_statements,
+        f"{two_statements}\n",
+        '$s = true ? false : true\nroot = TextContent(":w.text")',
+        *(
+            f'$s = true {operator} false\nroot = TextContent(":w.text")'
+            for operator in (
+                "||",
+                "&&",
+                "==",
+                "!=",
+                ">=",
+                "<=",
+                ">",
+                "<",
+                "+",
+                "-",
+                "*",
+                "/",
+                "%",
+            )
+        ),
+        '$s = !true\nroot = TextContent(":w.text")',
+        '$s = -true\nroot = TextContent(":w.text")',
+        '$s = {text: true}.text\nroot = TextContent(":w.text")',
+        '$s = {Stack: true}.Stack\nroot = TextContent(":w.text")',
+        '$s = [true][false]\nroot = TextContent(":w.text")',
+        '$s = []\nroot = TextContent(":w.text")',
+        '$s = [true, false]\nroot = TextContent(":w.text")',
+        '$s = {}\nroot = TextContent(":w.text")',
+        (
+            '$s = {text: true, Stack: false, ":w.key": null}\n'
+            'root = TextContent(":w.text")'
+        ),
+        '$s = "column"\nroot = TextContent(":w.text")',
+        '$s = true\nroot = TextContent(":w.text")',
+        '$s = null\nroot = TextContent(":w.text")',
+        '$s = $s\nroot = TextContent(":w.text")',
+        (
+            'item = TextContent(":w.text")\n$s = item\n'
+            'root = Stack([item], "column")'
+        ),
+        '$s = (true)\nroot = TextContent(":w.text")',
+        'root = Stack([], "column", true)',
+    ]
+    candidates = []
+    for source in sources:
+        symbols = [
+            RuntimeSymbol(surface=surface, role="external_entity")
+            for surface in sorted(set(extract_placeholders(source)))
+        ]
+        symbols.extend(
+            RuntimeSymbol(surface=surface, role="state")
+            for surface in sorted(
+                set(re.findall(r"\$[A-Za-z_][A-Za-z0-9_]*", source))
+            )
+        )
+        candidates.append(
+            GrammarWitnessCandidateV1(
+                source=source,
+                runtime_symbols=tuple(symbols),
+            )
+        )
+    return tuple(candidates)
+
+
 def _openui_grammar_capability_authority() -> GrammarCapabilityAuthorityV1:
     from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
-    from slm_training.dsl.grammar_capabilities import lark_authority
+    from slm_training.dsl.grammar_capabilities import (
+        lark_authority,
+        production_id,
+    )
 
     backend = get_backend("openui")
-    return lark_authority(
+    authority = lark_authority(
         grammar_path=GRAMMARS_DIR / "openui.lark",
         start_symbols=("start",),
         canonical_serialize=_openui_canonicalize,
         static_validate=backend.validate,
         scope_policy=_openui_scope_extractor,
         completion_frontier=_openui_completion_frontier,
+        witness_candidates=_openui_witness_candidates,
     )
+    unsupported: dict[str, str] = {}
+    for production in authority.productions or ():
+        lhs = str(production.lhs)
+        rhs = tuple((symbol.kind, str(symbol.name)) for symbol in production.rhs)
+        reason = None
+        if lhs == "start" and (
+            not rhs or rhs == (("nonterminal", "__start_star_0"),)
+        ):
+            reason = "STATIC_SEMANTICS_REQUIRES_ROOT"
+        elif lhs == "__start_star_0" and rhs[:1] == (
+            ("nonterminal", "__start_star_0"),
+        ):
+            reason = "LEXER_COLLAPSES_REPEATED_NEWLINES"
+        elif lhs == "primary" and rhs == (("terminal", "NUMBER"),):
+            reason = "SYMBOLIC_SURFACE_FORBIDS_OPEN_NUMBER"
+        elif lhs == "call_name" and rhs == (("terminal", "BUILTIN"),):
+            reason = "SYMBOLIC_SURFACE_HAS_NO_DECLARED_BUILTIN"
+        if reason is not None:
+            unsupported[production_id(production)] = reason
+    return replace(authority, unsupported_alternatives=unsupported)
 
 
 def _openui_slot_contract(

@@ -133,6 +133,14 @@ wiring. The generic adapter imports no OpenUI implementation and has no
 corpus-example fallback. See
 [dsh1-01-grammar-capability-adapter-20260723.md](dsh1-01-grammar-capability-adapter-20260723.md).
 
+SLM-354 extends that same authority object with exact production tracing,
+finite containing-context witness candidates, and typed unsupported reasons.
+`minimal_witnesses.py` remains pack-generic: it selects the lexicographic
+minimum fully admitted candidate per reachable/productive alternative and
+blocks every unexplained gap. OpenUI sources and lexer/semantic exclusions
+remain behind `pack.py`. See
+[dsh1-02-minimal-alternative-witnesses-20260723.md](dsh1-02-minimal-alternative-witnesses-20260723.md).
+
 ## End-to-end fixture run (executed, not hypothetical)
 
 `tests/test_dsl/test_pack.py::test_end_to_end_fixture_run_through_pack_interface`

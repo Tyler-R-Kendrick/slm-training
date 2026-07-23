@@ -1,0 +1,68 @@
+{
+  "schema_version": "minimal_alternative_witness_basis/v1",
+  "issue": "SLM-354",
+  "date": "2026-07-23",
+  "run_class": "contract_fixture",
+  "decision": "supported",
+  "pack_id": "openui",
+  "authority_fingerprint": "037eda9c65d3fcff8cead84754645c504d90928550c530c74f75bdd13ed6c309",
+  "seed": 0,
+  "basis_identity": "7519b9eae082dc71f57bd541946497c2cfd6ef2d35c44b823e2fbe4103a623f4",
+  "reachable_productive_alternatives": 76,
+  "verified_witnesses": 71,
+  "typed_unsupported": 5,
+  "unique_containing_sources": 35,
+  "unique_canonical_sources": 32,
+  "cost_order": [
+    "ast_nodes",
+    "productions",
+    "optional_nodes",
+    "markers",
+    "surface_tokens"
+  ],
+  "unsupported_reasons": {
+    "STATIC_SEMANTICS_REQUIRES_ROOT": 2,
+    "LEXER_COLLAPSES_REPEATED_NEWLINES": 1,
+    "SYMBOLIC_SURFACE_FORBIDS_OPEN_NUMBER": 1,
+    "SYMBOLIC_SURFACE_HAS_NO_DECLARED_BUILTIN": 1
+  },
+  "controls": {
+    "exact_production_trace_and_focus_path": "passed",
+    "parse_and_static_validation": "passed",
+    "scope_policy": "passed",
+    "canonical_idempotence_and_ast_round_trip": "passed",
+    "symbolic_surface_marker_closure": "passed",
+    "identical_snapshot_and_seed_determinism": "passed",
+    "complete_mini_dsl_shared_search": "passed",
+    "unexplained_gap_blocks": "passed"
+  },
+  "commands": [
+    "python -m pytest -q tests/test_dsl/test_minimal_witnesses.py tests/test_dsl/test_grammar_capabilities.py tests/test_dsl/test_pack.py",
+    "python -m ruff check .",
+    "python -m compileall -q src scripts tests",
+    "python -m scripts.verify_version_stamps --check",
+    "git diff --check"
+  ],
+  "results": {
+    "focused_pytest": "32 passed",
+    "ruff": "passed",
+    "compileall": "passed",
+    "version_stamps": "passed",
+    "diff_check": "passed"
+  },
+  "claim_limits": [
+    "Minimum cost is selected over the finite pack-declared containing-context candidate authority.",
+    "Typed unsupported rows are not witnesses and do not count as production coverage.",
+    "No corpus synthesis, train, model eval, benchmark, checkpoint, capability certificate, or ship claim was produced."
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e8ba9aa5fdef8fc85c83283a6e597a8f6428b29b",
+    "code_dirty": true,
+    "components": {
+      "dsl.grammar_capabilities": "v2",
+      "dsl.minimal_witnesses": "v1"
+    },
+    "stamped_at": "2026-07-23T21:47:26+00:00"
+  }
+}
