@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E990",
+  "experiment_id": "E939-E994",
   "date": "2026-07-22",
-  "decision": "retain_role_depth_and_training_entrypoint_constraints_reject_binder_arity_scratch_arms",
+  "decision": "retain_v264_rollback_reject_binder_arity_and_unique_reference_treatments",
   "train_data": "e937_role_safe_all_targets_v2",
   "eval_data": "e938_role_safe_all_targets_v2",
   "runs": {
@@ -54,7 +54,11 @@
     "E987": {"status": "invalid_interrupted_train", "requested_steps": 150, "reached_steps": 27, "checkpoint": null, "reason": "orphaned command session before checkpoint finalization", "agentv": null},
     "E988": {"status": "completed_rejected", "steps": 150, "elapsed_wall_seconds": 70.53686118000041, "last_loss": 6.380068778991699, "checkpoint_sha256": "36f57b3b0a693c3c5355fad8b674a816a11c2c7b98d1bcbddcc29a7e73c92bf2", "checkpoint_sync": "disabled_scratch", "mixture_id": "e937_role_safe_all_targets_v2-base", "binder_arity_loss_weight": 0.25},
     "E989": {"status": "completed_rejected_quality", "suite": "smoke", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 1.0, "strict_v2": 0.6666666666666666, "fidelity": 0.75, "structural_similarity": 0.5492333333333334, "component_recall": 0.6666666666666666, "reward": 0.882, "decode_timeouts": 0, "fallback_count": 0, "agentv": "0/1"},
-    "E990": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 0.6, "strict_v2": 0.2, "fidelity": 0.6366666666666667, "structural_similarity": 0.503, "component_recall": 0.5523809523809524, "reward": 0.8364, "decode_timeouts": 0, "fallback_count": 2, "agentv": "0/1"}
+    "E990": {"status": "completed_rejected_quality_unmatched_schema_policy", "suite": "held_out", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 0.6, "strict_v2": 0.2, "fidelity": 0.6366666666666667, "structural_similarity": 0.503, "component_recall": 0.5523809523809524, "reward": 0.8364, "decode_timeouts": 0, "fallback_count": 2, "agentv": "0/1"},
+    "E991": {"status": "completed_rejected_schema_matched", "evaluated_model_version": "v263", "binder_arity_decode_weight": 1.0, "compiler_schema_component_types": true, "smoke_parse": 1.0, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.75, "smoke_structural_similarity": 0.4347, "smoke_component_recall": 0.5833333333333334, "smoke_reward": 0.868, "smoke_decode_timeouts": 0, "smoke_fallback_count": 2, "held_out_parse": 0.8, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.8, "held_out_structural_similarity": 0.4748, "held_out_component_recall": 0.8, "held_out_reward": 0.7736, "held_out_decode_timeouts": 1, "held_out_fallback_count": 0, "agentv": "0/2"},
+    "E992": {"status": "completed_rejected_unique_binder_filter", "evaluated_model_version": "v263", "smoke_parse": 1.0, "smoke_meaning_v1": 1.0, "smoke_strict_v2": 0.3333333333333333, "smoke_fidelity": 0.7222222222222222, "smoke_structural_similarity": 0.6572666666666667, "smoke_component_recall": 0.5, "smoke_reward": 0.8536666666666667, "smoke_decode_timeouts": 0, "smoke_fallback_count": 1, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.4, "held_out_fidelity": 0.6666666666666666, "held_out_structural_similarity": 0.5554, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.831, "held_out_decode_timeouts": 0, "held_out_fallback_count": 4, "agentv": "0/2", "disposition": "withdraw"},
+    "E993": {"status": "completed_runtime_variance_not_parity", "evaluated_model_version": "v264", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 0.8, "held_out_strict_v2": 0.6, "held_out_decode_timeouts": 1, "agentv": "0/2"},
+    "E994": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v264", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E979"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
@@ -66,15 +70,16 @@
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "cbaf3c142d3445beff112f059e1c75ea7329ca77",
+    "code_commit": "a220fa08522a49bc761a9f5cb368f7825aa572fa",
     "code_dirty": true,
     "components": {
       "harness.model_build.train": "v22",
-      "harness.model_build.eval": "v52",
+      "harness.model_build.eval": "v54",
       "harness.train_data": "v26",
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v15",
-      "model.twotower": "v262"
+      "model.twotower": "v264",
+      "config.levers": "v37"
     }
   }
 }

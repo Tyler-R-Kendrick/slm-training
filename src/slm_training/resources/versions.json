@@ -27,13 +27,23 @@
       ]
     },
     "config.levers": {
-      "version": "v35",
+      "version": "v37",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v37",
+          "date": "2026-07-22",
+          "note": "Withdraw the unique-binder-reference lever after E992 regressed strict quality and fallbacks"
+        },
+        {
+          "version": "v36",
+          "date": "2026-07-22",
+          "note": "Advertise the opt-in lexer compiler unique-binder-reference constraint"
+        },
         {
           "version": "v35",
           "date": "2026-07-22",
@@ -2865,7 +2875,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v52",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2876,6 +2886,16 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-07-22",
+          "note": "Withdraw the unique-binder-reference evaluation switch after E992 rejection"
+        },
+        {
+          "version": "v53",
+          "date": "2026-07-22",
+          "note": "Expose and record the opt-in compiler unique-binder-reference evaluation switch"
+        },
         {
           "version": "v52",
           "date": "2026-07-22",
@@ -4187,7 +4207,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v262",
+      "version": "v264",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4212,6 +4232,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v264",
+          "date": "2026-07-22",
+          "note": "Withdraw decoder-only unique binder filtering after E992 collapsed Form and Tabs coverage"
+        },
+        {
+          "version": "v263",
+          "date": "2026-07-22",
+          "note": "Add a decoder-only tree constraint that filters already referenced binders without changing training supervision"
+        },
         {
           "version": "v262",
           "date": "2026-07-22",

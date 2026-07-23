@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E990 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E994 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6587,3 +6587,11 @@ persistent session. E989 smoke recovers parse 1.0 but only strict 0.6667 and
 fidelity 0.75. E990 held reaches parse 1.0 but strict 0.2, fidelity 0.6367,
 recall 0.5524, and two fallbacks; cross-parent binder reuse remains. Reject the
 undertrained E988 checkpoint and never use it as a parent.
+E981-E990 omitted the schema-type switch and are diagnostics, not matched E979
+comparisons. The corrected E991 E980 replay raises held strict to 0.6 but adds
+a timeout, lowers parse to 0.8 and reward to 0.7736, and regresses smoke;
+E980 remains rejected. E992 then applies decoder-only global binder uniqueness
+to E951. It removes reuse but collapses Form/Tabs coverage, lowering held strict
+to 0.4 and increasing fallbacks to four. Withdraw v263. E993 smoke matches E979;
+a transient held timeout prevents campaign parity. E994 held retry exactly
+matches E979, proving v264 rollback parity.

@@ -1,4 +1,4 @@
-# E939-E990: role-safe decoding, aligned training, and bounded nesting
+# E939-E994: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -69,6 +69,13 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E984 | E980 binder-arity weight 0 / held_out | 5 | 0.8000 | 0.6000 | 0.2000 | 0.6333 | 0.2755 | 0.5286 | 0.7224 | 1 / 2 | 0/1 |
 | E989 | E988 binder-arity weight 1 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.7500 | 0.5492 | 0.6667 | 0.8820 | 0 / 0 | 0/1 |
 | E990 | E988 binder-arity weight 1 / held_out | 5 | 1.0000 | 0.6000 | 0.2000 | 0.6367 | 0.5030 | 0.5524 | 0.8364 | 0 / 2 | 0/1 |
+| E991 | E980 arity 1 + schema types / smoke | 3 | 1.0000 | 0.6667 | 0.6667 | 0.7500 | 0.4347 | 0.5833 | 0.8680 | 0 / 2 | 0/2 campaign |
+| E991 | E980 arity 1 + schema types / held_out | 5 | 0.8000 | 0.8000 | 0.6000 | 0.8000 | 0.4748 | 0.8000 | 0.7736 | 1 / 0 | 0/2 campaign |
+| E992 | E951 unique binders v263 / smoke | 3 | 1.0000 | 1.0000 | 0.3333 | 0.7222 | 0.6573 | 0.5000 | 0.8537 | 0 / 1 | 0/2 campaign |
+| E992 | E951 unique binders v263 / held_out | 5 | 1.0000 | 0.8000 | 0.4000 | 0.6667 | 0.5554 | 0.6952 | 0.8310 | 0 / 4 | 0/2 campaign |
+| E993 | E951 withdrawal v264 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E993 | E951 withdrawal v264 / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6333 | 0.3914 | 0.5619 | 0.6960 | 1 / 2 | 0/2 campaign |
+| E994 | E951 withdrawal v264 / held_out retry | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/1 |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -240,7 +247,11 @@ strict-v2 remains 0.4 and component recall falls to 0.7190; Tabs still reuses
 the decode weight to isolate the auxiliary training effect: smoke still times
 out, and held parse/strict/reward fall to 0.8/0.2/0.7224. The head supplies a
 real held-out ranking signal, but the checkpoint is globally worse than E979.
-Reject E980; never sync, promote, serve, resume, or use it as a parent.
+E981-E990 omitted the schema-component-type switch used by E973/E979, so those
+runs remain valid diagnostics but are not matched comparisons. E991 corrects that: held
+strict rises to 0.6 and recall to 0.8, but parse falls to 0.8 with one timeout,
+reward falls to 0.7736, and smoke meaning/fidelity regress. Reject E980; never
+sync, promote, serve, resume, or use it as a parent.
 
 E985-E987 are invalid interrupted attempts at binder-arity loss weight 0.25:
 they stop at 397/450, 184/350, and 27/150 respectively without a checkpoint or
@@ -253,3 +264,12 @@ weight 1. Smoke recovers parse 1.0 but reaches only strict 0.6667 and fidelity
 0.5524, and two fallbacks remain; Form and Tabs still share binders across
 parents. Reject E988 as undertrained and dominated by E980/E979; never sync,
 promote, serve, resume, or use it as a parent.
+
+E992 tests decoder-only global binder-reference uniqueness without touching
+gold-decision extraction or auxiliary supervision. It removes cross-parent
+reuse but collapses Form to a one-slot fallback and Tabs to an empty array:
+held strict falls 0.8 to 0.4, fidelity to 0.6667, reward to 0.8310, and
+fallbacks rise from three to four; smoke strict falls to 0.3333. Reject and
+withdraw v263. E993's smoke is exact E979 parity, while one transient held
+timeout prevents campaign parity. The isolated E994 held retry exactly matches
+all E979 aggregates and three fallbacks, establishing v264 rollback parity.
