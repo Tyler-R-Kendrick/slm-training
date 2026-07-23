@@ -57,6 +57,8 @@ def test_report_round_trip_serialization(repo_root: Path) -> None:
     assert restored.verdict == report.verdict
     assert len(restored.mechanism_comparison) == len(report.mechanism_comparison)
     assert len(restored.differentiators) == len(report.differentiators)
+    assert restored.floor_gate_hash == report.floor_gate_hash
+    assert restored.floor_gate_verdict == "inconclusive"
 
 
 def test_minimal_contract_round_trip_serialization() -> None:
@@ -397,6 +399,8 @@ def test_fixture_audit_produces_blocked_by_recurrence(repo_root: Path) -> None:
     assert report.verdict == LoopedLatentVerdict.BLOCKED_BY_RECURRENCE
     assert report.minimal_contract is None
     assert report.contract_hash is None
+    assert "does not authorize learned-latent claims" in report.resolving_evidence
+    assert "does not authorize learned-latent claims" in report.scale_regime_audit.semantic_floor_status
 
 
 def test_fixture_audit_has_version_stamp(repo_root: Path) -> None:

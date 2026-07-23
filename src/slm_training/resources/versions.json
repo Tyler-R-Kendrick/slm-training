@@ -938,12 +938,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v63",
+      "version": "v64",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v64",
+          "date": "2026-07-23",
+          "note": "publish the fail-closed SLM-213 semantic-floor claim authorization gate"
+        },
         {
           "version": "v63",
           "date": "2026-07-23",
@@ -1379,6 +1384,30 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-184 single-touch confirmation firewall and preregistered claim manifest wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.semantic_floor_gate": {
+      "version": "v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/experiments/semantic_floor_gate.py",
+        "scripts/publish_semantic_floor_gate.py",
+        "tests/test_harnesses/experiments/test_semantic_floor_gate.py",
+        "tests/test_scripts/test_publish_semantic_floor_gate.py",
+        "docs/design/semantic-floor-gate-v1.json",
+        "docs/design/semantic-floor-gate-v1.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "normalize the component version and refresh registered identities while preserving the evidence timestamp"
+        },
+        {
+          "version": "sde5-06-v1",
+          "date": "2026-07-23",
+          "note": "initial SLM-213 SemanticFloorGateV1 evidence aggregation and claim authorization"
         }
       ]
     },
@@ -2867,7 +2896,7 @@
       ]
     },
     "harness.experiments.slm215_spectral_atlas": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm215_spectral_atlas.py",
@@ -2878,6 +2907,26 @@
         "docs/design/iter-slm215-spectral-atlas-20260721.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "no-bump: pin the custom gate-path regression to the current honest verdict"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "no-bump: assert that custom gate references and hashes identify the same loaded artifact"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "record the actual caller-supplied SemanticFloorGateV1 path in atlas manifests"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "bind NCS atlas manifests to SemanticFloorGateV1 and keep strict meaning-v2 separate from legacy meaningful rate"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -2902,7 +2951,7 @@
       ]
     },
     "harness.experiments.slm229_looped_latent_differentiation": {
-      "version": "v1",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm229_looped_latent_differentiation.py",
@@ -2913,6 +2962,21 @@
         "docs/design/iter-slm229-looped-latent-differentiation-20260721.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "derive learned-latent authorization narratives from the resolved semantic floor verdict"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: add explicit design output paths so fixture tests do not rewrite canonical docs; report semantics are unchanged"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "resolve the RSC learned-latent prerequisite through the authoritative SemanticFloorGateV1 hash"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",

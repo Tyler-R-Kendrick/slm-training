@@ -1,11 +1,12 @@
-# SLM-215 (NCS0-02): SpectralAtlasV1 fixture (slm215-spectral-atlas-20260721)
+# SLM-215 (NCS0-02): SpectralAtlasV1 fixture (slm215-spectral-atlas-20260723)
 
 **Matrix set:** `slm215_spectral_atlas`
 **Version:** `ncs0-02-v1`
 **Status:** fixture
 **Claim class:** wiring
 **Disposition:** fixture_signal — Observed Spearman correlation 0.876 between alpha_z and parse_rate.
-**Atlas hash:** `6d8414399256736c...`
+**Atlas hash:** `f68f2da944a99531...`
+**Semantic floor gate:** `7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d` (inconclusive; `docs/design/semantic-floor-gate-v1.json`)
 
 ## Honest caveats
 
