@@ -25,6 +25,7 @@ __all__ = [
     "mde_simulation",
     "benjamini_hochberg",
     "holm_bonferroni",
+    "exact_paired_binary_test",
     "classify_power",
 ]
 
@@ -602,6 +603,43 @@ def holm_bonferroni(
         )
         prior_adjusted = adjusted
     return sorted(entries, key=lambda item: item["index"])
+
+
+def exact_paired_binary_test(
+    control: Sequence[int | bool],
+    candidate: Sequence[int | bool],
+) -> dict[str, Any]:
+    """Two-sided exact McNemar test over paired binary outcomes."""
+    if len(control) != len(candidate) or not control:
+        raise ValueError("paired binary samples must be non-empty and equal length")
+    if any(value not in (0, 1, False, True) for value in (*control, *candidate)):
+        raise ValueError("paired binary samples must contain only zero/one values")
+    control_only = sum(
+        int(bool(left) and not bool(right))
+        for left, right in zip(control, candidate)
+    )
+    candidate_only = sum(
+        int(not bool(left) and bool(right))
+        for left, right in zip(control, candidate)
+    )
+    discordant = control_only + candidate_only
+    if discordant == 0:
+        p_value = 1.0
+    else:
+        smaller = min(control_only, candidate_only)
+        lower_tail = _binom_tail_prob(discordant, smaller, 0.5, upper=False)
+        p_value = min(1.0, 2.0 * lower_tail)
+    return {
+        "schema": "exact_paired_binary_test/v1",
+        "n": len(control),
+        "control_only": control_only,
+        "candidate_only": candidate_only,
+        "discordant": discordant,
+        "effect": sum(int(bool(value)) for value in candidate) / len(candidate)
+        - sum(int(bool(value)) for value in control) / len(control),
+        "p_value": p_value,
+        "method": "two_sided_exact_mcnemar",
+    }
 
 
 def classify_power(

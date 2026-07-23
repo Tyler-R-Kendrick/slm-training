@@ -17,6 +17,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from slm_training.autoresearch.experiment_campaign import campaign_manifest_sha256
+from slm_training.autoresearch.schemas import CampaignSpec
+from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.experiments.slm183_power_protocol import (
     MATRIX_SET,
     EXPERIMENT_ID,
@@ -25,6 +28,7 @@ from slm_training.harnesses.experiments.slm183_power_protocol import (
     PowerProtocolReport,
     analyze_existing_iter,
     build_default_manifest,
+    build_experiment_campaign,
     render_markdown,
     run_variance_fixture,
 )
@@ -56,6 +60,24 @@ def _build_payload(
     iter_json: Path | None,
 ) -> tuple[dict[str, Any], str]:
     manifest = build_default_manifest(seeds=seeds)
+    campaign = build_experiment_campaign(seeds=seeds)
+    campaign_payload = campaign.model_dump(mode="json")
+    campaign_sha = campaign_manifest_sha256(campaign)
+    store: CampaignStore | None = None
+    lock = None
+    if mode in {"plan-only", "fixture"}:
+        store = CampaignStore(campaign.campaign_id, output_dir / "campaigns")
+        store.initialize(
+            CampaignSpec(
+                campaign_id=campaign.campaign_id,
+                objective="Exercise paired, powered fixture campaign governance.",
+                primary_metric=campaign.endpoints[0].metric,
+                researcher_mode="fixture",
+                budget=campaign.budget,
+                created_at="2026-07-23T00:00:00Z",
+            )
+        )
+        lock = store.lock_experiment_campaign(campaign)
 
     if mode == "plan-only":
         payload: dict[str, Any] = {
@@ -66,7 +88,10 @@ def _build_payload(
             "status": "plan_only",
             "claim_class": "wiring",
             "manifest": manifest.to_dict(),
+            "experiment_campaign": campaign_payload,
+            "campaign_manifest_sha256": campaign_sha,
             "version_stamp": build_version_stamp(
+                "harness.autoresearch.experiment_campaign",
                 "harness.experiments",
                 "harness.experiments.slm183_power_protocol",
                 "evals.power_protocol",
@@ -88,7 +113,10 @@ def _build_payload(
             "status": "analysis",
             "claim_class": "wiring",
             "analysis": analysis,
+            "experiment_campaign": campaign_payload,
+            "campaign_manifest_sha256": campaign_sha,
             "version_stamp": build_version_stamp(
+                "harness.autoresearch.experiment_campaign",
                 "harness.experiments",
                 "harness.experiments.slm183_power_protocol",
                 "evals.power_protocol",
@@ -101,6 +129,13 @@ def _build_payload(
         )
         return payload, command
 
+    assert store is not None and lock is not None
+    store.append_event(
+        "experiment_started",
+        experiment_id=campaign.experiment_id,
+        status="running",
+        detail={"campaign_manifest_sha256": lock.manifest_sha256},
+    )
     report = run_variance_fixture(
         n_targets=n_targets,
         paths_per_target=paths_per_target,
@@ -108,8 +143,19 @@ def _build_payload(
         run_id=f"slm183-power-protocol-{_today_yyyymmdd()}",
         output_dir=output_dir,
         seed=seeds[0] if seeds else 0,
+        seeds=seeds,
     )
     payload = report.to_dict()
+    payload["experiment_campaign"] = campaign_payload
+    payload["campaign_manifest_sha256"] = lock.manifest_sha256
+    artifact = store.write_artifact("fixture_outcomes", payload)
+    store.append_event(
+        "experiment_finished",
+        experiment_id=campaign.experiment_id,
+        status="completed",
+        artifact_sha256=artifact.stem,
+        detail={"campaign_manifest_sha256": lock.manifest_sha256},
+    )
     command = "python -m scripts.run_flow_power_protocol --mode fixture"
     return payload, command
 
@@ -182,7 +228,11 @@ def _build_markdown(payload: dict[str, Any], command: str) -> str:
         return "\n".join(lines)
 
     report = PowerProtocolReport.from_dict(payload)
-    return render_markdown(report)
+    return (
+        render_markdown(report)
+        + "\n## Exact command\n\n"
+        + f"```bash\n{command}\n```\n"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -231,6 +281,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="Path to an existing iter JSON for --mode analyze-existing.",
     )
+    parser.add_argument(
+        "--write-design-docs",
+        action="store_true",
+        help="Publish fixture JSON/Markdown under docs/design (off in tests).",
+    )
     try:
         args = parser.parse_args(argv)
     except (argparse.ArgumentError, SystemExit):
@@ -240,6 +295,12 @@ def main(argv: list[str] | None = None) -> int:
         f"outputs/runs/slm183-power-protocol-{_today_yyyymmdd()}"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
+    if args.mode == "fixture" and args.n_seeds != len(args.seeds):
+        print(
+            "error: --n-seeds must equal the number of declared --seeds",
+            file=sys.stderr,
+        )
+        return 2
 
     try:
         payload, command = _build_payload(
@@ -254,6 +315,17 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    if args.mode == "fixture" and args.write_design_docs:
+        command = (
+            "python -m scripts.run_flow_power_protocol --mode fixture "
+            f"--output-dir {output_dir} "
+            f"--n-targets {args.n_targets} "
+            f"--paths-per-target {args.paths_per_target} "
+            f"--n-seeds {args.n_seeds} "
+            f"--seeds {','.join(str(seed) for seed in args.seeds)}"
+        )
+        if args.write_design_docs:
+            command += " --write-design-docs"
 
     payload["schema"] = "Slm183PowerProtocolReportV1"
     payload["claim_class"] = "wiring"
@@ -273,10 +345,7 @@ def main(argv: list[str] | None = None) -> int:
         md_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(report_text, encoding="utf-8")
 
-        command_line = command
-        if args.output_dir is not None:
-            command_line += f" --output-dir {output_dir}"
-        md_path.write_text(_build_markdown(payload, command_line), encoding="utf-8")
+        md_path.write_text(_build_markdown(payload, command), encoding="utf-8")
 
     print(str(run_json))
     return 0

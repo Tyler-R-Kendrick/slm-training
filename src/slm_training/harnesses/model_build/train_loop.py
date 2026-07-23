@@ -165,6 +165,30 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         save_full_state,
     )
 
+    campaign_governance = None
+    if bool(getattr(config, "register_promoted", False)):
+        from slm_training.harnesses.experiments.promotion import (
+            load_campaign_governance,
+        )
+
+        campaign_paths = (
+            config.campaign_manifest,
+            config.campaign_result,
+            config.campaign_store_root,
+            config.campaign_artifact_root,
+        )
+        if any(path is None for path in campaign_paths):
+            raise ValueError(
+                "register_promoted requires campaign manifest, result, store root, "
+                "and artifact root"
+            )
+        campaign_governance = load_campaign_governance(
+            manifest_path=config.campaign_manifest,
+            result_path=config.campaign_result,
+            store_root=config.campaign_store_root,
+            artifact_root=config.campaign_artifact_root,
+        )
+
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
     max_wall_minutes = (
         float(MAX_RUN_MINUTES) if max_wall_minutes is None else float(max_wall_minutes)
@@ -1095,9 +1119,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     if bool(getattr(config, "register_promoted", False)):
         from slm_training.harnesses.experiments.promotion import (
+            evaluate_promotion,
             register_promoted_checkpoint,
         )
 
+        assert campaign_governance is not None
+        manifest, result, store, artifact_root = campaign_governance
+        promotion = evaluate_promotion(
+            campaign_manifest=manifest,
+            campaign_result=result,
+            campaign_store=store,
+            artifact_root=artifact_root,
+        )
         source = ckpt_dir / "best_weighted_nll.pt"
         if not source.exists():
             source = ckpt_dir / "best_ship_score.pt"
@@ -1106,6 +1139,11 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         register_promoted_checkpoint(
             ckpt_dir,
             source=source,
+            promotion_result=promotion,
+            campaign_manifest=manifest,
+            campaign_result=result,
+            campaign_store=store,
+            artifact_root=artifact_root,
             meta={
                 "step": step,
                 "best_weighted_nll": (

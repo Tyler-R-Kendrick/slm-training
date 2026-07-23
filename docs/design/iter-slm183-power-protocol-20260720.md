@@ -1,4 +1,4 @@
-# SLM-183 (PQR): powered cluster-aware confirmation protocol (slm183-power-protocol-20260720)
+# SLM-183 (PQR): powered cluster-aware confirmation protocol (slm183-power-protocol-20260723)
 
 Matrix set: `slm183_power_protocol`
 
@@ -24,17 +24,17 @@ The protocol collapses seed and target variance into a single pooled estimate an
 
 ## Sample cells
 
-| cell_id | target | seed | n | successes | mean | wilson_low | wilson_high |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| target000_seed0 | 0 | 0 | 2 | 2 | 1.000 | 0.342 | 1.000 |
-| target000_seed1 | 0 | 1 | 2 | 1 | 0.500 | 0.095 | 0.905 |
-| target001_seed0 | 1 | 0 | 2 | 0 | 0.000 | 0.000 | 0.658 |
-| target001_seed1 | 1 | 1 | 2 | 1 | 0.500 | 0.095 | 0.905 |
-| target002_seed0 | 2 | 0 | 2 | 1 | 0.500 | 0.095 | 0.905 |
-| target002_seed1 | 2 | 1 | 2 | 2 | 1.000 | 0.342 | 1.000 |
-| target003_seed0 | 3 | 0 | 2 | 2 | 1.000 | 0.342 | 1.000 |
-| target003_seed1 | 3 | 1 | 2 | 0 | 0.000 | 0.000 | 0.658 |
-| ... | | | | | | | | (8 more cells) |
+| cell_id | target | seed | arm | n | successes | mean | wilson_low | wilson_high |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| target000_seed0_synthetic_control | 0 | 0 | synthetic_control | 2 | 2 | 1.000 | 0.342 | 1.000 |
+| target000_seed0_synthetic_candidate | 0 | 0 | synthetic_candidate | 2 | 2 | 1.000 | 0.342 | 1.000 |
+| target000_seed1_synthetic_control | 0 | 1 | synthetic_control | 2 | 1 | 0.500 | 0.095 | 0.905 |
+| target000_seed1_synthetic_candidate | 0 | 1 | synthetic_candidate | 2 | 1 | 0.500 | 0.095 | 0.905 |
+| target001_seed0_synthetic_control | 1 | 0 | synthetic_control | 2 | 0 | 0.000 | 0.000 | 0.658 |
+| target001_seed0_synthetic_candidate | 1 | 0 | synthetic_candidate | 2 | 0 | 0.000 | 0.000 | 0.658 |
+| target001_seed1_synthetic_control | 1 | 1 | synthetic_control | 2 | 1 | 0.500 | 0.095 | 0.905 |
+| target001_seed1_synthetic_candidate | 1 | 1 | synthetic_candidate | 2 | 1 | 0.500 | 0.095 | 0.905 |
+| ... | | | | | | | | | (24 more cells) |
 
 ## Seed variance components
 
@@ -67,7 +67,8 @@ The protocol collapses seed and target variance into a single pooled estimate an
 | seed_variance_detected | True | decidable |
 | mde_achievable_at_08 | False | decidable |
 | cluster_aware_ci_finite | True | decidable |
-| bh_rejections | 9 | decidable |
+| holm_rejections | 0 | decidable |
+| paired_binary_success_delta | 0.03125 | underpowered |
 
 ## Go / no-go decision
 
@@ -86,4 +87,10 @@ The protocol collapses seed and target variance into a single pooled estimate an
 python -m scripts.run_flow_power_protocol --mode plan-only
 python -m scripts.run_flow_power_protocol --mode fixture
 python -m scripts.run_flow_power_protocol --mode analyze-existing --iter-json <path>
+```
+
+## Exact command
+
+```bash
+python -m scripts.run_flow_power_protocol --mode fixture
 ```

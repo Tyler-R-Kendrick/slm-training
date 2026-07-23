@@ -1,7 +1,9 @@
 {
+  "campaign_manifest_sha256": "ee654ceb386e387f5b225e3797ba7224dbfe24d630cd2b8cafb393f27871dc38",
   "cells": [
     {
-      "cell_id": "target000_seed0",
+      "arm_id": "synthetic_control",
+      "cell_id": "target000_seed0_synthetic_control",
       "exact": {
         "estimate": 1.0,
         "high": 1.0,
@@ -14,14 +16,38 @@
       "successes": 2,
       "target_id": 0,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
     {
-      "cell_id": "target000_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target000_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 2,
+      "target_id": 0,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target000_seed1_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -34,6 +60,7 @@
       "successes": 1,
       "target_id": 0,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -41,7 +68,30 @@
       }
     },
     {
-      "cell_id": "target001_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target000_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 1,
+      "successes": 1,
+      "target_id": 0,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target001_seed0_synthetic_control",
       "exact": {
         "estimate": 0.0,
         "high": 0.841886116991581,
@@ -54,14 +104,38 @@
       "successes": 0,
       "target_id": 1,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.0,
-        "high": 0.6576197724933469,
+        "high": 0.6576197724933468,
         "low": 0.0,
         "n": 2
       }
     },
     {
-      "cell_id": "target001_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target001_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 0.0,
+        "high": 0.841886116991581,
+        "low": 0.0,
+        "n": 2
+      },
+      "mean": 0.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 0,
+      "target_id": 1,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.0,
+        "high": 0.6576197724933468,
+        "low": 0.0,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target001_seed1_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -74,6 +148,7 @@
       "successes": 1,
       "target_id": 1,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -81,7 +156,30 @@
       }
     },
     {
-      "cell_id": "target002_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target001_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 1,
+      "successes": 1,
+      "target_id": 1,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target002_seed0_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -94,6 +192,7 @@
       "successes": 1,
       "target_id": 2,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -101,7 +200,30 @@
       }
     },
     {
-      "cell_id": "target002_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target002_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 2,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target002_seed1_synthetic_control",
       "exact": {
         "estimate": 1.0,
         "high": 1.0,
@@ -114,14 +236,38 @@
       "successes": 2,
       "target_id": 2,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
     {
-      "cell_id": "target003_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target002_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 2,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target003_seed0_synthetic_control",
       "exact": {
         "estimate": 1.0,
         "high": 1.0,
@@ -134,14 +280,38 @@
       "successes": 2,
       "target_id": 3,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
     {
-      "cell_id": "target003_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target003_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 2,
+      "target_id": 3,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target003_seed1_synthetic_control",
       "exact": {
         "estimate": 0.0,
         "high": 0.841886116991581,
@@ -154,14 +324,38 @@
       "successes": 0,
       "target_id": 3,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.0,
-        "high": 0.6576197724933469,
+        "high": 0.6576197724933468,
         "low": 0.0,
         "n": 2
       }
     },
     {
-      "cell_id": "target004_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target003_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 0.0,
+        "high": 0.841886116991581,
+        "low": 0.0,
+        "n": 2
+      },
+      "mean": 0.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 0,
+      "target_id": 3,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.0,
+        "high": 0.6576197724933468,
+        "low": 0.0,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target004_seed0_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -174,6 +368,7 @@
       "successes": 1,
       "target_id": 4,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -181,7 +376,30 @@
       }
     },
     {
-      "cell_id": "target004_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target004_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 2,
+      "target_id": 4,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target004_seed1_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -194,6 +412,7 @@
       "successes": 1,
       "target_id": 4,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -201,7 +420,30 @@
       }
     },
     {
-      "cell_id": "target005_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target004_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 1,
+      "successes": 1,
+      "target_id": 4,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target005_seed0_synthetic_control",
       "exact": {
         "estimate": 0.0,
         "high": 0.841886116991581,
@@ -214,14 +456,38 @@
       "successes": 0,
       "target_id": 5,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.0,
-        "high": 0.6576197724933469,
+        "high": 0.6576197724933468,
         "low": 0.0,
         "n": 2
       }
     },
     {
-      "cell_id": "target005_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target005_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 0.0,
+        "high": 0.841886116991581,
+        "low": 0.0,
+        "n": 2
+      },
+      "mean": 0.0,
+      "n": 2,
+      "seed": 0,
+      "successes": 0,
+      "target_id": 5,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.0,
+        "high": 0.6576197724933468,
+        "low": 0.0,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target005_seed1_synthetic_control",
       "exact": {
         "estimate": 1.0,
         "high": 1.0,
@@ -234,14 +500,38 @@
       "successes": 2,
       "target_id": 5,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
     {
-      "cell_id": "target006_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target005_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 5,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target006_seed0_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -254,6 +544,7 @@
       "successes": 1,
       "target_id": 6,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -261,7 +552,30 @@
       }
     },
     {
-      "cell_id": "target006_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target006_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 6,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target006_seed1_synthetic_control",
       "exact": {
         "estimate": 1.0,
         "high": 1.0,
@@ -274,14 +588,38 @@
       "successes": 2,
       "target_id": 6,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
     {
-      "cell_id": "target007_seed0",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target006_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 6,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target007_seed0_synthetic_control",
       "exact": {
         "estimate": 0.5,
         "high": 0.9874208829065749,
@@ -294,6 +632,7 @@
       "successes": 1,
       "target_id": 7,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -301,7 +640,30 @@
       }
     },
     {
-      "cell_id": "target007_seed1",
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target007_seed0_synthetic_candidate",
+      "exact": {
+        "estimate": 0.5,
+        "high": 0.9874208829065749,
+        "low": 0.012579117093425053,
+        "n": 2
+      },
+      "mean": 0.5,
+      "n": 2,
+      "seed": 0,
+      "successes": 1,
+      "target_id": 7,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 0.5,
+        "high": 0.9054687942657693,
+        "low": 0.09453120573423074,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_control",
+      "cell_id": "target007_seed1_synthetic_control",
       "exact": {
         "estimate": 1.0,
         "high": 1.0,
@@ -314,9 +676,32 @@
       "successes": 2,
       "target_id": 7,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
+        "n": 2
+      }
+    },
+    {
+      "arm_id": "synthetic_candidate",
+      "cell_id": "target007_seed1_synthetic_candidate",
+      "exact": {
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.158113883008419,
+        "n": 2
+      },
+      "mean": 1.0,
+      "n": 2,
+      "seed": 1,
+      "successes": 2,
+      "target_id": 7,
+      "wilson": {
+        "confidence_level": 0.95,
+        "estimate": 1.0,
+        "high": 1.0,
+        "low": 0.3423802275066532,
         "n": 2
       }
     }
@@ -340,8 +725,13 @@
     },
     {
       "classification": "decidable",
-      "name": "bh_rejections",
-      "value": 9
+      "name": "holm_rejections",
+      "value": 0
+    },
+    {
+      "classification": "underpowered",
+      "name": "paired_binary_success_delta",
+      "value": 0.03125
     }
   ],
   "dependency_caveats": [
@@ -350,6 +740,96 @@
     "No model is trained; this is wiring evidence for the protocol only.",
     "Cluster bootstrap and ICC assume a single target_cluster_id level; nested clusters are not modeled here."
   ],
+  "experiment_campaign": {
+    "arms": [
+      {
+        "arm_id": "synthetic_control",
+        "config_sha256": "4d2eef2b2919e3c2d44b2725b7f196ef5822649a3e66ab43ad331be73fc2f88b",
+        "role": "control"
+      },
+      {
+        "arm_id": "synthetic_candidate",
+        "config_sha256": "db1c6798f8549657c2106f25acb99d9bf457635fa440a3e2f83e0e7457660418",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      }
+    ],
+    "author": "SLM-183 fixture bridge",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 2.0
+    },
+    "campaign_id": "slm183-power-protocol",
+    "claim_class": "wiring",
+    "controls": [
+      {
+        "control_id": "synthetic_control",
+        "description": "The unchanged fixture control must remain neutral.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "2026-07-23T00:00:00Z",
+    "decision": "Keep this fixture wiring-only; never promote from synthetic outcomes.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "paired_binary_success_delta",
+        "metric": "paired_binary_success_delta",
+        "minimum_effect": 0.08,
+        "role": "primary"
+      }
+    ],
+    "experiment_id": "slm183-power-protocol",
+    "hypothesis": "A paired candidate changes the locked primary endpoint relative to the unchanged control.",
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "primary",
+        "hypothesis_ids": [
+          "paired_binary_success_delta"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "synthetic_control"
+    ],
+    "promotion_gates": [
+      {
+        "endpoint_id": "paired_binary_success_delta",
+        "gate_id": "fixture_endpoint_reachable",
+        "operator": "ge",
+        "threshold": 0.08
+      }
+    ],
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "paired_binary_success_delta",
+        "gate_id": "fixture_endpoint_regression",
+        "operator": "le",
+        "threshold": -0.08
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0,
+      1
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": true,
+    "stopping_rules": [
+      "Stop after every declared fixture seed is reported."
+    ]
+  },
   "experiment_id": "slm183-power-protocol",
   "falsifier": "The protocol collapses seed and target variance into a single pooled estimate and cannot produce a calibrated MDE curve.",
   "hypothesis": "A powered confirmation protocol can separate seed variance from target variance and estimate the minimum detectable effect size.",
@@ -518,7 +998,7 @@
       "power": 0.1
     }
   ],
-  "run_id": "slm183-power-protocol-20260720",
+  "run_id": "slm183-power-protocol-20260723",
   "scenarios": [
     {
       "base_rate": 0.7,
@@ -533,9 +1013,9 @@
   "schema": "Slm183PowerProtocolReportV1",
   "seed_contrast": {
     "alpha": 0.05,
-    "estimate": -0.1875,
-    "high": 0.25,
-    "low": -0.5625,
+    "estimate": 0.03125,
+    "high": 0.09375,
+    "low": 0.0,
     "resamples": 1000
   },
   "seed_variance_components": {
@@ -544,16 +1024,17 @@
     "target_variance": 0.03459821428571429
   },
   "status": "fixture",
-  "timestamp": "2026-07-20T23:46:13.889585Z",
+  "timestamp": "2026-07-23T05:57:27.360184Z",
   "version_stamp": {
-    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
+    "code_commit": "35b2b0b44ee5b442acd4856252d3851d73b96cdb",
     "code_dirty": true,
     "components": {
-      "evals.power_protocol": "v1",
-      "harness.experiments": "v50",
-      "harness.experiments.slm183_power_protocol": "v1"
+      "evals.power_protocol": "v7",
+      "harness.autoresearch.experiment_campaign": "v3",
+      "harness.experiments": "v62",
+      "harness.experiments.slm183_power_protocol": "v3"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T23:46:13.888956+00:00"
+    "stamped_at": "2026-07-23T05:57:27.346376+00:00"
   }
 }

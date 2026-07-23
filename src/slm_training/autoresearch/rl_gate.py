@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import statistics
 from pathlib import Path
 from typing import Any
@@ -100,7 +101,8 @@ def assert_rl_ready(
             "RL is locked: provide an approved --rl-readiness-report produced from "
             "the frozen full-suite evaluation bundle"
         )
-    resolved = load_rl_readiness(report) if isinstance(report, (str, Path)) else report
+    report_path = Path(report) if isinstance(report, (str, Path)) else None
+    resolved = load_rl_readiness(report_path) if report_path is not None else report
     if not resolved.approved or resolved.failures:
         detail = "; ".join(resolved.failures) or "report is not approved"
         raise ValueError(f"RL is locked: {detail}")
@@ -117,6 +119,13 @@ def assert_rl_ready(
         raise ValueError(
             "RL is locked: readiness report is not bound to a verifiable evaluation"
         )
+    if (
+        evaluation is None
+        and report_path is not None
+        and isinstance(evidence, str)
+        and not Path(evidence).is_absolute()
+    ):
+        evidence = report_path.parent / evidence
     verified = assess_rl_readiness(evidence)
     if (
         not verified.approved
@@ -133,6 +142,17 @@ def write_rl_readiness(
 ) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    if report.evaluation_uri:
+        evaluation_path = Path(report.evaluation_uri)
+        if evaluation_path.is_absolute():
+            report = report.model_copy(
+                update={
+                    "evaluation_uri": os.path.relpath(
+                        evaluation_path,
+                        start=path.parent.resolve(),
+                    )
+                }
+            )
     mode = "w" if overwrite else "x"
     with path.open(mode, encoding="utf-8") as handle:
         handle.write(report.model_dump_json(indent=2) + "\n")

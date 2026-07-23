@@ -249,6 +249,19 @@ NO TRAIN / EVAL / BENCH / PROFILE / TELEMETRY / MATRIX / REPRO
 WITHOUT UPDATING DOCS
 ```
 
+## Preregistered campaign law
+
+AP-007+ experiment runners and every promotion candidate use the canonical
+`ExperimentCampaignV1` contract in
+`src/slm_training/autoresearch/experiment_campaign.py`. Lock the manifest in
+the campaign event chain before execution; bind plans, outcomes, and promotion
+evidence to that digest. Deviations are append-only and exploratory. Never
+replace the locked confirmatory endpoint, arms, seeds, stopping rule, family,
+or gates after outcomes are visible. Meaning-v2 becomes the default primary
+only after a hash-verified AP-001 `certified` artifact; otherwise use the
+binder/reference F1 fallback. See
+[`docs/design/experiment-campaign-governance.md`](docs/design/experiment-campaign-governance.md).
+
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 
 **Triggers (complete, whether invoked directly or via the `slm` wrapper):**

@@ -188,6 +188,10 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="P1d: write promoted.pt from best_weighted_nll / best_ship / last.",
     )
+    parser.add_argument("--campaign-manifest", type=Path)
+    parser.add_argument("--campaign-result", type=Path)
+    parser.add_argument("--campaign-store-root", type=Path)
+    parser.add_argument("--campaign-artifact-root", type=Path)
     parser.add_argument("--eval-suite", default="smoke")
     parser.add_argument(
         "--model",
@@ -1291,6 +1295,10 @@ def main(argv: list[str] | None = None) -> int:
         mixture_per_template_cap=args.mixture_per_template_cap,
         mixture_max_importance_weight=args.mixture_max_importance_weight,
         register_promoted=bool(args.register_promoted),
+        campaign_manifest=args.campaign_manifest,
+        campaign_result=args.campaign_result,
+        campaign_store_root=args.campaign_store_root,
+        campaign_artifact_root=args.campaign_artifact_root,
         telemetry=not bool(args.no_telemetry),
         checkpoint_bucket=(
             args.checkpoint_bucket

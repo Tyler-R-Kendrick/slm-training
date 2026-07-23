@@ -17,10 +17,21 @@ from slm_training.autoresearch.schemas import CampaignSpec, utc_now
 from slm_training.autoresearch.experiment_campaign import (
     CampaignDeviationV1,
     CampaignLockV1,
+    CampaignResultV1,
     ExperimentCampaignV1,
     campaign_manifest_sha256,
+    validate_result_claim,
 )
 from slm_training.lineage.records import canonical_json
+
+_OUTCOME_BOUNDARY_EVENTS = frozenset(
+    {
+        "experiment_started",
+        "experiment_finished",
+        "outcome_diagnosed",
+        "hypothesizer_feedback_recorded",
+    }
+)
 
 
 def _payload(value: BaseModel | dict[str, Any]) -> dict[str, Any]:
@@ -78,6 +89,19 @@ class CampaignStore:
         self, manifest: ExperimentCampaignV1
     ) -> CampaignLockV1:
         """Record the one authoritative manifest before execution starts."""
+        mutation_lock = self.root / ".campaign-mutation.lock"
+        mutation_lock.parent.mkdir(parents=True, exist_ok=True)
+        lock_fd = os.open(mutation_lock, os.O_CREAT | os.O_RDWR, 0o644)
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX)
+            return self._lock_experiment_campaign(manifest)
+        finally:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            os.close(lock_fd)
+
+    def _lock_experiment_campaign(
+        self, manifest: ExperimentCampaignV1
+    ) -> CampaignLockV1:
         manifest = ExperimentCampaignV1.model_validate(
             manifest.model_dump(mode="json")
         )
@@ -102,8 +126,11 @@ class CampaignStore:
                     "experiment campaign is already locked with different content"
                 )
             return self.load_experiment_campaign(manifest.experiment_id)
-        if any(row.get("event_type") == "experiment_started" for row in experiment_events):
-            raise RuntimeError("cannot lock a campaign after experiment start")
+        if any(
+            row.get("event_type") in _OUTCOME_BOUNDARY_EVENTS
+            for row in experiment_events
+        ):
+            raise RuntimeError("cannot lock a campaign after experiment outcome access")
         lock = CampaignLockV1(manifest_sha256=digest, manifest=manifest)
         path = self.write_artifact("experiment_campaigns", lock)
         self.append_event(
@@ -118,12 +145,12 @@ class CampaignStore:
     def load_experiment_campaign(self, experiment_id: str) -> CampaignLockV1:
         """Load and verify the earliest pre-start campaign lock."""
         events = self.verify_event_chain()
-        first_start = next(
+        first_boundary = next(
             (
                 index
                 for index, row in enumerate(events)
                 if row.get("experiment_id") == experiment_id
-                and row.get("event_type") == "experiment_started"
+                and row.get("event_type") in _OUTCOME_BOUNDARY_EVENTS
             ),
             len(events),
         )
@@ -138,8 +165,10 @@ class CampaignStore:
                 f"no locked experiment campaign for {experiment_id}"
             )
         index, row = lock_rows[0]
-        if index >= first_start:
-            raise RuntimeError("campaign lock was not recorded before experiment start")
+        if index >= first_boundary:
+            raise RuntimeError(
+                "campaign lock was not recorded before experiment outcome access"
+            )
         if len(lock_rows) != 1:
             raise RuntimeError("multiple campaign locks recorded for experiment")
         artifact_sha = str(row.get("artifact_sha256", ""))
@@ -168,6 +197,48 @@ class CampaignStore:
             detail={"manifest_sha256": lock.manifest_sha256},
         )
         return path
+
+    def validate_campaign_result(
+        self,
+        result: CampaignResultV1,
+        *,
+        artifact_root: Path,
+    ) -> tuple[str, ...]:
+        """Validate a result against the authoritative lock and event history."""
+        lock = self.load_experiment_campaign(result.experiment_id)
+        failures = list(
+            validate_result_claim(
+                lock.manifest,
+                result,
+                artifact_root=artifact_root,
+            )
+        )
+        events = self.verify_event_chain()
+        relevant = [
+            row
+            for row in events
+            if row.get("experiment_id") == result.experiment_id
+        ]
+        if any(
+            row.get("event_type") == "campaign_deviation_appended"
+            for row in relevant
+        ):
+            failures.append("exploratory_deviations_present")
+        starts = [
+            row for row in relevant if row.get("event_type") == "experiment_started"
+        ]
+        finishes = [
+            row for row in relevant if row.get("event_type") == "experiment_finished"
+        ]
+        if not starts or any(
+            row.get("detail", {}).get("campaign_manifest_sha256")
+            != lock.manifest_sha256
+            for row in (*starts, *finishes)
+        ):
+            failures.append("execution_manifest_binding_missing")
+        if not finishes:
+            failures.append("experiment_finish_missing")
+        return tuple(dict.fromkeys(failures))
 
     def verify_event_chain(self) -> list[dict[str, Any]]:
         """Fail closed on edited, reordered, deleted-link, or forked events."""

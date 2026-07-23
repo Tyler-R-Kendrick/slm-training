@@ -30,6 +30,8 @@ the *thesis*, the open questions, and the falsification boundary. Seed notes:
 - _(seed)_ Calculated arity & adaptive precision
 - [[gate-reachability-and-power]] — separate evidence volume and measurement
   integrity from model quality; freeze power inputs before confirmation.
+- [[preregistered-experiment-campaigns]] — bind execution and promotion to one
+  decision-complete pre-outcome manifest; keep deviations exploratory.
 
 > Add a note with `templates/concept-note.md` and wikilink it here when a thesis
 > becomes active. Do not restate the Linear project — link it and record what the
