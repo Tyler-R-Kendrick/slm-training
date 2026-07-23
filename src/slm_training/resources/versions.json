@@ -3748,7 +3748,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -3773,6 +3773,16 @@
         "docs/design/iter-slm279-depth-supervision-correction-20260723.md"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "no-bump: make the v15 raw-example gate fail inconclusive on missing or duplicate curve depths, example ids, curves, or matched-control records; experiment and disposition semantics are unchanged"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "SLM-282 preregistration correction: evaluate the exact CE(final) <= CE(previous) <= CE(r=1) condition independently for every raw example and record example ids on adjacent-depth failures, preventing token-weighted aggregation from averaging away a later-depth regression"
+        },
         {
           "version": "v14",
           "date": "2026-07-23",

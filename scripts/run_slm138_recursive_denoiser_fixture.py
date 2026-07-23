@@ -773,38 +773,88 @@ def _evaluate_recurrence_preregistration(
     seeds: tuple[int, ...],
     recursive_steps: tuple[int, ...],
     matched_controls: list[dict[str, Any]],
+    expected_example_ids: tuple[str, ...],
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Apply the exact preregistration without averaging seeds or depths."""
+    """Apply the exact preregistration to every raw example and depth."""
     adjacent_failures = []
     for curve in curves:
         depths = curve["depths"]
-        ces = [float(depth["token_weighted_cross_entropy"]) for depth in depths]
-        for left, right in zip(depths, depths[1:]):
-            before = float(left["token_weighted_cross_entropy"])
-            after = float(right["token_weighted_cross_entropy"])
-            if after > before:
-                adjacent_failures.append(
-                    {
-                        "arm": curve["arm"],
-                        "seed": curve["seed"],
-                        "recursive_steps": curve["recursive_steps"],
-                        "from_depth": left["step"],
-                        "to_depth": right["step"],
-                        "ce_before": before,
-                        "ce_after": after,
-                    }
-                )
-        ratios_finite = all(depth["ratios_finite"] for depth in depths)
+        expected_steps = list(range(1, int(curve["recursive_steps"]) + 1))
+        observed_steps = [int(depth["step"]) for depth in depths]
+        depths_complete = observed_steps == expected_steps
+        rosters_complete = all(
+            len(depth["examples"]) == len(expected_example_ids)
+            and len({str(example["id"]) for example in depth["examples"]})
+            == len(expected_example_ids)
+            and {str(example["id"]) for example in depth["examples"]}
+            == set(expected_example_ids)
+            for depth in depths
+        )
+        examples_by_depth = [
+            {str(example["id"]): example for example in depth["examples"]}
+            for depth in depths
+        ]
+        example_results = []
         eligible = int(curve["recursive_steps"]) > 1
-        condition = (
-            ces[-1] <= ces[-2] <= ces[0] if eligible else None
+        for example_id in expected_example_ids:
+            examples = [items.get(example_id) for items in examples_by_depth]
+            complete_examples = (
+                depths_complete
+                and rosters_complete
+                and all(example is not None for example in examples)
+            )
+            ces = (
+                [float(example["cross_entropy"]) for example in examples if example]
+                if complete_examples
+                else []
+            )
+            for left, right, before, after in zip(
+                depths, depths[1:], ces, ces[1:]
+            ):
+                if after > before:
+                    adjacent_failures.append(
+                        {
+                            "arm": curve["arm"],
+                            "seed": curve["seed"],
+                            "recursive_steps": curve["recursive_steps"],
+                            "example_id": example_id,
+                            "from_depth": left["step"],
+                            "to_depth": right["step"],
+                            "ce_before": before,
+                            "ce_after": after,
+                        }
+                    )
+            condition = (
+                ces[-1] <= ces[-2] <= ces[0]
+                if eligible and complete_examples
+                else None
+            )
+            example_results.append(
+                {
+                    "example_id": example_id,
+                    "complete": complete_examples,
+                    "ce_final": ces[-1] if ces else None,
+                    "ce_previous": ces[-2] if eligible and ces else None,
+                    "ce_r1": ces[0] if ces else None,
+                    "pass": bool(condition) if eligible else None,
+                }
+            )
+        ratios_finite = all(depth["ratios_finite"] for depth in depths)
+        examples_complete = depths_complete and rosters_complete and all(
+            result["complete"] for result in example_results
+        )
+        condition = examples_complete and all(
+            result["pass"] is True for result in example_results
         )
         curve["preregistered_result"] = {
             "eligible": eligible,
             "condition": "CE(final) <= CE(previous) <= CE(r=1)",
-            "ce_final": ces[-1],
-            "ce_previous": ces[-2] if eligible else None,
-            "ce_r1": ces[0],
+            "evaluation_unit": "raw_example",
+            "examples": example_results,
+            "expected_depths": expected_steps,
+            "observed_depths": observed_steps,
+            "depths_complete": depths_complete,
+            "example_rosters_complete": rosters_complete,
             "ratios_finite": ratios_finite,
             "pass": bool(condition and ratios_finite) if eligible else None,
         }
@@ -819,14 +869,32 @@ def _evaluate_recurrence_preregistration(
         (curve["arm"], curve["seed"], curve["recursive_steps"])
         for curve in curves
     }
-    complete = expected == observed
+    curves_complete = expected == observed and len(curves) == len(expected)
+    structures_complete = all(
+        curve["preregistered_result"]["depths_complete"]
+        and curve["preregistered_result"]["example_rosters_complete"]
+        for curve in curves
+    )
+    complete = curves_complete and structures_complete
     telemetry_finite = all(
         depth["all_finite"]
         for curve in curves
         for depth in curve["depths"]
     )
-    controls_matched = all(
-        control["matched"] and control.get("batches_matched", False)
+    expected_controls = {
+        (seed, depth) for seed in seeds for depth in recursive_steps
+    }
+    observed_controls = [
+        (control.get("seed"), control.get("recursive_steps"))
+        for control in matched_controls
+    ]
+    controls_complete = (
+        len(observed_controls) == len(expected_controls)
+        and set(observed_controls) == expected_controls
+    )
+    controls_matched = controls_complete and all(
+        control.get("matched", False)
+        and control.get("batches_matched", False)
         for control in matched_controls
     )
     eligible_depths = tuple(depth for depth in recursive_steps if depth > 1)
@@ -897,6 +965,7 @@ def _run_recurrence_health(
         seeds=seeds,
         recursive_steps=recursive_steps,
         matched_controls=matched_controls,
+        expected_example_ids=tuple(record.id for record in _fixture_records()),
     )
     version_stamp = build_version_stamp(
         "model.twotower", "model.recursive_denoiser", "evals.scoring"
