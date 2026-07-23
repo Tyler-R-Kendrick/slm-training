@@ -481,12 +481,27 @@ def plan_edit_sequence(
     # 1. Insert statements present in target but not seed.
     for t_stmt in target_statements:
         if t_stmt.name not in seed_by_name:
+            insert_slot = t_stmt.rest.strip() if not t_stmt.has_list else None
+            if insert_slot and insert_slot.startswith('"'):
+                try:
+                    insert_slot = str(json.loads(insert_slot))
+                except json.JSONDecodeError:
+                    pass
+            insert_child = t_stmt.children[0] if t_stmt.has_list and t_stmt.children else None
+            insert_args = _args_to_rest(t_stmt.rest) if t_stmt.has_list else []
             edits.append(
                 CanonicalEdit(
                     edit_id=f"insert-{idx}",
                     action="InsertStatement",
                     target_name=t_stmt.name,
                     production=t_stmt.comp,
+                    child_name=insert_child,
+                    slot=insert_slot,
+                    direction=(
+                        insert_args[0].strip('"')
+                        if insert_args
+                        else None
+                    ),
                     affected_node_ids=(t_stmt.name,),
                     inverse_action="DeleteStatement",
                     cost={"edits": 1, "nodes_touched": 1, "verifier_calls": 1, "serialization_delta": 1},
@@ -623,7 +638,10 @@ def apply_canonical_edit(source: str, edit: CanonicalEdit) -> str | None:
     if statements is None:
         return None
     by_name = {s.name: s for s in statements}
-    if edit.target_name not in by_name:
+    if edit.action == "InsertStatement":
+        if edit.target_name in by_name:
+            return None
+    elif edit.target_name not in by_name:
         return None
 
     def copy(stmt: Any) -> Any:
@@ -635,12 +653,20 @@ def apply_canonical_edit(source: str, edit: CanonicalEdit) -> str | None:
             has_list=stmt.has_list,
         )
 
-    stmt = copy(by_name[edit.target_name])
+    stmt = copy(by_name[edit.target_name]) if edit.target_name in by_name else None
 
     if edit.action == "InsertStatement":
         if edit.production is None:
             return None
-        rendered = f"{edit.target_name} = {edit.production}(\":slot\")"
+        if edit.child_name is not None:
+            rendered = (
+                f"{edit.target_name} = {edit.production}"
+                f"([{edit.child_name}], {json.dumps(edit.direction or 'column')})"
+            )
+        else:
+            slot = edit.slot or ":slot"
+            slot_text = slot if slot.startswith('"') else json.dumps(slot, ensure_ascii=False)
+            rendered = f"{edit.target_name} = {edit.production}({slot_text})"
         inserted = parse_statements(rendered)
         if inserted is None:
             return None
@@ -653,33 +679,33 @@ def apply_canonical_edit(source: str, edit: CanonicalEdit) -> str | None:
                 other.children = [c for c in other.children if c != edit.target_name]
         del by_name[edit.target_name]
     elif edit.action == "ReplaceProduction":
-        if edit.production is None:
+        if edit.production is None or stmt is None:
             return None
         # Leaf/container compatibility: keep has_list if possible.
         stmt.comp = edit.production
     elif edit.action == "BindSlotPointer":
-        if edit.slot is None or stmt.has_list:
+        if edit.slot is None or stmt is None or stmt.has_list:
             return None
         stmt.rest = edit.slot if edit.slot.startswith('"') else json.dumps(edit.slot, ensure_ascii=False)
     elif edit.action == "SetEnum":
-        if edit.direction is None or not stmt.has_list:
+        if edit.direction is None or stmt is None or not stmt.has_list:
             return None
         stmt = _set_direction(stmt, edit.direction)
     elif edit.action == "InsertChild":
-        if edit.child_name is None or not stmt.has_list:
+        if edit.child_name is None or stmt is None or not stmt.has_list:
             return None
         if edit.child_name not in by_name:
             return None
         if edit.child_name not in stmt.children:
             stmt.children.append(edit.child_name)
     elif edit.action == "DeleteChild":
-        if edit.child_name is None or not stmt.has_list:
+        if edit.child_name is None or stmt is None or not stmt.has_list:
             return None
         stmt.children = [c for c in stmt.children if c != edit.child_name]
     else:
         return None
 
-    if edit.action not in {"InsertStatement", "DeleteStatement"}:
+    if edit.action not in {"InsertStatement", "DeleteStatement"} and stmt is not None:
         by_name[edit.target_name] = stmt
 
     # Reorder: root last, dependencies before uses.
@@ -687,7 +713,7 @@ def apply_canonical_edit(source: str, edit: CanonicalEdit) -> str | None:
     rendered = render_statements(ordered)
     if not _is_valid(rendered):
         return None
-    return canonicalize(rendered, validate=True)
+    return rendered
 
 
 def _topological_order(by_name: dict[str, Any]) -> list[Any]:

@@ -136,7 +136,7 @@
       ]
     },
     "data.flow.bridge_planner": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/flow/bridge_planner.py",
@@ -144,9 +144,41 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "make every bridge transition certificate independently replayable and replace unconditional verifier acceptance with canonical validation"
+        },
+        {
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-189 FFE2-01 bridge planner protocols and deterministic engine wiring/fixture"
+        }
+      ]
+    },
+    "data.flow.legal_edit_bridge_corpus": {
+      "version": "v2",
+      "kind": "data_builder",
+      "paths": [
+        "src/slm_training/data/flow/bridge_corpus.py",
+        "scripts/build_legal_edit_bridges.py",
+        "tests/test_data/flow/test_bridge_corpus.py",
+        "tests/test_scripts/test_build_legal_edit_bridges.py",
+        "tests/fixtures/slm196_legal_edit_bridge/",
+        "src/slm_training/resources/data/train/slm196_legal_edit_bridge_fixture/",
+        "docs/design/legal-edit-bridge-corpus.md",
+        "docs/design/iter-slm196-legal-edit-bridge-20260723.json",
+        "docs/design/iter-slm196-legal-edit-bridge-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "remove planner-selected edit focus and dependency fields from the model-facing row view while retaining them only as diagnostics"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-196 replay-exact full-bridge rows, content-addressed live candidate sets, quality gates, and fixture builder"
         }
       ]
     },
@@ -906,12 +938,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v62",
+      "version": "v63",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v63",
+          "date": "2026-07-23",
+          "note": "repair canonical InsertStatement application for replay-exact SLM-196 bridge corpus construction"
+        },
         {
           "version": "v62",
           "date": "2026-07-23",
@@ -2664,7 +2701,7 @@
       ]
     },
     "harness.experiments.slm188_edit_algebra": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm188_edit_algebra.py",
@@ -2675,6 +2712,11 @@
         "docs/design/iter-slm188-edit-algebra-20260721.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "apply missing-statement insertions with typed leaf or container payloads instead of rejecting them before dispatch"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
@@ -3936,6 +3978,21 @@
           "version": "v1",
           "date": "2026-07-20",
           "note": "initial registration; SLM-154 SPV3-01 capacity-matched autoregressive compiler-legal action scorer baseline wiring/fixture harness"
+        }
+      ]
+    },
+    "model.legal_edit_batch": {
+      "version": "v1",
+      "kind": "model",
+      "paths": [
+        "src/slm_training/models/legal_edit_batch.py",
+        "tests/test_models/test_legal_edit_batch.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; objective-neutral exact dynamic candidate ragged batch, masks, multi-positive targets, padding, and gathered projection seam"
         }
       ]
     },
