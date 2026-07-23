@@ -1462,6 +1462,28 @@ each immutable node without introducing an ambient mutable cursor. Evidence and
 scope:
 [`dsh3-08-conversation-state-graph-20260723.md`](dsh3-08-conversation-state-graph-20260723.md).
 
+## Bounded branch merge (DSH3-09 / SLM-377)
+
+**Fidelity label: adapted repository contract.** The structured-edit framing in
+[Yin et al., 2019](https://arxiv.org/abs/1810.13337) and
+[Brody et al., 2020](https://arxiv.org/abs/2005.13209) motivates explicit,
+structural change records. The conservative three-way merge, conflict taxonomy,
+opaque-reference lineage, and compiler revalidation boundary are
+repository-specific and do not reproduce either paper.
+
+| | |
+| --- | --- |
+| **Inputs** | one verified operator edge from each of two distinct forks of one exact immutable base |
+| **Eligibility** | exact nonempty effects; disjoint base targets or symmetric commuting declarations |
+| **Composition** | deterministic structural three-way merge followed by ordinary pack authority |
+| **Refusal** | typed same-node, delete/modify, role/cardinality, child-order, scope/binder, stale-ref, or unsupported-effect conflict |
+| **Replay** | both application replays, fork-ref lineage, structural decision, result authority, and complete canonical identity |
+
+Conflict resolution remains an explicit later task; a commuting declaration
+permits exact composition but never authorizes branch selection or heuristic
+repair. Evidence and scope:
+[`dsh3-09-bounded-branch-merge-20260723.md`](dsh3-09-bounded-branch-merge-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
