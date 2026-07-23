@@ -4162,8 +4162,26 @@
         }
       ]
     },
+    "harness.synthesis_plan": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/synthesis_plan.py",
+        "src/slm_training/resources/synthesis_plans/",
+        "tests/test_harnesses/test_synthesis_plan.py",
+        "docs/design/dsh0-03-synthesis-plan-20260723.json",
+        "docs/design/dsh0-03-synthesis-plan-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial checked-in SynthesisPlanV1, pack-authoritative component preflight, and executable capability transition state machine"
+        }
+      ]
+    },
     "harness.train_data": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -4174,6 +4192,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "validate optional checked-in SynthesisPlanV1 before loading any train-data producer and record its exact identity in the manifest"
+        },
         {
           "version": "v14",
           "date": "2026-07-23",

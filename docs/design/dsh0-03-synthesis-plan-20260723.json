@@ -1,0 +1,65 @@
+{
+  "schema": "dsh0_synthesis_plan_evidence/v1",
+  "issue": "SLM-347",
+  "disposition": "adopt_contract",
+  "run_class": "fixture_demo",
+  "plan": {
+    "path": "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json",
+    "plan_id": "dsh0-cap0-fixture",
+    "plan_sha256": "beb3e1eb455b2df9509333a4e5e19112e61fa6cf55bcfbb169a2bedf3761476b",
+    "file_sha256": "bd9fc56a2fb6f9dba4349ed1401379d3c73e56187c8145fa3b63deddf70b8daa",
+    "dsl_pack_id": "openui",
+    "dsl_pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d",
+    "surface_policy_version": "symbolic_surface_policy/v1",
+    "generator_versions": {
+      "pack.corpus_generator": "v15"
+    },
+    "validator_versions": {
+      "pack.oracle": "v15",
+      "symbolic_surface": "v1"
+    },
+    "gate_versions": {
+      "gates.ship": "openui_ship_gates_v2"
+    }
+  },
+  "acceptance": {
+    "json_yaml_canonical_hash_equal": true,
+    "unknown_generator_rejected": true,
+    "unknown_validator_rejected": true,
+    "unsupported_pack_slot_rejected": true,
+    "illegal_transition_rejected_before_producer_load": true,
+    "cap0_to_cap1_certificate_required": true,
+    "cap1_to_cap2_certificate_required": true,
+    "cap2_distill_and_trace_promotion_certificate_required": true,
+    "no_plan_default_unchanged": true,
+    "focused_tests_passed": 7
+  },
+  "source_sha256": {
+    "src/slm_training/harnesses/synthesis_plan.py": "f72aeeab1e0d98e3a719143a9150552a5a9ce1da7da5773140d36275e60b900a",
+    "scripts/build_train_data.py": "2c233475ae133b21493b518c197060568cabb6915dcca55a51e180724125a00f",
+    "src/slm_training/harnesses/train_data/pipeline.py": "37c528f86ecb08090c84e4fe8a2fb20876bd3f3a4df1d7dda34217def64990c0"
+  },
+  "honesty": {
+    "train_run": false,
+    "eval_run": false,
+    "benchmark_run": false,
+    "data_build": false,
+    "checkpoint_written": false,
+    "agentv_required": false,
+    "certificate_claim": false,
+    "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0c125caf4577e4f6ca3086c5f99bf1031526f77b",
+    "code_dirty": true,
+    "components": {
+      "harness.staged": "v1",
+      "harness.synthesis_plan": "v1",
+      "harness.train_data": "v15",
+      "dsl.symbolic_surface": "v1",
+      "gates.ship": "openui_ship_gates_v2"
+    },
+    "stamped_at": "2026-07-23T19:54:26.818281+00:00"
+  }
+}

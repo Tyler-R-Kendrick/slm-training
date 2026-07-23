@@ -1623,6 +1623,22 @@ controls preserve canonical/opaque meaning. No corpus, model, checkpoint,
 certificate, or ship claim was produced. Evidence:
 [`dsh0-02-symbolic-surface-policy-20260723.md`](dsh0-02-symbolic-surface-policy-20260723.md).
 
+## Staged synthesis plan state machine (DSH0-03 / SLM-347)
+
+**Fidelity label: repository contract.** `SynthesisPlanV1` adds no learned
+mechanism. It gives checked-in staged plans a strict canonical identity over
+the independent capability/supervision/evaluation/difficulty axes and exact
+pack, surface-policy, generator, validator, split, gate, seed, and destination
+versions.
+
+The executable state machine requires verified CAP0 evidence before CAP1,
+verified CAP1 evidence before NL/paraphrase CAP2, and verified CAP2 evidence
+before distillation or trace-promotion eligibility. Invalid plans fail before
+producer loading; the plan registry delegates language lookup to `DslPack`.
+No data build, model, checkpoint, certificate, or ship claim was produced.
+Evidence:
+[`dsh0-03-synthesis-plan-20260723.md`](dsh0-03-synthesis-plan-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

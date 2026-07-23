@@ -1,0 +1,51 @@
+{
+  "schema_version": "synthesis_plan/v1",
+  "plan_id": "dsh0-cap0-fixture",
+  "action": "synthesize",
+  "capability": "CAP0_GRAMMAR",
+  "supervision_source": "SUP_COMPILER",
+  "evaluation_source": "EVAL_STATIC",
+  "difficulty_families": [
+    "atomic",
+    "compositional"
+  ],
+  "dsl_pack_id": "openui",
+  "dsl_pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d",
+  "surface_policy_version": "symbolic_surface_policy/v1",
+  "generators": [
+    {
+      "component_id": "pack.corpus_generator",
+      "version": "v15"
+    }
+  ],
+  "validators": [
+    {
+      "component_id": "pack.oracle",
+      "version": "v15"
+    },
+    {
+      "component_id": "symbolic_surface",
+      "version": "v1"
+    }
+  ],
+  "split_policy": {
+    "policy_id": "group-hash/v1",
+    "group_key": "split_group_id",
+    "holdout_modulus": 10,
+    "holdout_buckets": [
+      0
+    ]
+  },
+  "gate_spec": {
+    "component_id": "gates.ship",
+    "version": "openui_ship_gates_v2"
+  },
+  "seeds": [
+    0,
+    1
+  ],
+  "destinations": [
+    "outputs/data/train/dsh0-cap0-fixture"
+  ],
+  "prerequisite": null
+}

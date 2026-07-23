@@ -48,20 +48,20 @@
       {
         "path": "docs/design/symbol-only-output-contract.md",
         "identity": "output_contract/v2",
-        "sha256": "2ec6a7bf204eef536683ba6258e0a311463c92818032b3a20b5374de494b297d",
+        "sha256": "1a7c7c7bad85d8e9f852fa205e4e51994a78bf34d804400a5dab13a9471061fc",
         "status": "verified",
         "reason": null
       },
       {
         "path": "src/slm_training/resources/versions.json",
         "identity": "model.twotower/v227+harness.staged/v1",
-        "sha256": "965b8463be23fa0474de0e0cafd9cdd4c023a656acf88c2bb9bc2ead30e11950",
+        "sha256": "a88baafd9bd3a84c569f2fb2baddf26207a599c773b09cf6e26cc8a10df994f8",
         "status": "verified",
         "reason": null
       }
     ]
   },
-  "baseline_sha": "8ce4ffd0285a45ec76ba1729a604b30dfd109f449e414fa88e4d47155eaec00f",
+  "baseline_sha": "40b93dee036b0a7c84d9aff19f6764dd7c7af3ce57f5ded5b6e32d2d3caca889",
   "reuse_map": [
     {
       "seam": "dsl_pack",
