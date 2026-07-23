@@ -296,6 +296,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e977-e951-typed-slot-reservation-v260-r1`) | 5 | 1.0 | 0.7333 | 0.4354 | 0.8534 | No — meaning-v1 / strict-v2 0.6 / zero timeouts / three certified fallbacks, AgentV 0/2; incomplete reservation rejected |
+| smoke (`e977-e951-typed-slot-reservation-v260-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667 / zero timeout/fallback, AgentV 0/2 campaign; diagnostic subset |
 | held_out (`e976-e951-withdrawn-penalty-v259-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — meaning-v1 / strict-v2 0.8 / zero timeouts / three certified fallbacks, AgentV 0/2; exact E968 parity |
 | smoke (`e976-e951-withdrawn-penalty-v259-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667 / zero timeout/fallback, AgentV 0/2 campaign; diagnostic subset |
 | held_out (`e975-e951-visible-reference1-v258-r1`) | 5 | 1.0 | 0.6833 | 0.4207 | 0.8324 | No — meaning-v1 / strict-v2 0.6 / zero timeouts / four certified fallbacks, AgentV 0/2; generic penalty rejected |

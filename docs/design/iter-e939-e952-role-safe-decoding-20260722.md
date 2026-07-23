@@ -1,4 +1,4 @@
-# E939-E976: role-safe decoding, aligned training, and bounded nesting
+# E939-E977: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -57,6 +57,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E975 | E951 visible-reference penalty 1 / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
 | E976 | E951 withdrawn penalty v259 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E976 | E951 withdrawn penalty v259 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
+| E977 | E951 typed-slot reservation v260 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E977 | E951 typed-slot reservation v260 / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.7333 | 0.4354 | 0.6286 | 0.8534 | 0 / 3 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -196,3 +198,10 @@ aggregate is exactly equal to E968, including held strict 0.8, fidelity 0.8333,
 structure 0.4434, recall 0.6952, reward 0.8834, zero timeouts, and three
 fallbacks. The rollback is decode-neutral while the opaque training-fixture
 cleanup remains retained.
+
+E977 reserves required content capacity for undeclared typed binders before
+admitting another component with a required direct symbol. It preserves the
+smoke baseline and three held fallbacks, but optional CardHeader properties can
+still consume the reserved symbols. Form still reaches a compiler dead end,
+Tabs loses two slots, and held strict regresses from 0.8 to 0.6. Reject v260 as
+incomplete; reservation must apply where symbol tokens are consumed.
