@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E988 low-weight binder-arity scratch diagnostic | `e988-role-safe-binder-arity025-150-r1/last.pt` | `outputs/runs/...` (local) | 150 clean weighted E937 steps / 70.54s; E990 held strict-v2 0.2 / fidelity 0.6367 / recall 0.5524 / reward 0.8364 / two fallbacks, AgentV 0/1 — rejected, never use as parent |
 | E980 binder-arity scratch diagnostic | `e980-role-safe-binder-arity450-r1/last.pt` | `outputs/runs/...` (local) | 450 clean weighted E937 steps / 36.93s; E982 held weight-1 strict-v2 0.4 / fidelity 0.8833 / structure 0.5038 / reward 0.9284, while smoke timed out and strict fell to 0.6667 — rejected, never use as parent |
 | E972 weighted-mixture scratch diagnostic | `e972-role-safe-mixture450-r1/last.pt` | `outputs/runs/…` (local) | 450 clean weighted E937 steps / 33.07s; E973 held n=5 parse 1.0 / strict-v2 0.4 / recall 0.8286 / reward 0.9152 / two fallbacks, AgentV 0/2 — rejected, never use as parent |
 | E963 role-safe scratch diagnostic | `e963-role-safe-scratch500-r1/last.pt` | `outputs/runs/…` (local) | 500 clean E937 steps / 34.57s; E964 held n=5 strict-v2 0.4 / structure 0.1404 / reward 0.654 / zero role violations, AgentV 0/2 — rejected, never use as parent |

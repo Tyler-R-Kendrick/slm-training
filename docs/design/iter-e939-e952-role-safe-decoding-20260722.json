@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E984",
+  "experiment_id": "E939-E990",
   "date": "2026-07-22",
-  "decision": "retain_role_depth_and_training_entrypoint_constraints_reject_e980_binder_arity_scratch",
+  "decision": "retain_role_depth_and_training_entrypoint_constraints_reject_binder_arity_scratch_arms",
   "train_data": "e937_role_safe_all_targets_v2",
   "eval_data": "e938_role_safe_all_targets_v2",
   "runs": {
@@ -48,18 +48,25 @@
     "E981": {"status": "invalid_interrupted_campaign", "completed_suites": ["smoke"], "smoke_parse": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_decode_timeouts": 1, "scoreboard": null, "agentv": null},
     "E982": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.4, "fidelity": 0.8833333333333334, "structural_similarity": 0.5038199999999999, "component_recall": 0.719047619047619, "reward": 0.9283999999999999, "decode_timeouts": 0, "fallback_count": 0, "agentv": "0/1"},
     "E983": {"status": "completed_rejected_quality", "suite": "smoke", "binder_arity_decode_weight": 0.0, "parse": 0.6666666666666666, "meaning_v1": 0.6666666666666666, "strict_v2": 0.6666666666666666, "fidelity": 0.6666666666666666, "structural_similarity": 0.3477666666666666, "component_recall": 0.5, "reward": 0.6486666666666666, "decode_timeouts": 1, "fallback_count": 0, "agentv": "0/1"},
-    "E984": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 0.0, "parse": 0.8, "meaning_v1": 0.6, "strict_v2": 0.2, "fidelity": 0.6333333333333333, "structural_similarity": 0.27552, "component_recall": 0.5285714285714286, "reward": 0.7224, "decode_timeouts": 1, "fallback_count": 2, "agentv": "0/1"}
+    "E984": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 0.0, "parse": 0.8, "meaning_v1": 0.6, "strict_v2": 0.2, "fidelity": 0.6333333333333333, "structural_similarity": 0.27552, "component_recall": 0.5285714285714286, "reward": 0.7224, "decode_timeouts": 1, "fallback_count": 2, "agentv": "0/1"},
+    "E985": {"status": "invalid_interrupted_train", "requested_steps": 450, "reached_steps": 397, "checkpoint": null, "reason": "orphaned command session before checkpoint finalization", "agentv": null},
+    "E986": {"status": "invalid_interrupted_train", "requested_steps": 350, "reached_steps": 184, "checkpoint": null, "reason": "orphaned command session before checkpoint finalization", "agentv": null},
+    "E987": {"status": "invalid_interrupted_train", "requested_steps": 150, "reached_steps": 27, "checkpoint": null, "reason": "orphaned command session before checkpoint finalization", "agentv": null},
+    "E988": {"status": "completed_rejected", "steps": 150, "elapsed_wall_seconds": 70.53686118000041, "last_loss": 6.380068778991699, "checkpoint_sha256": "36f57b3b0a693c3c5355fad8b674a816a11c2c7b98d1bcbddcc29a7e73c92bf2", "checkpoint_sync": "disabled_scratch", "mixture_id": "e937_role_safe_all_targets_v2-base", "binder_arity_loss_weight": 0.25},
+    "E989": {"status": "completed_rejected_quality", "suite": "smoke", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 1.0, "strict_v2": 0.6666666666666666, "fidelity": 0.75, "structural_similarity": 0.5492333333333334, "component_recall": 0.6666666666666666, "reward": 0.882, "decode_timeouts": 0, "fallback_count": 0, "agentv": "0/1"},
+    "E990": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 0.6, "strict_v2": 0.2, "fidelity": 0.6366666666666667, "structural_similarity": 0.503, "component_recall": 0.5523809523809524, "reward": 0.8364, "decode_timeouts": 0, "fallback_count": 2, "agentv": "0/1"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
     "E951": "local_only_rejected_never_promote_or_parent",
     "E963": "local_only_rejected_never_promote_or_parent",
     "E972": "local_only_rejected_never_promote_or_parent",
-    "E980": "local_only_rejected_never_promote_or_parent"
+    "E980": "local_only_rejected_never_promote_or_parent",
+    "E988": "local_only_rejected_never_promote_or_parent"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "b19a2af32f29f5faa80f4fc5390dee127e07204c",
+    "code_commit": "cbaf3c142d3445beff112f059e1c75ea7329ca77",
     "code_dirty": true,
     "components": {
       "harness.model_build.train": "v22",

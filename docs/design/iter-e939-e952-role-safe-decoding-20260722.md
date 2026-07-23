@@ -1,4 +1,4 @@
-# E939-E984: role-safe decoding, aligned training, and bounded nesting
+# E939-E990: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -67,6 +67,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E982 | E980 binder-arity weight 1 / held_out | 5 | 1.0000 | 0.8000 | 0.4000 | 0.8833 | 0.5038 | 0.7190 | 0.9284 | 0 / 0 | 0/1 |
 | E983 | E980 binder-arity weight 0 / smoke | 3 | 0.6667 | 0.6667 | 0.6667 | 0.6667 | 0.3478 | 0.5000 | 0.6487 | 1 / 0 | 0/1 |
 | E984 | E980 binder-arity weight 0 / held_out | 5 | 0.8000 | 0.6000 | 0.2000 | 0.6333 | 0.2755 | 0.5286 | 0.7224 | 1 / 2 | 0/1 |
+| E989 | E988 binder-arity weight 1 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.7500 | 0.5492 | 0.6667 | 0.8820 | 0 / 0 | 0/1 |
+| E990 | E988 binder-arity weight 1 / held_out | 5 | 1.0000 | 0.6000 | 0.2000 | 0.6367 | 0.5030 | 0.5524 | 0.8364 | 0 / 2 | 0/1 |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -239,3 +241,15 @@ the decode weight to isolate the auxiliary training effect: smoke still times
 out, and held parse/strict/reward fall to 0.8/0.2/0.7224. The head supplies a
 real held-out ranking signal, but the checkpoint is globally worse than E979.
 Reject E980; never sync, promote, serve, resume, or use it as a parent.
+
+E985-E987 are invalid interrupted attempts at binder-arity loss weight 0.25:
+they stop at 397/450, 184/350, and 27/150 respectively without a checkpoint or
+summary. The varying stop points came from orphaned command sessions, not the
+harness wall cap; none is evidence or resumable. E988 keeps one persistent
+terminal session and completes 150 clean steps in 70.54 seconds at loss 6.3801,
+writing local-only SHA `36f57b3b...c92bf2`. E989-E990 evaluate arity decode
+weight 1. Smoke recovers parse 1.0 but reaches only strict 0.6667 and fidelity
+0.75. Held parse is 1.0, but strict falls to 0.2, fidelity to 0.6367, recall to
+0.5524, and two fallbacks remain; Form and Tabs still share binders across
+parents. Reject E988 as undertrained and dominated by E980/E979; never sync,
+promote, serve, resume, or use it as a parent.
