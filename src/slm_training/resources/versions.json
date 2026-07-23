@@ -3600,6 +3600,11 @@
         {
           "version": "v26",
           "date": "2026-07-22",
+          "note": "no-bump: reject and remove E1005 Form and Tabs producer fixtures after matched held-out strict-v2 and fidelity regressed"
+        },
+        {
+          "version": "v26",
+          "date": "2026-07-22",
           "note": "Canonicalize OpenUI pack-generated template markers and reject role-unsafe generated targets before returning records"
         },
         {

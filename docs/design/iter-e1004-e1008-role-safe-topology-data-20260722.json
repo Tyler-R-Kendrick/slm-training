@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1004-E1008",
+  "date": "2026-07-22",
+  "decision": "reject_and_withdraw_topology_fixture_supplement",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "train_steps": 450,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "train_profile": "strict",
+    "sanitize_mode": "enforce",
+    "evaluation_policy": "strict_compiler_tree",
+    "model_version": "v266",
+    "honesty_mode": "opaque structural ids and content-only slots",
+    "checkpoint_sync": "disabled_scratch",
+    "max_wall_minutes": 1.5833333333333333
+  },
+  "runs": {
+    "E1004": {
+      "status": "rejected_producer_preflight",
+      "dataset": "e1004_role_safe_topology_v1",
+      "records": 527,
+      "audited_targets": 585,
+      "role_violations": 0,
+      "form_variants_admitted": 4,
+      "tabs_variants_admitted": 0,
+      "reason": "TabItem content failed independent judge G11; no gate changed"
+    },
+    "E1005": {
+      "status": "completed_candidate_then_withdrawn",
+      "dataset": "e1005_role_safe_topology_v2",
+      "seeds": 926,
+      "candidates": 1486,
+      "records": 532,
+      "rejected_total": 1199,
+      "mean_quality_score": 0.9836,
+      "audited_targets": 590,
+      "role_violations": 0,
+      "form_variants_admitted": 4,
+      "tabs_variants_admitted": 4,
+      "decontamination_drops": 102,
+      "placeholder_contract_rejections": 20,
+      "synthesis_recommendations": 26,
+      "experiment_candidates": 26,
+      "content_fingerprint": "25f8b069387b2a40d4221047a80d3419f89c41445c87797a0b82b5d5e26ddb56",
+      "records_sha256": "3c821c7446abffdfc76505bbf04785124dc834e37a492c59deb9b9bbc0268a54"
+    },
+    "E1006": {
+      "status": "completed_rejected",
+      "run_id": "e1006-role-safe-topology450-r1",
+      "steps": 450,
+      "elapsed_wall_seconds": 56.62484433099962,
+      "last_loss": 3.893866539001465,
+      "checkpoint_sha256": "ca84c657e3b5db8b17a19da86cbec3791cc542441a9b6a390198c7b3758bd9b9",
+      "checkpoint_sync": "disabled_scratch",
+      "initialized_from": null
+    },
+    "E1007": {
+      "status": "completed_rejected",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 0.6666666666666666,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 0.8333333333333334,
+      "structural_similarity": 0.6980666666666666,
+      "component_recall": 0.5833333333333334,
+      "reward": 0.887,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "agentv": "0/1"
+    },
+    "E1008": {
+      "status": "completed_rejected",
+      "suite": "held_out",
+      "n": 5,
+      "parse": 0.8,
+      "meaning_v1": 0.6,
+      "strict_v2": 0.4,
+      "fidelity": 0.5700000000000001,
+      "structural_similarity": 0.39654,
+      "component_recall": 0.6,
+      "reward": 0.6746000000000001,
+      "decode_timeouts": 1,
+      "fallback_count": 2,
+      "agentv": "0/1",
+      "form_prediction": "",
+      "tabs_prediction": "root = TextContent(\":slot_0\")"
+    }
+  },
+  "comparison": {
+    "baseline": "E996/E994/E979",
+    "held_strict_v2_delta": -0.4,
+    "held_fidelity_delta": -0.2633333333333333,
+    "held_structural_similarity_delta": -0.04682000000000003,
+    "held_component_recall_delta": -0.09523809523809523,
+    "held_reward_delta": -0.20879999999999999
+  },
+  "disposition": {
+    "producer_fixtures_retained": false,
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "next_hypothesis": "target topology exposure without duplicating identical targets through prompt paraphrases"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9a769fa2e0c31973d1d4ee3b550f9bd6220c0344",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v26",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v266"
+    }
+  }
+}

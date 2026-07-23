@@ -6614,3 +6614,14 @@ E1001 is an invalid 139/150 wall-budget partial and is never evaluated or used
 as a parent. E1002 completes a fresh 100-step joint topology/arity arm in
 89.22s. E1003 regresses smoke strict to 0.3333 and held strict/fidelity/
 structure/recall to 0.2/0.55/0.2153/0.4952 with six fallbacks. Reject E1002.
+
+E1004-E1005 test a role-safe data-level topology supplement. The first Tabs
+producer fails G11 and is corrected without changing the gate. E1005 admits
+four Form and four Tabs variants; all 590 primary/alternate targets are
+role-safe, while 102 eval-overlap candidates and 20 placeholder-contract
+violations remain rejected. E1006 completes 450 fresh scratch steps in 56.62s.
+E1007 improves smoke structure to 0.6981, but E1008 collapses held Form/Tabs:
+strict/fidelity/structure/recall/reward fall to
+0.4/0.57/0.3965/0.6/0.6746 with one timeout. Reject E1006, remove the producer
+fixtures, and never use the checkpoint as a parent. See
+`iter-e1004-e1008-role-safe-topology-data-20260722.md`.
