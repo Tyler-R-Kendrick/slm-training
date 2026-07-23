@@ -1826,6 +1826,7 @@ def build_train_data(
         operator_version_stamp = build_version_stamp(
             "harness.train_data",
             "dsl.operators.contracts",
+            "dsl.operators.collapse",
             "dsl.operators.legal_set",
         )
         from slm_training.harnesses.train_data.operator_corpus import (

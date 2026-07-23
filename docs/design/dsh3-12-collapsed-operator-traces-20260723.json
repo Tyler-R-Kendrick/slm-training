@@ -1,0 +1,108 @@
+{
+  "schema": "collapsed_operator_trace_evidence/v1",
+  "issue": "SLM-380",
+  "run_id": "dsh3_12_collapse_fixture_v3",
+  "run_date": "2026-07-23",
+  "status": "pass_fixture_contract",
+  "honesty": {
+    "label": "fixture_wiring_only",
+    "ship_claim": false,
+    "checkpoint_created": false,
+    "agentv_required": false,
+    "notes": "This strict CPU data build validates symbolic collapse and replay wiring on two fixture roots. It is not a learned-model evaluation, full-corpus coverage claim, or ship result."
+  },
+  "recipe": {
+    "device": "cpu",
+    "profile": "strict",
+    "source": "fixture",
+    "synthesizer": "none",
+    "max_wall_minutes": 3,
+    "elapsed_seconds": 5.4,
+    "operator_corpus": {
+      "max_roots": 2,
+      "actions_per_state": 2,
+      "max_combinations_per_operator": 32,
+      "sibling_forks": true
+    },
+    "nl_collapse": {
+      "available": false,
+      "reason": "CERT_CAP1_unavailable",
+      "dependency_issue": "SLM-379"
+    }
+  },
+  "train_build": {
+    "candidate_count": 20,
+    "admitted_count": 19,
+    "rejected_count": 1,
+    "error_count": 0,
+    "mean_quality_score": 1.0,
+    "content_fingerprint": "e086b62faf8cecb326a5697ecb12e5f7e6af5bc2e34e922dc3be1cafb9510928"
+  },
+  "operator_corpus": {
+    "root_count": 2,
+    "record_count": 20,
+    "collapsed_record_count": 2,
+    "content_fingerprint": "3d4663d55e5a1fa54a86aabc391c8116b7a8c3e0c8a0cd7123f0a51003561cc4",
+    "invalid_family_count": 0,
+    "application_coverage": {
+      "legal_successes": 27,
+      "rejected_combinations": 533,
+      "emitted_illegal_targets": 0
+    }
+  },
+  "collapse": {
+    "schema": "collapsed_instruction/v1",
+    "source_turns_per_record": 2,
+    "exact_final_state_matches": 2,
+    "explicit_order_records": 2,
+    "required_order": [
+      0,
+      1
+    ],
+    "hard_negative_count": 2,
+    "hard_negative_outcomes": {
+      "conflict": 2,
+      "different_result": 0
+    },
+    "conflict_codes": {
+      "ref.missing": 2
+    },
+    "nl_available": false
+  },
+  "quality_loop": {
+    "warnings": [],
+    "recommendation_code": "eval_leakage_source",
+    "rejected_record": {
+      "id": "train_text_only_01",
+      "stage": "decontamination",
+      "reason": "test_fixture_structure",
+      "source_family": "human_curated"
+    },
+    "decision": "Preserve the strict reserved-structure firewall and attach duplicate evidence to the existing source-audit issue.",
+    "experiment_issue": "SLM-392",
+    "duplicate_issue_created": false
+  },
+  "acceptance": {
+    "all_source_traces_replayed_before_collapse": true,
+    "all_collapses_reached_exact_source_final_state": true,
+    "required_operation_order_explicit": true,
+    "source_turns_and_operators_traceable": true,
+    "reordered_hard_negatives_verified": true,
+    "equivalent_reorders_not_mislabeled": true,
+    "history_noop_cycle_and_redundancy_refused": true,
+    "closed_symbolic_question_and_answer_keys": true,
+    "natural_language_emitted_without_certificate": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f137ddccb9fe3a7f3f177b2d2d84f896d5e57517",
+    "code_dirty": true,
+    "components": {
+      "dsl.operators.collapse": "v1",
+      "dsl.operators.contracts": "v11",
+      "dsl.operators.legal_set": "v2",
+      "harness.train_data": "v13"
+    },
+    "stamped_at": "2026-07-23T17:56:17.787910+00:00"
+  }
+}

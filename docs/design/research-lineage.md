@@ -1506,6 +1506,28 @@ The measured result is fixture wiring evidence, not a full-corpus, learned-model
 or ship claim. Evidence and scope:
 [`dsh3-10-symbolic-operator-corpus-20260723.md`](dsh3-10-symbolic-operator-corpus-20260723.md).
 
+## Verified collapsed operator traces (DSH3-12 / SLM-380)
+
+**Fidelity label: adapted repository contract.**
+[Saha and Kanewala, 2018](https://arxiv.org/abs/1802.07361) motivates
+systematic source/follow-up construction for metamorphic fault detection. The
+OpenUI trace-collapse schema, exact sequential replay boundary, canonical AST
+equality, explicit instruction order, typed refusal rules, and reordered
+operator hard negatives are repository-specific and do not reproduce the
+paper.
+
+| | |
+| --- | --- |
+| **Source authority** | complete immutable conversation replay through state-specific pack authority |
+| **Collapsed target** | ordered serialized operators plus the exact trace-authoritative final AST |
+| **Refusal** | short/history/no-op/cycle/redundant/replay-mismatch sequences |
+| **Metamorphic control** | actually reorder adjacent noncommuting applications; retain only conflict or different-result negatives |
+| **Fixture result** | two collapses, two exact final-state matches, two `ref.missing` reordered conflicts, zero NL targets |
+
+This is fixture wiring evidence, not a learned planning or ship claim. Evidence
+and scope:
+[`dsh3-12-collapsed-operator-traces-20260723.md`](dsh3-12-collapsed-operator-traces-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

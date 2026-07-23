@@ -346,3 +346,24 @@ The strict parent build admitted 19/20 records with mean quality 1.0. Its only
 rejection was the reserved `test_fixture_structure` firewall; no gate changed.
 The emitted `human_curated` source-audit experiment is filed as SLM-392. See
 [DSH3-10 evidence](dsh3-10-symbolic-operator-corpus-20260723.md).
+
+## Verified collapsed operator traces (DSH3-12 / SLM-380)
+
+Verified multi-turn AST-edit traces can now emit a separate closed-schema
+multi-instruction artifact. Admission replays the complete source trace, keeps
+every turn and operator application, exposes required order as `[0, 1]`, and
+requires the collapsed final AST/state to equal the trace-authoritative final
+state exactly. Undo/redo/history operations, no-ops, cycles, redundant
+applications, and replay disagreement fail closed.
+
+The strict fixture run emitted two collapses from two roots. Both matched their
+source final states exactly. Reordering each noncommuting pair produced a
+verified `ref.missing` conflict, yielding two hard negatives. SLM-379/CERT_CAP1
+was unavailable, so all questions and answers remained symbolic and no NL
+target was synthesized.
+
+The parent quality loop again admitted 19/20 source records with mean quality
+1.0 and rejected only the reserved test fixture. Duplicate
+`eval_leakage_source` evidence was attached to SLM-392; gates remain unchanged.
+See
+[DSH3-12 evidence](dsh3-12-collapsed-operator-traces-20260723.md).
