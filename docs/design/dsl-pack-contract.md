@@ -109,6 +109,16 @@ Default behavior is byte-identical everywhere (asserted by tests):
 - **Reward wiring**: `reward_label` is exposed and tested; making RL/reward
   harnesses read it from the pack (instead of their own labels) is F3 work.
 
+### DSH3 operator capability
+
+SLM-370 extends the same fail-closed slot pattern with optional
+`operator_library`. The generic immutable registry and pure apply/dry-run/replay
+boundary live in `dsl/operators/registry.py`; packs without the slot remain
+unsupported. An operator-produced source passes the pack's normal parse,
+static/schema oracle, scope, property-order, canonicalization, and round-trip
+authorities before it can become a new immutable state. See
+[dsh3-02-pack-operator-registry-20260723.md](dsh3-02-pack-operator-registry-20260723.md).
+
 ## End-to-end fixture run (executed, not hypothetical)
 
 `tests/test_dsl/test_pack.py::test_end_to_end_fixture_run_through_pack_interface`

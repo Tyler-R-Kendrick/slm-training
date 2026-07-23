@@ -1310,6 +1310,26 @@ source provenance, and proof checks. Rejections cannot claim a resulting state.
 Evidence and scope:
 [`dsh3-01-operator-contracts-20260723.md`](dsh3-01-operator-contracts-20260723.md).
 
+## Pack-owned pure operator execution (DSH3-02 / SLM-370)
+
+**Fidelity label: repository contract.** The immutable registry does not add
+an algorithm from the cited transformation literature. It enforces the
+repository-specific authority boundary required before those operator families
+can be implemented: the same pack owns lookup, execution, ordinary-program
+validation, proof/rejection evidence, and replay.
+
+| | |
+| --- | --- |
+| **Capability seam** | optional `DslPack.operator_library`, fail-closed through `require` |
+| **Authority checks** | parse/serialize, static/schema oracle, scope, property order, canonicalization, canonical round trip |
+| **Identity** | registry declaration fingerprint, immutable source state/AST digests, exact application proof or typed rejection |
+| **Evidence** | real OpenUI authority fixture plus deterministic unit tests; no production operator or model claim |
+
+Dry-run and apply share the exact execution path; replay compares the complete
+recorded application identity. OpenUI receives no placeholder production
+operators, and partial packs remain unsupported. Evidence and scope:
+[`dsh3-02-pack-operator-registry-20260723.md`](dsh3-02-pack-operator-registry-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

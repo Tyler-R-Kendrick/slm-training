@@ -22,6 +22,16 @@ from slm_training.dsl.operators.contracts import (
     TemplateRef,
     ValueRef,
 )
+from slm_training.dsl.operators.registry import (
+    OperatorApplyResultV1,
+    OperatorAuthorityError,
+    OperatorLibraryV1,
+    OperatorMutationV1,
+    OperatorReplayError,
+    OperatorStateV1,
+    RegisteredOperatorV1,
+    validate_with_pack_authority,
+)
 
 __all__ = [
     "ActionEffectV1",
@@ -36,12 +46,20 @@ __all__ = [
     "IndexRef",
     "NodeRef",
     "OperatorApplicationV1",
+    "OperatorApplyResultV1",
     "OperatorArgumentSlotV1",
+    "OperatorAuthorityError",
+    "OperatorLibraryV1",
+    "OperatorMutationV1",
     "OperatorRejectionV1",
+    "OperatorReplayError",
+    "OperatorStateV1",
     "PreconditionV1",
     "RefKind",
     "RoleRef",
+    "RegisteredOperatorV1",
     "SymbolRef",
     "TemplateRef",
     "ValueRef",
+    "validate_with_pack_authority",
 ]

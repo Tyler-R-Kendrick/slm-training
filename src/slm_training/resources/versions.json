@@ -269,7 +269,7 @@
       ]
     },
     "dsl.operators.contracts": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/",
@@ -277,9 +277,30 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "validate bound operator arguments against required declaration slots and reference kinds before pack execution"
+        },
+        {
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial compiler-owned AST operator, typed reference, action-effect, and application proof contracts"
+        }
+      ]
+    },
+    "dsl.operators.registry": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/operators/registry.py",
+        "src/slm_training/dsl/pack.py",
+        "tests/test_dsl/test_operator_registry.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial pack-owned immutable operator registry with pure apply, dry-run authority validation, typed rejection, and exact replay"
         }
       ]
     },
