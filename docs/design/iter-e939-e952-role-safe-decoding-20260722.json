@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E996",
+  "experiment_id": "E939-E997",
   "date": "2026-07-22",
   "decision": "retain_v266_rollback_reject_binder_arity_and_reference_ownership_treatments",
   "train_data": "e937_role_safe_all_targets_v2",
@@ -60,7 +60,8 @@
     "E993": {"status": "completed_runtime_variance_not_parity", "evaluated_model_version": "v264", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 0.8, "held_out_strict_v2": 0.6, "held_out_decode_timeouts": 1, "agentv": "0/2"},
     "E994": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v264", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E979"},
     "E995": {"status": "completed_rejected_scoped_binder_ownership", "evaluated_model_version": "v265", "smoke_parse": 1.0, "smoke_meaning_v1": 1.0, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_structural_similarity": 0.6517666666666667, "smoke_component_recall": 0.6666666666666666, "smoke_reward": 0.891, "smoke_decode_timeouts": 0, "smoke_fallback_count": 0, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.6333333333333333, "held_out_structural_similarity": 0.39136000000000004, "held_out_component_recall": 0.5619047619047619, "held_out_reward": 0.696, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "agentv": "0/2", "disposition": "withdraw"},
-    "E996": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v266", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E994"}
+    "E996": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v266", "suite": "held_out", "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.8, "fidelity": 0.8333333333333334, "structural_similarity": 0.44336000000000003, "component_recall": 0.6952380952380952, "reward": 0.8834, "decode_timeouts": 0, "fallback_count": 3, "agentv": "0/1", "parity_with": "E994"},
+    "E997": {"status": "completed_rejected_lattice_recovery", "evaluated_model_version": "v266", "compiler_search_mode": "lattice", "compiler_search_trigger": "bottom", "compiler_search_width": 2, "smoke_parse": 0.6666666666666666, "smoke_meaning_v1": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.6666666666666666, "smoke_structural_similarity": 0.3833333333333333, "smoke_component_recall": 0.5, "smoke_reward": 0.6406666666666666, "smoke_decode_timeouts": 1, "smoke_fallback_count": 0, "held_out_parse": 0.8, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.8, "held_out_structural_similarity": 0.4748, "held_out_component_recall": 0.8, "held_out_reward": 0.7736, "held_out_decode_timeouts": 1, "held_out_fallback_count": 0, "agentv": "0/2"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",

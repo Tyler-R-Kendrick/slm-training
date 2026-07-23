@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E996 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E997 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6599,3 +6599,6 @@ E995 narrows ownership to lexical component-parent stacks and preserves smoke,
 but Tabs times out; held parse/strict/fidelity/reward fall to
 0.8/0.6/0.6333/0.696. Reject and withdraw v265. E996 exactly reproduces the
 E994/E979 held baseline and three fallbacks, proving v266 rollback parity.
+E997 adds width-2 bottom-triggered lattice search to the matched E980 arity
+arm. Held quality is identical to E991 including one timeout; smoke adds a
+timeout and falls to parse 0.6667 / reward 0.6407. Reject search recovery.

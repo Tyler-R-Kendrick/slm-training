@@ -298,6 +298,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e997-e980-arity-schema-lattice2-v266-r1`) | 5 | 0.8 | 0.8000 | 0.4748 | 0.7736 | No — strict-v2 0.6 / one timeout, AgentV 0/2 campaign; no E991 recovery |
+| smoke (`e997-e980-arity-schema-lattice2-v266-r1`) | 3 | 0.6667 | 0.6667 | 0.3833 | 0.6407 | No — strict-v2 0.6667 / one timeout, AgentV 0/2 campaign; search rejected |
 | held_out (`e996-e951-withdrawn-scoped-binders-v266-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — strict-v2 0.8 / three fallbacks, AgentV 0/1; exact E994/E979 rollback parity |
 | held_out (`e995-e951-scoped-binder-parents-v265-r1`) | 5 | 0.8 | 0.6333 | 0.3914 | 0.6960 | No — strict-v2 0.6 / one timeout / two fallbacks, AgentV 0/2 campaign; treatment withdrawn |
 | smoke (`e995-e951-scoped-binder-parents-v265-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667, AgentV 0/2 campaign; exact baseline but treatment withdrawn |
