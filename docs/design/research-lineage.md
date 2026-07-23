@@ -1573,6 +1573,26 @@ and legal-set identity but no edit intent, so the experiment does not add a
 hidden target channel to make the treatment pass. Evidence and scope:
 [`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).
 
+## Terminal CAP2 capability disposition (DSH3-17 / SLM-385)
+
+**Fidelity label: repository evidence disposition.** This terminal ledger adds
+no paper-derived mechanism. It preserves the adapted evidence boundaries from
+DSH3-13 and E803 while preventing compiler correctness, unavailable evidence,
+or unrun conditional branches from being reported as learned capability.
+
+| | |
+| --- | --- |
+| **Capabilities** | symbolic transform, NL transform, discrete-token action, hierarchical head, topology application, bounded merge, efficiency |
+| **Positive boundary** | no learned capability has implemented benefit; symbolic transform and bounded merge remain compiler contracts only |
+| **Negative boundary** | E803 rejects discrete-token action benefit; CAP1-dependent NL and exact-hardware efficiency evidence are unavailable |
+| **Unrun boundary** | hierarchical head and topology application remain explicit unrun conditionals after their prerequisite failed |
+| **Decision** | reject `CERT_CAP2`; close DSH4 action distillation; no checkpoint or ship claim |
+
+The disposition is machine-checkable, records exact evidence identities, and
+fails closed if a positive E803 claim or unsupported benefit is substituted.
+Evidence and scope:
+[`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

@@ -6131,3 +6131,19 @@ The valid run completed in 13.02 seconds, AgentV passed 5/5 evidence cases, and
 no checkpoint or ship claim was produced. CAP0 is unchanged because the path is
 default-off; CAP1 is unavailable pending CERT_CAP1/SLM-379. Full evidence:
 [`e803-reserved-operator-baseline-20260723/summary.md`](e803-reserved-operator-baseline-20260723/summary.md).
+
+# DSH3-17 — terminal CAP2 capability disposition (2026-07-23)
+
+Reject `CERT_CAP2` and close DSH4 action distillation. The typed terminal ledger
+accounts for all seven requested capabilities: symbolic transform and bounded
+merge are `contract_only`; learned discrete-token action is `rejected`; NL
+transform and efficiency are `unavailable`; hierarchical head and topology
+application are `unrun_conditional`. No unrun branch is counted as benefit.
+
+The decision consumes the immutable SLM-381 CAP2 fixture report and E803 matched
+negative report without rerunning an experiment. Exact code, data, checkpoint,
+suite, config, hardware, and result identities are preserved for every cited
+evidence item. AgentV passes 4/4 integrity cases with mean 1.0 and zero execution
+errors. No checkpoint, model-card roster, production default, or ship claim
+changed. Full evidence:
+[`dsh3-17-cap2-disposition-20260723/summary.md`](dsh3-17-cap2-disposition-20260723/summary.md).

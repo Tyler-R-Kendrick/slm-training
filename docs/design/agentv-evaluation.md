@@ -35,6 +35,7 @@ correctly imports the SDK from `@agentv/core`.
 | `diagnose_eval` | Diagnostic completion and length-budget result; explicitly not a ship claim |
 | `run_cap2_operator_eval_fixture` | Frozen CAP2 symbolic suite identity, oracle replay, three anti-cheat controls, and uncertified-NL refusal; fixture contract only |
 | `run_reserved_operator_baseline` | E803 matched-arm identity, compiler-membership audit, causal changes, honest stop-rule rejection, and CAP0/CAP1 retention boundary; bounded symbolic baseline only |
+| `publish_cap2_disposition` | Complete seven-capability terminal ledger, exact evidence identities, unrun-versus-benefit guard, certificate rejection, and DSH4 closure; no model eval or checkpoint claim |
 | Pure gate calculators and web read endpoints | No run is created because they evaluate supplied data without executing a model eval |
 
 New evaluation entrypoints must call the shared publisher instead of inventing
