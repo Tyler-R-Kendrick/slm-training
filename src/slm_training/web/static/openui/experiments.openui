@@ -12,7 +12,7 @@ tBoolean = StatTile("Boolean flags", flags.meta.boolean_count, null, "")
 tHistory = StatTile("Historical runs", flags.meta.history_runs, null, "")
 tRevision = StatTile("Registry", flags.meta.revision, null, "")
 flagTileRow = Grid([tFlags, tBoolean, tHistory, tRevision], "190px")
-flagColumns = [{ key: "label", label: "lever" }, { key: "key", label: "OpenFeature key" }, { key: "type", label: "type" }, { key: "default", label: "default" }]
+flagColumns = [{ key: "key", label: "OpenFeature flag" }, { key: "type", label: "type" }, { key: "default", label: "default" }]
 flagTable = DataTable(flagColumns, flags.rows, 0, "", true, "Search feature flags")
 flagPanel = Panel("All feature flags", [flagTable], ProvenanceBadge(flags.provenance))
 

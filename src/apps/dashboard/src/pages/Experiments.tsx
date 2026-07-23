@@ -70,14 +70,12 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
           searchable
           searchPlaceholder="Search feature flags"
           columns={[
-            { key: "label", label: "lever" },
-            { key: "key", label: "OpenFeature key" },
+            { key: "key", label: "OpenFeature flag" },
             { key: "type", label: "type" },
             { key: "default", label: "default" },
           ]}
           rows={flags.data?.flags ?? []}
           render={{
-            label: (r) => <span className="mono">{r.field}</span>,
             key: (r) => <span className="mono">{r.key}</span>,
             default: (r) => <span className="mono">{typeof r.default === "object" ? JSON.stringify(r.default) : fmt(r.default)}</span>,
           }}

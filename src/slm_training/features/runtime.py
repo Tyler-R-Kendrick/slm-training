@@ -13,7 +13,7 @@ from openfeature.provider.in_memory_provider import InMemoryFlag, InMemoryProvid
 
 from slm_training.features.defaults import PRODUCT_FLAG_DEFAULTS
 from slm_training.features.keys import PRODUCT_FLAG_KEYS
-from slm_training.features.levers import lever_registry_payload
+from slm_training.features.levers import feature_flag_registry_payload
 
 ProviderKind = Literal["in_memory", "posthog", "launchdarkly"]
 
@@ -188,7 +188,7 @@ class FeatureRuntime:
                 targeting_key=targeting_key, attributes=attributes
             ),
             "targeting_key": targeting_key,
-            "levers": lever_registry_payload()["levers"],
+            "flags": feature_flag_registry_payload()["flags"],
         }
 
     def shutdown(self) -> None:

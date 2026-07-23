@@ -322,7 +322,7 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
   const featureFlags = data.feature_flags ?? { rows: [], phases: [] };
   const flagRows = (featureFlags.rows ?? []).map((flag: any) => {
     const row: any = {
-      field: flag.field,
+      key: flag.key,
       type: flag.type,
       default: typeof flag.default === "object" ? JSON.stringify(flag.default) : fmt(flag.default),
     };
@@ -484,14 +484,14 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
           searchable
           searchPlaceholder="Search feature flags"
           columns={[
-            { key: "field", label: "lever" },
+            { key: "key", label: "OpenFeature flag" },
             { key: "type", label: "type" },
             { key: "default", label: "default" },
             ...(featureFlags.phases ?? []).map((phase: string) => ({ key: phase, label: phase })),
           ]}
           rows={flagRows}
           render={{
-            field: (r) => <span className="mono">{r.field}</span>,
+            key: (r) => <span className="mono">{r.key}</span>,
             default: (r) => <span className="mono">{r.default}</span>,
           }}
         />

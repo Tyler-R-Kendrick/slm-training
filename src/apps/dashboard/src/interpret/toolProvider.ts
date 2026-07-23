@@ -160,7 +160,6 @@ export const toolProvider: Record<string, QueryFn> = {
         revision: String(d.revision ?? "—").slice(0, 8),
       },
       rows: (d.flags ?? []).map((flag: any) => ({
-        label: flag.field ?? flag.label,
         key: flag.key,
         type: flag.type,
         default: typeof flag.default === "object" ? JSON.stringify(flag.default) : String(flag.default),

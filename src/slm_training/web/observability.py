@@ -852,6 +852,8 @@ class Readers:
     def _feature_history(self) -> dict[str, dict[str, Any]]:
         payload = _read_json(self.feature_flag_history) or {}
         rows = payload.get("runs") if isinstance(payload, dict) else []
+        if not isinstance(rows, list):
+            rows = []
         return {
             str(row["run_id"]): row
             for row in rows
@@ -882,7 +884,7 @@ class Readers:
         phases = ["training", "evaluation"] if snapshots else ["historical"]
         rows: list[dict[str, Any]] = []
         for flag in registry["flags"]:
-            field = str(flag["field"])
+            key = str(flag["key"])
             cells: dict[str, dict[str, Any]] = {}
             for phase in phases:
                 source = snapshots.get(phase, {}) if isinstance(snapshots, dict) else {}
@@ -891,7 +893,7 @@ class Readers:
                     (
                         item
                         for item in source_rows
-                        if isinstance(item, dict) and item.get("field") == field
+                        if isinstance(item, dict) and item.get("key") == key
                     ),
                     None,
                 )
@@ -905,15 +907,15 @@ class Readers:
                 elif phase == "historical" and isinstance(history, dict):
                     conflicts = history.get("conflicts") or {}
                     values = history.get("values") or {}
-                    if field in conflicts:
+                    if key in conflicts:
                         cells[phase] = {
                             "recorded": False,
                             "value": None,
                             "state": "conflict",
                             "source": "committed",
                         }
-                    elif field in values:
-                        value = values[field]
+                    elif key in values:
+                        value = values[key]
                         cells[phase] = {
                             "recorded": True,
                             "value": value,
