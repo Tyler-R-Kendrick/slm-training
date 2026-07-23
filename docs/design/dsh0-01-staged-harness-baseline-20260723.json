@@ -32,13 +32,6 @@
     ],
     "artifacts": [
       {
-        "path": "docs/design/quality-experiment-matrix.md",
-        "identity": "DSH3-17 terminal frontier",
-        "sha256": "614cb99b8290945c69f88099c0feab412e792dddad87f3b9551c7528e38f220e",
-        "status": "verified",
-        "reason": null
-      },
-      {
         "path": "docs/design/dsh3-17-cap2-disposition-20260723/report.json",
         "identity": "CERT_CAP2 rejected",
         "sha256": "494d875835aa927ea9b18a3fe2fd25c48876b772bb24d4aa3d260914cc7b212d",
@@ -51,17 +44,10 @@
         "sha256": "1a7c7c7bad85d8e9f852fa205e4e51994a78bf34d804400a5dab13a9471061fc",
         "status": "verified",
         "reason": null
-      },
-      {
-        "path": "src/slm_training/resources/versions.json",
-        "identity": "model.twotower/v227+harness.staged/v1",
-        "sha256": "c0457a667224260ef92db953f1418d3142ebfa1619c2f34da8046c7b68abaeb3",
-        "status": "verified",
-        "reason": null
       }
     ]
   },
-  "baseline_sha": "724bf511770017c51a4404e5cfede0d3ef68615787a0932a0401d6996fcd08fa",
+  "baseline_sha": "cf3ef97e66a976a82c99a362c80694b22a3b9b088d44cb8f7ca1cc91666fc2fb",
   "reuse_map": [
     {
       "seam": "dsl_pack",

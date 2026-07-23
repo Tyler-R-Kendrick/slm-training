@@ -4242,13 +4242,25 @@
       ]
     },
     "harness.staged": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/staged.py",
-        "tests/test_harnesses/test_staged.py"
+        "tests/test_harnesses/test_staged.py",
+        "scripts/verify_foundation_disposition.py",
+        "docs/design/dsh0-01-staged-harness-baseline-20260723.json",
+        "docs/design/dsh0-01-staged-harness-baseline-20260723.md",
+        "docs/design/dsh0-02-symbolic-surface-policy-20260723.json",
+        "docs/design/dsh0-02-symbolic-surface-policy-20260723.md",
+        "docs/design/dsh0-08-foundation-disposition-20260723.json",
+        "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Add the typed fail-closed G0 foundation disposition, current-artifact verification, and exact CAP0 identity freeze"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

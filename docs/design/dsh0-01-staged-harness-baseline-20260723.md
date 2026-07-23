@@ -16,7 +16,7 @@ Machine-readable evidence:
 | output contract | `output_contract/v2` (symbol-only) |
 | checkpoint implementation | `model.twotower/v227` |
 | staged contract | `staged_harness_baseline/v1`, component `harness.staged/v1` |
-| baseline SHA | `724bf511770017c51a4404e5cfede0d3ef68615787a0932a0401d6996fcd08fa` |
+| baseline SHA | `cf3ef97e66a976a82c99a362c80694b22a3b9b088d44cb8f7ca1cc91666fc2fb` |
 | run class | `fixture_demo` |
 
 The baseline records the repository state before this DSH0 contract lands.
@@ -24,6 +24,14 @@ Every cited repository artifact has an exact SHA-256 in the JSON. The current
 quality frontier remains negative: DSH3-17 rejected learned CAP2 and closed
 DSH4. It does not imply that the newly defined staged CAP0 or CAP1 certificates
 exist.
+
+The G0 audit removed whole-file hashes for the repository-wide `versions.json`
+registry and the append-only quality matrix from the baseline artifact list.
+Both necessarily change as unrelated components and experiment records
+advance, so their historical byte hashes cannot remain current-artifact
+invariants. The normalized checkpoint/staged versions and named quality
+frontier remain explicit fields; the immutable DSH3-17 frontier report and all
+other stable cited artifacts remain byte-verified.
 
 ## Frozen orthogonal axes
 
