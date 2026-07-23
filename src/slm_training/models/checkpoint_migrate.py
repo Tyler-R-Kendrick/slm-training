@@ -13,7 +13,11 @@ from slm_training.models.tokenizer import (
     TOKENIZER_VERSION,
     load_tokenizer_sidecar,
 )
-from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+from slm_training.models.twotower import (
+    TwoTowerConfig,
+    TwoTowerModel,
+    migrate_recursive_depth_aux_config,
+)
 
 
 def _copy_shared_embedding_rows(
@@ -71,6 +75,7 @@ def migrate_twotower_checkpoint(
     raw_cfg = dict(payload.get("config") or {})
     if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
         raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
+    raw_cfg = migrate_recursive_depth_aux_config(raw_cfg)
     valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
     cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})
 
@@ -233,6 +238,7 @@ def migrate_to_shared_recursive_denoiser(
     raw_cfg = dict(payload.get("config") or {})
     if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
         raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
+    raw_cfg = migrate_recursive_depth_aux_config(raw_cfg)
     valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}
     cfg_kwargs = {k: v for k, v in raw_cfg.items() if k in valid}
     cfg_kwargs["denoiser_arch"] = "shared_recursive"
@@ -241,6 +247,8 @@ def migrate_to_shared_recursive_denoiser(
         "recursive_steps",
         "recursive_transition_layers",
         "recursive_depth_supervision_weights",
+        "recursive_depth_aux_mode",
+        "recursive_depth_aux_weight",
     ):
         if key in user_cfg:
             cfg_kwargs[key] = user_cfg[key]

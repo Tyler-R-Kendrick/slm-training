@@ -3772,6 +3772,16 @@
         {
           "version": "v10",
           "date": "2026-07-23",
+          "note": "no-bump: isolate the SLM-138 fixture checkpoint in a process-unique temporary directory so concurrent changed-test shards cannot read a partially written archive; objective math and emitted evidence are unchanged"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "no-bump: make SLM-138 fixture and recursive-depth tests explicitly name their existing all-depth semantics while preserving their objective arithmetic"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
           "note": "no-bump: extract the behavior-identical normalized recursive-depth loss reduction into a pure helper and make the production objective plus exact arithmetic and gradient-isolation tests share it"
         },
         {
@@ -3877,7 +3887,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v225",
+      "version": "v226",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3901,6 +3911,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v226",
+          "date": "2026-07-23",
+          "note": "SLM-279: require new configs with non-empty recursive-depth weights to name intermediate_only, all_depths, or legacy_all_depths explicitly; keep empty configs primary-only and migrate pre-field checkpoint/config loads to legacy_all_depths, including tokenizer and stacked-to-recursive migration paths"
+        },
         {
           "version": "v225",
           "date": "2026-07-23",

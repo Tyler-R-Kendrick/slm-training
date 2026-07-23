@@ -78,7 +78,7 @@ class ModelBuildConfig:
     # string), no new arch value.
     recursive_detach_between_steps: bool = False
     recursive_depth_supervision_weights: tuple[float, ...] = ()
-    # SLM-238 (RSC-A02): explicit final-depth semantics for deep supervision.
+    # SLM-279: required explicit final-depth semantics when weights are non-empty.
     recursive_depth_aux_mode: str | None = None
     recursive_depth_aux_weight: float = 1.0
     # SLM-211: default-on tying; False creates an independent output head.
