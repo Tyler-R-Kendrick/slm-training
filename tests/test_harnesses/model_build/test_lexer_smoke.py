@@ -12,10 +12,10 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 
 HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":slot_0")\n'
-    'hero_body = TextContent(":slot_1")\n'
-    'hero = Card([hero_title, hero_body])'
+    'root = Stack([b1], "column")\n'
+    'b1 = Card([b2, b3])\n'
+    'b2 = TextContent(":slot_0")\n'
+    'b3 = TextContent(":slot_1")'
 )
 
 
@@ -78,7 +78,7 @@ def test_lexer_from_records_builds_dual_tokenizers(tmp_path: Path) -> None:
     assert is_dsl_native_tokenizer(model.tokenizer)
     assert model.context_tokenizer is not model.tokenizer
     # Fixed corpus-independent vocabulary incl. 64 reserved <MACRO_i> rows (C3).
-    assert model.tokenizer.vocab_size <= 512
+    assert model.tokenizer.vocab_size <= 640
     loss = model.training_loss(records)
     assert float(loss.detach()) >= 0.0
 

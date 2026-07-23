@@ -43,8 +43,8 @@ pytestmark_bridge = pytest.mark.skipif(
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":slot_0")\nhero_body = TextContent(":slot_1")\nhero = Card([hero_title, hero_body])'
-CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
+HERO = 'root = Stack([b1], "column")\nb1 = Card([b2, b3])\nb2 = TextContent(":slot_0")\nb3 = TextContent(":slot_1")'
+CTA = 'root = Stack([b1])\nb1 = Button(":slot_0")'
 
 
 def test_tokenize_preserves_placeholders_and_whitespace() -> None:
@@ -268,6 +268,37 @@ def test_checkpoint_rejects_pre_opaque_marker_contract(tmp_path: Path) -> None:
     torch.save(payload, path)
     with pytest.raises(ValueError, match="retrain from symbol-only targets"):
         TwoTowerModel.from_checkpoint(path, device="cpu")
+
+
+def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="valid", prompt="Hero", openui=HERO, split="train")],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="named",
+                    prompt="Hero",
+                    openui='root = TextContent(":hero.title")',
+                    placeholders=[":hero.title"],
+                )
+            ]
+        )
+    with pytest.raises(ValueError, match="non-content property Input.name"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="wrong-role",
+                    prompt="Input",
+                    openui='root = Input(":slot_0")',
+                    placeholders=[":slot_0"],
+                )
+            ]
+        )
 
 
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:

@@ -14,10 +14,10 @@ from slm_training.models.adapters.low_rank import LowRankAdapter  # noqa: E402
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel  # noqa: E402
 
 _HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
-    "hero = Card([hero_title, hero_body])"
+    'root = Stack([b1], "column")\n'
+    "b1 = Card([b2, b3])\n"
+    'b2 = TextContent(":slot_0")\n'
+    'b3 = TextContent(":slot_1")'
 )
 
 

@@ -24,6 +24,7 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
@@ -2606,7 +2607,10 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -13505,6 +13509,7 @@ class TwoTowerModel(nn.Module):
             assert_no_template_semantic_labels(record.prompt, record.design_md)
             assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "

@@ -39,21 +39,25 @@ def _corpus_generator(count: int, seed: int) -> list[ExampleRecord]:
     """
     from slm_training.data.progspec.generate import generate_program_specs
     from slm_training.data.progspec.schema import emit_record
-    from slm_training.dsl.analysis.templatize import templatize
+    from slm_training.data.contract import canonicalize_example_template_markers
+    from slm_training.dsl.analysis.templatize import assert_role_safe_output, templatize
     from slm_training.dsl.language_contract import assert_symbol_only_output
 
     result = generate_program_specs(count, seed=seed)
     records: list[ExampleRecord] = []
     for index, spec in enumerate(result.programs):
         templated = templatize(spec.canonical_openui)
-        record = emit_record(
-            spec,
-            prompt=f"Generate the canonical layout for program {index}.",
-            task="generation",
-            openui=templated.source,
-            meta={"templatized_literals": len(templated.replacements)},
+        record = canonicalize_example_template_markers(
+            emit_record(
+                spec,
+                prompt=f"Generate the canonical layout for program {index}.",
+                task="generation",
+                openui=templated.source,
+                meta={"templatized_literals": len(templated.replacements)},
+            )
         )
         assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+        assert_role_safe_output(record.openui, output_kind=record.target_kind)
         records.append(record)
     return records
 

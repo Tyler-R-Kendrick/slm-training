@@ -1,4 +1,4 @@
-# E939-E965: role-safe decoding, aligned training, and bounded nesting
+# E939-E967: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -126,3 +126,22 @@ coarse reservation changes the Tabs trajectory into a timeout and repeats
 E962's held regression: strict 0.6, fidelity 0.65, structure 0.3977, and reward
 0.701. Optional and nested component content has variable symbol cost, so a
 global one-symbol-per-binder budget is not authoritative. Revert to v255.
+
+E966 tests single-parent binder ownership after auditing 2,505 JSONL artifact
+targets under the E937/E938 directories, including governance and rejection
+artifacts, and finding zero multi-parent binders. The constraint also removes every
+nontrivial supervised row from the optional binder-topology head on canonical
+tree targets, so it fails focused tests before evaluation. Revert the decoder
+change rather than silently disabling that training lever.
+
+E967 closes the leak the audit exposed instead. Repository loaders were already
+strict, but direct TwoTower and grammar-diffusion construction/training checked
+only the older symbol-only rule. Both model boundaries now also reject named
+markers, semantic-role prompt labels, and role-unsafe strings. The OpenUI pack
+generator canonicalizes its emitted markers before returning records, and all
+training fixtures use opaque binders and `:slot_<ordinal>` targets. A durable
+test loads all 524 active E937 train records and all 50 E938 eval records; the
+earlier primary-plus-alternate audit remains 632/632. The literal `"email"`
+appears only as the official `Input.type` enum in the accepted test; the
+role-unsafe `Slider.name` negative fixture now uses schema atom `"row"` and is
+required to fail before model access.

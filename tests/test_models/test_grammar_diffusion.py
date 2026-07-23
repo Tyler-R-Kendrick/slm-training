@@ -304,6 +304,38 @@ def test_checkpoint_rejects_pre_opaque_marker_contract(tmp_path: Path) -> None:
         GrammarDiffusionModel.from_checkpoint(path, device="cpu")
 
 
+def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
+    model = GrammarDiffusionModel.from_records(
+        [ExampleRecord(id="valid", prompt="Hero", openui=HERO, split="train")],
+        config=GrammarDiffusionConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+        device="cpu",
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="named",
+                    prompt="Hero",
+                    openui='root = TextContent(":hero.title")',
+                    placeholders=[":hero.title"],
+                )
+            ]
+        )
+    with pytest.raises(ValueError, match="non-content property Input.name"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="wrong-role",
+                    prompt="Input",
+                    openui='root = Input(":slot_0")',
+                    placeholders=[":slot_0"],
+                )
+            ]
+        )
+
+
 def test_factory_builds_grammar_diffusion() -> None:
     records = [
         ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),

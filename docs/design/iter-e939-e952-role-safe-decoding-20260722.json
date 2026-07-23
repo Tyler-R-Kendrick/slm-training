@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E965",
+  "experiment_id": "E939-E967",
   "date": "2026-07-22",
-  "decision": "retain_role_and_depth_constraints_keep_e951_diagnostic_only",
+  "decision": "retain_role_depth_and_training_entrypoint_constraints_keep_e951_diagnostic_only",
   "train_data": "e937_role_safe_all_targets_v2",
   "eval_data": "e938_role_safe_all_targets_v2",
   "runs": {
@@ -29,7 +29,9 @@
     "E962": {"status": "completed_rejected_compiler_plan_array_close", "evaluated_model_version": "v256", "evaluated_lever_version": "v34", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.65, "held_out_structural_similarity": 0.39774000000000004, "held_out_component_recall": 0.6, "held_out_reward": 0.701, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "reverted_keep_v255_and_config_levers_v33"},
     "E963": {"status": "completed_rejected", "steps": 500, "elapsed_wall_seconds": 34.57040796000001, "last_loss": 3.1245527267456055, "checkpoint_sha256": "b795f3627c842f96ae7c80eeb5616f748951b4777fc3eead237ea49695ae37df", "checkpoint_sync": "disabled_scratch"},
     "E964": {"status": "completed_rejected_quality", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 1.0, "smoke_reward": 0.973, "held_out_parse": 0.8, "held_out_meaning_v1": 0.4, "held_out_strict_v2": 0.4, "held_out_fidelity": 0.47333333333333333, "held_out_structural_similarity": 0.1404, "held_out_component_recall": 0.49523809523809526, "held_out_reward": 0.654, "held_out_decode_timeouts": 1, "held_out_fallback_count": 5, "prediction_role_violations": 0, "agentv": "0/2"},
-    "E965": {"status": "completed_rejected_global_symbol_reservation", "evaluated_model_version": "v256", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.65, "held_out_structural_similarity": 0.39774000000000004, "held_out_component_recall": 0.6, "held_out_reward": 0.701, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "reverted_keep_v255"}
+    "E965": {"status": "completed_rejected_global_symbol_reservation", "evaluated_model_version": "v256", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.65, "held_out_structural_similarity": 0.39774000000000004, "held_out_component_recall": 0.6, "held_out_reward": 0.701, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "reverted_keep_v255"},
+    "E966": {"status": "failed_before_evaluation", "reason": "single-parent binder filtering removed all nontrivial binder-topology supervision on canonical tree targets", "role_safe_artifact_targets_audited": 2505, "role_safe_artifact_multi_parent_targets": 0, "agentv": null, "disposition": "reverted"},
+    "E967": {"status": "completed_retained_fail_closed_training_boundary", "train_records_loader_audited": 524, "eval_records_loader_audited": 50, "active_train_and_eval_targets_previously_audited": 632, "model_entrypoints_hardened": ["twotower.from_records", "twotower.training_loss", "grammar_diffusion.from_records", "grammar_diffusion.training_loss"], "producer_fixed": "openui_pack_corpus_generator", "versions": {"model.twotower": "v256", "harness.train_data": "v26", "model.recursive_denoiser": "v11"}, "agentv": null}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",

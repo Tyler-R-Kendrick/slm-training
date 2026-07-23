@@ -19,7 +19,7 @@ from slm_training.models.grammar import (
 from slm_training.models.tokenizer import OpenUITokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
-SAMPLE = 'root = Card(":slot_0")\n'
+SAMPLE = 'root = Card([TextContent(":slot_0")])\n'
 
 
 def _tok() -> OpenUITokenizer:
@@ -260,7 +260,7 @@ def test_lexer_newline_is_probed_as_surface_newline() -> None:
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
     tok = DSLNativeTokenizer.build()
-    prefix = tok.encode("root = Stack([])", add_special=False)
+    prefix = tok.encode("root = Stack([b1])", add_special=False)
     logits = torch.full((tok.vocab_size,), -20.0)
     logits[tok.token_to_id["NL"]] = 50.0
     choice = pick_constrained_token(logits, tok, prefix, top_k=8)

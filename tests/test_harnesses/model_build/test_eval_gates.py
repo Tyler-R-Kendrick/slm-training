@@ -297,6 +297,21 @@ def test_train_loader_accepts_opaque_structural_ids(tmp_path: Path) -> None:
     assert [record.id for record in load_train_records(train_dir)] == ["role-safe"]
 
 
+def test_active_role_safe_train_and_eval_corpora_pass_loaders() -> None:
+    root = Path(__file__).resolve().parents[3]
+    train_dir = (
+        root
+        / "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2"
+    )
+    eval_dir = root / "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2"
+
+    assert len(load_train_records(train_dir)) == 524
+    assert sum(
+        len(load_suite_records(eval_dir, suite))
+        for suite in ("smoke", "held_out", "adversarial", "ood", "rico_held")
+    ) == 50
+
+
 def test_train_loader_rejects_role_unsafe_accepted_output(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     train_dir.mkdir()

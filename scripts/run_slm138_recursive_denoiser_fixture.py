@@ -44,6 +44,7 @@ import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from slm_training.dsl.schema import ExampleRecord
@@ -70,12 +71,12 @@ from slm_training.versioning import build_version_stamp
 ROOT = Path(__file__).resolve().parents[1]
 
 HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
-    "hero = Card([hero_title, hero_body])"
+    'root = Stack([b1], "column")\n'
+    "b1 = Card([b2, b3])\n"
+    'b2 = TextContent(":slot_0")\n'
+    'b3 = TextContent(":slot_1")'
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([b1])\nb1 = Button(":slot_0")'
 
 
 def _today_slug() -> str:
@@ -426,11 +427,10 @@ def _run_fixture(
     }
 
     # (6) Round-trip save/load for the recursive model.
-    tmp = Path("outputs/runs/slm138-recursive-denoiser-tmp")
-    tmp.mkdir(parents=True, exist_ok=True)
-    ckpt = tmp / "recursive.pt"
-    recursive.save(ckpt)
-    loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    with TemporaryDirectory(prefix="slm138-recursive-") as tmp_dir:
+        ckpt = Path(tmp_dir) / "recursive.pt"
+        recursive.save(ckpt)
+        loaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
     loaded_ok = (
         loaded.config.denoiser_arch == "shared_recursive"
         and isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)

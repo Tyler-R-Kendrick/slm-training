@@ -3523,7 +3523,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v25",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3542,6 +3542,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-22",
+          "note": "Canonicalize OpenUI pack-generated template markers and reject role-unsafe generated targets before returning records"
+        },
         {
           "version": "v25",
           "date": "2026-07-22",
@@ -4038,7 +4043,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -4059,6 +4064,11 @@
         "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-22",
+          "note": "Replace recursive training fixtures with opaque slots and canonical binder ordering, and isolate concurrent checkpoint round trips"
+        },
         {
           "version": "v10",
           "date": "2026-07-21",
@@ -4162,7 +4172,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v255",
+      "version": "v256",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4187,6 +4197,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v256",
+          "date": "2026-07-22",
+          "note": "Fail closed on named template markers and role-unsafe strings at direct model construction and training-loss entrypoints"
+        },
         {
           "version": "v255",
           "date": "2026-07-22",

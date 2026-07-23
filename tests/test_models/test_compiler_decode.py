@@ -4336,10 +4336,10 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
         prompt="stack with title and body",
         openui=(
             "root = Stack([title, body])\n"
-            'title = TextContent(":title")\n'
-            'body = TextContent(":body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":title", ":body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -4397,10 +4397,10 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
         openui=(
             "root = Stack([card])\n"
             "card = Card([title, body])\n"
-            'title = TextContent(":title")\n'
-            'body = TextContent(":body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":title", ":body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -4496,7 +4496,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
             tokenizer.bind_id(0),
             tokenizer.token_to_id["="],
         ],
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
     assert root_value.candidate_ids
     assert all(
@@ -4524,7 +4524,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
             tokenizer.bos_id,
             *tokenizer.encode("root=Stack([", add_special=False),
         ],
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
     assert not (set(children.candidate_ids) & set(tokenizer.kind_ids("sym")))
     assert not (set(children.candidate_ids) & set(tokenizer.kind_ids("lit")))
@@ -4543,7 +4543,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     typed_string = build_completion_forest(
         tokenizer,
         tokenizer.encode("root=TextArea(", add_special=False),
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
     assert tokenizer.sym_id(0) not in typed_string.candidate_ids
     assert tokenizer.token_to_id["STR:$0"] in typed_string.candidate_ids
@@ -4560,7 +4560,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         },
     )
     prefix = tokenizer.encode("root=TextContent(", add_special=False)
-    forest = build_completion_forest(tokenizer, prefix, slot_contract=[":hero.title"])
+    forest = build_completion_forest(tokenizer, prefix, slot_contract=[":slot_0"])
     assert forest.coverage == "complete"
     assert tokenizer.sym_id(0) in forest.candidate_ids
     assert tokenizer.sym_id(1) not in forest.candidate_ids
@@ -4575,9 +4575,9 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         tokenizer,
         [
             tokenizer.bos_id,
-            *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+            *tokenizer.encode('root=TextContent(":slot_0")', add_special=False),
         ],
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
     assert set(complete.candidate_ids) == {tokenizer.eos_id}
 
@@ -4590,10 +4590,10 @@ def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
     )
 
     tokenizer = DSLNativeTokenizer.build()
-    contract = [":hero.title"]
+    contract = [":slot_0"]
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+        *tokenizer.encode('root=TextContent(":slot_0")', add_special=False),
     ]
     assert emitted_component_count(tokenizer, prefix) == 1
 
@@ -4625,8 +4625,8 @@ def test_effective_min_content_auto_from_inventory() -> None:
                 ExampleRecord(
                     id="a",
                     prompt="Hero",
-                    openui='root = Stack([t])\nt = TextContent(":hero.title")',
-                    placeholders=[":hero.title"],
+                    openui='root = Stack([t])\nt = TextContent(":slot_0")',
+                    placeholders=[":slot_0"],
                 )
             )
         ],
@@ -4640,7 +4640,7 @@ def test_effective_min_content_auto_from_inventory() -> None:
         ),
         device="cpu",
     )
-    assert model._effective_min_content([":hero.title", ":hero.body"]) == 1
+    assert model._effective_min_content([":slot_0", ":slot_1"]) == 2
     assert model._effective_min_content([":a.x", ":b.y"]) == 2
     assert model._effective_min_content(None) == 0
     model.config.decode_min_content = 3
@@ -4663,7 +4663,7 @@ def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
     )
 
     assert compiler_draft._generated_ast_is_complete(
-        'root = TextContent(":hero.title")'
+        'root = TextContent(":slot_0")'
     )
     assert not compiler_draft._generated_ast_is_complete("root = TextContent(")
 
@@ -5178,12 +5178,12 @@ def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(
-        'root=Card([title,body])\ntitle=TextContent(":hero.title")\n'
-        'body=TextContent(":hero.body")',
+        'root=Card([title,body])\ntitle=TextContent(":slot_0")\n'
+        'body=TextContent(":slot_1")',
         add_special=True,
     )
     positions = gold_compiler_decision_positions(
-        tokenizer, target, slot_contract=[":hero.title", ":hero.body"]
+        tokenizer, target, slot_contract=[":slot_0", ":slot_1"]
     )
     selected = {tokenizer.id_to_token[target[position]] for position in positions}
     assert {"<BIND_0>", "Card", "<BIND_1>", "TextContent"} <= selected
@@ -5243,8 +5243,8 @@ def test_compiler_alignment_loss_trains_gold_semantic_states() -> None:
     record = ExampleRecord(
         id="alignment",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -5262,8 +5262,8 @@ def test_compiler_alignment_margin_reports_legal_branch_violations() -> None:
     record = ExampleRecord(
         id="alignment-margin",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -5284,10 +5284,10 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
         prompt="card",
         openui=(
             "root = Card([title, body])\n"
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5311,8 +5311,8 @@ def test_component_inventory_supervision_trains_prompt_level_component_set() -> 
     record = ExampleRecord(
         id="inventory",
         prompt="card with a title",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -5361,10 +5361,10 @@ def test_component_plan_supervises_root_role_and_bound_counts() -> None:
         prompt="card with two labels",
         openui=(
             "root = Card([title, body])\n"
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5440,7 +5440,7 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
                 {
                     "type": "element",
                     "typeName": "TextContent",
-                    "props": {"text": ":title"},
+                    "props": {"text": ":slot_0"},
                 }
             ]
         },
@@ -5459,8 +5459,8 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
 def test_binder_reference_arities_follow_grammar_token_roles() -> None:
     tokenizer = DSLNativeTokenizer.build()
     ids = tokenizer.encode(
-        'root = Card([title, body])\ntitle = TextContent(":hero.title")\n'
-        'body = Stack([copy], "column")\ncopy = TextContent(":hero.body")',
+        'root = Card([title, body])\ntitle = TextContent(":slot_0")\n'
+        'body = Stack([copy], "column")\ncopy = TextContent(":slot_1")',
         add_special=False,
     )
     assert binder_reference_arities(tokenizer, ids) == (
@@ -5484,10 +5484,10 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
         prompt="card with title and body",
         openui=(
             "root = Card([title, body])\n"
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5538,8 +5538,8 @@ def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     record = ExampleRecord(
         id="component-edge",
         prompt="card with a title",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -5594,10 +5594,10 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
         prompt="card with title and body",
         openui=(
             "root = Card([title, body])\n"
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5644,12 +5644,12 @@ def test_binder_topology_supervises_and_biases_legal_references() -> None:
         id="binder-topology",
         prompt="card with title and body",
         openui=(
-            "root = Stack([group, title, body])\n"
-            "group = Card([title, body])\n"
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Stack([b1, b2, b3])\n"
+            "b1 = Card([b2, b3])\n"
+            'b2 = TextContent(":slot_0")\n'
+            'b3 = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5695,10 +5695,10 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
         prompt="card with title and body",
         openui=(
             "root = Card([title, body])\n"
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5987,10 +5987,10 @@ def test_constraint_evidence_localizes_binder_and_min_content() -> None:
     assert any(e.stage is ConstraintStage.BINDING for e in binder_excluded)
 
     # Minimum-content EOS withholding is distinguishable from grammar rejection.
-    contract = [":hero.title"]
+    contract = [":slot_0"]
     complete = [
         tokenizer.bos_id,
-        *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+        *tokenizer.encode('root=TextContent(":slot_0")', add_special=False),
     ]
     unmet = build_completion_forest(
         tokenizer, complete, slot_contract=contract, min_content=2, explain=True

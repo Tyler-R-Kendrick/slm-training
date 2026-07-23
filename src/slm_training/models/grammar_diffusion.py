@@ -22,6 +22,7 @@ from slm_training.dsl.language_contract import (
     require_current_output_contract,
 )
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.data.contract import (
     assert_canonical_template_markers,
     assert_canonical_template_marker_inventory,
@@ -1144,7 +1145,10 @@ class GrammarDiffusionModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         prompts, rows = self._state_rows(batch)
         ctx, ctx_pad = self._encode_context(prompts)
@@ -2277,6 +2281,7 @@ class GrammarDiffusionModel(nn.Module):
             assert_no_template_semantic_labels(record.prompt, record.design_md)
             assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         codec = _load_production_codec(
             [record.openui for record in records],
             [record.target_kind for record in records],

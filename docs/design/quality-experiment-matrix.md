@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E965 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E967 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6539,3 +6539,9 @@ and five fallbacks. Reject the checkpoint and do not use it as a parent.
 E965's global unresolved-binder symbol reservation removes one compiler dead
 end but causes a Tabs timeout; held strict falls 0.8→0.6 and reward
 0.8834→0.701. Revert the coarse budget and retain v255.
+E966's single-parent binder treatment fails before eval because it eliminates
+nontrivial binder-topology supervision. E967 instead closes all direct model
+training entrypoints over the same opaque-marker and role-safe contract as the
+loaders, fixes the OpenUI pack producer, and locks the active 524-train / 50-eval
+corpora behind a loader regression test. Retain model v256, train-data v26, and
+recursive-fixture v11; no checkpoint or ship claim.
