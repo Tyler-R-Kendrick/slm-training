@@ -151,6 +151,7 @@ def _write_record_nll(run_dir: Path, plugin, records) -> Path:
 
 
 def train(config: ModelBuildConfig, model=None) -> dict:
+    from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
     from slm_training.runtime.accel import (
         autocast_context,
         detect_device,
@@ -164,6 +165,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         restore_rng_states,
         save_full_state,
     )
+
+    config, flag_snapshot = resolve(config, phase="training")
 
     campaign_governance = None
     if bool(getattr(config, "register_promoted", False)):
@@ -364,6 +367,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     run_dir = config.run_dir
     ckpt_dir = config.checkpoint_dir
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+    flag_payload = save_snapshot(run_dir, flag_snapshot)
     metrics_path = run_dir / "metrics.jsonl"
     eval_history: list[dict] = []
     nll_history: list[dict] = []
@@ -1409,10 +1413,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "telemetry": tel.summary(),
         "telemetry_path": str(tel_path.as_posix()),
         "finished_at": datetime.now(timezone.utc).isoformat(),
+        "feature_flags": flag_payload,
     }
     from slm_training.versioning import build_version_stamp
 
-    summary["version_stamp"] = build_version_stamp("harness.model_build.train")
+    summary["version_stamp"] = build_version_stamp(
+        "harness.model_build.train", "harness.experiment_feature_flags"
+    )
     (run_dir / "train_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )

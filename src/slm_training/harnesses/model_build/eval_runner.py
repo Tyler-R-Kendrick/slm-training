@@ -46,6 +46,7 @@ def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
     components = (
         "config.levers",
         "harness.model_build.eval",
+        "harness.experiment_feature_flags",
         "evals.meaningful_program",
         "evals.power_protocol",
         "evals.scoring",
@@ -577,6 +578,9 @@ def evaluate(
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
 ) -> dict:
+    from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
+
+    config, flag_snapshot = resolve(config, phase="evaluation")
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
@@ -1412,6 +1416,7 @@ def evaluate(
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
+    save_snapshot(run_dir, flag_snapshot)
     suite_path = run_dir / f"eval_{config.suite}.json"
     from slm_training.versioning import build_version_stamp
 
@@ -1540,6 +1545,9 @@ def evaluate_suites(
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
+    from slm_training.harnesses.model_build.feature_flags import load_snapshot
+
+    scoreboard["feature_flags"] = load_snapshot(run_dir)
     path = run_dir / "scoreboard.json"
     scoreboard["output"] = str(path)
     if write_gates:

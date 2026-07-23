@@ -969,7 +969,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -982,6 +982,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "Expose the generated model-build OpenFeature lever registry through the experiment dashboard API"
+        },
         {
           "version": "v3",
           "date": "2026-07-23",
@@ -3473,8 +3478,24 @@
         }
       ]
     },
+    "harness.experiment_feature_flags": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/model_build/feature_flags.py",
+        "scripts/backfill_experiment_feature_flags.py",
+        "src/slm_training/resources/experiment_feature_flag_history.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "Initial OpenFeature-backed model-build lever registry, run snapshots, and historical evidence backfill"
+        }
+      ]
+    },
     "harness.model_build.eval": {
-      "version": "v47",
+      "version": "v48",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -3485,6 +3506,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v48",
+          "date": "2026-07-23",
+          "note": "Resolve and persist OpenFeature evaluation-lever snapshots in scoreboards"
+        },
         {
           "version": "v47",
           "date": "2026-07-23",
@@ -3772,13 +3798,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v21",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-23",
+          "note": "Persist resolved OpenFeature training-lever snapshots"
+        },
         {
           "version": "v21",
           "date": "2026-07-23",
@@ -4322,12 +4353,17 @@
       ]
     },
     "matrix.grammar": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_grammar_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Persist OpenFeature training/evaluation flag snapshots in grammar-matrix rows"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -4350,12 +4386,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v5",
+      "version": "v6",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "Persist OpenFeature training/evaluation flag snapshots in quality-matrix rows"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",

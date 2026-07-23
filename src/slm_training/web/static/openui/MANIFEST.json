@@ -66,9 +66,10 @@
       ],
       "file": "experiments.openui",
       "queries": [
+        "experiment_flags",
         "scoreboard"
       ],
-      "sha256": "ba1196cfcb06af8213a4078e7a6a848460ea83c929966a14b136d1553fba2e74",
+      "sha256": "18a6030f2e4774716f4e3eb4336ab2b2070f4d4d5c35a4fbca99ec4539ebe6c6",
       "status": "ok"
     },
     "overview": {

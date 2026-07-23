@@ -34,6 +34,10 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
+from slm_training.harnesses.model_build.feature_flags import (
+    catalog as feature_flag_catalog,
+)
+from slm_training.harnesses.model_build.feature_flags import load_snapshot
 from slm_training.autoresearch.run_insights import (
     RunInsightSubmission,
     enrich_with_openai,
@@ -432,6 +436,7 @@ class Readers:
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
         self.fixtures = self.root / "src" / "slm_training" / "resources"
+        self.feature_flag_history = self.fixtures / "experiment_feature_flag_history.json"
         self.data_store = DataStore(self.root)
         self.published_train_root = self.data_store.published_root / "train"
         self.dashboard_snapshot = self.root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
@@ -842,6 +847,103 @@ class Readers:
             )
         return index
 
+    # ---- experiment feature flags ------------------------------------------
+
+    def _feature_history(self) -> dict[str, dict[str, Any]]:
+        payload = _read_json(self.feature_flag_history) or {}
+        rows = payload.get("runs") if isinstance(payload, dict) else []
+        return {
+            str(row["run_id"]): row
+            for row in rows
+            if isinstance(row, dict) and isinstance(row.get("run_id"), str)
+        }
+
+    def experiment_flags(self) -> dict[str, Any]:
+        def compute() -> dict[str, Any]:
+            payload = feature_flag_catalog()
+            history = self._feature_history()
+            payload["history_runs"] = len(history)
+            payload["provenance"] = "live" if self.feature_flag_history.exists() else "missing"
+            return payload
+
+        return self._fresh("experiment_flags", [self.feature_flag_history], compute)
+
+    @staticmethod
+    def _flag_state(value: Any, default: Any, kind: str) -> str:
+        if kind == "boolean":
+            return "enabled" if bool(value) else "disabled"
+        return "default" if value == default else "overridden"
+
+    def run_feature_flags(self, run_id: str, run_dir: Path) -> dict[str, Any]:
+        registry = feature_flag_catalog()
+        live = load_snapshot(run_dir)
+        history = self._feature_history().get(run_id)
+        snapshots = live.get("snapshots", {}) if isinstance(live, dict) else {}
+        phases = ["training", "evaluation"] if snapshots else ["historical"]
+        rows: list[dict[str, Any]] = []
+        for flag in registry["flags"]:
+            field = str(flag["field"])
+            cells: dict[str, dict[str, Any]] = {}
+            for phase in phases:
+                source = snapshots.get(phase, {}) if isinstance(snapshots, dict) else {}
+                source_rows = source.get("flags", []) if isinstance(source, dict) else []
+                recorded = next(
+                    (
+                        item
+                        for item in source_rows
+                        if isinstance(item, dict) and item.get("field") == field
+                    ),
+                    None,
+                )
+                if isinstance(recorded, dict):
+                    cells[phase] = {
+                        "recorded": True,
+                        "value": recorded.get("value"),
+                        "state": recorded.get("state"),
+                        "source": "live",
+                    }
+                elif phase == "historical" and isinstance(history, dict):
+                    conflicts = history.get("conflicts") or {}
+                    values = history.get("values") or {}
+                    if field in conflicts:
+                        cells[phase] = {
+                            "recorded": False,
+                            "value": None,
+                            "state": "conflict",
+                            "source": "committed",
+                        }
+                    elif field in values:
+                        value = values[field]
+                        cells[phase] = {
+                            "recorded": True,
+                            "value": value,
+                            "state": self._flag_state(value, flag["default"], flag["type"]),
+                            "source": "committed",
+                        }
+                    else:
+                        cells[phase] = {
+                            "recorded": False,
+                            "value": None,
+                            "state": "not_recorded",
+                            "source": "committed",
+                        }
+                else:
+                    cells[phase] = {
+                        "recorded": False,
+                        "value": None,
+                        "state": "not_recorded",
+                        "source": "missing",
+                    }
+            rows.append({**flag, "cells": cells})
+        return {
+            "schema": registry["schema"],
+            "registry_revision": registry["revision"],
+            "provenance": "live" if snapshots else "committed" if history else "missing",
+            "phases": phases,
+            "rows": rows,
+            "history_sources": (history or {}).get("sources", []),
+        }
+
     # ---- runs (lineage + per-run artifacts) -----------------------------------
 
     def _matched_research_runs(self) -> list[dict[str, Any]]:
@@ -1192,6 +1294,7 @@ class Readers:
             "scoreboard": scoreboard,
             "insights": insights,
             "training_data": self.run_training_data(run_id),
+            "feature_flags": self.run_feature_flags(run_id, run_dir),
             **artifacts,
         }
 

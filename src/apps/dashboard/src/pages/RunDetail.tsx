@@ -319,6 +319,21 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
     reward_score: m?.reward_score,
     n: m?.n,
   }));
+  const featureFlags = data.feature_flags ?? { rows: [], phases: [] };
+  const flagRows = (featureFlags.rows ?? []).map((flag: any) => {
+    const row: any = {
+      field: flag.field,
+      type: flag.type,
+      default: typeof flag.default === "object" ? JSON.stringify(flag.default) : fmt(flag.default),
+    };
+    for (const phase of featureFlags.phases ?? []) {
+      const cell = flag.cells?.[phase] ?? {};
+      row[phase] = cell.recorded
+        ? `${typeof cell.value === "object" ? JSON.stringify(cell.value) : fmt(cell.value)} · ${cell.state}`
+        : cell.state === "conflict" ? "conflicting history" : "not recorded";
+    }
+    return row;
+  });
 
   return (
     <div>
@@ -460,6 +475,27 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
           )}
         </Card>
       </div>
+
+      <Card title="Experiment feature flags" right={<ProvenanceBadge provenance={featureFlags.provenance} />}>
+        <p className="hint" style={{ marginBottom: "0.7rem" }}>
+          Training and evaluation snapshots are resolved through OpenFeature. Historical evidence only shows values explicitly recorded in its source recipe.
+        </p>
+        <DataTable
+          searchable
+          searchPlaceholder="Search feature flags"
+          columns={[
+            { key: "field", label: "lever" },
+            { key: "type", label: "type" },
+            { key: "default", label: "default" },
+            ...(featureFlags.phases ?? []).map((phase: string) => ({ key: phase, label: phase })),
+          ]}
+          rows={flagRows}
+          render={{
+            field: (r) => <span className="mono">{r.field}</span>,
+            default: (r) => <span className="mono">{r.default}</span>,
+          }}
+        />
+      </Card>
 
       <Card
         title="RL traces"
