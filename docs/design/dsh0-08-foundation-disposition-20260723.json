@@ -11,7 +11,7 @@
       "artifacts": [
         {
           "path": "docs/design/dsh0-02-symbolic-surface-policy-20260723.json",
-          "sha256": "24d8ec7ce6fd5623f668b7bba77992f5aeced86fb1267b943674c4060a879c43"
+          "sha256": "67e585312d085c89ebb849f5db01d3eb7bf6017e8cd630614ddb8ea2f4284041"
         },
         {
           "path": "src/slm_training/dsl/language_contract.py",
@@ -38,7 +38,7 @@
         },
         {
           "path": "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json",
-          "sha256": "5165330d3c3a37093e5dd2c90910d380d2615141d3a9eece1bbb6f8352c29b60"
+          "sha256": "63cbe457e88ddd4de9e326796ba401fb2fdffbfccb7322cb0ed5843fc713592e"
         }
       ],
       "commands": [
@@ -91,7 +91,7 @@
       "artifacts": [
         {
           "path": "docs/design/dsh0-06-synthesis-materialization-20260723.json",
-          "sha256": "9904485977dffa1f4ce685378d55d2118e57c90251426719592cfc7624de9695"
+          "sha256": "3993cf69a7cca239821c41e9d91f36e37e39b531f3ef2ffe382c8c93c1290644"
         },
         {
           "path": "src/slm_training/harnesses/train_data/staged_materialization.py",
@@ -131,10 +131,10 @@
     {
       "name": "cap0.plan",
       "version": "synthesis_plan/v1",
-      "identity_sha256": "f0778bd88005687242a73626bdf8b4239750bbc9f6d10c06fae92a6240c9daa1",
+      "identity_sha256": "65bd2059ce85ca16436ea3572d98f38ca72e4188e97a7df3d0c6d584595c9256",
       "source": {
         "path": "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json",
-        "sha256": "5165330d3c3a37093e5dd2c90910d380d2615141d3a9eece1bbb6f8352c29b60"
+        "sha256": "63cbe457e88ddd4de9e326796ba401fb2fdffbfccb7322cb0ed5843fc713592e"
       }
     },
     {
@@ -175,7 +175,7 @@
     },
     {
       "name": "cap0.materialization",
-      "version": "harness.train_data/v17",
+      "version": "harness.train_data/v18",
       "identity_sha256": "e2617ffde441c9517f97b64f5acb904d20cb60082044dd4a8a680d6b093187e0",
       "source": {
         "path": "src/slm_training/harnesses/train_data/staged_materialization.py",
@@ -212,11 +212,11 @@
       "harness.synthesis_plan": "v2",
       "harness.capability_artifacts": "v1",
       "harness.artifact_graph": "v1",
-      "harness.train_data": "v17",
+      "harness.train_data": "v18",
       "harness.capability_gates": "v1",
       "config.levers": "v19"
     },
     "stamped_at": "2026-07-23T21:14:14.538095+00:00"
   },
-  "disposition_sha256": "82fce9dec8e6ede4ff6279f0f2142f96de6c139afcd414789570f7a56e7b4aca"
+  "disposition_sha256": "30036dd2b6fc1cb55f9b0e09910959e5609a57c182ef554aadbf4798e432581d"
 }

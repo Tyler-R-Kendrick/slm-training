@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from slm_training.data.corrupt import build_scoped_corruptions
 from slm_training.dsl.parser import ParseError, validate, validate_output
+from slm_training.dsl.harness_dsl import (
+    HarnessOperation,
+    parse_harness_task,
+)
 from slm_training.harnesses.train_data.pipeline import _normalize_record
 from slm_training.harnesses.train_data.scope_corpus import (
     ScopeCorpusConfig,
     build_scope_corpus,
     decanonicalize_variants,
+    scope_record_to_harness,
     scope_families,
 )
 
@@ -48,8 +55,11 @@ def test_identity_rows_echo_their_prompt_input(corpus) -> None:
     identity = [r for r in records if r.source.startswith("scope_identity")]
     assert identity
     for record in identity:
-        embedded = record.prompt.split("---INPUT---\n", 1)[1]
-        assert embedded == record.openui
+        task = parse_harness_task(record.prompt)
+        assert task.operation is HarnessOperation.IDENTITY
+        assert task.payload == record.openui
+        assert task.pack_id == "openui"
+        assert task.grammar_category == record.meta["scope_slice"]["category"]
 
 
 def test_identity_rows_survive_normalization_byte_identical(corpus) -> None:
@@ -66,7 +76,9 @@ def test_canonical_rows_rewrite_to_canonical_form(corpus) -> None:
     canonical_rows = [r for r in records if r.source.startswith("scope_canonical")]
     assert canonical_rows
     for record in canonical_rows:
-        embedded = record.prompt.split("---INPUT---\n", 1)[1]
+        task = parse_harness_task(record.prompt)
+        assert task.operation is HarnessOperation.CANONICALIZE
+        embedded = task.payload
         assert embedded != record.openui
         if record.source == "scope_canonical_document":
             program = validate(embedded)
@@ -76,9 +88,7 @@ def test_canonical_rows_rewrite_to_canonical_form(corpus) -> None:
 def test_canonical_pairs_share_prompts_with_identity_twins(corpus) -> None:
     records, pairs = corpus
     assert pairs
-    prompts = {
-        r.prompt: r for r in records if r.source.startswith("scope_canonical")
-    }
+    prompts = {r.prompt: r for r in records if r.source.startswith("scope_canonical")}
     for pair in pairs:
         assert pair.chosen != pair.rejected
         record = prompts.get(pair.prompt)
@@ -140,3 +150,56 @@ def test_scope_rows_inherit_root_lineage(corpus) -> None:
         assert record.meta["parent_id"] == "p1"
         assert record.meta["program_family_id"] == "fam:p1"
         assert record.meta["determinacy"] == "deterministic"
+
+
+def test_non_cap0_scope_families_refuse_reserved_operation_labels(corpus) -> None:
+    records, _ = corpus
+    unsupported = next(
+        record for record in records if record.source.startswith("scope_repair_")
+    )
+    with pytest.raises(ValueError, match="no reserved Harness operation"):
+        scope_record_to_harness(unsupported)
+
+
+def test_legacy_conversion_preserves_the_record_except_prompt_and_metadata(
+    corpus,
+) -> None:
+    records, _ = corpus
+    current = next(
+        record
+        for record in records
+        if record.source == "scope_identity_expression"
+    )
+    legacy = replace(
+        current,
+        prompt=(
+            "Emit the OpenUI expression for this input.\n"
+            f"---INPUT---\n{parse_harness_task(current.prompt).payload}"
+        ),
+        meta={
+            key: value
+            for key, value in current.meta.items()
+            if key != "harness_dsl"
+        },
+    )
+
+    converted = scope_record_to_harness(legacy)
+
+    assert converted.prompt == current.prompt
+    for field in (
+        "id",
+        "openui",
+        "placeholders",
+        "split",
+        "source",
+        "design_md",
+        "target_kind",
+        "target_category",
+        "accepted_outputs",
+    ):
+        assert getattr(converted, field) == getattr(legacy, field)
+    assert {
+        key: value
+        for key, value in converted.meta.items()
+        if key != "harness_dsl"
+    } == legacy.meta

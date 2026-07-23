@@ -138,12 +138,12 @@ def test_unknown_components_versions_and_pack_capabilities_are_rejected() -> Non
     with pytest.raises(ValueError, match="must include symbolic_surface"):
         replace(
             _plan(),
-            validators=(ComponentRefV1("pack.oracle", "v17"),),
+            validators=(ComponentRefV1("pack.oracle", "v18"),),
         ).require_executable()
     with pytest.raises(ValueError, match="is not a gate"):
         replace(
             _plan(),
-            gate_spec=ComponentRefV1("harness.train_data", "v17"),
+            gate_spec=ComponentRefV1("harness.train_data", "v18"),
         ).require_executable()
 
     toy_version = (

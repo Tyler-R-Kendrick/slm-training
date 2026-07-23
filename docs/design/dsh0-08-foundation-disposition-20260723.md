@@ -33,7 +33,7 @@ item SLM-353.
 
 | Authority | Version | Frozen identity |
 | --- | --- | --- |
-| synthesis plan | `synthesis_plan/v1` | `f0778bd88005687242a73626bdf8b4239750bbc9f6d10c06fae92a6240c9daa1` |
+| synthesis plan | `synthesis_plan/v1` | `65bd2059ce85ca16436ea3572d98f38ca72e4188e97a7df3d0c6d584595c9256` |
 | OpenUI pack surface | `openui` | `b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d` |
 | symbolic surface policy | `symbolic_surface_policy/v1` | `68954d579b07d7f987e5e8151450d573f7e2c8e5d06d64769d885c4718155acb` |
 | artifact schema | `capability_artifacts/v1` | `8dab5f0f627eb84b6164f74e24c729ee2f760202f6cbbc3ce629839c8b3ce89c` |

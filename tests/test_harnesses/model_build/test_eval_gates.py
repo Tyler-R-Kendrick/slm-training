@@ -534,11 +534,12 @@ def test_evaluate_suites_scoreboard(
     assert stamp["stamp_schema"] == "version_stamp/v1"
     assert set(stamp["components"]) == {
         "config.levers",
-            "harness.model_build.eval",
-            "evals.meaningful_program",
-            "evals.power_protocol",
-            "evals.scoring",
-        }
+        "harness.model_build.eval",
+        "harness.experiment_feature_flags",
+        "evals.meaningful_program",
+        "evals.power_protocol",
+        "evals.scoring",
+    }
     rate_evidence = metrics["rate_evidence"]["meaningful_program_rate"]
     assert rate_evidence["numerator"] == 1
     assert rate_evidence["denominator"] == 1

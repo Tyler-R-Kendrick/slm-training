@@ -402,6 +402,24 @@
         }
       ]
     },
+    "dsl.harness_dsl": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/harness_dsl.py",
+        "src/slm_training/dsl/grammars/harness.lark",
+        "tests/test_dsl/test_harness_dsl.py",
+        "docs/design/dsh1-03-symbolic-harness-dsl-20260723.json",
+        "docs/design/dsh1-03-symbolic-harness-dsl-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial closed versioned Harness DSL with reserved CAP0 operations, typed payloads, pack validation, declared markers, artifact refs, and canonical fingerprinted framing"
+        }
+      ]
+    },
     "dsl.minimal_witnesses": {
       "version": "v1",
       "kind": "harness",
@@ -456,6 +474,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: populate the existing fragment-parser slot for OpenUI without changing operator registry behavior"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -3880,12 +3903,17 @@
       ]
     },
     "harness.model_build.data": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/data.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "reject malformed or metadata-divergent Harness DSL prompts before train or eval records reach model input construction"
+        },
         {
           "version": "v1",
           "date": "2026-07-22",
@@ -4304,6 +4332,11 @@
         {
           "version": "v2",
           "date": "2026-07-23",
+          "note": "no-bump: refresh pinned pack, CAP0 plan, materialization, and disposition hashes after adding the independent Harness DSL boundary"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
           "note": "no-bump: refresh pinned DslPack hashes after adding independent minimal-witness authority"
         },
         {
@@ -4337,6 +4370,11 @@
         {
           "version": "v2",
           "date": "2026-07-23",
+          "note": "no-bump: refresh the executable CAP0 fixture to the v18 symbolic task materialization contract"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
           "note": "refresh the executable CAP0 fixture to the v17 train-data materialization contract and preserve its prior identity as historical evidence"
         },
         {
@@ -4347,7 +4385,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -4358,6 +4396,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "emit identity and canonical CAP0 scope rows as validated symbolic Harness DSL while preserving legacy repair and typed-map semantics"
+        },
         {
           "version": "v17",
           "date": "2026-07-23",
@@ -5019,7 +5062,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v228",
+      "version": "v229",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5043,6 +5086,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v229",
+          "date": "2026-07-23",
+          "note": "judge symbolic Harness identity rows from their parsed payload instead of the retired English input delimiter"
+        },
         {
           "version": "v228",
           "date": "2026-07-23",

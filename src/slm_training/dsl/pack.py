@@ -225,6 +225,21 @@ def _openui_scope_extractor(source: str, **kwargs: Any) -> list[Any]:
     return extract_scope_slices(source, dsl="openui", **kwargs)
 
 
+def _openui_fragment_parser(
+    source: str, kind: str, grammar_category: str | None = None
+) -> str:
+    """Validate a typed fragment behind the OpenUI pack boundary."""
+    from slm_training.data.scope_extract import TERMINAL_CATEGORIES
+    from slm_training.dsl.parser import validate_output
+
+    category = (
+        TERMINAL_CATEGORIES.get(str(grammar_category), str(grammar_category).lower())
+        if grammar_category is not None
+        else None
+    )
+    return validate_output(source, kind, category)  # type: ignore[arg-type]
+
+
 def _openui_prop_order() -> Mapping[str, Sequence[str]]:
     from slm_training.dsl.production_codec import _prop_order
 
@@ -249,9 +264,7 @@ def _openui_witness_candidates() -> tuple[Any, ...]:
     from slm_training.dsl.grammar_capabilities import GrammarWitnessCandidateV1
 
     base = 'root = TextContent(":w.text")'
-    two_statements = (
-        'item = TextContent(":w.text")\nroot = Stack([item], "column")'
-    )
+    two_statements = 'item = TextContent(":w.text")\nroot = Stack([item], "column")'
     sources = [
         base,
         f"{base}\n",
@@ -294,10 +307,7 @@ def _openui_witness_candidates() -> tuple[Any, ...]:
         '$s = true\nroot = TextContent(":w.text")',
         '$s = null\nroot = TextContent(":w.text")',
         '$s = $s\nroot = TextContent(":w.text")',
-        (
-            'item = TextContent(":w.text")\n$s = item\n'
-            'root = Stack([item], "column")'
-        ),
+        ('item = TextContent(":w.text")\n$s = item\nroot = Stack([item], "column")'),
         '$s = (true)\nroot = TextContent(":w.text")',
         'root = Stack([], "column", true)',
     ]
@@ -309,9 +319,7 @@ def _openui_witness_candidates() -> tuple[Any, ...]:
         ]
         symbols.extend(
             RuntimeSymbol(surface=surface, role="state")
-            for surface in sorted(
-                set(re.findall(r"\$[A-Za-z_][A-Za-z0-9_]*", source))
-            )
+            for surface in sorted(set(re.findall(r"\$[A-Za-z_][A-Za-z0-9_]*", source)))
         )
         candidates.append(
             GrammarWitnessCandidateV1(
@@ -344,9 +352,7 @@ def _openui_grammar_capability_authority() -> GrammarCapabilityAuthorityV1:
         lhs = str(production.lhs)
         rhs = tuple((symbol.kind, str(symbol.name)) for symbol in production.rhs)
         reason = None
-        if lhs == "start" and (
-            not rhs or rhs == (("nonterminal", "__start_star_0"),)
-        ):
+        if lhs == "start" and (not rhs or rhs == (("nonterminal", "__start_star_0"),)):
             reason = "STATIC_SEMANTICS_REQUIRES_ROOT"
         elif lhs == "__start_star_0" and rhs[:1] == (
             ("nonterminal", "__start_star_0"),
@@ -443,6 +449,7 @@ def _ensure_builtin_packs() -> None:
             prop_order=_openui_prop_order,
             incremental_engine=_openui_engine,
             opaque_region_extractor=_openui_opaque_region_extractor,
+            fragment_parser=_openui_fragment_parser,
             grammar_capability_authority=_openui_grammar_capability_authority(),
         )
     )
