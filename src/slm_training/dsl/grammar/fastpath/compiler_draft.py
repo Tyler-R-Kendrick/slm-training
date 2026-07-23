@@ -1449,6 +1449,13 @@ def build_completion_forest(
                     "component_reserves_pending_typed_symbols",
                     before_stage,
                 )
+                before_stage = _snapshot()
+                candidates -= set(unused_symbols)
+                _record_excluded(
+                    ConstraintStage.SLOT_CONTRACT,
+                    "symbol_reserves_pending_typed_symbols",
+                    before_stage,
+                )
     enum_sequences = (
         _schema_enum_sequences(tokenizer, engine, schema) if schema else None
     )

@@ -4187,7 +4187,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v260",
+      "version": "v261",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4212,6 +4212,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v261",
+          "date": "2026-07-22",
+          "note": "Reserve actual content-symbol tokens for pending typed binder obligations, including optional consumers"
+        },
         {
           "version": "v260",
           "date": "2026-07-22",
