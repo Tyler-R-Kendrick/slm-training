@@ -10,9 +10,9 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Sequence
 
-from lark import Lark
+from lark import Lark, Tree
 from lark.grammar import Terminal
 
 if TYPE_CHECKING:
@@ -55,6 +55,18 @@ class NonterminalAnalysisV1:
 
 
 @dataclass(frozen=True)
+class ProductionOccurrenceV1:
+    production: ProductionAlternativeV1
+    ast_path: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class GrammarWitnessCandidateV1:
+    source: str
+    runtime_symbols: tuple[Any, ...] = ()
+
+
+@dataclass(frozen=True)
 class GrammarCapabilityAuthorityV1:
     """Pack-owned declarations; grammar structure must not come from examples."""
 
@@ -66,6 +78,9 @@ class GrammarCapabilityAuthorityV1:
     static_validate: Callable[[str], Any] | None = None
     scope_policy: Callable[[str], Any] | None = None
     completion_frontier: Callable[[str], frozenset[str]] | None = None
+    production_trace: Callable[[str, str], tuple[ProductionOccurrenceV1, ...]] | None = None
+    witness_candidates: Callable[[], Iterable[GrammarWitnessCandidateV1]] | None = None
+    unsupported_alternatives: Mapping[str, str] | None = None
 
 
 def _canonical_hash(value: Any) -> str:
@@ -73,6 +88,17 @@ def _canonical_hash(value: Any) -> str:
         value, sort_keys=True, separators=(",", ":"), default=str
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def production_id(production: ProductionAlternativeV1) -> str:
+    payload = {
+        "lhs": str(production.lhs),
+        "rhs": [
+            {"kind": symbol.kind, "name": str(symbol.name)}
+            for symbol in production.rhs
+        ],
+    }
+    return f"{production.lhs}:{_canonical_hash(payload)[:16]}"
 
 
 def _unsupported(capability: str, pack_id: str) -> UnsupportedCapabilityV1:
@@ -289,6 +315,9 @@ def lark_authority(
     static_validate: Callable[[str], Any],
     scope_policy: Callable[[str], Any],
     completion_frontier: Callable[[str], frozenset[str]],
+    witness_candidates: Callable[[], Iterable[GrammarWitnessCandidateV1]]
+    | None = None,
+    unsupported_alternatives: Mapping[str, str] | None = None,
 ) -> GrammarCapabilityAuthorityV1:
     """Build authority from a declared Lark grammar file."""
 
@@ -301,10 +330,10 @@ def lark_authority(
     )
     productions = tuple(
         ProductionAlternativeV1(
-            lhs=rule.origin.name,
+            lhs=str(rule.origin.name),
             rhs=tuple(
                 GrammarSymbolV1(
-                    name=symbol.name,
+                    name=str(symbol.name),
                     kind=(
                         "terminal" if isinstance(symbol, Terminal) else "nonterminal"
                     ),
@@ -316,7 +345,7 @@ def lark_authority(
     )
     terminals = tuple(
         TerminalCategoryV1(
-            name=terminal.name,
+            name=str(terminal.name),
             kind=terminal.pattern.type,
             pattern=terminal.pattern.value,
         )
@@ -332,6 +361,68 @@ def lark_authority(
         text = source if source.endswith("\n") else source + "\n"
         return parser.parse(text, start=start_symbol)
 
+    def trace_productions(
+        start_symbol: str, source: str
+    ) -> tuple[ProductionOccurrenceV1, ...]:
+        if start_symbol not in start_symbols:
+            raise ValueError(
+                f"undeclared start symbol {start_symbol!r}; "
+                f"declared={sorted(start_symbols)!r}"
+            )
+        traced = Lark(
+            grammar,
+            start=list(start_symbols),
+            parser="lalr",
+            maybe_placeholders=False,
+        )
+        callbacks = traced.parser.parser.parser.callbacks
+        occurrences: list[tuple[ProductionAlternativeV1, int]] = []
+        for rule, callback in tuple(callbacks.items()):
+            production = ProductionAlternativeV1(
+                lhs=str(rule.origin.name),
+                rhs=tuple(
+                    GrammarSymbolV1(
+                        name=str(symbol.name),
+                        kind=(
+                            "terminal"
+                            if isinstance(symbol, Terminal)
+                            else "nonterminal"
+                        ),
+                    )
+                    for symbol in rule.expansion
+                ),
+            )
+
+            def record(
+                children: list[Any],
+                *,
+                item: ProductionAlternativeV1 = production,
+                inner: Callable[[list[Any]], Any] = callback,
+            ) -> Any:
+                result = inner(children)
+                occurrences.append((item, id(result)))
+                return result
+
+            callbacks[rule] = record
+
+        tree = traced.parse(source, start=start_symbol)
+        paths: dict[int, tuple[int, ...]] = {}
+
+        def visit(node: Any, path: tuple[int, ...]) -> None:
+            paths.setdefault(id(node), path)
+            if isinstance(node, Tree):
+                for index, child in enumerate(node.children):
+                    visit(child, (*path, index))
+            elif isinstance(node, (list, tuple)):
+                for index, child in enumerate(node):
+                    visit(child, (*path, index))
+
+        visit(tree, ())
+        return tuple(
+            ProductionOccurrenceV1(production=item, ast_path=paths.get(identity, ()))
+            for item, identity in occurrences
+        )
+
     return GrammarCapabilityAuthorityV1(
         start_symbols=tuple(start_symbols),
         productions=productions,
@@ -341,6 +432,9 @@ def lark_authority(
         static_validate=static_validate,
         scope_policy=scope_policy,
         completion_frontier=completion_frontier,
+        production_trace=trace_productions,
+        witness_candidates=witness_candidates,
+        unsupported_alternatives=unsupported_alternatives,
     )
 
 
@@ -348,9 +442,12 @@ __all__ = [
     "GrammarCapabilityAdapterV1",
     "GrammarCapabilityAuthorityV1",
     "GrammarSymbolV1",
+    "GrammarWitnessCandidateV1",
     "NonterminalAnalysisV1",
+    "ProductionOccurrenceV1",
     "ProductionAlternativeV1",
     "TerminalCategoryV1",
     "UnsupportedCapabilityV1",
     "lark_authority",
+    "production_id",
 ]

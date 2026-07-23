@@ -1698,6 +1698,20 @@ adapter applies that boundary to exact productions, grammar analyses, pack
 operations, and authority fingerprints. It deliberately has no
 example-to-production inference path.
 
+## Grammar-directed minimal alternative witnesses (DSH1-02 / SLM-354)
+
+| | |
+| --- | --- |
+| **Papers** | Rabinovich, Stern, and Klein, *Abstract Syntax Networks for Code Generation and Semantic Parsing*, ACL 2017. [ACL Anthology](https://aclanthology.org/P17-1105/). Yin and Neubig, *TRANX: A Transition-based Neural Abstract Syntax Parser for Semantic Parsing and Code Generation*, EMNLP 2018. [ACL Anthology](https://aclanthology.org/D18-2002/) |
+| **Fidelity** | **Adapted** — grammar/AST-governed construction and target-language generality; deterministic alternative coverage rather than either neural transition decoder |
+| **Code** | [`minimal_witnesses.py`](../../src/slm_training/dsl/minimal_witnesses.py), declared traces/candidates in [`grammar_capabilities.py`](../../src/slm_training/dsl/grammar_capabilities.py), and OpenUI authority behind [`pack.py`](../../src/slm_training/dsl/pack.py) |
+| **Evidence** | [`dsh1-02-minimal-alternative-witnesses-20260723.md`](dsh1-02-minimal-alternative-witnesses-20260723.md) |
+
+The shared selector treats the pack's declared productions and containing
+contexts as authority, selects lexicographic minimum admitted witnesses, and
+blocks unexplained reachable/productive gaps. It does not train or reproduce
+the cited models.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

@@ -6185,3 +6185,18 @@ diff checks passing. This did not run a train, model eval, benchmark, corpus
 synthesis, or checkpoint workflow and makes no certificate or ship claim.
 Full evidence:
 [`dsh1-01-grammar-capability-adapter-20260723.md`](dsh1-01-grammar-capability-adapter-20260723.md).
+
+# DSH1-02 — minimal reachable/productive alternative witnesses (2026-07-23)
+
+Account for all 76 reachable/productive OpenUI grammar alternatives. Exact
+reduction traces and focus paths verify 71 minimum-cost containing-context
+witnesses. Five alternatives remain typed `UNSUPPORTED`—two rootless start
+forms, one lexer-shadowed newline helper, the forbidden open-number leaf, and
+an undeclared builtin surface—and do not count as witnesses. There are no
+unexplained gaps.
+
+The shared OpenUI/mini-DSL focused suite passed 32/32 tests. This is a
+deterministic contract fixture over a finite pack-declared candidate authority,
+not a train, model eval, benchmark, corpus synthesis, checkpoint, certificate,
+or ship claim. Full evidence:
+[`dsh1-02-minimal-alternative-witnesses-20260723.md`](dsh1-02-minimal-alternative-witnesses-20260723.md).

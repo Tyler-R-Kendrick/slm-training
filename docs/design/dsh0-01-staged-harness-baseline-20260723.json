@@ -52,7 +52,7 @@
     {
       "seam": "dsl_pack",
       "owner": "src/slm_training/dsl/pack.py",
-      "sha256": "1ab7ca5be08fa921beaf4f75dea166a65cfba1ce023b69d3111d4a49a70d647f",
+      "sha256": "1317931e11ca213b8a22f7b604a3fe454df44da376366a1b11da80ef419d550c",
       "relation": "reuse",
       "later_work": "extend DslPack fail-closed slots; do not create another pack registry"
     },
