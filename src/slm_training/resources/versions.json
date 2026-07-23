@@ -3244,6 +3244,29 @@
         }
       ]
     },
+    "harness.experiments.slm197_direct_bridge_policy": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm197_direct_bridge_policy.py",
+        "src/slm_training/models/legal_edit_scorer.py",
+        "scripts/run_direct_bridge_policy_matrix.py",
+        "tests/test_models/test_legal_edit_scorer.py",
+        "tests/test_harnesses/experiments/test_slm197_direct_bridge_policy.py",
+        "tests/test_scripts/test_run_direct_bridge_policy_matrix.py",
+        "docs/design/iter-slm197-direct-bridge-policy-20260723.json",
+        "docs/design/iter-slm197-direct-bridge-policy-20260723.md",
+        "docs/design/iter-slm197-direct-bridge-policy-agentv-20260723/",
+        "docs/design/quality-experiment-matrix.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-197 exact-candidate direct policy, set-mass loss, matched time encodings, checkpoint migration, free-running decode, and honest D0-D5 fixture matrix"
+        }
+      ]
+    },
     "harness.experiments.slm209_debt_targeted_curriculum": {
       "version": "v3",
       "kind": "harness",
@@ -4812,13 +4835,18 @@
       ]
     },
     "model.legal_edit_batch": {
-      "version": "v1",
+      "version": "v2",
       "kind": "model",
       "paths": [
         "src/slm_training/models/legal_edit_batch.py",
         "tests/test_models/test_legal_edit_batch.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "add label-free runtime packing that preserves exact candidate membership and marks every inference candidate UNKNOWN until independently certified"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

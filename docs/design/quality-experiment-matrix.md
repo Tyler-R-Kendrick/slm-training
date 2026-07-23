@@ -6216,3 +6216,18 @@ they have no matching reserved operation. This is deterministic contract
 evidence, not a corpus build, model evaluation, certificate, or ship claim.
 Full evidence:
 [`dsh1-03-symbolic-harness-dsl-20260723.md`](dsh1-03-symbolic-harness-dsl-20260723.md).
+
+# VFA0-02 — direct legal-edit policy controls (2026-07-23)
+
+Implement the objective-neutral exact-candidate scorer, multi-positive set-mass
+loss, matched no-time/linear/Fourier encodings, schema-checked checkpoint
+migration, and certificate-replaying direct decoder. Across five seeds, D2,
+both D3 encodings, D4, and D5 use the same 4,769 parameters and exact SLM-196
+candidate sets. Every dev top-1 action is certified positive, but free-running
+target exactness is 0/2 for every run.
+
+The powered D0-D5 hypothesis remains inconclusive: D0 and D1 are unavailable,
+and the only committed bridge corpus is a non-publishable four-row fixture over
+two targets. Confirmation fails closed. AgentV passes all 5/5 structural and
+honesty cases; no checkpoint or ship claim changed. Full evidence:
+[`iter-slm197-direct-bridge-policy-20260723.md`](iter-slm197-direct-bridge-policy-20260723.md).

@@ -8,7 +8,9 @@ import torch
 
 from slm_training.data.flow.bridge_corpus import (
     ExactLegalEditCandidateSetV1,
+    enumerate_live_candidates,
     load_corpus,
+    RequestEditContractV1,
 )
 from slm_training.models.legal_edit_batch import LegalEditBatch
 
@@ -97,3 +99,23 @@ def test_two_objective_consumers_receive_identical_membership() -> None:
         return id(value), value.candidate_ids
 
     assert direct_policy_consumer(batch) == flow_rate_consumer(batch)
+
+
+def test_inference_pack_preserves_exact_membership_without_labels() -> None:
+    record = __import__("json").loads(
+        Path("tests/fixtures/slm196_legal_edit_bridge/records.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+    )
+    candidates = enumerate_live_candidates(
+        record["source_program"],
+        RequestEditContractV1.from_dict(record["request_contract"]),
+    )
+    batch = LegalEditBatch.pack_inference(
+        candidates, statement_count=3, step_index=0
+    )
+    assert batch.candidate_ids == tuple(
+        candidate.candidate_id for candidate in candidates.candidates
+    )
+    assert batch.unknown_mask.all()
+    assert not batch.positive_mask.any()
