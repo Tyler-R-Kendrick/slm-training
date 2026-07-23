@@ -1,4 +1,4 @@
-# E939-E957: role-safe decoding, aligned training, and bounded nesting
+# E939-E958: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -35,6 +35,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E956 | E951 depth-3 + schema types / held_out | 5 | 1.0000 | 0.8000 | 0.6000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 | E957 | E951 role-unique + schema types / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E957 | E951 role-unique + schema types / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
+| E958 | E951 inline typed items / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E958 | E951 inline typed items / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -74,3 +76,10 @@ preserving cross-role identity relationships. The matched run is otherwise
 byte-identical to E956, but changes the repeated `ImageBlock("$44")` to fresh
 role-local IDs and raises held strict-v2 0.6→0.8. All eight outputs remain
 role-safe; AgentV remains 0/2 and three fallback events remain, so no ship claim.
+
+E958 prohibited fresh forward references for slot-consuming typed-array items,
+forcing those items inline so their content cost was locally visible. It did
+not rescue Form and collapsed the previously strict Tabs row to the certified
+minimal fallback. Held meaning/strict fell 0.8→0.6, fidelity 0.8333→0.6833,
+structure 0.4434→0.4207, recall 0.6952→0.6286, reward 0.8834→0.8324, and
+fallback rose 3→4. The v256 treatment was reverted; retain v255/E957.
