@@ -195,7 +195,7 @@ EXPECTED = json.loads(r"""
     },
     "meaningful_metric_policy": {
       "active_primary": "meaningful_program_v1",
-      "threshold_version": "openui_ship_gates_v1",
+      "threshold_version": "openui_ship_gates_v2",
       "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -299,7 +299,7 @@ EXPECTED = json.loads(r"""
     },
     "meaningful_metric_policy": {
       "active_primary": "meaningful_program_v1",
-      "threshold_version": "openui_ship_gates_v1",
+      "threshold_version": "openui_ship_gates_v2",
       "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",

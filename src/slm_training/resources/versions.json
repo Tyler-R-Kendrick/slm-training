@@ -644,6 +644,11 @@
         {
           "version": "openui_ship_gates_v2",
           "date": "2026-07-23",
+          "note": "no-bump: mirror the already-versioned v2 runtime and integrity policy in the meaningful-metric provenance descriptor"
+        },
+        {
+          "version": "openui_ship_gates_v2",
+          "date": "2026-07-23",
           "note": "Fail closed on malformed measurement values and explicit decode timeouts while preserving evidence and quality categories"
         },
         {

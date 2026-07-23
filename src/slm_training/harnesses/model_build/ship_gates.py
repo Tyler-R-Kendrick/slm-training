@@ -61,7 +61,7 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
 # (candidate_pending_calibration) so recording it can never green a gate.
 MEANINGFUL_METRIC_POLICY = {
     "active_primary": "meaningful_program_v1",
-    "threshold_version": "openui_ship_gates_v1",
+    "threshold_version": "openui_ship_gates_v2",
     "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -78,7 +78,7 @@ MEANINGFUL_METRIC_POLICY = {
 def _meaningful_metric_policy(
     policy: dict[str, dict[str, float]], *, custom: bool
 ) -> dict[str, Any]:
-    policy_id = "openui_ship_gates_v1"
+    policy_id = "openui_ship_gates_v2"
     source = "DEFAULT_SHIP_GATES"
     if custom:
         encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
