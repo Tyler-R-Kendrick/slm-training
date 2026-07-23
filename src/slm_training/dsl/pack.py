@@ -42,7 +42,15 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, fields
-from typing import Any, Callable, Iterable, Mapping, Protocol, Sequence, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    Mapping,
+    Protocol,
+    Sequence,
+    runtime_checkable,
+)
 
 from slm_training.dsl.grammar.backends import GrammarBackend, get_backend
 from slm_training.dsl.placeholders import (
@@ -67,6 +75,11 @@ class ValidityOracle(Protocol):
     """Record- or source-level validity verdict (see ``reward_label``)."""
 
     def __call__(self, record: Any, /) -> Any: ...
+
+
+@runtime_checkable
+class OperatorLibrary(Protocol):
+    registry_fingerprint: str
 
 
 @dataclass(frozen=True)
@@ -107,13 +120,10 @@ class DslPack:
     opaque_region_extractor: Callable[..., Any] | None = None
     fragment_parser: Callable[..., Any] | None = None
     region_splicer: Callable[..., Any] | None = None
+    operator_library: OperatorLibrary | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
-        return tuple(
-            f.name
-            for f in fields(self)
-            if getattr(self, f.name) is not None
-        )
+        return tuple(f.name for f in fields(self) if getattr(self, f.name) is not None)
 
     def require(self, slot: str) -> Any:
         """Return the named slot, failing closed when the pack omits it."""
@@ -338,6 +348,7 @@ __all__ = [
     "Canonicalizer",
     "DslPack",
     "PackSlotUnavailable",
+    "OperatorLibrary",
     "PlaceholderPolicy",
     "ValidityOracle",
     "get_pack",

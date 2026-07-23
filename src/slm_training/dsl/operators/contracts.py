@@ -245,6 +245,37 @@ class AstOperatorV1:
     def fingerprint(self) -> str:
         return _fingerprint(self.to_dict())
 
+    def validate_arguments(
+        self, arguments: tuple[BoundArgumentV1, ...]
+    ) -> tuple[BoundArgumentV1, ...]:
+        """Validate and declaration-order one compiler argument binding."""
+        by_slot = {argument.slot_id: argument for argument in arguments}
+        if len(by_slot) != len(arguments):
+            raise ValueError("bound argument slots must be unique")
+        slots = {slot.slot_id: slot for slot in self.argument_slots}
+        unknown = set(by_slot) - set(slots)
+        if unknown:
+            raise ValueError(f"unknown bound argument slots: {sorted(unknown)}")
+        missing = {
+            slot.slot_id
+            for slot in self.argument_slots
+            if slot.required and slot.slot_id not in by_slot
+        }
+        if missing:
+            raise ValueError(f"missing required argument slots: {sorted(missing)}")
+        for slot_id, argument in by_slot.items():
+            expected = slots[slot_id].ref_kind
+            if argument.value.KIND is not expected:
+                raise ValueError(
+                    f"slot {slot_id!r} requires {expected.value}, "
+                    f"got {argument.value.KIND.value}"
+                )
+        return tuple(
+            by_slot[slot.slot_id]
+            for slot in self.argument_slots
+            if slot.slot_id in by_slot
+        )
+
 
 @dataclass(frozen=True)
 class EffectDeltaV1:
