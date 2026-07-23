@@ -437,7 +437,34 @@
       "model_version": "v272",
       "lever_version": "v40",
       "train_harness_version": "v23",
-      "next_action": "strict smoke with trained lexer root-reference identity decode enabled"
+      "next_action": "targeted Dual Card and Settings rows after completed E1076 smoke"
+    },
+    "E1076": {
+      "status": "completed_mixed_smoke_pass",
+      "run_id": "e1076_v272_root_identity_395_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 1.0,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5396333333333333,
+      "component_recall": 0.75,
+      "reward": 0.965,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "root_reference_identity_applications": 15,
+      "root_reference_identity_choice_changes": 2,
+      "role_safe_predictions": 3,
+      "prediction_changes_from_e1072": 2,
+      "agentv": "0/1",
+      "version_stamp": {
+        "config.levers": "v40",
+        "harness.model_build.eval": "v56",
+        "evals.meaningful_program": "2.13.0",
+        "evals.scoring": "v15",
+        "model.twotower": "v272"
+      }
     }
   },
   "disposition": {
@@ -459,7 +486,8 @@
     "e1071_pending_targeted_held": false,
     "e1071_checkpoint_rejected": true,
     "e1075_pending_own_resume": false,
-    "e1075_pending_eval": true,
+    "e1075_pending_eval": false,
+    "e1075_pending_targeted_held": true,
     "e1075_checkpoint_rejected": false,
     "next_hypothesis": "complete matched v272 lexer-native root-identity exposure, then test strict smoke before any targeted held rows"
   },

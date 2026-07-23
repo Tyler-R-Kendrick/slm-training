@@ -240,3 +240,13 @@ The completed checkpoint SHA is
 `9e03575396dba1aa971e2aa29224023ed9bfbc053a83f48414ef14eb872122c7`.
 It remains local, unsynced, non-parentable, and pending strict smoke with
 root-identity decode enabled.
+
+E1076 strict smoke reaches parse/meaning-v1/strict-v2/fidelity 1.0, structure
+0.5396, recall 0.75, and reward 0.965 with no timeout or fallback. The
+root-identity path applies 15 times and changes two choices: Hero and Button
+use a distinct `b2` reference where E1072 reused `b1`. All three predictions
+pass the role-safe output assertion. Relative to E1072, strict/fidelity/recall
+are unchanged, reward rises from 0.957, and structure falls from 0.5717, so
+this is a mixed but reachable intervention rather than a smoke-quality
+promotion. AgentV is `0/1`. Proceed only to the targeted Dual Card and Settings
+rows before disposition.

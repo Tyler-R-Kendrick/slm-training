@@ -6806,4 +6806,8 @@ the remaining 17 steps. That continuation completes in 5.03 seconds, reaching
 exactly 395 steps / 1,580 examples and 100.16 cumulative train seconds. Final
 identity loss/exact/positive-recall/negative-accuracy are
 0.5937/0.6667/1.0/0.25. Binder-component and binder-arity metrics exactly
-match E1071 at step 395. The checkpoint remains pending strict smoke.
+match E1071 at step 395. E1076 strict smoke preserves
+parse/meaning-v1/strict-v2/fidelity 1.0 and recall 0.75 with no timeout or
+fallback. Identity applies 15 times and changes two repeated references to
+unused binders. Reward rises 0.957→0.965 while structure falls
+0.5717→0.5396, so proceed only to targeted Dual Card and Settings rows.
