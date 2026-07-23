@@ -112,6 +112,16 @@ def test_opaque_structural_identifier_is_preserved() -> None:
     assert result.replacements == {":root.placeholder": "Enter email"}
 
 
+def test_role_contract_preserves_style_positions_during_validation() -> None:
+    from slm_training.dsl.analysis.templatize import role_contract_violations
+
+    source = (
+        'root = Stack([TextContent(":slot_0")], "row", "s", "center")'
+    )
+
+    assert role_contract_violations(source) == ()
+
+
 def test_non_content_placeholder_becomes_opaque_structural_id() -> None:
     result = templatize('root = Input(":slot_0")')
 

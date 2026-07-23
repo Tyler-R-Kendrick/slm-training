@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E955",
+  "experiment_id": "E939-E956",
   "date": "2026-07-22",
   "decision": "retain_role_and_depth_constraints_keep_e951_diagnostic_only",
   "train_data": "e937_role_safe_all_targets_v2",
@@ -19,7 +19,8 @@
     "E952": {"status": "completed_rejected_quality", "smoke_strict_v2": 0.6666666666666666, "held_out_strict_v2": 0.2, "held_out_decode_timeouts": 4, "prediction_role_violations": 0, "agentv": "0/2"},
     "E953": {"status": "completed_quality_neutral_latency_gain", "held_out_strict_v2": 0.2, "held_out_decode_timeouts": 4, "prediction_role_violations": 0, "agentv": "0/2"},
     "E954": {"status": "diagnostic", "suite": "held_out", "eval_limit": 1, "decode_timeout_seconds": 60, "output_symbols": 193, "structural_similarity": 0.08, "agentv": "0/1"},
-    "E955": {"status": "completed_retained_decoder_treatment", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.2, "held_out_fidelity": 0.7833333333333333, "held_out_structural_similarity": 0.38756, "held_out_component_recall": 0.6523809523809524, "held_out_reward": 0.8936, "held_out_decode_timeouts": 0, "prediction_role_violations": 0, "agentv": "0/2"}
+    "E955": {"status": "completed_retained_decoder_treatment", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.2, "held_out_fidelity": 0.7833333333333333, "held_out_structural_similarity": 0.38756, "held_out_component_recall": 0.6523809523809524, "held_out_reward": 0.8936, "held_out_decode_timeouts": 0, "prediction_role_violations": 0, "agentv": "0/2"},
+    "E956": {"status": "completed_retained_schema_type_treatment", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
@@ -32,6 +33,7 @@
     "components": {
       "harness.model_build.train": "v22",
       "harness.model_build.eval": "v52",
+      "harness.train_data": "v25",
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v15",
       "model.twotower": "v254"

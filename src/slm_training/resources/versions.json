@@ -3523,7 +3523,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v24",
+      "version": "v25",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3542,6 +3542,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v25",
+          "date": "2026-07-22",
+          "note": "Preserve raw positional style arguments during role-contract validation so style removal cannot shift a legal enum into the preceding property"
+        },
         {
           "version": "v24",
           "date": "2026-07-22",

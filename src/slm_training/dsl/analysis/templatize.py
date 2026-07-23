@@ -289,7 +289,11 @@ def role_contract_violations(
         return ()
 
     try:
-        bindings = parse_statement_bindings(source, validate=False)
+        bindings = parse_statement_bindings(
+            source,
+            validate=False,
+            strip_styles=False,
+        )
     except Exception as exc:  # noqa: BLE001 - caller reports contract failure
         return (f"role-contract parse failed: {exc}",)
 

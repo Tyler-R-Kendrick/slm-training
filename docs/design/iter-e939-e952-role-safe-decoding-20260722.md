@@ -1,4 +1,4 @@
-# E939-E955: role-safe decoding, aligned training, and bounded nesting
+# E939-E956: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -31,6 +31,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E954 | E951 Form-only, 60s diagnostic | 1 | 1.0000 | 0.0000 | 0.0000 | 1.0000 | 0.0800 | 0.4286 | 0.9430 | 0 / 0 | 0/1 |
 | E955 | E951 depth-3 bound / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.5045 | 0.6667 | 0.8990 | 0 / 0 | 0/2 campaign |
 | E955 | E951 depth-3 bound / held_out | 5 | 1.0000 | 0.8000 | 0.2000 | 0.7833 | 0.3876 | 0.6524 | 0.8936 | 0 / 0 | 0/2 campaign |
+| E956 | E951 depth-3 + schema types / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E956 | E951 depth-3 + schema types / held_out | 5 | 1.0000 | 0.8000 | 0.6000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -54,3 +56,12 @@ held row: parse 0.2→1.0, timeouts 4→0, meaning-v1 0.2→0.8, fidelity
 but do not promote or sync E951: its weights descend from pre-role-safe E891 even
 though the current decoder makes outputs role-safe. E944 remains the clean
 scratch lineage. No ship gate passed.
+
+E956 adds authoritative schema component types to the retained depth bound. It
+raises held strict-v2 0.2→0.6, fidelity 0.7833→0.8333, structure
+0.3876→0.4434, and recall 0.6524→0.6952 with zero timeouts. Reward slips
+0.8936→0.8834 and certified fallback rises 0→3, so this is retained as a
+decoder capability rather than a ship claim. Raw-position role auditing finds
+zero violations across all eight predictions; the earlier apparent
+`Stack.gap="center"` violation was an audit bug caused by stripping the style
+argument before mapping positional properties.

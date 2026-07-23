@@ -243,14 +243,15 @@ def test_train_loader_rejects_user_defined_marker_names(tmp_path: Path) -> None:
             "placeholder ':slot_0' in non-content property Input.name",
         ),
         (
-            'root = Input("email", ":slot_0", "email")',
+            'root = Input("row", ":slot_0", "email")',
             [":slot_0"],
-            "open string 'email' in property Input.name",
+            "open string 'row' in property Input.name",
         ),
         (
-            'root = Slider("email", "default", 0, 100, 1, 40, ":slot_0")',
+            'root = Slider("row", "continuous", '
+            '0, 100, 1, [40], ":slot_0")',
             [":slot_0"],
-            "open string 'email' in property Slider.name",
+            "open string 'row' in property Slider.name",
         ),
     ],
 )

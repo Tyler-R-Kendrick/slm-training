@@ -42,7 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
-| E951 role-safe warm-start diagnostic | `e951-e891-role-safe-warm20-r1/last.pt` | `outputs/runs/…` (local) | E955 held-out n=5 parse 1.0 / meaning 0.8 / strict-v2 0.2 / structure 0.3876 / recall 0.6524 / zero role violations, AgentV 0/2 — decoder treatment retained, checkpoint not promotable because parent E891 predates role safety |
+| E951 role-safe warm-start diagnostic | `e951-e891-role-safe-warm20-r1/last.pt` | `outputs/runs/…` (local) | E956 held-out n=5 parse 1.0 / meaning 0.8 / strict-v2 0.6 / structure 0.4434 / recall 0.6952 / zero role violations, AgentV 0/2 — decoder treatment retained, checkpoint not promotable because parent E891 predates role safety |
 | E944 role-safe scratch diagnostic | `e944-role-safe-scratch350-r1/last.pt` | `outputs/runs/…` (local) | 350 clean E937 steps / 25.45s; 4-second held-out diagnostic strict-v2 0.2 / three timeouts, AgentV 0/1 — rejected, never use as parent |
 | E902 focused-role retention diagnostic | `e902-e891-base75-focus25-retain05-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 strict-v2 0 / structure 0.1824 / recall 0.4524, AgentV 0/1 — retention averts collapse but remains worse than E891; rejected |
 | E900 focused-role continuation | `e900-e891-base75-focus25-warm20-r2/last.pt` | `outputs/runs/…` (local) | Held-out n=5 parse 0.2 / strict-v2 0 / structure 0.0293 / recall 0.0667 / four timeouts, AgentV 0/1 — catastrophic rejection, never use as parent |
