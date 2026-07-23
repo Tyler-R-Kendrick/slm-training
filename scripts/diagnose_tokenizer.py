@@ -8,6 +8,8 @@ import json
 import statistics
 from pathlib import Path
 
+from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+
 from slm_training.dsl.schema import load_jsonl
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer, SymbolTable
 from slm_training.models.tokenizer import OpenUITokenizer
@@ -84,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-records",
         type=Path,
-        default=Path("outputs/data/train/v1/records.jsonl"),
+        default=DEFAULT_TRAIN_DATA_DIR / "records.jsonl",
     )
     parser.add_argument(
         "--fixtures",

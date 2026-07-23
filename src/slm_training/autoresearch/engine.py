@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
     CampaignSpec,
@@ -263,7 +264,7 @@ def compile_commands(
             build.append("--scope-derivatives")
         commands.append(build)
     elif not knobs.train_version:
-        train_dir = Path("outputs/data/train/v1")
+        train_dir = DEFAULT_TRAIN_DATA_DIR
     mixture_path = root / "mixture.json"
     if knobs.mixture_weights:
         commands.append(

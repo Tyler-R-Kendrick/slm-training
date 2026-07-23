@@ -21,13 +21,13 @@ def test_large_clusters_are_discounted() -> None:
     # Three members of one semantic cluster vs a singleton.
     clones = [
         _record(f"c{i}", "A hero card with title and body text.",
-                'root = Stack([x])\nx = TextContent(":hero.title")', 1.0)
+                'root = Stack([x])\nx = TextContent(":slot_0")', 1.0)
         for i in range(3)
     ]
     lone = _record(
         "solo",
         "A shipping dashboard of delivery metrics.",
-        'root = Stack([grid], "row")\ngrid = TextContent(":stats.total")',
+        'root = Stack([grid], "row")\ngrid = TextContent(":slot_0")',
         1.0,
     )
     scores = curation_scores([*clones, lone])
@@ -85,3 +85,20 @@ def test_difficulty_discounts_the_trivially_easy_tail(tmp_path) -> None:
     assert records[0].meta["difficulty_weight"] < 1.0
     assert records[0].meta["record_nll"] == 1.0
     assert records[9].meta["curation_score"] == 1.0
+
+
+def test_difficulty_selection_rejects_easy_scored_records_only() -> None:
+    from slm_training.data.selection import select_difficult_records
+
+    records = [
+        _record(f"r{i}", f"prompt {i}", f"root = Stack([x{i}])", 1.0)
+        for i in range(10)
+    ]
+    unknown = _record("unknown", "unscored", "root = Stack([z])", 1.0)
+    kept, dropped = select_difficult_records(
+        [*records, unknown], {f"r{i}": float(i) for i in range(10)}
+    )
+
+    assert {row["id"] for row in dropped} == {"r0"}
+    assert dropped[0]["reason"] == "difficulty_easy_tail"
+    assert unknown in kept

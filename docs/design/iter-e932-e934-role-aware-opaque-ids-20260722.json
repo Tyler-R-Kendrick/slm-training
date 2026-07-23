@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "run_class": "strict_data_build",
+  "experiment_id": "E932-E938",
+  "date": "2026-07-22",
+  "decision": "promote_e937_train_and_e938_eval_as_defaults",
+  "recipe": {
+    "device": "cpu",
+    "backend": "deterministic_local_build",
+    "steps": 0,
+    "train_source": "all",
+    "profile": "strict",
+    "sanitize_mode": "enforce",
+    "honesty_mode": "content-only opaque slots and opaque structural identifiers",
+    "wall_cap_seconds": 110
+  },
+  "runs": {
+    "E932": {
+      "dataset": "e932_opaque_structural_ids_v1",
+      "status": "rejected_diagnostic",
+      "admitted": 604,
+      "sanitizer_fallbacks": 128,
+      "role_audit_checked": 500,
+      "role_audit_violations": 116,
+      "content_fingerprint": "0cd3f84549653b49be896ef2b94a668074ecf091058791a5529c4710dba9d4f4"
+    },
+    "E933": {
+      "dataset": "e933_role_aware_opaque_ids_v1",
+      "status": "rejected_primary_only_audit_missed_accepted_outputs",
+      "seeds": 924,
+      "candidates": 1714,
+      "collected": 1476,
+      "admitted": 543,
+      "rejected_total": 1178,
+      "sanitizer_fallbacks": 0,
+      "role_audit_checked": 515,
+      "role_audit_violations": 0,
+      "content_fingerprint": "b98b75d18d0e5460234612d90071db8b9d5a4ec23fd1cb5f7a05bd393236e0a4",
+      "manifest_sha256": "cf430ac49c5a169c634fc141add650548663539784ca88b48f118fc815eb4b3b",
+      "records_sha256": "13a11bb3a666f11cf9f7e43a9bc9312f2231fb5701ac878046d6d4686a60d661"
+    },
+    "E934": {
+      "dataset": "e934_role_aware_opaque_ids_v1",
+      "status": "rejected_paired_with_incomplete_e933_audit",
+      "suite_counts": {
+        "smoke": 3,
+        "held_out": 5,
+        "adversarial": 4,
+        "ood": 4,
+        "rico_held": 14
+      },
+      "total_records": 30,
+      "build_errors": 0,
+      "train_leakage_rejected": 26,
+      "role_audit_violations": 0,
+      "manifest_sha256": "f17ae9eb17de791d6f7624fc18d4295c8fb35ce97a7f8031e575604a8d8c8bbf"
+    },
+    "E935-E936": {
+      "status": "rejected_stale_component_version_stamps",
+      "reason": "built before the owning harness version bumps; retained only as output evidence"
+    },
+    "E937": {
+      "dataset": "e937_role_safe_all_targets_v2",
+      "status": "promoted_train_default",
+      "seeds": 924,
+      "candidates": 1714,
+      "collected": 1476,
+      "admitted": 524,
+      "rejected_total": 1197,
+      "sanitizer_fallbacks": 0,
+      "audited_targets": 582,
+      "role_audit_violations": 0,
+      "content_fingerprint": "23e81f05616592a29c755a96849da1af279e40ee075a4353277b36739af679e1",
+      "manifest_sha256": "fdd35c856d324c40a7745679e957c0bee11e470b8afbc8aa8107e09b8167eab3",
+      "records_sha256": "72b145eefa0b61d92e15ea89aaa159377b99cb2a5d8afbcb13eb0469ec24ae0f"
+    },
+    "E938": {
+      "dataset": "e938_role_safe_all_targets_v2",
+      "status": "promoted_eval_default",
+      "suite_counts": {
+        "smoke": 3,
+        "held_out": 5,
+        "adversarial": 4,
+        "ood": 4,
+        "rico_held": 34
+      },
+      "total_records": 50,
+      "build_errors": 0,
+      "train_leakage_rejected": 6,
+      "audited_targets": 50,
+      "role_audit_violations": 0,
+      "manifest_sha256": "8406086ddcf11ef86bf6ac83da13401ff727a1497b81ae4aec9b0165037b0e99"
+    }
+  },
+  "contract": {
+    "structural_ids": "quoted $0 through $63 atoms, assigned by traversal order",
+    "content_slots": "contiguous :slot_N identities only in content-bearing schema properties",
+    "enums": "accepted only when valid for the exact component property",
+    "natural_language_targets": false
+  },
+  "synthesis_feedback": {
+    "recommendations": 26,
+    "experiment_candidates": 26,
+    "awwwards_yield": 0.0,
+    "awwwards_disposition": "retained rejection because G10 provenance is incomplete; gates were not weakened",
+    "language_contract_yield": 0.873,
+    "language_contract_disposition": "eight role-invalid expressions rejected during normalization"
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "data-build promotion only; no model checkpoint or production ship claim"
+  },
+  "agentv": {
+    "status": "not_applicable",
+    "reason": "no model evaluation was run"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d6d25c6f186612b2a535c1aa0565c8188dc3f4fe",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v33",
+      "data.test_build": "v10",
+      "evals.scoring": "v15",
+      "harness.model_build.data": "v5",
+      "harness.train_data": "v24",
+      "model.twotower": "v249"
+    },
+    "stamped_at": "2026-07-22T23:54:29.349335+00:00"
+  }
+}

@@ -1,0 +1,1520 @@
+{
+  "version": "e937_role_safe_all_targets_v2",
+  "profile": "strict",
+  "source": "all",
+  "derive_from": null,
+  "seed_path": "src/slm_training/resources/train_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_train.jsonl",
+  "rico_hf_split": null,
+  "seed_count": 924,
+  "collected_count": 1476,
+  "verifier_rejected": 153,
+  "verifier_rejected_samples": [
+    {
+      "id": "07dc9d9792542ce1_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0a6ba8ca8a0afe12_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0ac7fa5225a48af5_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0db431608fa68a37_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0ee6c6ed119f281f_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0f8d2d3caa875628_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "0f8d2d3caa875628_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "15dd6a2c3be0ae11_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2217ecce7605d594_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "22643c98cab37954_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2814c0bb0a7badd6_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "29414be37c62052b_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2a30e33be53277b9_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2a9625749bc5e500_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2afd6430ac2139b6_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "2f5c9a3ad41bc7dc_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "3167f6e7ccb21329_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "3be3d298006f694a_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "3dd6831ec78705d0_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "3ea01c92b914b543_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    }
+  ],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 70,
+  "quality_rejected_samples": [
+    {
+      "id": "14c5210ea949c352_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 22,
+      "output_symbols": 8,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "1596da7b9bda52eb_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 18,
+      "output_symbols": 7,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "19fe3dfc4302dd03_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 20,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "1a94dcedd7f4e883_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 30,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "1ca5bc516fdfb9a8_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 39,
+      "output_symbols": 8,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "23e5d30f080a4231_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 35,
+      "output_symbols": 11,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "247652788567e34c_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 16,
+      "output_symbols": 7,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "2c320b0d36fc543f_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 26,
+      "output_symbols": 6,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "316cc705ef671a25_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 26,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "3cc556d2ef78b843_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 34,
+      "output_symbols": 9,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "41cd51a5aaf4adfa_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 2,
+      "component_diversity": 1,
+      "openui_chars": 50,
+      "output_symbols": 10,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4a5708985e955dbe_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 30,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4b86270dac05f0d7_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 26,
+      "output_symbols": 9,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4bb83cdbb6bfd532_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 21,
+      "output_symbols": 7,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4fb5374957faba33_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 40,
+      "output_symbols": 9,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "4fe22cf53c018118_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 25,
+      "output_symbols": 6,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "560dcd39df0ca153_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 16,
+      "output_symbols": 7,
+      "target_kind": "statement",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "5764f01686e9736b_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 1,
+      "component_diversity": 1,
+      "openui_chars": 26,
+      "output_symbols": 7,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    },
+    {
+      "id": "58745d4fd5aa75d8_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 107,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "58fe28bf84789bfe_scope",
+      "ok": false,
+      "score": 0.55,
+      "reasons": [
+        "identity_echo_mismatch"
+      ],
+      "n_components": 1,
+      "n_placeholders": 0,
+      "component_diversity": 1,
+      "openui_chars": 17,
+      "output_symbols": 8,
+      "target_kind": "expression",
+      "accepted_outputs": 0,
+      "independent_judge": {
+        "ok": false,
+        "score": 0.5,
+        "reasons": [
+          "identity_echo_mismatch"
+        ]
+      }
+    }
+  ],
+  "record_count": 524,
+  "error_count": 238,
+  "errors": [
+    {
+      "id": "00581a4dcaea120a_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "00f68a1d5ce8a89a_scope",
+      "error": "unbound ref 'switchitem1'"
+    },
+    {
+      "id": "02cbc87e98d242c0_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "03cc6f10f1267cd5_scope",
+      "error": "unbound ref 'carousel1'"
+    },
+    {
+      "id": "03cedfa59c7e7c2d_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "04a63aabde93a66d_scope",
+      "error": "unbound ref 'carousel1'"
+    },
+    {
+      "id": "06033596de70eb05_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "07150ba60eab155b_scope",
+      "error": "unbound ref 'switchitem1'"
+    },
+    {
+      "id": "08dc23f4bfbab666_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "090115c90873b628_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "09ffa24174633785_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "0af160675c2860c5_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "0b54e7856c38f41c_scope",
+      "error": "unbound ref 'separator1'"
+    },
+    {
+      "id": "0e4173519df9f720_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "0e59767059808638_scope",
+      "error": "unbound ref 'layer6'"
+    },
+    {
+      "id": "0fea9a5390dbc286_scope",
+      "error": "unbound ref 'image1'"
+    },
+    {
+      "id": "11d4ba81f9fe372f_scope",
+      "error": "unbound ref 'layer6'"
+    },
+    {
+      "id": "13f661ffdbae375a_scope",
+      "error": "unbound ref 'point1'"
+    },
+    {
+      "id": "156d018b13da3e6f_scope",
+      "error": "unbound ref 'textarea1'"
+    },
+    {
+      "id": "1594147494f5c235_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "15d9d1a91db92491_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "16301aadb5475ff4_scope",
+      "error": "unbound ref 'layer6'"
+    },
+    {
+      "id": "18542b2250f43ba8_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "18d0fb9b7dced860_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "18ebecf596f6d9f1_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "19b94e90c6913aa6_scope",
+      "error": "unbound ref 'accordion1'"
+    },
+    {
+      "id": "1abdc13df2db58e5_scope",
+      "error": "unbound ref 'point1'"
+    },
+    {
+      "id": "1bbfbfc17e67f41d_scope",
+      "error": "unbound ref 'layer4'"
+    },
+    {
+      "id": "1c5bd2bc4166df46_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "1e9604ec87092b85_scope",
+      "error": "unbound ref 'image1'"
+    },
+    {
+      "id": "1ef54484500522f8_scope",
+      "error": "unbound ref 'image1'"
+    },
+    {
+      "id": "2073c89cec187313_scope",
+      "error": "unbound ref 'image1'"
+    },
+    {
+      "id": "223475a98419ef39_scope",
+      "error": "unbound ref 'buttons1'"
+    },
+    {
+      "id": "26621b9450d8d39e_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "26d62aab022773af_scope",
+      "error": "unbound ref 'tabs1'"
+    },
+    {
+      "id": "278de918ec420db1_scope",
+      "error": "unbound ref 'layer4'"
+    },
+    {
+      "id": "296b71db2e2b2698_scope",
+      "error": "unbound ref 'separator1'"
+    },
+    {
+      "id": "29a01d2d0e0e8c8a_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "29c672afe0dad3bf_scope",
+      "error": "unbound ref 'carousel1'"
+    },
+    {
+      "id": "29e18d42b9aedd2d_scope",
+      "error": "unbound ref 'separator1'"
+    },
+    {
+      "id": "2bc390e42453aff6_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "2c224bef8f57d529_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "2d3884308c83bbe8_scope",
+      "error": "unbound ref 'separator1'"
+    },
+    {
+      "id": "2edf23cbe907e7e0_scope",
+      "error": "unbound ref 'carousel1'"
+    },
+    {
+      "id": "2fc6c38422365c93_scope",
+      "error": "missing root binding"
+    },
+    {
+      "id": "2fd705c4ec8fbe21_scope",
+      "error": "unbound ref 'layer4'"
+    },
+    {
+      "id": "2ff33b90606ff931_scope",
+      "error": "unbound ref 'layer5'"
+    },
+    {
+      "id": "31fe2b0dea4626b3_scope",
+      "error": "unbound ref 'point1'"
+    },
+    {
+      "id": "33a98ebf208338f8_scope",
+      "error": "unbound ref 'layer4'"
+    },
+    {
+      "id": "357e1939dcb7942e_scope",
+      "error": "missing root binding"
+    }
+  ],
+  "rejected_total": 1197,
+  "rejected_path": "outputs/data/train/e937_role_safe_all_targets_v2/rejected.jsonl",
+  "quality_report_path": "outputs/data/train/e937_role_safe_all_targets_v2/quality_report.json",
+  "synthesis_feedback_path": "outputs/data/train/e937_role_safe_all_targets_v2/synthesis_feedback.json",
+  "synthesis_recommendations": 26,
+  "synthesizer": "quality",
+  "documentize_expressions": false,
+  "target_kinds": null,
+  "min_quality_score": 0.55,
+  "min_verification_tier": "Bronze",
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "prompt_component_contract": false,
+  "prompt_component_contract_mode": "counts",
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 1476,
+    "changed": 1077,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 1117,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 42,
+      "flatten_opportunities": 138
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 734,
+      "misses": 359
+    }
+  },
+  "structure_reserved_rejected": 5,
+  "structure_reserved_rejected_samples": [
+    {
+      "id": "train_text_only_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_design_contrastive",
+      "source": "fixture+design_md_contrastive",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_syn_0",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_syn_1",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_text_only_01_syn_2",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    }
+  ],
+  "max_records_per_parent": 6,
+  "parent_cap_dropped": 0,
+  "parent_cap_dropped_samples": [],
+  "fuzzy_dedup": true,
+  "fuzzy_dropped": 43,
+  "fuzzy_dropped_samples": [
+    {
+      "id": "4ac6e3e8ef3d695d_scope",
+      "duplicate_of": "05d0a0a0fa383dfc_scope",
+      "source_family": "scope_identity_lexical",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "965ad068e5fd1194_scope",
+      "duplicate_of": "05d0a0a0fa383dfc_scope",
+      "source_family": "scope_identity_lexical",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "3725a09e501be674_scope",
+      "duplicate_of": "0848b3e845094d0f_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "af21c5ac318d853e_scope",
+      "duplicate_of": "a981bfab6ac3f9fd_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "8a50b721c5951fb4_scope",
+      "duplicate_of": "121d4fafe86ccbfc_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "f934cf764a433b39_scope",
+      "duplicate_of": "1abdf8fc50b51978_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "e4e705623bcb7e5e_scope",
+      "duplicate_of": "208318e4b7692bfa_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "f3dfa3dfc074e7d6_scope",
+      "duplicate_of": "2a02d1839fa8663f_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "5a61e142e15b634d_scope",
+      "duplicate_of": "2b0ae1117cc9c92c_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "a75829de178073e0_scope",
+      "duplicate_of": "2b194b1ba859a90a_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "a94d183339643fab_scope",
+      "duplicate_of": "92715941d96b9d3d_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "d86f32d9e7fd9737_scope",
+      "duplicate_of": "4dbb80d2dcbc3d2f_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "a9ac93d0dfae3d47_scope",
+      "duplicate_of": "3388a310e455af17_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "f6de3700fb3048fe_scope",
+      "duplicate_of": "3b069557fab9baa2_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "88112b7350e985e5_scope",
+      "duplicate_of": "4fbb743736eaa8d6_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "eb3bbceb466074f4_scope",
+      "duplicate_of": "40a69d6bbdc8b137_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "db5678311b574cb5_scope",
+      "duplicate_of": "47d5fa9939cc0b88_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "79a04df94e6c926d_scope",
+      "duplicate_of": "4d4f813a6134e8db_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "9a969139e469b3f1_scope",
+      "duplicate_of": "8e632e1fad157e1c_scope",
+      "source_family": "scope_identity_statement",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "72ad474db16be001_scope",
+      "duplicate_of": "585ec44bfbe1c926_scope",
+      "source_family": "scope_canonical_statement",
+      "reason": "fuzzy_minhash"
+    }
+  ],
+  "semantic_cluster_cap": 8,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "semantic_dedup": true,
+  "semantic_dedup_engine": "lexical-tfidf",
+  "semantic_cosine_dropped": 49,
+  "semantic_cosine_dropped_samples": [
+    {
+      "id": "train_form_three_controls_01_syn_0",
+      "duplicate_of": "train_form_three_controls_01",
+      "similarity": 0.9594,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "train_form_three_controls_01_syn_1",
+      "duplicate_of": "train_form_three_controls_01",
+      "similarity": 0.9686,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "07e122e7030b65a8_scope",
+      "duplicate_of": "07e122e7030b65a8_scope",
+      "similarity": 0.9728,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "0dc6439533d1c614_scope",
+      "duplicate_of": "049727b1704179f6_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "0e9159f302b5b920_scope",
+      "duplicate_of": "017b6ad0a9e30b87_scope",
+      "similarity": 0.9622,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "15366f8bf98574f1_scope",
+      "duplicate_of": "07e122e7030b65a8_scope",
+      "similarity": 0.9728,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "2363dbfd14699a3c_scope",
+      "duplicate_of": "13dd16fdef8dee7f_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "393001f450b6214e_scope",
+      "duplicate_of": "393001f450b6214e_scope",
+      "similarity": 0.9837,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "425d9fac9a5e05d3_scope",
+      "duplicate_of": "425d9fac9a5e05d3_scope",
+      "similarity": 0.9784,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "4919541ec272f6c5_scope",
+      "duplicate_of": "1c0c9cb06ba6e68c_scope",
+      "similarity": 0.9848,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "4919541ec272f6c5_scope",
+      "duplicate_of": "1c0c9cb06ba6e68c_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "4a1e6ea77e5884ed_scope",
+      "duplicate_of": "0a9b17a52fe28726_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "592fedac2f02a9d6_scope",
+      "duplicate_of": "026d3f19c3738765_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "6851d85c2a9fd991_scope",
+      "duplicate_of": "393001f450b6214e_scope",
+      "similarity": 0.9837,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "76cd189f7b3389ad_scope",
+      "duplicate_of": "30506370b3f59ecb_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "8581745084a56a43_scope",
+      "duplicate_of": "8581745084a56a43_scope",
+      "similarity": 0.9675,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "8a71c7551d8875b6_scope",
+      "duplicate_of": "425d9fac9a5e05d3_scope",
+      "similarity": 0.9784,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "8ce971cad00338aa_scope",
+      "duplicate_of": "74104db63a84ce5e_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "8e3d875b6b2eb59f_scope",
+      "duplicate_of": "20567f773f7eb7e9_scope",
+      "similarity": 0.9792,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    },
+    {
+      "id": "8e3d875b6b2eb59f_scope",
+      "duplicate_of": "20567f773f7eb7e9_scope",
+      "similarity": 1.0,
+      "engine": "lexical-tfidf",
+      "reason": "semantic_cosine"
+    }
+  ],
+  "ngram_decontam": true,
+  "decontam_flagged": 102,
+  "decontam_flagged_samples": [
+    {
+      "id": "rico_train_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.7179,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.6512,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_syn_1",
+      "reason": "ngram_overlap",
+      "overlap": 0.6667,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_0_syn_2",
+      "reason": "ngram_overlap",
+      "overlap": 0.6087,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_10",
+      "reason": "ngram_overlap",
+      "overlap": 1.0,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_100",
+      "reason": "ngram_overlap",
+      "overlap": 1.0,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_100_aug_dir",
+      "reason": "ngram_overlap",
+      "overlap": 0.8205,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_100_design_contrastive",
+      "reason": "ngram_overlap",
+      "overlap": 0.8025,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_100_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.9474,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_100_syn_1",
+      "reason": "ngram_overlap",
+      "overlap": 0.96,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_100_syn_2",
+      "reason": "ngram_overlap",
+      "overlap": 0.9114,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_102",
+      "reason": "ngram_overlap",
+      "overlap": 1.0,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_102_aug_dir",
+      "reason": "ngram_overlap",
+      "overlap": 0.6786,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_102_design_contrastive",
+      "reason": "ngram_overlap",
+      "overlap": 0.7288,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_102_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.9259,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_102_syn_1",
+      "reason": "ngram_overlap",
+      "overlap": 0.9434,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_102_syn_2",
+      "reason": "ngram_overlap",
+      "overlap": 0.8772,
+      "suite": "e934_role_aware_opaque_ids_v1/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_103_aug_dir",
+      "reason": "ngram_overlap",
+      "overlap": 0.7654,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_103_design_contrastive",
+      "reason": "ngram_overlap",
+      "overlap": 0.8095,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    },
+    {
+      "id": "rico_train_103_syn_0",
+      "reason": "ngram_overlap",
+      "overlap": 0.9494,
+      "suite": "e827_target_slots_only_v4/rico_held",
+      "ngram_size": 8
+    }
+  ],
+  "dedup_against": [],
+  "cross_corpus_dropped": 0,
+  "cross_corpus_dropped_samples": [],
+  "difficulty_from": null,
+  "difficulty_scored": 0,
+  "difficulty_dropped": 0,
+  "difficulty_dropped_samples": [],
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "documentize_expressions": false,
+    "target_kinds": null,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": true,
+    "repairs_per_program": 1,
+    "edit_derivatives": true,
+    "scope_derivatives": false,
+    "design_md_contrastive": true,
+    "scope_corpus": true,
+    "scope_kinds": [
+      "document",
+      "statement",
+      "expression",
+      "lexical"
+    ],
+    "scope_identity_per_scope": 3,
+    "scope_canonical_pairs_per_scope": 3,
+    "scoped_repairs_per_scope": 2,
+    "typed_lexical_per_program": 4
+  },
+  "preference_pairs": 189,
+  "preference_pairs_path": "outputs/data/train/e937_role_safe_all_targets_v2/preference_pairs.jsonl",
+  "mixture": {
+    "manifest": {
+      "mixture_id": "e937_role_safe_all_targets_v2-base",
+      "weights": {
+        "abstraction_ladder": 0.047430830039525695,
+        "awwwards_real": 0.0316205533596838,
+        "corruption_repair": 0.047430830039525695,
+        "diffusion_corruption": 0.0158102766798419,
+        "edit_trajectory": 0.047430830039525695,
+        "frontier_described": 0.00790513833992095,
+        "frontier_product": 0.00790513833992095,
+        "frontier_semantic": 0.00790513833992095,
+        "frontier_simplified": 0.00790513833992095,
+        "frontier_user": 0.00790513833992095,
+        "gold_correction": 0.011857707509881424,
+        "human_curated": 0.0632411067193676,
+        "human_feedback": 0.047430830039525695,
+        "language_contract": 0.0632411067193676,
+        "layout_augment": 0.019762845849802375,
+        "lexical_typed_map": 0.0158102766798419,
+        "programspec_generated": 0.09486166007905139,
+        "prompt_paraphrase": 0.023715415019762848,
+        "renderer_visual": 0.03952569169960475,
+        "rico_real": 0.09486166007905139,
+        "scope_canonical_document": 0.023715415019762848,
+        "scope_canonical_expression": 0.023715415019762848,
+        "scope_canonical_lexical": 0.023715415019762848,
+        "scope_canonical_statement": 0.023715415019762848,
+        "scope_contract": 0.0158102766798419,
+        "scope_identity_document": 0.0158102766798419,
+        "scope_identity_expression": 0.0158102766798419,
+        "scope_identity_lexical": 0.0158102766798419,
+        "scope_identity_statement": 0.0158102766798419,
+        "scope_repair_expression": 0.0158102766798419,
+        "scope_repair_lexical": 0.0158102766798419,
+        "scope_repair_statement": 0.0158102766798419,
+        "self_distilled_repair": 0.0158102766798419,
+        "self_distilled_success": 0.0158102766798419,
+        "stress_adversarial": 0.019762845849802375,
+        "web_distilled": 0.023715415019762848
+      },
+      "task_weights": {
+        "generation": 0.16666666666666666,
+        "identity_echo": 0.16666666666666666,
+        "noop_adversarial": 0.16666666666666666,
+        "patch_edit": 0.16666666666666666,
+        "repair_completion_inpaint": 0.16666666666666666,
+        "state_behavior": 0.16666666666666666
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "5fb80db1d11d719e128ae8a90755767ec8c8cc8abb776976f5dd3852cc0a2b84",
+    "diagnostics": {
+      "records": 524,
+      "family_counts": {
+        "abstraction_ladder": 5,
+        "corruption_repair": 13,
+        "edit_trajectory": 26,
+        "frontier_described": 3,
+        "human_curated": 41,
+        "language_contract": 55,
+        "layout_augment": 95,
+        "programspec_generated": 25,
+        "prompt_paraphrase": 108,
+        "renderer_visual": 1,
+        "rico_real": 11,
+        "scope_canonical_document": 19,
+        "scope_canonical_expression": 18,
+        "scope_canonical_lexical": 4,
+        "scope_canonical_statement": 14,
+        "scope_identity_lexical": 14,
+        "scope_identity_statement": 17,
+        "scope_repair_expression": 16,
+        "scope_repair_lexical": 6,
+        "scope_repair_statement": 31,
+        "web_distilled": 2
+      },
+      "task_counts": {
+        "edit": 69,
+        "generation": 345,
+        "identity": 31,
+        "patch": 13,
+        "repair": 66
+      },
+      "task_group_counts": {
+        "generation": 345,
+        "identity_echo": 31,
+        "patch_edit": 82,
+        "repair_completion_inpaint": 66
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 72,
+      "unique_structural_families": 222,
+      "observed_component_counts": {
+        "Accordion": 18,
+        "AccordionItem": 19,
+        "AreaChart": 14,
+        "Button": 133,
+        "Buttons": 20,
+        "Callout": 26,
+        "Card": 97,
+        "CardHeader": 22,
+        "Carousel": 17,
+        "CheckBoxGroup": 17,
+        "CheckBoxItem": 15,
+        "CodeBlock": 19,
+        "Col": 19,
+        "DatePicker": 15,
+        "Form": 16,
+        "FormControl": 24,
+        "Image": 18,
+        "ImageBlock": 34,
+        "ImageGallery": 15,
+        "Input": 50,
+        "Label": 16,
+        "LineChart": 14,
+        "MarkDownRenderer": 16,
+        "Modal": 23,
+        "PieChart": 13,
+        "Point": 8,
+        "RadarChart": 3,
+        "RadialChart": 1,
+        "RadioGroup": 18,
+        "RadioItem": 18,
+        "ScatterChart": 14,
+        "ScatterSeries": 20,
+        "Select": 18,
+        "SelectItem": 16,
+        "Separator": 21,
+        "Series": 5,
+        "SingleStackedBarChart": 1,
+        "Slice": 1,
+        "Slider": 8,
+        "Stack": 509,
+        "Steps": 17,
+        "StepsItem": 18,
+        "SwitchGroup": 19,
+        "SwitchItem": 39,
+        "TabItem": 30,
+        "Table": 15,
+        "Tabs": 23,
+        "Tag": 16,
+        "TagBlock": 14,
+        "TextArea": 17,
+        "TextCallout": 16,
+        "TextContent": 306
+      },
+      "configured_but_absent_families": [
+        "awwwards_real",
+        "diffusion_corruption",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_feedback",
+        "lexical_typed_map",
+        "scope_contract",
+        "scope_identity_document",
+        "scope_identity_expression",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 0.9834,
+  "placeholder_vocab_size": 7,
+  "with_design_md": 351,
+  "component_histogram": {
+    "Accordion": 18,
+    "AccordionItem": 19,
+    "AreaChart": 14,
+    "Button": 133,
+    "Buttons": 20,
+    "Callout": 26,
+    "Card": 97,
+    "CardHeader": 22,
+    "Carousel": 17,
+    "CheckBoxGroup": 17,
+    "CheckBoxItem": 15,
+    "CodeBlock": 19,
+    "Col": 19,
+    "DatePicker": 15,
+    "Form": 16,
+    "FormControl": 24,
+    "Image": 18,
+    "ImageBlock": 34,
+    "ImageGallery": 15,
+    "Input": 50,
+    "Label": 16,
+    "LineChart": 14,
+    "MarkDownRenderer": 16,
+    "Modal": 23,
+    "PieChart": 13,
+    "Point": 8,
+    "RadarChart": 3,
+    "RadialChart": 1,
+    "RadioGroup": 18,
+    "RadioItem": 18,
+    "ScatterChart": 14,
+    "ScatterSeries": 20,
+    "Select": 18,
+    "SelectItem": 16,
+    "Separator": 21,
+    "Series": 5,
+    "SingleStackedBarChart": 1,
+    "Slice": 1,
+    "Slider": 8,
+    "Stack": 509,
+    "Steps": 17,
+    "StepsItem": 18,
+    "SwitchGroup": 19,
+    "SwitchItem": 39,
+    "TabItem": 30,
+    "Table": 15,
+    "Tabs": 23,
+    "Tag": 16,
+    "TagBlock": 14,
+    "TextArea": 17,
+    "TextCallout": 16,
+    "TextContent": 306
+  },
+  "built_at": "2026-07-23T00:06:08.416438+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d6d25c6f186612b2a535c1aa0565c8188dc3f4fe",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v24"
+    },
+    "stamped_at": "2026-07-23T00:06:08.441067+00:00"
+  }
+}

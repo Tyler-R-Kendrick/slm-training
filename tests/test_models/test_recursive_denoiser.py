@@ -48,12 +48,12 @@ from slm_training.models.twotower import (
 )
 
 HERO = (
-    'root = Stack([hero], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")\n'
-    "hero = Card([hero_title, hero_body])"
+    'root = Stack([b1], "column")\n'
+    "b1 = Card([b2, b3])\n"
+    'b2 = TextContent(":slot_0")\n'
+    'b3 = TextContent(":slot_1")'
 )
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+CTA = 'root = Stack([b1])\nb1 = Button(":slot_0")'
 
 
 def test_recursive_tower_matches_denoiser_interface() -> None:

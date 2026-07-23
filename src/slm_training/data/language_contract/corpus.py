@@ -206,7 +206,7 @@ _PRODUCTIONS: tuple[Production, ...] = (
         "a number literal",
         (
             OutputTarget("1", "lexical", "number"),
-            OutputTarget('root = Slider("value", "continuous", 0, 1)'),
+            OutputTarget('root = Slider("$0", "continuous", 0, 1)'),
         ),
         "number",
     ),
@@ -216,7 +216,7 @@ _PRODUCTIONS: tuple[Production, ...] = (
         "-1",
         "lexical",
         "a negative number literal",
-        (OutputTarget('root = Slider("value", "continuous", -1, 1)'),),
+        (OutputTarget('root = Slider("$0", "continuous", -1, 1)'),),
         "number",
     ),
     Production(

@@ -13,3 +13,17 @@ src/slm_training/resources/data/train/e530_visible_semantic_roles_r1_20260719/**
 # Human narratives are served from the repository, not opened by the FastAPI
 # function. Machine-readable experiment JSON remains deployable.
 docs/design/**/*.md
+
+# BEGIN GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES
+.venv/**
+.vercel/**
+node_modules/**
+outputs/**
+tests/**
+src/apps/**
+**/governance/records.jsonl
+**/train/e177_*/**
+**/train/e21[48]_*/**
+**/train/e297_*/**
+**/train/scope_graded_v1/**
+# END GENERATED: VERCEL_FUNCTION_EXCLUDE_FILES

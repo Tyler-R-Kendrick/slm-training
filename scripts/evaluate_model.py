@@ -20,6 +20,12 @@ from slm_training.harnesses.model_build.ship_gates import (
     evaluate_ship_gates,
     write_ship_gates,
 )
+from slm_training.levers import (
+    DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_EVAL_DATA_DIR,
+    DEFAULT_EVALUATION_POLICY,
+    DEFAULT_TRAIN_DATA_DIR,
+)
 
 
 def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
@@ -65,13 +71,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--test-dir",
         type=Path,
-        default=Path("outputs/data/eval/v1"),
+        default=DEFAULT_EVAL_DATA_DIR,
     )
     parser.add_argument("--suite", default="smoke")
     parser.add_argument(
         "--evaluation-policy",
         choices=tuple(EVALUATION_POLICIES),
-        default="checkpoint_declared",
+        default=DEFAULT_EVALUATION_POLICY,
         help=(
             "Atomic evaluation policy preset. Selecting compiler tree mode "
             "always normalizes this to strict_compiler_tree."
@@ -93,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/data/train/v1"),
+        default=DEFAULT_TRAIN_DATA_DIR,
         help="Used to rebuild vocab when loading TwoTower without sidecar tokenizer.",
     )
     parser.add_argument(
@@ -208,23 +214,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's slot-to-component role bias.",
     )
     parser.add_argument(
-        "--semantic-role-decode-weight",
-        type=float,
-        default=None,
-        help="Bias legal component choices using only visible semantic-role candidates.",
-    )
-    parser.add_argument(
-        "--semantic-role-schema-candidates",
-        action="store_true",
-        help="Derive legal component candidates from visible slot roles and the public schema.",
-    )
-    parser.add_argument(
-        "--slot-coverage-close-decode-weight",
-        type=float,
-        default=None,
-        help="Prefer role-compatible visible-slot coverage before legal frame closure.",
-    )
-    parser.add_argument(
         "--schema-value-decode-weight",
         type=float,
         default=None,
@@ -256,12 +245,6 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="Prefer legal closure at optional unconstrained arguments.",
-    )
-    parser.add_argument(
-        "--schema-role-slot-decode-weight",
-        type=float,
-        default=None,
-        help="Prefer visible slots compatible with the active content property owner.",
     )
     parser.add_argument(
         "--required-slot-margin-decode-weight",
@@ -318,12 +301,6 @@ def main(argv: list[str] | None = None) -> int:
         help="Close nested arrays after one item inside repeated plan families.",
     )
     parser.add_argument(
-        "--semantic-plan-repeated-slot-margin-decode-weight",
-        type=float,
-        default=None,
-        help="Floor the best unused visible slot inside repeated plan instances.",
-    )
-    parser.add_argument(
         "--semantic-plan-typed-array-nonempty-margin-decode-weight",
         type=float,
         default=None,
@@ -334,6 +311,11 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=None,
         help="Floor the schema-derived item start inside authored typed arrays.",
+    )
+    parser.add_argument(
+        "--compiler-schema-component-types",
+        action="store_true",
+        help="Constrain forward binder declarations from official typed-array use sites.",
     )
     parser.add_argument(
         "--visible-reference-decode-weight",
@@ -414,14 +396,6 @@ def main(argv: list[str] | None = None) -> int:
         "--slot-contract-in-context",
         action="store_true",
         help="Override: inject placeholder inventory (SLOT_CONTRACT) into context.",
-    )
-    parser.add_argument(
-        "--semantic-role-contract-in-context",
-        action="store_true",
-        help=(
-            "Normalize prompt-mentioned components and visible slots into the "
-            "semantic-role contract used by E530 training."
-        ),
     )
     parser.add_argument(
         "--slot-contract-constrained-decode",
@@ -505,8 +479,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--decode-timeout-seconds",
         type=float,
-        default=None,
-        help="Diagnostic per-record decode timeout; omit for unlimited evaluation.",
+        default=DEFAULT_DECODE_TIMEOUT_SECONDS,
+        help="Per-record decode timeout from the centralized run policy.",
     )
     parser.add_argument(
         "--no-design-md-context",
@@ -671,9 +645,6 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
-        semantic_role_contract_in_context=(
-            args.semantic_role_contract_in_context
-        ),
         slot_contract_constrained_decode=(
             args.slot_contract_constrained_decode or args.ship_gates
         ),
@@ -703,27 +674,17 @@ def main(argv: list[str] | None = None) -> int:
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
         slot_component_decode_weight=args.slot_component_decode_weight,
-        semantic_role_decode_weight=args.semantic_role_decode_weight,
-        semantic_role_schema_candidates=args.semantic_role_schema_candidates,
-        slot_coverage_close_decode_weight=args.slot_coverage_close_decode_weight,
         schema_value_decode_weight=args.schema_value_decode_weight,
         schema_enum_close_decode_weight=args.schema_enum_close_decode_weight,
         schema_open_decode_weight=args.schema_open_decode_weight,
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
-        schema_role_slot_decode_weight=args.schema_role_slot_decode_weight,
-        required_slot_margin_decode_weight=(
-            args.required_slot_margin_decode_weight
-        ),
+        required_slot_margin_decode_weight=(args.required_slot_margin_decode_weight),
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
-        semantic_plan_margin_decode_weight=(
-            args.semantic_plan_margin_decode_weight
-        ),
+        semantic_plan_margin_decode_weight=(args.semantic_plan_margin_decode_weight),
         semantic_plan_seed_decode_weight=args.semantic_plan_seed_decode_weight,
         semantic_plan_inline_decode_weight=args.semantic_plan_inline_decode_weight,
-        semantic_plan_binding_decode_weight=(
-            args.semantic_plan_binding_decode_weight
-        ),
+        semantic_plan_binding_decode_weight=(args.semantic_plan_binding_decode_weight),
         semantic_plan_root_decode_weight=args.semantic_plan_root_decode_weight,
         semantic_plan_root_margin_decode_weight=(
             args.semantic_plan_root_margin_decode_weight
@@ -731,20 +692,18 @@ def main(argv: list[str] | None = None) -> int:
         semantic_plan_repeated_array_close_margin_decode_weight=(
             args.semantic_plan_repeated_array_close_margin_decode_weight
         ),
-        semantic_plan_repeated_slot_margin_decode_weight=(
-            args.semantic_plan_repeated_slot_margin_decode_weight
-        ),
         semantic_plan_typed_array_nonempty_margin_decode_weight=(
             args.semantic_plan_typed_array_nonempty_margin_decode_weight
         ),
         semantic_plan_typed_array_item_margin_decode_weight=(
             args.semantic_plan_typed_array_item_margin_decode_weight
         ),
+        compiler_schema_component_types=(
+            args.compiler_schema_component_types
+        ),
         visible_reference_decode_weight=args.visible_reference_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,
-        binder_component_plan_decode_weight=(
-            args.binder_component_plan_decode_weight
-        ),
+        binder_component_plan_decode_weight=(args.binder_component_plan_decode_weight),
         binder_topology_decode_weight=args.binder_topology_decode_weight,
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
@@ -771,7 +730,9 @@ def main(argv: list[str] | None = None) -> int:
         constraint_debt_routing_signal=args.constraint_debt_routing_signal,
         constraint_debt_routing_threshold_high=args.constraint_debt_routing_threshold_high,
         constraint_debt_routing_threshold_low=args.constraint_debt_routing_threshold_low,
-        constraint_debt_routing_hysteresis=max(1, args.constraint_debt_routing_hysteresis),
+        constraint_debt_routing_hysteresis=max(
+            1, args.constraint_debt_routing_hysteresis
+        ),
         constraint_debt_routing_fallback_policy=args.constraint_debt_routing_fallback_policy,
         constraint_debt_routing_budget_mode=args.constraint_debt_routing_budget_mode,
         constraint_debt_routing_calibrator_path=args.constraint_debt_routing_calibrator_path,

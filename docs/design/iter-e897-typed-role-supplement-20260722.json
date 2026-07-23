@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "run_class": "data_build",
+  "run_id": "e897_e851_typed_role_supplement_v1",
+  "experiment_id": "E897",
+  "date": "2026-07-22",
+  "decision": "retain_strict_typed_role_supplement_for_matched_training",
+  "data": {
+    "path": "src/slm_training/resources/data/train/e897_e851_typed_role_supplement_v1",
+    "derive_from": "src/slm_training/resources/data/train/e851_e826_typed_supplement_v1/records.jsonl",
+    "profile": "strict",
+    "source": "existing+fixture",
+    "fixture_ids": [
+      "train_tabs_01",
+      "train_card_stack_01"
+    ],
+    "candidates": 353,
+    "admitted": 353,
+    "rejected": 0,
+    "warnings": 0,
+    "recommendations": 0,
+    "experiment_candidates": 0,
+    "decontamination_rejections": 0,
+    "sanitizer_fallbacks": 0,
+    "mean_quality_score": 0.9894,
+    "content_fingerprint": "d1ad590287a79a7a35d190f6cc916575e2ea175f6a0fce48c4babde8ea79c832",
+    "lineage_snapshot": "f00eb37d5249e8e59a167a9930daeb2794cfa546a08688b688a5db1d794447d4"
+  },
+  "quality": {
+    "train_tabs_01": {
+      "verification_tier": "Silver",
+      "independent_judge_passed": true,
+      "score": 1.0,
+      "components": {
+        "Stack": 1,
+        "TextContent": 3,
+        "Separator": 1,
+        "TabItem": 2,
+        "Tabs": 1
+      }
+    },
+    "train_card_stack_01": {
+      "verification_tier": "Silver",
+      "independent_judge_passed": true,
+      "score": 1.0,
+      "components": {
+        "Stack": 2,
+        "TextContent": 5,
+        "Card": 2,
+        "Button": 1
+      }
+    }
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "data build only; model quality and ship gates not evaluated"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "53b45e0d096722ca1e066fe787363c24d1ce7739",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v22"
+    },
+    "stamped_at": "2026-07-22T21:39:05.991391+00:00"
+  }
+}

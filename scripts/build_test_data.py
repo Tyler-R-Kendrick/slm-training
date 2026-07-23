@@ -7,6 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.levers import DEFAULT_TRAIN_DATA_DIR
+
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 
 
@@ -66,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-manifest",
         type=Path,
-        default=Path("outputs/data/train/v1/manifest.json"),
+        default=DEFAULT_TRAIN_DATA_DIR / "manifest.json",
         help="Train manifest used for leakage checks (required).",
     )
     parser.add_argument(

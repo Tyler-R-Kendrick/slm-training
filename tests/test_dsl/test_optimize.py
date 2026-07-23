@@ -33,7 +33,7 @@ def test_trailing_default_direction_elided_row_kept() -> None:
 def test_form_empty_fields_default_elided() -> None:
     src = (
         'root = Stack([f])\n'
-        'f = Form(":form.name", [b], [])\n'
+        'f = Form("$0", [b], [])\n'
         'b = Button(":form.submit")'
     )
     result = optimize(src)

@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from slm_training.data.contract import GenerationRequest
+from slm_training.data.contract import (
+    GenerationRequest,
+    canonicalize_example_template_markers,
+)
 from slm_training.dsl.lang_core import bridge_available
 from slm_training.dsl.analysis.templatize import templatize
 from slm_training.dsl.language_contract import OutputContractError
@@ -117,7 +120,9 @@ def test_fixture_corpus_ids_are_decode_fixed_points(tok: ChoiceTokenizer) -> Non
 
 
 @needs_bridge
-def test_free_literals_are_rejected_instead_of_byte_spelled(tok: ChoiceTokenizer) -> None:
+def test_free_literals_are_rejected_instead_of_byte_spelled(
+    tok: ChoiceTokenizer,
+) -> None:
     source = 'root = Tabs([tab])\ntab = TabItem("one", ":tabs.one", [c])\nc = TextContent(":tabs.body")'
     table = SymbolTable.from_placeholders([":tabs.one", ":tabs.body"], max_slots=64)
     with pytest.raises(OutputContractError, match="free-form strings"):
@@ -456,17 +461,21 @@ def test_twotower_choice_wiring(
     from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
     records = [
-        ExampleRecord(
-            id="t1",
-            prompt="Hero card",
-            openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+        canonicalize_example_template_markers(
+            ExampleRecord(
+                id="t1",
+                prompt="Hero card",
+                openui=HERO,
+                placeholders=[":hero.title", ":hero.body"],
+            )
         ),
-        ExampleRecord(
-            id="t2",
-            prompt="CTA button",
-            openui='root = Stack([cta], "column")\ncta = Button(":cta.label")',
-            placeholders=[":cta.label"],
+        canonicalize_example_template_markers(
+            ExampleRecord(
+                id="t2",
+                prompt="CTA button",
+                openui='root = Stack([cta], "column")\ncta = Button(":cta.label")',
+                placeholders=[":cta.label"],
+            )
         ),
     ]
     cfg = TwoTowerConfig(
@@ -489,7 +498,7 @@ def test_twotower_choice_wiring(
     text = model.generate("Hero card", gold=records[0])
     assert text
     assert validate(text).serialized == text
-    projected = HERO.replace(":hero.title", ":slot_0").replace(":hero.body", ":slot_1")
+    projected = records[0].openui
     projected_ids = model.tokenizer.encode(
         projected, placeholders=[":slot_0", ":slot_1"]
     )
@@ -510,17 +519,14 @@ def test_twotower_choice_wiring(
         [
             GenerationRequest(
                 prompt="Hero card",
-                slot_contract=(":hero.title", ":hero.body"),
+                slot_contract=(":slot_0", ":slot_1"),
             )
         ],
         max_len=64,
     )[0]
     assert choice.status == "verified"
     assert choice.opaque_slot_contract == (":slot_0", ":slot_1")
-    assert choice.slot_projection == (
-        (":hero.title", ":slot_0"),
-        (":hero.body", ":slot_1"),
-    )
+    assert choice.slot_projection == ((":slot_0", ":slot_0"), (":slot_1", ":slot_1"))
     assert (
         model.tokenizer.decode(
             list(choice.choice_ids), placeholders=choice.opaque_slot_contract

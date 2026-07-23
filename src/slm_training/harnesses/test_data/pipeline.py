@@ -11,6 +11,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
+from slm_training.data.contract import (
+    assert_canonical_template_markers,
+    canonicalize_example_template_markers,
+)
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.language_contract import (
@@ -112,6 +116,8 @@ def _normalize(
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
+    out = canonicalize_example_template_markers(out)
+    assert_canonical_template_markers(out)
     return out
 
 
@@ -226,6 +232,10 @@ def build_test_data(config: TestDataConfig) -> dict:
                 f"test record {seed.id!r} violates the symbol-only output contract: {exc}"
             ) from exc
         except (ParseError, ValueError) as exc:
+            if seed.source != "rico":
+                raise ValueError(
+                    f"fixture test record {seed.id!r} failed normalization: {exc}"
+                ) from exc
             errors.append({"id": seed.id, "error": str(exc)})
             continue
 

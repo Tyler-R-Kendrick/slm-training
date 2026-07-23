@@ -1,0 +1,53 @@
+{
+  "version": "e938_role_safe_all_targets_v2",
+  "source": "both",
+  "seed_path": "src/slm_training/resources/test_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_test.jsonl",
+  "rico_hf_split": null,
+  "rico_limit": null,
+  "rico_hf_cache_path": "src/slm_training/resources/rico/hf_test_cache.jsonl",
+  "target_records": null,
+  "sanitize_mode": "enforce",
+  "sanitize": {
+    "mode": "enforce",
+    "sanitized": 50,
+    "changed": 50,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 48,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 1
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 13,
+      "misses": 43
+    }
+  },
+  "suite_counts": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 34
+  },
+  "total_records": 50,
+  "error_count": 0,
+  "errors": [],
+  "leakage_rejected": 6,
+  "train_manifest": "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2/manifest.json",
+  "built_at": "2026-07-23T00:06:14.627951+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d6d25c6f186612b2a535c1aa0565c8188dc3f4fe",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v10"
+    },
+    "stamped_at": "2026-07-23T00:06:14.646158+00:00"
+  }
+}

@@ -32,6 +32,8 @@ from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
+    _remap_vocab_weight,
+    _resize_position_weight,
     _truncate_with_eos,
     format_context_text,
 )
@@ -41,8 +43,8 @@ pytestmark_bridge = pytest.mark.skipif(
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+HERO = 'root = Stack([b1], "column")\nb1 = Card([b2, b3])\nb2 = TextContent(":slot_0")\nb3 = TextContent(":slot_1")'
+CTA = 'root = Stack([b1])\nb1 = Button(":slot_0")'
 
 
 def test_tokenize_preserves_placeholders_and_whitespace() -> None:
@@ -71,6 +73,30 @@ def test_tokenizer_save_load(tmp_path: Path) -> None:
     tok.save(path)
     loaded = OpenUITokenizer.load(path)
     assert loaded.encode(HERO) == tok.encode(HERO)
+
+
+def test_warm_start_vocab_remap_preserves_new_token_rows() -> None:
+    source = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    target = torch.tensor([[9.0, 9.0], [8.0, 8.0], [7.0, 7.0]])
+
+    remapped = _remap_vocab_weight(
+        source,
+        {"shared": 0, "old_only": 1},
+        target,
+        {"new_only": 0, "shared": 1, "newer": 2},
+    )
+
+    assert remapped.tolist() == [[9.0, 9.0], [1.0, 2.0], [7.0, 7.0]]
+
+
+def test_warm_start_position_resize_copies_shared_prefix() -> None:
+    source = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    target = torch.tensor([[9.0, 9.0], [8.0, 8.0]])
+
+    assert _resize_position_weight(source, target).tolist() == [
+        [1.0, 2.0],
+        [3.0, 4.0],
+    ]
 
 
 def test_hf_context_can_be_explicitly_unfrozen() -> None:
@@ -228,7 +254,7 @@ def test_checkpoint_rejects_missing_enabled_root_head(
         TwoTowerModel.from_checkpoint(path, device="cpu")
 
 
-def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
+def test_checkpoint_rejects_pre_opaque_marker_contract(tmp_path: Path) -> None:
     model = TwoTowerModel.from_records(
         [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")],
         config=TwoTowerConfig(
@@ -238,10 +264,41 @@ def test_checkpoint_rejects_pre_symbol_only_contract(tmp_path: Path) -> None:
     path = tmp_path / "legacy.pt"
     model.save(path)
     payload = torch.load(path, map_location="cpu", weights_only=True)
-    payload["output_contract_version"] = 1
+    payload["output_contract_version"] = 3
     torch.save(payload, path)
     with pytest.raises(ValueError, match="retrain from symbol-only targets"):
         TwoTowerModel.from_checkpoint(path, device="cpu")
+
+
+def test_training_loss_rechecks_opaque_role_safe_targets() -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="valid", prompt="Hero", openui=HERO, split="train")],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1
+        ),
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="named",
+                    prompt="Hero",
+                    openui='root = TextContent(":hero.title")',
+                    placeholders=[":hero.title"],
+                )
+            ]
+        )
+    with pytest.raises(ValueError, match="non-content property Input.name"):
+        model.training_loss(
+            [
+                ExampleRecord(
+                    id="wrong-role",
+                    prompt="Input",
+                    openui='root = Input(":slot_0")',
+                    placeholders=[":slot_0"],
+                )
+            ]
+        )
 
 
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
@@ -250,7 +307,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             id="a",
             prompt="Hero",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
         )
     ]
@@ -317,10 +374,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.slot_component_decode_weight == 0.25
     assert loaded.config.slot_component_prompt_context is False
     assert loaded.config.slot_component_lexeme_prior_weight == 1.0
-    hero_priors = dict(loaded.config.slot_component_lexeme_priors)["hero"]
-    component_index = loaded._component_name_index()
-    assert hero_priors[component_index["TextContent"]] > 0.0
-    assert hero_priors[component_index["Card"]] < 0.0
+    assert loaded.config.slot_component_lexeme_priors == ()
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4
@@ -381,7 +435,7 @@ def test_slot_pair_interaction_never_encodes_empty_next_slot() -> None:
             id="pair",
             prompt="Hero",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
             split="train",
         )
     ]
@@ -625,8 +679,8 @@ def test_fragment_records_reach_twotower_training_loss() -> None:
         ExampleRecord(
             id="button",
             prompt="Return a Button expression",
-            openui='Button(":cta")',
-            placeholders=[":cta"],
+            openui='Button(":slot_0")',
+            placeholders=[":slot_0"],
             target_kind="expression",
         ),
     ]
@@ -691,8 +745,8 @@ def test_opt_in_binding_runs_only_after_legacy_generation(
     monkeypatch.setattr(model, "_denoiser_forward", forbidden_forward)
     value = 'Welcome "back"\\\nToday ☃'
     result = model.generate_batch_bound_requests(
-        [GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))],
-        [(CallerContentBinding("hero.title", value),)],
+        [GenerationRequest(prompt="Hero", slot_contract=(":slot_0",))],
+        [(CallerContentBinding("slot_0", value),)],
     )[0]
 
     assert calls == 1
@@ -745,7 +799,7 @@ def test_opt_in_choice_generation_returns_exact_verified_stream(
         return [template]
 
     monkeypatch.setattr(model, "generate_batch_requests", fake_generate)
-    request = GenerationRequest(prompt="Hero", slot_contract=(":hero.title",))
+    request = GenerationRequest(prompt="Hero", slot_contract=(":slot_0",))
     first = model.generate_batch_choice_requests([request])[0]
     second = model.generate_batch_choice_requests([request])[0]
 
@@ -754,7 +808,7 @@ def test_opt_in_choice_generation_returns_exact_verified_stream(
     assert first.status == "verified"
     assert first.verification == "pack_verified"
     assert first.opaque_slot_contract == (":slot_0",)
-    assert first.slot_projection == ((":hero.title", ":slot_0"),)
+    assert first.slot_projection == ((":slot_0", ":slot_0"),)
     assert first.choice_ids == tuple(ids)
     assert first.choice_tokens == tuple(tokens)
     assert first.canonical_source == template
@@ -819,9 +873,9 @@ def test_choice_generation_rejects_incompatible_or_unprovable_paths(
     choice.config.best_of_n = 1
     undeclared = GenerationRequest(
         prompt="Hero",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
         runtime_symbols=(
-            RuntimeSymbol(surface=":other.title", role="external_entity"),
+            RuntimeSymbol(surface=":slot_1", role="external_entity"),
         ),
     )
     with pytest.raises(ValueError, match="must appear in slot_contract"):
@@ -862,6 +916,24 @@ def test_opaque_projection_keeps_marker_names_out_of_scoring() -> None:
     )[0]
     assert "slot_0" not in context
     model._opaque_slot_projection_active = False
+
+
+def test_model_rejects_named_markers_before_context_vocab_build() -> None:
+    semantic = ExampleRecord(
+        id="semantic",
+        prompt="Use :hero.title",
+        openui='root = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+    )
+    config = TwoTowerConfig(
+        d_model=32,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        context_backend="scratch",
+    )
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        TwoTowerModel.from_records([semantic], config=config)
 
 
 def test_opaque_projection_state_is_scoped_across_calls_and_failures(

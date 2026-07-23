@@ -1,0 +1,11 @@
+{"max_quality_score": 1.0, "mean_quality_score": 0.997917, "min_quality_score": 0.95, "record_count": 24, "root_parent_count": 24, "source_family": "corruption_repair", "task_counts": {"repair": 24}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.986765, "min_quality_score": 0.95, "record_count": 136, "root_parent_count": 62, "source_family": "edit_trajectory", "task_counts": {"edit": 37, "generation": 39, "patch": 60}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 2, "root_parent_count": 1, "source_family": "frontier_described", "task_counts": {"generation": 2}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.991667, "min_quality_score": 0.85, "record_count": 18, "root_parent_count": 18, "source_family": "human_curated", "task_counts": {"generation": 18}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 62, "root_parent_count": 62, "source_family": "language_contract", "task_counts": {"generation": 62}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.982353, "min_quality_score": 0.95, "record_count": 68, "root_parent_count": 43, "source_family": "layout_augment", "task_counts": {"generation": 68}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.954167, "min_quality_score": 0.95, "record_count": 12, "root_parent_count": 12, "source_family": "programspec_generated", "task_counts": {"generation": 12}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 18, "root_parent_count": 12, "source_family": "prompt_paraphrase", "task_counts": {"generation": 18}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "renderer_visual", "task_counts": {"edit": 1}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 9, "root_parent_count": 9, "source_family": "rico_real", "task_counts": {"generation": 9}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "web_distilled", "task_counts": {"generation": 1}}

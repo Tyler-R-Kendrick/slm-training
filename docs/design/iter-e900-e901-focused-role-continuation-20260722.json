@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e901-e900-current-policy-heldout-n5-r1",
+  "experiment_id": "E900-E901",
+  "date": "2026-07-22",
+  "decision": "reject_catastrophic_focused_continuation_retain_e891",
+  "attempts": {
+    "r1": {
+      "run_id": "e900-e891-focus25-base75-warm20-r1",
+      "status": "pretrain_shape_mismatch",
+      "checkpoint_emitted": false,
+      "valid_evidence": false,
+      "reason": "focus-primary max_prompt_len 256 incompatible with parent context position shape 308"
+    },
+    "r2": {
+      "run_id": "e900-e891-base75-focus25-warm20-r2",
+      "parent_run_id": "e891-e886-base75-hard25-warm20-r1",
+      "train_dir": "src/slm_training/resources/data/train/e851_e826_typed_supplement_v1",
+      "replay_train_dir": "src/slm_training/resources/data/train/e899_typed_role_focus_v1",
+      "requested_replay_fraction": 0.25,
+      "effective_replay_fraction": 0.2375,
+      "seen_primary_examples": 61,
+      "seen_replay_examples": 19,
+      "steps": 20,
+      "elapsed_wall_seconds": 4.695470380000188,
+      "last_loss": 4.481756210327148,
+      "initialized_weight_count": 1681282,
+      "initialized_weight_rms_drift": 0.0012889504014153479,
+      "data_manifest_sha": "9d1c4ec82f4aeb3d378e1b4cf8f80ebfb5c5542e9f497202aef3341fab215f67",
+      "checkpoint_sha256": "b3fe0bcec2ffcac2ed6766d60ebe167d7aa62282430544562e162a9e2c929663",
+      "checkpoint_sync": "disabled_local_scratch"
+    }
+  },
+  "baseline": {
+    "run_id": "e892-e891-current-policy-heldout-n5-r1",
+    "n": 5,
+    "parse_rate": 0.8,
+    "meaningful_program_rate": 0.8,
+    "binding_aware_meaningful_v2_rate_strict": 0.2,
+    "placeholder_fidelity_normalized": 0.8,
+    "structural_similarity": 0.32984,
+    "component_type_recall": 0.7142857142857142,
+    "reward_score": 0.7844,
+    "decode_timeout_count": 1,
+    "fallback_count": 0
+  },
+  "suites": {
+    "held_out": {
+      "n": 5,
+      "parse_rate": 0.2,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity_normalized": 0.03333333333333333,
+      "structural_similarity": 0.029339999999999998,
+      "component_type_recall": 0.06666666666666667,
+      "reward_score": 0.13140000000000002,
+      "decode_timeout_count": 4,
+      "empty_prediction_count": 4,
+      "fallback_count": 2,
+      "failure_breakdown": {
+        "parse_error": 4,
+        "low_component_recall": 1
+      }
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "failed": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "diagnostic held_out n=5 only; catastrophic regression and AgentV failure"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "98d22146adf8b09ded9a4a52305cdb0a8a151455",
+    "code_dirty": true,
+    "dirty_reason": "unrelated untracked SLM189 result files in shared worktree",
+    "components": {
+      "config.levers": "v29",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v51",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v236"
+    },
+    "stamped_at": "2026-07-22T21:49:42.974898+00:00"
+  }
+}

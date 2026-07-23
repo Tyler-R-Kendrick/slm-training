@@ -16,8 +16,8 @@ from slm_training.harnesses.train_data.scope_corpus import (
 
 SOURCE = (
     'root = Stack([hero, cta], "column")\n'
-    'hero = TextContent(":hero.title")\n'
-    'cta = Button(":cta.label", true)'
+    'hero = TextContent(":slot_0")\n'
+    'cta = Button(":slot_1", true)'
 )
 
 
@@ -52,13 +52,17 @@ def test_identity_rows_echo_their_prompt_input(corpus) -> None:
         assert embedded == record.openui
 
 
-def test_identity_rows_survive_normalization_byte_identical(corpus) -> None:
+def test_identity_rows_normalize_to_canonical_opaque_slots(corpus) -> None:
     records, _ = corpus
     for record in records:
         if not record.source.startswith("scope_identity"):
             continue
         normalized = _normalize_record(record)
-        assert normalized.openui == record.openui, record.source
+        assert _normalize_record(normalized).openui == normalized.openui, record.source
+        assert all(
+            slot == f":slot_{index}"
+            for index, slot in enumerate(normalized.placeholders)
+        ), record.source
 
 
 def test_canonical_rows_rewrite_to_canonical_form(corpus) -> None:

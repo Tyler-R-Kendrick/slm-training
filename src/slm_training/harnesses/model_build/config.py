@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slm_training.levers import MAX_RUN_MINUTES
+from slm_training.levers import (
+    DEFAULT_CONTEXT_BACKEND,
+    DEFAULT_DECODE_TIMEOUT_SECONDS,
+    CHECKPOINT_DECLARED_POLICY,
+    DEFAULT_OUTPUT_TOKENIZER,
+    MAX_HARNESS_WALL_MINUTES,
+)
 from slm_training.models.twotower_numeric_gates import (
     NumericValidationError,
     validate_model_build_config,
@@ -19,7 +25,7 @@ class ModelBuildConfig:
     suite: str = "smoke"
     # Atomic policy preset. compiler_decode_mode=tree always selects the strict
     # bundle in eval_policy before validation or artifact creation.
-    evaluation_policy: str = "checkpoint_declared"
+    evaluation_policy: str = CHECKPOINT_DECLARED_POLICY
     # Honesty label stamped into every eval payload (see evals.record_schema
     # RUN_CLASSES): fixture_demo | scratch_matrix | ship_eval.
     run_class: str = "scratch_matrix"
@@ -29,7 +35,7 @@ class ModelBuildConfig:
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
     # Cumulative deadline; canonical run policy lives in slm_training.levers.
-    max_wall_minutes: float | None = float(MAX_RUN_MINUTES)
+    max_wall_minutes: float | None = float(MAX_HARNESS_WALL_MINUTES)
     batch_size: int = 4
     lr: float = 3e-4
     # SLM-222: optimizer family. adamw (default, byte-identical) or muon_hybrid.
@@ -53,8 +59,8 @@ class ModelBuildConfig:
     mask_min: float = 0.15
     mask_max: float = 0.85
     gen_steps: int = 8
-    # Prefer HF when available; tests/CI can pass --context-backend scratch.
-    context_backend: str = "hf"  # scratch | hf
+    # Local-first. Remote/full HF context must be selected explicitly.
+    context_backend: str = DEFAULT_CONTEXT_BACKEND  # scratch | hf
     hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
     hf_model_revision: str | None = None
     # False for scratch POC; True by default when context_backend=hf (see factory)
@@ -178,6 +184,7 @@ class ModelBuildConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_schema_component_types: bool = False
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
     compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
@@ -254,7 +261,7 @@ class ModelBuildConfig:
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers
-    output_tokenizer: str = "lexer"  # symbol-only grammar/AST tokens
+    output_tokenizer: str = DEFAULT_OUTPUT_TOKENIZER
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"
@@ -405,7 +412,7 @@ class ModelBuildConfig:
     byte_budget: int | None = None
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
-    decode_timeout_seconds: float | None = None
+    decode_timeout_seconds: float | None = DEFAULT_DECODE_TIMEOUT_SECONDS
     grammar_finalize_on_last_attempt_only: bool = False
     allow_unconstrained_fallback: bool = True
     # V7 speculative denoising (docs/design/speculative-denoising.md)
@@ -453,8 +460,12 @@ class ModelBuildConfig:
     # SLM-212 (SDE5-05): default-off constraint-debt routing over decode paths.
     # All modes are default-off; routing only selects among existing MaskGIT /
     # constrained LTR / ASAp decode paths and never changes legal membership.
-    constraint_debt_routing_mode: str = "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
-    constraint_debt_routing_signal: str = "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    constraint_debt_routing_mode: str = (
+        "off"  # off | fixed_maskgit | fixed_ltr | fixed_asap | debt_router
+    )
+    constraint_debt_routing_signal: str = (
+        "D_legal"  # D_legal | D_good_proxy | legal_mass_deficit | pre_post_mask_kl
+    )
     constraint_debt_routing_threshold_high: float = 2.0
     constraint_debt_routing_threshold_low: float | None = None
     constraint_debt_routing_hysteresis: int = 1
@@ -463,6 +474,7 @@ class ModelBuildConfig:
     constraint_debt_routing_calibrator_path: Path | None = None
 
     def __post_init__(self) -> None:
+        from slm_training.levers import require_valid_lever_configuration
         from slm_training.harnesses.model_build.eval_policy import (
             apply_evaluation_policy,
         )
@@ -473,6 +485,7 @@ class ModelBuildConfig:
             validate_model_build_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        require_valid_lever_configuration(self, context="model build config")
 
     @property
     def run_dir(self) -> Path:

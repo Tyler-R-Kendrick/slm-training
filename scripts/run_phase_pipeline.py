@@ -25,6 +25,7 @@ from slm_training.harnesses.preference.train import train_preference_from_paths
 from slm_training.harnesses.quality import soft_corrupt_openui
 from slm_training.harnesses.rl import train_grpo_from_paths
 from slm_training.dsl.schema import load_jsonl
+from slm_training.levers import DEFAULT_EVAL_DATA_DIR, DEFAULT_TRAIN_DATA_DIR
 
 
 def _copy_ckpt(src: Path, dest: Path) -> Path:
@@ -66,9 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/data/train/v1_curriculum"),
+        default=DEFAULT_TRAIN_DATA_DIR,
     )
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
+    parser.add_argument("--test-dir", type=Path, default=DEFAULT_EVAL_DATA_DIR)
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--run-id", default="phase_abc_complete")
     parser.add_argument("--device", default="cpu")

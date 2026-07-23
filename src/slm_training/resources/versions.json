@@ -27,13 +27,103 @@
       ]
     },
     "config.levers": {
-      "version": "v17",
+      "version": "v35",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v35",
+          "date": "2026-07-22",
+          "note": "Withdraw lexer visible-reference capability after E974-E975 showed its first choice flip regressed strict quality"
+        },
+        {
+          "version": "v34",
+          "date": "2026-07-22",
+          "note": "Advertise visible-reference decode weighting on both choice and lexer compiler paths"
+        },
+        {
+          "version": "v33",
+          "date": "2026-07-22",
+          "note": "Default training and evaluation to E935/E936 after auditing primary and alternate targets for schema-role safety"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-22",
+          "note": "Default training and evaluation to role-audited corpora with opaque structural identifiers and content-only slots"
+        },
+        {
+          "version": "v31",
+          "date": "2026-07-22",
+          "note": "Advertise the opt-in lexer compiler path that enforces official component-valued property and forward-binder typed-array schemas"
+        },
+        {
+          "version": "v30",
+          "date": "2026-07-22",
+          "note": "Advertise the existing typed-array item margin on lexer restricted and tree compiler paths now that the path executes it"
+        },
+        {
+          "version": "v29",
+          "date": "2026-07-22",
+          "note": "Use non-nested Vercel exclusion globs so legacy corpora are actually removed from the function bundle"
+        },
+        {
+          "version": "v28",
+          "date": "2026-07-22",
+          "note": "Compact Vercel bundle exclusions within the platform's 256-character function-glob limit"
+        },
+        {
+          "version": "v27",
+          "date": "2026-07-22",
+          "note": "Centralize Vercel bundle exclusions and omit superseded semantic/schema-role training corpora from the deployed runtime"
+        },
+        {
+          "version": "v26",
+          "date": "2026-07-22",
+          "note": "Make structural AST-plan decode weights atomic members of the strict compiler-tree evaluation policy so callers cannot silently omit them"
+        },
+        {
+          "version": "v25",
+          "date": "2026-07-22",
+          "note": "Centralize the difficulty easy-tail selection fraction so scored rebuilds have one discoverable policy value"
+        },
+        {
+          "version": "v24",
+          "date": "2026-07-22",
+          "note": "Prohibit namespace augmentation so opaque marker canonicalization remains exclusively harness-owned"
+        },
+        {
+          "version": "v23",
+          "date": "2026-07-22",
+          "note": "Make scratch the single local-first context backend default; require explicit hf selection"
+        },
+        {
+          "version": "v22",
+          "date": "2026-07-22",
+          "note": "Point every canonical eval entrypoint at the harness-owned opaque-slot snapshot"
+        },
+        {
+          "version": "v21",
+          "date": "2026-07-22",
+          "note": "Centralize the only eligible default train and eval corpus paths beside all other run levers"
+        },
+        {
+          "version": "v20",
+          "date": "2026-07-22",
+          "note": "Centralize the fail-closed evaluation policy and make strict compiler-tree decoding the canonical run default"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-22",
+          "note": "Centralize symbol-only tokenizer and bounded decode defaults with the two-minute run policy"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-22",
+          "note": "Centralize the opaque-template-marker policy and prohibit every marker-label semantic lever plus disabling symbol anonymization"
+        },
         {
           "version": "v17",
           "date": "2026-07-22",
@@ -151,13 +241,20 @@
       ]
     },
     "data.semantic_contrast": {
-      "version": "v1",
+      "version": "v2",
       "kind": "data_builder",
       "paths": [
         "src/slm_training/data/semantic_contrast/",
+        "src/slm_training/data/semantic_plan/seed.py",
+        "tests/test_data/test_semantic_plan_extraction/test_seed.py",
         "scripts/build_semantic_contrasts.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Project generated source programs to opaque ordinal slots before plan extraction so semantic-contrast records satisfy the canonical marker contract"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -166,7 +263,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v5",
+      "version": "v10",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -174,6 +271,31 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-22",
+          "note": "Reject placeholders and open literals in non-content properties instead of disguising identifiers as eval completion slots"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-22",
+          "note": "Fail invalid fixture normalization and assert opaque markers before persisting eval suites"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-22",
+          "note": "Default test-data builds to the canonical opaque-marker train manifest"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-22",
+          "note": "Keep metadata-only opaque values out of the model completion inventory while sanitizing them out of band"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-22",
+          "note": "Canonicalize every persisted eval marker and nested contract field to opaque ordinal slot identities"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -435,12 +557,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v14",
+      "version": "v15",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-22",
+          "note": "Use opaque structural identifiers in metric-gaming golds so names and values are never learned as content slots or English atoms"
+        },
         {
           "version": "v14",
           "date": "2026-07-22",
@@ -780,12 +907,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-22",
+          "note": "Use opaque ordinal slot contracts in the external ceiling fixture requests"
+        },
         {
           "version": "v60",
           "date": "2026-07-21",
@@ -2617,6 +2749,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-22",
+          "note": "no-bump: replace named test-only training markers and binders with opaque ordinals; output-head behavior is unchanged"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-211 SDE5-04 default-on output-head tying control, copy-init untied arm, explicit checkpoint migration, optimizer deduplication, and spectral/Cactus metadata"
         }
@@ -2728,7 +2865,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v45",
+      "version": "v52",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2739,6 +2876,41 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v52",
+          "date": "2026-07-22",
+          "note": "Expose and record the opt-in official component-schema compiler evaluation switch"
+        },
+        {
+          "version": "v51",
+          "date": "2026-07-22",
+          "note": "Score only harness-owned opaque slot identities and stop rewarding prohibited semantic marker namespaces"
+        },
+        {
+          "version": "v50",
+          "date": "2026-07-22",
+          "note": "Remove prohibited semantic template-label controls from the evaluation CLI"
+        },
+        {
+          "version": "v49",
+          "date": "2026-07-22",
+          "note": "Default evaluation and tokenizer rebuilds to source-controlled opaque-marker corpora"
+        },
+        {
+          "version": "v48",
+          "date": "2026-07-22",
+          "note": "Default canonical evaluation to strict symbol-only decoding and persist the actual opaque slot request inventory"
+        },
+        {
+          "version": "v47",
+          "date": "2026-07-22",
+          "note": "Bound every decode and the cumulative eval deadline so result finalization precedes the two-minute command interrupt"
+        },
+        {
+          "version": "v46",
+          "date": "2026-07-22",
+          "note": "Stop synthesizing RuntimeSymbol semantic roles from evaluation marker suffixes"
+        },
         {
           "version": "v45",
           "date": "2026-07-22",
@@ -3002,12 +3174,32 @@
       ]
     },
     "harness.model_build.data": {
-      "version": "v1",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/data.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-22",
+          "note": "Apply the role-safe output guard to every accepted alternate target as well as the primary target"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-22",
+          "note": "Reject content slots and English-looking strings in structural schema properties before train or eval records reach a model"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-22",
+          "note": "Reject noncanonical marker identities anywhere in persisted train or eval records including nested metadata"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Reject explicit template semantic-role labels in shared train and eval record loading before model construction or artifacts"
+        },
         {
           "version": "v1",
           "date": "2026-07-22",
@@ -3016,13 +3208,23 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v20",
+      "version": "v22",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v22",
+          "date": "2026-07-22",
+          "note": "Warm-start filtered corpora by remapping shared context-token embeddings while preserving the current corpus tokenizer"
+        },
+        {
+          "version": "v21",
+          "date": "2026-07-22",
+          "note": "Reserve finalization time inside the two-minute hard cap so capped runs serialize their checkpoint and summary before command interruption"
+        },
         {
           "version": "v20",
           "date": "2026-07-22",
@@ -3336,17 +3538,105 @@
       ]
     },
     "harness.train_data": {
-      "version": "v11",
+      "version": "v26",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
         "src/slm_training/data/mixture.py",
+        "src/slm_training/data/dedup.py",
+        "src/slm_training/data/semantic_dedup.py",
+        "src/slm_training/data/progspec/",
+        "src/slm_training/data/awwwards/",
+        "src/slm_training/data/corrupt/",
+        "src/slm_training/data/language_contract/",
+        "src/slm_training/data/rico/",
         "src/slm_training/dsl/packs/openui.py",
+        "src/slm_training/dsl/analysis/templatize.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v26",
+          "date": "2026-07-22",
+          "note": "Canonicalize OpenUI pack-generated template markers and reject role-unsafe generated targets before returning records"
+        },
+        {
+          "version": "v25",
+          "date": "2026-07-22",
+          "note": "Preserve raw positional style arguments during role-contract validation so style removal cannot shift a legal enum into the preceding property"
+        },
+        {
+          "version": "v24",
+          "date": "2026-07-22",
+          "note": "no-bump: expose the existing templatizable and structural property sets for decoder reuse without changing synthesis behavior"
+        },
+        {
+          "version": "v24",
+          "date": "2026-07-22",
+          "note": "Use schema-role-aware templatization for document-kind alternate targets and correct opaque structural fixture identities"
+        },
+        {
+          "version": "v23",
+          "date": "2026-07-22",
+          "note": "Templatize only user-facing content properties so open identifiers and actions are rejected instead of mislabeled as completion slots"
+        },
+        {
+          "version": "v22",
+          "date": "2026-07-22",
+          "note": "Delete semantic namespace paths; preserve derived contract rows; make difficulty-scored rebuilds reject the easy NLL tail as selection instead of writing unused metadata or false producer feedback"
+        },
+        {
+          "version": "v21",
+          "date": "2026-07-22",
+          "note": "Remove namespace augmentation from the canonical train-data CLI"
+        },
+        {
+          "version": "v20",
+          "date": "2026-07-22",
+          "note": "Remove the ineffective two-action fixture after matched smoke regressed structure and strict meaning"
+        },
+        {
+          "version": "v19",
+          "date": "2026-07-22",
+          "note": "Add a structurally disjoint two-action Buttons producer fixture"
+        },
+        {
+          "version": "v18",
+          "date": "2026-07-22",
+          "note": "Rejected a standalone one-action fixture after test-structure decontamination; fixture removed"
+        },
+        {
+          "version": "v17",
+          "date": "2026-07-22",
+          "note": "Select explicit canonical fixture supplements when composing an existing corpus"
+        },
+        {
+          "version": "v16",
+          "date": "2026-07-22",
+          "note": "Compose immutable existing corpora with canonical fixture supplements through one train-data source"
+        },
+        {
+          "version": "v15",
+          "date": "2026-07-22",
+          "note": "Add canonical three-item FormControl and SwitchItem producer fixtures for repeated typed collections"
+        },
+        {
+          "version": "v14",
+          "date": "2026-07-22",
+          "note": "Declare only target-used opaque slots as completion inventory and keep metadata-only values out of supervision"
+        },
+        {
+          "version": "v13",
+          "date": "2026-07-22",
+          "note": "Canonicalize caller marker names atomically across train targets prompts and nested verification metadata before admission"
+        },
+        {
+          "version": "v12",
+          "date": "2026-07-22",
+          "note": "Reject semantic template-role prompt projection and explicit semantic-role labels before synthesis or training"
+        },
         {
           "version": "v11",
           "date": "2026-07-22",
@@ -3521,12 +3811,17 @@
       ]
     },
     "matrix.grammar": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_grammar_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Default every grammar-matrix data arm to canonical opaque-marker corpora"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -3535,12 +3830,17 @@
       ]
     },
     "matrix.perf": {
-      "version": "v1",
+      "version": "v2",
       "kind": "matrix",
       "paths": [
         "scripts/run_perf_matrix.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-22",
+          "note": "Default performance evaluation to the canonical opaque-marker eval corpus"
+        },
         {
           "version": "v1",
           "date": "2026-07-18",
@@ -3549,12 +3849,22 @@
       ]
     },
     "matrix.quality": {
-      "version": "v5",
+      "version": "v7",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-22",
+          "note": "Remove the prohibited semantic namespace augmentation arm and its data build path"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-22",
+          "note": "Default every quality-matrix data arm to canonical opaque-marker corpora"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -3748,7 +4058,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -3769,6 +4079,11 @@
         "docs/design/iter-rsc-a05-matched-recursive-control-arms-20260721.md"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-22",
+          "note": "Replace recursive training fixtures with opaque slots and canonical binder ordering, and isolate concurrent checkpoint round trips"
+        },
         {
           "version": "v10",
           "date": "2026-07-21",
@@ -3872,7 +4187,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v225",
+      "version": "v262",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -3884,6 +4199,7 @@
         "src/slm_training/models/template_fill.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
+        "src/slm_training/dsl/language_contract.py",
         "src/slm_training/data/quality.py",
         "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
@@ -3896,6 +4212,201 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v262",
+          "date": "2026-07-22",
+          "note": "Withdraw typed-binder slot reservation after E977-E978 regressed strict quality and preserve v259 decoder behavior"
+        },
+        {
+          "version": "v261",
+          "date": "2026-07-22",
+          "note": "Reserve actual content-symbol tokens for pending typed binder obligations, including optional consumers"
+        },
+        {
+          "version": "v260",
+          "date": "2026-07-22",
+          "note": "Reserve required content-slot capacity for undeclared binders with proven official-schema component obligations"
+        },
+        {
+          "version": "v259",
+          "date": "2026-07-22",
+          "note": "Remove the disproven generic lexer binder-reuse penalty while retaining opaque training-fixture cleanup"
+        },
+        {
+          "version": "v258",
+          "date": "2026-07-22",
+          "note": "Allow the visible-reference lever through the honest lexer-compiler runtime guard after capability validation"
+        },
+        {
+          "version": "v257",
+          "date": "2026-07-22",
+          "note": "Extend visible-reference ranking to lexer compiler paths as a soft repeated-child penalty without removing legal topology supervision"
+        },
+        {
+          "version": "v256",
+          "date": "2026-07-22",
+          "note": "Fail closed on named template markers and role-unsafe strings at direct model construction and training-loss entrypoints"
+        },
+        {
+          "version": "v255",
+          "date": "2026-07-22",
+          "note": "Reject reuse of an opaque structural identifier within the same component property role during slot-contracted compiler decode"
+        },
+        {
+          "version": "v254",
+          "date": "2026-07-22",
+          "note": "Bound recursive inline container nesting to the maximum observed in the role-safe train corpus while retaining leaf components and binder references"
+        },
+        {
+          "version": "v253",
+          "date": "2026-07-22",
+          "note": "Terminate compiler-tree documents once the root is complete and every reference is resolved so unused top-level declaration tails are not legal"
+        },
+        {
+          "version": "v252",
+          "date": "2026-07-22",
+          "note": "Resize learned scratch-context position rows by shared prefix during warm starts across corpus-derived context-length changes"
+        },
+        {
+          "version": "v251",
+          "date": "2026-07-22",
+          "note": "Remap shared output-token embedding rows by token identity during warm start while retaining initialized rows for newly introduced role-safe tokens"
+        },
+        {
+          "version": "v250",
+          "date": "2026-07-22",
+          "note": "Make schema string roles authoritative during compiler decode so request content slots cannot occupy structural identifiers and natural-language literals cannot replace opaque structural atoms"
+        },
+        {
+          "version": "v249",
+          "date": "2026-07-22",
+          "note": "Represent required structural string identifiers with opaque dollar ordinals instead of borrowed natural-language atoms"
+        },
+        {
+          "version": "v248",
+          "date": "2026-07-22",
+          "note": "Bound fresh forward binders in typed content-bearing arrays by the remaining opaque slot capacity"
+        },
+        {
+          "version": "v247",
+          "date": "2026-07-22",
+          "note": "Reject unresolved binders at typed component use sites when their accumulated official-schema requirements are disjoint"
+        },
+        {
+          "version": "v246",
+          "date": "2026-07-22",
+          "note": "Restrict opt-in component-valued properties to compatible components or binders and propagate direct property types to forward declarations"
+        },
+        {
+          "version": "v245",
+          "date": "2026-07-22",
+          "note": "Remove impossible trailing-comma branches after a closed array fills the final official-schema component argument"
+        },
+        {
+          "version": "v244",
+          "date": "2026-07-22",
+          "note": "Use opt-in official schema typing to prefer the unique recursive inline item before its slot resources are consumed by a forward declaration"
+        },
+        {
+          "version": "v243",
+          "date": "2026-07-22",
+          "note": "Add opt-in official component-valued property enforcement and propagate typed-array requirements from forward use sites to later declarations"
+        },
+        {
+          "version": "v242",
+          "date": "2026-07-22",
+          "note": "Abstain from schema-forced typed items whose required public-schema fields recursively require components"
+        },
+        {
+          "version": "v241",
+          "date": "2026-07-22",
+          "note": "Apply the explicit lexer typed-item margin when schema validation has already removed the empty-array close candidate"
+        },
+        {
+          "version": "v240",
+          "date": "2026-07-22",
+          "note": "Extend the explicit typed-array item margin to lexer compiler paths and prefer a unique public-schema item without semantic marker labels"
+        },
+        {
+          "version": "v239",
+          "date": "2026-07-22",
+          "note": "Activate lexer typed-array item margins from planned schema item families instead of requiring the container family itself"
+        },
+        {
+          "version": "v238",
+          "date": "2026-07-22",
+          "note": "Prefer schema-certified inline item components over unresolved binders at planned typed-array starts while retaining legal forward references"
+        },
+        {
+          "version": "v237",
+          "date": "2026-07-22",
+          "note": "Reject unresolved forward binder references in schema-typed arrays until their component type is certified"
+        },
+        {
+          "version": "v236",
+          "date": "2026-07-22",
+          "note": "Union parent and current scratch context vocabularies during warm-start so filtered corpora cannot discard learned token rows"
+        },
+        {
+          "version": "v235",
+          "date": "2026-07-22",
+          "note": "Warm-start across filtered corpus vocabularies by remapping shared context embedding rows and preserving the current tokenizer"
+        },
+        {
+          "version": "v234",
+          "date": "2026-07-22",
+          "note": "no-bump: expose the existing opaque marker predicate for evaluator reuse without changing model behavior"
+        },
+        {
+          "version": "v234",
+          "date": "2026-07-22",
+          "note": "Consume the centralized local-first context backend in training and model-build defaults"
+        },
+        {
+          "version": "v233",
+          "date": "2026-07-22",
+          "note": "Consume harness-owned opaque slot contracts without model-side marker conversion or semantic-name inference"
+        },
+        {
+          "version": "v232",
+          "date": "2026-07-22",
+          "note": "Default training to the canonical source-controlled opaque-marker corpus"
+        },
+        {
+          "version": "v231",
+          "date": "2026-07-22",
+          "note": "Reject the v230 all-path plan margin after held-out timeouts and restore component-only comparison"
+        },
+        {
+          "version": "v230",
+          "date": "2026-07-22",
+          "note": "Floor still-required grammar component paths above unneeded binder references"
+        },
+        {
+          "version": "v229",
+          "date": "2026-07-22",
+          "note": "Close active structural arrays when prompt component counts and opaque marker coverage are complete"
+        },
+        {
+          "version": "v228",
+          "date": "2026-07-22",
+          "note": "Make duplicate binder references within one structural array compiler-illegal"
+        },
+        {
+          "version": "v227",
+          "date": "2026-07-22",
+          "note": "no-bump: reference the centralized evaluation-policy identifier from ModelBuildConfig without changing model behavior"
+        },
+        {
+          "version": "v227",
+          "date": "2026-07-22",
+          "note": "Reject named marker records and request contracts instead of converting marker names inside model construction or generation"
+        },
+        {
+          "version": "v226",
+          "date": "2026-07-22",
+          "note": "Make external template markers opaque across TwoTower and grammar-diffusion context encoding, runtime metadata, pseudo-embeddings, slot heads, and deterministic template fill"
+        },
         {
           "version": "v225",
           "date": "2026-07-22",

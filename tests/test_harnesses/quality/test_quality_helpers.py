@@ -60,7 +60,7 @@ def test_retrieval_nearest() -> None:
         ExampleRecord(
             id="2",
             prompt="settings form inputs",
-            openui='root = Stack([f], "column", "m")\nf = Input(":f.v", "text")\n',
+            openui='root = Stack([f], "column", "m")\nf = Input("$0", ":f.v")\n',
         ),
     ]
     bank = build_skeleton_bank(records)

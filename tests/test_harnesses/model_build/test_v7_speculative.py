@@ -35,9 +35,9 @@ from slm_training.models.speculative_denoise import (
 )
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
-HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
-CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
-EXACT_SOURCE = 'root = Card([title])\ntitle = TextContent(":hero.title")\n'
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":slot_0")\nhero_body = TextContent(":slot_1")\nhero = Card([hero_title, hero_body])'
+CTA = 'root = Stack([cta])\ncta = Button(":slot_0")'
+EXACT_SOURCE = 'root = Card([title])\ntitle = TextContent(":slot_0")\n'
 
 
 # ---------------------------------------------------------------------------
@@ -458,7 +458,7 @@ def test_maskgit_one_hole_exact_final_step_skips_denoiser(
             ctx_pad,
             len(seed),
             use_grammar=True,
-            slot_contract=[":hero.title"],
+            slot_contract=[":slot_0"],
             seed_ids=seed,
         )
 
@@ -515,7 +515,7 @@ def test_maskgit_exact_step_preserves_verifier_rejection(
         ctx_pad,
         len(seed),
         use_grammar=True,
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
         seed_ids=seed,
     )
 
@@ -558,7 +558,7 @@ def test_maskgit_exact_bypass_matches_model_ranked_output(monkeypatch) -> None:
         exact_pad,
         len(seed),
         use_grammar=True,
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
         seed_ids=seed,
     )
     ranked = ranked_model._generate_maskgit_one(
@@ -566,7 +566,7 @@ def test_maskgit_exact_bypass_matches_model_ranked_output(monkeypatch) -> None:
         ranked_pad,
         len(ranked_seed),
         use_grammar=True,
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
         seed_ids=ranked_seed,
     )
 
@@ -604,7 +604,7 @@ def test_maskgit_model_dependent_step_still_forwards(
         ctx_pad,
         len(seed),
         use_grammar=True,
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
         seed_ids=seed,
     )
 

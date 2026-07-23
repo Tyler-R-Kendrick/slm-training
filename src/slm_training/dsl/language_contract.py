@@ -25,9 +25,11 @@ from typing import Any, Iterable
 
 # Language spec the repo currently targets (see module docstring).
 LANG_SPEC = "openui-lang-0.2.x"
-# v2 is intentionally checkpoint-incompatible: output targets may contain only
-# grammar/AST literals and placeholder symbols, never open-vocabulary strings.
-OUTPUT_CONTRACT_VERSION = 2
+# v4 is intentionally checkpoint-incompatible: output targets may contain only
+# grammar/AST literals and opaque ordinal placeholder symbols, never
+# open-vocabulary strings. Persisted train/eval records and their structured
+# metadata must already use the harness-owned ``:slot_<ordinal>`` identities.
+OUTPUT_CONTRACT_VERSION = 4
 OUTPUT_CONTRACT_NAME = "symbol_only"
 
 # src/slm_training/dsl/language_contract.py -> repo root is parents[3].
@@ -131,6 +133,9 @@ class OutputContractError(ValueError):
     """An OpenUI target contains text outside the symbol-only language."""
 
 
+STRUCTURAL_ID_ATOMS = frozenset(f"${index}" for index in range(64))
+
+
 @lru_cache(maxsize=1)
 def grammar_string_literals() -> frozenset[str]:
     """Closed string atoms declared by the pinned component schema."""
@@ -153,6 +158,9 @@ def grammar_string_literals() -> frozenset[str]:
     # Structural spellings accepted by the parser but not consistently
     # represented as machine-readable schema enums.
     values.update({"column", "row", "horizontal", "vertical"})
+    # Opaque identifiers satisfy required schema string fields without making
+    # the model reproduce user-facing names or borrowed English enum values.
+    values.update(STRUCTURAL_ID_ATOMS)
     return frozenset(values)
 
 

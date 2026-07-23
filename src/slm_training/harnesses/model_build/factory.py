@@ -157,6 +157,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_plan_repeated_slot_margin_decode_weight",
         "semantic_plan_typed_array_nonempty_margin_decode_weight",
         "semantic_plan_typed_array_item_margin_decode_weight",
+        "compiler_schema_component_types",
         "visible_reference_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
@@ -581,6 +582,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
                 0.0,
             )
             or 0.0
+        ),
+        compiler_schema_component_types=bool(
+            getattr(config, "compiler_schema_component_types", False)
         ),
         visible_reference_decode_weight=float(
             getattr(config, "visible_reference_decode_weight", 0.0) or 0.0

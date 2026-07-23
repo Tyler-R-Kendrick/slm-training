@@ -4,10 +4,10 @@
 // helpers keep client-side labels and the smoke canary gate on the same
 // policy so lever changes propagate everywhere.
 export const METRIC_LABELS: Record<string, string> = {
-  meaningful_program_rate: "Meaningful",
-  structural_similarity: "Structure",
-  component_type_recall: "Type recall",
-  placeholder_fidelity: "Fidelity",
+  meaningful_program_rate: "Meaningful v1",
+  structural_similarity: "Gold structure",
+  component_type_recall: "Gold type recall",
+  placeholder_fidelity: "Slot fidelity",
   reward_score: "Reward",
 };
 

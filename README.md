@@ -34,18 +34,37 @@ by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
 summary and the full card whenever a checkpoint is created or promoted.
 
-**Current compatibility:** output contract v2 is symbol-only. All pre-E714
-checkpoints are provenance-only; current code refuses to load, serve, resume,
-promote, or evaluate them. E714 is the first compatible scratch baseline, but
-it fails semantic gates and is not promoted. See
+**Current compatibility:** output contract v4 requires harness-canonical
+`:slot_<ordinal>` markers in persisted train/eval data and nested metadata.
+E828 is the first target-inventory-correct v4 scratch checkpoint; its corrected
+strict-harness eval still fails quality gates and it is not promoted. Every older checkpoint is incompatible provenance only. See
 [the contract](docs/design/symbol-only-output-contract.md).
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E972 weighted-mixture scratch diagnostic | `e972-role-safe-mixture450-r1/last.pt` | `outputs/runs/…` (local) | 450 clean weighted E937 steps / 33.07s; E973 held n=5 parse 1.0 / strict-v2 0.4 / recall 0.8286 / reward 0.9152 / two fallbacks, AgentV 0/2 — rejected, never use as parent |
+| E963 role-safe scratch diagnostic | `e963-role-safe-scratch500-r1/last.pt` | `outputs/runs/…` (local) | 500 clean E937 steps / 34.57s; E964 held n=5 strict-v2 0.4 / structure 0.1404 / reward 0.654 / zero role violations, AgentV 0/2 — rejected, never use as parent |
+| E951 role-safe warm-start diagnostic | `e951-e891-role-safe-warm20-r1/last.pt` | `outputs/runs/…` (local) | E968/v256 held-out n=5 parse 1.0 / meaning 0.8 / strict-v2 0.8 / structure 0.4434 / recall 0.6952 / zero role violations, AgentV 0/2 — fail-closed training boundary is decode-neutral; checkpoint not promotable because parent E891 predates role safety |
+| E944 role-safe scratch diagnostic | `e944-role-safe-scratch350-r1/last.pt` | `outputs/runs/…` (local) | 350 clean E937 steps / 25.45s; 4-second held-out diagnostic strict-v2 0.2 / three timeouts, AgentV 0/1 — rejected, never use as parent |
+| E902 focused-role retention diagnostic | `e902-e891-base75-focus25-retain05-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 strict-v2 0 / structure 0.1824 / recall 0.4524, AgentV 0/1 — retention averts collapse but remains worse than E891; rejected |
+| E900 focused-role continuation | `e900-e891-base75-focus25-warm20-r2/last.pt` | `outputs/runs/…` (local) | Held-out n=5 parse 0.2 / strict-v2 0 / structure 0.0293 / recall 0.0667 / four timeouts, AgentV 0/1 — catastrophic rejection, never use as parent |
+| E898 typed-role scratch attempt | `e898-e897-typed-role-scratch600-r2/last.pt` | `outputs/runs/…` (local) | Invalid 279/600-step wall-budget partial; never evaluate, sync, promote, serve, resume, or use as parent |
+| E894 low-replay diagnostic | `e894-e886-base90-hard10-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 meaning-v1 0.6 / strict-v2 0.2 / structure 0.3035 / recall 0.6476; smoke matches E891, AgentV 0/2 — dominated and rejected, not ship |
+| E891 balanced-replay held-out candidate | `e891-e886-base75-hard25-warm20-r1/last.pt` | `outputs/runs/…` (local) | Held-out n=5 meaning-v1 0.8 / strict-v2 0.2 / structure 0.3298 / recall 0.7143; smoke strict-v2 1.0 / structure 0.5783, AgentV 0/2 — strongest held-out candidate, not ship |
+| E889 hard-tail current-policy diagnostic | `e889-e886-hard80-warm20-r1/last.pt` | `outputs/runs/…` (local) | 20 steps / 2.91s; held-out n=5 parse 1.0 / strict-v2 0.2 / structure 0.1889 / recall 0.5190 / reward 0.8570, AgentV 0/1 — rejected, not ship |
+| E886 recovered current baseline | `e886-e851-recovery-scratch600-r1/last.pt` | `outputs/runs/…` (local) | Bit-identical E852 recovery; 600 steps / 53.30s; smoke n=3 strict-v2 1.0, held-out n=5 strict-v2 0.2 / structure 0.2588 / recall 0.4190, AgentV 0/2 — retained scratch parent, not ship |
+| E879 union-vocabulary compatibility proof | `e879-e852-e872-vocab-union-zero-r1/last.pt` | `outputs/runs/…` (local) | Zero-step load retained all 712 parent tokens and all 131 tensors; atomic-policy smoke exactly reproduces E852 — diagnostic only, not ship |
+| E877 hard-tail warm-start diagnostic | `e877-e852-hard80-warm20-r1/last.pt` | `outputs/runs/…` (local) | Matched smoke n=3 parse/strict/fidelity 1.0, structure 0.7633, recall 0.7500; held-out n=3 is mixed and AgentV 0/1 — research candidate only, not ship |
+| E861 root-arity warm-start diagnostic | `e861-root-arity-warmstart120-r1/last.pt` | `outputs/runs/…` (local) | 120 steps / 20.32s; matched smoke root-arity weight 1 gives strict-v2 0.6667, fidelity 0.8333, structure 0.4850, AgentV 0/1 — rejected, not ship |
+| E856 two-action diagnostic | `e856-two-action-group-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 57.13s; smoke n=3 strict-v2 0.6667, structure 0.5500, recall 0.7500, AgentV 0/1 — rejected, not ship |
+| E852 surgical typed-collection baseline | `e852-e826-typed-supplement-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 70.15s; smoke n=3 parse/strict/fidelity 1.0, structure 0.6589, recall 0.7500, reward 0.9490, AgentV 0/1 — retained scratch baseline, not ship |
+| E848 repeated typed-collection diagnostic | `e848-repeated-typed-collections-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 69.88s; smoke n=3 parse/strict/fidelity 0.6667, structure 0.5300, reward 0.6327, one timeout, AgentV 0/1 — rejected, not ship |
+| E832 longer v4 baseline | `e832-target-slots-v4-scratch600-r1/last.pt` | `outputs/runs/…` (local) | 600 steps / 63.30s; held-out n=5 parse 1.0 / fidelity 1.0 / reward 0.9682, but strict-v2 0 and duplicate-subtree spam on every row — rejected, not ship |
+| E828 target-slot-only v4 baseline | `e828-target-slots-only-v4-scratch120-r1/last.pt` | `outputs/runs/…` (local) | First completion-inventory-correct v4 checkpoint; strict-harness held-out n=5 parse 1.0 / meaning-v1 0.2 / fidelity 0.8857 / reward 0.9195, strict-v2 0.0 and AgentV 0/1 — rejected, not ship |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1/last.pt` | `outputs/runs/…` (local) | Removes impossible class-41 tail prediction, but weight 0/1 smoke quality remains identical and strict-v2 0.0 — fix retained, checkpoint rejected |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1/last.pt` | `outputs/runs/…` (local) | Proposed lever has zero reachable decode applications; config now rejects lexer identity before artifacts — checkpoint invalidated |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1/last.pt` | `outputs/runs/…` (local) | Lexer-native head is executable, but weights 0/1/2 change no choices; smoke strict-v2 0.0 — checkpoint rejected |
-| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1/last.pt` | `outputs/runs/…` (local) | First v2-compatible CPU scratch checkpoint; 600 steps / 48.72s, strict meaning 0.0 and AgentV 0/5 — diagnostic only, not ship |
+| E714 symbol-only baseline | `e714-symbol-only-scratch600-r1/last.pt` | `outputs/runs/…` (local) | Historical v2 CPU scratch checkpoint; now incompatible provenance under opaque-marker v3 |
 | E720 component-inventory diagnostic | `e720-symbol-only-component-inventory600-r1/last.pt` | `outputs/runs/…` (local) | Inventory head learned (top-k recall 0.6875), but smoke parse/strict meaning remained 0.0 and weight-4 decode timed out 3/3 — rejected, not ship |
 | E721 role/count plan diagnostic | `e721-symbol-only-component-plan190-r4/last.pt` | `outputs/runs/…` (local) | Smoke parse 1.0, but strict meaning 0.0 and plan weight 1 is identical to weight 0; local 190-step syntax diagnostic only, rejected |
 | E722 component-edge diagnostic | `e722-symbol-only-component-edge150-r1/last.pt` | `outputs/runs/…` (local) | Parse 1.0 / structure 0.2861 / recall 0.5, but strict meaning 0.0 and edge on/off identical — rejected, not ship |

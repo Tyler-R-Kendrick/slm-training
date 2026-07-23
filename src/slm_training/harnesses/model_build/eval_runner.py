@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from slm_training.data.contract import RuntimeSymbol
+from slm_training.data.contract import is_canonical_template_marker
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
@@ -33,6 +33,11 @@ from slm_training.evals.eval_cache import (
     suite_result_key,
 )
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
+from slm_training.levers import (
+    DEFAULT_DECODE_TIMEOUT_SECONDS,
+    DEFAULT_EVALUATION_POLICY,
+    MAX_HARNESS_WALL_SECONDS,
+)
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.versioning import component_version
 
@@ -96,9 +101,15 @@ def _aggregate_scope_contract_metrics(
     def summarize(group: list[dict[str, Any]]) -> dict[str, Any]:
         summary: dict[str, Any] = {"sample_count": len(group)}
         for key in mean_keys:
-            values = [float(row[key]) for row in group if isinstance(row.get(key), (int, float))]
+            values = [
+                float(row[key])
+                for row in group
+                if isinstance(row.get(key), (int, float))
+            ]
             if values:
-                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(values) / len(values)
+                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(
+                    values
+                ) / len(values)
         tp = sum(int(row.get("failure_cone_tp", 0)) for row in group)
         fp = sum(int(row.get("failure_cone_fp", 0)) for row in group)
         fn = sum(int(row.get("failure_cone_fn", 0)) for row in group)
@@ -110,7 +121,9 @@ def _aggregate_scope_contract_metrics(
                 "failure_cone_recall": recall,
                 "failure_cone_f1": (
                     2.0 * precision * recall / (precision + recall)
-                    if precision is not None and recall is not None and precision + recall
+                    if precision is not None
+                    and recall is not None
+                    and precision + recall
                     else None
                 ),
             }
@@ -140,18 +153,15 @@ def _sha256_file(path: Path) -> str:
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | None:
     """
-    Namespace-stripped placeholder overlap (diagnostic / ablation metric).
+    Legacy-schema alias for strict opaque-marker overlap.
+
+    Semantic namespace labels are prohibited and receive no normalization
+    credit. The retained field name avoids breaking historical result readers.
 
     ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
     undefined evidence, never a vacuous 1.0.
     """
-    pred_set = _placeholders_of(pred)
-    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
-    if not gold_set:
-        return None if not pred_set else 0.0
-    pred_n = {_normalize_placeholder(p) for p in pred_set}
-    gold_n = {_normalize_placeholder(p) for p in gold_set}
-    return len(pred_n & gold_n) / len(gold_n)
+    return _placeholder_fidelity(pred, gold)
 
 
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
@@ -168,15 +178,6 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
     return len(pred_set & gold_set) / len(gold_set)
 
 
-def _normalize_placeholder(token: str) -> str:
-    """Drop leading namespace segment so :smoke.hero.title ~= :hero.title."""
-    body = token[1:] if token.startswith(":") else token
-    parts = body.split(".")
-    if len(parts) >= 3:
-        return ".".join(parts[1:])
-    return body
-
-
 def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
     """
     Soft placeholder quality for diagnostics only (not a ship gate alone).
@@ -189,12 +190,8 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
         return None if not pred_set else 0.5
     if not pred_set:
         return 0.0
-    well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(
-        pred_set
-    )
-    pred_n = {_normalize_placeholder(p) for p in pred_set}
-    gold_n = {_normalize_placeholder(p) for p in gold_set}
-    overlap = len(pred_n & gold_n) / len(gold_n) if gold_n else 0.0
+    well_formed = sum(is_canonical_template_marker(p) for p in pred_set) / len(pred_set)
+    overlap = len(pred_set & gold_set) / len(gold_set)
     return round(0.4 * well_formed + 0.6 * overlap, 4)
 
 
@@ -396,7 +393,7 @@ def _effective_evaluation_policy(
 
     return {
         "evaluation_policy": str(
-            getattr(config, "evaluation_policy", "checkpoint_declared")
+            getattr(config, "evaluation_policy", DEFAULT_EVALUATION_POLICY)
         ),
         "context_backend": value("context_backend"),
         "local_files_only": bool(value("local_files_only")),
@@ -407,6 +404,9 @@ def _effective_evaluation_policy(
             None
             if value("compiler_decode_mode") is None
             else str(value("compiler_decode_mode"))
+        ),
+        "compiler_schema_component_types": bool(
+            value("compiler_schema_component_types")
         ),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
@@ -573,6 +573,14 @@ def evaluate(
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
 ) -> dict:
+    run_started = time.perf_counter()
+    configured_wall_seconds = float(
+        (config.max_wall_minutes or (MAX_HARNESS_WALL_SECONDS / 60)) * 60
+    )
+    run_deadline = run_started + min(
+        configured_wall_seconds,
+        float(MAX_HARNESS_WALL_SECONDS),
+    )
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
@@ -585,9 +593,7 @@ def evaluate(
         suite_limit = getattr(config, "rico_eval_limit", None)
     records = records[
         suite_offset : (
-            suite_offset + max(0, int(suite_limit))
-            if suite_limit is not None
-            else None
+            suite_offset + max(0, int(suite_limit)) if suite_limit is not None else None
         )
     ]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
@@ -736,31 +742,13 @@ def evaluate(
 
     def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
-        request = GenerationRequest.from_record(record, schema=schema)
-        # Historical evaluation checkpoints use visible placeholder suffixes as
-        # semantic-role features. Declare that compatibility authority explicitly;
-        # opaque production requests still require caller-provided typed symbols.
-        data = request.to_dict()
-        data["runtime_symbols"] = [
-            RuntimeSymbol(
-                surface=slot,
-                role="external_entity",
-                semantic_role=(
-                    re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
-                    or "value"
-                ),
-            ).to_dict()
-            for slot in request.slot_contract
-        ]
-        return GenerationRequest.from_dict(data)
+        return GenerationRequest.from_record(record, schema=schema)
 
     def _effective_request_for(record: ExampleRecord) -> GenerationRequest:
         request = _request_for(record)
         data = request.to_dict()
         if not getattr(config, "design_md_in_context", False):
             data.pop("design_md", None)
-        if not getattr(config, "slot_contract_in_context", False):
-            data["slot_contract"] = []
         return GenerationRequest.from_dict(data)
 
     def _requests_for(chunk: list[ExampleRecord]) -> list[GenerationRequest]:
@@ -774,9 +762,7 @@ def evaluate(
             with collect_decode_stats() as stats:
                 requests = _requests_for(chunk)
                 try:
-                    predictions = generate_batch_requests(
-                        requests, max_len=canvas_cap
-                    )
+                    predictions = generate_batch_requests(requests, max_len=canvas_cap)
                 except TypeError:
                     predictions = generate_batch_requests(requests)
             _annotate_decode_trace_records(stats, chunk)
@@ -786,9 +772,7 @@ def evaluate(
             return predictions, list(evidence)
         if callable(generate_with_stats) and len(chunk) == 1:
             try:
-                text, stats = generate_with_stats(
-                    chunk[0].prompt, max_len=canvas_cap
-                )
+                text, stats = generate_with_stats(chunk[0].prompt, max_len=canvas_cap)
             except TypeError:
                 text, stats = generate_with_stats(chunk[0].prompt)
             _annotate_decode_trace_records(stats, chunk)
@@ -820,8 +804,16 @@ def evaluate(
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate a chunk, converting an explicit diagnostic timeout to failures."""
         nonlocal decode_timeout_count
-        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
-        if seconds <= 0 or not hasattr(signal, "setitimer"):
+        remaining = run_deadline - time.perf_counter()
+        if remaining <= 0:
+            decode_timeout_count += len(chunk)
+            return ["" for _ in chunk], []
+        configured = float(
+            getattr(config, "decode_timeout_seconds", 0)
+            or DEFAULT_DECODE_TIMEOUT_SECONDS
+        )
+        seconds = min(configured, remaining)
+        if not hasattr(signal, "setitimer"):
             return _generate_chunk_unbounded(chunk)
 
         def _alarm(_signum: int, _frame: object) -> None:
@@ -1084,7 +1076,9 @@ def evaluate(
         upper = 1.0 - wilson_lower_bound(total - successes, total)
         return [round(lower, 4), round(upper, 4)]
 
-    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    run_class = (
+        config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+    )
     metrics = {
         "schema_version": SCHEMA_VERSION,
         "run_class": run_class,
@@ -1104,9 +1098,7 @@ def evaluate(
         # "not measured" must never render as a fabricated 0.0.
         "parse_rate": (syntax_parse_ok / document_n) if document_n else None,
         "meaningful_program_rate": (parse_ok / document_n) if document_n else None,
-        "syntax_parse_rate": (
-            (syntax_parse_ok / document_n) if document_n else None
-        ),
+        "syntax_parse_rate": ((syntax_parse_ok / document_n) if document_n else None),
         "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
         "parse_rate_ci95": _wilson_ci95(syntax_parse_ok, document_n),
         "meaningful_program_rate_ci95": _wilson_ci95(parse_ok, document_n),
@@ -1294,8 +1286,11 @@ def evaluate(
         metrics["speculative_stats"] = spec_stats.as_dict()
     if decode_stats_rows:
         from slm_training.models.decode_stats import aggregate_stats
+
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
-        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
+        retries = sum(
+            int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows
+        )
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
 
     # Metrics the active decode policy enforces by construction: consumers must
@@ -1345,9 +1340,14 @@ def evaluate(
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
     # SDE3-01: persist the full suite result for exact replay when enabled.
-    if cache is not None and cache_key is not None and cache.config.mode in (
-        EvalCacheMode.READ_WRITE,
-        EvalCacheMode.REFRESH,
+    if (
+        cache is not None
+        and cache_key is not None
+        and cache.config.mode
+        in (
+            EvalCacheMode.READ_WRITE,
+            EvalCacheMode.REFRESH,
+        )
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)

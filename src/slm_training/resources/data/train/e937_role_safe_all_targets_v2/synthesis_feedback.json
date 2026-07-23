@@ -1,0 +1,1146 @@
+{
+  "schema_version": 1,
+  "version": "e937_role_safe_all_targets_v2",
+  "profile": "strict",
+  "built_at": "2026-07-23T00:06:08.416438+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "abstraction_ladder": {
+      "admitted": 5,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 5,
+      "yield": 1.0
+    },
+    "awwwards": {
+      "admitted": 0,
+      "rejected": 12,
+      "by_stage": {
+        "verification": 12
+      },
+      "by_reason": {
+        "quarantine": 12
+      },
+      "candidates": 12,
+      "yield": 0.0
+    },
+    "awwwards+aug": {
+      "admitted": 0,
+      "rejected": 12,
+      "by_stage": {
+        "verification": 12
+      },
+      "by_reason": {
+        "quarantine": 12
+      },
+      "candidates": 12,
+      "yield": 0.0
+    },
+    "awwwards+design_md_contrastive": {
+      "admitted": 0,
+      "rejected": 12,
+      "by_stage": {
+        "verification": 12
+      },
+      "by_reason": {
+        "quarantine": 12
+      },
+      "candidates": 12,
+      "yield": 0.0
+    },
+    "awwwards+template": {
+      "admitted": 0,
+      "rejected": 36,
+      "by_stage": {
+        "verification": 36
+      },
+      "by_reason": {
+        "quarantine": 36
+      },
+      "candidates": 36,
+      "yield": 0.0
+    },
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 3,
+      "by_stage": {
+        "quality": 2,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 2,
+        "quarantine": 1
+      },
+      "candidates": 16,
+      "yield": 0.8125
+    },
+    "edit_trajectory": {
+      "admitted": 26,
+      "rejected": 29,
+      "by_stage": {
+        "dedup": 26,
+        "verification": 3
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 13,
+        "semantic_cosine": 13,
+        "quarantine": 3
+      },
+      "candidates": 55,
+      "yield": 0.4727
+    },
+    "edit_trajectory+aug": {
+      "admitted": 0,
+      "rejected": 2,
+      "by_stage": {
+        "verification": 2
+      },
+      "by_reason": {
+        "quarantine": 2
+      },
+      "candidates": 2,
+      "yield": 0.0
+    },
+    "edit_trajectory+design_md_contrastive": {
+      "admitted": 0,
+      "rejected": 1,
+      "by_stage": {
+        "verification": 1
+      },
+      "by_reason": {
+        "quarantine": 1
+      },
+      "candidates": 1,
+      "yield": 0.0
+    },
+    "edit_trajectory+template": {
+      "admitted": 0,
+      "rejected": 3,
+      "by_stage": {
+        "verification": 3
+      },
+      "by_reason": {
+        "quarantine": 3
+      },
+      "candidates": 3,
+      "yield": 0.0
+    },
+    "frontier_described": {
+      "admitted": 3,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 3,
+      "yield": 1.0
+    },
+    "human_curated": {
+      "admitted": 41,
+      "rejected": 3,
+      "by_stage": {
+        "decontamination": 3
+      },
+      "by_reason": {
+        "test_fixture_structure": 2,
+        "ngram_overlap": 1
+      },
+      "candidates": 44,
+      "yield": 0.9318
+    },
+    "language_contract": {
+      "admitted": 55,
+      "rejected": 8,
+      "by_stage": {
+        "normalize": 8
+      },
+      "by_reason": {
+        "parse_or_contract_error": 8
+      },
+      "candidates": 63,
+      "yield": 0.873
+    },
+    "layout_augment": {
+      "admitted": 95,
+      "rejected": 82,
+      "by_stage": {
+        "decontamination": 17,
+        "dedup": 65
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 64,
+        "ngram_overlap": 17,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 177,
+      "yield": 0.5367
+    },
+    "lexical_typed_map": {
+      "admitted": 0,
+      "rejected": 54,
+      "by_stage": {
+        "normalize": 54
+      },
+      "by_reason": {
+        "parse_or_contract_error": 54
+      },
+      "candidates": 54,
+      "yield": 0.0
+    },
+    "programspec_generated": {
+      "admitted": 25,
+      "rejected": 4,
+      "by_stage": {
+        "dedup": 1,
+        "quality": 2,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 2,
+        "quarantine": 1,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 29,
+      "yield": 0.8621
+    },
+    "programspec_generated+aug": {
+      "admitted": 0,
+      "rejected": 4,
+      "by_stage": {
+        "quality": 2,
+        "verification": 2
+      },
+      "by_reason": {
+        "quarantine": 2,
+        "quality_gate_failed": 2
+      },
+      "candidates": 4,
+      "yield": 0.0
+    },
+    "programspec_generated+design_md_contrastive": {
+      "admitted": 0,
+      "rejected": 3,
+      "by_stage": {
+        "quality": 2,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 2,
+        "quarantine": 1
+      },
+      "candidates": 3,
+      "yield": 0.0
+    },
+    "programspec_generated+template": {
+      "admitted": 0,
+      "rejected": 9,
+      "by_stage": {
+        "quality": 6,
+        "verification": 3
+      },
+      "by_reason": {
+        "quality_gate_failed": 6,
+        "quarantine": 3
+      },
+      "candidates": 9,
+      "yield": 0.0
+    },
+    "prompt_paraphrase": {
+      "admitted": 108,
+      "rejected": 276,
+      "by_stage": {
+        "decontamination": 56,
+        "dedup": 220
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 207,
+        "ngram_overlap": 53,
+        "fuzzy_minhash": 11,
+        "test_fixture_structure": 3,
+        "semantic_cosine": 2
+      },
+      "candidates": 384,
+      "yield": 0.2812
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "rico": {
+      "admitted": 0,
+      "rejected": 2,
+      "by_stage": {
+        "verification": 2
+      },
+      "by_reason": {
+        "quarantine": 2
+      },
+      "candidates": 2,
+      "yield": 0.0
+    },
+    "rico+aug": {
+      "admitted": 0,
+      "rejected": 3,
+      "by_stage": {
+        "verification": 3
+      },
+      "by_reason": {
+        "quarantine": 3
+      },
+      "candidates": 3,
+      "yield": 0.0
+    },
+    "rico+design_md_contrastive": {
+      "admitted": 0,
+      "rejected": 2,
+      "by_stage": {
+        "verification": 2
+      },
+      "by_reason": {
+        "quarantine": 2
+      },
+      "candidates": 2,
+      "yield": 0.0
+    },
+    "rico+template": {
+      "admitted": 0,
+      "rejected": 6,
+      "by_stage": {
+        "verification": 6
+      },
+      "by_reason": {
+        "quarantine": 6
+      },
+      "candidates": 6,
+      "yield": 0.0
+    },
+    "rico_real": {
+      "admitted": 11,
+      "rejected": 145,
+      "by_stage": {
+        "decontamination": 31,
+        "dedup": 114
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 112,
+        "ngram_overlap": 31,
+        "fuzzy_minhash": 2
+      },
+      "candidates": 156,
+      "yield": 0.0705
+    },
+    "scope_canonical_document": {
+      "admitted": 19,
+      "rejected": 36,
+      "by_stage": {
+        "dedup": 27,
+        "quality": 6,
+        "verification": 3
+      },
+      "by_reason": {
+        "semantic_cosine": 26,
+        "quality_gate_failed": 6,
+        "quarantine": 3,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 55,
+      "yield": 0.3455
+    },
+    "scope_canonical_expression": {
+      "admitted": 18,
+      "rejected": 30,
+      "by_stage": {
+        "normalize": 30
+      },
+      "by_reason": {
+        "parse_or_contract_error": 30
+      },
+      "candidates": 48,
+      "yield": 0.375
+    },
+    "scope_canonical_lexical": {
+      "admitted": 4,
+      "rejected": 41,
+      "by_stage": {
+        "dedup": 41
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 39,
+        "semantic_cosine": 2
+      },
+      "candidates": 45,
+      "yield": 0.0889
+    },
+    "scope_canonical_statement": {
+      "admitted": 14,
+      "rejected": 34,
+      "by_stage": {
+        "dedup": 17,
+        "normalize": 17
+      },
+      "by_reason": {
+        "parse_or_contract_error": 17,
+        "fuzzy_minhash": 15,
+        "semantic_cosine": 2
+      },
+      "candidates": 48,
+      "yield": 0.2917
+    },
+    "scope_identity_document": {
+      "admitted": 0,
+      "rejected": 48,
+      "by_stage": {
+        "verification": 48
+      },
+      "by_reason": {
+        "quarantine": 48
+      },
+      "candidates": 48,
+      "yield": 0.0
+    },
+    "scope_identity_expression": {
+      "admitted": 0,
+      "rejected": 96,
+      "by_stage": {
+        "normalize": 78,
+        "quality": 18
+      },
+      "by_reason": {
+        "parse_or_contract_error": 78,
+        "quality_gate_failed": 18
+      },
+      "candidates": 96,
+      "yield": 0.0
+    },
+    "scope_identity_lexical": {
+      "admitted": 14,
+      "rejected": 79,
+      "by_stage": {
+        "dedup": 79
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 76,
+        "fuzzy_minhash": 2,
+        "semantic_cosine": 1
+      },
+      "candidates": 93,
+      "yield": 0.1505
+    },
+    "scope_identity_statement": {
+      "admitted": 17,
+      "rejected": 79,
+      "by_stage": {
+        "dedup": 13,
+        "normalize": 34,
+        "quality": 32
+      },
+      "by_reason": {
+        "parse_or_contract_error": 34,
+        "quality_gate_failed": 32,
+        "fuzzy_minhash": 10,
+        "semantic_cosine": 3
+      },
+      "candidates": 96,
+      "yield": 0.1771
+    },
+    "scope_repair_expression": {
+      "admitted": 16,
+      "rejected": 16,
+      "by_stage": {
+        "normalize": 16
+      },
+      "by_reason": {
+        "parse_or_contract_error": 16
+      },
+      "candidates": 32,
+      "yield": 0.5
+    },
+    "scope_repair_lexical": {
+      "admitted": 6,
+      "rejected": 26,
+      "by_stage": {
+        "dedup": 26
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 26
+      },
+      "candidates": 32,
+      "yield": 0.1875
+    },
+    "scope_repair_statement": {
+      "admitted": 31,
+      "rejected": 1,
+      "by_stage": {
+        "normalize": 1
+      },
+      "by_reason": {
+        "parse_or_contract_error": 1
+      },
+      "candidates": 32,
+      "yield": 0.9688
+    },
+    "web_distilled": {
+      "admitted": 2,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 2,
+      "yield": 1.0
+    }
+  },
+  "synthesizers": {
+    "abstraction_ladder": {
+      "admitted": 5,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 5,
+      "yield": 1.0
+    },
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 3,
+      "by_stage": {
+        "quality": 2,
+        "verification": 1
+      },
+      "by_reason": {
+        "quality_gate_failed": 2,
+        "quarantine": 1
+      },
+      "candidates": 16,
+      "yield": 0.8125
+    },
+    "design_md_contrastive": {
+      "admitted": 43,
+      "rejected": 103,
+      "by_stage": {
+        "decontamination": 15,
+        "dedup": 70,
+        "quality": 2,
+        "verification": 16
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 69,
+        "quarantine": 16,
+        "ngram_overlap": 14,
+        "quality_gate_failed": 2,
+        "test_fixture_structure": 1,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 146,
+      "yield": 0.2945
+    },
+    "frontier_described": {
+      "admitted": 3,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 3,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 95,
+      "rejected": 103,
+      "by_stage": {
+        "decontamination": 17,
+        "dedup": 65,
+        "quality": 2,
+        "verification": 19
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 64,
+        "quarantine": 19,
+        "ngram_overlap": 17,
+        "quality_gate_failed": 2,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 198,
+      "yield": 0.4798
+    },
+    "template": {
+      "admitted": 108,
+      "rejected": 330,
+      "by_stage": {
+        "decontamination": 56,
+        "dedup": 220,
+        "quality": 6,
+        "verification": 48
+      },
+      "by_reason": {
+        "exact_pair_duplicate": 207,
+        "ngram_overlap": 53,
+        "quarantine": 48,
+        "fuzzy_minhash": 11,
+        "quality_gate_failed": 6,
+        "test_fixture_structure": 3,
+        "semantic_cosine": 2
+      },
+      "candidates": 438,
+      "yield": 0.2466
+    }
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.3057,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "eval_overlap_flagged",
+      "value": 102,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 20,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 12
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards+aug",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 12
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards+design_md_contrastive",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 12
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "awwwards+template",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 36
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "human_curated",
+      "evidence": {
+        "decontamination_drops": 3
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 17
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "lexical_typed_map",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 54
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "programspec_generated+template",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quality_gate_failed",
+        "candidates": 9
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quality_gate_failed) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "evidence": {
+        "decontamination_drops": 56
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "prompt_paraphrase",
+      "evidence": {
+        "dup_share": 0.5729,
+        "candidates": 384
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "rico_real",
+      "evidence": {
+        "decontamination_drops": 31
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "rico_real",
+      "evidence": {
+        "dup_share": 0.7308,
+        "candidates": 156
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_canonical_document",
+      "evidence": {
+        "yield": 0.3455,
+        "top_reason": "semantic_cosine",
+        "candidates": 55
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: semantic_cosine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_canonical_expression",
+      "evidence": {
+        "yield": 0.375,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 48
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_canonical_lexical",
+      "evidence": {
+        "dup_share": 0.9111,
+        "candidates": 45
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_canonical_statement",
+      "evidence": {
+        "yield": 0.2917,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 48
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_identity_document",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "quarantine",
+        "candidates": 48
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_identity_expression",
+      "evidence": {
+        "yield": 0.0,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 96
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_identity_lexical",
+      "evidence": {
+        "dup_share": 0.8495,
+        "candidates": 93
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "scope_identity_statement",
+      "evidence": {
+        "yield": 0.1771,
+        "top_reason": "parse_or_contract_error",
+        "candidates": 96
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: parse_or_contract_error) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "scope_repair_lexical",
+      "evidence": {
+        "dup_share": 0.8125,
+        "candidates": 32
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "design_md_contrastive",
+      "evidence": {
+        "decontamination_drops": 15
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "synthesizer",
+      "target": "design_md_contrastive",
+      "evidence": {
+        "yield": 0.2945,
+        "top_reason": "exact_pair_duplicate",
+        "candidates": 146
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: exact_pair_duplicate) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "layout_augment",
+      "evidence": {
+        "decontamination_drops": 17
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "evidence": {
+        "decontamination_drops": 56
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "template",
+      "evidence": {
+        "dup_share": 0.5023,
+        "candidates": 438
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 12}",
+      "expected_effect": "family:awwwards yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards+aug raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 12}",
+      "expected_effect": "family:awwwards+aug yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards+design_md_contrastive raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 12}",
+      "expected_effect": "family:awwwards+design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:awwwards+template raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 36}",
+      "expected_effect": "family:awwwards+template yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:human_curated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 3}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "family:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 17}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:lexical_typed_map raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'parse_or_contract_error', 'candidates': 54}",
+      "expected_effect": "family:lexical_typed_map yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated+template raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'quality_gate_failed', 'candidates': 9}",
+      "expected_effect": "family:programspec_generated+template yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:prompt_paraphrase inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 56}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:prompt_paraphrase raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e937_role_safe_all_targets_v2: {'dup_share': 0.5729, 'candidates': 384}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "family:rico_real inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 31}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:rico_real raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e937_role_safe_all_targets_v2: {'dup_share': 0.7308, 'candidates': 156}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_canonical_document raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.3455, 'top_reason': 'semantic_cosine', 'candidates': 55}",
+      "expected_effect": "family:scope_canonical_document yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_canonical_expression raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.375, 'top_reason': 'parse_or_contract_error', 'candidates': 48}",
+      "expected_effect": "family:scope_canonical_expression yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_canonical_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e937_role_safe_all_targets_v2: {'dup_share': 0.9111, 'candidates': 45}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_canonical_statement raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.2917, 'top_reason': 'parse_or_contract_error', 'candidates': 48}",
+      "expected_effect": "family:scope_canonical_statement yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_document raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'quarantine', 'candidates': 48}",
+      "expected_effect": "family:scope_identity_document yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_expression raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.0, 'top_reason': 'parse_or_contract_error', 'candidates': 96}",
+      "expected_effect": "family:scope_identity_expression yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_identity_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e937_role_safe_all_targets_v2: {'dup_share': 0.8495, 'candidates': 93}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:scope_identity_statement raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.1771, 'top_reason': 'parse_or_contract_error', 'candidates': 96}",
+      "expected_effect": "family:scope_identity_statement yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:scope_repair_lexical raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e937_role_safe_all_targets_v2: {'dup_share': 0.8125, 'candidates': 32}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:design_md_contrastive inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 15}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for synthesizer:design_md_contrastive raises its yield above 0.4",
+      "rationale": "build e937_role_safe_all_targets_v2: {'yield': 0.2945, 'top_reason': 'exact_pair_duplicate', 'candidates': 146}",
+      "expected_effect": "synthesizer:design_md_contrastive yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:layout_augment inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 17}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "synthesizer:template inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e937_role_safe_all_targets_v2: {'decontamination_drops': 56}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:template raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e937_role_safe_all_targets_v2: {'dup_share': 0.5023, 'candidates': 438}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d6d25c6f186612b2a535c1aa0565c8188dc3f4fe",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v24"
+    },
+    "stamped_at": "2026-07-23T00:06:08.441067+00:00"
+  }
+}

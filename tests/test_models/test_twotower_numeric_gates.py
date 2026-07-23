@@ -125,6 +125,7 @@ def _valid_build_config(**overrides: object) -> ModelBuildConfig:
     defaults: dict[str, object] = {
         "train_dir": Path("outputs/data/train"),
         "run_id": "slm242-test",
+        "evaluation_policy": "checkpoint_declared",
     }
     defaults.update(overrides)
     return ModelBuildConfig(**defaults)  # type: ignore[arg-type]
@@ -339,11 +340,11 @@ def test_model_build_config_rejects_choice_only_schema_lever_for_lexer() -> None
         )
 
 
-def test_model_build_config_rejects_missing_decode_companions_before_artifacts(
+def test_model_build_config_rejects_prohibited_semantic_marker_lever_before_artifacts(
     tmp_path: Path,
 ) -> None:
     run_root = tmp_path / "runs"
-    with pytest.raises(ValueError, match="requires one companion configuration"):
+    with pytest.raises(ValueError, match="template markers are opaque"):
         _valid_build_config(
             run_root=run_root,
             run_id="must-not-exist",

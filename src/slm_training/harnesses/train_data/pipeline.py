@@ -44,6 +44,7 @@ class TrainDataConfig:
     # Explicitly set fields always win over the profile (see resolve_profile).
     profile: str = "strict"
     seed_path: Path | None = None
+    fixture_ids: tuple[str, ...] = ()
     # Human thumbs-up promotions from the annotate playground.
     human_annotations_path: Path | None = Path(
         "src/slm_training/resources/annotations/human_train.jsonl"
@@ -51,7 +52,7 @@ class TrainDataConfig:
     rico_path: Path | None = Path(
         "src/slm_training/resources/rico/semantic_train.jsonl"
     )
-    # rico | fixture | existing | both | awwwards | rico+awwwards | all
+    # rico | fixture | existing | existing+fixture | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
     derive_from: Path | None = None
@@ -69,7 +70,6 @@ class TrainDataConfig:
     max_openui_chars: int | None = None
     max_components: int | None = None
     curriculum: bool = False
-    namespace_augment: bool = False
     # Make the declared slot contract visible to production-like training
     # prompts; this is intentionally opt-in so historical snapshots remain
     # immutable and comparable.
@@ -78,14 +78,12 @@ class TrainDataConfig:
     # opt-in because it is a stronger contract than ordinary user prompts.
     prompt_component_contract: bool = False
     prompt_component_contract_mode: str = "counts"
-    # Group visible placeholder namespaces into semantic roles and annotate
-    # schema-compatible owners from the already-visible component type set.
-    prompt_semantic_role_contract: bool = False
     # Deterministic target sanitization (D2 canonicalization + schema-checked
     # AST optimization + content-literal templatization) applied inside
     # _normalize_record before the official validate. off | audit | enforce;
     # None = the profile decides (strict=enforce, permissive=off).
     sanitize_mode: str | None = None
+
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -151,6 +149,11 @@ class TrainDataConfig:
     # Autoresearch snapshots must never overwrite prior evidence.
     immutable: bool = False
 
+    def __post_init__(self) -> None:
+        from slm_training.levers import require_valid_lever_configuration
+
+        require_valid_lever_configuration(self, context="TrainDataConfig")
+
     @property
     def output_dir(self) -> Path:
         return self.output_root / self.version
@@ -194,12 +197,17 @@ def _normalize_record(
     *,
     sanitize: "SanitizeOptions | None" = None,
 ) -> ExampleRecord:
-    from slm_training.data.contract import normalize_example_record
+    from slm_training.data.contract import (
+        assert_no_template_semantic_labels,
+        canonicalize_example_template_markers,
+        normalize_example_record,
+    )
     from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
     record = normalize_example_record(record)
+    assert_no_template_semantic_labels(record.prompt, record.design_md)
     if record.target_kind != "document":
         from slm_training.dsl.analysis.templatize import templatize_fragment
         from slm_training.dsl.language_contract import assert_symbol_only_output
@@ -209,13 +217,15 @@ def _normalize_record(
         accepted_outputs = list(record.accepted_outputs)
         fragment_replacements: dict[str, str] = {}
         if sanitize is not None and sanitize.enabled and sanitize.templatize:
-            primary_result = templatize_fragment(primary_source)
+            primary_result = templatize_fragment(
+                primary_source, output_kind=record.target_kind
+            )
             fragment_replacements.update(primary_result.replacements)
             if sanitize.mode == "enforce":
                 primary_source = primary_result.source
             rewritten_outputs: list[OutputTarget] = []
             for target in accepted_outputs:
-                result = templatize_fragment(target.text)
+                result = templatize_fragment(target.text, output_kind=target.kind)
                 fragment_replacements.update(result.replacements)
                 rewritten_outputs.append(
                     OutputTarget(
@@ -267,7 +277,7 @@ def _normalize_record(
                 "templatize_skipped": {},
             }
         surfaces = [primary, *(target.text for target in accepted_outputs)]
-        return ExampleRecord(
+        return canonicalize_example_template_markers(ExampleRecord(
             id=record.id,
             prompt=record.prompt.strip(),
             openui=primary,
@@ -281,7 +291,7 @@ def _normalize_record(
             target_kind=record.target_kind,
             target_category=record.target_category,
             accepted_outputs=accepted_outputs,
-        )
+        ))
 
     scrubbed = strip_style_literals(record.openui)
     # Deterministic sanitization runs on the style-stripped source *before*
@@ -321,7 +331,7 @@ def _normalize_record(
             result = (
                 templatize(target_text)
                 if target.kind == "document"
-                else templatize_fragment(target_text)
+                else templatize_fragment(target_text, output_kind=target.kind)
             )
             if sanitize.mode == "enforce":
                 target_text = result.source
@@ -420,6 +430,7 @@ def _normalize_record(
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
+    out = canonicalize_example_template_markers(out)
     from slm_training.data.quality import independent_judge
 
     # Feed the deterministic prompt/output judge into the authoritative
@@ -1048,7 +1059,15 @@ def _records_from_fixtures(
     human_records, human_errors = _records_from_seed_file(
         config.human_annotations_path, require_split=config.require_split
     )
-    return fixture_records + human_records, fixture_errors + human_errors
+    records = fixture_records + human_records
+    if config.fixture_ids:
+        requested = set(config.fixture_ids)
+        available = {record.id for record in records}
+        missing = requested - available
+        if missing:
+            raise ValueError(f"unknown fixture ids: {sorted(missing)}")
+        records = [record for record in records if record.id in requested]
+    return records, fixture_errors + human_errors
 
 
 def _records_from_rico(
@@ -1107,11 +1126,20 @@ def _records_from_existing(
         raise ValueError("source 'existing' requires --derive-from")
     if not Path(path).is_file():
         raise ValueError(f"derivation source does not exist: {path}")
+    refreshed_contract_ids: set[str] = set()
+    if config.include_language_contract:
+        from slm_training.data.language_contract import iter_positives
+
+        refreshed_contract_ids = {
+            record.id for record in iter_positives(config.require_split)
+        }
     records: list[ExampleRecord] = []
     errors: list[dict] = []
     for record in load_jsonl(path):
-        family = str((record.meta or {}).get("program_family_id") or "")
-        if config.include_language_contract and family.startswith("language_contract:"):
+        # Current canonical contract rows are refreshed below. Preserve derived
+        # rows in the same family: silently dropping them makes --derive-from
+        # non-conservative and discards valid hard examples.
+        if record.id in refreshed_contract_ids:
             continue
         if record.split != config.require_split:
             errors.append(
@@ -1200,7 +1228,7 @@ def build_train_data(
     # rejected.jsonl with its stage + reason (never silently discarded).
     rejections: list[dict] = []
 
-    if source in {"fixture", "both", "fixtures", "all"}:
+    if source in {"fixture", "both", "fixtures", "existing+fixture", "all"}:
         fixture_records, fixture_errors = _records_from_fixtures(config)
         seeds.extend(fixture_records)
         errors.extend(fixture_errors)
@@ -1212,7 +1240,7 @@ def build_train_data(
         aww_records, aww_errors = _records_from_awwwards(config)
         seeds.extend(aww_records)
         errors.extend(aww_errors)
-    if source == "existing":
+    if source in {"existing", "existing+fixture"}:
         records, source_errors = _records_from_existing(config)
         seeds.extend(records)
         errors.extend(source_errors)
@@ -1231,7 +1259,13 @@ def build_train_data(
         )
         seeds.extend(records)
         errors.extend(source_errors)
-    if source in {"language_contract", "integrated", "all", "existing"}:
+    if source in {
+        "language_contract",
+        "integrated",
+        "all",
+        "existing",
+        "existing+fixture",
+    }:
         records, source_errors = _records_from_language_contract(config)
         seeds.extend(records)
         errors.extend(source_errors)
@@ -1250,6 +1284,7 @@ def build_train_data(
         "both",
         "awwwards",
         "existing",
+        "existing+fixture",
         "rico+awwwards",
         "programspec",
         "language_contract",
@@ -1322,7 +1357,7 @@ def build_train_data(
             "generation",
         }:
             candidates.extend(synth.expand(seed))
-            if source == "existing" and (
+            if source in {"existing", "existing+fixture"} and (
                 config.include_edit_derivatives or config.repairs_per_program > 0
             ):
                 try:
@@ -1337,16 +1372,6 @@ def build_train_data(
                             detail={"error": str(exc)},
                         )
                     )
-        if config.namespace_augment and seed.target_kind == "document":
-            from slm_training.harnesses.train_data.synth import (
-                NamespaceAugmentSynthesizer,
-            )
-
-            ns = NamespaceAugmentSynthesizer()
-            extra: list[ExampleRecord] = []
-            for candidate in list(candidates):
-                extra.extend(ns.expand(candidate))
-            candidates.extend(extra)
         for candidate in candidates:
             candidate = _apply_governance_gate(candidate)
             lineage_index[candidate.id] = lineage_entry(candidate)
@@ -1684,33 +1709,37 @@ def build_train_data(
     )
     _mirror_drops("exposure", parent_cap_dropped)
     deduped.sort(key=lambda r: r.id)
+
+    from slm_training.data.selection import (
+        attach_curation_scores,
+        load_record_nll,
+        select_difficult_records,
+    )
+
+    nll_by_id: dict[str, float] | None = None
+    difficulty_dropped: list[dict] = []
+    difficulty_scored_count = 0
+    if config.difficulty_from:
+        nll_by_id = load_record_nll(config.difficulty_from)
+        difficulty_scored_count = sum(record.id in nll_by_id for record in deduped)
+    attach_curation_scores(deduped, nll_by_id=nll_by_id)
+    if nll_by_id:
+        deduped, difficulty_dropped = select_difficult_records(deduped, nll_by_id)
+        _mirror_drops("selection", difficulty_dropped)
+
     source_families = family_stats(deduped)
     from slm_training.data.dedup import cluster_exposure_stats
 
     source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
 
-    from slm_training.data.selection import attach_curation_scores, load_record_nll
-
-    nll_by_id: dict[str, float] | None = None
-    if config.difficulty_from:
-        nll_by_id = load_record_nll(config.difficulty_from)
-    attach_curation_scores(deduped, nll_by_id=nll_by_id)
-
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
     # contract cannot silently change which source examples are admitted.
-    if config.prompt_semantic_role_contract and not (
-        config.prompt_component_contract and config.prompt_slot_contract
-    ):
-        raise ValueError(
-            "prompt_semantic_role_contract requires visible component and slot contracts"
-        )
     if (
         config.prompt_component_contract
         or config.prompt_slot_contract
-        or config.prompt_semantic_role_contract
     ):
-        from slm_training.data.quality import component_counts, semantic_role_contract
+        from slm_training.data.quality import component_counts
         from slm_training.models.template_fill import ensure_prompt_inventory
 
         component_mode = config.prompt_component_contract_mode
@@ -1735,15 +1764,6 @@ def build_train_data(
                 prompt = ensure_prompt_inventory(
                     prompt, list(record.placeholders or [])
                 )
-            if config.prompt_semantic_role_contract and not any(
-                line.startswith("Semantic roles:") for line in prompt.splitlines()
-            ):
-                roles = semantic_role_contract(
-                    list(record.placeholders or []),
-                    [name for name, _count in counts],
-                )
-                if roles:
-                    prompt = f"{prompt}\nSemantic roles: {roles}"
             contracted.append(replace(record, prompt=prompt))
         deduped = contracted
 
@@ -1910,9 +1930,6 @@ def build_train_data(
         "prompt_slot_contract": bool(config.prompt_slot_contract),
         "prompt_component_contract": bool(config.prompt_component_contract),
         "prompt_component_contract_mode": config.prompt_component_contract_mode,
-        "prompt_semantic_role_contract": bool(
-            config.prompt_semantic_role_contract
-        ),
         "sanitize_mode": sanitize_mode,
         "sanitize": sanitization_section,
         "structure_reserved_rejected": len(structure_reserved_rejected),
@@ -1939,11 +1956,9 @@ def build_train_data(
         "difficulty_from": (
             str(config.difficulty_from) if config.difficulty_from else None
         ),
-        "difficulty_scored": (
-            sum(1 for r in deduped if "record_nll" in (r.meta or {}))
-            if nll_by_id
-            else 0
-        ),
+        "difficulty_scored": difficulty_scored_count,
+        "difficulty_dropped": len(difficulty_dropped),
+        "difficulty_dropped_samples": difficulty_dropped[:20],
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None

@@ -33,9 +33,9 @@ def _model() -> TwoTowerModel:
     record = ExampleRecord(
         id="a",
         prompt="Card",
-        openui='root = TextContent(":card.title")',
+        openui='root = TextContent(":slot_0")',
         split="train",
-        placeholders=[":card.title"],
+        placeholders=[":slot_0"],
     )
     return TwoTowerModel.from_records(
         [record],

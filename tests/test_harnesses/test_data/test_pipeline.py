@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.dsl import bridge_available
-from slm_training.dsl.language_contract import output_contract_violations
-from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.data.leakage import load_train_fingerprints
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -66,9 +65,39 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
     out_dir = Path(result["output_dir"])
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["suite_counts"]["smoke"] == 1
-    assert manifest["version_stamp"]["components"] == {"data.test_build": "v5"}
+    assert manifest["version_stamp"]["components"] == {"data.test_build": "v10"}
     assert result["stats"]["version_stamp"] == manifest["version_stamp"]
     assert (out_dir / "suites" / "smoke" / "records.jsonl").exists()
+
+
+def test_fixture_normalization_failure_is_fatal(tmp_path: Path) -> None:
+    seeds = tmp_path / "bad_test_seeds.jsonl"
+    write_jsonl(
+        seeds,
+        [
+            ExampleRecord(
+                id="bad_fixture",
+                prompt="Broken fixture",
+                openui="root = Broken(",
+                split="smoke",
+                source="fixture",
+                meta={"suite": "smoke"},
+            )
+        ],
+    )
+    with pytest.raises(ValueError, match="fixture test record 'bad_fixture'"):
+        build_test_data(
+            TestDataConfig(
+                seed_path=seeds,
+                rico_path=None,
+                source="fixture",
+                output_root=tmp_path / "test_data",
+                version="bad",
+                suites=("smoke",),
+                train_manifest=None,
+                require_train_manifest=False,
+            )
+        )
 
 
 def test_leakage_detection_by_id(tmp_path: Path) -> None:
@@ -256,7 +285,9 @@ def test_test_builder_sanitizes_gold_with_shared_transform(tmp_path: Path) -> No
         .read_text(encoding="utf-8")
         .splitlines()
     ]
-    expected = sanitize_openui(gold, options=SanitizeOptions(mode="enforce")).openui
+    expected = sanitize_openui(
+        gold, options=SanitizeOptions(mode="enforce")
+    ).openui.replace(":hero.title", ":slot_0")
     assert records[0]["openui"] == expected
     assert '"column"' not in records[0]["openui"]
 
@@ -285,7 +316,7 @@ def test_test_builder_sanitizes_gold_with_shared_transform(tmp_path: Path) -> No
     assert off["stats"]["sanitize"] == {"mode": "off"}
 
 
-def test_test_builder_templatizes_or_rejects_free_form_targets(tmp_path: Path) -> None:
+def test_test_builder_rewrites_structural_strings_to_opaque_ids(tmp_path: Path) -> None:
     seeds = tmp_path / "free_form_seeds.jsonl"
     write_jsonl(
         seeds,
@@ -302,30 +333,27 @@ def test_test_builder_templatizes_or_rejects_free_form_targets(tmp_path: Path) -
             )
         ],
     )
-    result = build_test_data(
+    enforced_root = tmp_path / "eval"
+    build_test_data(
         TestDataConfig(
             seed_path=seeds,
             rico_path=None,
             source="fixture",
-            output_root=tmp_path / "eval",
+            output_root=enforced_root,
             version="enforced",
             suites=("held_out",),
             train_manifest=None,
             require_train_manifest=False,
         )
     )
-    record = json.loads(
-        (
-            Path(result["output_dir"])
-            / "suites"
-            / "held_out"
-            / "records.jsonl"
-        ).read_text(encoding="utf-8")
+    [record] = load_jsonl(
+        enforced_root / "enforced" / "suites" / "held_out" / "records.jsonl"
     )
-    assert output_contract_violations(record["openui"]) == ()
-    assert record["meta"]["sanitize"]["template_fills"] == {
-        ":root.name": "contact"
-    }
+    assert record.openui == (
+        'root = Form("$0", v0, [])\n'
+        'v0 = Buttons([Button(":slot_0")])'
+    )
+    assert "contact" not in record.openui
 
     rejected_root = tmp_path / "eval_off"
     with pytest.raises(ValueError, match="symbol-only output contract"):

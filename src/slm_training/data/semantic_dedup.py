@@ -27,9 +27,8 @@ from slm_training.data.dedup import _keep_key, _record_family
 from slm_training.data.leakage import norm_text, normalize_openui_structure
 from slm_training.dsl.schema import ExampleRecord
 
-# Families that are near-duplicates BY DESIGN (deliberate curriculum
-# augmentation the caller opted into); semantic dedup must not undo them.
-DELIBERATE_VARIANT_FAMILIES = frozenset({"namespace_augment"})
+# Families that are near-duplicates by design; none are currently exempt.
+DELIBERATE_VARIANT_FAMILIES: frozenset[str] = frozenset()
 
 # Engine-specific cosine thresholds: embeddings place paraphrases much closer
 # together than surface n-grams do, so the lexical fallback runs stricter.

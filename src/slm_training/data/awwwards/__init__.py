@@ -100,8 +100,8 @@ def _heuristic_openui(site: dict[str, Any]) -> tuple[str, list[str]]:
             [
                 'tab_body_a = TextContent(":tabs.a.body")',
                 'tab_body_b = TextContent(":tabs.b.body")',
-                'tab_a = TabItem("a", ":tabs.a.trigger", [tab_body_a])',
-                'tab_b = TabItem("b", ":tabs.b.trigger", [tab_body_b])',
+                'tab_a = TabItem("$0", ":tabs.a.trigger", [tab_body_a])',
+                'tab_b = TabItem("$1", ":tabs.b.trigger", [tab_body_b])',
                 "tabs = Tabs([tab_a, tab_b])",
             ]
         )
@@ -116,7 +116,7 @@ def _heuristic_openui(site: dict[str, Any]) -> tuple[str, list[str]]:
 
     if tags & {"form", "signup", "login", "contact", "education", "health"}:
         children.extend(["email", "submit"])
-        lines.append(f'email = Input("email", ":{name}.email.placeholder")')
+        lines.append(f'email = Input("$2", ":{name}.email.placeholder", "email")')
         lines.append(f'submit = Button(":{name}.submit")')
         placeholders.extend([f":{name}.email.placeholder", f":{name}.submit"])
     else:
@@ -127,7 +127,7 @@ def _heuristic_openui(site: dict[str, Any]) -> tuple[str, list[str]]:
     if tags & {"settings", "ops"}:
         children.append("notify")
         lines.append(
-            'notify = SwitchItem(":settings.notify.label", ":settings.notify.description", "notify")'
+            'notify = SwitchItem(":settings.notify.label", ":settings.notify.description", "$3")'
         )
         placeholders.extend(
             [":settings.notify.label", ":settings.notify.description"]

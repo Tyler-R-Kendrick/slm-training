@@ -24,7 +24,11 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.data.contract import GenerationRequest, RuntimeSymbol
+from slm_training.data.contract import (
+    GenerationRequest,
+    RuntimeSymbol,
+    canonicalize_example_template_markers,
+)
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -32,7 +36,10 @@ from slm_training.models.grammar import make_grammar_state
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
-from slm_training.levers import SLOT_CONTRACT_DECODE_LEVERS
+from slm_training.levers import (
+    PROHIBITED_TEMPLATE_SEMANTIC_LEVERS,
+    SLOT_CONTRACT_DECODE_LEVERS,
+)
 
 
 def _model(**config_overrides) -> TwoTowerModel:
@@ -56,11 +63,15 @@ def _model(**config_overrides) -> TwoTowerModel:
         config_overrides.setdefault("slot_contract_constrained_decode", True)
     if (
         satisfy_companions
-        and float(config_overrides.get("semantic_role_decode_weight", 0.0) or 0.0)
-        > 0.0
+        and float(config_overrides.get("semantic_role_decode_weight", 0.0) or 0.0) > 0.0
     ):
         config_overrides.setdefault("honest_slot_contract", True)
         config_overrides.setdefault("semantic_role_contract_in_context", True)
+    prohibited_overrides = {
+        name: config_overrides.pop(name)
+        for name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS
+        if name in config_overrides
+    }
     config = TwoTowerConfig(
         context_backend="scratch",
         output_tokenizer=output_tokenizer,
@@ -76,7 +87,13 @@ def _model(**config_overrides) -> TwoTowerModel:
         seed=0,
         **config_overrides,
     )
-    model = TwoTowerModel.from_records([record], config=config, device="cpu")
+    model = TwoTowerModel.from_records(
+        [canonicalize_example_template_markers(record)], config=config, device="cpu"
+    )
+    # Internal bias tests exercise legacy helpers directly. Production config
+    # construction rejects these values; restore only after that boundary.
+    for name, value in prohibited_overrides.items():
+        setattr(model.config, name, value)
     model.eval()
     return model
 
@@ -110,6 +127,7 @@ def test_choice_decode_all_singletons_skips_denoiser(monkeypatch) -> None:
             AssertionError("all-singleton choice step must not run the denoiser")
         ),
     )
+
     def forbidden_scoring(*_args, **_kwargs):
         raise AssertionError("exact singleton must commit before semantic scoring")
 
@@ -157,9 +175,7 @@ def test_choice_decode_mixed_step_forwards_only_ambiguous_rows(monkeypatch) -> N
 
     def forward(ids, _ctx, _ctx_pad):
         forwarded_rows.append(int(ids.size(0)))
-        logits = torch.zeros(
-            (ids.size(0), ids.size(1), model.tokenizer.vocab_size)
-        )
+        logits = torch.zeros((ids.size(0), ids.size(1), model.tokenizer.vocab_size))
         logits[..., model.tokenizer.eos_id] = 100.0
         return logits
 
@@ -167,9 +183,7 @@ def test_choice_decode_mixed_step_forwards_only_ambiguous_rows(monkeypatch) -> N
     monkeypatch.setattr(model, "_denoiser_forward", forward)
     ctx, ctx_pad = model._encode_context(["forced", "ambiguous"])
     with collect_decode_stats() as stats:
-        ids = model._choice_ltr_decode_batch(
-            ctx, ctx_pad, 8, [None, [":hero.title"]]
-        )
+        ids = model._choice_ltr_decode_batch(ctx, ctx_pad, 8, [None, [":hero.title"]])
 
     assert forwarded_rows == [1]
     assert ids[:, 1].tolist() == [model.tokenizer.eos_id] * 2
@@ -191,7 +205,9 @@ def test_compiler_singleton_bypass_requires_complete_coverage(
     forest = CompletionForest(
         (CompletionPath((model.tokenizer.eos_id,), "eos"),), coverage
     )
-    monkeypatch.setattr(compiler_draft, "build_completion_forest", lambda *_a, **_k: forest)
+    monkeypatch.setattr(
+        compiler_draft, "build_completion_forest", lambda *_a, **_k: forest
+    )
     original_hidden = model._denoiser_hidden
     forwards = 0
 
@@ -223,9 +239,7 @@ def test_compiler_empty_forest_records_bounded_dead_end_trace(monkeypatch) -> No
     ctx, ctx_pad = model._encode_context(["card"])
 
     with collect_decode_stats() as stats:
-        model._compiler_ltr_decode_one(
-            ctx, ctx_pad, 8, mode="tree", slot_contract=None
-        )
+        model._compiler_ltr_decode_one(ctx, ctx_pad, 8, mode="tree", slot_contract=None)
 
     assert stats.compiler_fallbacks == 1
     assert stats.constrained_dead_ends == 1
@@ -246,19 +260,14 @@ def test_choice_gold_decisions_classify_component_roles() -> None:
     from slm_training.models.choice_tokenizer import ChoiceTokenizer
 
     tokenizer = ChoiceTokenizer.build()
-    source = (
-        'root = Card([title])\n'
-        'title = TextContent(":hero.title")'
-    )
+    source = 'root = Card([title])\ntitle = TextContent(":hero.title")'
     decisions = gold_compiler_decisions(
         tokenizer,
         tokenizer.encode(source, placeholders=[":hero.title"]),
         slot_contract=[":hero.title"],
     )
     component_roles = [
-        decision.kind
-        for decision in decisions
-        if decision.token_kind == "component"
+        decision.kind for decision in decisions if decision.token_kind == "component"
     ]
     # Structural choice streams emit dependencies first and the root last.
     assert component_roles == ["component_bound", "component_root"]
@@ -266,13 +275,15 @@ def test_choice_gold_decisions_classify_component_roles() -> None:
 
 
 def test_choice_component_plan_trains_without_surface_compiler() -> None:
-    record = ExampleRecord(
-        id="choice-plan",
-        prompt="card with title",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
-        split="train",
-        source="fixture",
+    record = canonicalize_example_template_markers(
+        ExampleRecord(
+            id="choice-plan",
+            prompt="card with title",
+            openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+            placeholders=[":hero.title"],
+            split="train",
+            source="fixture",
+        )
     )
     model = TwoTowerModel.from_records(
         [record],
@@ -301,17 +312,19 @@ def test_choice_component_plan_trains_without_surface_compiler() -> None:
 
 
 def test_slot_component_head_trains_on_visible_slot_owners() -> None:
-    record = ExampleRecord(
-        id="slot-components",
-        prompt="email field and submit action",
-        openui=(
-            'root = Stack([field, submit])\n'
-            'field = Input("email", ":form.email")\n'
-            'submit = Button(":form.submit")'
-        ),
-        placeholders=[":form.email", ":form.submit"],
-        split="train",
-        source="fixture",
+    record = canonicalize_example_template_markers(
+        ExampleRecord(
+            id="slot-components",
+            prompt="email field and submit action",
+            openui=(
+                "root = Stack([field, submit])\n"
+                'field = Input("$0", ":form.email")\n'
+                'submit = Button(":form.submit")'
+            ),
+            placeholders=[":form.email", ":form.submit"],
+            split="train",
+            source="fixture",
+        )
     )
     model = TwoTowerModel.from_records(
         [record],
@@ -363,7 +376,7 @@ def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
             device=context.device,
         )
         for index, slot in enumerate(slots):
-            target = "Input" if slot == ":form.email" else "Button"
+            target = "Input" if slot == "content:0" else "Button"
             rows[index, component_index[target]] = 3.0
         return rows
 
@@ -518,9 +531,7 @@ def test_visible_semantic_roles_abstain_with_incomplete_original_coverage() -> N
 def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     from types import SimpleNamespace
 
-    model = _model(
-        output_tokenizer="choice", slot_coverage_close_decode_weight=4.0
-    )
+    model = _model(output_tokenizer="choice", slot_coverage_close_decode_weight=4.0)
     tokenizer = model.tokenizer
     close_id = tokenizer.token_to_id["]"]
     button_id = tokenizer.token_to_id["+Button"]
@@ -550,15 +561,11 @@ def test_slot_coverage_close_bias_closes_legal_frames_after_coverage() -> None:
     complete = [tokenizer.bos_id, tokenizer.sym_id(0), tokenizer.sym_id(1)]
     incomplete = [tokenizer.bos_id, tokenizer.sym_id(0)]
 
-    bias = model._slot_coverage_close_bias(
-        typed, complete, candidates, scores, slots
-    )
+    bias = model._slot_coverage_close_bias(typed, complete, candidates, scores, slots)
 
     assert bias is not None and bias.tolist() == [0.0, 4.0]
     assert (
-        model._slot_coverage_close_bias(
-            typed, incomplete, candidates, scores, slots
-        )
+        model._slot_coverage_close_bias(typed, incomplete, candidates, scores, slots)
         is None
     )
     structural_bias = model._slot_coverage_close_bias(
@@ -637,16 +644,15 @@ def test_slot_coverage_close_bias_continues_through_compatible_component() -> No
         state,
         [tokenizer.bos_id],
         (button_id, close_id),
-            torch.tensor([0.0, 3.0]),
-            [":dialog.confirm"],
-            {":dialog.confirm": ("Button",)},
-            semantic_role_properties={
-                ":dialog.confirm": ("action", "confirm", "label")
-            },
+        torch.tensor([0.0, 3.0]),
+        [":dialog.confirm"],
+        {":dialog.confirm": ("Button",)},
+        semantic_role_properties={":dialog.confirm": ("action", "confirm", "label")},
     )
 
     assert bias is not None
     assert bias.tolist() == [7.0, 0.0]
+
 
 def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
     from types import SimpleNamespace
@@ -674,9 +680,7 @@ def test_slot_coverage_close_bias_reaches_slot_through_schema_wrapper() -> None:
         torch.tensor([0.0, 3.0]),
         [":dialog.confirm"],
         {":dialog.confirm": ("Button",)},
-        semantic_role_properties={
-            ":dialog.confirm": ("action", "confirm", "label")
-        },
+        semantic_role_properties={":dialog.confirm": ("action", "confirm", "label")},
     )
 
     assert bias is not None
@@ -733,7 +737,9 @@ def test_slot_coverage_wrapper_stops_after_bound_roles_are_covered() -> None:
     assert complete is None
 
 
-def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> None:
+def test_slot_coverage_close_bias_continues_through_compatible_object_property() -> (
+    None
+):
     from types import SimpleNamespace
 
     model = _model(
@@ -767,9 +773,7 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("ImageGallery",)},
-        semantic_role_properties={
-            ":gallery.caption": ("caption", "details", "text")
-        },
+        semantic_role_properties={":gallery.caption": ("caption", "details", "text")},
     )
 
     assert bias is not None
@@ -781,9 +785,7 @@ def test_slot_coverage_close_bias_continues_through_compatible_object_property()
         torch.tensor([1.0, 5.0]),
         [":gallery.caption"],
         {":gallery.caption": ("TextContent",)},
-        semantic_role_properties={
-            ":gallery.caption": ("caption", "details", "text")
-        },
+        semantic_role_properties={":gallery.caption": ("caption", "details", "text")},
     )
     assert schema_bias is not None and schema_bias.tolist() == [8.0, 0.0]
 
@@ -863,8 +865,7 @@ def test_slot_coverage_direct_slot_requires_placeholder_property() -> None:
     assert model._slot_coverage_close_bias(*args) is None
 
 
-def test_slot_coverage_close_bias_escapes_wrong_owner_before_nested_component(
-) -> None:
+def test_slot_coverage_close_bias_escapes_wrong_owner_before_nested_component() -> None:
     from types import SimpleNamespace
 
     model = _model(
@@ -1064,9 +1065,7 @@ def test_repeated_plan_array_close_bias_targets_nested_repeated_family() -> None
         frames=[
             SimpleNamespace(kind="component", expr_type="element:Card"),
             SimpleNamespace(kind="variadic", expr_type="array", item_count=0),
-            SimpleNamespace(
-                kind="component", expr_type="element:TextContent"
-            ),
+            SimpleNamespace(kind="component", expr_type="element:TextContent"),
             SimpleNamespace(
                 kind="variadic",
                 expr_type="array",
@@ -1148,15 +1147,17 @@ def test_repeated_plan_slot_bias_uses_shared_plan_margin_for_lexer_ownership() -
     tokenizer = model.tokenizer
     card_id = tokenizer.token_to_id["Card"]
     model._semantic_plan_action_counts = [{card_id: 3}]
-    model._slot_contracts = [[
-        ":toolbar.text",
-        ":card1.title",
-        ":card1.body",
-        ":card2.title",
-        ":card2.body",
-        ":card3.title",
-        ":card3.body",
-    ]]
+    model._slot_contracts = [
+        [
+            ":toolbar.text",
+            ":card1.title",
+            ":card1.body",
+            ":card2.title",
+            ":card2.body",
+            ":card3.title",
+            ":card3.body",
+        ]
+    ]
     prefix = [
         tokenizer.bos_id,
         *tokenizer.encode("root = Stack([Card([TextContent(", add_special=False),
@@ -1189,15 +1190,17 @@ def test_repeated_plan_slot_bias_closes_completed_lexer_owner_group() -> None:
     tokenizer = model.tokenizer
     card_id = tokenizer.token_to_id["Card"]
     model._semantic_plan_action_counts = [{card_id: 3}]
-    model._slot_contracts = [[
-        ":toolbar.text",
-        ":card1.title",
-        ":card1.body",
-        ":card2.title",
-        ":card2.body",
-        ":card3.title",
-        ":card3.body",
-    ]]
+    model._slot_contracts = [
+        [
+            ":toolbar.text",
+            ":card1.title",
+            ":card1.body",
+            ":card2.title",
+            ":card2.body",
+            ":card3.title",
+            ":card3.body",
+        ]
+    ]
     prefix = [
         tokenizer.bos_id,
         *tokenizer.encode("root = Stack([Card([TextContent(", add_special=False),
@@ -1231,14 +1234,16 @@ def test_repeated_plan_slot_bias_does_not_close_parent_sibling_array() -> None:
     tokenizer = model.tokenizer
     card_id = tokenizer.token_to_id["Card"]
     model._semantic_plan_action_counts = [{card_id: 3}]
-    model._slot_contracts = [[
-        ":card1.title",
-        ":card1.body",
-        ":card2.title",
-        ":card2.body",
-        ":card3.title",
-        ":card3.body",
-    ]]
+    model._slot_contracts = [
+        [
+            ":card1.title",
+            ":card1.body",
+            ":card2.title",
+            ":card2.body",
+            ":card3.title",
+            ":card3.body",
+        ]
+    ]
     prefix = [
         tokenizer.bos_id,
         *tokenizer.encode("root = Stack([Card([TextContent(", add_special=False),
@@ -1251,13 +1256,16 @@ def test_repeated_plan_slot_bias_does_not_close_parent_sibling_array() -> None:
     for token_id in prefix[1:]:
         state.advance_token(tokenizer, token_id)
 
-    assert model._semantic_plan_repeated_slot_bias(
-        0,
-        state,
-        prefix,
-        (tokenizer.token_to_id[","], tokenizer.token_to_id["]"]),
-        torch.tensor([1.0, 8.0]),
-    ) is None
+    assert (
+        model._semantic_plan_repeated_slot_bias(
+            0,
+            state,
+            prefix,
+            (tokenizer.token_to_id[","], tokenizer.token_to_id["]"]),
+            torch.tensor([1.0, 8.0]),
+        )
+        is None
+    )
 
 
 def test_typed_array_nonempty_bias_starts_slot_bearing_authored_array() -> None:
@@ -1403,9 +1411,7 @@ def test_typed_array_item_bias_prefers_schema_allowed_role_wrapper() -> None:
                             {
                                 "$ref": "#/$defs/BarChart",
                                 "type": "object",
-                                "properties": {
-                                    "value": {"x-openui-placeholder": True}
-                                },
+                                "properties": {"value": {"x-openui-placeholder": True}},
                             },
                         ]
                     },
@@ -1560,7 +1566,15 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     enabled, so the bias silently no-opped on every decode step regardless of
     weight or checkpoint quality. Fail loud instead of reproducing that footgun.
     """
-    with pytest.raises(ValueError, match="requires one companion configuration"):
+    expected = (
+        "template markers are opaque"
+        if weight_name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS
+        else "requires one companion configuration"
+    )
+    with pytest.raises(ValueError, match=expected):
+        if weight_name in PROHIBITED_TEMPLATE_SEMANTIC_LEVERS:
+            TwoTowerConfig(**{weight_name: 8.0})
+            return
         _model(
             output_tokenizer="choice",
             _satisfy_companions=False,
@@ -1572,47 +1586,24 @@ def test_contract_gated_decode_weight_without_slot_contract_decode_raises(
     "enabling_flag",
     ["slot_contract_constrained_decode", "template_fill_decode"],
 )
-def test_contract_gated_decode_weight_with_slot_contract_decode_does_not_raise(
+def test_semantic_role_weight_remains_prohibited_with_contract_decode(
     enabling_flag: str,
 ) -> None:
-    """Either companion flag populates ``self._slot_contracts`` and clears the
-
-    E617 guard; this only asserts the guard itself does not fire (generation may
-    still legitimately fail/parse-fallback for other reasons on this tiny model).
-    """
-    model = _model(
-        output_tokenizer="choice",
-        schema_role_slot_decode_weight=8.0,
-        **{enabling_flag: True},
-    )
-    request = GenerationRequest(
-        prompt="Gallery block.",
-        slot_contract=[":gallery.image"],
-        runtime_symbols=(
-            RuntimeSymbol(
-                surface=":gallery.image",
-                role="external_entity",
-                semantic_role="image",
-            ),
-        ),
-    )
-
-    model.generate_batch_requests([request])  # must not raise ValueError
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        TwoTowerConfig(
+            output_tokenizer="choice",
+            schema_role_slot_decode_weight=8.0,
+            **{enabling_flag: True},
+        )
 
 
 def test_marker_name_cannot_activate_semantic_role_scoring() -> None:
-    model = _model(
-        output_tokenizer="choice",
-        schema_role_slot_decode_weight=8.0,
-        slot_contract_constrained_decode=True,
-    )
-    request = GenerationRequest(
-        prompt="Gallery block.",
-        slot_contract=[":gallery.image"],
-    )
-
-    with pytest.raises(ValueError, match="RuntimeSymbol.semantic_role"):
-        model.generate_batch_requests([request])
+    with pytest.raises(ValueError, match="template markers are opaque"):
+        RuntimeSymbol(
+            surface=":gallery.image",
+            role="external_entity",
+            semantic_role="image",
+        )
 
 
 def test_schema_value_bias_penalizes_slots_only_for_enum_arguments() -> None:
@@ -1708,16 +1699,15 @@ def test_schema_enum_finalize_replaces_only_invalid_fixed_literal() -> None:
     finalized_invalid = model._finalize_schema_enum_choices(
         invalid, [[":title", ":body"]]
     )
-    finalized_valid = model._finalize_schema_enum_choices(
-        valid, [[":title", ":body"]]
-    )
+    finalized_valid = model._finalize_schema_enum_choices(valid, [[":title", ":body"]])
     finalized_compact_valid = model._finalize_schema_enum_choices(
         compact_valid, [[":title"]]
     )
 
-    assert model._decode_openui(
-        finalized_invalid[0], placeholders=[":title", ":body"]
-    ) == 'root = Callout("info", ":title", ":body")'
+    assert (
+        model._decode_openui(finalized_invalid[0], placeholders=[":title", ":body"])
+        == 'root = Callout("info", ":title", ":body")'
+    )
     assert torch.equal(finalized_valid, valid)
     assert torch.equal(finalized_compact_valid, compact_valid)
 
@@ -1776,9 +1766,7 @@ def test_schema_enum_close_bias_rewards_only_optional_enum_close() -> None:
     close_id = tokenizer.token_to_id[CLOSE]
     scores = torch.zeros(2)
 
-    assert (
-        model._schema_enum_close_bias(state, (slot_id, close_id), scores) is None
-    )
+    assert model._schema_enum_close_bias(state, (slot_id, close_id), scores) is None
     assert state.advance_id(tokenizer.sym_id(0))
     assert state.advance_id(tokenizer.token_to_id[f"{LIT_PREFIX}null"])
     bias = model._schema_enum_close_bias(state, (slot_id, close_id), scores)
@@ -1802,9 +1790,7 @@ def test_schema_opaque_close_bias_rewards_only_optional_empty_schema_close() -> 
     close_id = tokenizer.token_to_id[CLOSE]
     scores = torch.zeros(2)
 
-    assert (
-        model._schema_opaque_close_bias(state, (slot_id, close_id), scores) is None
-    )
+    assert model._schema_opaque_close_bias(state, (slot_id, close_id), scores) is None
     assert state.advance_id(tokenizer.sym_id(0))
     bias = model._schema_opaque_close_bias(state, (slot_id, close_id), scores)
 
@@ -2066,9 +2052,7 @@ def test_role_obligations_partition_hero_roles_into_schema_carriers() -> None:
         },
     )
 
-    assert counts == Counter(
-        {"TextContent": 2, "Card": 1, "Stack": 1, "CardHeader": 1}
-    )
+    assert counts == Counter({"TextContent": 2, "Card": 1, "Stack": 1, "CardHeader": 1})
     assert bindings == {
         "CardHeader": (":hero.subtitle", ":hero.title"),
         "TextContent": (":hero.body", ":hero.kicker"),
@@ -2111,24 +2095,53 @@ def test_role_obligations_replace_exhausted_joint_carrier() -> None:
         Counter({"Button": 1, "Stack": 1}),
         {
             ":held.form.title": (
-                "Callout", "CardHeader", "Label", "Modal", "StepsItem",
-                "Tag", "TextCallout", "TextContent",
+                "Callout",
+                "CardHeader",
+                "Label",
+                "Modal",
+                "StepsItem",
+                "Tag",
+                "TextCallout",
+                "TextContent",
             ),
             ":held.form.email": (
-                "CheckBoxGroup", "DatePicker", "Input", "RadioGroup",
-                "Select", "Slider", "TextArea",
+                "CheckBoxGroup",
+                "DatePicker",
+                "Input",
+                "RadioGroup",
+                "Select",
+                "Slider",
+                "TextArea",
             ),
             ":held.form.hint.title": (
-                "Callout", "CardHeader", "Label", "Modal", "StepsItem",
-                "Tag", "TextCallout", "TextContent",
+                "Callout",
+                "CardHeader",
+                "Label",
+                "Modal",
+                "StepsItem",
+                "Tag",
+                "TextCallout",
+                "TextContent",
             ),
             ":held.form.hint.body": (
-                "Callout", "CheckBoxItem", "Label", "RadioItem",
-                "SwitchItem", "Tag", "TextCallout", "TextContent",
+                "Callout",
+                "CheckBoxItem",
+                "Label",
+                "RadioItem",
+                "SwitchItem",
+                "Tag",
+                "TextCallout",
+                "TextContent",
             ),
             ":held.form.submit": (
-                "Button", "CheckBoxItem", "Col", "FormControl", "RadioItem",
-                "SelectItem", "Slider", "SwitchItem",
+                "Button",
+                "CheckBoxItem",
+                "Col",
+                "FormControl",
+                "RadioItem",
+                "SelectItem",
+                "Slider",
+                "SwitchItem",
             ),
         },
         {
@@ -2242,11 +2255,13 @@ def test_prompt_semantic_plan_bias_reaches_root_and_bound_components() -> None:
     ]
     plan = prompt_semantic_plan("Image gallery block with caption text underneath.")
     features = OpenUISemanticPlanCompiler().annotate_actions(None, actions, plan)
-    model._semantic_plan_action_scores = [{
-        token_id: feature.plan_confidence
-        for token_id, feature in zip(component_ids, features, strict=True)
-        if feature.component_family_compatible
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            token_id: feature.plan_confidence
+            for token_id, feature in zip(component_ids, features, strict=True)
+            if feature.component_family_compatible
+        }
+    ]
     gallery_id = tokenizer.token_to_id["+ImageGallery"]
     slider_id = tokenizer.token_to_id["+Slider"]
     candidates = (gallery_id, slider_id)
@@ -2411,6 +2426,56 @@ def test_prompt_semantic_plan_keeps_parent_open_for_remaining_siblings() -> None
     assert (scores + bias).argmax().item() == 0
 
 
+def test_prompt_semantic_plan_closes_array_after_opaque_coverage() -> None:
+    model = _model(
+        semantic_plan_decode_weight=4.0,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    comma = tokenizer.token_to_id[","]
+    close = tokenizer.token_to_id["]"]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode(
+            'root = Stack([Card([TextContent(":slot_0")])',
+            add_special=False,
+        ),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    model._semantic_plan_action_scores = [{card: 1.0}]
+    model._semantic_plan_action_counts = [{card: 1}]
+    model._slot_contracts = [[":slot_0"]]
+
+    scores = torch.tensor([8.0, 1.0])
+    bias = model._semantic_plan_bias(
+        0,
+        (comma, close),
+        ("structural", "structural"),
+        state,
+        prefix,
+        scores,
+    )
+
+    assert bias is not None
+    assert (scores + bias).argmax().item() == 1
+
+    model._slot_contracts = [[":slot_0", ":slot_1"]]
+    assert (
+        model._semantic_plan_bias(
+            0,
+            (comma, close),
+            ("structural", "structural"),
+            state,
+            prefix,
+            scores,
+        )
+        is None
+    )
+
+
 def test_prompt_semantic_plan_does_not_continue_inside_repeated_family() -> None:
     model = _model(
         semantic_plan_decode_weight=6.0,
@@ -2450,45 +2515,46 @@ def test_prompt_semantic_plan_does_not_continue_inside_repeated_family() -> None
 def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     monkeypatch,
 ) -> None:
-    model = _model(semantic_plan_margin_decode_weight=2.0)
+    model = _model(
+        semantic_plan_margin_decode_weight=2.0,
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
     tokenizer = model.tokenizer
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode(
-            "root = Stack([b1])\nb1 = Card([", add_special=False
-        ),
+        *tokenizer.encode('root = SwitchGroup(":group", [', add_special=False),
     ]
     state = make_grammar_state()
     for token_id in prefix[1:]:
         state.advance_token(tokenizer, token_id)
-    card_id = tokenizer.token_to_id["Card"]
-    close_id = tokenizer.token_to_id["]"]
-    stack_id = tokenizer.token_to_id["Stack"]
-    model._semantic_plan_action_counts = [{card_id: 1}]
+    binder_id = tokenizer.token_to_id["<BIND_1>"]
+    group_id = tokenizer.token_to_id["SwitchGroup"]
+    item_id = tokenizer.token_to_id["SwitchItem"]
+    model._semantic_plan_action_counts = [{group_id: 1}]
     model._slot_contracts = [[":hero.title"]]
 
     bias = model._semantic_plan_typed_array_nonempty_bias(
         0,
         state,
         prefix,
-        (close_id, stack_id),
-        torch.tensor([8.0, 1.0]),
+        (binder_id, item_id),
+        torch.tensor([9.0, 1.0]),
     )
 
     assert bias is not None
-    assert bias.tolist() == [0.0, 9.0]
+    assert bias.tolist() == [0.0, 10.0]
 
     monkeypatch.setattr(
         model,
         "_project_candidates",
         lambda _hidden, candidate_ids: torch.tensor(
-            [8.0 if token_id == close_id else 1.0 for token_id in candidate_ids]
+            [9.0 if token_id == binder_id else 1.0 for token_id in candidate_ids]
         ),
     )
     ctx, ctx_pad = model._encode_context(["Card layout."])
     paths = (
-        CompletionPath((close_id,), "literal"),
-        CompletionPath((stack_id, tokenizer.token_to_id["("]), "component"),
+        CompletionPath((binder_id,), "binder"),
+        CompletionPath((item_id, tokenizer.token_to_id["("]), "component"),
     )
     selected = model._select_compiler_path(
         prefix,
@@ -2501,6 +2567,68 @@ def test_lexer_semantic_plan_margin_keeps_planned_typed_array_nonempty(
     )
 
     assert selected == paths[1].token_ids
+
+
+def test_lexer_typed_item_margin_abstains_for_recursive_unique_item() -> None:
+    model = _model(
+        semantic_plan_margin_decode_weight=2.0,
+        semantic_plan_typed_array_item_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Tabs([", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    binder_id = tokenizer.token_to_id["<BIND_1>"]
+    tabs_id = tokenizer.token_to_id["Tabs"]
+    item_id = tokenizer.token_to_id["TabItem"]
+    model._semantic_plan_action_counts = [{tabs_id: 1}]
+    model._slot_contracts = [[":tab", ":content"]]
+
+    assert (
+        model._semantic_plan_typed_array_nonempty_bias(
+            0,
+            state,
+            prefix,
+            (binder_id, item_id),
+            torch.tensor([9.0, 1.0]),
+        )
+        is None
+    )
+
+
+def test_lexer_schema_types_prefer_recursive_unique_item() -> None:
+    model = _model(
+        compiler_schema_component_types=True,
+        semantic_plan_margin_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Tabs([", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    binder_id = tokenizer.token_to_id["<BIND_1>"]
+    tabs_id = tokenizer.token_to_id["Tabs"]
+    item_id = tokenizer.token_to_id["TabItem"]
+    model._semantic_plan_action_counts = [{tabs_id: 1}]
+    model._slot_contracts = [[":tab", ":content"]]
+
+    bias = model._semantic_plan_typed_array_nonempty_bias(
+        0,
+        state,
+        prefix,
+        (binder_id, item_id),
+        torch.tensor([9.0, 1.0]),
+    )
+
+    assert bias is not None
+    assert bias.tolist() == [0.0, 10.0]
 
 
 def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> None:
@@ -2548,6 +2676,7 @@ def test_lexer_schema_role_slot_bias_ranks_nested_compiler_edge(monkeypatch) -> 
     )
 
     assert selected == paths[0].token_ids
+
 
 def test_lexer_semantic_role_ranks_compiler_component_family(monkeypatch) -> None:
     model = _model(semantic_role_decode_weight=2.0)
@@ -2706,13 +2835,15 @@ def test_lexer_schema_role_slot_continues_to_missing_bound_property(
         CompletionPath((comma_id,), "structural"),
         CompletionPath((close_id,), "structural"),
     )
-    model._semantic_plan_role_bindings = [{
-        "CardHeader": (":hero.title", ":hero.subtitle")
-    }]
-    model._semantic_role_properties = [{
-        ":hero.title": ("text", "title"),
-        ":hero.subtitle": ("subtitle",),
-    }]
+    model._semantic_plan_role_bindings = [
+        {"CardHeader": (":hero.title", ":hero.subtitle")}
+    ]
+    model._semantic_role_properties = [
+        {
+            ":hero.title": ("text", "title"),
+            ":hero.subtitle": ("subtitle",),
+        }
+    ]
     monkeypatch.setattr(
         model,
         "_project_candidates",
@@ -2751,11 +2882,14 @@ def test_prompt_semantic_plan_bias_is_neutral_without_prompt_mentions() -> None:
     )
     assert all(feature.plan_confidence == 0.0 for feature in features)
     model._semantic_plan_action_scores = [{}]
-    assert model._semantic_plan_bias(
-        0,
-        (model.tokenizer.token_to_id["+Card"],),
-        ("component_root",),
-    ) is None
+    assert (
+        model._semantic_plan_bias(
+            0,
+            (model.tokenizer.token_to_id["+Card"],),
+            ("component_root",),
+        )
+        is None
+    )
 
 
 def test_prompt_semantic_plan_preserves_repeated_authored_component_mentions() -> None:
@@ -2865,9 +2999,7 @@ def test_prompt_semantic_plan_extracts_explicit_outer_group_topology() -> None:
 def test_prompt_semantic_plan_infers_button_from_action_semantics() -> None:
     from slm_training.models.template_fill import prompt_semantic_plan
 
-    plan = prompt_semantic_plan(
-        "Modal dialog confirming a destructive delete action."
-    )
+    plan = prompt_semantic_plan("Modal dialog confirming a destructive delete action.")
 
     assert plan is not None
     assert [slot.component_family for slot in plan.role_slots] == [
@@ -2890,19 +3022,13 @@ def test_prompt_semantic_plan_bias_targets_only_missing_family_instances() -> No
     kinds = ("component_bound", "component_bound")
     model._semantic_plan_action_scores = [{input_id: 1.0, button_id: 1.0}]
     model._semantic_plan_action_counts = [{input_id: 2, button_id: 1}]
-    one_each = SimpleNamespace(
-        section_types=["element:Input", "element:Button"]
-    )
+    one_each = SimpleNamespace(section_types=["element:Input", "element:Button"])
     all_required = SimpleNamespace(
         section_types=["element:Input", "element:Input", "element:Button"]
     )
 
-    remaining_bias = model._semantic_plan_bias(
-        0, candidates, kinds, one_each
-    )
-    complete_bias = model._semantic_plan_bias(
-        0, candidates, kinds, all_required
-    )
+    remaining_bias = model._semantic_plan_bias(0, candidates, kinds, one_each)
+    complete_bias = model._semantic_plan_bias(0, candidates, kinds, all_required)
 
     assert remaining_bias is not None
     assert remaining_bias.tolist() == [3.0, 0.0]
@@ -2918,16 +3044,20 @@ def test_prompt_semantic_plan_bias_counts_nested_family_instances() -> None:
     text_id = tokenizer.token_to_id["+TextContent"]
     buttons_id = tokenizer.token_to_id["+Buttons"]
     button_id = tokenizer.token_to_id["+Button"]
-    model._semantic_plan_action_scores = [{
-        modal_id: 1.0,
-        text_id: 1.0,
-        button_id: 1.0,
-    }]
-    model._semantic_plan_action_counts = [{
-        modal_id: 1,
-        text_id: 1,
-        button_id: 1,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            modal_id: 1.0,
+            text_id: 1.0,
+            button_id: 1.0,
+        }
+    ]
+    model._semantic_plan_action_counts = [
+        {
+            modal_id: 1,
+            text_id: 1,
+            button_id: 1,
+        }
+    ]
     state = SimpleNamespace(section_types=["element:Modal"], frames=[])
     prefix = [
         tokenizer.bos_id,
@@ -2937,13 +3067,16 @@ def test_prompt_semantic_plan_bias_counts_nested_family_instances() -> None:
         button_id,
     ]
 
-    assert model._semantic_plan_bias(
-        0,
-        (button_id,),
-        ("component_bound",),
-        state,
-        prefix,
-    ) is None
+    assert (
+        model._semantic_plan_bias(
+            0,
+            (button_id,),
+            ("component_bound",),
+            state,
+            prefix,
+        )
+        is None
+    )
 
 
 def test_prompt_semantic_plan_margin_floors_only_missing_families() -> None:
@@ -3014,9 +3147,7 @@ def test_prompt_semantic_plan_orders_required_parent_before_child() -> None:
         0,
         (stack_id, callout_id),
         ("component_bound", "component_bound"),
-        SimpleNamespace(
-            section_types=["element:Form", "element:Button"], frames=[]
-        ),
+        SimpleNamespace(section_types=["element:Form", "element:Button"], frames=[]),
         prefix=[tokenizer.bos_id, form_id, button_id],
         candidate_scores=torch.zeros(2),
     )
@@ -3041,15 +3172,11 @@ def test_prompt_semantic_plan_seed_bias_applies_only_before_first_component() ->
     initial = SimpleNamespace(section_types=[], frames=[object()])
     after_first = SimpleNamespace(section_types=["element:TextContent"], frames=[])
 
-    initial_bias = model._semantic_plan_bias(
-        0, candidates, kinds, initial
-    )
+    initial_bias = model._semantic_plan_bias(0, candidates, kinds, initial)
     nested_bias = model._semantic_plan_bias(
         0, candidates, ("component_bound", "component_bound"), initial
     )
-    later_bias = model._semantic_plan_bias(
-        0, candidates, kinds, after_first
-    )
+    later_bias = model._semantic_plan_bias(0, candidates, kinds, after_first)
 
     assert initial_bias is not None
     assert initial_bias.tolist() == [5.0, 0.0]
@@ -3267,16 +3394,20 @@ def test_prompt_semantic_plan_inline_bias_targets_only_missing_families() -> Non
     modal_id = tokenizer.token_to_id["+Modal"]
     text_id = tokenizer.token_to_id["+TextContent"]
     button_id = tokenizer.token_to_id["+Button"]
-    model._semantic_plan_action_scores = [{
-        modal_id: 1.0,
-        text_id: 1.0,
-        button_id: 1.0,
-    }]
-    model._semantic_plan_action_counts = [{
-        modal_id: 1,
-        text_id: 1,
-        button_id: 1,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            modal_id: 1.0,
+            text_id: 1.0,
+            button_id: 1.0,
+        }
+    ]
+    model._semantic_plan_action_counts = [
+        {
+            modal_id: 1,
+            text_id: 1,
+            button_id: 1,
+        }
+    ]
 
     bias = model._semantic_plan_inline_bias(
         0,
@@ -3320,13 +3451,16 @@ def test_prompt_semantic_plan_bias_reserves_distinct_repeated_slots() -> None:
     second = first.clone()
     assert second.advance_id(input_id)
     assert second.advance_id(tokenizer.token_to_id["@1"])
-    assert model._semantic_plan_bias(
-        0,
-        (close,),
-        ("structural",),
-        second,
-        [input_id, slot0, close, input_id, tokenizer.token_to_id["@1"]],
-    ) is None
+    assert (
+        model._semantic_plan_bias(
+            0,
+            (close,),
+            ("structural",),
+            second,
+            [input_id, slot0, close, input_id, tokenizer.token_to_id["@1"]],
+        )
+        is None
+    )
 
 
 def test_prompt_semantic_plan_binding_bias_prefers_matching_unused_references() -> None:
@@ -3337,10 +3471,12 @@ def test_prompt_semantic_plan_binding_bias_prefers_matching_unused_references() 
         semantic_plan_binding_decode_weight=3.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-        tokenizer.token_to_id["+Button"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+            tokenizer.token_to_id["+Button"]: 1.0,
+        }
+    ]
     ref0 = tokenizer.token_to_id["&0"]
     ref1 = tokenizer.token_to_id["&1"]
     ref2 = tokenizer.token_to_id["&2"]
@@ -3370,9 +3506,11 @@ def test_prompt_semantic_plan_binding_bias_is_root_list_only() -> None:
         semantic_plan_binding_decode_weight=3.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+        }
+    ]
     nested = SimpleNamespace(
         mode="structural",
         frames=[
@@ -3382,12 +3520,15 @@ def test_prompt_semantic_plan_binding_bias_is_root_list_only() -> None:
         section_types=["element:Input"],
     )
 
-    assert model._semantic_plan_binding_bias(
-        0,
-        nested,
-        [tokenizer.bos_id],
-        (tokenizer.token_to_id["&0"],),
-    ) is None
+    assert (
+        model._semantic_plan_binding_bias(
+            0,
+            nested,
+            [tokenizer.bos_id],
+            (tokenizer.token_to_id["&0"],),
+        )
+        is None
+    )
 
 
 def test_prompt_semantic_plan_binding_bias_reaches_stack_child_list() -> None:
@@ -3398,9 +3539,11 @@ def test_prompt_semantic_plan_binding_bias_reaches_stack_child_list() -> None:
         semantic_plan_binding_decode_weight=3.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+        }
+    ]
     state = SimpleNamespace(
         mode="structural",
         frames=[
@@ -3525,10 +3668,12 @@ def test_prompt_semantic_plan_root_bias_builds_stack_then_ends() -> None:
         semantic_plan_root_decode_weight=2.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-        tokenizer.token_to_id["+Button"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+            tokenizer.token_to_id["+Button"]: 1.0,
+        }
+    ]
     candidates = (
         tokenizer.token_to_id["+Stack"],
         tokenizer.token_to_id["+Card"],
@@ -3563,10 +3708,12 @@ def test_prompt_semantic_plan_root_margin_floors_verified_target() -> None:
         semantic_plan_root_margin_decode_weight=2.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-        tokenizer.token_to_id["+Button"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+            tokenizer.token_to_id["+Button"]: 1.0,
+        }
+    ]
     candidates = (
         tokenizer.token_to_id["+Stack"],
         tokenizer.token_to_id["+TextContent"],
@@ -3607,14 +3754,10 @@ def test_semantic_plan_root_abstention_trace_is_bounded_and_deduplicated() -> No
         "reference_count": 4,
     }
 
-    model._record_semantic_plan_root_abstention(
-        stats, row=0, position=35, state=state
-    )
+    model._record_semantic_plan_root_abstention(stats, row=0, position=35, state=state)
     first_evidence = dict(model._semantic_plan_root_last_abstention)
     model._semantic_plan_root_last_abstention["section_count"] = 6
-    model._record_semantic_plan_root_abstention(
-        stats, row=0, position=36, state=state
-    )
+    model._record_semantic_plan_root_abstention(stats, row=0, position=36, state=state)
 
     assert len(stats.constrained_selection_traces) == 1
     assert stats.constrained_selection_traces[0]["evidence"] == first_evidence
@@ -3667,25 +3810,32 @@ def test_prompt_semantic_plan_root_bias_waits_for_role_coverage() -> None:
         semantic_plan_root_decode_weight=2.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-        tokenizer.token_to_id["+Button"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+            tokenizer.token_to_id["+Button"]: 1.0,
+        }
+    ]
     incomplete = SimpleNamespace(
         mode="structural",
         frames=[],
         section_types=["element:Input"],
     )
 
-    assert model._semantic_plan_root_bias(
-        0,
-        incomplete,
-        None,
-        (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
-    ) is None
+    assert (
+        model._semantic_plan_root_bias(
+            0,
+            incomplete,
+            None,
+            (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
+        )
+        is None
+    )
 
 
-def test_prompt_semantic_plan_root_bias_records_missing_slot_carrier_reference() -> None:
+def test_prompt_semantic_plan_root_bias_records_missing_slot_carrier_reference() -> (
+    None
+):
     from types import SimpleNamespace
 
     model = _model(
@@ -3734,9 +3884,7 @@ def test_prompt_semantic_plan_root_bias_records_missing_slot_carrier_reference()
 
     assert bias is not None
     assert bias.tolist() == [0.0, 13.0, 0.0]
-    assert model._semantic_plan_required_root_references == [
-        {2: "element:TextContent"}
-    ]
+    assert model._semantic_plan_required_root_references == [{2: "element:TextContent"}]
 
 
 def test_semantic_plan_required_reference_bias_targets_only_carrier() -> None:
@@ -3761,7 +3909,7 @@ def test_semantic_plan_required_reference_bias_targets_only_carrier() -> None:
         frames=[
             SimpleNamespace(kind="component", expr_type="element:Stack"),
             SimpleNamespace(kind="variadic", expr_type="array", close="]"),
-        ]
+        ],
     )
     candidates = (ref1, ref2, close)
 
@@ -3830,16 +3978,20 @@ def test_prompt_semantic_plan_root_bias_counts_nested_family_instances() -> None
     text_id = tokenizer.token_to_id["+TextContent"]
     button_id = tokenizer.token_to_id["+Button"]
     stack_id = tokenizer.token_to_id["+Stack"]
-    model._semantic_plan_action_scores = [{
-        modal_id: 1.0,
-        text_id: 1.0,
-        button_id: 1.0,
-    }]
-    model._semantic_plan_action_counts = [{
-        modal_id: 1,
-        text_id: 1,
-        button_id: 1,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            modal_id: 1.0,
+            text_id: 1.0,
+            button_id: 1.0,
+        }
+    ]
+    model._semantic_plan_action_counts = [
+        {
+            modal_id: 1,
+            text_id: 1,
+            button_id: 1,
+        }
+    ]
     model._slot_contracts = [[":modal.title", ":modal.body", ":modal.confirm"]]
     prefix_tokens = [
         "<bos>",
@@ -3881,10 +4033,12 @@ def test_prompt_semantic_plan_root_bias_follows_only_verified_closure() -> None:
         semantic_plan_root_decode_weight=2.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-        tokenizer.token_to_id["+Button"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+            tokenizer.token_to_id["+Button"]: 1.0,
+        }
+    ]
     model._slot_contracts = [[":auth.email", ":auth.submit"]]
     prefix_tokens = [
         "<bos>",
@@ -3919,9 +4073,11 @@ def test_prompt_semantic_plan_root_bias_abstains_when_closure_is_invalid() -> No
         semantic_plan_root_decode_weight=2.0,
     )
     tokenizer = model.tokenizer
-    model._semantic_plan_action_scores = [{
-        tokenizer.token_to_id["+Input"]: 1.0,
-    }]
+    model._semantic_plan_action_scores = [
+        {
+            tokenizer.token_to_id["+Input"]: 1.0,
+        }
+    ]
     model._slot_contracts = [[]]
     prefix = [
         tokenizer.bos_id,
@@ -3933,12 +4089,15 @@ def test_prompt_semantic_plan_root_bias_abstains_when_closure_is_invalid() -> No
     for token_id in prefix[1:]:
         assert state.advance_id(token_id)
 
-    assert model._semantic_plan_root_bias(
-        0,
-        state,
-        prefix,
-        (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
-    ) is None
+    assert (
+        model._semantic_plan_root_bias(
+            0,
+            state,
+            prefix,
+            (tokenizer.token_to_id["+Stack"], tokenizer.eos_id),
+        )
+        is None
+    )
 
 
 def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None:
@@ -4136,9 +4295,9 @@ def test_rare_slot_owner_sampler_selects_records_by_label_frequency() -> None:
             id="mixed",
             prompt="mixed",
             openui=(
-                'root = Stack([title, field])\n'
+                "root = Stack([title, field])\n"
                 'title = TextContent(":title")\n'
-                'field = Input(":field")'
+                'field = Input("$0", ":field")'
             ),
             placeholders=[":title", ":field"],
             split="train",
@@ -4177,10 +4336,10 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
         prompt="stack with title and body",
         openui=(
             "root = Stack([title, body])\n"
-            'title = TextContent(":title")\n'
-            'body = TextContent(":body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":title", ":body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -4209,9 +4368,7 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
         assert state.advance_id(tokenizer.token_to_id[token])
     ctx, ctx_pad = model._encode_context(["stack with title and body"])
     candidates = (tokenizer.token_to_id["&0"], tokenizer.token_to_id["]"])
-    continue_bias = model._root_reference_arity_bias(
-        ctx, ctx_pad, state, candidates
-    )
+    continue_bias = model._root_reference_arity_bias(ctx, ctx_pad, state, candidates)
     assert continue_bias is not None and continue_bias[0] > continue_bias[1]
     assert state.advance_id(tokenizer.token_to_id["&0"])
     assert state.advance_id(tokenizer.token_to_id["&1"])
@@ -4240,10 +4397,10 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
         openui=(
             "root = Stack([card])\n"
             "card = Card([title, body])\n"
-            'title = TextContent(":title")\n'
-            'body = TextContent(":body")'
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":title", ":body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -4339,7 +4496,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
             tokenizer.bind_id(0),
             tokenizer.token_to_id["="],
         ],
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
     assert root_value.candidate_ids
     assert all(
@@ -4367,7 +4524,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
             tokenizer.bos_id,
             *tokenizer.encode("root=Stack([", add_special=False),
         ],
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
     assert not (set(children.candidate_ids) & set(tokenizer.kind_ids("sym")))
     assert not (set(children.candidate_ids) & set(tokenizer.kind_ids("lit")))
@@ -4386,9 +4543,11 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     typed_string = build_completion_forest(
         tokenizer,
         tokenizer.encode("root=TextArea(", add_special=False),
-        slot_contract=[":hero.title"],
+        slot_contract=[":slot_0"],
     )
-    assert tokenizer.sym_id(0) in typed_string.candidate_ids
+    assert tokenizer.sym_id(0) not in typed_string.candidate_ids
+    assert tokenizer.token_to_id["STR:$0"] in typed_string.candidate_ids
+    assert tokenizer.token_to_id["STR:email"] not in typed_string.candidate_ids
     for token in ("true", "false", "null", "LIT_NUM", "LIT_END"):
         assert tokenizer.token_to_id[token] not in typed_string.candidate_ids
 
@@ -4401,9 +4560,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         },
     )
     prefix = tokenizer.encode("root=TextContent(", add_special=False)
-    forest = build_completion_forest(
-        tokenizer, prefix, slot_contract=[":hero.title"]
-    )
+    forest = build_completion_forest(tokenizer, prefix, slot_contract=[":slot_0"])
     assert forest.coverage == "complete"
     assert tokenizer.sym_id(0) in forest.candidate_ids
     assert tokenizer.sym_id(1) not in forest.candidate_ids
@@ -4416,20 +4573,13 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
 
     complete = build_completion_forest(
         tokenizer,
-        [tokenizer.bos_id, *tokenizer.encode(
-            'root=TextContent(":hero.title")', add_special=False
-        )],
-        slot_contract=[":hero.title"],
+        [
+            tokenizer.bos_id,
+            *tokenizer.encode('root=TextContent(":slot_0")', add_special=False),
+        ],
+        slot_contract=[":slot_0"],
     )
-    continuation_ids = set(
-        compiler_draft.allowed_id_set(
-            tokenizer,
-            frozenset({"$END", "_NL", "NAME", "STATE_NAME", "COMMENT", "WS_INLINE"}),
-        )
-        or set()
-    ) | {tokenizer.eos_id}
-    assert set(complete.candidate_ids) <= continuation_ids
-    assert tokenizer.eos_id in complete.candidate_ids
+    assert set(complete.candidate_ids) == {tokenizer.eos_id}
 
 
 def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
@@ -4440,10 +4590,10 @@ def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
     )
 
     tokenizer = DSLNativeTokenizer.build()
-    contract = [":hero.title"]
+    contract = [":slot_0"]
     prefix = [
         tokenizer.bos_id,
-        *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+        *tokenizer.encode('root=TextContent(":slot_0")', add_special=False),
     ]
     assert emitted_component_count(tokenizer, prefix) == 1
 
@@ -4471,20 +4621,26 @@ def test_effective_min_content_auto_from_inventory() -> None:
     # decode_min_content == -1 derives the floor from distinct slot roots.
     model = TwoTowerModel.from_records(
         [
-            ExampleRecord(
-                id="a",
-                prompt="Hero",
-                openui='root = Stack([t])\nt = TextContent(":hero.title")',
-                placeholders=[":hero.title"],
+            canonicalize_example_template_markers(
+                ExampleRecord(
+                    id="a",
+                    prompt="Hero",
+                    openui='root = Stack([t])\nt = TextContent(":slot_0")',
+                    placeholders=[":slot_0"],
+                )
             )
         ],
         config=TwoTowerConfig(
-            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1, seed=0,
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            seed=0,
             decode_min_content=-1,
         ),
         device="cpu",
     )
-    assert model._effective_min_content([":hero.title", ":hero.body"]) == 1
+    assert model._effective_min_content([":slot_0", ":slot_1"]) == 2
     assert model._effective_min_content([":a.x", ":b.y"]) == 2
     assert model._effective_min_content(None) == 0
     model.config.decode_min_content = 3
@@ -4507,7 +4663,7 @@ def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
     )
 
     assert compiler_draft._generated_ast_is_complete(
-        'root = TextContent(":hero.title")'
+        'root = TextContent(":slot_0")'
     )
     assert not compiler_draft._generated_ast_is_complete("root = TextContent(")
 
@@ -4564,29 +4720,90 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     )
 
     first = build_completion_forest(
-        tokenizer, tokenizer.encode('root=SelectItem(":value"', add_special=False)
+        tokenizer, tokenizer.encode('root=SelectItem("$0"', add_special=False)
     )
     assert set(first.candidate_ids) == {tokenizer.token_to_id[","]}
 
     complete = build_completion_forest(
         tokenizer,
-        tokenizer.encode('root=SelectItem(":value",":label"', add_special=False),
+        tokenizer.encode('root=SelectItem("$0",":label"', add_special=False),
     )
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
+
+
+def test_completion_forest_closes_max_arity_after_array_argument() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=TabItem("$0",":slot_0",[TextContent(":slot_1")]',
+        add_special=False,
+    )
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[":slot_0", ":slot_1"],
+        enforce_schema_component_types=True,
+    )
+
+    assert set(forest.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
 def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
     from slm_training.models.dsl_tokenizer import TokenKind
 
     tokenizer = DSLNativeTokenizer.build()
-    contract = [":value", ":label"]
+    contract = [":slot_0", ":slot_1"]
     prefix = tokenizer.encode(
-        'root=RadioItem(":value",":label",', add_special=False
+        'root=RadioItem(":slot_0",":slot_1",', add_special=False
     )
     forest = build_completion_forest(tokenizer, prefix, slot_contract=contract)
 
     assert "LIT_STR" not in tokenizer.token_to_id
     assert not (set(forest.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE))
+
+
+def test_completion_forest_separates_content_and_structural_string_roles() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":slot_0", ":slot_1"]
+
+    content = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=TextContent(", add_special=False),
+        slot_contract=contract,
+    )
+    assert set(content.candidate_ids) == {tokenizer.sym_id(0), tokenizer.sym_id(1)}
+
+    structural = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=Slider(", add_special=False),
+        slot_contract=contract,
+    )
+    assert tokenizer.sym_id(0) not in structural.candidate_ids
+    assert tokenizer.token_to_id["STR:email"] not in structural.candidate_ids
+    assert tokenizer.token_to_id["STR:$0"] in structural.candidate_ids
+    assert {
+        tokenizer.id_to_token[token_id] for token_id in structural.candidate_ids
+    } == {f"STR:${index}" for index in range(64)}
+
+
+def test_completion_forest_bounds_recursive_container_nesting() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+
+    two_containers = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=Stack([Card([", add_special=False),
+        slot_contract=[":slot_0"],
+    )
+    assert tokenizer.token_to_id["Stack"] not in two_containers.candidate_ids
+    assert tokenizer.token_to_id["Card"] not in two_containers.candidate_ids
+    assert tokenizer.token_to_id["TextContent"] in two_containers.candidate_ids
+
+    one_container = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=Stack([", add_special=False),
+        slot_contract=[":slot_0"],
+    )
+    assert tokenizer.token_to_id["Card"] in one_container.candidate_ids
 
 
 def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
@@ -4596,12 +4813,10 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
 
     tokenizer = DSLNativeTokenizer.build()
     number_slot = tokenizer.encode(
-        'root=Slider(":value","discrete",', add_special=False
+        'root=Slider("$0","discrete",', add_special=False
     )
     opener = tokenizer.token_to_id["LIT_NUM"]
-    opening = build_completion_forest(
-        tokenizer, number_slot, slot_contract=[":value"]
-    )
+    opening = build_completion_forest(tokenizer, number_slot, slot_contract=[":value"])
     opener_path = next(path for path in opening.paths if path.token_ids[0] == opener)
     assert opener_path.token_ids == (opener,)
 
@@ -4635,7 +4850,7 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
     assert close_path.token_ids == (tokenizer.token_to_id["LIT_END"],)
 
     complete_number = tokenizer.encode(
-        'root=Slider(":value","discrete",1e1', add_special=False
+        'root=Slider("$0","discrete",1e1', add_special=False
     )
     state = GrammarDecodeState(engine=OpenUIIncrementalEngine())
     for token_id in complete_number:
@@ -4656,7 +4871,7 @@ def test_completion_forest_enforces_primitive_array_item_schema() -> None:
     tokenizer = DSLNativeTokenizer.build()
     contract = [":value"]
     prefix = tokenizer.encode(
-        'root=Slider(":value","continuous",0,100,1,[', add_special=False
+        'root=Slider("$0","continuous",0,100,1,[', add_special=False
     )
     item = build_completion_forest(tokenizer, prefix, slot_contract=contract)
     assert tokenizer.token_to_id["LIT_NUM"] in item.candidate_ids
@@ -4665,7 +4880,7 @@ def test_completion_forest_enforces_primitive_array_item_schema() -> None:
     completed = build_completion_forest(
         tokenizer,
         tokenizer.encode(
-            'root=Slider(":value","continuous",0,100,1,[40', add_special=False
+            'root=Slider("$0","continuous",0,100,1,[40', add_special=False
         ),
         slot_contract=contract,
     )
@@ -4729,8 +4944,15 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
 
     second = [*first, tokenizer.bind_id(1), tokenizer.token_to_id[","]]
     forest = build_completion_forest(tokenizer, second)
-    assert tokenizer.bind_id(1) in forest.candidate_ids
+    assert tokenizer.bind_id(1) not in forest.candidate_ids
     assert tokenizer.bind_id(2) in forest.candidate_ids
+
+    nested = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root=Stack([Stack([b1]),", add_special=False),
+    ]
+    forest = build_completion_forest(tokenizer, nested)
+    assert tokenizer.bind_id(1) in forest.candidate_ids
 
     declaration = [
         tokenizer.bos_id,
@@ -4757,25 +4979,211 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
     resolved = [
         tokenizer.bos_id,
         *tokenizer.encode(
-            'root=Stack([b1],"column")\nb1=TextContent(":hero.title")',
+            'root=Stack([b1],"column")\nb1=TextContent(":slot_0")',
             add_special=False,
         ),
     ]
-    forest = build_completion_forest(
-        tokenizer, resolved, slot_contract=[":hero.title"]
-    )
+    forest = build_completion_forest(tokenizer, resolved, slot_contract=[":slot_0"])
     assert tokenizer.eos_id in forest.candidate_ids
+
+
+def test_completion_forest_propagates_typed_array_use_to_forward_declaration() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Tabs([b1])\nb1=',
+        add_special=True,
+    )[:-1]
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert tokenizer.token_to_id["Separator"] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+
+    assert tokenizer.token_to_id["TabItem"] in forest.candidate_ids
+    assert tokenizer.token_to_id["Separator"] not in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_forward_binder_component_type"
+        and evidence.candidate_id == tokenizer.token_to_id["Separator"]
+        for evidence in forest.evidence
+    )
+
+
+def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Stack([b1])\nb1=',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(tokenizer, prefix)
+
+    assert tokenizer.token_to_id["TextContent"] in forest.candidate_ids
+    assert tokenizer.token_to_id["Separator"] in forest.candidate_ids
+
+
+@pytest.mark.parametrize(
+    ("prefix_text", "allowed", "rejected"),
+    [
+        ('root=Form("$0",', "Buttons", "Button"),
+        (
+            'root=Form("$0",Buttons([]),[FormControl(":slot_0",',
+            "Input",
+            "TextContent",
+        ),
+    ],
+)
+def test_completion_forest_enforces_direct_component_property_schema(
+    prefix_text: str,
+    allowed: str,
+    rejected: str,
+) -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(prefix_text, add_special=True)[:-1]
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert tokenizer.token_to_id[rejected] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+    assert tokenizer.token_to_id[allowed] in forest.candidate_ids
+    assert tokenizer.token_to_id[rejected] not in forest.candidate_ids
+    assert tokenizer.token_to_id["("] not in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_slot_component_type"
+        and evidence.candidate_id == tokenizer.token_to_id[rejected]
+        for evidence in forest.evidence
+    )
+
+
+def test_completion_forest_propagates_direct_component_binder_type() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Form("$0",b1,[FormControl(":slot_0",'
+        'Input("$1",":slot_1"))])\nb1=',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+    )
+
+    assert tokenizer.token_to_id["Buttons"] in forest.candidate_ids
+    assert tokenizer.token_to_id["Button"] not in forest.candidate_ids
+
+
+def test_completion_forest_rejects_reused_structural_id_in_same_role() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Card([ImageBlock("$0"),ImageBlock(',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[":slot_0"],
+    )
+
+    assert tokenizer.token_to_id["STR:$0"] not in forest.candidate_ids
+    assert tokenizer.token_to_id["STR:$1"] in forest.candidate_ids
+
+
+def test_completion_forest_allows_structural_id_across_distinct_roles() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Stack([SwitchGroup("$0",[]),Input(',
+        add_special=True,
+    )[:-1]
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=[":slot_0"],
+    )
+
+    assert tokenizer.token_to_id["STR:$0"] in forest.candidate_ids
+
+
+def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
+        "b1=Buttons([",
+        add_special=True,
+    )[:-1]
+
+    control = build_completion_forest(tokenizer, prefix)
+    assert tokenizer.bind_id(2) in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+
+    assert tokenizer.bind_id(2) not in forest.candidate_ids
+    assert tokenizer.bind_id(3) in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_array_children"
+        and evidence.candidate_id == tokenizer.bind_id(2)
+        for evidence in forest.evidence
+    )
+
+
+def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = tokenizer.encode(
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
+        "b1=Buttons([b3,b4",
+        add_special=True,
+    )[:-1]
+    contract = [":slot_0", ":slot_1", ":slot_2"]
+
+    control = build_completion_forest(tokenizer, prefix, slot_contract=contract)
+    assert tokenizer.token_to_id[","] in control.candidate_ids
+
+    forest = build_completion_forest(
+        tokenizer,
+        prefix,
+        slot_contract=contract,
+        enforce_schema_component_types=True,
+        explain=True,
+    )
+
+    assert tokenizer.token_to_id[","] not in forest.candidate_ids
+    assert tokenizer.token_to_id["]"] in forest.candidate_ids
+    assert any(
+        evidence.stage is ConstraintStage.SCHEMA
+        and evidence.reason_code == "schema_array_children"
+        and evidence.candidate_id == tokenizer.token_to_id[","]
+        for evidence in forest.evidence
+    )
 
 
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(
-        'root=Card([title,body])\ntitle=TextContent(":hero.title")\n'
-        'body=TextContent(":hero.body")',
+        'root=Card([title,body])\ntitle=TextContent(":slot_0")\n'
+        'body=TextContent(":slot_1")',
         add_special=True,
     )
     positions = gold_compiler_decision_positions(
-        tokenizer, target, slot_contract=[":hero.title", ":hero.body"]
+        tokenizer, target, slot_contract=[":slot_0", ":slot_1"]
     )
     selected = {tokenizer.id_to_token[target[position]] for position in positions}
     assert {"<BIND_0>", "Card", "<BIND_1>", "TextContent"} <= selected
@@ -4811,8 +5219,7 @@ def test_gold_decisions_follow_compiler_forest() -> None:
         "root=Stack([child])\nchild=Stack([])", add_special=True
     )
     assert "grammar_rsqb_bound_empty" not in {
-        decision.kind
-        for decision in gold_compiler_decisions(tokenizer, bound_empty)
+        decision.kind for decision in gold_compiler_decisions(tokenizer, bound_empty)
     }
 
 
@@ -4836,8 +5243,8 @@ def test_compiler_alignment_loss_trains_gold_semantic_states() -> None:
     record = ExampleRecord(
         id="alignment",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -4855,15 +5262,17 @@ def test_compiler_alignment_margin_reports_legal_branch_violations() -> None:
     record = ExampleRecord(
         id="alignment-margin",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
     loss = model.training_loss([record])
     assert torch.isfinite(loss)
     assert model.last_training_metrics["compiler_alignment_margin_loss"] > 0.0
-    assert model.last_training_metrics["compiler_alignment_margin_violation_rate"] == 1.0
+    assert (
+        model.last_training_metrics["compiler_alignment_margin_violation_rate"] == 1.0
+    )
 
 
 def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
@@ -4874,11 +5283,11 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
         id="alignment-stratified",
         prompt="card",
         openui=(
-            'root = Card([title, body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -4902,8 +5311,8 @@ def test_component_inventory_supervision_trains_prompt_level_component_set() -> 
     record = ExampleRecord(
         id="inventory",
         prompt="card with a title",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -4951,11 +5360,11 @@ def test_component_plan_supervises_root_role_and_bound_counts() -> None:
         id="component-plan",
         prompt="card with two labels",
         openui=(
-            'root = Card([title, body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5031,7 +5440,7 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
                 {
                     "type": "element",
                     "typeName": "TextContent",
-                    "props": {"text": ":title"},
+                    "props": {"text": ":slot_0"},
                 }
             ]
         },
@@ -5050,8 +5459,8 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
 def test_binder_reference_arities_follow_grammar_token_roles() -> None:
     tokenizer = DSLNativeTokenizer.build()
     ids = tokenizer.encode(
-        'root = Card([title, body])\ntitle = TextContent(":hero.title")\n'
-        'body = Stack([copy], "column")\ncopy = TextContent(":hero.body")',
+        'root = Card([title, body])\ntitle = TextContent(":slot_0")\n'
+        'body = Stack([copy], "column")\ncopy = TextContent(":slot_1")',
         add_special=False,
     )
     assert binder_reference_arities(tokenizer, ids) == (
@@ -5074,11 +5483,11 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
         id="lexer-root-arity",
         prompt="card with title and body",
         openui=(
-            'root = Card([title, body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5129,8 +5538,8 @@ def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     record = ExampleRecord(
         id="component-edge",
         prompt="card with a title",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui='root = Card([title])\ntitle = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
         split="train",
         source="fixture",
     )
@@ -5146,8 +5555,7 @@ def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     assert model.last_training_metrics["component_edge_alignment_rows"] == 1
     assert model.last_training_metrics["component_edge_alignment_loss"] > 0
     assert (
-        model.last_training_metrics["component_edge_alignment_unknown_parent_rows"]
-        == 0
+        model.last_training_metrics["component_edge_alignment_unknown_parent_rows"] == 0
     )
     assert 0 <= model.last_training_metrics["component_edge_alignment_accuracy"] <= 1
 
@@ -5185,11 +5593,11 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
         id="binder-component-plan",
         prompt="card with title and body",
         openui=(
-            'root = Card([title, body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5236,11 +5644,12 @@ def test_binder_topology_supervises_and_biases_legal_references() -> None:
         id="binder-topology",
         prompt="card with title and body",
         openui=(
-            'root = Card([title, body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Stack([b1, b2, b3])\n"
+            "b1 = Card([b2, b3])\n"
+            'b2 = TextContent(":slot_0")\n'
+            'b3 = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5285,11 +5694,11 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
         id="binder-arity",
         prompt="card with title and body",
         openui=(
-            'root = Card([title, body])\n'
-            'title = TextContent(":hero.title")\n'
-            'body = TextContent(":hero.body")'
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")'
         ),
-        placeholders=[":hero.title", ":hero.body"],
+        placeholders=[":slot_0", ":slot_1"],
         split="train",
         source="fixture",
     )
@@ -5365,9 +5774,9 @@ def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     assert stats.full_projections == 0
     assert stats.constrained_selection_traces[0]["phase"] == "compiler_tree"
     assert stats.constrained_selection_traces[0]["top_candidates"]
-    assert "first_edge_score" in stats.constrained_selection_traces[0][
-        "top_candidates"
-    ][0]
+    assert (
+        "first_edge_score" in stats.constrained_selection_traces[0]["top_candidates"][0]
+    )
 
 
 def test_tree_verifier_records_exact_branch_support_for_event_mining(
@@ -5578,10 +5987,10 @@ def test_constraint_evidence_localizes_binder_and_min_content() -> None:
     assert any(e.stage is ConstraintStage.BINDING for e in binder_excluded)
 
     # Minimum-content EOS withholding is distinguishable from grammar rejection.
-    contract = [":hero.title"]
+    contract = [":slot_0"]
     complete = [
         tokenizer.bos_id,
-        *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+        *tokenizer.encode('root=TextContent(":slot_0")', add_special=False),
     ]
     unmet = build_completion_forest(
         tokenizer, complete, slot_contract=contract, min_content=2, explain=True
@@ -5640,7 +6049,9 @@ def test_constraint_evidence_schema_stage_and_partial_coverage(monkeypatch) -> N
     # COVERAGE record refuses to serialize a partial forest as an exact proof.
     monkeypatch.setattr(compiler_draft, "_official_schema", lambda: None)
     partial = build_completion_forest(
-        tokenizer, tokenizer.encode("root=TextContent(", add_special=False), explain=True
+        tokenizer,
+        tokenizer.encode("root=TextContent(", add_special=False),
+        explain=True,
     )
     assert partial.coverage != "complete"
     cover = [e for e in partial.evidence if e.stage is ConstraintStage.COVERAGE]
@@ -5657,7 +6068,9 @@ def test_constraint_evidence_is_deterministic_and_json_roundtrips() -> None:
     assert first.evidence == second.evidence
     assert first.evidence_summary == second.evidence_summary
     for record in first.evidence:
-        restored = ConstraintEvidence.from_dict(json.loads(json.dumps(record.as_dict())))
+        restored = ConstraintEvidence.from_dict(
+            json.loads(json.dumps(record.as_dict()))
+        )
         assert restored == record
     # The whole-forest view is JSON-serializable.
     json.dumps(first.evidence_as_json())
@@ -5669,9 +6082,7 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
     still missing from the prefix; already-filled slots and the fully-covered
     case are both no-ops, and the default-off weight never fires.
     """
-    model = _model(
-        output_tokenizer="choice", required_slot_margin_decode_weight=2.0
-    )
+    model = _model(output_tokenizer="choice", required_slot_margin_decode_weight=2.0)
     tokenizer = model.tokenizer
     slot0 = tokenizer.sym_id(0)
     slot1 = tokenizer.sym_id(1)
@@ -5682,9 +6093,7 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
 
     # slot0 already appears in the prefix; only slot1 is still missing.
     prefix = [tokenizer.bos_id, slot0]
-    bias = model._required_slot_margin_bias(
-        prefix, candidates, scores, slot_contract
-    )
+    bias = model._required_slot_margin_bias(prefix, candidates, scores, slot_contract)
 
     assert bias is not None
     assert bias.tolist() == [0.0, 10.0, 0.0]
@@ -5702,16 +6111,12 @@ def test_required_slot_margin_bias_floors_only_still_missing_slots() -> None:
         output_tokenizer="choice", required_slot_margin_decode_weight=0.0
     )
     assert (
-        off_model._required_slot_margin_bias(
-            prefix, candidates, scores, slot_contract
-        )
+        off_model._required_slot_margin_bias(prefix, candidates, scores, slot_contract)
         is None
     )
 
     # No slot contract -> no-op regardless of weight.
-    assert (
-        model._required_slot_margin_bias(prefix, candidates, scores, None) is None
-    )
+    assert model._required_slot_margin_bias(prefix, candidates, scores, None) is None
 
 
 def test_native_slot_contract_excludes_already_emitted_marker() -> None:
@@ -5746,9 +6151,7 @@ def test_required_slot_margin_bias_excludes_frame_depth_zero() -> None:
     """
     from types import SimpleNamespace
 
-    model = _model(
-        output_tokenizer="choice", required_slot_margin_decode_weight=2.0
-    )
+    model = _model(output_tokenizer="choice", required_slot_margin_decode_weight=2.0)
     tokenizer = model.tokenizer
     slot0 = tokenizer.sym_id(0)
     slot1 = tokenizer.sym_id(1)
@@ -5819,9 +6222,7 @@ def test_required_slot_margin_bias_excludes_non_content_schema_positions() -> No
     """
     from types import SimpleNamespace
 
-    model = _model(
-        output_tokenizer="choice", required_slot_margin_decode_weight=2.0
-    )
+    model = _model(output_tokenizer="choice", required_slot_margin_decode_weight=2.0)
     tokenizer = model.tokenizer
     slot0 = tokenizer.sym_id(0)
     slot1 = tokenizer.sym_id(1)

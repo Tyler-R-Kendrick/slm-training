@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "run_class": "scratch_matrix",
+  "run_id": "e929-e891-v247-binder-conflict-schema-heldout-n5-r1",
+  "experiment_id": "E928-E929",
+  "date": "2026-07-22",
+  "decision": "retain_default_off_intersection_reject_promotion",
+  "checkpoint": {
+    "run_id": "e891-e886-base75-hard25-warm20-r1",
+    "sha256": "a0ca03a45246d71ef11452ffa671e4adcb7aa8f50b89e48e86eeb39d79eee37d"
+  },
+  "recipe": {
+    "suite": "held_out",
+    "n": 5,
+    "canvas_cap": 192,
+    "decode_timeout_seconds": 12.0,
+    "evaluation_policy": "strict_compiler_tree",
+    "semantic_plan_decode_weight": 4.0,
+    "semantic_plan_margin_decode_weight": 2.0,
+    "semantic_plan_typed_array_item_margin_decode_weight": 0.0,
+    "slot_contract_in_context": true,
+    "honesty_mode": "harness-owned opaque slots"
+  },
+  "arms": {
+    "e928_same_revision_control": {
+      "run_id": "e928-e891-v247-binder-conflict-control-heldout-n5-r1",
+      "compiler_schema_component_types": false,
+      "parse_rate": 1.0,
+      "meaningful_program_v1_rate": 0.6,
+      "binding_aware_meaningful_v2_rate_strict": 0.2,
+      "placeholder_fidelity_normalized": 0.6799999999999999,
+      "structural_similarity": 0.34188,
+      "component_type_recall": 0.5809523809523809,
+      "reward_score": 0.8488,
+      "decode_timeout_count": 0,
+      "fallback_count": 2
+    },
+    "e929_intersect_pending_binder_types": {
+      "run_id": "e929-e891-v247-binder-conflict-schema-heldout-n5-r1",
+      "compiler_schema_component_types": true,
+      "parse_rate": 0.8,
+      "meaningful_program_v1_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.8,
+      "placeholder_fidelity_normalized": 0.8,
+      "structural_similarity": 0.54296,
+      "component_type_recall": 0.7428571428571429,
+      "reward_score": 0.764,
+      "decode_timeout_count": 1,
+      "fallback_count": 1,
+      "decision": "reject_parse_timeout_and_reward_regression"
+    }
+  },
+  "suites": {
+    "held_out": {
+      "run_id": "e929-e891-v247-binder-conflict-schema-heldout-n5-r1",
+      "n": 5,
+      "parse_rate": 0.8,
+      "meaningful_program_v1_rate": 0.8,
+      "binding_aware_meaningful_v2_rate_strict": 0.8,
+      "placeholder_fidelity_normalized": 0.8,
+      "structural_similarity": 0.54296,
+      "component_type_recall": 0.7428571428571429,
+      "reward_score": 0.764,
+      "decode_timeout_count": 1,
+      "fallback_count": 1
+    }
+  },
+  "mechanism": {
+    "treatment": "exclude unresolved binders whose accumulated official-schema component requirements are disjoint from the active typed use site",
+    "observed_success": "the Form row uses separate Buttons and input-family binders and becomes strict-v2 valid",
+    "observed_failure": "the dual-card row still times out and emits an empty prediction",
+    "next_action": "diagnose the dual-card timeout under the satisfiable typed-binder path"
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 2,
+    "failed": 2,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "evaluated": false,
+    "pass": false,
+    "reason": "diagnostic held_out n=5 only; treatment still regresses parse and reward and AgentV fails"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "665a5390585499fdd2740a843b07ad30fbc66ffa",
+    "code_dirty": true,
+    "dirty_reason": "intended v247 implementation plus unrelated modified and untracked experiment files in shared worktree",
+    "components": {
+      "config.levers": "v31",
+      "harness.model_build.eval": "v52",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v14",
+      "model.twotower": "v247"
+    },
+    "stamped_at": "2026-07-22T23:20:23.368196+00:00"
+  }
+}

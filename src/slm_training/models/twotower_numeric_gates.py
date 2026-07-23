@@ -13,7 +13,7 @@ from dataclasses import dataclass, fields as _fields
 from typing import Any, Iterable, Sequence
 
 from slm_training.levers import (
-    MAX_RUN_MINUTES,
+    MAX_HARNESS_WALL_MINUTES,
     lever_configuration_errors,
 )
 
@@ -419,11 +419,11 @@ def validate_numeric_config(
             try:
                 if value is not None:
                     finite_scalar(name, value)
-                    if not (0.0 <= value <= MAX_RUN_MINUTES):
+                    if not (0.0 <= value <= MAX_HARNESS_WALL_MINUTES):
                         raise NumericValidationError(
                             name,
                             value,
-                            f"must be at most {MAX_RUN_MINUTES} minutes",
+                            f"must be at most {MAX_HARNESS_WALL_MINUTES} minutes",
                         )
                 report.record(name, True)
             except NumericValidationError as exc:

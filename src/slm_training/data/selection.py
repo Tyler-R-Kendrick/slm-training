@@ -23,11 +23,11 @@ from pathlib import Path
 
 from slm_training.data.dedup import semantic_cluster_key
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.levers import DIFFICULTY_EASY_TAIL_FRACTION
 
 CURATION_SCORE_VERSION = 2
 # Easy-tail discount: records below this NLL percentile are down-weighted
 # linearly (floor 0.5 at percentile 0); everything harder keeps weight 1.0.
-EASY_PERCENTILE = 0.2
 
 
 def load_record_nll(path: Path | str) -> dict[str, float]:
@@ -59,10 +59,12 @@ def difficulty_weights(
             continue
         rank = sum(1 for value in known if value <= nll)
         percentile = rank / len(known)
-        if percentile >= EASY_PERCENTILE:
+        if percentile >= DIFFICULTY_EASY_TAIL_FRACTION:
             weights[record.id] = 1.0
         else:
-            weights[record.id] = round(0.5 + 0.5 * (percentile / EASY_PERCENTILE), 4)
+            weights[record.id] = round(
+                0.5 + 0.5 * (percentile / DIFFICULTY_EASY_TAIL_FRACTION), 4
+            )
     return weights
 
 
@@ -117,11 +119,34 @@ def attach_curation_scores(
     return records
 
 
+def select_difficult_records(
+    records: list[ExampleRecord], nll_by_id: dict[str, float]
+) -> tuple[list[ExampleRecord], list[dict]]:
+    """Keep scored records outside the easy tail; retain unscored records."""
+    weights = difficulty_weights(records, nll_by_id)
+    kept: list[ExampleRecord] = []
+    dropped: list[dict] = []
+    for record in records:
+        weight = weights[record.id]
+        if record.id in nll_by_id and weight < 1.0:
+            dropped.append(
+                {
+                    "id": record.id,
+                    "reason": "difficulty_easy_tail",
+                    "record_nll": nll_by_id[record.id],
+                    "difficulty_weight": weight,
+                }
+            )
+        else:
+            kept.append(record)
+    return kept, dropped
+
+
 __all__ = [
     "CURATION_SCORE_VERSION",
-    "EASY_PERCENTILE",
     "attach_curation_scores",
     "curation_scores",
     "difficulty_weights",
     "load_record_nll",
+    "select_difficult_records",
 ]

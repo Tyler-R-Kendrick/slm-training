@@ -22,7 +22,7 @@ from slm_training.harnesses.model_build.eval_runner import (
     evaluate,
 )
 
-_GOLD = 'root = Stack([cta])\ncta = Button(":cta")'
+_GOLD = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def _record(**overrides: object) -> ExampleRecord:
@@ -30,7 +30,7 @@ def _record(**overrides: object) -> ExampleRecord:
         "id": "r1",
         "prompt": "CTA",
         "openui": _GOLD,
-        "placeholders": [":cta"],
+        "placeholders": [":slot_0"],
         **overrides,
     }
     return ExampleRecord.from_dict(data)
@@ -73,6 +73,16 @@ def test_real_mismatches_still_score_zero() -> None:
     bare = _record(openui="root = Stack([])", placeholders=[])
     assert _contract_precision('root = Button(":x")', bare) == 0.0
     assert component_type_recall("root = Stack([])", _GOLD) == 0.0
+
+
+def test_placeholder_metrics_only_credit_opaque_harness_markers() -> None:
+    gold = _record()
+    opaque = 'root = Button(":slot_0")'
+    semantic = 'root = Button(":hero.title")'
+
+    assert _placeholder_validity(opaque, gold) == 1.0
+    assert _placeholder_fidelity_normalized(semantic, gold) == 0.0
+    assert _placeholder_validity(semantic, gold) == 0.0
 
 
 def test_tree_match_splits_model_failure_from_harness_failure() -> None:
@@ -154,10 +164,10 @@ def test_measured_metrics_report_defined_counts_and_fallbacks(tmp_path: Path) ->
     # generate_batch_requests collects decode stats → measured zero fallbacks.
     assert metrics["fallback_count"] == 0
     assert metrics["empty_prediction_count"] == 0
-    # Default policy is grammar-constrained → syntax metrics are labeled as
-    # decoder-guaranteed; the slot contract is not injected by default.
+    # The strict default policy guarantees both grammar and the harness-owned
+    # opaque slot contract.
     assert "parse_rate" in metrics["decoder_guaranteed"]
-    assert "contract_precision" not in metrics["decoder_guaranteed"]
+    assert "contract_precision" in metrics["decoder_guaranteed"]
 
 
 def test_agentv_single_suite_publishes_one_case() -> None:

@@ -1,0 +1,487 @@
+{
+  "schema_version": 1,
+  "version": "e845_repeated_typed_collections_v1",
+  "profile": "strict",
+  "built_at": "2026-07-22T18:32:51.877990+00:00",
+  "counts": {
+    "seeds": 923,
+    "candidates": 1713,
+    "collected": 1660,
+    "admitted": 613,
+    "rejected_total": 1108,
+    "source_errors": 0,
+    "by_stage": {
+      "decontamination": 40,
+      "dedup": 803,
+      "normalize": 53,
+      "quality": 59,
+      "verification": 153
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 53,
+    "parse_rate": 0.9691,
+    "tier_histogram": {
+      "Bronze": 199,
+      "Gold": 6,
+      "Silver": 408
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 153,
+    "placeholder_contract_violations": 10,
+    "judge_contract_violations": 49,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 59,
+    "reason_histogram": {
+      "identity_echo_mismatch": 49,
+      "too_few_placeholders": 10,
+      "unknown_components": 10
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 613
+    },
+    "mean_quality_score": 0.985,
+    "min_quality_score": 0.85
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 577,
+      "fuzzy_minhash": 90,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 136,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 586,
+      "records_per_cluster": {
+        "max": 2,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "031155591c50ccf6|6abe1595061eae3527dd1e9c13c8447a8f28809b99cceeffca2912c21e19925b|d921a577688dd055",
+        "count": 2,
+        "sample_ids": [
+          "0072a4a4626efe70_scope",
+          "0072a4a4626efe70_scope"
+        ]
+      },
+      {
+        "cluster": "0c10c1d5791fb352|8ea1269339f4b187d3bf7a92f7350a3ca0a68791f6f58fc6986510d9d260cd36|7e988d7c54e9621f",
+        "count": 2,
+        "sample_ids": [
+          "program_6bf891b163fb6489",
+          "program_6bf891b163fb6489_syn_0"
+        ]
+      },
+      {
+        "cluster": "161ea93f03e26285|ace9f21c39afd975cc5fa26ef084843b2498e9b2113401e8043911e5e1e3056e|bbc2bda95125d0aa",
+        "count": 2,
+        "sample_ids": [
+          "425d9fac9a5e05d3_scope",
+          "425d9fac9a5e05d3_scope"
+        ]
+      },
+      {
+        "cluster": "16dbb5a676dbf410|82808d040402ea34fab6591f9dd6ad0f0f626caec7a7ecd53c39a3b7a5e9e7f7|4000ececf73c49e2",
+        "count": 2,
+        "sample_ids": [
+          "6f181453ca4673cf_scope",
+          "6f181453ca4673cf_scope"
+        ]
+      },
+      {
+        "cluster": "2c81ec27036407ad|da525448a30e024f1c4ebf3a7f46408ec86df1ce50114907ec7dbf6a2593ae8e|bbf5b0ad96a727d6",
+        "count": 2,
+        "sample_ids": [
+          "program_ed6d209b65260ef0",
+          "program_ed6d209b65260ef0_syn_0"
+        ]
+      },
+      {
+        "cluster": "40037df915249b3a|f93a721b3dedc97a71faf57ab17ba42794125bfb329cf1c33d67b3dfa39ea672|909205721044b724",
+        "count": 2,
+        "sample_ids": [
+          "program_a0c71836e52c7b26",
+          "program_a0c71836e52c7b26_syn_0"
+        ]
+      },
+      {
+        "cluster": "5a0007190c99d521|65ff37f8b61be7775e4157f7d3bc86b6e5203be817b3a2904d91163d87c7c23f|7e3145c083fe1856",
+        "count": 2,
+        "sample_ids": [
+          "program_36eb21e823ac68c9",
+          "program_36eb21e823ac68c9_syn_0"
+        ]
+      },
+      {
+        "cluster": "6a917e711ff53047|627826e0cd74e12d2b0cc32154dd6ed67193c71be3bbacbe6e1d3cb7fc4c9e84|417dc8c59f84a25f",
+        "count": 2,
+        "sample_ids": [
+          "program_16e57c86e8ca54d6",
+          "program_16e57c86e8ca54d6_syn_0"
+        ]
+      },
+      {
+        "cluster": "720af35b5a016162|cb4ce5d90da9f29eb32cac06abc475a6e7ae1a4c61f655a60cf69c24ab8804ec|a5ce4425b2371208",
+        "count": 2,
+        "sample_ids": [
+          "aeb6f89d8f8b5aa2_scope",
+          "aeb6f89d8f8b5aa2_scope"
+        ]
+      },
+      {
+        "cluster": "7ca0958e33f8a0e9|00208478e3096609b2c85f0e2564e7bf75eb288a8b2a04e8bf04755a1628218e|275babf8910a67ec",
+        "count": 2,
+        "sample_ids": [
+          "program_effe0f7375001c6c",
+          "program_effe0f7375001c6c_syn_0"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 40,
+    "ngram_flagged": 35,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e813_opaque_slot_ids_v4/adversarial",
+      "e813_opaque_slot_ids_v4/held_out",
+      "e813_opaque_slot_ids_v4/ood",
+      "e813_opaque_slot_ids_v4/rico_held",
+      "e813_opaque_slot_ids_v4/smoke",
+      "e819_opaque_slot_ids_v4/adversarial",
+      "e819_opaque_slot_ids_v4/held_out",
+      "e819_opaque_slot_ids_v4/ood",
+      "e819_opaque_slot_ids_v4/rico_held",
+      "e819_opaque_slot_ids_v4/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 1660,
+    "changed": 1221,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 1117,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 42,
+      "flatten_opportunities": 138
+    },
+    "literals_templatized": 600,
+    "records_templatized": 438,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 733,
+      "misses": 360
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "abstraction_ladder",
+      "record_count": 5,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 5
+      }
+    },
+    {
+      "source_family": "corruption_repair",
+      "record_count": 14,
+      "root_parent_count": 14,
+      "mean_quality_score": 0.953571,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 14
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 26,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.953846,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 13,
+        "patch": 13
+      }
+    },
+    {
+      "source_family": "frontier_described",
+      "record_count": 3,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 3
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 41,
+      "root_parent_count": 21,
+      "mean_quality_score": 0.992683,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 41
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 63,
+      "root_parent_count": 62,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 63
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 99,
+      "root_parent_count": 59,
+      "mean_quality_score": 0.974242,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 99
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 27,
+      "root_parent_count": 14,
+      "mean_quality_score": 0.953704,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 27
+      }
+    },
+    {
+      "source_family": "prompt_paraphrase",
+      "record_count": 114,
+      "root_parent_count": 45,
+      "mean_quality_score": 0.980263,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 114
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    },
+    {
+      "source_family": "rico_real",
+      "record_count": 19,
+      "root_parent_count": 12,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 19
+      }
+    },
+    {
+      "source_family": "scope_canonical_document",
+      "record_count": 22,
+      "root_parent_count": 14,
+      "mean_quality_score": 0.954545,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 22
+      }
+    },
+    {
+      "source_family": "scope_canonical_expression",
+      "record_count": 22,
+      "root_parent_count": 14,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 22
+      }
+    },
+    {
+      "source_family": "scope_canonical_lexical",
+      "record_count": 5,
+      "root_parent_count": 4,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 5
+      }
+    },
+    {
+      "source_family": "scope_canonical_statement",
+      "record_count": 22,
+      "root_parent_count": 13,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 22
+      }
+    },
+    {
+      "source_family": "scope_identity_expression",
+      "record_count": 29,
+      "root_parent_count": 14,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 29
+      }
+    },
+    {
+      "source_family": "scope_identity_lexical",
+      "record_count": 13,
+      "root_parent_count": 9,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 13
+      }
+    },
+    {
+      "source_family": "scope_identity_statement",
+      "record_count": 21,
+      "root_parent_count": 13,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 21
+      }
+    },
+    {
+      "source_family": "scope_repair_expression",
+      "record_count": 27,
+      "root_parent_count": 16,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 27
+      }
+    },
+    {
+      "source_family": "scope_repair_lexical",
+      "record_count": 6,
+      "root_parent_count": 5,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 6
+      }
+    },
+    {
+      "source_family": "scope_repair_statement",
+      "record_count": 32,
+      "root_parent_count": 16,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 32
+      }
+    },
+    {
+      "source_family": "web_distilled",
+      "record_count": 2,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 2
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.3579,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "eval_overlap_flagged",
+      "value": 35,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 10,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "178675ec2ae83bb913dd0835e7525851f2da3402",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v15"
+    },
+    "stamped_at": "2026-07-22T18:32:51.897428+00:00"
+  }
+}

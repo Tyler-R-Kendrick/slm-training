@@ -60,7 +60,8 @@ def test_seed_builder_uses_opaque_marker_identity(
     plan = OpenUISemanticPlanExtractor().extract(single_spec, pack)
     result = PlanSeedBuilder(pack).build(plan)
     seed = result.seed or ""
-    assert ":slot_0." in seed
+    assert '":slot_0"' in seed
+    assert ":slot_0." not in seed
     assert all(symbol.symbol_id not in seed for symbol in plan.symbols)
 
 

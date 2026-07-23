@@ -116,8 +116,8 @@ def test_maskgit_loop_instantiates_ledger_only_when_enabled() -> None:
         ExampleRecord(
             id="a",
             prompt="Hero",
-            openui='root = Stack([t])\nt = TextContent(":hero.title")',
-            placeholders=[":hero.title"],
+            openui='root = Stack([t])\nt = TextContent(":slot_0")',
+            placeholders=[":slot_0"],
         )
     ]
     model = TwoTowerModel.from_records(

@@ -22,6 +22,12 @@ from slm_training.dsl.language_contract import (
     require_current_output_contract,
 )
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
+from slm_training.data.contract import (
+    assert_canonical_template_markers,
+    assert_canonical_template_marker_inventory,
+    assert_no_template_semantic_labels,
+)
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import RMSNorm, TransformerBlock
 from slm_training.models.context import (
@@ -41,9 +47,7 @@ from slm_training.dsl.solver.topology_solver import (
 from slm_training.dsl.pack import PackSlotUnavailable, get_pack
 
 
-def _load_production_codec(
-    texts: list[str], output_kinds: list[str] | None = None
-):
+def _load_production_codec(texts: list[str], output_kinds: list[str] | None = None):
     from slm_training.dsl.production_codec import ProductionCodec
 
     return ProductionCodec.build(texts, output_kinds)
@@ -490,8 +494,7 @@ def _topology_from_ids(
     index = 0
     is_v05 = bool(pairs and pairs[0][0] == v05_id)
     is_fragment = bool(
-        pairs
-        and codec.id_to_production.get(pairs[0][0], "") in FRAGMENT_MARKERS
+        pairs and codec.id_to_production.get(pairs[0][0], "") in FRAGMENT_MARKERS
     )
     if is_fragment:
         root = TopologyNode(0, "document", pairs[0][0])
@@ -588,6 +591,7 @@ def _serialize_topology(
 
     for statement in root.children:
         if is_fragment:
+
             def emit_fragment(node: TopologyNode) -> None:
                 token = codec.id_to_production.get(node.production_id, "")
                 if token != FRAGMENT_CHUNK:
@@ -1095,6 +1099,7 @@ class GrammarDiffusionModel(nn.Module):
             schema = compact_schema_snippet(
                 budget=min(600, self.config.design_md_budget)
             )
+        assert_canonical_template_marker_inventory(slot_contract or ())
         return format_context_text(
             prompt,
             design_md if self.config.design_md_in_context else None,
@@ -1140,7 +1145,10 @@ class GrammarDiffusionModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         prompts, rows = self._state_rows(batch)
         ctx, ctx_pad = self._encode_context(prompts)
@@ -1527,7 +1535,10 @@ class GrammarDiffusionModel(nn.Module):
                             or "unknown"
                         ),
                         "scope_gate_accuracy": float(
-                            gate_pred.eq(gate_gold[scoped].ge(0.5)).float().mean().item()
+                            gate_pred.eq(gate_gold[scoped].ge(0.5))
+                            .float()
+                            .mean()
+                            .item()
                         ),
                         "scope_summary_definitions_mae": float(summary_mae[0].item()),
                         "scope_summary_uses_mae": float(summary_mae[1].item()),
@@ -1543,9 +1554,15 @@ class GrammarDiffusionModel(nn.Module):
                     cone_pred = failure_cone[batch_index, :width][scoped].ge(0.5)
                     row_evidence.update(
                         {
-                            "failure_cone_tp": int((cone_pred & cone_gold).sum().item()),
-                            "failure_cone_fp": int((cone_pred & ~cone_gold).sum().item()),
-                            "failure_cone_fn": int((~cone_pred & cone_gold).sum().item()),
+                            "failure_cone_tp": int(
+                                (cone_pred & cone_gold).sum().item()
+                            ),
+                            "failure_cone_fp": int(
+                                (cone_pred & ~cone_gold).sum().item()
+                            ),
+                            "failure_cone_fn": int(
+                                (~cone_pred & cone_gold).sum().item()
+                            ),
                             "failure_cone_predicted_size": int(cone_pred.sum().item()),
                             "failure_cone_target_size": int(cone_gold.sum().item()),
                         }
@@ -1626,24 +1643,16 @@ class GrammarDiffusionModel(nn.Module):
             )
             bounds = SolverBounds(
                 max_tokens=self.config.topology_max_nodes * 64,
-                max_nodes=int(
-                    getattr(self.config, "topology_solver_max_nodes", 256)
-                ),
-                max_depth=int(
-                    getattr(self.config, "topology_solver_max_depth", 32)
-                ),
+                max_nodes=int(getattr(self.config, "topology_solver_max_nodes", 256)),
+                max_depth=int(getattr(self.config, "topology_solver_max_depth", 32)),
                 max_backtracks=int(
                     getattr(self.config, "topology_solver_max_backtracks", 64)
                 ),
                 max_verifier_calls=int(
-                    getattr(
-                        self.config, "topology_solver_max_verifier_calls", 64
-                    )
+                    getattr(self.config, "topology_solver_max_verifier_calls", 64)
                 ),
             )
-            use_capsules = bool(
-                getattr(self.config, "topology_capsule_solver", False)
-            )
+            use_capsules = bool(getattr(self.config, "topology_capsule_solver", False))
             capsule_available = False
             if use_capsules:
                 try:
@@ -1679,9 +1688,7 @@ class GrammarDiffusionModel(nn.Module):
                 else:
                     capsule_error = None
 
-                capsule_survivors: set[
-                    tuple[int, str, int, int, int]
-                ] = set()
+                capsule_survivors: set[tuple[int, str, int, int, int]] = set()
                 if capsule_result is not None:
                     for per_capsule in capsule_result.capsule_results:
                         if (
@@ -1863,9 +1870,7 @@ class GrammarDiffusionModel(nn.Module):
             slot_choices = slot_logits[0].argmax(-1).tolist()
             critic_values = critic[0].tolist()
             confidence_values = confidence[0].tolist()
-            proposals: list[
-                tuple[TopologyNode, int, int, int, int, float, float]
-            ] = []
+            proposals: list[tuple[TopologyNode, int, int, int, int, float, float]] = []
             proposal_nodes = list(active_selected)
             if (
                 self.config.topology_actions
@@ -1966,7 +1971,15 @@ class GrammarDiffusionModel(nn.Module):
                 ) in proposals:
                     if production_id < 0:
                         filtered.append(
-                            (node, action, production_id, arity, slot_id, validity, conf)
+                            (
+                                node,
+                                action,
+                                production_id,
+                                arity,
+                                slot_id,
+                                validity,
+                                conf,
+                            )
                         )
                         continue
                     action_name = TopologyAction(action).name
@@ -1978,7 +1991,15 @@ class GrammarDiffusionModel(nn.Module):
                         slot_id,
                     ) in solver_survivors:
                         filtered.append(
-                            (node, action, production_id, arity, slot_id, validity, conf)
+                            (
+                                node,
+                                action,
+                                production_id,
+                                arity,
+                                slot_id,
+                                validity,
+                                conf,
+                            )
                         )
                 proposals = filtered
 
@@ -2134,16 +2155,8 @@ class GrammarDiffusionModel(nn.Module):
         outputs: list[str] = []
         self._generation_evidence = []
         for index, request in enumerate(requests):
-            inventory = [
-                value if value.startswith(":") else f":{value}"
-                for value in (request.slot_contract or ())
-            ]
-            if not inventory:
-                from slm_training.models.template_fill import inventory_from_prompt
-
-                inventory = inventory_from_prompt(
-                    request.prompt, request.design_md, heuristic=True
-                )
+            inventory = list(request.slot_contract or ())
+            assert_canonical_template_marker_inventory(inventory)
             text, evidence = self._decode_one(
                 ctx[index : index + 1],
                 ctx_pad[index : index + 1],
@@ -2158,7 +2171,7 @@ class GrammarDiffusionModel(nn.Module):
         from slm_training.models.template_fill import inventory_from_prompt
 
         design_md = gold.design_md if gold is not None else None
-        contract = tuple(inventory_from_prompt(prompt, design_md, heuristic=True))
+        contract = tuple(inventory_from_prompt(prompt, design_md, heuristic=False))
         return self.generate_batch_requests(
             [
                 GenerationRequest(
@@ -2265,21 +2278,32 @@ class GrammarDiffusionModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> GrammarDiffusionModel:
         for record in records:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         codec = _load_production_codec(
             [record.openui for record in records],
             [record.target_kind for record in records],
         )
-        tokenizer = OpenUITokenizer.build(
-            [record.prompt for record in records]
-            + [record.openui for record in records]
-        )
         cfg = config or GrammarDiffusionConfig()
+        context_texts = []
+        for record in records:
+            inventory = list(record.placeholders or extract_placeholders(record.openui))
+            context_texts.append(
+                format_context_text(
+                    record.prompt,
+                    record.design_md if cfg.design_md_in_context else None,
+                    budget=cfg.design_md_budget,
+                    slot_contract=(inventory if cfg.slot_contract_in_context else None),
+                    output_kind=record.target_kind,
+                    output_category=record.target_category,
+                )
+            )
+        tokenizer = OpenUITokenizer.build(context_texts)
         cfg.max_prompt_len = max(
             cfg.max_prompt_len,
-            max(
-                (len(tokenizer.encode(record.prompt)) for record in records), default=16
-            )
+            max((len(tokenizer.encode(text)) for text in context_texts), default=16)
             + 4,
         )
         return cls(tokenizer, codec, cfg, device)

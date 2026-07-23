@@ -24,12 +24,16 @@ from slm_training.dsl.language_contract import (
     assert_symbol_only_output,
     require_current_output_contract,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 from slm_training.dsl.placeholders import is_placeholder
 from slm_training.data.contract import (
     BoundGenerationResult,
     CallerContentBinding,
     ChoiceGenerationResult,
     RuntimeSymbol,
+    assert_canonical_template_marker_inventory,
+    assert_canonical_template_markers,
+    assert_no_template_semantic_labels,
     choice_generation_fingerprint,
 )
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -88,7 +92,6 @@ from slm_training.models.speculative_denoise import (
 )
 from slm_training.models.template_fill import (
     build_slot_contract_template,
-    ensure_prompt_inventory,
     inventory_from_prompt,
     prompt_semantic_plan,
     template_mask_positions,
@@ -437,6 +440,7 @@ class TwoTowerConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_schema_component_types: bool = False
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
@@ -627,11 +631,14 @@ class TwoTowerConfig:
     speculative_overlap: bool = False
 
     def __post_init__(self) -> None:
+        from slm_training.levers import require_valid_lever_configuration
+
         # SLM-242: generic fail-closed numeric/schedule gate.
         try:
             validate_twotower_config(self)
         except NumericValidationError as exc:
             raise ValueError(str(exc)) from exc
+        require_valid_lever_configuration(self, context="TwoTower config")
         # SLM-237/238: architecture-aware recursive-depth supervision gate.
         if self.recursive_depth_supervision_weights or (
             self.recursive_depth_aux_mode is not None
@@ -754,6 +761,33 @@ def _load_checkpoint_state(
             "checkpoint state mismatch: "
             f"missing={bad_missing!r} unexpected={bad_unexpected!r}"
         )
+
+
+def _remap_vocab_weight(
+    source_weight: torch.Tensor,
+    source_token_to_id: dict[str, int],
+    target_weight: torch.Tensor,
+    target_token_to_id: dict[str, int],
+) -> torch.Tensor:
+    """Copy shared token rows while retaining initialized rows for new tokens."""
+    remapped = target_weight.detach().clone()
+    for token, target_id in target_token_to_id.items():
+        source_id = source_token_to_id.get(token)
+        if source_id is not None:
+            remapped[target_id] = source_weight[source_id]
+    return remapped
+
+
+def _resize_position_weight(
+    source_weight: torch.Tensor, target_weight: torch.Tensor
+) -> torch.Tensor:
+    """Copy the shared learned position prefix across context-length changes."""
+    if source_weight.ndim != 2 or source_weight.shape[1:] != target_weight.shape[1:]:
+        return source_weight
+    resized = target_weight.detach().clone()
+    shared = min(source_weight.shape[0], target_weight.shape[0])
+    resized[:shared] = source_weight[:shared]
+    return resized
 
 
 def _check_output_head_tie_migration(
@@ -1571,14 +1605,14 @@ class TwoTowerModel(nn.Module):
         self._semantic_role_properties: list[dict[str, tuple[str, ...]]] | None = None
         self._semantic_plan_action_scores: list[dict[int, float]] | None = None
         self._semantic_plan_action_counts: list[dict[int, int]] | None = None
-        self._semantic_plan_role_bindings: list[
-            dict[str, tuple[str, ...]]
-        ] | None = None
+        self._semantic_plan_role_bindings: list[dict[str, tuple[str, ...]]] | None = (
+            None
+        )
         self._semantic_plan_required_root_references: list[dict[int, str]] | None = None
         self._semantic_plan_outer_groups: list[dict[str, object] | None] | None = None
-        self._semantic_plan_root_token_plans: list[
-            tuple[tuple[str, ...], tuple[str, ...]] | None
-        ] | None = None
+        self._semantic_plan_root_token_plans: (
+            list[tuple[tuple[str, ...], tuple[str, ...]] | None] | None
+        ) = None
         self._semantic_plan_root_last_abstention: dict[str, object] | None = None
         self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
@@ -2457,18 +2491,16 @@ class TwoTowerModel(nn.Module):
                     "fresh_binder",
                 }:
                     continue
-                if self._opaque_slot_projection_active:
-                    # External aliases are late codec data in the opt-in opaque
-                    # APIs. Compose only the ordinal and declared typed authority.
+                if (
+                    symbol.role == "external_entity"
+                    or self._opaque_slot_projection_active
+                ):
+                    # External aliases are late codec data. Their spelling and
+                    # metadata must never enter model features.
                     parts = (
                         f"{namespace}:{ordinal}",
                         f"role:{symbol.role}" if symbol.role else None,
-                        f"type:{symbol.semantic_type}" if symbol.semantic_type else None,
-                        (
-                            f"semantic-role:{symbol.semantic_role}"
-                            if symbol.semantic_role
-                            else None
-                        ),
+                        None,
                     )
                 else:
                     # Preserve historical default-off experiment/checkpoint
@@ -2575,7 +2607,10 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         _require_symbol_only_tokenizer(self.tokenizer)
         for record in batch:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         self.train()
         self.last_training_metrics = {}
         self._detached_auxiliary_loss: torch.Tensor | None = None
@@ -2590,15 +2625,18 @@ class TwoTowerModel(nn.Module):
                 prompts.append(self._context_text_cache[key])
             else:
                 design_md = self._training_design_md(r.design_md, key)
+                contract = (
+                    self._resolve_slot_contract(
+                        r.prompt, r, design_md, use_gold_design=False
+                    )
+                    if getattr(self.config, "slot_contract_in_context", False)
+                    else None
+                )
                 text = self._format_one_context(
                     r.prompt,
                     design_md,
                     query_prompt=r.prompt,
-                    slot_contract=self._resolve_slot_contract(
-                        r.prompt, r, design_md, use_gold_design=False
-                    )
-                    if getattr(self.config, "slot_contract_in_context", False)
-                    else None,
+                    slot_contract=contract,
                     output_kind=r.target_kind,
                     output_category=r.target_category,
                 )
@@ -4066,7 +4104,9 @@ class TwoTowerModel(nn.Module):
         self, slot_contract: list[str] | tuple[str, ...] | None = None
     ) -> str | None:
         """Return a certified fallback without inventing completion symbols."""
-        marker = next((item for item in slot_contract or () if is_placeholder(item)), None)
+        marker = next(
+            (item for item in slot_contract or () if is_placeholder(item)), None
+        )
         candidates = (
             [f"root = TextContent({json.dumps(marker)})\n"]
             if marker
@@ -4888,15 +4928,6 @@ class TwoTowerModel(nn.Module):
         slots: list[str],
         ordinals: list[int] | None = None,
     ) -> list[str]:
-        if not self._opaque_slot_projection_active:
-            if not bool(getattr(self.config, "slot_component_next_context", False)):
-                return list(slots)
-            return [
-                f"{slot}\n{slots[index + 1]}"
-                if index + 1 < len(slots)
-                else slot
-                for index, slot in enumerate(slots)
-            ]
         indices = ordinals if ordinals is not None else list(range(len(slots)))
         if len(indices) != len(slots):
             raise ValueError("slot ordinals must align with slots")
@@ -4909,16 +4940,7 @@ class TwoTowerModel(nn.Module):
         ]
 
     def _slot_role_token(self, slot: str) -> str:
-        if self._opaque_slot_projection_active:
-            return "content"
-        return next(
-            (
-                token
-                for token in reversed(tokenize_text(slot))
-                if any(char.isalnum() for char in token)
-            ),
-            "",
-        )
+        return "content"
 
     def _binder_component_token_ids(self) -> tuple[int, ...]:
         if self._binder_token_ids_cache is not None:
@@ -5152,7 +5174,9 @@ class TwoTowerModel(nn.Module):
             prefix,
             candidate_ids,
             candidate_kinds,
-            slot_contract if slot_contract is not None else row_value(self._slot_contracts),
+            slot_contract
+            if slot_contract is not None
+            else row_value(self._slot_contracts),
             row_value(self._semantic_role_candidates),
         )
 
@@ -5194,7 +5218,9 @@ class TwoTowerModel(nn.Module):
         direct_string_properties = {
             name: {
                 property_name
-                for property_name, schema in (definition.get("properties") or {}).items()
+                for property_name, schema in (
+                    definition.get("properties") or {}
+                ).items()
                 if isinstance(schema, dict) and schema.get("type") == "string"
             }
             for name in sorted(set(component_names))
@@ -5279,8 +5305,7 @@ class TwoTowerModel(nn.Module):
         def enum_values(value: object) -> set[str]:
             if isinstance(value, dict):
                 return {
-                    str(item).lower()
-                    for item in value.get("enum", ())
+                    str(item).lower() for item in value.get("enum", ())
                 } | set().union(*(enum_values(child) for child in value.values()))
             if isinstance(value, list):
                 return set().union(*(enum_values(child) for child in value), set())
@@ -5365,7 +5390,11 @@ class TwoTowerModel(nn.Module):
         coverage: dict[str, list[str]] = defaultdict(list)
         bound_slots: set[str] = set()
         component_names = sorted(
-            {component for candidates in role_candidates.values() for component in candidates}
+            {
+                component
+                for candidates in role_candidates.values()
+                for component in candidates
+            }
         )
 
         def covered_by_planned(slots: tuple[str, ...]) -> bool:
@@ -5436,7 +5465,8 @@ class TwoTowerModel(nn.Module):
                 (
                     preferred
                     for preferred in DEFAULT_HOUSE_STYLE.preferred_components
-                    if preferred in planned and preferred in candidates
+                    if preferred in planned
+                    and preferred in candidates
                     and TwoTowerModel._semantic_role_family_has_capacity(
                         preferred,
                         (
@@ -5747,8 +5777,7 @@ class TwoTowerModel(nn.Module):
                 remaining_families = {
                     family
                     for family, token_id in family_token_ids.items()
-                    if family != active_family
-                    and remaining_counts.get(token_id, 0) > 0
+                    if family != active_family and remaining_counts.get(token_id, 0) > 0
                 }
                 comma_id = self.tokenizer.token_to_id.get(",")
                 close_id = self.tokenizer.token_to_id.get("]")
@@ -5788,6 +5817,42 @@ class TwoTowerModel(nn.Module):
                         margin_bias,
                     )
                 applied = True
+        if (
+            margin > 0.0
+            and remaining_counts is not None
+            and not any(remaining_counts.values())
+            and prefix
+            and candidate_scores is not None
+        ):
+            slot_contract = (
+                self._slot_contracts[row]
+                if self._slot_contracts and row < len(self._slot_contracts)
+                else ()
+            )
+            required_slot_ids = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(
+                    min(len(slot_contract or ()), int(self.tokenizer.sym_slots))
+                )
+            }
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                _active_array_start_index,
+            )
+
+            close_id = self.tokenizer.token_to_id.get("]")
+            if (
+                required_slot_ids.issubset(prefix)
+                and close_id in candidate_ids
+                and _active_array_start_index(self.tokenizer, prefix) is not None
+            ):
+                target = candidate_ids.index(close_id)
+                bias[target] = max(
+                    float(bias[target].item()),
+                    float(candidate_scores.max().item())
+                    + margin
+                    - float(candidate_scores[target].item()),
+                )
+                applied = True
         frames = getattr(state, "frames", ())
         if margin > 0.0 and remaining_counts is not None and not frames:
             remaining_families = {
@@ -5806,8 +5871,7 @@ class TwoTowerModel(nn.Module):
                 for position, (token_id, kind) in enumerate(
                     zip(candidate_ids, candidate_kinds, strict=True)
                 )
-                if kind in component_kinds
-                and remaining_counts.get(token_id, 0) > 0
+                if kind in component_kinds and remaining_counts.get(token_id, 0) > 0
             }
             if containment and (best := max(containment.values())) > 0:
                 for position, count in containment.items():
@@ -6299,9 +6363,7 @@ class TwoTowerModel(nn.Module):
         slot_positions = [
             position
             for position, token_id in enumerate(candidate_ids)
-            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(
-                SLOT_PREFIX
-            )
+            if str(self.tokenizer.id_to_token.get(token_id, "")).startswith(SLOT_PREFIX)
         ]
         non_slot_scores = [
             float(scores[position].item())
@@ -6474,9 +6536,7 @@ class TwoTowerModel(nn.Module):
         scores: torch.Tensor,
     ) -> torch.Tensor | None:
         """Prefer a visible authored component's boolean ``open`` property."""
-        weight = float(
-            getattr(self.config, "schema_open_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "schema_open_decode_weight", 0.0) or 0.0)
         frames = list(getattr(state, "frames", ()))
         if weight <= 0.0 or not frames:
             return None
@@ -6640,7 +6700,9 @@ class TwoTowerModel(nn.Module):
 
         properties_by_slot = semantic_role_properties
         if properties_by_slot is None and not self._opaque_slot_projection_active:
-            from slm_training.data.quality import semantic_role_properties as infer_roles
+            from slm_training.data.quality import (
+                semantic_role_properties as infer_roles,
+            )
 
             properties_by_slot = infer_roles(slot_contract)
         properties_by_slot = properties_by_slot or {}
@@ -6801,11 +6863,11 @@ class TwoTowerModel(nn.Module):
         }
         properties_by_slot = semantic_role_properties
         if properties_by_slot is None and not self._opaque_slot_projection_active:
-            from slm_training.data.quality import semantic_role_properties as infer_roles
-
-            properties_by_slot = infer_roles(
-                [slot for _index, slot in missing]
+            from slm_training.data.quality import (
+                semantic_role_properties as infer_roles,
             )
+
+            properties_by_slot = infer_roles([slot for _index, slot in missing])
         properties_by_slot = properties_by_slot or {}
         owner_component = next(
             (
@@ -7269,9 +7331,7 @@ class TwoTowerModel(nn.Module):
             target = library_schema().get("$defs", {}).get(name)
             return isinstance(
                 target, dict
-            ) and TwoTowerModel._schema_can_reach_visible_slot(
-                target, seen | {name}
-            )
+            ) and TwoTowerModel._schema_can_reach_visible_slot(target, seen | {name})
         if schema.get("x-openui-placeholder") or schema.get("type") == "string":
             return True
         return any(
@@ -7329,7 +7389,10 @@ class TwoTowerModel(nn.Module):
         if max(margin, typed_margin) <= 0.0 or not slot_contract:
             return None
         if not choice_codec:
-            from slm_training.dsl.grammar.fastpath.compiler_draft import _active_call
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                _active_call,
+                _schema_component_refs,
+            )
             from slm_training.dsl.lang_core import library_schema
 
             active = _active_call(getattr(state, "engine", state))
@@ -7357,15 +7420,76 @@ class TwoTowerModel(nn.Module):
                 ),
                 None,
             )
+            root_schema = library_schema()
+            allowed_components = _schema_component_refs(
+                dict(schema["items"]), root_schema
+            )
+            plan_counts = (
+                self._semantic_plan_action_counts[row]
+                if self._semantic_plan_action_counts
+                and row < len(self._semantic_plan_action_counts)
+                else {}
+            )
+            planned_item_ids = {
+                token_id
+                for token_id, count in plan_counts.items()
+                if count > 0
+                and str(self.tokenizer.id_to_token.get(token_id, ""))
+                .removeprefix("COMP:")
+                .removeprefix("+")
+                in allowed_components
+            }
+            unique_component = (
+                next(iter(allowed_components))
+                if len(allowed_components) == 1
+                else None
+            )
+            unique_definition = (
+                (root_schema.get("$defs") or {}).get(unique_component) or {}
+                if unique_component is not None
+                else {}
+            )
+            unique_properties = unique_definition.get("properties") or {}
+            unique_required = unique_definition.get("required") or ()
+            unique_item_is_closed_leaf = unique_component is not None and all(
+                not _schema_component_refs(
+                    dict(unique_properties.get(name) or {}), root_schema
+                )
+                for name in unique_required
+            )
+            schema_component_types = bool(
+                getattr(self.config, "compiler_schema_component_types", False)
+            )
+            unique_schema_item_ids = {
+                token_id
+                for token_id in self._component_inventory_token_ids()
+                if (unique_item_is_closed_leaf or schema_component_types)
+                and str(self.tokenizer.id_to_token.get(token_id, ""))
+                .removeprefix("COMP:")
+                .removeprefix("+")
+                in allowed_components
+            }
+            preferred_item_ids = planned_item_ids | (
+                unique_schema_item_ids
+                if typed_margin > 0.0 or schema_component_types
+                else set()
+            )
+            if typed_margin > 0.0 and allowed_components and not preferred_item_ids:
+                return None
             if (
                 family_id is None
-                or not self._semantic_plan_action_counts
-                or row >= len(self._semantic_plan_action_counts)
-                or self._semantic_plan_action_counts[row].get(family_id, 0) <= 0
+                or (
+                    plan_counts.get(family_id, 0) <= 0
+                    and not preferred_item_ids
+                )
             ):
                 return None
             close_id = self.tokenizer.token_to_id.get("]")
-            if close_id not in candidate_ids:
+            if (
+                close_id not in candidate_ids
+                and typed_margin <= 0.0
+                and not (schema_component_types and unique_schema_item_ids)
+            ):
                 return None
             targets = [
                 position
@@ -7374,7 +7498,15 @@ class TwoTowerModel(nn.Module):
             ]
             if not targets:
                 return None
-            target = max(targets, key=lambda position: float(scores[position].item()))
+            typed_targets = [
+                position
+                for position in targets
+                if candidate_ids[position] in preferred_item_ids
+            ]
+            ranked_targets = typed_targets or targets
+            target = max(
+                ranked_targets, key=lambda position: float(scores[position].item())
+            )
             bias = scores.new_zeros(len(candidate_ids))
             bias[target] = max(
                 0.0,
@@ -7539,8 +7671,7 @@ class TwoTowerModel(nn.Module):
                 or 0.0
             ),
             float(
-                getattr(self.config, "semantic_plan_margin_decode_weight", 0.0)
-                or 0.0
+                getattr(self.config, "semantic_plan_margin_decode_weight", 0.0) or 0.0
             ),
         )
         slot_contract = (
@@ -7595,10 +7726,12 @@ class TwoTowerModel(nn.Module):
                 ]
                 comma_id = self.tokenizer.token_to_id.get(",")
                 close_id = self.tokenizer.token_to_id.get("]")
-                if not targets and comma_id in candidate_ids and close_id in candidate_ids:
-                    targets = [
-                        candidate_ids.index(comma_id if missing else close_id)
-                    ]
+                if (
+                    not targets
+                    and comma_id in candidate_ids
+                    and close_id in candidate_ids
+                ):
+                    targets = [candidate_ids.index(comma_id if missing else close_id)]
                 if targets:
                     target = max(
                         targets, key=lambda position: float(scores[position].item())
@@ -7688,14 +7821,11 @@ class TwoTowerModel(nn.Module):
                     frame = frames[-1]
                     schemas = tuple(getattr(frame, "schemas", ()))
                     arg_index = int(getattr(frame, "arg_index", -1))
-                    if (
-                        getattr(frame, "kind", None) == "component"
-                        and 0 <= arg_index < len(schemas)
-                    ):
+                    if getattr(
+                        frame, "kind", None
+                    ) == "component" and 0 <= arg_index < len(schemas):
                         enum_ids: list[int] = []
-                        for value in self._schema_enum_values(
-                            dict(schemas[arg_index])
-                        ):
+                        for value in self._schema_enum_values(dict(schemas[arg_index])):
                             spellings = [f"{LIT_PREFIX}{json.dumps(value)}"]
                             if isinstance(value, str):
                                 spellings.append(f"{DIR_PREFIX}{value}")
@@ -8305,8 +8435,7 @@ class TwoTowerModel(nn.Module):
         if not targets:
             return None
         margin = float(
-            getattr(self.config, "semantic_plan_root_margin_decode_weight", 0.0)
-            or 0.0
+            getattr(self.config, "semantic_plan_root_margin_decode_weight", 0.0) or 0.0
         )
         weight = float(
             getattr(self.config, "semantic_plan_root_decode_weight", 0.0) or 0.0
@@ -8732,9 +8861,7 @@ class TwoTowerModel(nn.Module):
         split = min(int(emitted) + 1, logits.numel())
         stop_score = logits[:split].max()
         continue_score = (
-            logits[split:].max()
-            if split < logits.numel()
-            else logits.new_tensor(-1e4)
+            logits[split:].max() if split < logits.numel() else logits.new_tensor(-1e4)
         )
         return [
             weight * float(stop_score if stops[index] else continue_score)
@@ -8811,9 +8938,7 @@ class TwoTowerModel(nn.Module):
 
         def bound_plan_kinds(kinds: tuple[str, ...]) -> tuple[str, ...]:
             return tuple(
-                "component_bound"
-                if kind in {"component", "component_bound"}
-                else ""
+                "component_bound" if kind in {"component", "component_bound"} else ""
                 for kind in kinds
             )
 
@@ -9208,9 +9333,7 @@ class TwoTowerModel(nn.Module):
             prefix, paths, slot_contract, path_scores
         )
         if coverage_close_bias is not None:
-            before_coverage_close = max(
-                range(len(paths)), key=path_scores.__getitem__
-            )
+            before_coverage_close = max(range(len(paths)), key=path_scores.__getitem__)
             path_scores = [
                 score + coverage_close_bias[index]
                 for index, score in enumerate(path_scores)
@@ -9491,6 +9614,13 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "grammar_draft_window", 8) or 8
                     ),
                     min_content=self._effective_min_content(slot_contract),
+                    enforce_schema_component_types=bool(
+                        getattr(
+                            self.config,
+                            "compiler_schema_component_types",
+                            False,
+                        )
+                    ),
                 )
             if getattr(self.config, "verified_solver_decode", False):
                 # VSS1-03: certified exact closure prunes the forest to the live
@@ -10924,17 +11054,16 @@ class TwoTowerModel(nn.Module):
     ) -> list[str] | None:
         """Return inventory for decode/context.
 
-        E35 honest mode: inventory comes from the user-visible prompt/DESIGN.md
-        only (never ``gold.placeholders``). When the prompt lacks an explicit
-        inventory, a keyword heuristic is used. Non-honest mode (legacy V3)
-        falls back to gold placeholders for template fill / conditioning.
+        Honest mode accepts only an explicit canonical inventory from visible
+        request text and never ``gold.placeholders``. Structured requests pass
+        their harness-owned contract directly and do not call this fallback.
         """
         dm = design_md
         if dm is None and gold is not None and use_gold_design:
             dm = gold.design_md
         honest = bool(getattr(self.config, "honest_slot_contract", False))
         if honest:
-            inv = inventory_from_prompt(prompt, dm, heuristic=True)
+            inv = inventory_from_prompt(prompt, dm, heuristic=False)
             return inv or None
         # Prefer visible inventory when present, else gold (legacy path).
         inv = inventory_from_prompt(prompt, dm, heuristic=False)
@@ -10942,7 +11071,7 @@ class TwoTowerModel(nn.Module):
             return inv
         if gold is not None and gold.placeholders:
             return list(gold.placeholders)
-        return inventory_from_prompt(prompt, dm, heuristic=True) or None
+        return inventory_from_prompt(prompt, dm, heuristic=False) or None
 
     def _context_prompts(
         self,
@@ -10966,16 +11095,23 @@ class TwoTowerModel(nn.Module):
             contract: list[str] | None = None
             schema = schemas[i] if schemas and i < len(schemas) else None
             if use_contract and not opaque_slot_projection:
-                honest = bool(getattr(self.config, "honest_slot_contract", False))
                 if (
-                    not honest
-                    and slot_contracts
+                    slot_contracts
                     and i < len(slot_contracts)
                     and slot_contracts[i] is not None
                 ):
                     contract = slot_contracts[i]
                 else:
                     contract = self._resolve_slot_contract(prompt, gold, dm)
+            visible_markers = list(
+                contract
+                or (
+                    slot_contracts[i]
+                    if slot_contracts and i < len(slot_contracts) and slot_contracts[i]
+                    else ()
+                )
+            )
+            assert_canonical_template_marker_inventory(visible_markers)
             out.append(
                 self._format_one_context(
                     prompt,
@@ -11176,11 +11312,16 @@ class TwoTowerModel(nn.Module):
     ) -> list[str]:
         """Generate using production-available inputs only (no gold records).
 
-        E35 honesty: when ``honest_slot_contract`` is set, surface
-        ``request.slot_contract`` into the user-visible prompt via
-        ``ensure_prompt_inventory`` (inventory-in-prompt API), then extract
-        inventory from the prompt text — never a silent gold channel.
+        Slot contracts are prepared and canonicalized by the request harness.
+        The model consumes those opaque symbols directly; it never derives or
+        converts marker identities from prompt language.
         """
+        from slm_training.levers import require_valid_lever_configuration
+
+        require_valid_lever_configuration(
+            self.config,
+            context="generation config",
+        )
         if not requests:
             return []
         self._last_generation_evidence = []
@@ -11190,14 +11331,11 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "checkpoint predates compact output contracts; request a document"
             )
-        honest = bool(getattr(self.config, "honest_slot_contract", False))
         prompts: list[str] = []
         slot_contracts: list[list[str] | None] = []
         for r in requests:
             prompt = r.prompt
             contract = list(r.slot_contract) if r.slot_contract else None
-            if honest and contract and not _opaque_slot_projection:
-                prompt = ensure_prompt_inventory(prompt, contract)
             prompts.append(prompt)
             slot_contracts.append(contract)
         schemas = [r.schema for r in requests]
@@ -11269,10 +11407,10 @@ class TwoTowerModel(nn.Module):
         """Generate verified templates, then attach caller values out of band."""
         if len(requests) != len(caller_bindings):
             raise ValueError("requests and caller_bindings must have equal length")
-        model_requests: list[GenerationRequest] = []
         for request in requests:
             if len(set(request.slot_contract)) != len(request.slot_contract):
                 raise ValueError("slot_contract contains duplicate external keys")
+            assert_canonical_template_marker_inventory(request.slot_contract)
             undeclared = [
                 symbol.surface
                 for symbol in request.runtime_symbols
@@ -11284,36 +11422,8 @@ class TwoTowerModel(nn.Module):
                     "external content symbols must appear in slot_contract: "
                     f"{undeclared}"
                 )
-            projection = {
-                external: f":slot_{index}"
-                for index, external in enumerate(request.slot_contract)
-            }
-            projected_symbols = tuple(
-                RuntimeSymbol(
-                    surface=projection.get(symbol.surface, symbol.surface),
-                    role=symbol.role,
-                    namespace=symbol.namespace,
-                    semantic_type=symbol.semantic_type,
-                    semantic_role=symbol.semantic_role,
-                    scope=symbol.scope,
-                    signature=symbol.signature,
-                    description=symbol.description,
-                )
-                for symbol in request.runtime_symbols
-            )
-            model_requests.append(
-                GenerationRequest(
-                    prompt=request.prompt,
-                    slot_contract=tuple(projection.values()),
-                    schema=request.schema,
-                    design_md=request.design_md,
-                    runtime_symbols=projected_symbols,
-                    output_kind=request.output_kind,
-                    output_category=request.output_category,
-                )
-            )
         templates = self.generate_batch_requests(
-            model_requests,
+            requests,
             max_len=max_len,
             grammar_constrained=grammar_constrained,
             _opaque_slot_projection=True,
@@ -11366,12 +11476,12 @@ class TwoTowerModel(nn.Module):
         if not requests:
             return []
 
-        model_requests: list[GenerationRequest] = []
         opaque_contracts: list[tuple[str, ...]] = []
         slot_projections: list[tuple[tuple[str, str], ...]] = []
         for request in requests:
             if len(set(request.slot_contract)) != len(request.slot_contract):
                 raise ValueError("slot_contract contains duplicate external keys")
+            assert_canonical_template_marker_inventory(request.slot_contract)
             undeclared = [
                 symbol.surface
                 for symbol in request.runtime_symbols
@@ -11383,38 +11493,12 @@ class TwoTowerModel(nn.Module):
                     "external content symbols must appear in slot_contract: "
                     f"{undeclared}"
                 )
-            opaque = tuple(
-                f":slot_{index}" for index in range(len(request.slot_contract))
-            )
-            projection = dict(zip(request.slot_contract, opaque, strict=True))
+            opaque = tuple(request.slot_contract)
             opaque_contracts.append(opaque)
-            slot_projections.append(tuple(projection.items()))
-            model_requests.append(
-                GenerationRequest(
-                    prompt=request.prompt,
-                    slot_contract=opaque,
-                    schema=request.schema,
-                    design_md=request.design_md,
-                    runtime_symbols=tuple(
-                        RuntimeSymbol(
-                            surface=projection.get(symbol.surface, symbol.surface),
-                            role=symbol.role,
-                            namespace=symbol.namespace,
-                            semantic_type=symbol.semantic_type,
-                            semantic_role=symbol.semantic_role,
-                            scope=symbol.scope,
-                            signature=symbol.signature,
-                            description=symbol.description,
-                        )
-                        for symbol in request.runtime_symbols
-                    ),
-                    output_kind=request.output_kind,
-                    output_category=request.output_category,
-                )
-            )
+            slot_projections.append(tuple((slot, slot) for slot in opaque))
 
         sources = self.generate_batch_requests(
-            model_requests,
+            requests,
             max_len=max_len,
             grammar_constrained=grammar_constrained,
             _opaque_slot_projection=True,
@@ -11600,18 +11684,8 @@ class TwoTowerModel(nn.Module):
             or bool(opaque_slot_projection)
         )
         honest = bool(getattr(self.config, "honest_slot_contract", False))
-        # E35: surface inventory in the user-visible prompt when gold provides
-        # slots but the prompt text does not (inventory-in-prompt API).
-        if honest and golds:
-            prompts = [
-                ensure_prompt_inventory(
-                    prompts[i],
-                    list(golds[i].placeholders or []) if golds[i] is not None else None,
-                )
-                for i in range(len(prompts))
-            ]
         if use_contract_decode:
-            if (not honest or opaque_slot_projection) and slot_contracts is not None:
+            if slot_contracts is not None:
                 self._slot_contracts = [list(c) if c else None for c in slot_contracts]
             else:
                 self._slot_contracts = []
@@ -11705,9 +11779,7 @@ class TwoTowerModel(nn.Module):
                     if slot in by_surface
                 )
                 if typed_roles:
-                        prompts[row] = (
-                            f"{prompt.rstrip()}\nSemantic roles: {typed_roles}"
-                        )
+                    prompts[row] = f"{prompt.rstrip()}\nSemantic roles: {typed_roles}"
         if typed_role_scoring > 0.0:
             if role_weight > 0.0 and (
                 not opaque_slot_projection
@@ -11811,9 +11883,7 @@ class TwoTowerModel(nn.Module):
             self._semantic_plan_action_scores = []
             self._semantic_plan_action_counts = []
             self._semantic_plan_role_bindings = []
-            self._semantic_plan_required_root_references = [
-                {} for _prompt in prompts
-            ]
+            self._semantic_plan_required_root_references = [{} for _prompt in prompts]
             self._semantic_plan_outer_groups = []
             self._semantic_plan_root_token_plans = [None for _prompt in prompts]
             for row, prompt in enumerate(prompts):
@@ -13245,7 +13315,13 @@ class TwoTowerModel(nn.Module):
         )
         torch.save(payload, path)
 
-    def load(self, path: Path | str, *, allow_tie_migration: bool = False) -> None:
+    def load(
+        self,
+        path: Path | str,
+        *,
+        allow_tie_migration: bool = False,
+        preserve_tokenizers: bool = False,
+    ) -> None:
         path = Path(path)
         payload = torch.load(path, map_location=self.device_name, weights_only=True)
         if payload.get("kind") != "twotower":
@@ -13256,9 +13332,75 @@ class TwoTowerModel(nn.Module):
             payload.get("config") or {},
             allow_tie_migration=allow_tie_migration,
         )
+        state_dict = dict(payload["state_dict"])
+        tok_path = path.with_suffix(".tokenizer.json")
+        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+        if preserve_tokenizers and tok_path.exists():
+            source_output_tokenizer = load_tokenizer_sidecar(tok_path)
+            current_state = self.state_dict()
+            for key in ("denoiser.tok.weight", "denoiser.lm_head.weight"):
+                if key not in state_dict or key not in current_state:
+                    continue
+                state_dict[key] = _remap_vocab_weight(
+                    state_dict[key],
+                    source_output_tokenizer.token_to_id,
+                    current_state[key],
+                    self.tokenizer.token_to_id,
+                )
+            position_key = "context.encoder.pos.weight"
+            if position_key in state_dict and position_key in current_state:
+                state_dict[position_key] = _resize_position_weight(
+                    state_dict[position_key], current_state[position_key]
+                )
+        if preserve_tokenizers and "context.encoder.tok.weight" in state_dict:
+            source_context_tokenizer = load_tokenizer_sidecar(
+                ctx_tok_path if ctx_tok_path.exists() else tok_path
+            )
+            source_tokens = sorted(
+                source_context_tokenizer.token_to_id,
+                key=source_context_tokenizer.token_to_id.get,
+            )
+            current_tokens = sorted(
+                self.context_tokenizer.token_to_id,
+                key=self.context_tokenizer.token_to_id.get,
+            )
+            merged_tokens = source_tokens + [
+                token for token in current_tokens if token not in source_context_tokenizer.token_to_id
+            ]
+            merged_token_to_id = {
+                token: index for index, token in enumerate(merged_tokens)
+            }
+            current_embedding = self.context.encoder.tok
+            merged_embedding = nn.Embedding(
+                len(merged_tokens),
+                current_embedding.embedding_dim,
+                device=current_embedding.weight.device,
+                dtype=current_embedding.weight.dtype,
+            )
+            with torch.no_grad():
+                for token, current_id in self.context_tokenizer.token_to_id.items():
+                    merged_id = merged_token_to_id[token]
+                    merged_embedding.weight[merged_id].copy_(
+                        current_embedding.weight[current_id]
+                    )
+            self.context.encoder.tok = merged_embedding
+            self.context_tokenizer = OpenUITokenizer(
+                token_to_id=merged_token_to_id,
+                id_to_token={index: token for token, index in merged_token_to_id.items()},
+                version=max(
+                    source_context_tokenizer.version,
+                    self.context_tokenizer.version,
+                ),
+            )
+            state_dict["context.encoder.tok.weight"] = _remap_vocab_weight(
+                state_dict["context.encoder.tok.weight"],
+                source_context_tokenizer.token_to_id,
+                self.context.encoder.tok.weight,
+                self.context_tokenizer.token_to_id,
+            )
         _load_checkpoint_state(
             self,
-            payload["state_dict"],
+            state_dict,
             allow_missing_auxiliary_heads=True,
         )
         source_config = payload.get("config") or {}
@@ -13283,14 +13425,13 @@ class TwoTowerModel(nn.Module):
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
         self.output_contract_version = int(payload.get("output_contract_version", 0))
-        tok_path = path.with_suffix(".tokenizer.json")
-        if tok_path.exists():
-            self.tokenizer = load_tokenizer_sidecar(tok_path)
-        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
-        if ctx_tok_path.exists():
-            self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
-        else:
-            self.context_tokenizer = self.tokenizer
+        if not preserve_tokenizers:
+            if tok_path.exists():
+                self.tokenizer = load_tokenizer_sidecar(tok_path)
+            if ctx_tok_path.exists():
+                self.context_tokenizer = load_tokenizer_sidecar(ctx_tok_path)
+            else:
+                self.context_tokenizer = self.tokenizer
 
     @classmethod
     def from_checkpoint(
@@ -13365,7 +13506,10 @@ class TwoTowerModel(nn.Module):
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
         for record in records:
+            assert_no_template_semantic_labels(record.prompt, record.design_md)
+            assert_canonical_template_markers(record)
             assert_symbol_only_output(record.openui, output_kind=record.target_kind)
+            assert_role_safe_output(record.openui, output_kind=record.target_kind)
         if not (_is_choice_output(cfg) or _is_lexer_output(cfg)):
             raise ValueError(
                 "free-form-capable output_tokenizer is forbidden; use 'choice' "
@@ -13376,7 +13520,8 @@ class TwoTowerModel(nn.Module):
 
             tokenizer = ChoiceTokenizer.build()
             # Scratch context keeps a prompt-word tokenizer (decoupled).
-            context_tokenizer = OpenUITokenizer.build([r.prompt for r in records])
+            ctx_texts = [r.prompt for r in records]
+            context_tokenizer = OpenUITokenizer.build(ctx_texts)
             max_target = max(
                 (
                     len(
@@ -13391,7 +13536,7 @@ class TwoTowerModel(nn.Module):
                 default=32,
             )
             max_prompt = max(
-                (len(context_tokenizer.encode(r.prompt)) for r in records),
+                (len(context_tokenizer.encode(text)) for text in ctx_texts),
                 default=16,
             )
         elif _is_lexer_output(cfg):
@@ -13455,7 +13600,7 @@ class TwoTowerModel(nn.Module):
                 default=32,
             )
             max_prompt = max(
-                (len(context_tokenizer.encode(r.prompt)) for r in records),
+                (len(context_tokenizer.encode(text)) for text in ctx_texts),
                 default=16,
             )
         else:

@@ -74,6 +74,24 @@ def test_round_trip_with_symbol_table(tok: DSLNativeTokenizer) -> None:
     assert '":hero.title"' in text2
 
 
+def test_template_marker_renaming_cannot_change_training_ids(
+    tok: DSLNativeTokenizer,
+) -> None:
+    semantic = 'root = Stack([item])\nitem = TextContent(":hero.title")'
+    opaque = 'root = Stack([item])\nitem = TextContent(":x")'
+    semantic_ids = tok.encode(
+        semantic,
+        table=SymbolTable.from_placeholders([":hero.title"]),
+        use_symbol_table=True,
+    )
+    opaque_ids = tok.encode(
+        opaque,
+        table=SymbolTable.from_placeholders([":x"]),
+        use_symbol_table=True,
+    )
+    assert semantic_ids == opaque_ids
+
+
 def test_prefix_decode_preserves_terminal_newline(tok: DSLNativeTokenizer) -> None:
     ids = [
         *tok.encode('root = Button(":cta.label")', add_special=False),
@@ -88,15 +106,13 @@ def test_runtime_symbol_contract_and_v2_table_migration(
 ) -> None:
     request = GenerationRequest(
         prompt="Hero",
-        slot_contract=(":hero.title",),
+        slot_contract=(":slot_0",),
         runtime_symbols=(
             RuntimeSymbol(
-                surface=":hero.title",
+                surface=":slot_0",
                 role="external_entity",
-                semantic_type="copy",
-                semantic_role="title",
             ),
-            RuntimeSymbol(surface="$filter", role="state"),
+            RuntimeSymbol(surface="$filter", role="state", semantic_type="filter"),
         ),
     )
     assert GenerationRequest.from_dict(request.to_dict()) == request
@@ -114,12 +130,25 @@ def test_runtime_symbol_contract_and_v2_table_migration(
         tok.bind_id(0),
         tok.state_id(0),
     }
-    with pytest.raises(ValueError, match="typed identifier"):
+    with pytest.raises(ValueError, match="template markers are opaque"):
         RuntimeSymbol(
             surface=":hero.title",
             role="external_entity",
             semantic_role="hero.title",
         )
+
+
+def test_generation_request_rejects_template_semantic_labels() -> None:
+    with pytest.raises(ValueError, match="semantic role labels are prohibited"):
+        GenerationRequest(
+            prompt="Build a modal.\nSemantic roles: title -> Button",
+            slot_contract=(":slot_0",),
+        )
+
+
+def test_generation_request_rejects_named_template_markers() -> None:
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        GenerationRequest(prompt="Build a modal.", slot_contract=(":modal.title",))
 
 
 def test_symbol_permutation_preserves_root_and_surfaces() -> None:
@@ -377,12 +406,8 @@ def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
         text = tok.decode(ids, table=table)
         for ph in placeholders:
             assert f'"{ph}"' in text
-        assert (
-            "Stack" in text
-            or "Card" in text
-            or "TextContent" in text
-            or "Button" in text
-        )
+        assert text.strip()
+        assert not output_contract_violations(text)
 
 
 def test_canonicalize_is_idempotent_per_example(tok: DSLNativeTokenizer) -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from slm_training.dsl import validate
 from slm_training.dsl.placeholders import PLACEHOLDER_RE
 from slm_training.dsl.production_codec import encode_openui
@@ -13,11 +15,11 @@ LOGIN = (
     'msg = TextContent("Sign in to continue")\n'
     'root = Stack([hero, actions])\n'
     "actions = Buttons([b1])\n"
-    'b1 = Button("Log in", "submit")'
+    'b1 = Button("Log in")'
 )
 LOGIN_RENAMED = (
     "zz = Buttons([qq])\n"
-    'qq = Button("Log in", "submit")\n'
+    'qq = Button("Log in")\n'
     "big = Card([h2, m1])\n"
     'h2 = CardHeader("Welcome back", "Good to see you")\n'
     'm1 = TextContent("Sign in to continue")\n'
@@ -33,8 +35,6 @@ def test_content_literals_become_positional_placeholders() -> None:
     assert result.replacements[":v0.subtitle"] == "Good to see you"
     assert result.replacements[":v1.text"] == "Sign in to continue"
     assert result.replacements[":v3.label"] == "Log in"
-    assert '"submit"' not in result.source
-    assert result.replacements[":v3.action"] == "submit"
     validate(result.source)
 
 
@@ -95,6 +95,61 @@ def test_enum_is_preserved_and_array_strings_are_templatized() -> None:
     assert '"New Item Alpha"' not in result.source
     assert result.replacements[":v1.tags"] == "New Item Alpha"
     assert result.replacements[":v0.description"] == "Longer description text"
+
+
+@pytest.mark.parametrize("value", ["item", "email", "default"])
+def test_non_content_string_becomes_opaque_structural_id(value: str) -> None:
+    result = templatize(f'root = Input("{value}", "Enter email")')
+
+    assert result.source == 'root = Input("$0", ":root.placeholder")'
+    assert result.replacements == {":root.placeholder": "Enter email"}
+
+
+def test_opaque_structural_identifier_is_preserved() -> None:
+    result = templatize('root = Input("$0", "Enter email")')
+
+    assert result.source == 'root = Input("$0", ":root.placeholder")'
+    assert result.replacements == {":root.placeholder": "Enter email"}
+
+
+def test_role_contract_preserves_style_positions_during_validation() -> None:
+    from slm_training.dsl.analysis.templatize import role_contract_violations
+
+    source = (
+        'root = Stack([TextContent(":slot_0")], "row", "s", "center")'
+    )
+
+    assert role_contract_violations(source) == ()
+
+
+def test_non_content_placeholder_becomes_opaque_structural_id() -> None:
+    result = templatize('root = Input(":slot_0")')
+
+    assert result.source == 'root = Input("$0")'
+    assert result.placeholders == ()
+
+
+def test_expression_uses_property_roles() -> None:
+    result = templatize_fragment(
+        'Form("contact", Buttons([]), [FormControl("Label", Input("email"))])',
+        output_kind="expression",
+    )
+
+    assert result.source == (
+        'Form("$0", Buttons([]), [FormControl(":root.label", Input("$1"))])'
+    )
+
+
+def test_document_fragment_uses_property_roles() -> None:
+    result = templatize_fragment(
+        'root = SwitchGroup("settings", [SwitchItem(null, null, "notify")])',
+        output_kind="document",
+    )
+
+    assert result.source == (
+        'root = SwitchGroup("$0", [SwitchItem(null, null, "$1")])'
+    )
+    assert result.placeholders == ()
 
 
 def test_fragment_strings_are_templatized_without_touching_grammar_enums() -> None:

@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "version": "e851_e826_typed_supplement_v1",
+  "profile": "strict",
+  "built_at": "2026-07-22T18:47:35.934299+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "corruption_repair": {
+      "admitted": 24,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 24,
+      "yield": 1.0
+    },
+    "edit_trajectory": {
+      "admitted": 136,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 136,
+      "yield": 1.0
+    },
+    "frontier_described": {
+      "admitted": 2,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 2,
+      "yield": 1.0
+    },
+    "human_curated": {
+      "admitted": 18,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 18,
+      "yield": 1.0
+    },
+    "language_contract": {
+      "admitted": 62,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 62,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 68,
+      "rejected": 1,
+      "by_stage": {
+        "dedup": 1
+      },
+      "by_reason": {
+        "semantic_cosine": 1
+      },
+      "candidates": 69,
+      "yield": 0.9855
+    },
+    "programspec_generated": {
+      "admitted": 12,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 12,
+      "yield": 1.0
+    },
+    "prompt_paraphrase": {
+      "admitted": 18,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 18,
+      "yield": 1.0
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "rico_real": {
+      "admitted": 9,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 9,
+      "yield": 1.0
+    },
+    "web_distilled": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    }
+  },
+  "synthesizers": {
+    "corruption_repair": {
+      "admitted": 24,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 24,
+      "yield": 1.0
+    },
+    "frontier_described": {
+      "admitted": 2,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 2,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 68,
+      "rejected": 1,
+      "by_stage": {
+        "dedup": 1
+      },
+      "by_reason": {
+        "semantic_cosine": 1
+      },
+      "candidates": 69,
+      "yield": 0.9855
+    },
+    "template": {
+      "admitted": 18,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 18,
+      "yield": 1.0
+    }
+  },
+  "warnings": [],
+  "recommendations": [],
+  "experiment_candidates": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b64dd34fc7d2f702894e31da87fa4d25a71298d9",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v17"
+    },
+    "stamped_at": "2026-07-22T18:47:35.980466+00:00"
+  }
+}

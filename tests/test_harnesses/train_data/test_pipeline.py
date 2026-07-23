@@ -107,7 +107,7 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     )
     rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
     assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
-    assert "Placeholders: :hero.title, :hero.body" in rows["t1"].prompt
+    assert "Placeholders: :slot_0, :slot_1" in rows["t1"].prompt
     assert result["stats"]["prompt_component_contract"] is True
     assert result["stats"]["prompt_slot_contract"] is True
     assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
@@ -136,47 +136,42 @@ def test_component_contract_can_expose_types_without_counts(tmp_path: Path) -> N
     assert result["stats"]["prompt_component_contract_mode"] == "types"
 
 
-@pytest.mark.skipif(
-    not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
-)
-def test_semantic_role_contract_uses_only_visible_slots_and_types(
+def test_semantic_role_contract_is_absent_from_data_config(tmp_path: Path) -> None:
+    config = TrainDataConfig(seed_path=_seed_file(tmp_path))
+    assert not hasattr(config, "prompt_semantic_role_contract")
+
+
+def test_existing_source_refreshes_contract_bases_without_dropping_derivatives(
     tmp_path: Path,
 ) -> None:
-    result = build_train_data(
-        TrainDataConfig(
-            seed_path=_seed_file(tmp_path),
-            rico_path=None,
-            source="fixture",
-            output_root=tmp_path / "train_data",
-            version="roles",
-            synthesizer="none",
-            prompt_slot_contract=True,
-            prompt_component_contract=True,
-            prompt_component_contract_mode="types",
-            prompt_semantic_role_contract=True,
-        )
+    from slm_training.harnesses.train_data.pipeline import _records_from_existing
+
+    base = ExampleRecord(
+        id="lc_forward_reference",
+        prompt="stale base",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        meta={"program_family_id": "language_contract:forward_reference"},
     )
-    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
-    assert "Semantic roles: hero(body -> TextContent, title -> TextContent)" in rows["t1"].prompt
-    assert "Semantic roles: cta(label -> Button)" in rows["t2"].prompt
-    assert " x" not in rows["t2"].prompt
-    assert result["stats"]["prompt_semantic_role_contract"] is True
+    derivative = ExampleRecord(
+        id="lc_forward_reference_aug_dir",
+        prompt="derived hard case",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="train",
+        meta={"program_family_id": "language_contract:forward_reference"},
+    )
+    roots = tmp_path / "records.jsonl"
+    write_jsonl(roots, [base, derivative])
 
+    records, errors = _records_from_existing(
+        TrainDataConfig(source="existing", derive_from=roots)
+    )
 
-def test_semantic_role_contract_requires_visible_authority(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="requires visible component and slot"):
-        build_train_data(
-            TrainDataConfig(
-                seed_path=_seed_file(tmp_path),
-                rico_path=None,
-                source="fixture",
-                output_root=tmp_path / "train_data",
-                version="invalid-roles",
-                synthesizer="none",
-                prompt_semantic_role_contract=True,
-            )
-        )
+    assert errors == []
+    assert [record.id for record in records] == [derivative.id]
+    assert records[0].meta["derivation_source"] == str(roots)
 
 
 @pytest.mark.skipif(
@@ -205,6 +200,62 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     assert any(row.target_kind == "lexical" for row in rows)
     assert any(row.meta.get("synth") == "template" for row in rows)
     assert len(rows) > 2
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
+def test_existing_corpus_can_be_supplemented_from_fixture_registry(
+    tmp_path: Path,
+) -> None:
+    roots = _seed_file(tmp_path)
+    fixture = ExampleRecord(
+        id="supplement",
+        prompt="Three-item switch group",
+        openui=(
+            'root = SwitchGroup("$0", [a, b, c])\n'
+            'a = SwitchItem(":slot_0", ":slot_1", "$1")\n'
+            'b = SwitchItem(":slot_2", ":slot_3", "$2")\n'
+            'c = SwitchItem(":slot_4", ":slot_5", "$3")'
+        ),
+        placeholders=[f":slot_{index}" for index in range(6)],
+        split="train",
+    )
+    fixture_path = tmp_path / "supplements.jsonl"
+    write_jsonl(fixture_path, [fixture])
+
+    result = build_train_data(
+        TrainDataConfig(
+            source="existing+fixture",
+            derive_from=roots,
+            seed_path=fixture_path,
+            fixture_ids=("supplement",),
+            output_root=tmp_path / "train_data",
+            version="supplemented",
+            synthesizer="none",
+            include_frontier_artifacts=False,
+            include_language_contract=False,
+            include_edit_derivatives=False,
+            repairs_per_program=0,
+        )
+    )
+
+    rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
+    assert {"t1", "t2", "supplement"} <= {row.id for row in rows}
+
+
+def test_unknown_fixture_selection_fails_closed(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unknown fixture ids"):
+        build_train_data(
+            TrainDataConfig(
+                source="fixture",
+                seed_path=_seed_file(tmp_path),
+                fixture_ids=("missing",),
+                output_root=tmp_path / "train_data",
+                synthesizer="none",
+            )
+        )
 
 
 @pytest.mark.skipif(
@@ -327,7 +378,9 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             rico_limit=10,
         )
     )
-    assert result["stats"]["record_count"] >= 5
+    # Opaque role canonicalization collapses semantic-name-only duplicates;
+    # strict decontamination also removes fixtures reserved by the eval corpus.
+    assert result["stats"]["record_count"] >= 1
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
 

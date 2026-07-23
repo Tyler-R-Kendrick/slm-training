@@ -15,8 +15,8 @@ from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
     'root = Stack([hero_title, hero_body], "column")\n'
-    'hero_title = TextContent(":hero.title")\n'
-    'hero_body = TextContent(":hero.body")'
+    'hero_title = TextContent(":slot_0")\n'
+    'hero_body = TextContent(":slot_1")'
 )
 
 
@@ -26,7 +26,7 @@ def _model(mode: str) -> TwoTowerModel:
             id="a",
             prompt="Hero",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         )
     ]
     return TwoTowerModel.from_records(
@@ -45,82 +45,84 @@ def _model(mode: str) -> TwoTowerModel:
     )
 
 
-def test_replace_mode_substitutes_the_learned_pool_row_exactly() -> None:
+def test_replace_mode_uses_opaque_ordinal_features() -> None:
     from slm_training.models.dsl_tokenizer import SymbolTable
 
     model = _model("replace")
     table = SymbolTable.from_placeholders(
-        [":hero.title", ":hero.body"], max_slots=model.tokenizer.sym_slots
+        [":slot_0", ":slot_1"], max_slots=model.tokenizer.sym_slots
     )
     features = model._runtime_feature_tensor([table])
     assert features is not None
     weight = model.denoiser.tok.weight
-    for slot, surface in enumerate(table.placeholders):
+    for slot, _surface in enumerate(table.placeholders):
         token_id = model.tokenizer.sym_id(slot)
         delta = features[0, token_id]
         assert torch.any(delta != 0), "replace mode must write a delta"
         effective = weight[token_id] + delta
-        byte_ids = model.tokenizer._encode_bytes(surface)
+        byte_ids = model.tokenizer._encode_bytes(
+            f"content:{slot} role:external_entity"
+        )
         composed = weight.index_select(0, torch.tensor(byte_ids)).mean(0)
         assert torch.allclose(effective, composed, atol=1e-6)
     model.denoiser.set_runtime_symbol_features(None)
 
 
-def test_same_surface_means_identical_embedding_across_slots() -> None:
+def test_marker_embedding_depends_on_ordinal() -> None:
     from slm_training.models.dsl_tokenizer import SymbolTable
 
     model = _model("replace")
     weight = model.denoiser.tok.weight
-    table_a = SymbolTable.from_placeholders(
-        [":hero.title", ":hero.body"], max_slots=model.tokenizer.sym_slots
+    table = SymbolTable.from_placeholders(
+        [":slot_0", ":slot_1"], max_slots=model.tokenizer.sym_slots
     )
-    table_b = SymbolTable.from_placeholders(
-        [":hero.body", ":hero.title"], max_slots=model.tokenizer.sym_slots
-    )
-    fa = model._runtime_feature_tensor([table_a])
-    fb = model._runtime_feature_tensor([table_b])
-    assert fa is not None and fb is not None
-    eff_a = weight[model.tokenizer.sym_id(0)] + fa[0, model.tokenizer.sym_id(0)]
-    eff_b = weight[model.tokenizer.sym_id(1)] + fb[0, model.tokenizer.sym_id(1)]
-    assert torch.allclose(eff_a, eff_b, atol=1e-6)
+    features = model._runtime_feature_tensor([table])
+    assert features is not None
+    first = weight[model.tokenizer.sym_id(0)] + features[0, model.tokenizer.sym_id(0)]
+    second = weight[model.tokenizer.sym_id(1)] + features[0, model.tokenizer.sym_id(1)]
+    assert not torch.allclose(first, second, atol=1e-6)
     model.denoiser.set_runtime_symbol_features(None)
 
 
-def test_slot_component_texts_and_span_priors_ignore_marker_names() -> None:
+def test_slot_component_texts_use_opaque_ordinals() -> None:
     model = _model("none")
     model._opaque_slot_projection_active = True
     try:
-        assert model._slot_component_texts([":hero.title", ":cta.label"]) == [
+        assert model._slot_component_texts([":slot_0", ":slot_1"]) == [
             "content:0",
             "content:1",
         ]
-        assert model._slot_component_texts([":x", ":y"]) == [
-            "content:0",
-            "content:1",
-        ]
-        assert model._slot_role_token(":hero.title") == "content"
-        assert model._slot_role_token(":different.name") == "content"
+        assert model._slot_role_token(":slot_0") == "content"
     finally:
         model._opaque_slot_projection_active = False
 
 
-def test_opaque_replace_mode_uses_ordinal_not_marker_spelling() -> None:
+def test_context_rejects_named_marker_contracts() -> None:
+    model = _model("none")
+    model.config.slot_contract_in_context = True
+    with pytest.raises(ValueError, match="opaque :slot_<ordinal>"):
+        model._context_prompts(
+            ["Use :hero.title"], slot_contracts=[[":hero.title"]]
+        )
+    canonical = model._context_prompts(
+        ["Use :slot_0 then :slot_1"],
+        slot_contracts=[[":slot_0", ":slot_1"]],
+    )
+    assert canonical[0].count(":slot_") >= 2
+
+
+def test_opaque_replace_mode_uses_canonical_inventory() -> None:
     from slm_training.models.dsl_tokenizer import SymbolTable
 
     model = _model("replace")
-    original = SymbolTable.from_placeholders(
-        [":hero.title", ":hero.body"], max_slots=model.tokenizer.sym_slots
-    )
-    renamed = SymbolTable.from_placeholders(
-        [":marketing.heading", ":article.summary"],
+    table = SymbolTable.from_placeholders(
+        [":slot_0", ":slot_1"],
         max_slots=model.tokenizer.sym_slots,
     )
     model._opaque_slot_projection_active = True
     try:
-        original_features = model._runtime_feature_tensor([original])
-        renamed_features = model._runtime_feature_tensor([renamed])
-        assert original_features is not None and renamed_features is not None
-        assert torch.equal(original_features, renamed_features)
+        features = model._runtime_feature_tensor([table])
+        assert features is not None
     finally:
         model._opaque_slot_projection_active = False
         model.denoiser.set_runtime_symbol_features(None)
@@ -132,7 +134,7 @@ def test_replace_mode_trains_and_decodes() -> None:
             id=f"r{i}",
             prompt=f"Hero {i}",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         )
         for i in range(4)
     ]
@@ -154,13 +156,13 @@ def test_binding_consistency_probe_reports_margin() -> None:
             id="a",
             prompt="Hero",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         ),
         ExampleRecord(
             id="b",
             prompt="Hero again",
             openui=HERO,
-            placeholders=[":hero.title", ":hero.body"],
+            placeholders=[":slot_0", ":slot_1"],
         ),
     ]
     model = _model("replace")

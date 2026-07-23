@@ -83,3 +83,24 @@ def test_small_groups_do_not_trigger_noise() -> None:
     assert feedback["families"]["tiny"]["candidates"] == 2
     assert feedback["recommendations"] == []
     assert feedback["experiment_candidates"] == []
+
+
+def test_selection_drops_are_not_reported_as_synthesis_failures() -> None:
+    feedback = build_synthesis_feedback(
+        version="v",
+        profile="strict",
+        built_at="t",
+        admitted=[_admitted("kept", "prompt_paraphrase", "template")],
+        rejections=[
+            _reject(
+                "selection", "difficulty_easy_tail", "prompt_paraphrase", "template"
+            )
+            for _ in range(12)
+        ],
+        quality_report={},
+    )
+
+    assert feedback["families"]["prompt_paraphrase"]["candidates"] == 1
+    assert feedback["synthesizers"]["template"]["candidates"] == 1
+    assert feedback["recommendations"] == []
+    assert feedback["experiment_candidates"] == []

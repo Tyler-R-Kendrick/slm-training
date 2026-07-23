@@ -425,7 +425,15 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
     if operator is CorruptionOperator.MISSING_DELIMITER:
         return _truncate(source, statement, operator), "component"
     if operator is CorruptionOperator.BROKEN_NUMBER_BOOL:
-        scalar = _SCALAR_RE.search(source)
+        string_spans = tuple(match.span() for match in _STRING_RE.finditer(source))
+        scalar = next(
+            (
+                match
+                for match in _SCALAR_RE.finditer(source)
+                if not any(start <= match.start() < end for start, end in string_spans)
+            ),
+            None,
+        )
         if not scalar:
             raise CorruptionNotApplicable(
                 "broken_number_bool requires a number or bool"
