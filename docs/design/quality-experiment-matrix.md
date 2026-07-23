@@ -6777,3 +6777,10 @@ train seconds). E1070 is prediction- and metric-identical to root-decode-off
 E1068: strict-v2/recall remain 0.6667 with one duplicated placeholder. This
 shows 331-step exposure causes the base failure; detached root training is
 behavior-neutral when its decode head is off. Reject the control.
+
+### E1071: v271 395-step exposure (own resume pending)
+
+E1071 starts fresh with v271 bound-only arity and typed binder-component loss.
+Its first bounded invocation reaches 342/395 steps in 95.18 seconds. This
+partial checkpoint does not test the 395-step hypothesis; resume only its own
+full-state checkpoint for the remaining 53 steps before evaluation.

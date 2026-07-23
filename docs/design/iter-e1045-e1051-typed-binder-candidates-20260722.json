@@ -348,6 +348,25 @@
       "prediction_identical_to_e1068": true,
       "finding": "331-step exposure causes the base failure; detached root training is behavior-neutral with root decode disabled",
       "agentv": "0/1"
+    },
+    "E1071": {
+      "status": "completed_partial_pending_own_resume",
+      "run_id": "e1071_v271_bound_only_arity_395",
+      "steps_requested": 395,
+      "steps_completed": 342,
+      "stopped_on": "wall_time_budget",
+      "elapsed_wall_seconds": 95.1776491060009,
+      "examples": 1368,
+      "last_loss": 7.613790035247803,
+      "binder_component_plan_loss_last": 1.5941640138626099,
+      "binder_component_plan_accuracy_last": 0.4444444477558136,
+      "binder_component_plan_candidate_count_last": 30.11111111111111,
+      "binder_arity_loss_last": 0.5220195055007935,
+      "binder_arity_accuracy_last": 0.8181818127632141,
+      "checkpoint_sha256": "0dbeed6453e64e3a28ce38661f0f80b2c2851fd468cc6b529313186136935832",
+      "checkpoint_sync": "disabled_scratch",
+      "causal_comparison_valid": false,
+      "next_action": "resume own full-state checkpoint for 53 remaining steps"
     }
   },
   "disposition": {
@@ -364,6 +383,7 @@
     "e1069_pending_own_resume": false,
     "e1069_pending_eval": false,
     "e1069_checkpoint_rejected": true,
+    "e1071_pending_own_resume": true,
     "next_hypothesis": "test v271 bound-only arity at the 395-step exposure that passed E1045 smoke"
   },
   "version_stamp": {

@@ -160,3 +160,15 @@ objective does not cause the base-model regression. The 331-step exposure is
 insufficient, while enabling the trained root head adds the separate harmful
 choice observed in E1067. Reject E1069 at 331 steps and do not promote or use it
 as a parent.
+
+## E1071 v271 395-step exposure
+
+E1071 starts fresh on the same audited E937 data with v271 bound-only generic
+arity and typed binder-component loss, both at weight 1. Its first bounded
+invocation reaches 342/395 steps after 1,368 examples in 95.18 seconds and
+stops cleanly on the internal wall budget. Final binder-component
+loss/accuracy/candidates are 1.5942/0.4444/30.11; binder-arity loss/accuracy
+are 0.5220/0.8182. The partial checkpoint SHA is
+`0dbeed6453e64e3a28ce38661f0f80b2c2851fd468cc6b529313186136935832`.
+It is not evidence for the 395-step hypothesis; resume only its own full-state
+checkpoint for the remaining 53 steps before evaluation.
