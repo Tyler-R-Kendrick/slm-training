@@ -268,13 +268,12 @@ class TwoTowerConfig:
     # output projection initialized as a copy of the token embedding.
     tie_output_embedding: bool = True
     # SLM-238 (RSC-A02): explicit final-depth double-counting semantics.
-    # ``None`` (the true dataclass default) resolves deterministically at
-    # validation time -- see ``resolve_recursive_depth_aux_mode`` -- to "off"
-    # when ``recursive_depth_supervision_weights`` is empty, or to
-    # "legacy_all_depths" when it is non-empty (this reproduces SLM-237's
-    # weighted-mean-over-every-depth objective unchanged, so any config or
-    # checkpoint written before this field existed keeps its exact prior
-    # numeric behavior). New configs should set this explicitly to one of
+    # ``None`` (the dataclass default) resolves to "off" only when
+    # ``recursive_depth_supervision_weights`` is empty. New configs with
+    # non-empty weights must name their semantics explicitly; persisted
+    # configs/checkpoints written before this field existed are migrated to
+    # "legacy_all_depths" before construction so their numeric behavior is
+    # unchanged. New configs should set this explicitly to one of
     # "off" | "intermediate_only" | "all_depths"; "legacy_all_depths" is a
     # reproduction-only label, never the recommended choice for new runs --
     # see docs/design/iter-rsc-a02-*.
@@ -813,23 +812,31 @@ def resolve_recursive_depth_aux_mode(
     """SLM-238 (RSC-A02): deterministic backward-compatible mode resolution.
 
     ``mode=None`` is the ``TwoTowerConfig.recursive_depth_aux_mode`` dataclass
-    default -- i.e. any config or checkpoint written before this field existed,
-    or any new config that has not opted into the versioned semantics. It
-    resolves deterministically so historical behavior never silently changes:
+    default for a new primary-only config. It resolves to ``"off"`` only for
+    empty weights. Non-empty weights must name their final-depth semantics;
+    otherwise construction fails closed instead of silently creating a new
+    legacy objective.
 
     - empty ``weights`` -> ``"off"`` (matches the historical always-off
       default when deep supervision was never configured).
-    - non-empty ``weights`` -> ``"legacy_all_depths"`` (reproduces SLM-237's
-      weighted-mean-over-every-depth objective byte-for-byte, since that mode
-      shares "all_depths"'s length rule and math, with
-      ``recursive_depth_aux_weight`` defaulting to the neutral ``1.0``).
+    Persisted configs/checkpoints predating the field remain compatible because
+    :func:`migrate_recursive_depth_aux_config` materializes
+    ``"legacy_all_depths"`` before ``TwoTowerConfig`` is constructed.
 
     An explicitly supplied ``mode`` (including a deliberate "legacy_all_depths"
     for reproduction) always passes through unchanged.
     """
     if mode is not None:
         return mode
-    return "legacy_all_depths" if weights else "off"
+    if weights:
+        raise ValueError(
+            "non-empty recursive_depth_supervision_weights requires an explicit "
+            "recursive_depth_aux_mode; use 'intermediate_only' for the canonical "
+            "final-primary plus intermediate-depth auxiliary objective, "
+            "'all_depths' to deliberately count the final depth again, or "
+            "'legacy_all_depths' only to reproduce a historical config"
+        )
+    return "off"
 
 
 @dataclass(frozen=True)
@@ -1072,8 +1079,8 @@ def migrate_recursive_depth_aux_config(raw_cfg: dict) -> dict:
     existed is missing that key entirely (as opposed to a config that
     explicitly chose one of the versioned modes). This makes that historical
     state an explicit, persisted value instead of relying forever on
-    :func:`resolve_recursive_depth_aux_mode`'s ``None``-resolution at every
-    load: "off" when ``recursive_depth_supervision_weights`` was never set,
+    a missing field at construction time: "off" when
+    ``recursive_depth_supervision_weights`` was never set,
     "legacy_all_depths" (reproduction-only -- never the recommended new
     default) when it was. Returns a new dict; ``raw_cfg`` is never mutated in
     place. Idempotent -- a config that already has the key is returned

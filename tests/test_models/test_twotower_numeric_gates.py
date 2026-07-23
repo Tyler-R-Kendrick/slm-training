@@ -175,6 +175,7 @@ def test_model_build_config_rejects_bad_diffusion_length_buckets() -> None:
 def test_model_build_config_accepts_valid_schedules_and_weights() -> None:
     cfg = _valid_build_config(
         recursive_depth_supervision_weights=(0.5, 1.0, 0.5),
+        recursive_depth_aux_mode="all_depths",
         grammar_ltr_stages=(16, 32, 64),
         diffusion_length_buckets=(32, 64, 128),
     )
@@ -392,6 +393,7 @@ def test_twotower_config_rejects_non_recursive_arch_with_depth_weights() -> None
             denoiser_arch="stacked",
             recursive_steps=3,
             recursive_depth_supervision_weights=(1.0, 1.0, 1.0),
+            recursive_depth_aux_mode="all_depths",
         )
 
 
@@ -401,6 +403,7 @@ def test_twotower_config_rejects_wrong_weight_length() -> None:
             denoiser_arch="shared_recursive",
             recursive_steps=3,
             recursive_depth_supervision_weights=(1.0, 1.0),
+            recursive_depth_aux_mode="all_depths",
         )
 
 
@@ -410,6 +413,7 @@ def test_twotower_config_rejects_negative_depth_weight() -> None:
             denoiser_arch="shared_recursive",
             recursive_steps=2,
             recursive_depth_supervision_weights=(1.0, -0.5),
+            recursive_depth_aux_mode="all_depths",
         )
 
 
@@ -419,6 +423,7 @@ def test_twotower_config_rejects_nan_depth_weight() -> None:
             denoiser_arch="shared_recursive",
             recursive_steps=2,
             recursive_depth_supervision_weights=(1.0, float("nan")),
+            recursive_depth_aux_mode="all_depths",
         )
 
 
@@ -440,6 +445,7 @@ def test_twotower_config_rejects_invalid_aux_weight() -> None:
             denoiser_arch="shared_recursive",
             recursive_steps=2,
             recursive_depth_supervision_weights=(1.0, 1.0),
+            recursive_depth_aux_mode="all_depths",
             recursive_depth_aux_weight=float("nan"),
         )
     with pytest.raises(ValueError, match="negative"):
@@ -447,6 +453,7 @@ def test_twotower_config_rejects_invalid_aux_weight() -> None:
             denoiser_arch="shared_recursive",
             recursive_steps=2,
             recursive_depth_supervision_weights=(1.0, 1.0),
+            recursive_depth_aux_mode="all_depths",
             recursive_depth_aux_weight=-1.0,
         )
 

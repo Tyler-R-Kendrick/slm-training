@@ -127,6 +127,7 @@ def _build_model(arch: str, seed: int = 0) -> TwoTowerModel:
             recursive_steps=2,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=ds_weights,
+            recursive_depth_aux_mode=("legacy_all_depths" if ds_weights else None),
             grammar_constrained=False,
             gen_steps=2,
             seed=seed,

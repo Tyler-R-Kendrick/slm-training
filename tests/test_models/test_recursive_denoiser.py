@@ -579,6 +579,7 @@ def test_twotower_deep_supervision_metrics() -> None:
             recursive_steps=3,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=(0.5, 1.0, 0.5),
+            recursive_depth_aux_mode="all_depths",
             grammar_constrained=False,
             seed=0,
         ),
@@ -611,7 +612,13 @@ def test_checkpoint_migration_to_shared_recursive(tmp_path: Path) -> None:
     report = migrate_to_shared_recursive_denoiser(
         src,
         dst,
-        config={"recursive_steps": 2, "recursive_transition_layers": 2},
+        config={
+            "recursive_steps": 2,
+            "recursive_transition_layers": 2,
+            "recursive_depth_supervision_weights": (1.0,),
+            "recursive_depth_aux_mode": "intermediate_only",
+            "recursive_depth_aux_weight": 0.25,
+        },
         device="cpu",
     )
     assert dst.exists()
@@ -629,6 +636,8 @@ def test_checkpoint_migration_to_shared_recursive(tmp_path: Path) -> None:
 
     loaded = TwoTowerModel.from_checkpoint(dst, device="cpu")
     assert loaded.config.denoiser_arch == "shared_recursive"
+    assert loaded.config.recursive_depth_aux_mode == "intermediate_only"
+    assert loaded.config.recursive_depth_aux_weight == 0.25
     assert isinstance(loaded.denoiser, SharedRecursiveDenoiserTower)
 
 
@@ -664,6 +673,7 @@ def _recursive_model_for_weights(
             recursive_steps=recursive_steps,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=weights,
+            recursive_depth_aux_mode=("all_depths" if weights else None),
             grammar_constrained=False,
             seed=seed,
         ),
@@ -817,6 +827,7 @@ def test_training_loss_fails_closed_on_stacked_denoiser() -> None:
                 denoiser_layers=2,
                 denoiser_arch="stacked",
                 recursive_depth_supervision_weights=(1.0,),
+                recursive_depth_aux_mode="all_depths",
                 grammar_constrained=False,
                 seed=0,
             ),
@@ -1212,14 +1223,21 @@ def test_migrate_recursive_depth_aux_config_deterministic() -> None:
     assert migrate_recursive_depth_aux_config(already_migrated) == already_migrated
 
 
-def test_resolve_recursive_depth_aux_mode_backward_compatible() -> None:
-    """``resolve_recursive_depth_aux_mode`` mirrors the migration policy for
-    in-memory (non-checkpoint) configs, e.g. TwoTowerConfig() built directly
-    in Python without ever touching the new field."""
+def test_resolve_recursive_depth_aux_mode_requires_explicit_weighted_semantics() -> None:
     assert resolve_recursive_depth_aux_mode(None, ()) == "off"
-    assert resolve_recursive_depth_aux_mode(None, (0.5, 1.0)) == "legacy_all_depths"
+    with pytest.raises(ValueError, match="explicit.*recursive_depth_aux_mode"):
+        resolve_recursive_depth_aux_mode(None, (0.5, 1.0))
     assert resolve_recursive_depth_aux_mode("all_depths", (0.5, 1.0)) == "all_depths"
     assert resolve_recursive_depth_aux_mode("off", ()) == "off"
+
+
+def test_new_weighted_config_requires_explicit_aux_mode() -> None:
+    with pytest.raises(ValueError, match="explicit.*recursive_depth_aux_mode"):
+        TwoTowerConfig(
+            denoiser_arch="shared_recursive",
+            recursive_steps=2,
+            recursive_depth_supervision_weights=(0.5, 1.0),
+        )
 
 
 def test_generated_decomposition_sums_reproduce_scalar_loss_exactly() -> None:
@@ -1374,6 +1392,7 @@ def test_rsc_a03_restored_generator_state_repeated_evaluation_identical() -> Non
             recursive_steps=2,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_aux_mode="all_depths",
             grammar_constrained=False,
             seed=0,
         ),
@@ -1418,6 +1437,7 @@ def test_rsc_a03_restoring_only_torch_rng_is_insufficient_without_model() -> Non
             recursive_steps=2,
             recursive_transition_layers=2,
             recursive_depth_supervision_weights=(0.5, 1.0),
+            recursive_depth_aux_mode="all_depths",
             grammar_constrained=False,
             seed=0,
         ),
@@ -1828,6 +1848,7 @@ def test_deep_supervision_works_for_arm_c_and_d() -> None:
                 denoiser_arch=arch,  # type: ignore[arg-type]
                 recursive_steps=2, recursive_transition_layers=2,
                 recursive_depth_supervision_weights=weights,
+                recursive_depth_aux_mode="all_depths",
                 grammar_constrained=False, seed=0,
             ),
             device="cpu",

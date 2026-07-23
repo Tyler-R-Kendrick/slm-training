@@ -310,7 +310,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "SLM-238 (RSC-A02): final-depth semantics for recursive depth "
-            "supervision (None = resolve from --recursive-depth-supervision-weights)."
+            "supervision. Required when --recursive-depth-supervision-weights "
+            "is non-empty; intermediate_only is the canonical new objective."
         ),
     )
     parser.add_argument(
