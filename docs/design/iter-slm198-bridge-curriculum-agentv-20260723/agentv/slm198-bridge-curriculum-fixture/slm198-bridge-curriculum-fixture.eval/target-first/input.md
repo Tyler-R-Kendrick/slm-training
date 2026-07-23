@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "bridge_curriculum_fixture_contract", "failures": [], "result": {"arms": ["uniform_targets", "length_curriculum", "entropy_curriculum", "dependency_curriculum", "anti_curriculum", "oracle_difficulty"]}}
