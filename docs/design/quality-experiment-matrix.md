@@ -6771,5 +6771,6 @@ training exposure and optional-head RNG trajectory before retraining.
 E1069 removes only dedicated root-reference arity while matching E1066's seed,
 data, compiler mode, batch, and remaining objectives. Its first bounded
 invocation reaches 316/331 steps in 95.32 seconds. This is not yet the intended
-331-step control, so make no causal comparison; resume only its own full-state
-checkpoint for the remaining 15 steps before evaluation.
+331-step control, so no comparison is made at that point. Its own full-state
+resume completes the remaining 15 steps in 5.60 seconds (100.92 cumulative
+train seconds). The exact 331-step control is now pending strict smoke.

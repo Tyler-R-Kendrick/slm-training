@@ -313,23 +313,23 @@
       "agentv": "0/1"
     },
     "E1069": {
-      "status": "completed_partial_pending_own_resume",
+      "status": "completed_pending_eval",
       "run_id": "e1069_v271_331_step_control",
       "steps_requested": 331,
-      "steps_completed": 316,
-      "stopped_on": "wall_time_budget",
-      "elapsed_wall_seconds": 95.3238404549993,
-      "examples": 1264,
-      "last_loss": 7.120875835418701,
-      "binder_component_plan_loss_last": 2.77378249168396,
-      "binder_component_plan_accuracy_last": 0.1666666716337204,
-      "binder_component_plan_candidate_count_last": 35.0,
-      "binder_arity_loss_last": 0.16177429258823395,
-      "binder_arity_accuracy_last": 1.0,
-      "checkpoint_sha256": "9f4a52e62a7797ec81cdc2b02fbd915ea1bf97c2de9207a074d0531d9213bcb0",
+      "steps_completed": 331,
+      "stopped_on": "steps_after_own_full_state_resume",
+      "elapsed_wall_seconds": 100.92392844400092,
+      "examples": 1324,
+      "last_loss": 6.225110054016113,
+      "binder_component_plan_loss_last": 2.0786728858947754,
+      "binder_component_plan_accuracy_last": 0.2857142984867096,
+      "binder_component_plan_candidate_count_last": 28.428571428571427,
+      "binder_arity_loss_last": 0.6896659731864929,
+      "binder_arity_accuracy_last": 0.800000011920929,
+      "checkpoint_sha256": "79d3f93dfbf5a5fbe0388931aef3ec9c07d69adab9fe73f6f4248a578b8f5617",
       "checkpoint_sync": "disabled_scratch",
       "causal_comparison_valid": false,
-      "next_action": "resume own full-state checkpoint for 15 remaining steps"
+      "next_action": "run strict smoke before causal comparison"
     }
   },
   "disposition": {
@@ -343,7 +343,8 @@
     "bound_only_arity_decode_accepted": false,
     "e1066_pending_eval": false,
     "e1066_checkpoint_rejected": true,
-    "e1069_pending_own_resume": true,
+    "e1069_pending_own_resume": false,
+    "e1069_pending_eval": true,
     "next_hypothesis": "separate shorter training exposure and optional-head RNG effects before any further root-list training"
   },
   "version_stamp": {

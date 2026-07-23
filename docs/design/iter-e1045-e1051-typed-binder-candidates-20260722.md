@@ -141,3 +141,11 @@ comparison is made. The local checkpoint SHA is
 `9f4a52e62a7797ec81cdc2b02fbd915ea1bf97c2de9207a074d0531d9213bcb0`;
 sync is disabled. Resume only its own full-state checkpoint for the remaining
 15 steps before evaluation.
+
+The own-checkpoint resume completes the remaining 15 steps in 5.60 seconds,
+ending exactly at 331 with cumulative train wall 100.92 seconds and 1,324
+examples. Final loss is 6.2251; binder-component
+loss/accuracy/candidates are 2.0787/0.2857/28.43 and binder-arity
+loss/accuracy are 0.6897/0.80. The completed control checkpoint SHA is
+`79d3f93dfbf5a5fbe0388931aef3ec9c07d69adab9fe73f6f4248a578b8f5617`.
+It is now pending smoke evaluation.
