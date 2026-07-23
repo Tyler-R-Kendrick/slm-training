@@ -313,7 +313,7 @@
       "agentv": "0/1"
     },
     "E1069": {
-      "status": "completed_pending_eval",
+      "status": "completed_rejected_by_smoke",
       "run_id": "e1069_v271_331_step_control",
       "steps_requested": 331,
       "steps_completed": 331,
@@ -328,8 +328,26 @@
       "binder_arity_accuracy_last": 0.800000011920929,
       "checkpoint_sha256": "79d3f93dfbf5a5fbe0388931aef3ec9c07d69adab9fe73f6f4248a578b8f5617",
       "checkpoint_sync": "disabled_scratch",
-      "causal_comparison_valid": false,
-      "next_action": "run strict smoke before causal comparison"
+      "causal_comparison_valid": true,
+      "next_action": "none; 331-step control rejected"
+    },
+    "E1070": {
+      "status": "completed_rejected_control",
+      "run_id": "e1070_v271_331_step_control_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 1.0,
+      "structural_similarity": 0.6633333333333333,
+      "component_recall": 0.6666666666666666,
+      "reward": 0.957,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "prediction_identical_to_e1068": true,
+      "finding": "331-step exposure causes the base failure; detached root training is behavior-neutral with root decode disabled",
+      "agentv": "0/1"
     }
   },
   "disposition": {
@@ -344,8 +362,9 @@
     "e1066_pending_eval": false,
     "e1066_checkpoint_rejected": true,
     "e1069_pending_own_resume": false,
-    "e1069_pending_eval": true,
-    "next_hypothesis": "separate shorter training exposure and optional-head RNG effects before any further root-list training"
+    "e1069_pending_eval": false,
+    "e1069_checkpoint_rejected": true,
+    "next_hypothesis": "test v271 bound-only arity at the 395-step exposure that passed E1045 smoke"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

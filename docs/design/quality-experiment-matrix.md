@@ -6773,4 +6773,7 @@ data, compiler mode, batch, and remaining objectives. Its first bounded
 invocation reaches 316/331 steps in 95.32 seconds. This is not yet the intended
 331-step control, so no comparison is made at that point. Its own full-state
 resume completes the remaining 15 steps in 5.60 seconds (100.92 cumulative
-train seconds). The exact 331-step control is now pending strict smoke.
+train seconds). E1070 is prediction- and metric-identical to root-decode-off
+E1068: strict-v2/recall remain 0.6667 with one duplicated placeholder. This
+shows 331-step exposure causes the base failure; detached root training is
+behavior-neutral when its decode head is off. Reject the control.

@@ -149,3 +149,14 @@ loss/accuracy/candidates are 2.0787/0.2857/28.43 and binder-arity
 loss/accuracy are 0.6897/0.80. The completed control checkpoint SHA is
 `79d3f93dfbf5a5fbe0388931aef3ec9c07d69adab9fe73f6f4248a578b8f5617`.
 It is now pending smoke evaluation.
+
+E1070 applies the same root-decode-off smoke policy as E1068. All three
+predictions and all headline metrics are identical: parse/meaning-v1 1.0,
+strict-v2 0.6667, fidelity 1.0, structure 0.6633, recall 0.6667, and reward
+0.957, with Hero duplicating one placeholder identity. AgentV is `0/1`.
+
+This exact behavioral control closes the attribution: the detached root
+objective does not cause the base-model regression. The 331-step exposure is
+insufficient, while enabling the trained root head adds the separate harmful
+choice observed in E1067. Reject E1069 at 331 steps and do not promote or use it
+as a parent.
