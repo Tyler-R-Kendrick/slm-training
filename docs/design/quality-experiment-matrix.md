@@ -6758,3 +6758,10 @@ root-reference arity loss/accuracy are 1.2019/0.50; last-50 means are
 Hero row omits a required placeholder. Reject without held evaluation; this
 local no-sync checkpoint is not parentable or promotable. See
 `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
+
+E1068 disables only root-reference arity decode. Fidelity returns to 1.0 and
+reward to 0.957, but strict-v2/recall stay 0.6667 because Hero duplicates a
+placeholder identity. The root head made one harmful decode choice in E1067,
+while a checkpoint-level failure remains. Because the head consumes detached
+context, this does not prove shared-gradient interference; isolate the shorter
+training exposure and optional-head RNG trajectory before retraining.

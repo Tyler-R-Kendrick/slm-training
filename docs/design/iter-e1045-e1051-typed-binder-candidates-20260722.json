@@ -292,6 +292,25 @@
           "model.twotower": "v271"
         }
       }
+    },
+    "E1068": {
+      "status": "completed_rejected_ablation",
+      "run_id": "e1068_v271_dedicated_root_arity_decode0_smoke",
+      "suite": "smoke",
+      "root_reference_arity_decode_weight": 0.0,
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 0.6666666666666666,
+      "fidelity": 1.0,
+      "structural_similarity": 0.6633333333333333,
+      "component_recall": 0.6666666666666666,
+      "reward": 0.957,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "failure": "smoke_hero_01 duplicated one placeholder identity",
+      "finding": "root decode caused the E1067 omission, but a checkpoint-level regression remains with root decode disabled; detached context rules out direct shared-gradient interference",
+      "agentv": "0/1"
     }
   },
   "disposition": {
@@ -305,7 +324,7 @@
     "bound_only_arity_decode_accepted": false,
     "e1066_pending_eval": false,
     "e1066_checkpoint_rejected": true,
-    "next_hypothesis": "root-list arity alone is insufficient; diagnose required-placeholder loss without restoring overlapping generic supervision"
+    "next_hypothesis": "separate shorter training exposure and optional-head RNG effects before any further root-list training"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

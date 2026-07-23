@@ -119,3 +119,13 @@ JSONL plus a pinned AgentV bundle (`0/1`).
 Reject E1066 without held evaluation. Its structure gain over E1063 does not
 offset the smoke contract and component-recall regressions. Never sync,
 promote, serve, resume, or use it as a parent.
+
+E1068 disables only root-reference arity decode on the same checkpoint.
+Fidelity returns to 1.0 and reward to 0.957, but strict-v2 and component recall
+remain 0.6667; Hero now duplicates a placeholder identity instead of omitting
+one. This separates a single harmful root-head decode choice from the broader
+checkpoint regression. The root head consumes detached context, so these runs
+do not establish shared-gradient interference. The remaining causal
+candidates are the shorter 331-step exposure and the changed RNG trajectory
+from instantiating an additional head, not active data content. AgentV is
+`0/1`.
