@@ -129,3 +129,15 @@ do not establish shared-gradient interference. The remaining causal
 candidates are the shorter 331-step exposure and the changed RNG trajectory
 from instantiating an additional head, not active data content. AgentV is
 `0/1`.
+
+## E1069 matched-exposure control
+
+E1069 removes only the dedicated root-reference objective while preserving the
+E1066 seed, E937 data, compiler-tree mode, batch size, typed binder-component
+loss, and bound-only binder-arity loss. The first bounded invocation reaches
+316/331 requested steps and stops cleanly at 95.32 seconds after 1,264
+examples. It is therefore not yet the intended 331-step control and no causal
+comparison is made. The local checkpoint SHA is
+`9f4a52e62a7797ec81cdc2b02fbd915ea1bf97c2de9207a074d0531d9213bcb0`;
+sync is disabled. Resume only its own full-state checkpoint for the remaining
+15 steps before evaluation.

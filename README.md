@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E1069 331-step exposure control | `e1069_v271_331_step_control/last.pt` | `outputs/runs/...` (local) | First bounded invocation reached 316/331 steps / 95.32s; own full-state resume pending for 15 steps. Not yet comparable or parentable |
 | E1066 dedicated root-arity scratch diagnostic | `e1066_v271_dedicated_root_arity/last.pt` | `outputs/runs/...` (local) | 331 fresh E937 steps / 95.24s; E1067 smoke strict-v2 0.6667 / fidelity 0.9167 / recall 0.6667, and decode-off E1068 still strict-v2 0.6667; detached context rules out direct shared-gradient interference, AgentV 0/2 — rejected |
 | E1045 typed binder-candidate scratch diagnostic | `e1045_v270_typed_binder_candidates/last.pt` | `outputs/runs/...` (local) | 395 fresh E937 steps / 95.16s; E1047-E1051 held diagnostics strict-v2 0.6 / fidelity 0.6667 / recall 0.5333 / one timeout. Arity calibration and v271 bound-only ownership still split Dual Card/Settings; AgentV 0/20 — v271 retained, checkpoint rejected and never use as parent |
 | E1029 joint detached binder-plans scratch diagnostic | `e1029_v268_joint_binder_plans/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 54.83s; v269 makes the component head reachable before declaration, but weight 1 leaves held unchanged and weight 4 regresses held parse to 0.4 with three timeouts; AgentV 0/14 — scalar sweep closed, never use as parent |

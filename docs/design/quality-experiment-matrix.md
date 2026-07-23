@@ -6765,3 +6765,11 @@ placeholder identity. The root head made one harmful decode choice in E1067,
 while a checkpoint-level failure remains. Because the head consumes detached
 context, this does not prove shared-gradient interference; isolate the shorter
 training exposure and optional-head RNG trajectory before retraining.
+
+### E1069: matched-exposure control (own resume pending)
+
+E1069 removes only dedicated root-reference arity while matching E1066's seed,
+data, compiler mode, batch, and remaining objectives. Its first bounded
+invocation reaches 316/331 steps in 95.32 seconds. This is not yet the intended
+331-step control, so make no causal comparison; resume only its own full-state
+checkpoint for the remaining 15 steps before evaluation.

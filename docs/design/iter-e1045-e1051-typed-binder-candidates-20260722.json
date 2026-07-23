@@ -311,6 +311,25 @@
       "failure": "smoke_hero_01 duplicated one placeholder identity",
       "finding": "root decode caused the E1067 omission, but a checkpoint-level regression remains with root decode disabled; detached context rules out direct shared-gradient interference",
       "agentv": "0/1"
+    },
+    "E1069": {
+      "status": "completed_partial_pending_own_resume",
+      "run_id": "e1069_v271_331_step_control",
+      "steps_requested": 331,
+      "steps_completed": 316,
+      "stopped_on": "wall_time_budget",
+      "elapsed_wall_seconds": 95.3238404549993,
+      "examples": 1264,
+      "last_loss": 7.120875835418701,
+      "binder_component_plan_loss_last": 2.77378249168396,
+      "binder_component_plan_accuracy_last": 0.1666666716337204,
+      "binder_component_plan_candidate_count_last": 35.0,
+      "binder_arity_loss_last": 0.16177429258823395,
+      "binder_arity_accuracy_last": 1.0,
+      "checkpoint_sha256": "9f4a52e62a7797ec81cdc2b02fbd915ea1bf97c2de9207a074d0531d9213bcb0",
+      "checkpoint_sync": "disabled_scratch",
+      "causal_comparison_valid": false,
+      "next_action": "resume own full-state checkpoint for 15 remaining steps"
     }
   },
   "disposition": {
@@ -324,6 +343,7 @@
     "bound_only_arity_decode_accepted": false,
     "e1066_pending_eval": false,
     "e1066_checkpoint_rejected": true,
+    "e1069_pending_own_resume": true,
     "next_hypothesis": "separate shorter training exposure and optional-head RNG effects before any further root-list training"
   },
   "version_stamp": {
