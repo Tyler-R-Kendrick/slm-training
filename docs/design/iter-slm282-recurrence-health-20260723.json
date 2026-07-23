@@ -1,0 +1,3529 @@
+{
+  "adjacent_ce_failures": [
+    {
+      "arm": "as_is",
+      "ce_after": 17.855323791503906,
+      "ce_before": 17.487688064575195,
+      "example_id": "b",
+      "from_depth": 3,
+      "recursive_steps": 4,
+      "seed": 1,
+      "to_depth": 4
+    }
+  ],
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "outputs/runs/slm282-recurrence-health-v15-20260723/agentv/slm282-recurrence-health/benchmark.json",
+      "indexPath": "outputs/runs/slm282-recurrence-health-v15-20260723/agentv/slm282-recurrence-health/index.jsonl",
+      "runDir": "outputs/runs/slm282-recurrence-health-v15-20260723/agentv/slm282-recurrence-health",
+      "timingPath": "outputs/runs/slm282-recurrence-health-v15-20260723/agentv/slm282-recurrence-health/timing.json"
+    },
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "outputs/runs/slm282-recurrence-health-v15-20260723/agentv/slm282-recurrence-health.eval.jsonl",
+    "summary": {
+      "durationMs": 18,
+      "executionErrors": 0,
+      "failed": 1,
+      "meanScore": 0.875,
+      "passed": 3,
+      "total": 4
+    }
+  },
+  "checkpoint_created": false,
+  "claim_class": "fixture_diagnostic_not_ship",
+  "curves": [
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "as_is",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.441862106323242,
+              "entropy": 1.3850374221801758,
+              "finite_difference_initial_state_directional_gain": 1.5410493612289429,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 23,
+              "y_norm": 78.89527893066406,
+              "y_update_norm": 37.561866760253906,
+              "y_update_state_ratio": 0.8487957715988159,
+              "z_norm": 70.06244659423828,
+              "z_update_norm": 37.235740661621094,
+              "z_update_state_ratio": 1.045518159866333
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 21.601404190063477,
+              "entropy": 1.1461924314498901,
+              "finite_difference_initial_state_directional_gain": 1.530083179473877,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 12,
+              "y_norm": 80.10283660888672,
+              "y_update_norm": 37.275508880615234,
+              "y_update_state_ratio": 0.8150261640548706,
+              "z_norm": 70.0360107421875,
+              "z_update_norm": 37.02604675292969,
+              "z_update_state_ratio": 1.0416991710662842
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 18.867990820748464
+        }
+      ],
+      "post_training_loss": 27.15155792236328,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": false,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 17.441862106323242,
+            "ce_previous": null,
+            "ce_r1": 17.441862106323242,
+            "complete": true,
+            "example_id": "a",
+            "pass": null
+          },
+          {
+            "ce_final": 21.601404190063477,
+            "ce_previous": null,
+            "ce_r1": 21.601404190063477,
+            "complete": true,
+            "example_id": "b",
+            "pass": null
+          }
+        ],
+        "expected_depths": [
+          1
+        ],
+        "observed_depths": [
+          1
+        ],
+        "pass": null,
+        "ratios_finite": true
+      },
+      "recursive_steps": 1,
+      "seed": 0,
+      "training_losses": [
+        27.343177795410156,
+        34.50758743286133,
+        31.40976333618164,
+        18.424049377441406
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "residual_delta",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.041345596313477,
+              "entropy": 1.353609323501587,
+              "finite_difference_initial_state_directional_gain": 1.009070873260498,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 23,
+              "y_norm": 46.10026550292969,
+              "y_update_norm": 12.887063026428223,
+              "y_update_state_ratio": 0.2912581264972687,
+              "z_norm": 37.505252838134766,
+              "z_update_norm": 10.931262969970703,
+              "z_update_state_ratio": 0.30872011184692383
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 21.303756713867188,
+              "entropy": 1.3265376091003418,
+              "finite_difference_initial_state_directional_gain": 1.013160228729248,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 12,
+              "y_norm": 47.546939849853516,
+              "y_update_norm": 12.20959186553955,
+              "y_update_state_ratio": 0.266930490732193,
+              "z_norm": 37.82497787475586,
+              "z_update_norm": 11.177190780639648,
+              "z_update_state_ratio": 0.3162330090999603
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 18.502743693760465
+        }
+      ],
+      "post_training_loss": 26.20406723022461,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": false,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 17.041345596313477,
+            "ce_previous": null,
+            "ce_r1": 17.041345596313477,
+            "complete": true,
+            "example_id": "a",
+            "pass": null
+          },
+          {
+            "ce_final": 21.303756713867188,
+            "ce_previous": null,
+            "ce_r1": 21.303756713867188,
+            "complete": true,
+            "example_id": "b",
+            "pass": null
+          }
+        ],
+        "expected_depths": [
+          1
+        ],
+        "observed_depths": [
+          1
+        ],
+        "pass": null,
+        "ratios_finite": true
+      },
+      "recursive_steps": 1,
+      "seed": 0,
+      "training_losses": [
+        26.901968002319336,
+        33.9764289855957,
+        30.700267791748047,
+        18.68044090270996
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "as_is",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.430177688598633,
+              "entropy": 1.3762699365615845,
+              "finite_difference_initial_state_directional_gain": 1.541264295578003,
+              "id": "a",
+              "kl_to_final": 0.16671638190746307,
+              "kl_to_next": 0.16671638190746307,
+              "target_count": 23,
+              "y_norm": 78.85123443603516,
+              "y_update_norm": 37.48017501831055,
+              "y_update_state_ratio": 0.8469221591949463,
+              "z_norm": 69.99202728271484,
+              "z_update_norm": 37.22038650512695,
+              "z_update_state_ratio": 1.046172857284546
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 21.60417938232422,
+              "entropy": 1.1319111585617065,
+              "finite_difference_initial_state_directional_gain": 1.5310059785842896,
+              "id": "b",
+              "kl_to_final": 0.14292263984680176,
+              "kl_to_next": 0.14292263984680176,
+              "target_count": 12,
+              "y_norm": 80.01445770263672,
+              "y_update_norm": 37.181209564208984,
+              "y_update_state_ratio": 0.812997579574585,
+              "z_norm": 69.94186401367188,
+              "z_update_norm": 36.96497344970703,
+              "z_update_state_ratio": 1.0409811735153198
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 18.861263983590263
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.041719436645508,
+              "entropy": 1.3734341859817505,
+              "finite_difference_initial_state_directional_gain": 2.1552934646606445,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 23,
+              "y_norm": 115.9544448852539,
+              "y_update_norm": 38.86568069458008,
+              "y_update_state_ratio": 0.4928988218307495,
+              "z_norm": 106.94348907470703,
+              "z_update_norm": 38.408660888671875,
+              "z_update_state_ratio": 0.5487576723098755
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.951974868774414,
+              "entropy": 1.3097845315933228,
+              "finite_difference_initial_state_directional_gain": 2.137415885925293,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 12,
+              "y_norm": 116.62191772460938,
+              "y_update_norm": 38.483543395996094,
+              "y_update_state_ratio": 0.48095735907554626,
+              "z_norm": 106.92536926269531,
+              "z_update_norm": 38.33987808227539,
+              "z_update_state_ratio": 0.5481678247451782
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 18.382378441946848
+        }
+      ],
+      "post_training_loss": 26.18229103088379,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 17.041719436645508,
+            "ce_previous": 17.430177688598633,
+            "ce_r1": 17.430177688598633,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 20.951974868774414,
+            "ce_previous": 21.60417938232422,
+            "ce_r1": 21.60417938232422,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2
+        ],
+        "observed_depths": [
+          1,
+          2
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 2,
+      "seed": 0,
+      "training_losses": [
+        26.80374526977539,
+        33.52545166015625,
+        29.68024253845215,
+        17.857868194580078
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "residual_delta",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 16.869037628173828,
+              "entropy": 1.3464620113372803,
+              "finite_difference_initial_state_directional_gain": 1.0090224742889404,
+              "id": "a",
+              "kl_to_final": 0.7715420722961426,
+              "kl_to_next": 0.7715420722961426,
+              "target_count": 23,
+              "y_norm": 45.70240020751953,
+              "y_update_norm": 12.46338176727295,
+              "y_update_state_ratio": 0.2816750109195709,
+              "z_norm": 37.14877700805664,
+              "z_update_norm": 10.910573959350586,
+              "z_update_state_ratio": 0.3091961741447449
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 21.4416561126709,
+              "entropy": 1.280266284942627,
+              "finite_difference_initial_state_directional_gain": 1.0137256383895874,
+              "id": "b",
+              "kl_to_final": 0.6215594410896301,
+              "kl_to_next": 0.6215594410896301,
+              "target_count": 12,
+              "y_norm": 47.25979995727539,
+              "y_update_norm": 12.04775619506836,
+              "y_update_state_ratio": 0.2633729577064514,
+              "z_norm": 37.391849517822266,
+              "z_update_norm": 11.01699447631836,
+              "z_update_state_ratio": 0.31274664402008057
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 18.436792537144253
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 15.443229675292969,
+              "entropy": 1.425360083580017,
+              "finite_difference_initial_state_directional_gain": 1.0357102155685425,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 23,
+              "y_norm": 50.86527633666992,
+              "y_update_norm": 13.579401969909668,
+              "y_update_state_ratio": 0.2971266806125641,
+              "z_norm": 41.890750885009766,
+              "z_update_norm": 10.90075969696045,
+              "z_update_state_ratio": 0.2934352159500122
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.569833755493164,
+              "entropy": 1.8069239854812622,
+              "finite_difference_initial_state_directional_gain": 1.046610713005066,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 12,
+              "y_norm": 52.06874465942383,
+              "y_update_norm": 13.256561279296875,
+              "y_update_state_ratio": 0.2805039584636688,
+              "z_norm": 42.58598327636719,
+              "z_update_norm": 11.225996971130371,
+              "z_update_state_ratio": 0.30022576451301575
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 16.858065359933036
+        }
+      ],
+      "post_training_loss": 23.25051498413086,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 15.443229675292969,
+            "ce_previous": 16.869037628173828,
+            "ce_r1": 16.869037628173828,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 19.569833755493164,
+            "ce_previous": 21.4416561126709,
+            "ce_r1": 21.4416561126709,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2
+        ],
+        "observed_depths": [
+          1,
+          2
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 2,
+      "seed": 0,
+      "training_losses": [
+        25.463642120361328,
+        32.10511779785156,
+        27.20365333557129,
+        17.28372573852539
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "as_is",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.4606990814209,
+              "entropy": 1.3536370992660522,
+              "finite_difference_initial_state_directional_gain": 1.5418614149093628,
+              "id": "a",
+              "kl_to_final": 0.6193011999130249,
+              "kl_to_next": 0.14054909348487854,
+              "target_count": 23,
+              "y_norm": 78.74537658691406,
+              "y_update_norm": 37.33492660522461,
+              "y_update_state_ratio": 0.8436405062675476,
+              "z_norm": 69.87545776367188,
+              "z_update_norm": 37.21607971191406,
+              "z_update_state_ratio": 1.0484099388122559
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 21.661283493041992,
+              "entropy": 1.1057960987091064,
+              "finite_difference_initial_state_directional_gain": 1.5317968130111694,
+              "id": "b",
+              "kl_to_final": 0.5949037075042725,
+              "kl_to_next": 0.10927053540945053,
+              "target_count": 12,
+              "y_norm": 79.92443084716797,
+              "y_update_norm": 37.071136474609375,
+              "y_update_state_ratio": 0.8105899691581726,
+              "z_norm": 69.79179382324219,
+              "z_update_norm": 36.912628173828125,
+              "z_update_state_ratio": 1.0418410301208496
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 18.90089945111956
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.02001953125,
+              "entropy": 1.375623106956482,
+              "finite_difference_initial_state_directional_gain": 2.156694173812866,
+              "id": "a",
+              "kl_to_final": 0.17780262231826782,
+              "kl_to_next": 0.060337796807289124,
+              "target_count": 23,
+              "y_norm": 115.69155883789062,
+              "y_update_norm": 38.688720703125,
+              "y_update_state_ratio": 0.491314172744751,
+              "z_norm": 106.80325317382812,
+              "z_update_norm": 38.396095275878906,
+              "z_update_state_ratio": 0.5494933128356934
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.967727661132812,
+              "entropy": 1.306535243988037,
+              "finite_difference_initial_state_directional_gain": 2.1403470039367676,
+              "id": "b",
+              "kl_to_final": 0.22161436080932617,
+              "kl_to_next": 0.07051140069961548,
+              "target_count": 12,
+              "y_norm": 116.41443634033203,
+              "y_update_norm": 38.3529052734375,
+              "y_update_state_ratio": 0.47986459732055664,
+              "z_norm": 106.70878601074219,
+              "z_update_norm": 38.277557373046875,
+              "z_update_state_ratio": 0.5484535694122314
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 18.373519461495537
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 16.769004821777344,
+              "entropy": 1.3784412145614624,
+              "finite_difference_initial_state_directional_gain": 2.790977716445923,
+              "id": "a",
+              "kl_to_final": 0.030144643038511276,
+              "kl_to_next": 0.030144643038511276,
+              "target_count": 23,
+              "y_norm": 153.94012451171875,
+              "y_update_norm": 39.63480758666992,
+              "y_update_state_ratio": 0.3425903022289276,
+              "z_norm": 144.73556518554688,
+              "z_update_norm": 39.06764221191406,
+              "z_update_state_ratio": 0.3657907545566559
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.502239227294922,
+              "entropy": 1.4587950706481934,
+              "finite_difference_initial_state_directional_gain": 2.7712180614471436,
+              "id": "b",
+              "kl_to_final": 0.04283297434449196,
+              "kl_to_next": 0.04283297434449196,
+              "target_count": 12,
+              "y_norm": 154.16917419433594,
+              "y_update_norm": 39.276981353759766,
+              "y_update_state_ratio": 0.3373892605304718,
+              "z_norm": 144.68902587890625,
+              "z_update_norm": 39.06654739379883,
+              "z_update_state_ratio": 0.3661043047904968
+            }
+          ],
+          "ratios_finite": true,
+          "step": 3,
+          "token_weighted_cross_entropy": 18.048970903669083
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 16.60382652282715,
+              "entropy": 1.3667258024215698,
+              "finite_difference_initial_state_directional_gain": 3.4284627437591553,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 23,
+              "y_norm": 193.0733642578125,
+              "y_update_norm": 40.35197067260742,
+              "y_update_state_ratio": 0.26212769746780396,
+              "z_norm": 183.25234985351562,
+              "z_update_norm": 39.52406311035156,
+              "z_update_state_ratio": 0.27307775616645813
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.17899513244629,
+              "entropy": 1.5476609468460083,
+              "finite_difference_initial_state_directional_gain": 3.4084579944610596,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 12,
+              "y_norm": 192.80419921875,
+              "y_update_norm": 39.99348068237305,
+              "y_update_state_ratio": 0.259412944316864,
+              "z_norm": 183.30665588378906,
+              "z_update_norm": 39.602699279785156,
+              "z_update_state_ratio": 0.27370908856391907
+            }
+          ],
+          "ratios_finite": true,
+          "step": 4,
+          "token_weighted_cross_entropy": 17.82959861755371
+        }
+      ],
+      "post_training_loss": 24.926054000854492,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 16.60382652282715,
+            "ce_previous": 16.769004821777344,
+            "ce_r1": 17.4606990814209,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 20.17899513244629,
+            "ce_previous": 20.502239227294922,
+            "ce_r1": 21.661283493041992,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "observed_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 4,
+      "seed": 0,
+      "training_losses": [
+        26.16543197631836,
+        32.39902114868164,
+        27.85531234741211,
+        17.379777908325195
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "residual_delta",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.12142562866211,
+              "entropy": 1.3390781879425049,
+              "finite_difference_initial_state_directional_gain": 1.0092922449111938,
+              "id": "a",
+              "kl_to_final": 4.371673107147217,
+              "kl_to_next": 0.6899315714836121,
+              "target_count": 23,
+              "y_norm": 45.39502716064453,
+              "y_update_norm": 12.035916328430176,
+              "y_update_state_ratio": 0.27201563119888306,
+              "z_norm": 36.962284088134766,
+              "z_update_norm": 10.790138244628906,
+              "z_update_state_ratio": 0.30620190501213074
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 21.847755432128906,
+              "entropy": 1.1972784996032715,
+              "finite_difference_initial_state_directional_gain": 1.0131855010986328,
+              "id": "b",
+              "kl_to_final": 3.787062883377075,
+              "kl_to_next": 0.4257108271121979,
+              "target_count": 12,
+              "y_norm": 47.043968200683594,
+              "y_update_norm": 11.898247718811035,
+              "y_update_state_ratio": 0.2601242661476135,
+              "z_norm": 37.20683670043945,
+              "z_update_norm": 10.840324401855469,
+              "z_update_state_ratio": 0.30810850858688354
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 18.741881561279296
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 15.569045066833496,
+              "entropy": 1.4828169345855713,
+              "finite_difference_initial_state_directional_gain": 1.036205530166626,
+              "id": "a",
+              "kl_to_final": 1.8204622268676758,
+              "kl_to_next": 0.5790114998817444,
+              "target_count": 23,
+              "y_norm": 50.016849517822266,
+              "y_update_norm": 13.210582733154297,
+              "y_update_state_ratio": 0.2910138666629791,
+              "z_norm": 41.583194732666016,
+              "z_update_norm": 10.867568016052246,
+              "z_update_state_ratio": 0.2940177619457245
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.083253860473633,
+              "entropy": 1.56378972530365,
+              "finite_difference_initial_state_directional_gain": 1.0450844764709473,
+              "id": "b",
+              "kl_to_final": 2.1336705684661865,
+              "kl_to_next": 0.6802313923835754,
+              "target_count": 12,
+              "y_norm": 51.64911651611328,
+              "y_update_norm": 13.304858207702637,
+              "y_update_state_ratio": 0.2828175127506256,
+              "z_norm": 42.26958084106445,
+              "z_update_norm": 11.17509651184082,
+              "z_update_state_ratio": 0.3003506064414978
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 17.116773796081542
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.043478261679410934,
+              "cross_entropy": 14.601910591125488,
+              "entropy": 1.6420016288757324,
+              "finite_difference_initial_state_directional_gain": 1.0759663581848145,
+              "id": "a",
+              "kl_to_final": 0.3575780391693115,
+              "kl_to_next": 0.3575780391693115,
+              "target_count": 23,
+              "y_norm": 57.99671936035156,
+              "y_update_norm": 14.383056640625,
+              "y_update_state_ratio": 0.287564218044281,
+              "z_norm": 48.39175033569336,
+              "z_update_norm": 11.224329948425293,
+              "z_update_state_ratio": 0.26992467045783997
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 18.466136932373047,
+              "entropy": 1.9114021062850952,
+              "finite_difference_initial_state_directional_gain": 1.0904172658920288,
+              "id": "b",
+              "kl_to_final": 0.3944631516933441,
+              "kl_to_next": 0.3944631516933441,
+              "target_count": 12,
+              "y_norm": 59.68687057495117,
+              "y_update_norm": 14.831290245056152,
+              "y_update_state_ratio": 0.28715476393699646,
+              "z_norm": 49.64346694946289,
+              "z_update_norm": 11.69244384765625,
+              "z_update_state_ratio": 0.27661603689193726
+            }
+          ],
+          "ratios_finite": true,
+          "step": 3,
+          "token_weighted_cross_entropy": 15.926788193838936
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 14.205290794372559,
+              "entropy": 1.6395721435546875,
+              "finite_difference_initial_state_directional_gain": 1.1240154504776,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 23,
+              "y_norm": 68.72108459472656,
+              "y_update_norm": 15.446091651916504,
+              "y_update_state_ratio": 0.26632699370384216,
+              "z_norm": 56.845211029052734,
+              "z_update_norm": 11.812360763549805,
+              "z_update_state_ratio": 0.24409864842891693
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.416059494018555,
+              "entropy": 1.9399667978286743,
+              "finite_difference_initial_state_directional_gain": 1.1427723169326782,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 12,
+              "y_norm": 70.75666046142578,
+              "y_update_norm": 16.26036834716797,
+              "y_update_state_ratio": 0.27242788672447205,
+              "z_norm": 58.717613220214844,
+              "z_update_norm": 12.344971656799316,
+              "z_update_state_ratio": 0.24867263436317444
+            }
+          ],
+          "ratios_finite": true,
+          "step": 4,
+          "token_weighted_cross_entropy": 15.30612577710833
+        }
+      ],
+      "post_training_loss": 20.095802307128906,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 14.205290794372559,
+            "ce_previous": 14.601910591125488,
+            "ce_r1": 17.12142562866211,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 17.416059494018555,
+            "ce_previous": 18.466136932373047,
+            "ce_r1": 21.847755432128906,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "observed_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 4,
+      "seed": 0,
+      "training_losses": [
+        24.12503433227539,
+        29.16092300415039,
+        23.090015411376953,
+        15.91729736328125
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "as_is",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.363698959350586,
+              "entropy": 0.6946437358856201,
+              "finite_difference_initial_state_directional_gain": 1.5166430473327637,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 27,
+              "y_norm": 81.3686294555664,
+              "y_update_norm": 37.29402542114258,
+              "y_update_state_ratio": 0.7486979961395264,
+              "z_norm": 70.33241271972656,
+              "z_update_norm": 37.07594680786133,
+              "z_update_state_ratio": 1.0109589099884033
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 18.3548526763916,
+              "entropy": 0.703363299369812,
+              "finite_difference_initial_state_directional_gain": 1.5382081270217896,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 9,
+              "y_norm": 81.49267578125,
+              "y_update_norm": 38.61543655395508,
+              "y_update_state_ratio": 0.8112179040908813,
+              "z_norm": 70.83638763427734,
+              "z_update_norm": 38.1782341003418,
+              "z_update_state_ratio": 1.0406866073608398
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 19.11148738861084
+        }
+      ],
+      "post_training_loss": 25.12897491455078,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": false,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 19.363698959350586,
+            "ce_previous": null,
+            "ce_r1": 19.363698959350586,
+            "complete": true,
+            "example_id": "a",
+            "pass": null
+          },
+          {
+            "ce_final": 18.3548526763916,
+            "ce_previous": null,
+            "ce_r1": 18.3548526763916,
+            "complete": true,
+            "example_id": "b",
+            "pass": null
+          }
+        ],
+        "expected_depths": [
+          1
+        ],
+        "observed_depths": [
+          1
+        ],
+        "pass": null,
+        "ratios_finite": true
+      },
+      "recursive_steps": 1,
+      "seed": 1,
+      "training_losses": [
+        33.09230422973633,
+        20.576114654541016,
+        23.86001968383789,
+        28.684040069580078
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "residual_delta",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.805282592773438,
+              "entropy": 0.33259809017181396,
+              "finite_difference_initial_state_directional_gain": 1.004549503326416,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 27,
+              "y_norm": 49.349300384521484,
+              "y_update_norm": 16.79106330871582,
+              "y_update_state_ratio": 0.33706045150756836,
+              "z_norm": 40.727012634277344,
+              "z_update_norm": 18.18256950378418,
+              "z_update_state_ratio": 0.5003901124000549
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.025856018066406,
+              "entropy": 0.4154260754585266,
+              "finite_difference_initial_state_directional_gain": 1.0097808837890625,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 9,
+              "y_norm": 50.02940368652344,
+              "y_update_norm": 16.457998275756836,
+              "y_update_state_ratio": 0.34571295976638794,
+              "z_norm": 39.85307312011719,
+              "z_update_norm": 16.22608757019043,
+              "z_update_state_ratio": 0.4461978077888489
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 20.36042594909668
+        }
+      ],
+      "post_training_loss": 27.487520217895508,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": false,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 20.805282592773438,
+            "ce_previous": null,
+            "ce_r1": 20.805282592773438,
+            "complete": true,
+            "example_id": "a",
+            "pass": null
+          },
+          {
+            "ce_final": 19.025856018066406,
+            "ce_previous": null,
+            "ce_r1": 19.025856018066406,
+            "complete": true,
+            "example_id": "b",
+            "pass": null
+          }
+        ],
+        "expected_depths": [
+          1
+        ],
+        "observed_depths": [
+          1
+        ],
+        "pass": null,
+        "ratios_finite": true
+      },
+      "recursive_steps": 1,
+      "seed": 1,
+      "training_losses": [
+        36.342063903808594,
+        22.94814682006836,
+        25.818817138671875,
+        30.656208038330078
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "as_is",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.53921890258789,
+              "entropy": 0.6350117325782776,
+              "finite_difference_initial_state_directional_gain": 1.5143606662750244,
+              "id": "a",
+              "kl_to_final": 1.141222596168518,
+              "kl_to_next": 1.141222596168518,
+              "target_count": 27,
+              "y_norm": 81.51721954345703,
+              "y_update_norm": 37.19056701660156,
+              "y_update_state_ratio": 0.7464932203292847,
+              "z_norm": 70.2562255859375,
+              "z_update_norm": 37.07050323486328,
+              "z_update_state_ratio": 1.0114562511444092
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 18.489992141723633,
+              "entropy": 0.6302986145019531,
+              "finite_difference_initial_state_directional_gain": 1.538955569267273,
+              "id": "b",
+              "kl_to_final": 1.0116623640060425,
+              "kl_to_next": 1.0116623640060425,
+              "target_count": 9,
+              "y_norm": 81.37725830078125,
+              "y_update_norm": 38.40822219848633,
+              "y_update_state_ratio": 0.8068930506706238,
+              "z_norm": 70.67359161376953,
+              "z_update_norm": 38.04145812988281,
+              "z_update_state_ratio": 1.0375674962997437
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 19.276912212371826
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.15406608581543,
+              "entropy": 1.0265806913375854,
+              "finite_difference_initial_state_directional_gain": 2.09840989112854,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 27,
+              "y_norm": 116.66548156738281,
+              "y_update_norm": 39.00261306762695,
+              "y_update_state_ratio": 0.47845858335494995,
+              "z_norm": 108.62644958496094,
+              "z_update_norm": 40.39008712768555,
+              "z_update_state_ratio": 0.5748969316482544
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.464622497558594,
+              "entropy": 1.4222753047943115,
+              "finite_difference_initial_state_directional_gain": 2.1435110569000244,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 9,
+              "y_norm": 118.454833984375,
+              "y_update_norm": 40.047550201416016,
+              "y_update_state_ratio": 0.4921221435070038,
+              "z_norm": 109.16416931152344,
+              "z_update_norm": 40.66965866088867,
+              "z_update_state_ratio": 0.5754576325416565
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 17.23170518875122
+        }
+      ],
+      "post_training_loss": 19.507104873657227,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 17.15406608581543,
+            "ce_previous": 19.53921890258789,
+            "ce_r1": 19.53921890258789,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 17.464622497558594,
+            "ce_previous": 18.489992141723633,
+            "ce_r1": 18.489992141723633,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2
+        ],
+        "observed_depths": [
+          1,
+          2
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 2,
+      "seed": 1,
+      "training_losses": [
+        30.045001983642578,
+        18.934589385986328,
+        20.967668533325195,
+        24.282569885253906
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "residual_delta",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 20.925260543823242,
+              "entropy": 0.31433606147766113,
+              "finite_difference_initial_state_directional_gain": 1.003855586051941,
+              "id": "a",
+              "kl_to_final": 2.816615581512451,
+              "kl_to_next": 2.816615581512451,
+              "target_count": 27,
+              "y_norm": 49.282379150390625,
+              "y_update_norm": 16.985069274902344,
+              "y_update_state_ratio": 0.3409886658191681,
+              "z_norm": 40.6929931640625,
+              "z_update_norm": 18.435440063476562,
+              "z_update_state_ratio": 0.5076980590820312
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.084943771362305,
+              "entropy": 0.3918066620826721,
+              "finite_difference_initial_state_directional_gain": 1.009706974029541,
+              "id": "b",
+              "kl_to_final": 3.2839787006378174,
+              "kl_to_next": 3.2839787006378174,
+              "target_count": 9,
+              "y_norm": 49.957191467285156,
+              "y_update_norm": 16.641672134399414,
+              "y_update_state_ratio": 0.34964826703071594,
+              "z_norm": 39.791072845458984,
+              "z_update_norm": 16.41144561767578,
+              "z_update_state_ratio": 0.4516427516937256
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 20.465181350708008
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.03703703731298447,
+              "cross_entropy": 16.183292388916016,
+              "entropy": 1.0684243440628052,
+              "finite_difference_initial_state_directional_gain": 1.0203853845596313,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 27,
+              "y_norm": 54.56294631958008,
+              "y_update_norm": 18.620145797729492,
+              "y_update_state_ratio": 0.37782561779022217,
+              "z_norm": 51.299320220947266,
+              "z_update_norm": 17.973085403442383,
+              "z_update_state_ratio": 0.44167518615722656
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 16.929508209228516,
+              "entropy": 1.0918841361999512,
+              "finite_difference_initial_state_directional_gain": 1.0327013731002808,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 9,
+              "y_norm": 57.77658462524414,
+              "y_update_norm": 18.11803436279297,
+              "y_update_state_ratio": 0.3626711964607239,
+              "z_norm": 48.673194885253906,
+              "z_update_norm": 16.068077087402344,
+              "z_update_state_ratio": 0.40381109714508057
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 16.36984634399414
+        }
+      ],
+      "post_training_loss": 18.061445236206055,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 16.183292388916016,
+            "ce_previous": 20.925260543823242,
+            "ce_r1": 20.925260543823242,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 16.929508209228516,
+            "ce_previous": 19.084943771362305,
+            "ce_r1": 19.084943771362305,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2
+        ],
+        "observed_depths": [
+          1,
+          2
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 2,
+      "seed": 1,
+      "training_losses": [
+        32.21515655517578,
+        19.837860107421875,
+        20.209774017333984,
+        22.27328109741211
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "as_is",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.88758087158203,
+              "entropy": 0.5319263935089111,
+              "finite_difference_initial_state_directional_gain": 1.512119174003601,
+              "id": "a",
+              "kl_to_final": 4.153213024139404,
+              "kl_to_next": 0.9406642913818359,
+              "target_count": 27,
+              "y_norm": 81.71849060058594,
+              "y_update_norm": 37.03082275390625,
+              "y_update_state_ratio": 0.7431458830833435,
+              "z_norm": 70.10245513916016,
+              "z_update_norm": 37.01844787597656,
+              "z_update_state_ratio": 1.0120453834533691
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 18.76934051513672,
+              "entropy": 0.5201811194419861,
+              "finite_difference_initial_state_directional_gain": 1.5395852327346802,
+              "id": "b",
+              "kl_to_final": 3.826672077178955,
+              "kl_to_next": 0.7115955352783203,
+              "target_count": 9,
+              "y_norm": 81.26647186279297,
+              "y_update_norm": 38.134666442871094,
+              "y_update_state_ratio": 0.8011261224746704,
+              "z_norm": 70.41609191894531,
+              "z_update_norm": 37.81082534790039,
+              "z_update_state_ratio": 1.0330967903137207
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 19.608020782470703
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.332271575927734,
+              "entropy": 0.9472950100898743,
+              "finite_difference_initial_state_directional_gain": 2.093355178833008,
+              "id": "a",
+              "kl_to_final": 1.2185386419296265,
+              "kl_to_next": 0.4266899824142456,
+              "target_count": 27,
+              "y_norm": 116.88175964355469,
+              "y_update_norm": 38.81809616088867,
+              "y_update_state_ratio": 0.47502219676971436,
+              "z_norm": 108.26802062988281,
+              "z_update_norm": 40.18610763549805,
+              "z_update_state_ratio": 0.5732482075691223
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.515771865844727,
+              "entropy": 1.3530426025390625,
+              "finite_difference_initial_state_directional_gain": 2.146568775177002,
+              "id": "b",
+              "kl_to_final": 1.2707982063293457,
+              "kl_to_next": 0.4350545406341553,
+              "target_count": 9,
+              "y_norm": 118.12764739990234,
+              "y_update_norm": 39.76364517211914,
+              "y_update_state_ratio": 0.4892995059490204,
+              "z_norm": 108.62152862548828,
+              "z_update_norm": 40.35200119018555,
+              "z_update_state_ratio": 0.573050856590271
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 17.378146648406982
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.07407407462596893,
+              "cross_entropy": 16.327713012695312,
+              "entropy": 1.1632863283157349,
+              "finite_difference_initial_state_directional_gain": 2.6896607875823975,
+              "id": "a",
+              "kl_to_final": 0.18188263475894928,
+              "kl_to_next": 0.18188263475894928,
+              "target_count": 27,
+              "y_norm": 153.89878845214844,
+              "y_update_norm": 40.0115852355957,
+              "y_update_state_ratio": 0.3423253297805786,
+              "z_norm": 148.59759521484375,
+              "z_update_norm": 42.026973724365234,
+              "z_update_state_ratio": 0.3881753087043762
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.487688064575195,
+              "entropy": 1.6327828168869019,
+              "finite_difference_initial_state_directional_gain": 2.7643051147460938,
+              "id": "b",
+              "kl_to_final": 0.21278801560401917,
+              "kl_to_next": 0.21278801560401917,
+              "target_count": 9,
+              "y_norm": 156.63601684570312,
+              "y_update_norm": 40.80203628540039,
+              "y_update_state_ratio": 0.34540632367134094,
+              "z_norm": 148.72735595703125,
+              "z_update_norm": 41.78520584106445,
+              "z_update_state_ratio": 0.3846862316131592
+            }
+          ],
+          "ratios_finite": true,
+          "step": 3,
+          "token_weighted_cross_entropy": 16.617706775665283
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.07407407462596893,
+              "cross_entropy": 15.91929817199707,
+              "entropy": 1.2128828763961792,
+              "finite_difference_initial_state_directional_gain": 3.2851004600524902,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 27,
+              "y_norm": 192.1619415283203,
+              "y_update_norm": 40.874610900878906,
+              "y_update_state_ratio": 0.26559409499168396,
+              "z_norm": 190.2779083251953,
+              "z_update_norm": 43.25172805786133,
+              "z_update_state_ratio": 0.29106613993644714
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 17.855323791503906,
+              "entropy": 1.508980631828308,
+              "finite_difference_initial_state_directional_gain": 3.3780102729797363,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 9,
+              "y_norm": 196.20310974121094,
+              "y_update_norm": 41.53718948364258,
+              "y_update_state_ratio": 0.26518288254737854,
+              "z_norm": 189.9801025390625,
+              "z_update_norm": 42.73910903930664,
+              "z_update_state_ratio": 0.28736549615859985
+            }
+          ],
+          "ratios_finite": true,
+          "step": 4,
+          "token_weighted_cross_entropy": 16.40330457687378
+        }
+      ],
+      "post_training_loss": 16.554794311523438,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 15.91929817199707,
+            "ce_previous": 16.327713012695312,
+            "ce_r1": 19.88758087158203,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 17.855323791503906,
+            "ce_previous": 17.487688064575195,
+            "ce_r1": 18.76934051513672,
+            "complete": true,
+            "example_id": "b",
+            "pass": false
+          }
+        ],
+        "expected_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "observed_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "pass": false,
+        "ratios_finite": true
+      },
+      "recursive_steps": 4,
+      "seed": 1,
+      "training_losses": [
+        27.002273559570312,
+        18.250537872314453,
+        18.777624130249023,
+        21.248783111572266
+      ]
+    },
+    {
+      "anytime_evaluation": {
+        "available_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "denoiser_forward_calls": 1
+      },
+      "arm": "residual_delta",
+      "depths": [
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 22.223508834838867,
+              "entropy": 0.1982339769601822,
+              "finite_difference_initial_state_directional_gain": 1.0031405687332153,
+              "id": "a",
+              "kl_to_final": 9.113564491271973,
+              "kl_to_next": 0.8508942127227783,
+              "target_count": 27,
+              "y_norm": 49.9318733215332,
+              "y_update_norm": 15.562061309814453,
+              "y_update_state_ratio": 0.31232529878616333,
+              "z_norm": 40.051021575927734,
+              "z_update_norm": 17.23887825012207,
+              "z_update_state_ratio": 0.4743896424770355
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 19.961078643798828,
+              "entropy": 0.2613069713115692,
+              "finite_difference_initial_state_directional_gain": 1.0089188814163208,
+              "id": "b",
+              "kl_to_final": 9.15660572052002,
+              "kl_to_next": 0.7830445170402527,
+              "target_count": 9,
+              "y_norm": 49.66205596923828,
+              "y_update_norm": 15.332528114318848,
+              "y_update_state_ratio": 0.32220032811164856,
+              "z_norm": 39.26508331298828,
+              "z_update_norm": 15.363081932067871,
+              "z_update_state_ratio": 0.4225241243839264
+            }
+          ],
+          "ratios_finite": true,
+          "step": 1,
+          "token_weighted_cross_entropy": 21.657901287078857
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 16.95480728149414,
+              "entropy": 0.9195356965065002,
+              "finite_difference_initial_state_directional_gain": 1.019128441810608,
+              "id": "a",
+              "kl_to_final": 5.113901615142822,
+              "kl_to_next": 1.9046486616134644,
+              "target_count": 27,
+              "y_norm": 55.06028366088867,
+              "y_update_norm": 17.40972900390625,
+              "y_update_state_ratio": 0.3486696481704712,
+              "z_norm": 49.607242584228516,
+              "z_update_norm": 17.108243942260742,
+              "z_update_state_ratio": 0.42716124653816223
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 16.32780647277832,
+              "entropy": 1.112536907196045,
+              "finite_difference_initial_state_directional_gain": 1.0326310396194458,
+              "id": "b",
+              "kl_to_final": 5.021305561065674,
+              "kl_to_next": 2.1247618198394775,
+              "target_count": 9,
+              "y_norm": 56.564727783203125,
+              "y_update_norm": 17.009366989135742,
+              "y_update_state_ratio": 0.34250226616859436,
+              "z_norm": 47.218658447265625,
+              "z_update_norm": 15.27200984954834,
+              "z_update_state_ratio": 0.3889463245868683
+            }
+          ],
+          "ratios_finite": true,
+          "step": 2,
+          "token_weighted_cross_entropy": 16.798057079315186
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.03703703731298447,
+              "cross_entropy": 14.045299530029297,
+              "entropy": 1.6331441402435303,
+              "finite_difference_initial_state_directional_gain": 1.0412135124206543,
+              "id": "a",
+              "kl_to_final": 0.6070178151130676,
+              "kl_to_next": 0.6070178151130676,
+              "target_count": 27,
+              "y_norm": 65.33638000488281,
+              "y_update_norm": 19.189952850341797,
+              "y_update_state_ratio": 0.3485262393951416,
+              "z_norm": 62.39173889160156,
+              "z_update_norm": 17.408584594726562,
+              "z_update_state_ratio": 0.35092827677726746
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 15.31026840209961,
+              "entropy": 1.6068187952041626,
+              "finite_difference_initial_state_directional_gain": 1.0642565488815308,
+              "id": "b",
+              "kl_to_final": 0.3527182340621948,
+              "kl_to_next": 0.3527182340621948,
+              "target_count": 9,
+              "y_norm": 67.88951110839844,
+              "y_update_norm": 18.60921287536621,
+              "y_update_state_ratio": 0.328989714384079,
+              "z_norm": 58.257633209228516,
+              "z_update_norm": 15.654216766357422,
+              "z_update_state_ratio": 0.3315260708332062
+            }
+          ],
+          "ratios_finite": true,
+          "step": 3,
+          "token_weighted_cross_entropy": 14.361541748046875
+        },
+        {
+          "all_finite": true,
+          "examples": [
+            {
+              "accuracy": 0.03703703731298447,
+              "cross_entropy": 13.017539024353027,
+              "entropy": 1.7760279178619385,
+              "finite_difference_initial_state_directional_gain": 1.0643872022628784,
+              "id": "a",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 27,
+              "y_norm": 79.56890106201172,
+              "y_update_norm": 20.34695053100586,
+              "y_update_state_ratio": 0.3114183843135834,
+              "z_norm": 76.9288558959961,
+              "z_update_norm": 17.73032569885254,
+              "z_update_state_ratio": 0.2841774523258209
+            },
+            {
+              "accuracy": 0.0,
+              "cross_entropy": 15.271915435791016,
+              "entropy": 1.760311245918274,
+              "finite_difference_initial_state_directional_gain": 1.0979477167129517,
+              "id": "b",
+              "kl_to_final": 0.0,
+              "kl_to_next": null,
+              "target_count": 9,
+              "y_norm": 82.49398040771484,
+              "y_update_norm": 19.72962760925293,
+              "y_update_state_ratio": 0.2906137704849243,
+              "z_norm": 71.1520767211914,
+              "z_update_norm": 16.095420837402344,
+              "z_update_state_ratio": 0.2762800455093384
+            }
+          ],
+          "ratios_finite": true,
+          "step": 4,
+          "token_weighted_cross_entropy": 13.581133127212524
+        }
+      ],
+      "post_training_loss": 13.690621376037598,
+      "preregistered_result": {
+        "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+        "depths_complete": true,
+        "eligible": true,
+        "evaluation_unit": "raw_example",
+        "example_rosters_complete": true,
+        "examples": [
+          {
+            "ce_final": 13.017539024353027,
+            "ce_previous": 14.045299530029297,
+            "ce_r1": 22.223508834838867,
+            "complete": true,
+            "example_id": "a",
+            "pass": true
+          },
+          {
+            "ce_final": 15.271915435791016,
+            "ce_previous": 15.31026840209961,
+            "ce_r1": 19.961078643798828,
+            "complete": true,
+            "example_id": "b",
+            "pass": true
+          }
+        ],
+        "expected_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "observed_depths": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "pass": true,
+        "ratios_finite": true
+      },
+      "recursive_steps": 4,
+      "seed": 1,
+      "training_losses": [
+        24.044803619384766,
+        16.23406410217285,
+        15.320108413696289,
+        17.143049240112305
+      ]
+    }
+  ],
+  "evidence_gate": {
+    "allow_dirty": false,
+    "claim_grade": true,
+    "code_dirty": false,
+    "comparable": true,
+    "diff_hash": null
+  },
+  "issue": "SLM-282",
+  "matched_controls": [
+    {
+      "arms": [
+        "as_is",
+        "residual_delta"
+      ],
+      "batch_digests": {
+        "as_is": [
+          {
+            "noisy": "689749fd1d550486f71ee85c4e59b3e29c6e119527549d5b1c5376f8621331fe",
+            "predict_mask": "0546f96345c83424e2c6e193aecd24b42bf7bd5cac3d15e7b7f15e58ab1880d5",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "9538ea6c036855ab57825b0e06cc54be5b364643c2621adfe9605e329422e024",
+            "predict_mask": "153e51950a7f11e6f6afcc86e378a3fc5c1fe8109ac05cbbb5dc981dd95f72da",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "f6c4ae108a601947d6051018056a2bd6976b954641b2c72470e52b17e90bbc51",
+            "predict_mask": "4a26a2ffb9ccd6a1ddde181d008aa4f1f35c886c5cb87e66160ba59defc10bb4",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d19b247cc6935896451d2a81ad65a50f40aceef10492eb3d3703dc5ea29acd30",
+            "predict_mask": "e1f9852b2eb02485a8cd2dcc3c4ce499aae2da908bdcdf3b01e5f17104c49fd3",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ],
+        "residual_delta": [
+          {
+            "noisy": "689749fd1d550486f71ee85c4e59b3e29c6e119527549d5b1c5376f8621331fe",
+            "predict_mask": "0546f96345c83424e2c6e193aecd24b42bf7bd5cac3d15e7b7f15e58ab1880d5",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "9538ea6c036855ab57825b0e06cc54be5b364643c2621adfe9605e329422e024",
+            "predict_mask": "153e51950a7f11e6f6afcc86e378a3fc5c1fe8109ac05cbbb5dc981dd95f72da",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "f6c4ae108a601947d6051018056a2bd6976b954641b2c72470e52b17e90bbc51",
+            "predict_mask": "4a26a2ffb9ccd6a1ddde181d008aa4f1f35c886c5cb87e66160ba59defc10bb4",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d19b247cc6935896451d2a81ad65a50f40aceef10492eb3d3703dc5ea29acd30",
+            "predict_mask": "e1f9852b2eb02485a8cd2dcc3c4ce499aae2da908bdcdf3b01e5f17104c49fd3",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ]
+      },
+      "batches_matched": true,
+      "contracts": {
+        "as_is": {
+          "config_hash": "bb0661f84b525c9c5948f56c8f9dd7d202298969a60ca0e8e38788b9c07928c3",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "1d958be6c6707e793fe3a77a14fbfe81f9e7ba74dbc50bb9c8c7ab521bd6693d",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        },
+        "residual_delta": {
+          "config_hash": "bb0661f84b525c9c5948f56c8f9dd7d202298969a60ca0e8e38788b9c07928c3",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "1d958be6c6707e793fe3a77a14fbfe81f9e7ba74dbc50bb9c8c7ab521bd6693d",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        }
+      },
+      "corruption_seeds": [
+        30000,
+        30001,
+        30002,
+        30003
+      ],
+      "evaluation_corruption_seed": 30004,
+      "matched": true,
+      "mismatches": [],
+      "optimizer_steps": 4,
+      "recursive_steps": 1,
+      "seed": 0
+    },
+    {
+      "arms": [
+        "as_is",
+        "residual_delta"
+      ],
+      "batch_digests": {
+        "as_is": [
+          {
+            "noisy": "689749fd1d550486f71ee85c4e59b3e29c6e119527549d5b1c5376f8621331fe",
+            "predict_mask": "0546f96345c83424e2c6e193aecd24b42bf7bd5cac3d15e7b7f15e58ab1880d5",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "9538ea6c036855ab57825b0e06cc54be5b364643c2621adfe9605e329422e024",
+            "predict_mask": "153e51950a7f11e6f6afcc86e378a3fc5c1fe8109ac05cbbb5dc981dd95f72da",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "f6c4ae108a601947d6051018056a2bd6976b954641b2c72470e52b17e90bbc51",
+            "predict_mask": "4a26a2ffb9ccd6a1ddde181d008aa4f1f35c886c5cb87e66160ba59defc10bb4",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d19b247cc6935896451d2a81ad65a50f40aceef10492eb3d3703dc5ea29acd30",
+            "predict_mask": "e1f9852b2eb02485a8cd2dcc3c4ce499aae2da908bdcdf3b01e5f17104c49fd3",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ],
+        "residual_delta": [
+          {
+            "noisy": "689749fd1d550486f71ee85c4e59b3e29c6e119527549d5b1c5376f8621331fe",
+            "predict_mask": "0546f96345c83424e2c6e193aecd24b42bf7bd5cac3d15e7b7f15e58ab1880d5",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "9538ea6c036855ab57825b0e06cc54be5b364643c2621adfe9605e329422e024",
+            "predict_mask": "153e51950a7f11e6f6afcc86e378a3fc5c1fe8109ac05cbbb5dc981dd95f72da",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "f6c4ae108a601947d6051018056a2bd6976b954641b2c72470e52b17e90bbc51",
+            "predict_mask": "4a26a2ffb9ccd6a1ddde181d008aa4f1f35c886c5cb87e66160ba59defc10bb4",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d19b247cc6935896451d2a81ad65a50f40aceef10492eb3d3703dc5ea29acd30",
+            "predict_mask": "e1f9852b2eb02485a8cd2dcc3c4ce499aae2da908bdcdf3b01e5f17104c49fd3",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ]
+      },
+      "batches_matched": true,
+      "contracts": {
+        "as_is": {
+          "config_hash": "57f17d448fda579818519569fbb05770b9f534924ba643408b78ee7e34c9eb06",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "1d958be6c6707e793fe3a77a14fbfe81f9e7ba74dbc50bb9c8c7ab521bd6693d",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        },
+        "residual_delta": {
+          "config_hash": "57f17d448fda579818519569fbb05770b9f534924ba643408b78ee7e34c9eb06",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "1d958be6c6707e793fe3a77a14fbfe81f9e7ba74dbc50bb9c8c7ab521bd6693d",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        }
+      },
+      "corruption_seeds": [
+        30000,
+        30001,
+        30002,
+        30003
+      ],
+      "evaluation_corruption_seed": 30004,
+      "matched": true,
+      "mismatches": [],
+      "optimizer_steps": 4,
+      "recursive_steps": 2,
+      "seed": 0
+    },
+    {
+      "arms": [
+        "as_is",
+        "residual_delta"
+      ],
+      "batch_digests": {
+        "as_is": [
+          {
+            "noisy": "689749fd1d550486f71ee85c4e59b3e29c6e119527549d5b1c5376f8621331fe",
+            "predict_mask": "0546f96345c83424e2c6e193aecd24b42bf7bd5cac3d15e7b7f15e58ab1880d5",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "9538ea6c036855ab57825b0e06cc54be5b364643c2621adfe9605e329422e024",
+            "predict_mask": "153e51950a7f11e6f6afcc86e378a3fc5c1fe8109ac05cbbb5dc981dd95f72da",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "f6c4ae108a601947d6051018056a2bd6976b954641b2c72470e52b17e90bbc51",
+            "predict_mask": "4a26a2ffb9ccd6a1ddde181d008aa4f1f35c886c5cb87e66160ba59defc10bb4",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d19b247cc6935896451d2a81ad65a50f40aceef10492eb3d3703dc5ea29acd30",
+            "predict_mask": "e1f9852b2eb02485a8cd2dcc3c4ce499aae2da908bdcdf3b01e5f17104c49fd3",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ],
+        "residual_delta": [
+          {
+            "noisy": "689749fd1d550486f71ee85c4e59b3e29c6e119527549d5b1c5376f8621331fe",
+            "predict_mask": "0546f96345c83424e2c6e193aecd24b42bf7bd5cac3d15e7b7f15e58ab1880d5",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "9538ea6c036855ab57825b0e06cc54be5b364643c2621adfe9605e329422e024",
+            "predict_mask": "153e51950a7f11e6f6afcc86e378a3fc5c1fe8109ac05cbbb5dc981dd95f72da",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "f6c4ae108a601947d6051018056a2bd6976b954641b2c72470e52b17e90bbc51",
+            "predict_mask": "4a26a2ffb9ccd6a1ddde181d008aa4f1f35c886c5cb87e66160ba59defc10bb4",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d19b247cc6935896451d2a81ad65a50f40aceef10492eb3d3703dc5ea29acd30",
+            "predict_mask": "e1f9852b2eb02485a8cd2dcc3c4ce499aae2da908bdcdf3b01e5f17104c49fd3",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ]
+      },
+      "batches_matched": true,
+      "contracts": {
+        "as_is": {
+          "config_hash": "4ca12860024447445d1c845253acfb229a5d987d2eb269d19d2b81d766857e23",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "1d958be6c6707e793fe3a77a14fbfe81f9e7ba74dbc50bb9c8c7ab521bd6693d",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        },
+        "residual_delta": {
+          "config_hash": "4ca12860024447445d1c845253acfb229a5d987d2eb269d19d2b81d766857e23",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "1d958be6c6707e793fe3a77a14fbfe81f9e7ba74dbc50bb9c8c7ab521bd6693d",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        }
+      },
+      "corruption_seeds": [
+        30000,
+        30001,
+        30002,
+        30003
+      ],
+      "evaluation_corruption_seed": 30004,
+      "matched": true,
+      "mismatches": [],
+      "optimizer_steps": 4,
+      "recursive_steps": 4,
+      "seed": 0
+    },
+    {
+      "arms": [
+        "as_is",
+        "residual_delta"
+      ],
+      "batch_digests": {
+        "as_is": [
+          {
+            "noisy": "e8ed57210d3f0c4fb82af21b9675fc21db3c595a5b888906982786b88fedaf32",
+            "predict_mask": "498182d2e79a41cfb498375436744b2ebcf796d43bc7497e67bad311bc15ba16",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "abb468636a1d55846221e977ef49e4abc09fdd5b29d60aaa6cb102509c452b3c",
+            "predict_mask": "363102534095b5d79853e47bc2733ee03d90427eed0fbe5a5efc257f7d3948e8",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d9f9ab091e6f92da7c38a135c9b2a5c42edd01ad335b710c1d1b4ef6a93ffc7d",
+            "predict_mask": "7c59269b8a346ec53167db8541a924cb6df7e6f632b0a3fa832a4f79031cc47d",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "a6084baf1f3030b58550851772df5ee90559ccc4e71af96c5197ea8205a5e15e",
+            "predict_mask": "3695cfc8ce9369539345b66fbfc7bcd1ede2662040d398681d464cdbca0b2fc0",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ],
+        "residual_delta": [
+          {
+            "noisy": "e8ed57210d3f0c4fb82af21b9675fc21db3c595a5b888906982786b88fedaf32",
+            "predict_mask": "498182d2e79a41cfb498375436744b2ebcf796d43bc7497e67bad311bc15ba16",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "abb468636a1d55846221e977ef49e4abc09fdd5b29d60aaa6cb102509c452b3c",
+            "predict_mask": "363102534095b5d79853e47bc2733ee03d90427eed0fbe5a5efc257f7d3948e8",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d9f9ab091e6f92da7c38a135c9b2a5c42edd01ad335b710c1d1b4ef6a93ffc7d",
+            "predict_mask": "7c59269b8a346ec53167db8541a924cb6df7e6f632b0a3fa832a4f79031cc47d",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "a6084baf1f3030b58550851772df5ee90559ccc4e71af96c5197ea8205a5e15e",
+            "predict_mask": "3695cfc8ce9369539345b66fbfc7bcd1ede2662040d398681d464cdbca0b2fc0",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ]
+      },
+      "batches_matched": true,
+      "contracts": {
+        "as_is": {
+          "config_hash": "96f3cb6328f4d3be6ab9e9f003cbb07f55bdc96f022f6381d99ab04a1e59f988",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "a9a8e38195d1340ebf4f707c2e07aabfea0b9ed54b2367491a66884492b90832",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        },
+        "residual_delta": {
+          "config_hash": "96f3cb6328f4d3be6ab9e9f003cbb07f55bdc96f022f6381d99ab04a1e59f988",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "a9a8e38195d1340ebf4f707c2e07aabfea0b9ed54b2367491a66884492b90832",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        }
+      },
+      "corruption_seeds": [
+        31000,
+        31001,
+        31002,
+        31003
+      ],
+      "evaluation_corruption_seed": 31004,
+      "matched": true,
+      "mismatches": [],
+      "optimizer_steps": 4,
+      "recursive_steps": 1,
+      "seed": 1
+    },
+    {
+      "arms": [
+        "as_is",
+        "residual_delta"
+      ],
+      "batch_digests": {
+        "as_is": [
+          {
+            "noisy": "e8ed57210d3f0c4fb82af21b9675fc21db3c595a5b888906982786b88fedaf32",
+            "predict_mask": "498182d2e79a41cfb498375436744b2ebcf796d43bc7497e67bad311bc15ba16",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "abb468636a1d55846221e977ef49e4abc09fdd5b29d60aaa6cb102509c452b3c",
+            "predict_mask": "363102534095b5d79853e47bc2733ee03d90427eed0fbe5a5efc257f7d3948e8",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d9f9ab091e6f92da7c38a135c9b2a5c42edd01ad335b710c1d1b4ef6a93ffc7d",
+            "predict_mask": "7c59269b8a346ec53167db8541a924cb6df7e6f632b0a3fa832a4f79031cc47d",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "a6084baf1f3030b58550851772df5ee90559ccc4e71af96c5197ea8205a5e15e",
+            "predict_mask": "3695cfc8ce9369539345b66fbfc7bcd1ede2662040d398681d464cdbca0b2fc0",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ],
+        "residual_delta": [
+          {
+            "noisy": "e8ed57210d3f0c4fb82af21b9675fc21db3c595a5b888906982786b88fedaf32",
+            "predict_mask": "498182d2e79a41cfb498375436744b2ebcf796d43bc7497e67bad311bc15ba16",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "abb468636a1d55846221e977ef49e4abc09fdd5b29d60aaa6cb102509c452b3c",
+            "predict_mask": "363102534095b5d79853e47bc2733ee03d90427eed0fbe5a5efc257f7d3948e8",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d9f9ab091e6f92da7c38a135c9b2a5c42edd01ad335b710c1d1b4ef6a93ffc7d",
+            "predict_mask": "7c59269b8a346ec53167db8541a924cb6df7e6f632b0a3fa832a4f79031cc47d",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "a6084baf1f3030b58550851772df5ee90559ccc4e71af96c5197ea8205a5e15e",
+            "predict_mask": "3695cfc8ce9369539345b66fbfc7bcd1ede2662040d398681d464cdbca0b2fc0",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ]
+      },
+      "batches_matched": true,
+      "contracts": {
+        "as_is": {
+          "config_hash": "4ab517ce3a5f8106174b3550b3d222613f428bde63b8d07c568cc286542f5903",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "a9a8e38195d1340ebf4f707c2e07aabfea0b9ed54b2367491a66884492b90832",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        },
+        "residual_delta": {
+          "config_hash": "4ab517ce3a5f8106174b3550b3d222613f428bde63b8d07c568cc286542f5903",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "a9a8e38195d1340ebf4f707c2e07aabfea0b9ed54b2367491a66884492b90832",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        }
+      },
+      "corruption_seeds": [
+        31000,
+        31001,
+        31002,
+        31003
+      ],
+      "evaluation_corruption_seed": 31004,
+      "matched": true,
+      "mismatches": [],
+      "optimizer_steps": 4,
+      "recursive_steps": 2,
+      "seed": 1
+    },
+    {
+      "arms": [
+        "as_is",
+        "residual_delta"
+      ],
+      "batch_digests": {
+        "as_is": [
+          {
+            "noisy": "e8ed57210d3f0c4fb82af21b9675fc21db3c595a5b888906982786b88fedaf32",
+            "predict_mask": "498182d2e79a41cfb498375436744b2ebcf796d43bc7497e67bad311bc15ba16",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "abb468636a1d55846221e977ef49e4abc09fdd5b29d60aaa6cb102509c452b3c",
+            "predict_mask": "363102534095b5d79853e47bc2733ee03d90427eed0fbe5a5efc257f7d3948e8",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d9f9ab091e6f92da7c38a135c9b2a5c42edd01ad335b710c1d1b4ef6a93ffc7d",
+            "predict_mask": "7c59269b8a346ec53167db8541a924cb6df7e6f632b0a3fa832a4f79031cc47d",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "a6084baf1f3030b58550851772df5ee90559ccc4e71af96c5197ea8205a5e15e",
+            "predict_mask": "3695cfc8ce9369539345b66fbfc7bcd1ede2662040d398681d464cdbca0b2fc0",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ],
+        "residual_delta": [
+          {
+            "noisy": "e8ed57210d3f0c4fb82af21b9675fc21db3c595a5b888906982786b88fedaf32",
+            "predict_mask": "498182d2e79a41cfb498375436744b2ebcf796d43bc7497e67bad311bc15ba16",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "abb468636a1d55846221e977ef49e4abc09fdd5b29d60aaa6cb102509c452b3c",
+            "predict_mask": "363102534095b5d79853e47bc2733ee03d90427eed0fbe5a5efc257f7d3948e8",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "d9f9ab091e6f92da7c38a135c9b2a5c42edd01ad335b710c1d1b4ef6a93ffc7d",
+            "predict_mask": "7c59269b8a346ec53167db8541a924cb6df7e6f632b0a3fa832a4f79031cc47d",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          },
+          {
+            "noisy": "a6084baf1f3030b58550851772df5ee90559ccc4e71af96c5197ea8205a5e15e",
+            "predict_mask": "3695cfc8ce9369539345b66fbfc7bcd1ede2662040d398681d464cdbca0b2fc0",
+            "targets": "564f23fd6c98038bc0f684f24f7b4bd0d59d97a73df42cd63dd4ff2e734c1bb4"
+          }
+        ]
+      },
+      "batches_matched": true,
+      "contracts": {
+        "as_is": {
+          "config_hash": "86db68a9828d7c4155378f1c52df5ce79374e94110a46acda96526f97e4e58d4",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "a9a8e38195d1340ebf4f707c2e07aabfea0b9ed54b2367491a66884492b90832",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        },
+        "residual_delta": {
+          "config_hash": "86db68a9828d7c4155378f1c52df5ce79374e94110a46acda96526f97e4e58d4",
+          "data_record_hash": "3ab89760f743181f246b29693a74b668467a80993a1c7300990002eab7d2254e",
+          "optimizer": {
+            "groups": [
+              {
+                "amsgrad": false,
+                "betas": [
+                  0.9,
+                  0.999
+                ],
+                "eps": 1e-08,
+                "lr": 0.001,
+                "maximize": false,
+                "parameter_names": [
+                  "context.encoder.tok.weight",
+                  "context.encoder.pos.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.weight",
+                  "context.encoder.layers.0.self_attn.q_proj.bias",
+                  "context.encoder.layers.0.self_attn.k_proj.weight",
+                  "context.encoder.layers.0.self_attn.k_proj.bias",
+                  "context.encoder.layers.0.self_attn.v_proj.weight",
+                  "context.encoder.layers.0.self_attn.v_proj.bias",
+                  "context.encoder.layers.0.self_attn.out_proj.weight",
+                  "context.encoder.layers.0.self_attn.out_proj.bias",
+                  "context.encoder.layers.0.norm1.weight",
+                  "context.encoder.layers.0.mlp.0.weight",
+                  "context.encoder.layers.0.mlp.0.bias",
+                  "context.encoder.layers.0.mlp.2.weight",
+                  "context.encoder.layers.0.mlp.2.bias",
+                  "context.encoder.layers.0.norm2.weight",
+                  "context.encoder.norm.weight",
+                  "denoiser.z_latent",
+                  "denoiser.tok.weight",
+                  "denoiser.pos.weight",
+                  "denoiser.layers.0.self_attn.q_proj.weight",
+                  "denoiser.layers.0.self_attn.q_proj.bias",
+                  "denoiser.layers.0.self_attn.k_proj.weight",
+                  "denoiser.layers.0.self_attn.k_proj.bias",
+                  "denoiser.layers.0.self_attn.v_proj.weight",
+                  "denoiser.layers.0.self_attn.v_proj.bias",
+                  "denoiser.layers.0.self_attn.out_proj.weight",
+                  "denoiser.layers.0.self_attn.out_proj.bias",
+                  "denoiser.layers.0.norm1.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.weight",
+                  "denoiser.layers.0.cross_attn.q_proj.bias",
+                  "denoiser.layers.0.cross_attn.k_proj.weight",
+                  "denoiser.layers.0.cross_attn.k_proj.bias",
+                  "denoiser.layers.0.cross_attn.v_proj.weight",
+                  "denoiser.layers.0.cross_attn.v_proj.bias",
+                  "denoiser.layers.0.cross_attn.out_proj.weight",
+                  "denoiser.layers.0.cross_attn.out_proj.bias",
+                  "denoiser.layers.0.norm_cross.weight",
+                  "denoiser.layers.0.mlp.0.weight",
+                  "denoiser.layers.0.mlp.0.bias",
+                  "denoiser.layers.0.mlp.2.weight",
+                  "denoiser.layers.0.mlp.2.bias",
+                  "denoiser.layers.0.norm2.weight",
+                  "denoiser.layers.1.self_attn.q_proj.weight",
+                  "denoiser.layers.1.self_attn.q_proj.bias",
+                  "denoiser.layers.1.self_attn.k_proj.weight",
+                  "denoiser.layers.1.self_attn.k_proj.bias",
+                  "denoiser.layers.1.self_attn.v_proj.weight",
+                  "denoiser.layers.1.self_attn.v_proj.bias",
+                  "denoiser.layers.1.self_attn.out_proj.weight",
+                  "denoiser.layers.1.self_attn.out_proj.bias",
+                  "denoiser.layers.1.norm1.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.weight",
+                  "denoiser.layers.1.cross_attn.q_proj.bias",
+                  "denoiser.layers.1.cross_attn.k_proj.weight",
+                  "denoiser.layers.1.cross_attn.k_proj.bias",
+                  "denoiser.layers.1.cross_attn.v_proj.weight",
+                  "denoiser.layers.1.cross_attn.v_proj.bias",
+                  "denoiser.layers.1.cross_attn.out_proj.weight",
+                  "denoiser.layers.1.cross_attn.out_proj.bias",
+                  "denoiser.layers.1.norm_cross.weight",
+                  "denoiser.layers.1.mlp.0.weight",
+                  "denoiser.layers.1.mlp.0.bias",
+                  "denoiser.layers.1.mlp.2.weight",
+                  "denoiser.layers.1.mlp.2.bias",
+                  "denoiser.layers.1.norm2.weight",
+                  "denoiser.norm.weight",
+                  "denoiser.ctx_proj.weight",
+                  "denoiser.ctx_proj.bias",
+                  "trust_gate.proj.weight",
+                  "trust_gate.proj.bias",
+                  "survival_head.proj.weight",
+                  "survival_head.proj.bias"
+                ],
+                "weight_decay": 0.01
+              }
+            ],
+            "initial_state_empty": true
+          },
+          "state_digest": "a9a8e38195d1340ebf4f707c2e07aabfea0b9ed54b2367491a66884492b90832",
+          "tokenizer_hash": "0e6cc0147f70a3af3bbd4c433dc2a5b0e679b6629e5a8b7cf46141c8e9e427e8"
+        }
+      },
+      "corruption_seeds": [
+        31000,
+        31001,
+        31002,
+        31003
+      ],
+      "evaluation_corruption_seed": 31004,
+      "matched": true,
+      "mismatches": [],
+      "optimizer_steps": 4,
+      "recursive_steps": 4,
+      "seed": 1
+    }
+  ],
+  "matrix_set": "slm282-recurrence-health",
+  "matrix_version": "slm282-v1",
+  "note": "Fixture-only recurrence diagnostic. residual_delta is not a production default and this report is never a ship claim.",
+  "preregistration": {
+    "arms": [
+      "as_is",
+      "residual_delta"
+    ],
+    "condition": "CE(final) <= CE(previous) <= CE(r=1)",
+    "primary_arm": "as_is",
+    "recursive_steps": [
+      1,
+      2,
+      4
+    ],
+    "required_seed_passes": 2,
+    "residual_delta_is_fixture_only": true,
+    "seeds": [
+      0,
+      1
+    ]
+  },
+  "production_default_changed": false,
+  "recipe": {
+    "backend": "scratch",
+    "data": "synthetic_fixture",
+    "device": "cpu",
+    "finite_difference_epsilon": 0.001,
+    "honesty_mode": "fixture_diagnostic_not_ship",
+    "learning_rate": 0.001,
+    "max_wall_minutes": 2.0,
+    "optimizer": "AdamW",
+    "optimizer_steps": 4,
+    "suite_n": 2,
+    "training_objective": "final_depth_masked_cross_entropy"
+  },
+  "rng_contract": {
+    "per_seed_namespaces": {
+      "0": {
+        "arch_specific:shared_recursive": 70000,
+        "arch_specific:shared_recursive_no_extra_capacity": 90000,
+        "arch_specific:shared_recursive_y_only": 80000,
+        "arch_specific:stacked": 60000,
+        "arch_specific:stacked_depth_matched": 100000,
+        "arch_specific:stacked_matched_state": 110000,
+        "control_only": 50000,
+        "model_initialization": 0,
+        "shape_probe_context": 20000,
+        "shape_probe_inputs": 10000,
+        "training_batch_order": 40000,
+        "training_corruption": 30000
+      },
+      "1": {
+        "arch_specific:shared_recursive": 70001,
+        "arch_specific:shared_recursive_no_extra_capacity": 90001,
+        "arch_specific:shared_recursive_y_only": 80001,
+        "arch_specific:stacked": 60001,
+        "arch_specific:stacked_depth_matched": 100001,
+        "arch_specific:stacked_matched_state": 110001,
+        "control_only": 50001,
+        "model_initialization": 1,
+        "shape_probe_context": 20001,
+        "shape_probe_inputs": 10001,
+        "training_batch_order": 40001,
+        "training_corruption": 30001
+      }
+    },
+    "version": "FixtureRngContractV1"
+  },
+  "run_id": "slm282_recurrence_health",
+  "schema": "RecurrenceHealthReportV1",
+  "ship_gate_claim": false,
+  "status": "fixture_only",
+  "summary": {
+    "controls_matched": true,
+    "disposition": "recursive_core_negative",
+    "passed_seed_count": 1,
+    "primary_arm": "as_is",
+    "required_seed_passes": 2,
+    "residual_delta_can_promote": false,
+    "schedule_complete": true,
+    "seed_results": [
+      {
+        "pass": true,
+        "recursive_steps": [
+          2,
+          4
+        ],
+        "seed": 0
+      },
+      {
+        "pass": false,
+        "recursive_steps": [
+          2,
+          4
+        ],
+        "seed": 1
+      }
+    ],
+    "telemetry_finite": true
+  },
+  "version_stamp": {
+    "code_commit": "c81dc0c5b53a092b7a368e5158bceaddef7b70ef",
+    "code_dirty": false,
+    "components": {
+      "evals.scoring": "v14",
+      "model.recursive_denoiser": "v15",
+      "model.twotower": "v226"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T03:51:04.147441+00:00"
+  }
+}

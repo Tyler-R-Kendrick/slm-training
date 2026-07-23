@@ -3770,9 +3770,16 @@
         "docs/design/iter-slm138-recursive-denoiser-20260723.json",
         "docs/design/iter-slm138-recursive-denoiser-20260723.md",
         "docs/design/iter-slm279-depth-supervision-correction-20260723.json",
-        "docs/design/iter-slm279-depth-supervision-correction-20260723.md"
+        "docs/design/iter-slm279-depth-supervision-correction-20260723.md",
+        "docs/design/iter-slm282-recurrence-health-20260723.json",
+        "docs/design/iter-slm282-recurrence-health-20260723.md"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "no-bump: register the clean squash-merged v15 SLM-282 negative recurrence-health JSON and markdown, superseding the withdrawn unmerged v14 positive artifact after raw-example gating exposed the seed-1 regression"
+        },
         {
           "version": "v15",
           "date": "2026-07-23",

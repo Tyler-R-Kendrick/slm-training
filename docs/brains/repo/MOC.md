@@ -51,3 +51,5 @@ hypothesis loop's novelty audit can exclude them.
 
 - _(seed)_ E249 / E252 local-preference chain — negative; see
   [`research-lineage.md`](../../design/research-lineage.md) "Exact-state local decision preference".
+- [[recursive-recurrence-health]] — negative: seed 1 / R=4 / example `b`
+  regressed at the final depth, so the LAR3 activation prerequisite failed.

@@ -12,6 +12,11 @@ Prioritize:
 8. Recursive-denoiser objective semantics: final-depth primary versus explicit
    intermediate/all-depth auxiliary modes, checkpoint migration boundaries, and
    the correction-only SLM-279 evidence under `docs/design/`.
+9. Recursive-denoiser health diagnostics: opt-in raw per-depth state/update and
+   prediction telemetry, historical `as_is` versus fixture-only
+   `residual_delta`, one-forward anytime-depth curves, the exact preregistered
+   disposition, and the SLM-282 boundary that fixture success is neither a
+   contraction proof nor a quality/ship claim.
 
 Ground pages in repository structure and measured results under `docs/design/`. Prefer practical navigation over generic summaries. Prefer linking existing design docs over rewriting them.
 
