@@ -19,6 +19,17 @@ from slm_training.harnesses.experiments.slm214_spectral_snapshot import (
     sample_null_summary,
 )
 
+
+@pytest.mark.parametrize("initializer", ["xavier_uniform", "kaiming_uniform"])
+def test_uniform_null_initializers_are_deterministic(initializer: str) -> None:
+    from slm_training.harnesses.experiments.slm214_spectral_snapshot import (
+        sample_null_summary,
+    )
+
+    left = sample_null_summary(16, 16, torch.float32, initializer, draws=3)
+    right = sample_null_summary(16, 16, torch.float32, initializer, draws=3)
+    assert left == right
+
 pytest.importorskip("torch")
 
 

@@ -1133,7 +1133,7 @@ and the canonical meaning-v2, anti-gaming, and AgentV owners; missing identities
 fail closed instead of being inferred from fixture filenames.
 
 The current verdict is **`inconclusive`** at gate hash
-`6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a`.
+`7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d`.
 Constraint-debt, structural, spectral, and recurrent/latent diagnostics remain
 allowed as proxies, but NCS/RSC manifests must carry this hash and cannot make
 semantic prediction/control claims. The SLM-215 spectral atlas and SLM-229
@@ -1141,6 +1141,34 @@ looped-latent audit now consume the gate directly; SLM-229 remains
 `blocked_by_recurrence` as well. No new training, decoder experiment, metric
 change, or promotion was performed. Generated narrative:
 [`semantic-floor-gate-v1.md`](semantic-floor-gate-v1.md).
+
+## Fixed-token spectral-regime gate (NCS0-03 / SLM-216)
+
+**Fidelity label: adapted.** [Yang et al.
+(2021)](https://jmlr.org/papers/v22/20-410.html) motivate batch size as an
+optimization-noise dial and null-calibrated spectral trajectories as
+diagnostics. The bounded implementation reuses the canonical
+`SpectralSnapshotV1` owner; it does not claim the paper's production-scale
+model, data, or training regime.
+
+| | |
+| --- | --- |
+| **Lineage** | batch-size/optimization-noise controls; same-shape randomized ESD nulls; fixed-token exposure accounting |
+| **Fidelity** | **Adapted diagnostic** — deterministic 16×16 CPU scratch model, not the serving TwoTower checkpoint |
+| **Code** | `src/slm_training/harnesses/experiments/slm216_spectral_regime.py`, `scripts/run_spectral_regime_matrix.py` |
+| **Config** | six frozen cells, three seeds, 1,280 target tokens/cell, snapshots at 0/640/1,280 tokens, five null draws |
+
+The 18-cell measured report is `inconclusive` at report hash
+`7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675`.
+The scratch controls show lower final randomized-ESD distance for genuinely
+diverse 5×/10× data than for the duplicated-data control; direct batch 8 and
+physical batch 2 with accumulation 4 are exactly trajectory/state equivalent.
+The fixed-token batch-2/batch-8 contrast necessarily changes optimizer-step
+count, so it cannot authorize a batch-causal claim. No current-model checkpoint,
+canonical model evaluation, AgentV run, promotion, or ship claim was produced.
+Spectral diagnostics remain allowed; spectral LR/RG control, semantic,
+promotion, and ship claims remain blocked. Evidence:
+[`iter-slm216-spectral-regime-20260723.md`](iter-slm216-spectral-regime-20260723.md).
 
 ## Honesty rules (for docs & claims)
 

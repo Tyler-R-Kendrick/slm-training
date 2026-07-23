@@ -26,13 +26,19 @@ file or passing partial board cannot bypass this requirement. See
 Semantic prediction/control claims have an additional fail-closed prerequisite:
 [`SemanticFloorGateV1`](design/semantic-floor-gate-v1.json), currently
 `inconclusive` at gate hash
-`6a9bf662bcc3f2a698504f0972a1d1160484343f9f049c77808b435bfe739c0a`.
+`7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d`.
 The SDE5 bundle contains fixture/proxy evidence but no durable checkpoint,
 preregistered strict meaning-v2 evaluation, executed anti-gaming result, paired
 semantic statistics, or AgentV bundle. Spectral and recurrent/latent work may
 continue as explicitly scoped diagnostics; `semantic_prediction`,
 `semantic_causal`, and `learned_latent` claims remain blocked. See the
 [generated closeout](design/semantic-floor-gate-v1.md).
+
+The SLM-216 fixed-token spectral-regime matrix is also diagnostic-only and
+`inconclusive`: it trained a bounded CPU scratch model, wrote no reusable
+checkpoint, and did not run a canonical model/AgentV evaluation. It therefore
+does not change this roster or authorize spectral optimizer, promotion, or ship
+claims. See the [measured result](design/iter-slm216-spectral-regime-20260723.md).
 
 Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 [checkpoint-provenance.md](design/checkpoint-provenance.md),
