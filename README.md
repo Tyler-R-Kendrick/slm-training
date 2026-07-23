@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E1045 typed binder-candidate scratch diagnostic | `e1045_v270_typed_binder_candidates/last.pt` | `outputs/runs/...` (local) | 395 fresh E937 steps / 95.16s; E1047-E1051 held diagnostics strict-v2 0.6 / fidelity 0.6667 / recall 0.5333 / one timeout, AgentV 0/6 — v270 retained, checkpoint rejected and never use as parent |
 | E1029 joint detached binder-plans scratch diagnostic | `e1029_v268_joint_binder_plans/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 54.83s; v269 makes the component head reachable before declaration, but weight 1 leaves held unchanged and weight 4 regresses held parse to 0.4 with three timeouts; AgentV 0/14 — scalar sweep closed, never use as parent |
 | E1026 detached binder-component scratch diagnostic | `e1026-role-safe-binder-component-detached450-v268-r1/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 38.82s; E1028 held is prediction-identical to E1022 with zero head applications, AgentV 0/2 — v268 isolation retained, checkpoint rejected |
 | E1023 low-weight binder-component scratch diagnostic | `e1023-role-safe-binder-component025-450-v267-r1/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 49.07s; E1025 held strict-v2 0.4 / fidelity 0.4733 / recall 0.3619 / one timeout / four fallbacks, AgentV 0/2 — rejected, scalar sweep closed |

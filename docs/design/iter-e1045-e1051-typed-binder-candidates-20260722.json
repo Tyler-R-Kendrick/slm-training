@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1045-E1051",
+  "date": "2026-07-22",
+  "decision": "retain_v270_reject_checkpoint",
+  "role_contract_audit": {
+    "train_data": "e937_role_safe_all_targets_v2",
+    "eval_data": "e938_role_safe_all_targets_v2",
+    "targets_checked": 1214,
+    "violations": 0
+  },
+  "runs": {
+    "E1045": {
+      "status": "completed_rejected",
+      "run_id": "e1045_v270_typed_binder_candidates",
+      "steps_requested": 450,
+      "steps_completed": 395,
+      "stopped_on": "wall_time_budget",
+      "max_wall_minutes": 1.5833333333333333,
+      "elapsed_wall_seconds": 95.1601057600019,
+      "batch_size": 4,
+      "examples": 1580,
+      "last_loss": 8.949901580810547,
+      "binder_component_plan_loss_last": 0.9042730331420898,
+      "binder_component_plan_accuracy_last": 0.7692307829856873,
+      "binder_component_plan_candidate_count_last": 15.461538461538462,
+      "binder_component_plan_loss_last_50_mean": 1.8523229920864106,
+      "binder_component_plan_accuracy_last_50_mean": 0.4303741505742073,
+      "binder_arity_loss_last": 1.1607388257980347,
+      "binder_arity_accuracy_last": 0.5,
+      "checkpoint_sha256": "dc39d2f12391af21be7aeeefad42fca3ff45b01f32dfc2b43dcdb6481a22eef1",
+      "checkpoint_sync": "disabled_scratch",
+      "initialized_from": null
+    },
+    "E1046": {
+      "status": "completed_rejected_by_held",
+      "run_id": "e1046_v270_typed_binder_candidates_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 1.0,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5658333333333333,
+      "component_recall": 0.75,
+      "reward": 0.961,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "agentv": "0/1"
+    },
+    "E1047_E1051": {
+      "status": "completed_rejected_diagnostic_subsets",
+      "run_ids": [
+        "e1047_v270_typed_binder_candidates_form",
+        "e1048_v270_typed_binder_candidates_dual_card",
+        "e1049_v270_typed_binder_candidates_input",
+        "e1050_v270_typed_binder_candidates_tabs",
+        "e1051_v270_typed_binder_candidates_settings"
+      ],
+      "suite": "held_out",
+      "subset_protocol": "five completed one-row diagnostic subsets under identical policy",
+      "canonical_full_suite_scoreboard": false,
+      "n": 5,
+      "parse": 0.8,
+      "meaning_v1": 0.6,
+      "strict_v2": 0.6,
+      "fidelity": 0.6666666666666667,
+      "structural_similarity": 0.37616,
+      "component_recall": 0.5333333333333333,
+      "reward": 0.7132,
+      "decode_timeouts": 1,
+      "fallback_count": 3,
+      "binder_component_plan_applications_non_timeout_rows": 30,
+      "binder_component_plan_choice_changes": 4,
+      "binder_arity_applications_non_timeout_rows": 30,
+      "binder_arity_choice_changes_non_timeout_rows": 12,
+      "agentv": "0/5"
+    }
+  },
+  "disposition": {
+    "v270_capability_retained": true,
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "next_hypothesis": "isolate remaining untyped rows or binder-arity interaction"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b8863f4a2bb83036a3f5d7dabfaef8fab4b6fc2d",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v39",
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v270"
+    }
+  }
+}

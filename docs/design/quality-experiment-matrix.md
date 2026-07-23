@@ -6703,3 +6703,15 @@ regress to parse/strict/fidelity/structure/recall/reward
 weight 4, close the scalar sweep, and change the declaration supervision or
 representation next. See
 `iter-e1039-e1044-predeclaration-weight4-20260722.md`.
+
+### E1045-E1051: typed binder-component candidates (harness retained)
+
+v270 restricts each binder-component training row to classes permitted by the
+binder's schema-typed use sites. E1045 completes 395 fresh E937 steps inside
+its 95-second budget; final candidate count/loss/accuracy are
+15.46/0.9043/0.7692. E1046 smoke reaches strict-v2 1.0, structure 0.5658, and
+recall 0.75. Five completed one-row held diagnostics improve over v268 to
+parse/strict/fidelity/structure/recall/reward
+0.8/0.6/0.6667/0.3762/0.5333/0.7132 with one timeout and three fallbacks, but
+remain below E996. Retain v270 and reject the checkpoint; never use it as a
+parent. See `iter-e1045-e1051-typed-binder-candidates-20260722.md`.
