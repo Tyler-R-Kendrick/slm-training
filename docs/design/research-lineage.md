@@ -1351,6 +1351,28 @@ conflicting parent-order edits fail with stable codes before operator
 execution. Evidence and scope:
 [`dsh3-03-permutation-invariant-references-20260723.md`](dsh3-03-permutation-invariant-references-20260723.md).
 
+## Core local OpenUI operators (DSH3-04 / SLM-372)
+
+**Fidelity label: adapted executable contract.** The six local edits adapt the
+explicit transformation/action inventories in
+[Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205) and
+[Allamanis et al., 2019](https://arxiv.org/abs/1810.13337) to OpenUI's
+pack-owned compiler boundary. They do not reproduce either model architecture
+or make a learned policy authoritative for legality.
+
+| | |
+| --- | --- |
+| **Inventory** | add/remove/replace node, set/unset property, reorder children |
+| **Legality** | component-schema roles, child compatibility, required properties, exact permutations, state-bound ordered indices |
+| **Authority** | canonical statement-binding rewrite followed by all ordinary OpenUI pack checks |
+| **Controls** | exhaustive small-state insertion/order fixtures, inverse identity, locality diff, opaque-ref permutation, stable rejection cases |
+
+Unsupported binding-graph removal, positional optional-property holes, v0.5
+programs, and schema behavior that cannot be represented exactly fail closed.
+No text-replacement fallback or learned legality path exists. Evidence and
+scope:
+[`dsh3-04-core-local-operators-20260723.md`](dsh3-04-core-local-operators-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
