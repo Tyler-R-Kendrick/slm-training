@@ -1,4 +1,4 @@
-# E939-E974: role-safe decoding, aligned training, and bounded nesting
+# E939-E975: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -53,6 +53,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E973 | E972 weighted-mixture scratch / held_out | 5 | 1.0000 | 0.8000 | 0.4000 | 0.8333 | 0.3961 | 0.8286 | 0.9152 | 0 / 2 | 0/2 campaign |
 | E974 | E951 visible-reference penalty 4 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E974 | E951 visible-reference penalty 4 / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
+| E975 | E951 visible-reference penalty 1 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E975 | E951 visible-reference penalty 1 / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -181,3 +183,8 @@ overcorrects: held strict falls from E968's 0.8 to 0.6, fidelity to 0.6833,
 recall to 0.6286, reward to 0.8324, and fallbacks rise from three to four. The
 Tabs and Form cases collapse to a one-slot TextContent fallback. Reject weight
 4; do not weaken strict meaning or promote the treatment.
+
+E975 lowers the same penalty to 1. It activates 13 times and changes only one
+held-out choice, but every aggregate and fallback count is identical to E974.
+The first choice flip is already harmful, so this is not a useful monotonic
+weight sweep. Reject the generic reuse penalty rather than tune it further.

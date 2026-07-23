@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E974 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E975 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6559,3 +6559,6 @@ path without removing any legal topology action. Weight 4 changes three held
 choices but regresses held strict 0.8 → 0.6, fidelity 0.8333 → 0.6833, recall
 0.6952 → 0.6286, reward 0.8834 → 0.8324, and fallbacks 3 → 4. Reject this
 weight; the strict metric correctly exposes the Form/Tabs fallback collapse.
+E975 lowers the weight to 1; only one choice changes, but all held metrics and
+the four-fallback count remain identical. Reject the generic penalty rather
+than continue a non-monotonic sweep.
