@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E979 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E984 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6572,3 +6572,12 @@ one-slot fallback and held strict remains 0.6 with four fallbacks. Withdraw the
 complete reservation treatment.
 E979 withdraws the treatment under v262 and exactly restores all E976/E968
 aggregates. Future work must target the upstream binder-arity choice.
+E980 trains that head from scratch for 450 weighted E937 steps in 36.93s with
+no parent and no sync. The combined E981 campaign is invalid because it stops
+after smoke and emits no final scoreboard/AgentV campaign bundle. Separate
+bounded runs show that arity decode weight 1 (E982) improves held fidelity,
+structure, and reward to 0.8833/0.5038/0.9284, but strict-v2 stays 0.4, recall
+falls to 0.7190, and cross-parent Tabs binder reuse remains. With decode weight
+0, E983-E984 still time out on smoke and held parse/strict/reward fall to
+0.8/0.2/0.7224. Reject E980 and never use it as a parent; E979 remains the
+stronger strict decoder result.

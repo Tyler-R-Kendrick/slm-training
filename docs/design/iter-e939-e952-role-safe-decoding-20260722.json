@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E979",
+  "experiment_id": "E939-E984",
   "date": "2026-07-22",
-  "decision": "retain_role_depth_and_training_entrypoint_constraints_keep_e951_diagnostic_only",
+  "decision": "retain_role_depth_and_training_entrypoint_constraints_reject_e980_binder_arity_scratch",
   "train_data": "e937_role_safe_all_targets_v2",
   "eval_data": "e938_role_safe_all_targets_v2",
   "runs": {
@@ -43,25 +43,31 @@
     "E976": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v259", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2", "parity_with": "E968"},
     "E977": {"status": "completed_rejected_incomplete_reservation", "evaluated_model_version": "v260", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.7333333333333333, "held_out_structural_similarity": 0.43536, "held_out_component_recall": 0.6285714285714286, "held_out_reward": 0.8534, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2", "reason": "optional component fields still consume reserved symbols"},
     "E978": {"status": "completed_rejected_symbol_reservation", "evaluated_model_version": "v261", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.6833333333333333, "held_out_structural_similarity": 0.42069999999999996, "held_out_component_recall": 0.6285714285714286, "held_out_reward": 0.8324, "held_out_decode_timeouts": 0, "held_out_fallback_count": 4, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "withdraw_complete_reservation_treatment"},
-    "E979": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v262", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2", "parity_with": "E976"}
+    "E979": {"status": "completed_withdrawal_parity", "evaluated_model_version": "v262", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2", "parity_with": "E976"},
+    "E980": {"status": "completed_rejected", "steps": 450, "elapsed_wall_seconds": 36.928584540000884, "last_loss": 4.6926398277282715, "checkpoint_sha256": "76a2b78d4adab71c20708398396d2069c7dc1afa6e4617a9ad936360b4814bb0", "checkpoint_sync": "disabled_scratch", "mixture_id": "e937_role_safe_all_targets_v2-base", "binder_arity_loss_weight": 1.0},
+    "E981": {"status": "invalid_interrupted_campaign", "completed_suites": ["smoke"], "smoke_parse": 0.6666666666666666, "smoke_strict_v2": 0.6666666666666666, "smoke_decode_timeouts": 1, "scoreboard": null, "agentv": null},
+    "E982": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 1.0, "parse": 1.0, "meaning_v1": 0.8, "strict_v2": 0.4, "fidelity": 0.8833333333333334, "structural_similarity": 0.5038199999999999, "component_recall": 0.719047619047619, "reward": 0.9283999999999999, "decode_timeouts": 0, "fallback_count": 0, "agentv": "0/1"},
+    "E983": {"status": "completed_rejected_quality", "suite": "smoke", "binder_arity_decode_weight": 0.0, "parse": 0.6666666666666666, "meaning_v1": 0.6666666666666666, "strict_v2": 0.6666666666666666, "fidelity": 0.6666666666666666, "structural_similarity": 0.3477666666666666, "component_recall": 0.5, "reward": 0.6486666666666666, "decode_timeouts": 1, "fallback_count": 0, "agentv": "0/1"},
+    "E984": {"status": "completed_rejected_quality", "suite": "held_out", "binder_arity_decode_weight": 0.0, "parse": 0.8, "meaning_v1": 0.6, "strict_v2": 0.2, "fidelity": 0.6333333333333333, "structural_similarity": 0.27552, "component_recall": 0.5285714285714286, "reward": 0.7224, "decode_timeouts": 1, "fallback_count": 2, "agentv": "0/1"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
     "E951": "local_only_rejected_never_promote_or_parent",
     "E963": "local_only_rejected_never_promote_or_parent",
-    "E972": "local_only_rejected_never_promote_or_parent"
+    "E972": "local_only_rejected_never_promote_or_parent",
+    "E980": "local_only_rejected_never_promote_or_parent"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "512be7a7a1454f1b70c4f3514878c710cd0bbada",
+    "code_commit": "b19a2af32f29f5faa80f4fc5390dee127e07204c",
     "code_dirty": true,
     "components": {
       "harness.model_build.train": "v22",
       "harness.model_build.eval": "v52",
-      "harness.train_data": "v25",
+      "harness.train_data": "v26",
       "evals.meaningful_program": "2.13.0",
       "evals.scoring": "v15",
-      "model.twotower": "v255"
+      "model.twotower": "v262"
     }
   }
 }
