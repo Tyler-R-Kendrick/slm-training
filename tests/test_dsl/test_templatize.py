@@ -131,12 +131,12 @@ def test_non_content_placeholder_becomes_opaque_structural_id() -> None:
 
 def test_expression_uses_property_roles() -> None:
     result = templatize_fragment(
-        'Form("contact", Buttons([]), [FormControl("Label", Input("email"))])',
+        'Form(":slot_1", Buttons([]), [FormControl(":slot_0", Input(":slot_2"))])',
         output_kind="expression",
     )
 
     assert result.source == (
-        'Form("$0", Buttons([]), [FormControl(":root.label", Input("$1"))])'
+        'Form("$0", Buttons([]), [FormControl(":slot_0", Input("$1"))])'
     )
 
 

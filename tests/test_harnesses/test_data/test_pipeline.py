@@ -325,7 +325,7 @@ def test_test_builder_rewrites_structural_strings_to_opaque_ids(tmp_path: Path) 
                 id="free_form_form",
                 prompt="Contact form.",
                 openui=(
-                    'root = Form("contact", actions, [])\n'
+                    'root = Form("!", actions, [])\n'
                     'actions = Buttons([Button(":form.submit")])'
                 ),
                 split="held_out",
@@ -353,7 +353,7 @@ def test_test_builder_rewrites_structural_strings_to_opaque_ids(tmp_path: Path) 
         'root = Form("$0", v0, [])\n'
         'v0 = Buttons([Button(":slot_0")])'
     )
-    assert "contact" not in record.openui
+    assert '"!"' not in record.openui
 
     rejected_root = tmp_path / "eval_off"
     with pytest.raises(ValueError, match="symbol-only output contract"):
