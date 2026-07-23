@@ -1,4 +1,4 @@
-# E939-E964: role-safe decoding, aligned training, and bounded nesting
+# E939-E965: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -45,6 +45,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E962 | E951 compiler-native plan close / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3977 | 0.6000 | 0.7010 | 1 / 2 | 0/2 campaign |
 | E964 | E963 clean scratch / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 1.0000 | 0.4656 | 0.7500 | 0.9730 | 0 / 0 | 0/2 campaign |
 | E964 | E963 clean scratch / held_out | 5 | 0.8000 | 0.4000 | 0.4000 | 0.4733 | 0.1404 | 0.4952 | 0.6540 | 1 / 5 | 0/2 campaign |
+| E965 | E951 global binder-symbol reservation / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E965 | E951 global binder-symbol reservation / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3977 | 0.6000 | 0.7010 | 1 / 2 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -117,3 +119,10 @@ weights or replay, final loss 3.1246, and local-only checkpoint SHA
 parse is 0.8, meaning/strict 0.4, fidelity 0.4733, structure 0.1404, recall
 0.4952, reward 0.654, with one timeout and five fallback events. Reject E963;
 never sync, promote, serve, resume, or use it as a parent.
+
+E965 reserves remaining content symbols for every unresolved schema-typed
+forward binder. It removes one of E957's two compiler dead ends, but the
+coarse reservation changes the Tabs trajectory into a timeout and repeats
+E962's held regression: strict 0.6, fidelity 0.65, structure 0.3977, and reward
+0.701. Optional and nested component content has variable symbol cost, so a
+global one-symbol-per-binder budget is not authoritative. Revert to v255.

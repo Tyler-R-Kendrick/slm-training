@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E964 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E965 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6536,3 +6536,6 @@ generic plan-owned array truncation is not the remedy.
 E963 then completes 500 clean E937 scratch steps in 34.57s. E964 smoke fidelity
 is 1.0, but held strict is 0.4, structure 0.1404, reward 0.654, with one timeout
 and five fallbacks. Reject the checkpoint and do not use it as a parent.
+E965's global unresolved-binder symbol reservation removes one compiler dead
+end but causes a Tabs timeout; held strict falls 0.8→0.6 and reward
+0.8834→0.701. Revert the coarse budget and retain v255.
