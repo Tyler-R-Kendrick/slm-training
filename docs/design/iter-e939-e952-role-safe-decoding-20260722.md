@@ -1,4 +1,4 @@
-# E939-E968: role-safe decoding, aligned training, and bounded nesting
+# E939-E973: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -49,6 +49,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E965 | E951 global binder-symbol reservation / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3977 | 0.6000 | 0.7010 | 1 / 2 | 0/2 campaign |
 | E968 | E951 fail-closed training boundary v256 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E968 | E951 fail-closed training boundary v256 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
+| E973 | E972 weighted-mixture scratch / smoke | 3 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0.5978 | 0.8333 | 0.9730 | 0 / 0 | 0/2 campaign |
+| E973 | E972 weighted-mixture scratch / held_out | 5 | 1.0000 | 0.8000 | 0.4000 | 0.8333 | 0.3961 | 0.8286 | 0.9152 | 0 / 2 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -154,3 +156,17 @@ strict 0.8, fidelity 0.8333, structure 0.4434, recall 0.6952, reward 0.8834,
 zero timeouts, and three certified fallbacks. The boundary is decode-neutral.
 AgentV remains 0/2; E951 remains diagnostic-only because its weights descend
 from pre-role-safe E891.
+
+E969 fails before evaluation because visible-reference completeness remains a
+choice-codec-only capability and cannot observe lexer `bN` binders. E970 is
+interrupted at 559/1,200 before checkpoint finalization. E971 reaches 500/500
+weighted-mixture steps but is interrupted during finalization and also has no
+checkpoint. Neither interrupted run is evidence or resumable lineage.
+
+E972 completes 450 clean scratch steps with the committed E937 mixture in 33.07
+seconds, final loss 4.3559 (last-20 example mean 3.4385), and local-only SHA
+`a905a6af…ccd742`. E973 improves substantially over uniform E963: held parse
+1.0, fidelity 0.8333, recall 0.8286, reward 0.9152, zero timeouts, and two
+fallbacks. However, strict meaning is only 0.4 versus E968's 0.8, and the Tabs
+output still shares binders across parents. Reject E972; never sync, promote,
+serve, resume, or use it as a parent.

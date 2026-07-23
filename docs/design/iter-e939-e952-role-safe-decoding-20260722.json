@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "experiment_id": "E939-E968",
+  "experiment_id": "E939-E973",
   "date": "2026-07-22",
   "decision": "retain_role_depth_and_training_entrypoint_constraints_keep_e951_diagnostic_only",
   "train_data": "e937_role_safe_all_targets_v2",
@@ -32,12 +32,18 @@
     "E965": {"status": "completed_rejected_global_symbol_reservation", "evaluated_model_version": "v256", "smoke_strict_v2": 0.6666666666666666, "held_out_parse": 0.8, "held_out_meaning_v1": 0.6, "held_out_strict_v2": 0.6, "held_out_fidelity": 0.65, "held_out_structural_similarity": 0.39774000000000004, "held_out_component_recall": 0.6, "held_out_reward": 0.701, "held_out_decode_timeouts": 1, "held_out_fallback_count": 2, "prediction_role_violations": 0, "agentv": "0/2", "disposition": "reverted_keep_v255"},
     "E966": {"status": "failed_before_evaluation", "reason": "single-parent binder filtering removed all nontrivial binder-topology supervision on canonical tree targets", "role_safe_artifact_targets_audited": 2505, "role_safe_artifact_multi_parent_targets": 0, "agentv": null, "disposition": "reverted"},
     "E967": {"status": "completed_retained_fail_closed_training_boundary", "train_records_loader_audited": 524, "eval_records_loader_audited": 50, "active_train_and_eval_targets_previously_audited": 632, "model_entrypoints_hardened": ["twotower.from_records", "twotower.training_loss", "grammar_diffusion.from_records", "grammar_diffusion.training_loss"], "producer_fixed": "openui_pack_corpus_generator", "versions": {"model.twotower": "v256", "harness.train_data": "v26", "model.recursive_denoiser": "v11"}, "agentv": null},
-    "E968": {"status": "completed_retained_decode_parity", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2"}
+    "E968": {"status": "completed_retained_decode_parity", "smoke_strict_v2": 0.6666666666666666, "smoke_fidelity": 0.8333333333333334, "smoke_reward": 0.891, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.8, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.44336000000000003, "held_out_component_recall": 0.6952380952380952, "held_out_reward": 0.8834, "held_out_decode_timeouts": 0, "held_out_fallback_count": 3, "prediction_role_violations": 0, "agentv": "0/2"},
+    "E969": {"status": "failed_before_evaluation", "reason": "visible_reference_decode_weight is choice-codec-only and unsupported on lexer compiler decode", "agentv": null},
+    "E970": {"status": "invalid_interrupted_train", "requested_steps": 1200, "reached_steps": 559, "checkpoint": null, "reason": "interrupted before checkpoint finalization", "agentv": null},
+    "E971": {"status": "invalid_interrupted_finalization", "requested_steps": 500, "reached_steps": 500, "checkpoint": null, "reason": "interrupted before checkpoint and summary finalization", "agentv": null},
+    "E972": {"status": "completed_rejected", "steps": 450, "elapsed_wall_seconds": 33.06994884000051, "last_loss": 4.355920791625977, "last_20_example_loss_mean": 3.4385333508253098, "checkpoint_sha256": "a905a6af34d2578aa7fe3a4ebb5afec36b6d67ea7db00a0a423ec17286ccd742", "checkpoint_sync": "disabled_scratch", "mixture_id": "e937_role_safe_all_targets_v2-base"},
+    "E973": {"status": "completed_rejected_strict_regression", "smoke_strict_v2": 1.0, "smoke_fidelity": 1.0, "smoke_reward": 0.973, "held_out_parse": 1.0, "held_out_meaning_v1": 0.8, "held_out_strict_v2": 0.4, "held_out_fidelity": 0.8333333333333334, "held_out_structural_similarity": 0.39614000000000005, "held_out_component_recall": 0.8285714285714286, "held_out_reward": 0.9151999999999999, "held_out_decode_timeouts": 0, "held_out_fallback_count": 2, "prediction_role_violations": 0, "agentv": "0/2"}
   },
   "checkpoint_policy": {
     "E944": "local_only_rejected_never_promote_or_parent",
     "E951": "local_only_rejected_never_promote_or_parent",
-    "E963": "local_only_rejected_never_promote_or_parent"
+    "E963": "local_only_rejected_never_promote_or_parent",
+    "E972": "local_only_rejected_never_promote_or_parent"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
