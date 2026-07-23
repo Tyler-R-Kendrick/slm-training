@@ -1198,6 +1198,33 @@ DecisionEvent manifest pair to analyze. No semantic, predictive, causal,
 optimizer, promotion, or ship claim is authorized. Evidence:
 [`iter-slm217-functional-spectra-20260723.md`](iter-slm217-functional-spectra-20260723.md).
 
+## Cross-attention and parent-child retention geometry (NCS1-02 / SLM-218)
+
+**Fidelity label: adapted diagnostic.** SLM-218 combines the SLM-217
+input-conditioned operator with standard principal-angle/subspace metrics. It
+uses the dimensionally valid activation-side restriction
+`||J V||²_F / ||J||²_F`; it does not reuse the invalid output-side `U×U`
+orientation and does not infer causality from retrospective correlation.
+
+| | |
+| --- | --- |
+| **Preregistered ranks** | `k ∈ {4, 8, 16, 32}` subject to matrix dimension |
+| **Preregistered energy thresholds** | `{0.5, 0.8, 0.9}` |
+| **Retention metrics** | principal angles, projection overlap, child energy in parent subspace, update energy inside/outside, RMS drift baseline |
+| **Context metrics** | activation/K-V alignment, pairwise input-side `Wq.T @ Wk`, functional context covariance, activation-side restriction energy |
+| **Code** | `src/slm_training/harnesses/experiments/slm218_cross_attention_retention.py`, `scripts/run_cross_attention_retention.py` |
+
+The zero-training retrospective is `inconclusive` for both H1 and H2 at report
+hash `04fa873a3615b0f695e0bea745bd968516092d5f2ac51ff13e93ba466cf14a72`.
+The immutable manifest covers five context sources and four retention sources,
+but resolves zero complete checkpoint families: E135–E176 checkpoints are
+absent local history, while E501–E504 retain a durable parent reference but
+their rejected child checkpoints were explicitly local-only and are absent.
+Synthetic controls validate the formulas but cannot rank historical outcomes.
+No cross-attention bottleneck or retention target is nominated; no semantic,
+causal, optimizer, promotion, or ship claim is made. Evidence:
+[`iter-slm218-cross-attention-retention-20260723.md`](iter-slm218-cross-attention-retention-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

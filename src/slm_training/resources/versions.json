@@ -938,12 +938,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v66",
+      "version": "v67",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v67",
+          "date": "2026-07-23",
+          "note": "add SLM-218 cross-attention and parent-child subspace retrospective owners"
+        },
         {
           "version": "v66",
           "date": "2026-07-23",
@@ -2984,6 +2989,25 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial FunctionalSpectralSnapshotV1 exact-state contract and bounded fixture"
+        }
+      ]
+    },
+    "harness.experiments.slm218_cross_attention_retention": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm218_cross_attention_retention.py",
+        "scripts/run_cross_attention_retention.py",
+        "tests/test_harnesses/experiments/test_slm218_cross_attention_retention.py",
+        "tests/test_scripts/test_run_cross_attention_retention.py",
+        "docs/design/iter-slm218-cross-attention-retention-20260723.json",
+        "docs/design/iter-slm218-cross-attention-retention-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial CrossAttentionRetentionReportV1 geometry and fail-closed family coverage"
         }
       ]
     },
