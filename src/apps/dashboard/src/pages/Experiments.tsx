@@ -108,6 +108,7 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
             { key: "pass", label: "gate" },
             ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" as const })),
             { key: "agentv", label: "AgentV", align: "right" },
+            { key: "eval_criteria", label: "Eval criteria", align: "right" },
             { key: "checkpoint", label: "checkpoint" },
             { key: "trace", label: "trace", align: "right" },
           ]}
@@ -133,6 +134,7 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
               metricColumns.map((c: any) => [c.key, (r: any) => suiteMetric(r, c.suite, c.metric)]),
             ),
             agentv: (r) => r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+            eval_criteria: (r) => r.eval_criteria?.total === undefined ? "—" : `${r.eval_criteria.passed ?? 0}/${r.eval_criteria.total}`,
             checkpoint: (r) =>
               r.checkpoint ? (
                 <a

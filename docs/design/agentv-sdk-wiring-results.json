@@ -35,5 +35,51 @@
     "command": ".venv/bin/pytest -q tests/test_harnesses/model_build/test_loop.py tests/test_scripts tests/test_evals/test_agentv.py tests/test_harnesses/model_build/test_eval_gates.py tests/test_evals/test_denoising_nll.py",
     "passed": 34,
     "failed": 0
+  },
+  "authority_verification": {
+    "date": "2026-07-23",
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "none",
+    "honesty": "tooling_fixture_not_model_eval",
+    "checkpoint": null,
+    "ship_gates": {
+      "status": "not_run",
+      "pass": null,
+      "reason": "No model checkpoint was evaluated."
+    },
+    "evals": {
+      "format": "AgentEvals JSONL",
+      "authority": "AgentEvals assertions",
+      "criteria": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "runner": {
+        "name": "AgentV",
+        "sdk": "@agentv/core@4.42.4",
+        "execution_errors": 0
+      },
+      "precomputed_agentv_pass_present": false
+    },
+    "verification": {
+      "focused_tests_passed": 135,
+      "focused_tests_failed": 0,
+      "interpreted_pages_valid": 6,
+      "dashboard_build": "blocked by missing locked dependency @openfeature/web-sdk; dependency installation was rejected by the automatic-review service before execution"
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5404017417ce5189617b6da270dbe02980e2cbcf",
+    "code_dirty": true,
+    "components": {
+      "gates.ship": "openui_ship_gates_v3",
+      "harness.core": "v6",
+      "harness.model_build.eval": "v48",
+      "evals.scoring": "v16"
+    },
+    "stamped_at": "2026-07-23T05:16:50.177675+00:00"
   }
 }
