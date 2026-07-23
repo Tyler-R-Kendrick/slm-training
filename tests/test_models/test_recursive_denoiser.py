@@ -43,6 +43,7 @@ from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
     migrate_recursive_depth_aux_config,
+    reduce_weighted_recursive_depth_losses,
     resolve_recursive_depth_aux_mode,
     validate_recursive_depth_supervision,
 )
@@ -671,6 +672,32 @@ def _recursive_model_for_weights(
     return model, records
 
 
+@pytest.mark.parametrize(
+    ("raw_losses", "weights", "expected"),
+    [
+        ((1.0, 2.0, 3.0), (0.5, 1.0, 0.5), 2.0),
+        ((1.0, 2.0), (1.0, 0.0), 1.0),
+        ((1.0, 2.0), (0.0, 1.0), 2.0),
+    ],
+)
+def test_reduce_weighted_recursive_depth_losses_exact_matrix(
+    raw_losses: tuple[float, ...],
+    weights: tuple[float, ...],
+    expected: float,
+) -> None:
+    validated = validate_recursive_depth_supervision(
+        weights=weights,
+        num_depths=len(weights),
+        supports_recursive_outputs=True,
+    )
+    contributions, total = reduce_weighted_recursive_depth_losses(
+        tuple(torch.tensor(loss) for loss in raw_losses), validated
+    )
+
+    assert len(contributions) == len(raw_losses)
+    torch.testing.assert_close(total, torch.tensor(expected))
+
+
 def test_weights_zero_one_equals_l1_exactly() -> None:
     """(0, 1) must equal L1 exactly -- weight-0 depths must not leak in."""
     model, records = _recursive_model_for_weights((0.0, 1.0))
@@ -863,10 +890,9 @@ def test_gradient_reaches_only_positive_weight_depths() -> None:
     validated = validate_recursive_depth_supervision(
         weights=(0.0, 1.0), num_depths=2, supports_recursive_outputs=True
     )
-    norm_w0, norm_w1 = validated.normalized()
     l0 = F.cross_entropy(logits_zero_weighted, targets)
     l1 = F.cross_entropy(logits_positive_weighted, targets)
-    total = norm_w0 * l0 + norm_w1 * l1
+    _, total = reduce_weighted_recursive_depth_losses((l0, l1), validated)
     total.backward()
 
     assert logits_zero_weighted.grad is not None
