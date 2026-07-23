@@ -1639,6 +1639,23 @@ No data build, model, checkpoint, certificate, or ship claim was produced.
 Evidence:
 [`dsh0-03-synthesis-plan-20260723.md`](dsh0-03-synthesis-plan-20260723.md).
 
+## Content-addressed capability artifacts (DSH0-04 / SLM-348)
+
+**Fidelity label: repository contract.** The V1 artifact graph applies
+content-addressed and W3C-PROV-style lineage ideas to staged questions,
+answers, accepted QA sets, derivation activities, validations, and capability
+results. It adds no learned mechanism.
+
+Canonical content identity excludes timestamps, host paths, and invocation
+IDs; activity identity retains exact run/process/config/code provenance.
+Accepted answer sets remain separate from canonical preference. Publication
+fails on unresolved lineage, missing process versions, incomplete accepted
+compiler coverage, or schema/recorded-ID drift. Optional LLM and teacher
+processes pin provider/model/prompt or exact-versus-approximate trace identity.
+No data build, model, checkpoint, capability certificate, or ship claim was
+produced. Evidence:
+[`dsh0-04-capability-artifacts-20260723.md`](dsh0-04-capability-artifacts-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
