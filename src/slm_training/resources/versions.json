@@ -4232,7 +4232,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v270",
+      "version": "v271",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4257,6 +4257,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v271",
+          "date": "2026-07-23",
+          "note": "Restrict generic binder-arity supervision and decode bias to bound declarations because root-list arity has a dedicated head"
+        },
         {
           "version": "v270",
           "date": "2026-07-22",

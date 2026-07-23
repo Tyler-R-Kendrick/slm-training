@@ -5753,19 +5753,21 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     assert model.binder_arity_head is not None
     assert model.binder_arity_head.weight.grad is not None
     assert model.binder_arity_head.weight.grad.abs().sum() > 0
-    assert model.last_training_metrics["binder_arity_rows"] == 3
+    assert model.last_training_metrics["binder_arity_rows"] == 2
     assert model.last_training_metrics["binder_arity_loss"] > 0
 
     tokenizer = model.tokenizer
     binders = model._binder_component_token_ids()
-    root = binders.index(tokenizer.bind_id(0))
+    bound = binders.index(tokenizer.bind_id(1))
     buckets = len(binders) + 1
     with torch.no_grad():
         model.binder_arity_head.weight.zero_()
         model.binder_arity_head.bias.zero_()
-        model.binder_arity_head.bias[root * buckets + 2] = 3.0
+        model.binder_arity_head.bias[bound * buckets + 2] = 3.0
     ctx, ctx_pad = model._encode_context(["card with title and body"])
-    prefix = tokenizer.encode("root = Card([title", add_special=False)
+    prefix = tokenizer.encode(
+        "root = Stack([b1])\nb1 = Card([b2", add_special=False
+    )
     paths = (
         CompletionPath(
             (tokenizer.token_to_id[","], tokenizer.bind_id(2)),
@@ -5779,6 +5781,10 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     bias = model._binder_arity_path_bias(ctx, ctx_pad, prefix, paths)
     assert bias is not None
     assert bias[0] > bias[1]
+    root_prefix = tokenizer.encode("root = Card([b1", add_special=False)
+    assert model._binder_arity_path_bias(
+        ctx, ctx_pad, root_prefix, paths
+    ) is None
 
 
 def test_binder_component_plan_biases_typed_declaration_path() -> None:

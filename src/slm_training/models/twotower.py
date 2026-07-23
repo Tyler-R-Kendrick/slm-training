@@ -3506,6 +3506,7 @@ class TwoTowerModel(nn.Module):
             )
 
             binder_ids = self._binder_component_token_ids()
+            root_id = int(self.tokenizer.bind_id(0))
             binder_index = {
                 token_id: index for index, token_id in enumerate(binder_ids)
             }
@@ -3521,6 +3522,8 @@ class TwoTowerModel(nn.Module):
                 for binder_id, count in binder_reference_arities(
                     self.tokenizer, target_key
                 ):
+                    if binder_id == root_id:
+                        continue
                     binder = binder_index.get(binder_id)
                     if binder is None:
                         continue
@@ -8860,7 +8863,10 @@ class TwoTowerModel(nn.Module):
 
         binder_ids = self._binder_component_token_ids()
         binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
-        parent = binder_index.get(active_declaration_binder_id(self.tokenizer, prefix))
+        active = active_declaration_binder_id(self.tokenizer, prefix)
+        if active is None or active == self.tokenizer.bind_id(0):
+            return None
+        parent = binder_index.get(active)
         emitted = active_declaration_reference_count(self.tokenizer, prefix)
         if parent is None or emitted is None:
             return None
