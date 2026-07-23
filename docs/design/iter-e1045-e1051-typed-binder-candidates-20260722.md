@@ -180,3 +180,10 @@ train seconds. Final binder-component loss/accuracy/candidates are
 loss/accuracy are 1.0203/0.6154. The completed checkpoint SHA is
 `0d2c4c4806d7815906a110aff4ec0d9029823d202447ba87de40b641dc6f9a12`.
 It is pending strict smoke and remains local, unsynced, and non-parentable.
+
+E1072 strict smoke reaches parse/meaning-v1/strict-v2/fidelity 1.0, structure
+0.5717, recall 0.75, and reward 0.957 with no timeout or fallback. All three
+predictions are identical to E1063 and the arity-off E1052 arm. The run emits
+AgentEvals JSONL plus a pinned AgentV bundle (`0/1`). Proceed only to the
+targeted Dual Card and Settings rows; the checkpoint remains pending held
+disposition.
