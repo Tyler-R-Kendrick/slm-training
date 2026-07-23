@@ -6061,3 +6061,34 @@ reward 0.8613, p95 3165.11 ms, and zero fallback/timeout. Strict-v2 and AgentV
 remain zero, so this is a compiler-correctness retention with no checkpoint or
 ship claim. No remote compute ran. Full positive and negative evidence:
 [`iter-e792-e802-schema-array-contract-20260722.md`](iter-e792-e802-schema-array-contract-20260722.md).
+
+# SLM-286 — gate reachability and committed-evidence census (2026-07-23)
+
+Retain `DEFAULT_MIN_SUITE_N=20`. Canonical binomial evaluator rates now disclose
+their numerator, denominator, seed count, configurable 95% Wilson interval, and
+evidence class. Continuous means remain continuous means. Gate output preserves
+the historical flat failure list and pass decision while partitioning failures
+into evidence volume, measurement integrity, quality threshold, and runtime.
+
+The deterministic no-write census replayed 439 scoreboards and 904 suite rows
+from 401 of 780 committed `docs/design/*.json` artifacts at revision
+`8c20bce30842588c5b2ca9b410f68606dfc162e8`. Before reading quality, 869/904
+suite rows were below the evidence minimum and 408/439 scoreboards had every
+present suite below it. Hash-bound append-only adjudications classify 101 rows
+as `inconclusive_until_powered` and 338 as `invalid/confounded`; none qualified
+as `supported_negative` under the current complete-measurement boundary.
+
+The census recognized 306 positive/negative verdict labels. Its implemented
+control/candidate pairing scan found no claim with paired exact binomial count
+provenance, so zero were interval-assessable and zero overlapping-interval
+claims were reported. That zero is missing assessable provenance, not
+statistical significance. Power planning is prospective-only: target delta,
+alpha, target power, per-seed sample size, and seeds are frozen without
+observed outcomes, and seeds are never pooled into an artificial `n`.
+
+This was a CPU-only repository audit: no model trained, no checkpoint was
+written, no AgentV model evaluation ran, and no ship/default/promotion claim is
+made. OpenWiki source instructions were updated, but local regeneration was
+blocked by the unavailable non-interactive provider token and is not claimed.
+Full evidence and source hashes:
+[`slm286-ship-gate-evidence-census-20260723.md`](slm286-ship-gate-evidence-census-20260723.md).

@@ -1101,6 +1101,29 @@ is ready for production until it clears its activation gate and produces a
 `POSITIVE` result under ship-gates with durable checkpoints. The synthesis
 renderer labels the report as wiring-grade and does not promote a champion.
 
+## Gate reachability and prospective power (SLM-286)
+
+**Fidelity label: adapted.** [Wilson (1927)](https://doi.org/10.1080/01621459.1927.10502953)
+supplies the score interval; [Hoenig and Heisey
+(2001)](https://doi.org/10.1198/000313001300339897) motivates rejecting
+observed/post-hoc power as success evidence.
+
+| | |
+| --- | --- |
+| **Lineage** | Wilson score intervals; prospective statistical-power planning; anti-post-hoc-power metascience |
+| **Fidelity** | **Adapted** — exact binomial count provenance and preregistration metadata, not a significance-test implementation |
+| **Code** | `src/slm_training/evals/power_protocol.py`, `src/slm_training/harnesses/model_build/evidence_census.py` |
+| **Config** | `confidence_level`, `target_delta`, `alpha`, `target_power`, `sides`, `seeds`, `--revision` |
+
+**What we took:** canonical binomial rates disclose exact counts, seeds, and
+intervals; power inputs are frozen prospectively; committed scoreboards are
+replayed through current gates with hash-bound append-only adjudications.
+
+**What we did not take:** interval overlap as a significance test, observed
+power as success evidence, or permission to rewrite historical scoreboards.
+Evidence:
+[`slm286-ship-gate-evidence-census-20260723.md`](slm286-ship-gate-evidence-census-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

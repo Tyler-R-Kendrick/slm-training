@@ -17,6 +17,10 @@ Prioritize:
    `residual_delta`, one-forward anytime-depth curves, the exact preregistered
    disposition, and the SLM-282 boundary that fixture success is neither a
    contraction proof nor a quality/ship claim.
+10. Measurement reachability: canonical binomial rate evidence, the four-way
+    ship-gate failure taxonomy, prospective-only power planning, and the
+    deterministic SLM-286 committed-artifact census with append-only
+    adjudications.
 
 Ground pages in repository structure and measured results under `docs/design/`. Prefer practical navigation over generic summaries. Prefer linking existing design docs over rewriting them.
 
