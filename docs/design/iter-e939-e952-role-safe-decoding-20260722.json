@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E939-E952",
+  "date": "2026-07-22",
+  "decision": "retain_role_constraint_reject_checkpoints",
+  "train_data": "e937_role_safe_all_targets_v2",
+  "eval_data": "e938_role_safe_all_targets_v2",
+  "runs": {
+    "E942": {"status": "invalid_partial", "steps": 549, "requested_steps": 600, "checkpoint": null},
+    "E943": {"status": "invalid_partial", "steps": 439, "requested_steps": 480, "checkpoint": null},
+    "E944": {"status": "completed_rejected", "steps": 350, "elapsed_wall_seconds": 25.451, "checkpoint_sha256": "a79121f7409aea09fa46bec19e79cdc8eac7c1f33eea36a3b0a53a9c8547447f"},
+    "E945": {"status": "invalid_interrupted_campaign", "completed_suites": ["smoke"], "agentv": null},
+    "E946": {"status": "invalid_interrupted_campaign", "completed_suites": [], "agentv": null},
+    "E947": {"status": "diagnostic", "suite": "held_out", "n": 5, "decode_timeout_seconds": 4, "strict_v2": 0.2, "role_violations": 2, "agentv": "0/1"},
+    "E948": {"status": "completed_rejected_quality", "checkpoint": "E891", "smoke_strict_v2": 1.0, "held_out_strict_v2": 0.0, "held_out_role_slot_violations": 0, "agentv": "0/2"},
+    "E949": {"status": "failed_before_step_1", "reason": "warm-start output vocabulary and context position shape mismatch", "checkpoint": null},
+    "E950": {"status": "cli_parse_failure", "checkpoint": null},
+    "E951": {"status": "completed_rejected", "steps": 20, "elapsed_wall_seconds": 2.9095909200004826, "checkpoint_sha256": "1646f0b6b46d1826ec198968515cd010cf8875f58a66e89e6255aa6181905e4b"},
+    "E952": {"status": "completed_rejected_quality", "smoke_strict_v2": 0.6666666666666666, "held_out_strict_v2": 0.2, "held_out_decode_timeouts": 4, "prediction_role_violations": 0, "agentv": "0/2"}
+  },
+  "checkpoint_policy": {
+    "E944": "local_only_rejected_never_promote_or_parent",
+    "E951": "local_only_rejected_never_promote_or_parent"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "512be7a7a1454f1b70c4f3514878c710cd0bbada",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v22",
+      "harness.model_build.eval": "v52",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v252"
+    }
+  }
+}

@@ -34,7 +34,8 @@ from slm_training.dsl.language_contract import (
 )
 from slm_training.dsl.lang_core import library_schema
 from slm_training.dsl.placeholders import (
-    CONTENT_PROPS,
+    STRUCTURAL_ID_PROPS,
+    TEMPLATIZABLE_PROPS,
     extract_placeholders,
     is_placeholder,
 )
@@ -43,17 +44,6 @@ from slm_training.dsl.production_codec import (
     parse_statement_bindings,
     statement_binding_order,
 )
-
-_TEMPLATIZABLE_PROPS = CONTENT_PROPS | {
-    "codeString",
-    "data",
-    "details",
-    "subtitle",
-    "tags",
-    "textMarkdown",
-}
-_STRUCTURAL_ID_PROPS = frozenset({"category", "language", "name", "src", "value"})
-
 
 @dataclass(frozen=True)
 class TemplatizeResult:
@@ -136,8 +126,8 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
     ) -> Any:
         if isinstance(value, str):
             if is_placeholder(value):
-                if prop not in _TEMPLATIZABLE_PROPS:
-                    if prop in _STRUCTURAL_ID_PROPS:
+                if prop not in TEMPLATIZABLE_PROPS:
+                    if prop in STRUCTURAL_ID_PROPS:
                         skipped["non_content_string"] += 1
                         return next_structural_id()
                     raise ValueError(
@@ -148,11 +138,11 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
             if value in _prop_enum(defs, component, prop):
                 skipped["enum_value"] += 1
                 return value
-            if value in STRUCTURAL_ID_ATOMS and prop in _STRUCTURAL_ID_PROPS:
+            if value in STRUCTURAL_ID_ATOMS and prop in STRUCTURAL_ID_PROPS:
                 skipped["structural_literal"] += 1
                 return value
-            if prop not in _TEMPLATIZABLE_PROPS:
-                if prop in _STRUCTURAL_ID_PROPS:
+            if prop not in TEMPLATIZABLE_PROPS:
+                if prop in STRUCTURAL_ID_PROPS:
                     skipped["non_content_string"] += 1
                     return next_structural_id()
                 raise ValueError(
@@ -316,13 +306,13 @@ def role_contract_violations(
             return
         enum_values = _prop_enum(defs, component, prop)
         if is_placeholder(child):
-            if prop not in _TEMPLATIZABLE_PROPS:
+            if prop not in TEMPLATIZABLE_PROPS:
                 violations.append(
                     f"placeholder {child!r} in non-content property "
                     f"{component}.{prop}"
                 )
         elif child in STRUCTURAL_ID_ATOMS:
-            if prop not in _STRUCTURAL_ID_PROPS:
+            if prop not in STRUCTURAL_ID_PROPS:
                 violations.append(
                     f"structural id {child!r} in content property "
                     f"{component}.{prop}"

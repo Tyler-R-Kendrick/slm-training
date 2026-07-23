@@ -4545,7 +4545,9 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         tokenizer.encode("root=TextArea(", add_special=False),
         slot_contract=[":hero.title"],
     )
-    assert tokenizer.sym_id(0) in typed_string.candidate_ids
+    assert tokenizer.sym_id(0) not in typed_string.candidate_ids
+    assert tokenizer.token_to_id["STR:$0"] in typed_string.candidate_ids
+    assert tokenizer.token_to_id["STR:email"] not in typed_string.candidate_ids
     for token in ("true", "false", "null", "LIT_NUM", "LIT_END"):
         assert tokenizer.token_to_id[token] not in typed_string.candidate_ids
 
@@ -4766,6 +4768,30 @@ def test_completion_forest_has_no_lexer_string_literal_frame() -> None:
 
     assert "LIT_STR" not in tokenizer.token_to_id
     assert not (set(forest.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE))
+
+
+def test_completion_forest_separates_content_and_structural_string_roles() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":slot_0", ":slot_1"]
+
+    content = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=TextContent(", add_special=False),
+        slot_contract=contract,
+    )
+    assert set(content.candidate_ids) == {tokenizer.sym_id(0), tokenizer.sym_id(1)}
+
+    structural = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=Slider(", add_special=False),
+        slot_contract=contract,
+    )
+    assert tokenizer.sym_id(0) not in structural.candidate_ids
+    assert tokenizer.token_to_id["STR:email"] not in structural.candidate_ids
+    assert tokenizer.token_to_id["STR:$0"] in structural.candidate_ids
+    assert {
+        tokenizer.id_to_token[token_id] for token_id in structural.candidate_ids
+    } == {f"STR:${index}" for index in range(64)}
 
 
 def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:

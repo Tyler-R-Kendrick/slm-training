@@ -6499,3 +6499,15 @@ rejects six train overlaps, and has 0/50 role violations. Promote E937/E938 as
 defaults. The shared loader now fails closed on every target; it rejects E933 and
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
+
+# E939-E952 — role-safe decoder boundary and aligned warm start (2026-07-22)
+
+E940 exposed the remaining runtime leak: the compiler forest unconditionally
+re-added content-slot IDs to structural string properties. v250-v252 make string
+roles authoritative and repair warm-start remapping for the expanded vocabulary.
+E948 removes the structural-slot failures but regresses E891 held-out strict-v2
+0.2→0.0. E951 trains 20 clean steps and E952 has zero role-contract violations
+across eight predictions, but held-out has four timeouts and only strict-v2 0.2.
+Retain the hard safety boundary; reject the E944 and E951 checkpoints and every
+partial/failed arm. AgentV is 0/2 on both complete matched campaigns; no ship
+claim. Full evidence: [role-safe decoding results](iter-e939-e952-role-safe-decoding-20260722.md).

@@ -1320,25 +1320,39 @@ def build_completion_forest(
         typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
         candidates &= typed_ids
         _record_excluded(ConstraintStage.SCHEMA, "schema_type_mismatch", before_stage)
-        if schema_type == "string" and slot_contract:
+        if schema_type == "string":
             before_stage = _snapshot()
             try:
-                from slm_training.dsl.placeholders import CONTENT_PROPS
+                from slm_training.dsl.language_contract import STRUCTURAL_ID_ATOMS
+                from slm_training.dsl.placeholders import (
+                    STRUCTURAL_ID_PROPS,
+                    TEMPLATIZABLE_PROPS,
+                )
                 from slm_training.models.grammar import contract_allowed_token_ids
 
                 contract_ids = set(
                     contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract)
                     or set()
                 )
-                kind_ids = getattr(tokenizer, "kind_ids", None)
-                if callable(kind_ids):
-                    candidates -= set(kind_ids("sym"))
-                candidates |= contract_ids
-                if schema_slot in CONTENT_PROPS:
-                    candidates = contract_ids
+                structural_ids = {
+                    int(tokenizer.token_to_id[f"STR:{value}"])
+                    for value in STRUCTURAL_ID_ATOMS
+                    if f"STR:{value}" in tokenizer.token_to_id
+                }
+                if schema_slot in TEMPLATIZABLE_PROPS:
+                    if slot_contract:
+                        candidates &= contract_ids
+                elif schema_slot in STRUCTURAL_ID_PROPS:
+                    candidates &= structural_ids
+                elif slot_contract:
+                    candidates.clear()
             except Exception:  # noqa: BLE001
                 pass
-            _record_excluded(ConstraintStage.SLOT_CONTRACT, "slot_contract_restricted", before_stage)
+            _record_excluded(
+                ConstraintStage.SLOT_CONTRACT,
+                "string_role_restricted",
+                before_stage,
+            )
 
     array_item_components = (
         _schema_array_item_components(engine, schema)

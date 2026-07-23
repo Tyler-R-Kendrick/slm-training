@@ -3545,6 +3545,11 @@
         {
           "version": "v24",
           "date": "2026-07-22",
+          "note": "no-bump: expose the existing templatizable and structural property sets for decoder reuse without changing synthesis behavior"
+        },
+        {
+          "version": "v24",
+          "date": "2026-07-22",
           "note": "Use schema-role-aware templatization for document-kind alternate targets and correct opaque structural fixture identities"
         },
         {
@@ -4152,7 +4157,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v249",
+      "version": "v252",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4177,6 +4182,21 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v252",
+          "date": "2026-07-22",
+          "note": "Resize learned scratch-context position rows by shared prefix during warm starts across corpus-derived context-length changes"
+        },
+        {
+          "version": "v251",
+          "date": "2026-07-22",
+          "note": "Remap shared output-token embedding rows by token identity during warm start while retaining initialized rows for newly introduced role-safe tokens"
+        },
+        {
+          "version": "v250",
+          "date": "2026-07-22",
+          "note": "Make schema string roles authoritative during compiler decode so request content slots cannot occupy structural identifiers and natural-language literals cannot replace opaque structural atoms"
+        },
         {
           "version": "v249",
           "date": "2026-07-22",

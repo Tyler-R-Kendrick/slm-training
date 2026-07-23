@@ -32,6 +32,8 @@ from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
+    _remap_vocab_weight,
+    _resize_position_weight,
     _truncate_with_eos,
     format_context_text,
 )
@@ -71,6 +73,30 @@ def test_tokenizer_save_load(tmp_path: Path) -> None:
     tok.save(path)
     loaded = OpenUITokenizer.load(path)
     assert loaded.encode(HERO) == tok.encode(HERO)
+
+
+def test_warm_start_vocab_remap_preserves_new_token_rows() -> None:
+    source = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    target = torch.tensor([[9.0, 9.0], [8.0, 8.0], [7.0, 7.0]])
+
+    remapped = _remap_vocab_weight(
+        source,
+        {"shared": 0, "old_only": 1},
+        target,
+        {"new_only": 0, "shared": 1, "newer": 2},
+    )
+
+    assert remapped.tolist() == [[9.0, 9.0], [1.0, 2.0], [7.0, 7.0]]
+
+
+def test_warm_start_position_resize_copies_shared_prefix() -> None:
+    source = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    target = torch.tensor([[9.0, 9.0], [8.0, 8.0]])
+
+    assert _resize_position_weight(source, target).tolist() == [
+        [1.0, 2.0],
+        [3.0, 4.0],
+    ]
 
 
 def test_hf_context_can_be_explicitly_unfrozen() -> None:
