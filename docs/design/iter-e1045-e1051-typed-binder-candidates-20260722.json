@@ -230,6 +230,40 @@
           "model.twotower": "v271"
         }
       }
+    },
+    "E1066": {
+      "status": "completed_pending_eval",
+      "run_id": "e1066_v271_dedicated_root_arity",
+      "steps_requested": 450,
+      "steps_completed": 331,
+      "stopped_on": "wall_time_budget",
+      "max_wall_minutes": 1.5833333333333333,
+      "elapsed_wall_seconds": 95.24092521999773,
+      "batch_size": 4,
+      "examples": 1324,
+      "last_loss": 7.435193061828613,
+      "binder_component_plan_loss_last": 2.0869057178497314,
+      "binder_component_plan_accuracy_last": 0.2857142984867096,
+      "binder_component_plan_candidate_count_last": 28.428571428571427,
+      "binder_component_plan_loss_last_50_mean": 1.7947798347473145,
+      "binder_component_plan_accuracy_last_50_mean": 0.4576371768116951,
+      "binder_arity_loss_last": 0.6901429891586304,
+      "binder_arity_accuracy_last": 0.800000011920929,
+      "root_reference_arity_loss_last": 1.2019168138504028,
+      "root_reference_arity_accuracy_last": 0.5,
+      "root_reference_arity_loss_last_50_mean": 1.3582804381847382,
+      "root_reference_arity_accuracy_last_50_mean": 0.5366666704416275,
+      "root_reference_arity_rows_last_50": 160,
+      "checkpoint_sha256": "51ffed4a5ede84a8422a5402b14688adda3bc51d83bc9c58ebc270d281b8ff22",
+      "checkpoint_sync": "disabled_scratch",
+      "initialized_from": null,
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "bd2438f455db754d3acc54f2ce3230710cfa859e",
+        "components": {
+          "harness.model_build.train": "v22"
+        }
+      }
     }
   },
   "disposition": {
@@ -241,6 +275,7 @@
     "no_arity_decode_accepted": false,
     "arity_scalar_sweep_closed": true,
     "bound_only_arity_decode_accepted": false,
+    "e1066_pending_eval": true,
     "next_hypothesis": "model root-list identity and cardinality through the dedicated root-reference owner without overlapping generic supervision"
   },
   "version_stamp": {

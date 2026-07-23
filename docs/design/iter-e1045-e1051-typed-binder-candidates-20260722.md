@@ -91,3 +91,23 @@ E1045 non-parentable. The Dual Card gain at higher global arity weights came
 from root-list pressure, not reusable bound-declaration evidence. A subsequent
 arm must model root-list identity/cardinality through its dedicated owner
 rather than restoring overlapping generic supervision.
+
+## E1066 dedicated root-reference arity train
+
+E1066 is a fresh CPU scratch train on the same audited 524-row E937 corpus. It
+combines typed binder-component loss 1, bound-only generic binder-arity loss 1,
+and dedicated root-reference arity loss 1 under compiler-tree capability. The
+95-second internal wall budget stops cleanly at 331/450 requested steps after
+1,324 examples in 95.24 seconds. It has no parent and checkpoint sync is
+explicitly disabled.
+
+The final root-reference arity loss/accuracy are 1.2019/0.50 over four rows;
+their last-50 means are 1.3583/0.5367 over 160 rows. Final binder arity
+loss/accuracy are 0.6901/0.80, and final binder-component
+loss/accuracy/candidate count are 2.0869/0.2857/28.43. Checkpoint SHA is
+`51ffed4a5ede84a8422a5402b14688adda3bc51d83bc9c58ebc270d281b8ff22`.
+
+This is a completed bounded diagnostic checkpoint, not a production or
+step-matched result. Its disposition remains pending strict smoke and targeted
+held evaluation; it must not be synced, promoted, served, resumed, or used as a
+parent before those results.
