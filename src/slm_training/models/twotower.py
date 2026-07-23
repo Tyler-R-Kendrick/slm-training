@@ -3824,6 +3824,7 @@ class TwoTowerModel(nn.Module):
         )
         if binder_plan_w > 0.0 and self.binder_component_plan_head is not None:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                binder_component_candidate_ids,
                 binder_component_targets,
             )
 
@@ -3847,6 +3848,9 @@ class TwoTowerModel(nn.Module):
                 target_key = tuple(
                     int(token_id) for token_id in target_ids[row].tolist()
                 )
+                typed_candidates = binder_component_candidate_ids(
+                    self.tokenizer, target_key
+                )
                 for binder_id, child_id in binder_component_targets(
                     self.tokenizer, target_key
                 ):
@@ -3855,10 +3859,25 @@ class TwoTowerModel(nn.Module):
                     if binder is None or child is None:
                         continue
                     scores = plan_logits[row, binder]
-                    target = torch.as_tensor([child], device=ctx.device)
-                    plan_losses.append(F.cross_entropy(scores[None, :], target))
-                    plan_hits.append(scores.argmax().eq(target[0]).float())
-                    candidate_counts.append(len(component_ids))
+                    candidates = [
+                        component_index[token_id]
+                        for token_id in typed_candidates.get(binder_id, ())
+                        if token_id in component_index
+                    ]
+                    if child not in candidates:
+                        candidates = list(range(len(component_ids)))
+                    candidate_tensor = torch.as_tensor(
+                        candidates, device=ctx.device
+                    )
+                    typed_scores = scores.index_select(0, candidate_tensor)
+                    target = torch.as_tensor(
+                        [candidates.index(child)], device=ctx.device
+                    )
+                    plan_losses.append(
+                        F.cross_entropy(typed_scores[None, :], target)
+                    )
+                    plan_hits.append(typed_scores.argmax().eq(target[0]).float())
+                    candidate_counts.append(len(candidates))
             binder_plan_loss = (
                 torch.stack(plan_losses).mean()
                 if plan_losses

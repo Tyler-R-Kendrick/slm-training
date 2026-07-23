@@ -4232,7 +4232,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v269",
+      "version": "v270",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4257,6 +4257,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v270",
+          "date": "2026-07-22",
+          "note": "Train binder-component plans over schema-compatible use-site component classes instead of all 35 library components"
+        },
         {
           "version": "v269",
           "date": "2026-07-22",

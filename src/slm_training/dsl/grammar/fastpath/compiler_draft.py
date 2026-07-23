@@ -496,6 +496,28 @@ def binder_component_targets(
     return tuple(targets)
 
 
+def binder_component_candidate_ids(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> dict[int, tuple[int, ...]]:
+    """Return schema-compatible component classes for referenced binders."""
+    requirements = _forward_binder_component_requirements(
+        tokenizer,
+        [int(token_id) for token_id in token_ids],
+        _official_schema(),
+    )
+    component_ids = set(tokenizer.kind_ids("component"))
+    return {
+        binder_id: tuple(
+            sorted(
+                token_id
+                for name in names
+                if (token_id := tokenizer.token_to_id.get(name)) in component_ids
+            )
+        )
+        for binder_id, names in requirements.items()
+    }
+
+
 def binder_reference_arities(
     tokenizer: Any, token_ids: list[int] | tuple[int, ...]
 ) -> tuple[tuple[int, int], ...]:

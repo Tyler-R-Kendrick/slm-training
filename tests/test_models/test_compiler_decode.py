@@ -5609,6 +5609,10 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
     assert model.binder_component_plan_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["binder_component_plan_rows"] == 2
     assert model.last_training_metrics["binder_component_plan_loss"] > 0
+    assert (
+        model.last_training_metrics["binder_component_plan_candidate_count_mean"]
+        < len(model._component_inventory_token_ids())
+    )
 
     tokenizer = model.tokenizer
     binders = model._binder_component_token_ids()
@@ -5637,6 +5641,7 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
 def test_binder_component_targets_match_compiler_bound_component_decisions() -> None:
     from slm_training.dsl.grammar.fastpath.compiler_draft import (
         active_declaration_binder_id,
+        binder_component_candidate_ids,
         binder_component_targets,
     )
 
@@ -5664,6 +5669,11 @@ def test_binder_component_targets_match_compiler_bound_component_decisions() -> 
             if decision.kind == "component_bound"
         )
         assert binder_component_targets(tokenizer, token_ids) == compiler_targets
+        typed_candidates = binder_component_candidate_ids(tokenizer, token_ids)
+        assert all(
+            child_id in typed_candidates[binder_id]
+            for binder_id, child_id in compiler_targets
+        )
 
 
 def test_binder_topology_supervises_and_biases_legal_references() -> None:
