@@ -77,11 +77,15 @@ fixture naturally covers only `replace_node`, `set_property`, and history fork
 targets; broader operator, state-size, scope, and semantic-family balance
 remains measurable work rather than an implied claim.
 
-The strict parent build rejected only `train_text_only_01` at
+The original strict parent build rejected only `train_text_only_01` at
 `decontamination/test_fixture_structure`. `quality_report.json` contained no
 warnings; `synthesis_feedback.json` emitted `eval_leakage_source` for the
-`human_curated` family. This is an intentional firewall decision, not evidence
-to weaken a gate. The emitted source-audit hypothesis is preserved as SLM-392.
+`human_curated` family. SLM-392 confirmed that strict default elision made the
+train seed isomorphic to reserved `adv_empty_prompt_01`, removed the accidental
+train source, and reran the same strict recipe. The rerun admits 19/19 with zero
+decontamination drops, no warnings or recommendations, and the same admitted
+content fingerprint. The firewall and thresholds remain unchanged. Full audit:
+[`slm392-human-curated-source-overlap-20260723.md`](slm392-human-curated-source-overlap-20260723.md).
 
 ## Validation
 

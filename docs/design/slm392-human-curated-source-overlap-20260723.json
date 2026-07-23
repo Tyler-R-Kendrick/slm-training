@@ -1,0 +1,93 @@
+{
+  "schema": "train_fixture_source_overlap_audit/v1",
+  "issue": "SLM-392",
+  "date": "2026-07-23",
+  "status": "pass_source_remediated",
+  "hypothesis": "Removing the accidental train-side fixture duplicate will eliminate the reserved-structure drop without changing any admission gate or admitted training content.",
+  "trace": {
+    "train_record_id": "train_text_only_01",
+    "reserved_test_record_id": "adv_empty_prompt_01",
+    "train_seed_file_before_sha256": "909344b62b2bc7715afa681b1844e9af8c96592cfea72f6ef97ea572dad82fd2",
+    "train_seed_file_after_sha256": "38d44afaa5d98dfd141f4f11aed2e280b1af41ca5a415206ae9eee3340717461",
+    "test_seed_file_sha256": "72b1aaa51ff3759eac1a2384472b816669b2f9c967cad943926345fe25c73e24",
+    "raw_train_structure_fingerprint": "2b2923abf7e3f6880d0c1be9cc12915ddd0bab8ef81c4028d1afe03089f9d106",
+    "strict_sanitized_train_structure_fingerprint": "198ad03f517e14bd83dc92db0c458058d2f9b5671db1f1ac95e5544e027801a8",
+    "reserved_test_structure_fingerprint": "198ad03f517e14bd83dc92db0c458058d2f9b5671db1f1ac95e5544e027801a8",
+    "normalized_collision": "id = Stack([id]) id = TextContent(\":ph\")",
+    "cause": "Strict sanitization elides the train Stack column default, producing the same reserved structure as the adversarial empty-prompt fallback."
+  },
+  "recipe": {
+    "device": "cpu",
+    "profile": "strict",
+    "source": "fixture",
+    "synthesizer": "none",
+    "version": "dsh3_10_operator_fixture_v5",
+    "max_wall_minutes": 3,
+    "operator_corpus": {
+      "enabled": true,
+      "max_roots": 2,
+      "actions_per_state": 2,
+      "max_combinations_per_operator": 32,
+      "sibling_forks": true
+    },
+    "gates_or_thresholds_changed": false,
+    "publish": false,
+    "register_lineage": false
+  },
+  "comparison": {
+    "before": {
+      "candidates": 20,
+      "admitted": 19,
+      "rejected": 1,
+      "structure_reserved_rejected": 1,
+      "rejected_record": "train_text_only_01",
+      "rejection_reason": "test_fixture_structure"
+    },
+    "after": {
+      "candidates": 19,
+      "admitted": 19,
+      "rejected": 0,
+      "structure_reserved_rejected": 0,
+      "ngram_decontamination_drops": 0,
+      "mean_quality_score": 1.0,
+      "admitted_content_fingerprint": "e086b62faf8cecb326a5697ecb12e5f7e6af5bc2e34e922dc3be1cafb9510928"
+    },
+    "admitted_content_unchanged": true
+  },
+  "operator_corpus": {
+    "roots": 2,
+    "records": 20,
+    "collapsed_records": 2,
+    "legal_successes": 27,
+    "rejected_combinations": 533,
+    "emitted_illegal_targets": 0,
+    "invalid_families": 0,
+    "records_sha256": "8c3a0f86df5dd90313a016279c3fe372225df7c217c52648e11c005e9bab233c"
+  },
+  "synthesis_feedback": {
+    "human_curated_candidates": 19,
+    "human_curated_admitted": 19,
+    "human_curated_rejected": 0,
+    "human_curated_yield": 1.0,
+    "warnings": [],
+    "recommendations": [],
+    "experiment_candidates": []
+  },
+  "decision": {
+    "source_fixture_removed": true,
+    "reserved_test_fixture_retained": true,
+    "strict_firewall_retained": true,
+    "success": true,
+    "checkpoint_created": false,
+    "model_or_ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "ee1a35752379de7b64ff9e10ceeb85c30ecf1658",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v14"
+    },
+    "stamped_at": "2026-07-23T19:05:45.455822+00:00"
+  }
+}

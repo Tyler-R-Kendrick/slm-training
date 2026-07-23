@@ -342,10 +342,14 @@ six next-turn, and two sibling-fork records. It retained 27 legal successes and
 replayed every application and trace. This is fixture wiring evidence, not a
 full-corpus or ship claim.
 
-The strict parent build admitted 19/20 records with mean quality 1.0. Its only
-rejection was the reserved `test_fixture_structure` firewall; no gate changed.
-The emitted `human_curated` source-audit experiment is filed as SLM-392. See
-[DSH3-10 evidence](dsh3-10-symbolic-operator-corpus-20260723.md).
+The original strict parent build admitted 19/20 records with mean quality 1.0.
+Its only rejection was the reserved `test_fixture_structure` firewall. SLM-392
+traced that collision to strict default elision making `train_text_only_01`
+isomorphic to the reserved `adv_empty_prompt_01` fallback. Removing the
+accidental train seed yields 19/19 admitted, zero decontamination drops, no
+warnings or new feedback candidates, and the same admitted-content fingerprint;
+no gate changed. See [DSH3-10 evidence](dsh3-10-symbolic-operator-corpus-20260723.md)
+and the [source audit](slm392-human-curated-source-overlap-20260723.md).
 
 ## Verified collapsed operator traces (DSH3-12 / SLM-380)
 
@@ -364,6 +368,7 @@ target was synthesized.
 
 The parent quality loop again admitted 19/20 source records with mean quality
 1.0 and rejected only the reserved test fixture. Duplicate
-`eval_leakage_source` evidence was attached to SLM-392; gates remain unchanged.
+`eval_leakage_source` evidence was attached to SLM-392; the later source audit
+removed that train-side duplicate while retaining every gate.
 See
 [DSH3-12 evidence](dsh3-12-collapsed-operator-traces-20260723.md).
