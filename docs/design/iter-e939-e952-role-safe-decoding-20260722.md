@@ -1,4 +1,4 @@
-# E939-E998: role-safe decoding, aligned training, and bounded nesting
+# E939-E1000: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -82,6 +82,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E997 | E980 arity + schema + lattice 2 / smoke | 3 | 0.6667 | 0.6667 | 0.6667 | 0.6667 | 0.3833 | 0.5000 | 0.6407 | 1 / 0 | 0/2 campaign |
 | E997 | E980 arity + schema + lattice 2 / held_out | 5 | 0.8000 | 0.8000 | 0.6000 | 0.8000 | 0.4748 | 0.8000 | 0.7736 | 1 / 0 | 0/2 campaign |
 | E998 | E980 Form-only 60s diagnostic | 1 | 1.0000 | 0.0000 | 0.0000 | 0.1667 | 0.1148 | 0.1429 | 0.6570 | 0 / 2 | 0/1 |
+| E1000 | E980 arity + schema + slot margin 2 / smoke | 3 | 1.0000 | 0.6667 | 0.6667 | 0.7500 | 0.4347 | 0.5833 | 0.8680 | 0 / 2 | 0/2 campaign |
+| E1000 | E980 arity + schema + slot margin 2 / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3316 | 0.6667 | 0.7130 | 1 / 2 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -298,3 +300,10 @@ finishes in 11.91 seconds only by emitting `root = TextContent(":slot_0")`:
 one of six slots, one of seven component types, strict meaning 0, and two
 fallbacks. The short result is not semantically equivalent minification; its
 low fidelity and recall are correct. Raising the timeout does not repair E980.
+
+E999 fails closed before evaluation because required-slot margin requires both
+slot-contract context and constrained decode; it emits no evaluation/AgentV
+evidence. E1000 supplies that supported configuration using opaque ordinal
+slots only. Form still times out and Tabs collapses to one slot; versus E991,
+held fidelity falls from 0.8 to 0.65, structure to 0.3316, recall to 0.6667,
+reward to 0.713, and fallbacks rise to two. Reject slot margin 2.

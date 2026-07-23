@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E998 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E1000 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6606,3 +6606,7 @@ E998 gives the E991 Form row 60 seconds. It finishes at 11.91s only as a
 one-slot TextContent fallback: fidelity 0.1667, recall 0.1429, strict 0, and two
 fallbacks. This is missing requested content, not equivalent minification;
 timeout expansion does not repair the checkpoint.
+E999 fails the slot-margin companion-config guard before evaluation. E1000 uses
+the supported opaque slot-contract context plus constrained decode, but Form
+still times out and Tabs collapses to one slot. Held fidelity/structure/recall/
+reward regress to 0.65/0.3316/0.6667/0.713 with two fallbacks. Reject margin 2.
