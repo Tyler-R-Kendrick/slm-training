@@ -1396,6 +1396,27 @@ the dependent operators rather than synthesizing a fallback. Evidence and
 scope:
 [`dsh3-05-topology-template-operators-20260723.md`](dsh3-05-topology-template-operators-20260723.md).
 
+## Exact bounded operator legal set (DSH3-06 / SLM-374)
+
+**Fidelity label: repository contract.** The legal-set boundary composes the
+compiler-owned declarations, opaque semantic references, and pack-owned dry-run
+authority established by DSH3-01 through DSH3-05. It does not add a learned
+policy or claim an implementation of a cited transformation model.
+
+| | |
+| --- | --- |
+| **Enumeration** | declaration-ordered typed Cartesian products, consumed lazily under a per-operator bound |
+| **Proof boundary** | every admitted tuple succeeds through the exact pack-owned registry dry-run path |
+| **Conservative decisions** | only complete zero-action products hard-prune; partial and unbounded products remain retained |
+| **Action surface** | `OPERATOR <operator_id> <slot>=<kind>:<request>:<opaque> ...`; ordinary nonoperator actions preserved |
+| **Controls** | independent small-domain brute force, zero false admissions, truncation, singleton forcing, opaque-ID and candidate-order permutation |
+
+Semantic action IDs use declaration and descriptor fingerprints rather than
+request-local opaque IDs. Exact singleton emission requires complete global
+coverage across the combined ordinary and operator action set. Evidence and
+scope:
+[`dsh3-06-operator-legal-set-20260723.md`](dsh3-06-operator-legal-set-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
