@@ -4232,7 +4232,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v268",
+      "version": "v269",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4257,6 +4257,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v269",
+          "date": "2026-07-22",
+          "note": "Apply the trained binder-component plan at typed bind-vs-inline declaration choices using schema-compatible probability mass so the plan is reachable before the bound declaration exists"
+        },
         {
           "version": "v268",
           "date": "2026-07-22",

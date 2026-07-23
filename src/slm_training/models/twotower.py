@@ -8761,6 +8761,69 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _binder_component_declaration_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        paths: tuple,
+    ) -> list[float] | None:
+        """Use a binder's planned component before choosing bind vs inline."""
+        weight = float(
+            getattr(self.config, "binder_component_plan_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.binder_component_plan_head is None:
+            return None
+        binder_ids = self._binder_component_token_ids()
+        component_ids = self._component_inventory_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        component_index = {
+            token_id: index for index, token_id in enumerate(component_ids)
+        }
+
+        def first_semantic(path: Any) -> tuple[str, int] | None:
+            for token_id in path.token_ids:
+                value = int(token_id)
+                if value in binder_index:
+                    return "binder", value
+                if value in component_index:
+                    return "component", value
+            return None
+
+        semantic = [first_semantic(path) for path in paths]
+        allowed = sorted(
+            {
+                component_index[token_id]
+                for kind, token_id in (item for item in semantic if item is not None)
+                if kind == "component"
+            }
+        )
+        bind_paths = [
+            (index, binder_index[token_id])
+            for index, item in enumerate(semantic)
+            if item is not None
+            for kind, token_id in (item,)
+            if kind == "binder"
+        ]
+        if (
+            not allowed
+            or not bind_paths
+            or len(allowed) == len(component_ids)
+        ):
+            return None
+        logits = self.binder_component_plan_head(self._pool_context(ctx, ctx_pad))[
+            0
+        ].view(len(binder_ids), len(component_ids))
+        allowed_index = torch.as_tensor(allowed, device=logits.device)
+        uniform_log_mass = math.log(len(allowed) / len(component_ids))
+        bias = [0.0] * len(paths)
+        for path_index, binder in bind_paths:
+            log_probs = F.log_softmax(logits[binder], dim=0)
+            log_mass = torch.logsumexp(
+                log_probs.index_select(0, allowed_index), dim=0
+            )
+            bias[path_index] = weight * float(log_mass - uniform_log_mass)
+        return bias
+
     def _binder_arity_path_bias(
         self,
         ctx: torch.Tensor,
@@ -9000,6 +9063,17 @@ class TwoTowerModel(nn.Module):
                     stats.binder_component_plan_applications += 1
                     stats.binder_component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_binder
+                    )
+            declaration_bias = self._binder_component_declaration_path_bias(
+                ctx, ctx_pad, paths
+            )
+            if declaration_bias is not None:
+                before_declaration = int(scores.argmax().item())
+                scores = scores + scores.new_tensor(declaration_bias)
+                if stats is not None:
+                    stats.binder_component_plan_applications += 1
+                    stats.binder_component_plan_choice_changes += int(
+                        int(scores.argmax().item()) != before_declaration
                     )
             topology_bias = self._binder_topology_bias(
                 ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
@@ -9282,6 +9356,23 @@ class TwoTowerModel(nn.Module):
                     branches += 1
                 parent = (*parent, int(token_id))
             path_scores.append(score / max(1, branches))
+        declaration_bias = self._binder_component_declaration_path_bias(
+            ctx, ctx_pad, paths
+        )
+        if declaration_bias is not None:
+            before_declaration = max(
+                range(len(paths)), key=path_scores.__getitem__
+            )
+            path_scores = [
+                score + declaration_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+            if stats is not None:
+                stats.binder_component_plan_applications += 1
+                stats.binder_component_plan_choice_changes += int(
+                    max(range(len(paths)), key=path_scores.__getitem__)
+                    != before_declaration
+                )
         arity_bias = self._binder_arity_path_bias(ctx, ctx_pad, prefix, paths)
         if arity_bias is not None:
             before_arity = max(range(len(paths)), key=path_scores.__getitem__)

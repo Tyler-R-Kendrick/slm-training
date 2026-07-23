@@ -5771,6 +5771,42 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     assert bias[0] > bias[1]
 
 
+def test_binder_component_plan_biases_typed_declaration_path() -> None:
+    model = _model(
+        binder_component_plan_loss_weight=1.0,
+        binder_component_plan_decode_weight=2.0,
+    )
+    tokenizer = model.tokenizer
+    binders = model._binder_component_token_ids()
+    components = model._component_inventory_token_ids()
+    binder = binders.index(tokenizer.bind_id(1))
+    buttons = components.index(tokenizer.token_to_id["Buttons"])
+    assert model.binder_component_plan_head is not None
+    with torch.no_grad():
+        model.binder_component_plan_head.weight.zero_()
+        model.binder_component_plan_head.bias.zero_()
+        model.binder_component_plan_head.bias[
+            binder * len(components) + buttons
+        ] = 4.0
+    ctx, ctx_pad = model._encode_context(["form"])
+    paths = (
+        CompletionPath((tokenizer.bind_id(1),), "bind_reference_root_buttons"),
+        CompletionPath(
+            (
+                tokenizer.token_to_id["Buttons"],
+                tokenizer.token_to_id["("],
+            ),
+            "component",
+        ),
+    )
+
+    bias = model._binder_component_declaration_path_bias(ctx, ctx_pad, paths)
+
+    assert bias is not None
+    assert bias[0] > 0
+    assert bias[1] == 0
+
+
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     model = _model()
     model.config.structural_bias = 0.0
