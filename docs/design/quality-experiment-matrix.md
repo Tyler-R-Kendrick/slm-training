@@ -6692,3 +6692,14 @@ reward 0.5106 as E1031, with 26 non-timeout applications and zero component-head
 choice changes. Reject the decode arm and leave its weight disabled; retain
 only the guarded diagnostic capability. See
 `iter-e1032-e1038-predeclaration-binder-plan-20260722.md`.
+
+### E1039-E1044: pre-declaration weight 4 (rejected)
+
+E1039 raises only the pre-declaration component-plan weight from 1 to 4.
+Smoke strict-v2 improves from 0.6667 to 1.0, but recall stays 0.5833 and
+structure slips to 0.5257. Five completed one-row held diagnostics then
+regress to parse/strict/fidelity/structure/recall/reward
+0.4/0.4/0.4/0.2072/0.3333/0.3796 with three timeouts and one fallback. Reject
+weight 4, close the scalar sweep, and change the declaration supervision or
+representation next. See
+`iter-e1039-e1044-predeclaration-weight4-20260722.md`.

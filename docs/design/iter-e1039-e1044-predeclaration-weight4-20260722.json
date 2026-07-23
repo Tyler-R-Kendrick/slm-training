@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1039-E1044",
+  "date": "2026-07-22",
+  "decision": "reject_and_close_predeclaration_scalar_sweep",
+  "role_contract_audit": {
+    "train_data": "e937_role_safe_all_targets_v2",
+    "eval_data": "e938_role_safe_all_targets_v2",
+    "targets_checked": 1214,
+    "violations": 0
+  },
+  "checkpoint": {
+    "run_id": "e1029_v268_joint_binder_plans",
+    "sha256": "41955a281910afeb17ec60fe2b7f529d465e5d4c8810032418430ec4881b9f2f",
+    "promoted": false,
+    "synced": false,
+    "parentable": false
+  },
+  "policy": {
+    "compiler_decode_mode": "tree",
+    "compiler_schema_component_types": true,
+    "binder_component_plan_decode_weight": 4.0,
+    "binder_arity_decode_weight": 1.0,
+    "skip_exact_stream_probe": true,
+    "allow_unconstrained_fallback": false,
+    "decode_timeout_seconds": 12.0,
+    "run_class": "scratch_matrix"
+  },
+  "runs": {
+    "E1039": {
+      "status": "completed_rejected_by_held",
+      "run_id": "e1039_v269_predeclaration_weight4_smoke",
+      "suite": "smoke",
+      "n": 3,
+      "parse": 1.0,
+      "meaning_v1": 1.0,
+      "strict_v2": 1.0,
+      "fidelity": 1.0,
+      "structural_similarity": 0.5257333333333333,
+      "component_recall": 0.5833333333333334,
+      "reward": 0.961,
+      "decode_timeouts": 0,
+      "fallback_count": 0,
+      "binder_component_plan_applications": 16,
+      "binder_component_plan_choice_changes": 4,
+      "agentv": "0/1"
+    },
+    "E1040_E1044": {
+      "status": "completed_rejected_diagnostic_subsets",
+      "run_ids": [
+        "e1040_v269_predeclaration_weight4_form",
+        "e1041_v269_predeclaration_weight4_dual_card",
+        "e1042_v269_predeclaration_weight4_input",
+        "e1043_v269_predeclaration_weight4_tabs",
+        "e1044_v269_predeclaration_weight4_settings"
+      ],
+      "suite": "held_out",
+      "subset_protocol": "five completed one-row diagnostic subsets under identical policy",
+      "canonical_full_suite_scoreboard": false,
+      "n": 5,
+      "parse": 0.4,
+      "meaning_v1": 0.4,
+      "strict_v2": 0.4,
+      "fidelity": 0.4,
+      "structural_similarity": 0.20722000000000002,
+      "component_recall": 0.3333333333333333,
+      "reward": 0.37960000000000005,
+      "decode_timeouts": 3,
+      "fallback_count": 1,
+      "binder_component_plan_applications_non_timeout_rows": 13,
+      "binder_component_plan_choice_changes": 0,
+      "binder_arity_applications_non_timeout_rows": 13,
+      "binder_arity_choice_changes_non_timeout_rows": 3,
+      "agentv": "0/5"
+    }
+  },
+  "disposition": {
+    "decode_arm_accepted": false,
+    "scalar_sweep_closed": true,
+    "checkpoint_promoted": false,
+    "checkpoint_parentable": false,
+    "checkpoint_synced": false,
+    "next_hypothesis": "change declaration supervision or representation instead of increasing decode margin"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "465eca0ca34cb40f91d32e92ec44a424385afcc2",
+    "code_dirty": true,
+    "components": {
+      "config.levers": "v39",
+      "harness.model_build.eval": "v56",
+      "evals.meaningful_program": "2.13.0",
+      "evals.scoring": "v15",
+      "model.twotower": "v269"
+    }
+  }
+}
