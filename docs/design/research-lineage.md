@@ -1259,6 +1259,34 @@ checkpoints were rejected without sync or promotion, no recommendation artifact
 was emitted, and production behavior is unchanged. Evidence:
 [`iter-slm219-correlation-trap-20260723.md`](iter-slm219-correlation-trap-20260723.md).
 
+## Activation-side causal restriction energy (NCS2-01 / SLM-220)
+
+**Fidelity label: adapted diagnostic.** SLM-220 implements the corrected
+activation-side quantity `||J V||²_F / ||J||²_F`, where `V` spans right
+singular directions of `W Σ^(1/2)` and `J` maps the same module-input space to
+an explicitly declared legal-decision output. It does not use the invalid
+output-side `U×U` comparison and never differentiates through compiler legality.
+
+| | |
+| --- | --- |
+| **Target API** | pure selected activation → declared legal-logit/objective vector; tested hook replacement preserves baseline logits and exact membership |
+| **Estimators** | bounded exact Jacobian, direct JVP numerator, deterministic Hutchinson VJP denominator with uncertainty |
+| **Controls** | repeated random orthonormal, raw-weight, functional top/middle/bottom, covariance-only, group/label permutation, norm-matched random module |
+| **Evidence scope** | four analytic fixtures; current semantic floor is `inconclusive`; no compatible retained checkpoint/state-manifest family |
+| **Code** | `src/slm_training/harnesses/experiments/slm220_causal_subspace.py`, `scripts/run_causal_subspace_fixture.py` |
+
+The fixture retrospective is **`rejected` for coupling-based use** at report
+hash `5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312`.
+Exact and JVP restriction energies agree, the deterministic Hutchinson
+denominator is exact on the one-output fixtures, and learned-unused versus
+causally-effective analytic cases separate by construction. Those fixtures are
+not model evidence. SLM-217 and SLM-125 retain fixture evidence only, while
+SLM-218 resolves zero complete checkpoint families, so the required focused
+checkpoint retrospective cannot be run honestly. No matrix or band is eligible
+for a later coupling perturbation; no semantic, training, optimizer, promotion,
+or ship claim is authorized. Evidence:
+[`iter-slm220-causal-subspace-20260723.md`](iter-slm220-causal-subspace-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

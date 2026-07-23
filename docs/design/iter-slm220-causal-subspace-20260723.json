@@ -1,0 +1,381 @@
+{
+  "claim_class": "diagnostic_fixture",
+  "cost_accuracy_benchmark": {
+    "device": "cpu",
+    "exact_jacobian_elements_per_fixture": 4,
+    "exact_jvp_max_abs_error": 0.0,
+    "hard_wall_cap_seconds": 170,
+    "hutchinson_max_relative_error": 0.0,
+    "hutchinson_probes": 64,
+    "input_dimension": 4,
+    "jvp_directions_per_primary_subspace": 1,
+    "output_dimension": 1,
+    "runtime_measurement": "bounded by external cap; deterministic operation-size and tensor-byte costs retained instead of volatile wall timing",
+    "vjp_probes_per_fixture": 64
+  },
+  "eligible_perturbation_bands": [],
+  "honesty_mode": "analytic_cpu_no_checkpoint",
+  "inventory": {
+    "current_checkpoint_retrospective_eligible": false,
+    "slm125": "fixture report only; no retained compatible adapter family",
+    "slm217": "fixture only; no compatible checkpoint plus DecisionEvent manifest",
+    "slm218": "zero complete provenance-resolvable checkpoint families"
+  },
+  "rationale": [
+    "analytic fixtures validate activation-side orientation, exact/JVP parity, deterministic Hutchinson uncertainty, and all preregistered subspace controls",
+    "the learned-unused and causally-effective fixtures separate as designed, but fixtures are not model evidence",
+    "no compatible retained checkpoint plus exact-state manifest resolves for the required retrospective families",
+    "SemanticFloorGateV1 is inconclusive; semantic causal interpretation remains blocked",
+    "no matrix or band is eligible for SLM-220 coupling-based perturbation"
+  ],
+  "report_hash": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+  "run_id": "slm220-causal-subspace-fixture-20260723",
+  "schema": "CausalSubspaceReportV1",
+  "semantic_floor_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+  "semantic_floor_verdict": "inconclusive",
+  "snapshots": [
+    {
+      "activation_orientation": "activation-side basis V[in,k]; declared-output Jacobian J[out,in]; restriction = ||J@V||_F^2 / ||J||_F^2",
+      "activation_variance": 14.25,
+      "calibrated_enrichment": -0.2640235819240775,
+      "checkpoint_reference": "fixture:learned_unused_auxiliary",
+      "constraint_debt_join": {
+        "d_good": null,
+        "d_legal": null
+      },
+      "control_energies": {
+        "covariance_top": 0.0,
+        "functional_bottom": 1.0,
+        "functional_middle": 0.0,
+        "functional_top": 0.0,
+        "norm_matched_random_checkpoint": 0.006058913821807951,
+        "raw_weight_top": 0.0,
+        "state_label_permutation": 1.0
+      },
+      "decision_stratum": "learned_unused_auxiliary",
+      "estimator_mode": "exact_plus_jvp_hutchinson",
+      "estimator_version": "activation-restriction-v1",
+      "exact_jvp_abs_error": 0.0,
+      "exact_restriction_energy": 0.0,
+      "floor_gate_claim_scope": "diagnostic geometry only; semantic causal interpretation blocked",
+      "functional_snapshot_reference": "slm217:fixture:learned_unused_auxiliary",
+      "gradient_norm": 1.0,
+      "group_ids": [
+        "learned_unused_auxiliary-group"
+      ],
+      "hutchinson": {
+        "ci95_high": 1.0,
+        "ci95_low": 1.0,
+        "frobenius_squared": 1.0,
+        "probes": 64,
+        "seed": 220,
+        "standard_error": 0.0
+      },
+      "input_dimension": 4,
+      "intervention_point": "complete nn.Linear input activation",
+      "jacobian_frobenius_squared": 1.0,
+      "jvp_restriction_energy": 0.0,
+      "k": 1,
+      "legal_membership_hash": "c31adc59ad13b2e9bc741057c07628ab35ff75fd6ed37c72c195d1505e56cbdf",
+      "module_path": "fixture.learned_unused_auxiliary",
+      "numerical_status": "ok",
+      "output_declaration": "frozen legal-decision logit vector",
+      "output_dimension": 1,
+      "peak_memory_bytes": 192,
+      "protected_metric_join": {
+        "fixture_exact_choice_effect": 0.0,
+        "strict_meaning_v2": null
+      },
+      "random_subspace_null_interval": [
+        0.004495899020541866,
+        0.8491289163637114
+      ],
+      "random_subspace_null_mean": 0.2640235819240775,
+      "right_jacobian_principal_angles": [
+        1.5707963267948966
+      ],
+      "runtime_seconds": 0.0,
+      "schema": "CausalSubspaceSnapshotV1",
+      "split": "held_out",
+      "state_ids": [
+        "learned_unused_auxiliary-state-0",
+        "learned_unused_auxiliary-state-1"
+      ],
+      "state_manifest_hash": "2aa878e67a1da9872d3ea277b582aecdbad64f4cdb861c718c6ffebb61d7cc60",
+      "support_count": 2,
+      "version_stamp": {
+        "code_commit": "f0eaf55c2a5d21d956573978ff39606bafe60925",
+        "code_dirty": true,
+        "components": {
+          "harness.experiments": "v69",
+          "harness.experiments.slm217_functional_spectra": "v1",
+          "harness.experiments.slm218_cross_attention_retention": "v1",
+          "harness.experiments.slm220_causal_subspace": "v1"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-23T15:29:29.330964+00:00"
+      }
+    },
+    {
+      "activation_orientation": "activation-side basis V[in,k]; declared-output Jacobian J[out,in]; restriction = ||J@V||_F^2 / ||J||_F^2",
+      "activation_variance": 14.25,
+      "calibrated_enrichment": 0.7713756261219638,
+      "checkpoint_reference": "fixture:causally_effective_choice",
+      "constraint_debt_join": {
+        "d_good": null,
+        "d_legal": null
+      },
+      "control_energies": {
+        "covariance_top": 1.0,
+        "functional_bottom": 0.0,
+        "functional_middle": 0.0,
+        "functional_top": 1.0,
+        "norm_matched_random_checkpoint": 0.8931509398276319,
+        "raw_weight_top": 1.0,
+        "state_label_permutation": 0.0
+      },
+      "decision_stratum": "causally_effective_choice",
+      "estimator_mode": "exact_plus_jvp_hutchinson",
+      "estimator_version": "activation-restriction-v1",
+      "exact_jvp_abs_error": 0.0,
+      "exact_restriction_energy": 1.0,
+      "floor_gate_claim_scope": "diagnostic geometry only; semantic causal interpretation blocked",
+      "functional_snapshot_reference": "slm217:fixture:causally_effective_choice",
+      "gradient_norm": 1.0,
+      "group_ids": [
+        "causally_effective_choice-group"
+      ],
+      "hutchinson": {
+        "ci95_high": 1.0,
+        "ci95_low": 1.0,
+        "frobenius_squared": 1.0,
+        "probes": 64,
+        "seed": 221,
+        "standard_error": 0.0
+      },
+      "input_dimension": 4,
+      "intervention_point": "complete nn.Linear input activation",
+      "jacobian_frobenius_squared": 1.0,
+      "jvp_restriction_energy": 1.0,
+      "k": 1,
+      "legal_membership_hash": "c95fec718f4c367b6e1df7853517fe6f05fb1383a0442e120604843a25ce349e",
+      "module_path": "fixture.causally_effective_choice",
+      "numerical_status": "ok",
+      "output_declaration": "frozen legal-decision logit vector",
+      "output_dimension": 1,
+      "peak_memory_bytes": 192,
+      "protected_metric_join": {
+        "fixture_exact_choice_effect": 1.0,
+        "strict_meaning_v2": null
+      },
+      "random_subspace_null_interval": [
+        0.0001192179280034716,
+        0.7891828095004606
+      ],
+      "random_subspace_null_mean": 0.2286243738780362,
+      "right_jacobian_principal_angles": [
+        0.0
+      ],
+      "runtime_seconds": 0.0,
+      "schema": "CausalSubspaceSnapshotV1",
+      "split": "held_out",
+      "state_ids": [
+        "causally_effective_choice-state-0",
+        "causally_effective_choice-state-1"
+      ],
+      "state_manifest_hash": "e1802ee5b04ea7d5eddfdb7f2b21238bfb8d8b491a00352109978088aa185711",
+      "support_count": 2,
+      "version_stamp": {
+        "code_commit": "f0eaf55c2a5d21d956573978ff39606bafe60925",
+        "code_dirty": true,
+        "components": {
+          "harness.experiments": "v69",
+          "harness.experiments.slm217_functional_spectra": "v1",
+          "harness.experiments.slm218_cross_attention_retention": "v1",
+          "harness.experiments.slm220_causal_subspace": "v1"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-23T15:29:29.335457+00:00"
+      }
+    },
+    {
+      "activation_orientation": "activation-side basis V[in,k]; declared-output Jacobian J[out,in]; restriction = ||J@V||_F^2 / ||J||_F^2",
+      "activation_variance": 14.25,
+      "calibrated_enrichment": -0.28115977716077645,
+      "checkpoint_reference": "fixture:cross_attention_candidate",
+      "constraint_debt_join": {
+        "d_good": null,
+        "d_legal": null
+      },
+      "control_energies": {
+        "covariance_top": 0.0,
+        "functional_bottom": 0.0,
+        "functional_middle": 1.0,
+        "functional_top": 0.0,
+        "norm_matched_random_checkpoint": 0.6738762506027441,
+        "raw_weight_top": 0.0,
+        "state_label_permutation": 0.5
+      },
+      "decision_stratum": "cross_attention_candidate",
+      "estimator_mode": "exact_plus_jvp_hutchinson",
+      "estimator_version": "activation-restriction-v1",
+      "exact_jvp_abs_error": 0.0,
+      "exact_restriction_energy": 0.0,
+      "floor_gate_claim_scope": "diagnostic geometry only; semantic causal interpretation blocked",
+      "functional_snapshot_reference": "slm217:fixture:cross_attention_candidate",
+      "gradient_norm": 1.0,
+      "group_ids": [
+        "cross_attention_candidate-group"
+      ],
+      "hutchinson": {
+        "ci95_high": 1.0,
+        "ci95_low": 1.0,
+        "frobenius_squared": 1.0,
+        "probes": 64,
+        "seed": 222,
+        "standard_error": 0.0
+      },
+      "input_dimension": 4,
+      "intervention_point": "complete nn.Linear input activation",
+      "jacobian_frobenius_squared": 1.0,
+      "jvp_restriction_energy": 0.0,
+      "k": 1,
+      "legal_membership_hash": "e61b663d18d11b3dabd1a5725d4a20243bcb94ac29ba0d529598ecd126398947",
+      "module_path": "fixture.cross_attention_candidate",
+      "numerical_status": "ok",
+      "output_declaration": "frozen legal-decision logit vector",
+      "output_dimension": 1,
+      "peak_memory_bytes": 192,
+      "protected_metric_join": {
+        "fixture_exact_choice_effect": 0.5,
+        "strict_meaning_v2": null
+      },
+      "random_subspace_null_interval": [
+        0.00024121692417791753,
+        0.8925553826793731
+      ],
+      "random_subspace_null_mean": 0.28115977716077645,
+      "right_jacobian_principal_angles": [
+        1.5707963267948966
+      ],
+      "runtime_seconds": 0.0,
+      "schema": "CausalSubspaceSnapshotV1",
+      "split": "held_out",
+      "state_ids": [
+        "cross_attention_candidate-state-0",
+        "cross_attention_candidate-state-1"
+      ],
+      "state_manifest_hash": "224bb67764f8ce58ac2ad84c92788350343e11990a05b181cd8667b2bb0b1433",
+      "support_count": 2,
+      "version_stamp": {
+        "code_commit": "f0eaf55c2a5d21d956573978ff39606bafe60925",
+        "code_dirty": true,
+        "components": {
+          "harness.experiments": "v69",
+          "harness.experiments.slm217_functional_spectra": "v1",
+          "harness.experiments.slm218_cross_attention_retention": "v1",
+          "harness.experiments.slm220_causal_subspace": "v1"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-23T15:29:29.338803+00:00"
+      }
+    },
+    {
+      "activation_orientation": "activation-side basis V[in,k]; declared-output Jacobian J[out,in]; restriction = ||J@V||_F^2 / ||J||_F^2",
+      "activation_variance": 14.25,
+      "calibrated_enrichment": 0.1794695659628538,
+      "checkpoint_reference": "fixture:adapter_geometry_candidate",
+      "constraint_debt_join": {
+        "d_good": null,
+        "d_legal": null
+      },
+      "control_energies": {
+        "covariance_top": 0.5,
+        "functional_bottom": 0.0,
+        "functional_middle": 0.0,
+        "functional_top": 0.5,
+        "norm_matched_random_checkpoint": 0.06982600324222434,
+        "raw_weight_top": 0.5,
+        "state_label_permutation": 0.0
+      },
+      "decision_stratum": "adapter_geometry_candidate",
+      "estimator_mode": "exact_plus_jvp_hutchinson",
+      "estimator_version": "activation-restriction-v1",
+      "exact_jvp_abs_error": 0.0,
+      "exact_restriction_energy": 0.5,
+      "floor_gate_claim_scope": "diagnostic geometry only; semantic causal interpretation blocked",
+      "functional_snapshot_reference": "slm217:fixture:adapter_geometry_candidate",
+      "gradient_norm": 0.9899494768024272,
+      "group_ids": [
+        "adapter_geometry_candidate-group"
+      ],
+      "hutchinson": {
+        "ci95_high": 0.9799999666213992,
+        "ci95_low": 0.9799999666213992,
+        "frobenius_squared": 0.9799999666213992,
+        "probes": 64,
+        "seed": 223,
+        "standard_error": 0.0
+      },
+      "input_dimension": 4,
+      "intervention_point": "complete nn.Linear input activation",
+      "jacobian_frobenius_squared": 0.9799999666213992,
+      "jvp_restriction_energy": 0.5,
+      "k": 1,
+      "legal_membership_hash": "e20dc36987da4fe2cf1dfa55c25c9619057bff6475a11d51daa761b5bbfe5dbc",
+      "module_path": "fixture.adapter_geometry_candidate",
+      "numerical_status": "ok",
+      "output_declaration": "frozen legal-decision logit vector",
+      "output_dimension": 1,
+      "peak_memory_bytes": 192,
+      "protected_metric_join": {
+        "fixture_exact_choice_effect": 0.7,
+        "strict_meaning_v2": null
+      },
+      "random_subspace_null_interval": [
+        0.0005107543152923284,
+        0.9116312530108281
+      ],
+      "random_subspace_null_mean": 0.3205304340371462,
+      "right_jacobian_principal_angles": [
+        0.7853981633974484
+      ],
+      "runtime_seconds": 0.0,
+      "schema": "CausalSubspaceSnapshotV1",
+      "split": "held_out",
+      "state_ids": [
+        "adapter_geometry_candidate-state-0",
+        "adapter_geometry_candidate-state-1"
+      ],
+      "state_manifest_hash": "41f6124ff31a9ae8bf4287d77921730ad5d68fc32da90ef069eab88814417ec6",
+      "support_count": 2,
+      "version_stamp": {
+        "code_commit": "f0eaf55c2a5d21d956573978ff39606bafe60925",
+        "code_dirty": true,
+        "components": {
+          "harness.experiments": "v69",
+          "harness.experiments.slm217_functional_spectra": "v1",
+          "harness.experiments.slm218_cross_attention_retention": "v1",
+          "harness.experiments.slm220_causal_subspace": "v1"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-23T15:29:29.342084+00:00"
+      }
+    }
+  ],
+  "source_commit": "f0eaf55c2a5d21d956573978ff39606bafe60925",
+  "verdict": "rejected",
+  "version_stamp": {
+    "code_commit": "f0eaf55c2a5d21d956573978ff39606bafe60925",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v69",
+      "harness.experiments.semantic_floor_gate": "v1",
+      "harness.experiments.slm217_functional_spectra": "v1",
+      "harness.experiments.slm218_cross_attention_retention": "v1",
+      "harness.experiments.slm220_causal_subspace": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-23T15:29:29.342404+00:00"
+  }
+}

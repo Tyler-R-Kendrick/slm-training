@@ -938,12 +938,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v68",
+      "version": "v69",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v69",
+          "date": "2026-07-23",
+          "note": "add SLM-220 activation-side causal restriction energy, exact and JVP estimators, null controls, and fail-closed fixture retrospective"
+        },
         {
           "version": "v68",
           "date": "2026-07-23",
@@ -3040,6 +3045,25 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial CorrelationTrapReportV1 with deterministic six-checkpoint prefix evidence, independent collapse preregistration, confirmation-timed warnings, native and WeightWatcher controls, and fail-closed decision"
+        }
+      ]
+    },
+    "harness.experiments.slm220_causal_subspace": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm220_causal_subspace.py",
+        "scripts/run_causal_subspace_fixture.py",
+        "tests/test_harnesses/experiments/test_slm220_causal_subspace.py",
+        "tests/test_scripts/test_run_causal_subspace_fixture.py",
+        "docs/design/iter-slm220-causal-subspace-20260723.json",
+        "docs/design/iter-slm220-causal-subspace-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial CausalSubspaceSnapshotV1 activation-side restriction estimator and rejected fixture-only retrospective"
         }
       ]
     },
