@@ -3776,6 +3776,11 @@
         {
           "version": "v11",
           "date": "2026-07-23",
+          "note": "no-bump: refresh only the clean fixture code_commit and timestamp after replaying the evidence stack onto squash-merged main; all measured arithmetic and objective fields are byte-identical"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
           "note": "no-bump: register the clean committed SLM-138 rerun and dedicated SLM-279 correction-only JSON and markdown produced by the v11 fixture contract"
         },
         {

@@ -711,13 +711,13 @@
   "stacked_params": 79394,
   "status": "wiring_only",
   "version_stamp": {
-    "code_commit": "e1e4bc7a3e8d1af0ad1cc29c1c80af0ababbbe67",
+    "code_commit": "d2cd782286a6064ca1a6f3308a1125b7683b8a4d",
     "code_dirty": false,
     "components": {
       "model.recursive_denoiser": "v11",
       "model.twotower": "v226"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-23T02:21:22.866122+00:00"
+    "stamped_at": "2026-07-23T02:37:40.198072+00:00"
   }
 }
