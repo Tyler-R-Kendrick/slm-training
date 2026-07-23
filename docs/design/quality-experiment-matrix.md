@@ -6092,3 +6092,19 @@ made. OpenWiki source instructions were updated, but local regeneration was
 blocked by the unavailable non-interactive provider token and is not claimed.
 Full evidence and source hashes:
 [`slm286-ship-gate-evidence-census-20260723.md`](slm286-ship-gate-evidence-census-20260723.md).
+
+# DSH3-13 — frozen CAP2 operator evaluation (2026-07-23)
+
+Freeze `cap2_operator_v1` at suite hash
+`16f210786bac7fd5f5edb64d13888c3cc7d634330a81b5065150e7a41fcb1d4d`.
+The 20 symbolic cases cover held-out transitions and composition, exact
+history/branch state identity, collapse equivalence, reordered and stale-ref
+conflicts, marker permutation, and merge replay/conflict contracts. CERT_CAP1
+is unavailable, so the suite intentionally contains zero NL rows.
+
+The CPU fixture oracle passes 20/20 (95% Wilson lower 0.8389); unchanged input
+and a generic valid AST pass 0/20; a constant operator passes 1/20. AgentV
+passes all 6 evidence cases with zero execution errors. This freezes a
+discriminative evaluator contract only: no learned model, checkpoint, strict
+ship suite, promotion, or CAP2 certificate was evaluated. Full evidence:
+[`dsh3-13-cap2-operator-eval-20260723.md`](dsh3-13-cap2-operator-eval-20260723.md).

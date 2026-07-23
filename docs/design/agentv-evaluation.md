@@ -33,6 +33,7 @@ correctly imports the SDK from `@agentv/core`.
 | `evaluate_loss_suites` report writer | Complete finite diagnostic report; explicitly not a ship claim |
 | `evaluate_tasks` | Fixture prediction evidence; fails the AgentV quality case while ship gates are not run |
 | `diagnose_eval` | Diagnostic completion and length-budget result; explicitly not a ship claim |
+| `run_cap2_operator_eval_fixture` | Frozen CAP2 symbolic suite identity, oracle replay, three anti-cheat controls, and uncertified-NL refusal; fixture contract only |
 | Pure gate calculators and web read endpoints | No run is created because they evaluate supplied data without executing a model eval |
 
 New evaluation entrypoints must call the shared publisher instead of inventing

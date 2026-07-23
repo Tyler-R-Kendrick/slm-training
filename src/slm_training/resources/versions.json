@@ -526,6 +526,24 @@
         }
       ]
     },
+    "evals.cap2_operator": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/cap2_operator.py",
+        "src/slm_training/resources/evals/cap2_operator_v1.json",
+        "scripts/run_cap2_operator_eval_fixture.py",
+        "tests/test_evals/test_cap2_operator.py",
+        "tests/test_scripts/test_run_cap2_operator_eval_fixture.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial frozen CAP2 symbolic operator suite with replayed held-out composition, confidence bounds, telemetry, and anti-cheat controls"
+        }
+      ]
+    },
     "evals.judge_resolution": {
       "version": "v1",
       "kind": "metric",
@@ -717,12 +735,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v20",
+      "version": "v21",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v21",
+          "date": "2026-07-23",
+          "note": "Add the frozen CAP2 operator, history, collapse, permutation, and anti-cheat scoring contract"
+        },
         {
           "version": "v20",
           "date": "2026-07-23",
