@@ -1287,6 +1287,29 @@ for a later coupling perturbation; no semantic, training, optimizer, promotion,
 or ship claim is authorized. Evidence:
 [`iter-slm220-causal-subspace-20260723.md`](iter-slm220-causal-subspace-20260723.md).
 
+## Compiler-owned AST operator contracts (DSH3-01 / SLM-369)
+
+**Fidelity label: adapted contract.** The versioned operator, typed-reference,
+effect, and proof records adapt the explicit edit/action representation used by
+neural program transformation and graph-edit work into the repository's
+compiler-owned DSL boundary. The records do not claim faithful reproduction of
+one paper and do not make learned embeddings authoritative for identity or
+legality.
+
+| | |
+| --- | --- |
+| **Primary sources** | [Allamanis et al., 2019](https://arxiv.org/abs/1810.13337); [Brockschmidt et al., 2019](https://arxiv.org/abs/1911.01205); [Yao et al., 2020](https://arxiv.org/abs/2005.13209) |
+| **Schemas** | `AstOperatorV1`, six opaque typed references, `ActionEffectV1`, `OperatorApplicationV1`, deterministic proof/rejection |
+| **Authority boundary** | declaration/evidence only; pack-owned execution and legal-set enumeration remain later DSH3 work |
+| **Evidence** | nine deterministic unit tests; no train, eval, model, checkpoint, or capability claim |
+
+Equivalent declarations canonicalize set-like metadata before SHA-256
+fingerprinting. Successful application identity binds typed arguments,
+before/after state and AST digests, the exact effect fingerprint, compiler and
+source provenance, and proof checks. Rejections cannot claim a resulting state.
+Evidence and scope:
+[`dsh3-01-operator-contracts-20260723.md`](dsh3-01-operator-contracts-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
