@@ -61,7 +61,7 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
 # (candidate_pending_calibration) so recording it can never green a gate.
 MEANINGFUL_METRIC_POLICY = {
     "active_primary": "meaningful_program_v1",
-    "threshold_version": "openui_ship_gates_v1",
+    "threshold_version": "openui_ship_gates_v2",
     "meaningful_program_v1": {
         "version": "1.0.0",
         "wire_field": "meaningful_program_rate",
@@ -78,7 +78,7 @@ MEANINGFUL_METRIC_POLICY = {
 def _meaningful_metric_policy(
     policy: dict[str, dict[str, float]], *, custom: bool
 ) -> dict[str, Any]:
-    policy_id = "openui_ship_gates_v1"
+    policy_id = "openui_ship_gates_v2"
     source = "DEFAULT_SHIP_GATES"
     if custom:
         encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
@@ -142,12 +142,27 @@ def evaluate_ship_gates(
     reported as `missing_suite` failures (cannot claim pass without evidence).
     """
     policy = thresholds or DEFAULT_SHIP_GATES
-    actual, checks, failures = run_gate_checks(
+    actual, checks, failures, categorized = run_gate_checks(
         suites,
         policy,
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
     )
+    for suite_name in policy:
+        metrics = suites.get(suite_name)
+        if metrics is None:
+            continue
+        timeout_count = metrics.get("decode_timeout_count")
+        if (
+            isinstance(timeout_count, (int, float))
+            and not isinstance(timeout_count, bool)
+            and timeout_count > 0
+        ):
+            key = f"{suite_name}:decode_timeout_count"
+            message = f"{key} actual={timeout_count!r} need=0"
+            checks[key] = False
+            failures.append(message)
+            categorized["runtime_failures"].append(message)
 
     return {
         "policy": policy,
@@ -157,6 +172,7 @@ def evaluate_ship_gates(
         "actual": actual,
         "gates": checks,
         "failures": failures,
+        **categorized,
         "pass": all(checks.values()) if checks else False,
         "note": (
             "Honest ship gates require all policy suites and score structure only "
