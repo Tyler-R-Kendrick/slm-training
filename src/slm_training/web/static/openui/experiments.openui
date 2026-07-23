@@ -13,7 +13,7 @@ tHistory = StatTile("Historical runs", flags.meta.history_runs, null, "")
 tRevision = StatTile("Registry", flags.meta.revision, null, "")
 flagTileRow = Grid([tFlags, tBoolean, tHistory, tRevision], "190px")
 flagColumns = [{ key: "key", label: "OpenFeature flag" }, { key: "type", label: "type" }, { key: "default", label: "default" }]
-flagTable = DataTable(flagColumns, flags.rows, 0, "", true, "Search feature flags")
+flagTable = DataTable(flagColumns, flags.rows, 0, "key", true, "Search feature flags", "href")
 flagPanel = Panel("All feature flags", [flagTable], ProvenanceBadge(flags.provenance))
 
 tExp = StatTile("Experiments", board.meta.count, null, "moss")

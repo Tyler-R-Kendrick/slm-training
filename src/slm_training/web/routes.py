@@ -116,6 +116,14 @@ def experiment_flags(request: Request) -> dict[str, Any]:
     return _readers(request).experiment_flags()
 
 
+@observability_router.get("/experiment-flags/{key}")
+def experiment_flag(request: Request, key: str) -> dict[str, Any]:
+    detail = _readers(request).experiment_flag(key)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="unknown experiment feature flag")
+    return detail
+
+
 @observability_router.get("/scoreboards/{kind}")
 def scoreboard(request: Request, kind: str) -> dict[str, Any]:
     board = _readers(request).scoreboard(kind)

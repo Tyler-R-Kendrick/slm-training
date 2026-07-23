@@ -24,6 +24,10 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const flags = usePoll<any>("/api/experiment-flags", 15000);
 
   const results = board.data?.results ?? [];
+  const flagRows = (flags.data?.flags ?? []).map((flag: any) => ({
+    ...flag,
+    href: `/experiments/flags/${encodeURIComponent(flag.key)}`,
+  }));
   const metricColumns = board.data?.metric_columns ?? [];
   const passed = results.filter((r: any) => r.pass === true).length;
 
@@ -74,9 +78,9 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
             { key: "type", label: "type" },
             { key: "default", label: "default" },
           ]}
-          rows={flags.data?.flags ?? []}
+          rows={flagRows}
           render={{
-            key: (r) => <span className="mono">{r.key}</span>,
+            key: (r) => <a className="mono runlink" title="open feature flag detail" onClick={() => navigate(r.href)}>{r.key}</a>,
             default: (r) => <span className="mono">{typeof r.default === "object" ? JSON.stringify(r.default) : fmt(r.default)}</span>,
           }}
         />

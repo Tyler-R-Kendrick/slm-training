@@ -2995,6 +2995,13 @@ def test_features_levers_registry(ro_client: TestClient) -> None:
     assert any(row["key"] == "dashboard.default-renderer" for row in payload["flags"])
 
 
+def test_experiment_feature_flag_detail_endpoint(ro_client: TestClient) -> None:
+    response = ro_client.get("/api/experiment-flags/slm.schema_in_context")
+    assert response.status_code == 200
+    assert response.json()["key"] == "slm.schema_in_context"
+    assert ro_client.get("/api/experiment-flags/slm.not-a-flag").status_code == 404
+
+
 def test_read_only_blocks_execution(ro_client: TestClient) -> None:
     resp = ro_client.post(
         "/api/jobs",

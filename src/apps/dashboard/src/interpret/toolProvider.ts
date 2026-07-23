@@ -161,6 +161,7 @@ export const toolProvider: Record<string, QueryFn> = {
       },
       rows: (d.flags ?? []).map((flag: any) => ({
         key: flag.key,
+        href: `/experiments/flags/${encodeURIComponent(flag.key)}`,
         type: flag.type,
         default: typeof flag.default === "object" ? JSON.stringify(flag.default) : String(flag.default),
       })),

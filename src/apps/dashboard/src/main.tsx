@@ -10,6 +10,7 @@ import { Smoke } from "./pages/Smoke";
 import { Checkpoints } from "./pages/Checkpoints";
 import { Playground } from "./pages/Playground";
 import { RunDetail } from "./pages/RunDetail";
+import { ExperimentFlagDetail } from "./pages/ExperimentFlagDetail";
 import { DslView } from "./interpret/DslView";
 import {
   defaultDashboardRenderer,
@@ -177,9 +178,12 @@ function App() {
   const runMatch = path.startsWith("/runs/")
     ? decodeURIComponent(path.slice("/runs/".length))
     : null;
+  const flagMatch = path.startsWith("/experiments/flags/")
+    ? decodeURIComponent(path.slice("/experiments/flags/".length))
+    : null;
   const route = ROUTES.find((r) => r.path === path) ?? ROUTES[0];
   // A run-detail view is reached from Experiments — keep that nav item lit.
-  const activePath = runMatch ? "/experiments" : route.path;
+  const activePath = runMatch || flagMatch ? "/experiments" : route.path;
 
   return (
     <CapsContext.Provider value={caps}>
@@ -243,6 +247,7 @@ function App() {
           <FreshnessBanner />
           {(() => {
             if (runMatch) return <RunDetail runId={runMatch} navigate={navigate} />;
+            if (flagMatch) return <ExperimentFlagDetail flagKey={flagMatch} navigate={navigate} />;
             const Compiled = COMPILED[route.path];
             if (mode === "compiled" && Compiled) return <Compiled key={`${route.path}:compiled`} navigate={navigate} />;
             return <DslView key={`${route.path}:interpreted`} page={route.path} navigate={navigate} />;
