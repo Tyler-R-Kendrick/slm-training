@@ -6662,3 +6662,11 @@ parse/strict/fidelity/structure/recall 0.8/0.4/0.4733/0.3232/0.3619 with one
 timeout and four fallbacks. The head still applies zero times. Reject E1023,
 close the scalar sweep, and isolate auxiliary gradients next. See
 `iter-e1023-e1025-low-binder-component-20260722.md`.
+
+E1026 trains the v268 detached head for 450 steps in 38.82s. Gradient tests
+prove exact base-model isolation. E1027-E1028 are nevertheless
+prediction-identical to E1021-E1022: held remains
+0.6/0.4/0.4333/0.3050/0.2952 for parse/strict/fidelity/structure/recall with
+two timeouts, and the head applies zero times. Retain v268 safety, reject
+E1026, and diagnose bound-declaration reachability before further head tuning.
+See `iter-e1026-e1028-detached-binder-component-20260722.md`.
