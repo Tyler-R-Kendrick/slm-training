@@ -51,7 +51,7 @@ class TrainDataConfig:
     rico_path: Path | None = Path(
         "src/slm_training/resources/rico/semantic_train.jsonl"
     )
-    # rico | fixture | existing | both | awwwards | rico+awwwards | all
+    # rico | fixture | existing | staged | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
     derive_from: Path | None = None
@@ -229,13 +229,17 @@ def _normalize_record(
                 fragment_replacements.update(result.replacements)
                 rewritten_outputs.append(
                     OutputTarget(
-                        text=result.source if sanitize.mode == "enforce" else target.text,
+                        text=result.source
+                        if sanitize.mode == "enforce"
+                        else target.text,
                         kind=target.kind,
                         category=target.category,
                     )
                 )
             accepted_outputs = rewritten_outputs
-        primary = validate_output(primary_source, record.target_kind, record.target_category)
+        primary = validate_output(
+            primary_source, record.target_kind, record.target_category
+        )
         assert_symbol_only_output(primary, output_kind=record.target_kind)
         for target in accepted_outputs:
             validate_output(target.text, target.kind, target.category)
@@ -310,9 +314,7 @@ def _normalize_record(
         if not eligible:
             sanitize_meta = {"mode": sanitize.mode, "skip_reason": skip_reason}
         else:
-            outcome = sanitize_openui(
-                scrubbed, prompt=record.prompt, options=sanitize
-            )
+            outcome = sanitize_openui(scrubbed, prompt=record.prompt, options=sanitize)
             sanitize_meta = outcome.to_meta(sanitize.mode)
             if sanitize.mode == "enforce" and outcome.applied:
                 scrubbed = outcome.openui
@@ -1216,6 +1218,32 @@ def build_train_data(
     # rejected.jsonl with its stage + reason (never silently discarded).
     rejections: list[dict] = []
 
+    staged_materialization = None
+    staged_preference_pairs: list = []
+    if synthesis_plan is not None:
+        from slm_training.harnesses.train_data.staged_materialization import (
+            materialize_staged_graph,
+        )
+
+        staged_materialization = materialize_staged_graph(
+            synthesis_plan,
+            output_dir=config.output_dir,
+            require_split=config.require_split,
+        )
+        seeds.extend(staged_materialization.records)
+        staged_preference_pairs.extend(staged_materialization.preference_pairs)
+        for rejection in staged_materialization.rejections:
+            rejections.append(
+                rejection_entry(
+                    "staged_materialization",
+                    str(rejection["reason"]),
+                    record_id=str(rejection["artifact_id"]),
+                    detail=dict(rejection["detail"]),
+                )
+            )
+    elif source == "staged":
+        raise ValueError("train source 'staged' requires --synthesis-plan")
+
     if source in {"fixture", "both", "fixtures", "all"}:
         fixture_records, fixture_errors = _records_from_fixtures(config)
         seeds.extend(fixture_records)
@@ -1266,6 +1294,7 @@ def build_train_data(
         "both",
         "awwwards",
         "existing",
+        "staged",
         "rico+awwwards",
         "programspec",
         "language_contract",
@@ -1333,10 +1362,15 @@ def build_train_data(
     lineage_index: LineageIndex = {}
     for seed in seeds:
         candidates = [seed]
-        if seed.target_kind == "document" and (seed.meta or {}).get("task") in {
-            None,
-            "generation",
-        }:
+        if (
+            seed.source != "staged"
+            and seed.target_kind == "document"
+            and (seed.meta or {}).get("task")
+            in {
+                None,
+                "generation",
+            }
+        ):
             candidates.extend(synth.expand(seed))
             if source == "existing" and (
                 config.include_edit_derivatives or config.repairs_per_program > 0
@@ -1353,7 +1387,11 @@ def build_train_data(
                             detail={"error": str(exc)},
                         )
                     )
-        if config.namespace_augment and seed.target_kind == "document":
+        if (
+            seed.source != "staged"
+            and config.namespace_augment
+            and seed.target_kind == "document"
+        ):
             from slm_training.harnesses.train_data.synth import (
                 NamespaceAugmentSynthesizer,
             )
@@ -1367,9 +1405,7 @@ def build_train_data(
             candidate = _apply_governance_gate(candidate)
             lineage_index[candidate.id] = lineage_entry(candidate)
             try:
-                collected.append(
-                    _normalize_record(candidate, sanitize=sanitize_options)
-                )
+                normalized = _normalize_record(candidate, sanitize=sanitize_options)
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
                 rejections.append(
@@ -1380,6 +1416,56 @@ def build_train_data(
                         detail={"error": str(exc)},
                     )
                 )
+                if candidate.source == "staged" and staged_materialization is not None:
+                    artifact_id = str(
+                        (candidate.meta.get("staged_sources") or {}).get(
+                            "graph_node_id"
+                        )
+                        or candidate.id
+                    )
+                    if artifact_id in staged_materialization.nodes:
+                        staged_materialization.store.quarantine_node(
+                            staged_materialization.nodes[artifact_id],
+                            ("parse_or_contract_error",),
+                            {"error": str(exc)},
+                        )
+                continue
+            if candidate.source == "staged":
+                from slm_training.harnesses.train_data.staged_materialization import (
+                    StagedValidationError,
+                    validate_staged_record,
+                )
+
+                try:
+                    validation = validate_staged_record(normalized, synthesis_plan)
+                except StagedValidationError as exc:
+                    artifact_id = str(
+                        (candidate.meta.get("staged_sources") or {}).get(
+                            "graph_node_id"
+                        )
+                        or candidate.id
+                    )
+                    errors.append({"id": candidate.id, "error": str(exc)})
+                    rejections.append(
+                        rejection_entry(
+                            "staged_validation",
+                            exc.reason,
+                            record=candidate,
+                            detail=exc.detail,
+                        )
+                    )
+                    if (
+                        staged_materialization is not None
+                        and artifact_id in staged_materialization.nodes
+                    ):
+                        staged_materialization.store.quarantine_node(
+                            staged_materialization.nodes[artifact_id],
+                            (exc.reason,),
+                            exc.detail,
+                        )
+                    continue
+                normalized.meta["staged_validation"] = validation
+            collected.append(normalized)
 
     verifier_rejected: list[dict] = []
     verified: list[ExampleRecord] = []
@@ -1779,7 +1865,34 @@ def build_train_data(
     write_jsonl(records_path, deduped)
 
     preference_pairs_path: Path | None = None
-    if config.emit_preference_pairs and scope_preference_pairs:
+    staged_admitted_ids = {record.id for record in deduped if record.source == "staged"}
+    admitted_staged_pairs = []
+    for pair in staged_preference_pairs:
+        record_ids = set((pair.meta or {}).get("record_ids") or ())
+        if record_ids and record_ids <= staged_admitted_ids:
+            admitted_staged_pairs.append(pair)
+    staged_preference_pairs = admitted_staged_pairs
+    if config.emit_preference_pairs and staged_preference_pairs:
+        from slm_training.harnesses.preference import write_pairs
+
+        preference_pairs = []
+        if scope_preference_pairs:
+            _write_scope_preference_pairs(out_dir, scope_preference_pairs)
+            from slm_training.harnesses.preference import load_pairs
+
+            preference_pairs.extend(load_pairs(out_dir / "preference_pairs.jsonl"))
+        preference_pairs.extend(staged_preference_pairs)
+        preference_pairs.sort(
+            key=lambda pair: (
+                pair.prompt,
+                pair.chosen,
+                pair.rejected,
+                json.dumps(pair.meta or {}, sort_keys=True),
+            )
+        )
+        preference_pairs_path = out_dir / "preference_pairs.jsonl"
+        write_pairs(preference_pairs_path, preference_pairs)
+    elif config.emit_preference_pairs and scope_preference_pairs:
         preference_pairs_path = _write_scope_preference_pairs(
             out_dir, scope_preference_pairs
         )
@@ -1851,9 +1964,7 @@ def build_train_data(
             config=OperatorCorpusConfig(
                 max_roots=config.operator_corpus_max_roots,
                 actions_per_state=config.operator_corpus_actions_per_state,
-                max_combinations_per_operator=(
-                    config.operator_corpus_max_combinations
-                ),
+                max_combinations_per_operator=(config.operator_corpus_max_combinations),
                 sibling_forks=config.operator_corpus_sibling_forks,
             ),
         )
@@ -1953,9 +2064,7 @@ def build_train_data(
         "prompt_slot_contract": bool(config.prompt_slot_contract),
         "prompt_component_contract": bool(config.prompt_component_contract),
         "prompt_component_contract_mode": config.prompt_component_contract_mode,
-        "prompt_semantic_role_contract": bool(
-            config.prompt_semantic_role_contract
-        ),
+        "prompt_semantic_role_contract": bool(config.prompt_semantic_role_contract),
         "sanitize_mode": sanitize_mode,
         "sanitize": sanitization_section,
         "structure_reserved_rejected": len(structure_reserved_rejected),
@@ -2021,9 +2130,7 @@ def build_train_data(
             "operator_corpus_max_combinations": (
                 config.operator_corpus_max_combinations
             ),
-            "operator_corpus_sibling_forks": (
-                config.operator_corpus_sibling_forks
-            ),
+            "operator_corpus_sibling_forks": (config.operator_corpus_sibling_forks),
         },
         "operator_corpus": (
             {
@@ -2034,7 +2141,7 @@ def build_train_data(
             if operator_corpus_result is not None
             else None
         ),
-        "preference_pairs": len(scope_preference_pairs),
+        "preference_pairs": len(scope_preference_pairs) + len(staged_preference_pairs),
         "preference_pairs_path": (
             str(preference_pairs_path) if preference_pairs_path else None
         ),
@@ -2107,6 +2214,27 @@ def build_train_data(
         "version_stamp": version_stamp,
     }
     if synthesis_plan is not None:
+        from slm_training.harnesses.train_data.staged_materialization import (
+            dataset_card_markdown,
+            graph_publication,
+        )
+
+        assert staged_materialization is not None
+        graph = graph_publication(
+            staged_materialization,
+            accepted_record_ids=staged_admitted_ids,
+        )
+        graph["version_stamp"] = version_stamp
+        dataset_card_path = out_dir / "DATASET_CARD.md"
+        dataset_card_path.write_text(
+            dataset_card_markdown(
+                synthesis_plan,
+                graph,
+                version=config.version,
+                version_stamp=version_stamp,
+            ),
+            encoding="utf-8",
+        )
         manifest["synthesis_plan"] = {
             "plan_id": synthesis_plan.plan_id,
             "sha256": synthesis_plan.sha,
@@ -2117,6 +2245,13 @@ def build_train_data(
             "generators": [item.to_dict() for item in synthesis_plan.generators],
             "validators": [item.to_dict() for item in synthesis_plan.validators],
             "gate_spec": synthesis_plan.gate_spec.to_dict(),
+        }
+        manifest["artifact_graph"] = graph
+        manifest["dataset_card"] = dataset_card_path.as_posix()
+        manifest["staged_materialization"] = {
+            "accepted_count": graph["accepted_count"],
+            "rejected_count": graph["rejected_count"],
+            "preference_pair_count": len(staged_preference_pairs),
         }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

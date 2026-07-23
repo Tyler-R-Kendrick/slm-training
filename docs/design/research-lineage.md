@@ -1667,6 +1667,22 @@ typed quarantine evidence, never silently dropped. No staged corpus, model,
 checkpoint, certificate, or ship claim was produced. Evidence:
 [`dsh0-05-artifact-graph-20260723.md`](dsh0-05-artifact-graph-20260723.md).
 
+## Synthesis-plan train-data materialization (DSH0-06 / SLM-350)
+
+**Fidelity label: repository contract.** Plan destinations now feed their
+append-only artifact graphs through the single canonical train-data path.
+Typed question/answer/QA identities survive on each `ExampleRecord` and
+canonical preference, while plan-authoritative symbolic-surface, active-pack,
+integrity, and tokenizer round trips precede the existing quality and leakage
+gates.
+
+Invalid targets retain both train-data rejection and graph quarantine evidence.
+Plan-only manifests publish graph identity/version/counts plus a deterministic
+dataset card; the pinned no-plan fixture remains byte-identical. No durable
+corpus, model, checkpoint, capability certificate, or ship claim was produced.
+Evidence:
+[`dsh0-06-synthesis-materialization-20260723.md`](dsh0-06-synthesis-materialization-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

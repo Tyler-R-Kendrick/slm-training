@@ -4199,7 +4199,7 @@
       ]
     },
     "harness.synthesis_plan": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/synthesis_plan.py",
@@ -4210,6 +4210,11 @@
       ],
       "history": [
         {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "refresh the executable CAP0 fixture to the v17 train-data materialization contract and preserve its prior identity as historical evidence"
+        },
+        {
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial checked-in SynthesisPlanV1, pack-authoritative component preflight, and executable capability transition state machine"
@@ -4217,7 +4222,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v16",
+      "version": "v17",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -4228,6 +4233,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v17",
+          "date": "2026-07-23",
+          "note": "materialize synthesis-plan artifact graphs through canonical ExampleRecord, validation, preference, quality, leakage, and publication paths"
+        },
         {
           "version": "v16",
           "date": "2026-07-23",

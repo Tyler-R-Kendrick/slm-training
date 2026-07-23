@@ -1,0 +1,60 @@
+{
+  "schema": "dsh0_synthesis_materialization_evidence/v1",
+  "issue": "SLM-350",
+  "disposition": "adopt_contract",
+  "run_class": "unit_fixture",
+  "plan": {
+    "path": "src/slm_training/resources/synthesis_plans/dsh0_cap0_fixture.json",
+    "plan_id": "dsh0-cap0-fixture",
+    "plan_sha256": "f0778bd88005687242a73626bdf8b4239750bbc9f6d10c06fae92a6240c9daa1",
+    "file_sha256": "5165330d3c3a37093e5dd2c90910d380d2615141d3a9eece1bbb6f8352c29b60",
+    "dsl_pack_id": "openui",
+    "dsl_pack_version": "b37da286bdbcc41c3227f7ec6a379f78c9c62348be682cdbd7544c4feb77cb2d",
+    "surface_policy_version": "symbolic_surface_policy/v1",
+    "train_data_version": "v17",
+    "graph_schema": "artifact_graph_sidecar/v1"
+  },
+  "acceptance": {
+    "no_plan_records_sha256": "0831fdee53294f5fb41588f36b2fa3f6605ade4dd976ccbd9212f28f30ef2f6a",
+    "no_plan_fixture_byte_identical": true,
+    "typed_graph_sources_on_every_staged_row": true,
+    "plan_hash_on_every_staged_row": true,
+    "symbolic_surface_checked": true,
+    "active_pack_parse_static_checked": true,
+    "canonical_round_trip_checked": true,
+    "synthetic_integrity_checked": true,
+    "dsl_tokenizer_round_trip_checked": true,
+    "existing_quality_and_leakage_pipeline_used": true,
+    "canonical_preference_optional": true,
+    "resume_rebuild_records_and_card_byte_stable": true,
+    "invalid_rows_rejected_with_graph_quarantine": true,
+    "focused_tests_passed": 50
+  },
+  "source_sha256": {
+    "src/slm_training/harnesses/train_data/staged_materialization.py": "e2617ffde441c9517f97b64f5acb904d20cb60082044dd4a8a680d6b093187e0",
+    "src/slm_training/harnesses/train_data/pipeline.py": "5b8ff757f3de233a3e2855bb519569810af0e155ea62a7f3cdf8a3761364c8d4",
+    "scripts/build_train_data.py": "c243d248e4d4ca83480656a8b11f914aac6c3465c4aed69e6ece695780c07c47",
+    "tests/test_harnesses/train_data/test_staged_materialization.py": "b3ed3c43e9f4dc985b95f83a71a54bc8028aae89908994c6a558bfca24d66e36"
+  },
+  "honesty": {
+    "durable_data_build": false,
+    "train_run": false,
+    "eval_run": false,
+    "benchmark_run": false,
+    "checkpoint_written": false,
+    "agentv_required": false,
+    "certificate_claim": false,
+    "ship_claim": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d916d8f5fddd146b4b572974e5d9b0cbfadde838",
+    "code_dirty": true,
+    "components": {
+      "harness.synthesis_plan": "v2",
+      "harness.train_data": "v17",
+      "dsl.symbolic_surface": "v1"
+    },
+    "stamped_at": "2026-07-23T20:36:16.835328+00:00"
+  }
+}

@@ -27,6 +27,11 @@ The committed CAP0 fixture pins:
 | validators | `pack.oracle` / `v15`; `symbolic_surface` / `v1` |
 | gate | `gates.ship/openui_ship_gates_v2` |
 
+This table preserves the original SLM-347 fixture identity. SLM-350 refreshed
+the live fixture to `harness.train_data/v17` after adding graph
+materialization; its current canonical identity is recorded in
+[`dsh0-06-synthesis-materialization-20260723.md`](dsh0-06-synthesis-materialization-20260723.md).
+
 `SynthesisPlanRegistry` owns only plans. It resolves pack IDs through the
 canonical `DslPack` registry and therefore does not create a parallel language
 registry.
