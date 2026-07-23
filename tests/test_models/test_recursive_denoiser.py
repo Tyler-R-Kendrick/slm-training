@@ -1991,9 +1991,14 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
         published.update(
             run_dir=run_dir, name=name, claim=claim, cases=cases
         )
+        artifact_root = Path(run_dir)
         return {
             "format": "AgentEvals JSONL",
             "sdk": "@agentv/core",
+            "spec": str(artifact_root / "agentv" / "fixture.eval.jsonl"),
+            "artifacts": {
+                "runDir": str(artifact_root / "agentv" / "fixture"),
+            },
             "summary": {"passed": len(cases), "executionErrors": 0},
         }
 
@@ -2016,6 +2021,11 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     assert published["run_dir"] == tmp_path
     assert published["name"] == "slm282-recurrence-health"
     assert published["claim"] == "fixture_recurrence_health_not_ship"
+    assert report["agentv"]["spec"] == "output-dir://agentv/fixture.eval.jsonl"
+    assert (
+        report["agentv"]["artifacts"]["runDir"]
+        == "output-dir://agentv/fixture"
+    )
     assert [case["id"] for case in published["cases"]] == [
         "matched-controls",
         "finite-complete-telemetry",
@@ -2024,7 +2034,7 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     ]
     assert (
         report["version_stamp"]["components"]["model.recursive_denoiser"]
-        == "v13"
+        == "v14"
     )
 
 
