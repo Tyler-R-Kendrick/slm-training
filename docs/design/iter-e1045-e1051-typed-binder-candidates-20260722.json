@@ -350,7 +350,7 @@
       "agentv": "0/1"
     },
     "E1071": {
-      "status": "completed_smoke_pass_pending_held",
+      "status": "completed_rejected_targeted_held",
       "run_id": "e1071_v271_bound_only_arity_395",
       "steps_requested": 395,
       "steps_completed": 395,
@@ -366,7 +366,7 @@
       "checkpoint_sha256": "0d2c4c4806d7815906a110aff4ec0d9029823d202447ba87de40b641dc6f9a12",
       "checkpoint_sync": "disabled_scratch",
       "causal_comparison_valid": true,
-      "next_action": "run targeted Dual Card and Settings held rows"
+      "next_action": "none; targeted held rows reject checkpoint"
     },
     "E1072": {
       "status": "completed_smoke_pass",
@@ -384,6 +384,32 @@
       "fallback_count": 0,
       "prediction_identical_to_e1063": true,
       "agentv": "0/1"
+    },
+    "E1073_E1074": {
+      "status": "completed_rejected_targeted_subsets",
+      "suite": "held_out",
+      "runs": {
+        "dual_card": {
+          "run_id": "e1073_v271_bound_only_arity_395_dual_card",
+          "parse": 0.0,
+          "strict_v2": 0.0,
+          "decode_timeouts": 1,
+          "agentv": "0/1"
+        },
+        "settings": {
+          "run_id": "e1074_v271_bound_only_arity_395_settings",
+          "parse": 1.0,
+          "strict_v2": 1.0,
+          "fidelity": 1.0,
+          "structural_similarity": 0.6,
+          "component_recall": 1.0,
+          "reward": 0.937,
+          "decode_timeouts": 0,
+          "fallback_count": 0,
+          "agentv": "0/1"
+        }
+      },
+      "finding": "395-step exposure restores smoke but leaves the same Dual Card timeout and Settings success as E1064-E1065"
     }
   },
   "disposition": {
@@ -402,8 +428,9 @@
     "e1069_checkpoint_rejected": true,
     "e1071_pending_own_resume": false,
     "e1071_pending_eval": false,
-    "e1071_pending_targeted_held": true,
-    "next_hypothesis": "test v271 bound-only arity at the 395-step exposure that passed E1045 smoke"
+    "e1071_pending_targeted_held": false,
+    "e1071_checkpoint_rejected": true,
+    "next_hypothesis": "improve root-list construction through a representation other than generic binder arity, scalar calibration, or exposure"
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

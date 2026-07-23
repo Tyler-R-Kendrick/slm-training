@@ -187,3 +187,16 @@ predictions are identical to E1063 and the arity-off E1052 arm. The run emits
 AgentEvals JSONL plus a pinned AgentV bundle (`0/1`). Proceed only to the
 targeted Dual Card and Settings rows; the checkpoint remains pending held
 disposition.
+
+E1073 Dual Card times out to an empty prediction. E1074 Settings is
+strict-valid with fidelity 1.0, structure 0.60, recall 1.0, and reward 0.937.
+These exactly reproduce E1064-E1065: additional exposure restores clean smoke
+but does not create a useful bound-only arity signal for the root-list
+decision. All three E1072-E1074 evaluations emit AgentEvals JSONL and pinned
+AgentV bundles (`0/3`).
+
+Reject E1071 without a redundant full-held run. Never sync, promote, serve,
+resume, or use it as a parent. Retain v271's ownership correction because it
+prevents the Settings collapse, but the next quality arm must improve root-list
+construction through a different representation rather than generic binder
+arity or another scalar/exposure sweep.

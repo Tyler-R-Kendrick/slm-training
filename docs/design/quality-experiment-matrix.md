@@ -6788,4 +6788,7 @@ continuation completes in 11.96 seconds, reaching exactly 395 steps and 107.13
 cumulative train seconds. Final binder-component loss/accuracy/candidates are
 0.9040/0.7692/15.46. E1072 strict smoke reaches strict-v2/fidelity 1.0,
 structure 0.5717, recall 0.75, and reward 0.957 with no timeout or fallback;
-all predictions exactly match E1063. Proceed to targeted held rows.
+all predictions exactly match E1063. E1073 Dual Card still times out, while
+E1074 Settings is strict-valid with fidelity/recall 1.0 and structure 0.60,
+exactly reproducing E1064-E1065. Reject E1071 without a redundant full-held
+run; retain v271 ownership and close the exposure sweep.
