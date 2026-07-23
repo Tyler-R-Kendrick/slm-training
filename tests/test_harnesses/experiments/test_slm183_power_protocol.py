@@ -12,6 +12,7 @@ from slm_training.harnesses.experiments.slm183_power_protocol import (
     PowerProtocolReport,
     analyze_existing_iter,
     build_default_manifest,
+    build_experiment_campaign,
     render_markdown,
     run_variance_fixture,
 )
@@ -29,6 +30,14 @@ def test_manifest_round_trip() -> None:
     manifest = build_default_manifest()
     reconstructed = type(manifest).from_dict(manifest.to_dict())
     assert reconstructed == manifest
+
+
+def test_fixture_embeds_canonical_campaign_with_fallback_endpoint() -> None:
+    campaign = build_experiment_campaign(seeds=(0, 1))
+    assert campaign.claim_class == "wiring"
+    assert campaign.seeds == (0, 1)
+    assert campaign.endpoints[0].metric == "binder_reference_f1"
+    assert campaign.multiplicity_families[0].method == "holm"
 
 
 def test_run_variance_fixture_produces_report() -> None:

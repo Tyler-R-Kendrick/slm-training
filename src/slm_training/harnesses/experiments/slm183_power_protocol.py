@@ -9,6 +9,7 @@ No model is trained and no GPU is required.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from dataclasses import asdict, dataclass, field
 from collections.abc import Sequence
@@ -17,13 +18,17 @@ from typing import Any
 
 import numpy as np
 
+from slm_training.autoresearch.experiment_campaign import (
+    ExperimentCampaignV1,
+    select_primary_endpoint,
+)
 from slm_training.evals.power_protocol import (
-    benjamini_hochberg,
     bootstrap_paired_ci,
     classify_power,
     cluster_bootstrap_ci,
     exact_binomial_interval,
     intraclass_correlation,
+    holm_bonferroni,
     mde_simulation,
     wilson_interval,
 )
@@ -37,6 +42,7 @@ __all__ = [
     "PowerProtocolReport",
     "analyze_existing_iter",
     "build_default_manifest",
+    "build_experiment_campaign",
     "render_markdown",
     "run_variance_fixture",
 ]
@@ -290,6 +296,94 @@ def build_default_manifest(
     )
 
 
+def build_experiment_campaign(
+    seeds: tuple[int, ...] = _DEFAULT_SEEDS,
+) -> ExperimentCampaignV1:
+    """Bridge the legacy fixture manifest to canonical campaign governance."""
+    endpoint = select_primary_endpoint(None)
+
+    def digest(value: str) -> str:
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    return ExperimentCampaignV1(
+        campaign_id=EXPERIMENT_ID,
+        experiment_id=EXPERIMENT_ID,
+        hypothesis=(
+            "A paired candidate changes the locked primary endpoint relative "
+            "to the unchanged control."
+        ),
+        decision="Keep this fixture wiring-only; never promote from synthetic outcomes.",
+        endpoints=(
+            {
+                "endpoint_id": endpoint,
+                "metric": endpoint,
+                "role": "primary",
+                "direction": "increase",
+                "minimum_effect": 0.08,
+            },
+        ),
+        arms=(
+            {
+                "arm_id": "unchanged_control",
+                "role": "control",
+                "config_sha256": digest("slm183:unchanged-control"),
+            },
+            {
+                "arm_id": "synthetic_candidate",
+                "role": "candidate",
+                "config_sha256": digest("slm183:synthetic-candidate"),
+            },
+        ),
+        seeds=seeds,
+        budget={
+            "max_experiments": 1,
+            "max_gpu_hours": 0.0,
+            "max_wall_minutes": 2.0,
+        },
+        stopping_rules=("Stop after every declared fixture seed is reported.",),
+        controls=(
+            {
+                "control_id": "unchanged_control",
+                "description": "The unchanged fixture control must remain neutral.",
+                "kind": "negative",
+            },
+        ),
+        negative_controls=("unchanged_control",),
+        multiplicity_families=(
+            {
+                "family_id": "primary",
+                "hypothesis_ids": (endpoint,),
+                "alpha": 0.05,
+                "method": "holm",
+            },
+        ),
+        promotion_gates=(
+            {
+                "gate_id": "fixture_endpoint_reachable",
+                "endpoint_id": endpoint,
+                "operator": "ge",
+                "threshold": 0.08,
+            },
+        ),
+        rollback_gates=(
+            {
+                "gate_id": "fixture_endpoint_regression",
+                "endpoint_id": endpoint,
+                "operator": "le",
+                "threshold": -0.08,
+            },
+        ),
+        artifact_requirements=(
+            {"kind": "version_stamp", "minimum_count": 1},
+        ),
+        claim_class="wiring",
+        source_commit="0" * 40,
+        source_dirty=True,
+        author="SLM-183 fixture bridge",
+        created_at="2026-07-23T00:00:00Z",
+    )
+
+
 def run_variance_fixture(
     n_targets: int = 50,
     paths_per_target: int = 3,
@@ -386,13 +480,16 @@ def run_variance_fixture(
         left, right, lambda a, b: float(np.mean(a) - np.mean(b)), seed=seed
     )
 
-    # BH demonstration on cell p-values (two-sided via Wilson center).
+    # Holm demonstration on the prospectively declared cell family.
     p_values = [
         2.0 * min(cell["wilson"]["estimate"], 1.0 - cell["wilson"]["estimate"])
         for cell in cells
     ]
-    bh = benjamini_hochberg(p_values, alpha=0.05)
-    n_rejected = sum(1 for e in bh if e["rejected"])
+    holm = holm_bonferroni(
+        tuple((cell["cell_id"], p_value) for cell, p_value in zip(cells, p_values)),
+        alpha=0.05,
+    )
+    n_rejected = sum(1 for entry in holm if entry["rejected"])
 
     conclusions = [
         {
@@ -417,7 +514,7 @@ def run_variance_fixture(
             "classification": "decidable",
         },
         {
-            "name": "bh_rejections",
+            "name": "holm_rejections",
             "value": n_rejected,
             "classification": "decidable",
         },
@@ -470,6 +567,7 @@ def run_variance_fixture(
             "nested clusters are not modeled here.",
         ],
         version_stamp=build_version_stamp(
+            "harness.autoresearch.experiment_campaign",
             "harness.experiments",
             "harness.experiments.slm183_power_protocol",
             "evals.power_protocol",

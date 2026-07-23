@@ -9,6 +9,7 @@ confirmatory evidence.  No model is trained and no GPU is required.
 from __future__ import annotations
 
 import json
+import hashlib
 import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
@@ -16,6 +17,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from slm_training.versioning import build_version_stamp
+from slm_training.lineage.records import canonical_json
 
 __all__ = [
     "EXPERIMENT_ID",
@@ -346,25 +348,39 @@ def freeze_manifest(
     """Persist a frozen copy of the manifest and return its path."""
     output_dir.mkdir(parents=True, exist_ok=True)
     frozen_path = output_dir / _FROZEN_FILE_NAME
+    manifest_payload = manifest.to_dict()
     payload = {
         "schema": "ExperimentClaimManifestV1Frozen",
         "frozen_at": _now_iso(),
-        "manifest": manifest.to_dict(),
+        "manifest": manifest_payload,
+        "manifest_sha256": hashlib.sha256(
+            canonical_json(manifest_payload).encode("utf-8")
+        ).hexdigest(),
         "version_stamp": build_version_stamp(
             "harness.experiments",
             "harness.experiments.claim_manifest",
         ),
     }
-    frozen_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n",
-        encoding="utf-8",
-    )
+    with frozen_path.open("x", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n")
     return frozen_path
 
 
 def is_frozen(manifest_path: Path) -> bool:
-    """Return True when the frozen manifest file exists."""
-    return manifest_path.is_file()
+    """Return True only when the create-once frozen payload still matches its digest."""
+    if not manifest_path.is_file():
+        return False
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = payload["manifest"]
+        expected = str(payload["manifest_sha256"])
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+    actual = hashlib.sha256(canonical_json(manifest).encode("utf-8")).hexdigest()
+    return (
+        payload.get("schema") == "ExperimentClaimManifestV1Frozen"
+        and actual == expected
+    )
 
 
 def classify_iter_artifact(data: dict[str, Any]) -> str:

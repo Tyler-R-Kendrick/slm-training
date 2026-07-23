@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
 from slm_training.harnesses.experiments.ladder import (
     capacity_ladder_pair,
@@ -132,13 +134,13 @@ def test_promotion_checks(tmp_path: Path) -> None:
         rankings={"z": ["cand"], "y": ["cand"]},
         eg_time_by_seed=[1.2, 1.3, 1.1],
     )
-    assert result["promotable"]
+    assert result["promotable"] is False
+    assert "campaign_governance_missing" in result["failures"]
 
     src = tmp_path / "last.pt"
     src.write_bytes(b"ckpt")
-    dest = register_promoted_checkpoint(tmp_path / "ckpts", source=src, meta={"ok": True})
-    assert dest.exists()
-    assert (tmp_path / "ckpts" / "promoted.json").exists()
+    with pytest.raises(ValueError, match="campaign-governed"):
+        register_promoted_checkpoint(tmp_path / "ckpts", source=src, meta={"ok": True})
 
 
 def test_integrity_alone_cannot_promote() -> None:
@@ -147,4 +149,7 @@ def test_integrity_alone_cannot_promote() -> None:
     )
 
     assert result["promotable"] is False
-    assert result["failures"] == ["sufficient_evidence"]
+    assert result["failures"] == [
+        "sufficient_evidence",
+        "campaign_governance_missing",
+    ]

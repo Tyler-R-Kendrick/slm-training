@@ -17,6 +17,12 @@ Gitignored `outputs/` rows below are honest **local / diagnostic** evidence, not
 frontier claims; see the migration record
 [checkpoint-reference-backfill-20260717.md](design/checkpoint-reference-backfill-20260717.md).
 
+Promotion provenance is also preregistered: new promotion candidates must bind
+their complete arm/seed, endpoint, multiplicity, AgentEvals/AgentV, rollback,
+and ship-gate evidence to the pre-start `ExperimentCampaignV1` digest. A model
+file or passing partial board cannot bypass this requirement. See
+[experiment-campaign-governance.md](design/experiment-campaign-governance.md).
+
 Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 [checkpoint-provenance.md](design/checkpoint-provenance.md),
 [adversarial-review.md](design/adversarial-review.md),

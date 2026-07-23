@@ -5,6 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Sequence
 
+from slm_training.autoresearch.experiment_campaign import (
+    CampaignResultV1,
+    ExperimentCampaignV1,
+    campaign_manifest_sha256,
+    validate_result_claim,
+)
 from slm_training.harness_core.promotion_engine import (
     PromotionCriteria,
     check_rank_stability,
@@ -101,9 +107,11 @@ def evaluate_promotion(
     eg_time_by_seed: Sequence[float] | None = None,
     ship_suites: dict[str, dict[str, Any]] | None = None,
     criteria: PromotionCriteria | None = None,
+    campaign_manifest: ExperimentCampaignV1 | dict[str, Any] | None = None,
+    campaign_result: CampaignResultV1 | dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return ``{promotable, checks, failures}`` mirroring ship-gates shape."""
-    return _evaluate_promotion(
+    result = _evaluate_promotion(
         integrity=integrity,
         baseline_loss_report=baseline_loss_report,
         candidate_loss_report=candidate_loss_report,
@@ -114,6 +122,32 @@ def evaluate_promotion(
         hard_categories=HARD_CATEGORIES,
         gate_evaluator=_openui_gate_evaluator,
     )
+    if campaign_manifest is None or campaign_result is None:
+        governance_failures = ("campaign_governance_missing",)
+        manifest_sha = None
+    else:
+        manifest = (
+            campaign_manifest
+            if isinstance(campaign_manifest, ExperimentCampaignV1)
+            else ExperimentCampaignV1.model_validate(campaign_manifest)
+        )
+        governed_result = (
+            campaign_result
+            if isinstance(campaign_result, CampaignResultV1)
+            else CampaignResultV1.model_validate(campaign_result)
+        )
+        governance_failures = validate_result_claim(manifest, governed_result)
+        manifest_sha = campaign_manifest_sha256(manifest)
+    governance = {
+        "pass": not governance_failures,
+        "failures": list(governance_failures),
+        "manifest_sha256": manifest_sha,
+    }
+    result.setdefault("checks", {})["campaign_governance"] = governance
+    if governance_failures:
+        result["promotable"] = False
+        result.setdefault("failures", []).extend(governance_failures)
+    return result
 
 
 def register_promoted_checkpoint(
@@ -121,10 +155,23 @@ def register_promoted_checkpoint(
     *,
     source: Path | str | None = None,
     meta: dict[str, Any] | None = None,
+    promotion_result: dict[str, Any] | None = None,
 ) -> Path:
     """Copy/link the mid-trained anchor to ``promoted.pt`` (P1d)."""
     import shutil
 
+    governance = (
+        (promotion_result or {}).get("checks", {}).get("campaign_governance", {})
+    )
+    if (
+        not promotion_result
+        or not promotion_result.get("promotable")
+        or governance.get("pass") is not True
+        or not governance.get("manifest_sha256")
+    ):
+        raise ValueError(
+            "checkpoint registration requires a promotable campaign-governed result"
+        )
     checkpoint_dir = Path(checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     dest = checkpoint_dir / "promoted.pt"
@@ -133,7 +180,11 @@ def register_promoted_checkpoint(
         if source.resolve() != dest.resolve():
             shutil.copy2(source, dest)
     meta_path = checkpoint_dir / "promoted.json"
-    payload = {"kind": "promoted_anchor", **(meta or {})}
+    payload = {
+        "kind": "promoted_anchor",
+        "campaign_manifest_sha256": governance["manifest_sha256"],
+        **(meta or {}),
+    }
     meta_path.write_text(
         __import__("json").dumps(payload, indent=2) + "\n", encoding="utf-8"
     )

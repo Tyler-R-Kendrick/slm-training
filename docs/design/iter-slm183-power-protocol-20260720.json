@@ -1,4 +1,5 @@
 {
+  "campaign_manifest_sha256": "a8368b2f6472e0e4d4d8279fc69166d6df5ea9faa16500ff3648b85980c98432",
   "cells": [
     {
       "cell_id": "target000_seed0",
@@ -14,9 +15,10 @@
       "successes": 2,
       "target_id": 0,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
@@ -34,6 +36,7 @@
       "successes": 1,
       "target_id": 0,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -54,8 +57,9 @@
       "successes": 0,
       "target_id": 1,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.0,
-        "high": 0.6576197724933469,
+        "high": 0.6576197724933468,
         "low": 0.0,
         "n": 2
       }
@@ -74,6 +78,7 @@
       "successes": 1,
       "target_id": 1,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -94,6 +99,7 @@
       "successes": 1,
       "target_id": 2,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -114,9 +120,10 @@
       "successes": 2,
       "target_id": 2,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
@@ -134,9 +141,10 @@
       "successes": 2,
       "target_id": 3,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
@@ -154,8 +162,9 @@
       "successes": 0,
       "target_id": 3,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.0,
-        "high": 0.6576197724933469,
+        "high": 0.6576197724933468,
         "low": 0.0,
         "n": 2
       }
@@ -174,6 +183,7 @@
       "successes": 1,
       "target_id": 4,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -194,6 +204,7 @@
       "successes": 1,
       "target_id": 4,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -214,8 +225,9 @@
       "successes": 0,
       "target_id": 5,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.0,
-        "high": 0.6576197724933469,
+        "high": 0.6576197724933468,
         "low": 0.0,
         "n": 2
       }
@@ -234,9 +246,10 @@
       "successes": 2,
       "target_id": 5,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
@@ -254,6 +267,7 @@
       "successes": 1,
       "target_id": 6,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -274,9 +288,10 @@
       "successes": 2,
       "target_id": 6,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     },
@@ -294,6 +309,7 @@
       "successes": 1,
       "target_id": 7,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 0.5,
         "high": 0.9054687942657693,
         "low": 0.09453120573423074,
@@ -314,9 +330,10 @@
       "successes": 2,
       "target_id": 7,
       "wilson": {
+        "confidence_level": 0.95,
         "estimate": 1.0,
         "high": 1.0,
-        "low": 0.34238022750665303,
+        "low": 0.3423802275066532,
         "n": 2
       }
     }
@@ -340,7 +357,7 @@
     },
     {
       "classification": "decidable",
-      "name": "bh_rejections",
+      "name": "holm_rejections",
       "value": 9
     }
   ],
@@ -350,6 +367,99 @@
     "No model is trained; this is wiring evidence for the protocol only.",
     "Cluster bootstrap and ICC assume a single target_cluster_id level; nested clusters are not modeled here."
   ],
+  "experiment_campaign": {
+    "arms": [
+      {
+        "arm_id": "unchanged_control",
+        "config_sha256": "141e33170c55b79f9572fdd0f5027427fb51b8353eeca353045128fd7b209fc6",
+        "role": "control"
+      },
+      {
+        "arm_id": "synthetic_candidate",
+        "config_sha256": "db1c6798f8549657c2106f25acb99d9bf457635fa440a3e2f83e0e7457660418",
+        "role": "candidate"
+      }
+    ],
+    "artifact_requirements": [
+      {
+        "kind": "version_stamp",
+        "minimum_count": 1
+      }
+    ],
+    "author": "SLM-183 fixture bridge",
+    "budget": {
+      "max_experiments": 1,
+      "max_gpu_hours": 0.0,
+      "max_wall_minutes": 2.0
+    },
+    "campaign_id": "slm183-power-protocol",
+    "claim_class": "wiring",
+    "controls": [
+      {
+        "control_id": "unchanged_control",
+        "description": "The unchanged fixture control must remain neutral.",
+        "kind": "negative"
+      }
+    ],
+    "created_at": "2026-07-23T00:00:00Z",
+    "decision": "Keep this fixture wiring-only; never promote from synthetic outcomes.",
+    "endpoints": [
+      {
+        "direction": "increase",
+        "endpoint_id": "binder_reference_f1",
+        "metric": "binder_reference_f1",
+        "minimum_effect": 0.08,
+        "role": "primary"
+      }
+    ],
+    "experiment_id": "slm183-power-protocol",
+    "hypothesis": "A paired candidate changes the locked primary endpoint relative to the unchanged control.",
+    "multiplicity_families": [
+      {
+        "alpha": 0.05,
+        "family_id": "primary",
+        "hypothesis_ids": [
+          "binder_reference_f1"
+        ],
+        "method": "holm"
+      }
+    ],
+    "negative_controls": [
+      "unchanged_control"
+    ],
+    "promotion_gates": [
+      {
+        "endpoint_id": "binder_reference_f1",
+        "gate_id": "fixture_endpoint_reachable",
+        "operator": "ge",
+        "threshold": 0.08
+      }
+    ],
+    "requires_rl": false,
+    "rl_evaluation_sha256": null,
+    "rl_readiness_report_sha256": null,
+    "rollback_gates": [
+      {
+        "endpoint_id": "binder_reference_f1",
+        "gate_id": "fixture_endpoint_regression",
+        "operator": "le",
+        "threshold": -0.08
+      }
+    ],
+    "schema_version": "ExperimentCampaignV1",
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "source_commit": "0000000000000000000000000000000000000000",
+    "source_dirty": true,
+    "stopping_rules": [
+      "Stop after every declared fixture seed is reported."
+    ]
+  },
   "experiment_id": "slm183-power-protocol",
   "falsifier": "The protocol collapses seed and target variance into a single pooled estimate and cannot produce a calibrated MDE curve.",
   "hypothesis": "A powered confirmation protocol can separate seed variance from target variance and estimate the minimum detectable effect size.",
@@ -518,7 +628,7 @@
       "power": 0.1
     }
   ],
-  "run_id": "slm183-power-protocol-20260720",
+  "run_id": "slm183-power-protocol-20260723",
   "scenarios": [
     {
       "base_rate": 0.7,
@@ -544,16 +654,17 @@
     "target_variance": 0.03459821428571429
   },
   "status": "fixture",
-  "timestamp": "2026-07-20T23:46:13.889585Z",
+  "timestamp": "2026-07-23T05:37:45.661060Z",
   "version_stamp": {
-    "code_commit": "26758dea4900db1876ba4efd85028c75d38cfdc5",
+    "code_commit": "5a4baac9b3a164cc78c5551c48cc93d5d2a3bdfc",
     "code_dirty": true,
     "components": {
-      "evals.power_protocol": "v1",
-      "harness.experiments": "v50",
-      "harness.experiments.slm183_power_protocol": "v1"
+      "evals.power_protocol": "v6",
+      "harness.autoresearch.experiment_campaign": "v1",
+      "harness.experiments": "v61",
+      "harness.experiments.slm183_power_protocol": "v2"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-20T23:46:13.888956+00:00"
+    "stamped_at": "2026-07-23T05:37:45.660550+00:00"
   }
 }

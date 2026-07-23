@@ -1,4 +1,4 @@
-# SLM-183 (PQR): powered cluster-aware confirmation protocol (slm183-power-protocol-20260720)
+# SLM-183 (PQR): powered cluster-aware confirmation protocol (slm183-power-protocol-20260723)
 
 Matrix set: `slm183_power_protocol`
 
@@ -67,7 +67,7 @@ The protocol collapses seed and target variance into a single pooled estimate an
 | seed_variance_detected | True | decidable |
 | mde_achievable_at_08 | False | decidable |
 | cluster_aware_ci_finite | True | decidable |
-| bh_rejections | 9 | decidable |
+| holm_rejections | 9 | decidable |
 
 ## Go / no-go decision
 
@@ -86,4 +86,10 @@ The protocol collapses seed and target variance into a single pooled estimate an
 python -m scripts.run_flow_power_protocol --mode plan-only
 python -m scripts.run_flow_power_protocol --mode fixture
 python -m scripts.run_flow_power_protocol --mode analyze-existing --iter-json <path>
+```
+
+## Exact command
+
+```bash
+python -m scripts.run_flow_power_protocol --mode fixture --output-dir /tmp/pytest-of-codex/pytest-276/test_fixture_writes_design_doc1 --n-targets 8 --paths-per-target 2 --n-seeds 2 --seeds 0,1,2,3,4
 ```

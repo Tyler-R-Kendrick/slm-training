@@ -881,12 +881,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v60",
+      "version": "v61",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v61",
+          "date": "2026-07-23",
+          "note": "Require campaign-governed promotion, integrity-check legacy frozen manifests, and bridge the power-protocol fixture to ExperimentCampaignV1"
+        },
         {
           "version": "v60",
           "date": "2026-07-21",
@@ -1282,7 +1287,7 @@
       ]
     },
     "harness.experiments.claim_manifest": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/claim_manifest.py",
@@ -1293,6 +1298,11 @@
         "docs/design/iter-slm184-claim-manifest-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Make frozen claim manifests create-once and verify their canonical content digest before confirmation access"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -2542,7 +2552,7 @@
       ]
     },
     "harness.experiments.slm183_power_protocol": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -2553,6 +2563,11 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Embed the canonical ExperimentCampaignV1 preregistration with binder-reference fallback and Holm family metadata"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
