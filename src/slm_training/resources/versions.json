@@ -4132,6 +4132,21 @@
         }
       ]
     },
+    "harness.staged": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/staged.py",
+        "tests/test_harnesses/test_staged.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial staged DSL capability taxonomy and fail-closed StagedHarnessBaselineV1 evidence identity contract"
+        }
+      ]
+    },
     "harness.train_data": {
       "version": "v14",
       "kind": "harness",
