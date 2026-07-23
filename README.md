@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E1011 exposure-targeted scratch diagnostic | `e1011-role-safe-exposure450-r1/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 87.11s; E1013 held strict-v2 0 / fidelity 0.47 / structure 0.2457 / six fallbacks, AgentV 0/2 — rejected, never use as parent |
 | E1006 topology-data scratch diagnostic | `e1006-role-safe-topology450-r1/last.pt` | `outputs/runs/...` (local) | 450 fresh E1005 steps / 56.62s; E1008 held strict-v2 0.4 / fidelity 0.57 / structure 0.3965 / one timeout / two fallbacks, AgentV 0/2 — rejected, never use as parent |
 | E1002 topology+arity scratch diagnostic | `e1002-role-safe-binder-topology-arity100-r1/last.pt` | `outputs/runs/...` (local) | 100 clean weighted E937 steps / 89.22s; E1003 held strict-v2 0.2 / fidelity 0.55 / structure 0.2153 / six fallbacks, AgentV 0/2 — rejected, never use as parent |
 | E1001 topology+arity partial | `e1001-role-safe-binder-topology-arity150-r1/last.pt` | `outputs/runs/...` (local) | Invalid 139/150 wall-budget partial at 96.05s; never evaluate, resume, sync, promote, or use as parent |

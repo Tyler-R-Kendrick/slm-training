@@ -38,6 +38,7 @@ supersedes E829's permissive-harness metrics for this checkpoint.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| E1011 exposure-targeted scratch diagnostic | `e1011-role-safe-exposure450-r1` | CPU scratch role-safe exposure diagnostic | `outputs/runs/e1011-role-safe-exposure450-r1/checkpoints/last.pt` (local) | 450 steps / 87.11s, SHA `788a485a...8a159a2`; E1013 held n=5 parse 1.0 / strict-v2 0 / fidelity 0.47 / structure 0.2457 / recall 0.4952 / reward 0.7768 / six fallbacks, AgentV 0/2 campaign — **rejected; never sync/promote/serve/resume/use as parent** ([results](design/iter-e1009-e1013-topology-exposure-20260722.md)) |
 | E1006 topology-data scratch diagnostic | `e1006-role-safe-topology450-r1` | CPU scratch role-safe topology-data diagnostic | `outputs/runs/e1006-role-safe-topology450-r1/checkpoints/last.pt` (local) | 450 steps / 56.62s, SHA `ca84c657...bd9b9`; E1008 held n=5 parse 0.8 / strict-v2 0.4 / fidelity 0.57 / structure 0.3965 / recall 0.6 / reward 0.6746 / one timeout / two fallbacks, AgentV 0/2 campaign — **rejected; never sync/promote/serve/resume/use as parent** ([results](design/iter-e1004-e1008-role-safe-topology-data-20260722.md)) |
 | E1002 topology+arity scratch diagnostic | `e1002-role-safe-binder-topology-arity100-r1` | CPU scratch weighted role-safe corpus diagnostic | `outputs/runs/e1002-role-safe-binder-topology-arity100-r1/checkpoints/last.pt` (local) | 100 steps / 89.22s, SHA `5eec07fa...6d823a`; E1003 held n=5 parse 1.0 / strict-v2 0.2 / fidelity 0.55 / structure 0.2153 / recall 0.4952 / reward 0.796 / six fallbacks, AgentV 0/2 — **rejected; never sync/promote/serve/resume/use as parent** ([results](design/iter-e939-e952-role-safe-decoding-20260722.md)) |
 | E1001 topology+arity partial | `e1001-role-safe-binder-topology-arity150-r1` | Incomplete CPU scratch attempt | `outputs/runs/e1001-role-safe-binder-topology-arity150-r1/checkpoints/last.pt` (local) | Invalid 139/150 wall-budget partial at 96.05s, SHA `c546b990...3a0b1` — **never evaluate, sync, promote, serve, resume, or use as parent** ([results](design/iter-e939-e952-role-safe-decoding-20260722.md)) |
@@ -301,6 +302,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e1013-e1011-role-safe-exposure-held-v266-r1`) | 5 | 1.0 | 0.4700 | 0.2457 | 0.7768 | No — strict-v2 0 / recall 0.4952 / six fallbacks, AgentV 0/1; checkpoint rejected |
+| smoke (`e1012-e1011-role-safe-exposure-smoke-v266-r1`) | 3 | 1.0 | 0.7778 | 0.4397 | 0.8843 | No — strict-v2 0.6667 / two fallbacks, AgentV 0/1; held collapse rejects checkpoint |
 | held_out (`e1008-e1006-role-safe-topology-held-v266-r1`) | 5 | 0.8 | 0.5700 | 0.3965 | 0.6746 | No — strict-v2 0.4 / recall 0.6 / one timeout / two fallbacks, AgentV 0/1; checkpoint and fixtures rejected |
 | smoke (`e1007-e1006-role-safe-topology-smoke-v266-r1`) | 3 | 1.0 | 0.8333 | 0.6981 | 0.8870 | No — strict-v2 0.6667 / recall 0.5833, AgentV 0/1; held regression rejects checkpoint |
 | held_out (`e1003-e1002-binder-topology-arity-v266-r1`) | 5 | 1.0 | 0.5500 | 0.2153 | 0.7960 | No — strict-v2 0.2 / six fallbacks, AgentV 0/2 campaign; checkpoint rejected |
@@ -993,6 +996,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-23 | `e1011-role-safe-exposure450-r1` | `outputs/runs/e1011-role-safe-exposure450-r1/` (local) | E1013 held n=5 parse 1.0 / strict-v2 0 / fidelity 0.47 / structure 0.2457 / recall 0.4952 / reward 0.7768 / six fallbacks, AgentV 0/2 campaign | 450 fresh E937 exposure-targeted steps in 87.11s, SHA `788a485a...8a159a2`; explicit no-sync diagnostic, rejected and never use as parent |
 | 2026-07-23 | `e1006-role-safe-topology450-r1` | `outputs/runs/e1006-role-safe-topology450-r1/` (local) | E1008 held n=5 parse 0.8 / strict-v2 0.4 / fidelity 0.57 / structure 0.3965 / recall 0.6 / reward 0.6746 / one timeout / two fallbacks, AgentV 0/2 campaign | 450 fresh E1005 scratch steps in 56.62s, SHA `ca84c657...bd9b9`; explicit no-sync diagnostic, rejected and never use as parent |
 | 2026-07-23 | `e1002-role-safe-binder-topology-arity100-r1` | `outputs/runs/e1002-role-safe-binder-topology-arity100-r1/` (local) | E1003 held n=5 parse 1.0 / strict-v2 0.2 / fidelity 0.55 / structure 0.2153 / recall 0.4952 / reward 0.796 / six fallbacks, AgentV 0/2 | 100 clean weighted E937 scratch steps in 89.22s; explicit no-sync diagnostic, rejected and never use as parent |
 | 2026-07-23 | `e1001-role-safe-binder-topology-arity150-r1` | `outputs/runs/e1001-role-safe-binder-topology-arity150-r1/` (local) | No evaluation; invalid 139/150-step partial | Stopped on wall budget at 96.05s, SHA `c546b990...3a0b1`; never evaluate, resume, sync, promote, or use as parent |

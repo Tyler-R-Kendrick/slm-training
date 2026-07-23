@@ -6625,3 +6625,10 @@ strict/fidelity/structure/recall/reward fall to
 0.4/0.57/0.3965/0.6/0.6746 with one timeout. Reject E1006, remove the producer
 fixtures, and never use the checkpoint as a parent. See
 `iter-e1004-e1008-role-safe-topology-data-20260722.md`.
+
+E1009-E1010 show that `existing+fixture` is not identity-preserving for an
+already-curated snapshot: strict recomposition shrinks E937 from 524 rows to
+117/372, so neither build is trained. E1011 keeps E937 unchanged and applies
+bounded exposure-targeted sampling, but E1013 held strict/fidelity/structure
+fall to 0/0.47/0.2457 with six fallbacks. Reject E1011 and generic rare-action
+exposure for this failure. See `iter-e1009-e1013-topology-exposure-20260722.md`.
