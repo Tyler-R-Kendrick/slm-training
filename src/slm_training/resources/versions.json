@@ -27,13 +27,18 @@
       ]
     },
     "config.levers": {
-      "version": "v39",
+      "version": "v40",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v40",
+          "date": "2026-07-23",
+          "note": "Advertise trained root-reference identity supervision and decode on lexer compiler paths"
+        },
         {
           "version": "v39",
           "date": "2026-07-22",
@@ -4232,7 +4237,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v271",
+      "version": "v272",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4257,6 +4262,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v272",
+          "date": "2026-07-23",
+          "note": "Generalize learned root-reference identity targets and path ranking to lexer-native binders"
+        },
         {
           "version": "v271",
           "date": "2026-07-23",

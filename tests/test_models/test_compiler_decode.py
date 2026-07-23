@@ -21,6 +21,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     gold_compiler_decisions,
     gold_compiler_decision_positions,
     root_declaration_reference_arity_target,
+    root_declaration_reference_identity_target,
     semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -5472,6 +5473,10 @@ def test_binder_reference_arities_follow_grammar_token_roles() -> None:
     prefix = tokenizer.encode("root = Card([title,", add_special=False)
     assert active_declaration_reference_count(tokenizer, prefix) == 1
     assert root_declaration_reference_arity_target(tokenizer, ids) == (2, 3)
+    assert root_declaration_reference_identity_target(tokenizer, ids) == (
+        frozenset({0, 1}),
+        3,
+    )
 
 
 def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
@@ -5526,6 +5531,59 @@ def test_lexer_root_reference_arity_trains_and_biases_root_list_paths() -> None:
     )
     assert continue_bias is not None and continue_bias[1] > continue_bias[0]
     assert stop_bias is not None and stop_bias[0] > stop_bias[1]
+
+
+def test_lexer_root_reference_identity_trains_and_biases_unused_binders() -> None:
+    model = _model(
+        root_reference_identity_loss_weight=1.0,
+        root_reference_identity_decode_weight=1.0,
+    )
+    record = ExampleRecord(
+        id="lexer-root-identity",
+        prompt="card with title and body",
+        openui=(
+            "root = Card([title, body])\n"
+            'title = TextContent(":slot_0")\n'
+            'body = TextContent(":slot_1")\n'
+            'unused = TextContent(":slot_2")'
+        ),
+        placeholders=[":slot_0", ":slot_1", ":slot_2"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+
+    assert model.root_reference_identity_head is not None
+    assert model.root_reference_identity_head.weight.grad is not None
+    assert model.root_reference_identity_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["root_reference_identity_rows"] == 1
+    assert model.last_training_metrics["root_reference_identity_classes_mean"] == 3
+
+    tokenizer = model.tokenizer
+    with torch.no_grad():
+        model.root_reference_identity_head.weight.zero_()
+        model.root_reference_identity_head.bias.zero_()
+        model.root_reference_identity_head.bias[1] = 4.0
+    ctx, ctx_pad = model._encode_context([record.prompt])
+    title = CompletionPath((tokenizer.bind_id(1),), "bind_reference")
+    body = CompletionPath((tokenizer.bind_id(2),), "bind_reference")
+    stop = CompletionPath((tokenizer.token_to_id["]"],), "grammar_rsqb")
+    prefix = tokenizer.encode("root = Card([title,", add_special=False)
+    bias = model._root_reference_identity_path_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (title, body, stop),
+        torch.tensor([3.0, 1.0, 2.0]),
+    )
+    assert bias is not None
+    assert bias[0] < 0
+    assert 1.0 + bias[1] == pytest.approx(3.0)
+    assert bias[2] == 0
 
 
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
