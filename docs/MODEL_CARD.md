@@ -294,6 +294,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out (`e961-e951-on-e938-plan-array-close2-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — strict-v2 0.8 / three fallbacks / zero array-close applications, AgentV 0/2; no-op treatment reverted |
+| smoke (`e961-e951-on-e938-plan-array-close2-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667, AgentV 0/2 campaign; no-op treatment reverted |
 | held_out (`e959-e951-on-e938-lattice-bottom-w2-r1`) | 5 | 1.0 | 0.8333 | 0.4434 | 0.8834 | No — strict-v2 0.8 / three fallbacks / p95 6.89s, AgentV 0/2; search treatment rejected |
 | smoke (`e959-e951-on-e938-lattice-bottom-w2-r1`) | 3 | 1.0 | 0.8333 | 0.6518 | 0.8910 | No — strict-v2 0.6667, AgentV 0/2 campaign; search treatment rejected |
 | held_out (`e958-e951-on-e938-inline-typed-items-r1`) | 5 | 1.0 | 0.6833 | 0.4207 | 0.8324 | No — meaning-v1 / strict-v2 0.6, four certified fallbacks, AgentV 0/2; treatment reverted |

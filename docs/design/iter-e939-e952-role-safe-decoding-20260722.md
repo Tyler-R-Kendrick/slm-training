@@ -1,4 +1,4 @@
-# E939-E959: role-safe decoding, aligned training, and bounded nesting
+# E939-E961: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -39,6 +39,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E958 | E951 inline typed items / held_out | 5 | 1.0000 | 0.6000 | 0.6000 | 0.6833 | 0.4207 | 0.6286 | 0.8324 | 0 / 4 | 0/2 campaign |
 | E959 | E951 lattice-bottom width 2 / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E959 | E951 lattice-bottom width 2 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
+| E961 | E951 plan-owned array close / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E961 | E951 plan-owned array close / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -91,3 +93,10 @@ bottom. Held decoding performs 16 rollbacks and exhausts the search budget
 twice, but Form still takes the same certified fallback and every quality
 aggregate is unchanged from E957. Held p95 latency worsens 5252.52→6888.31 ms.
 Reject the search treatment; earlier feasibility accounting is required.
+
+E960 failed before evaluation because the CLI-exposed semantic-plan array-close
+lever was registered as choice-codec-only. E961 temporarily exposed it to the
+lexer compiler and extended ownership to single authored families, but records
+zero array-close applications and is quality-identical to E957. The runtime
+method still consumes choice-codec frames, so the apparent lexer path was a
+no-op. Revert model v256 and lever registry v34; retain v255/v33.
