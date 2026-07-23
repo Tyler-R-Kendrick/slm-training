@@ -6655,3 +6655,10 @@ parse/strict/fidelity/structure/recall/reward
 applies zero times. Retain v267 performance, reject the checkpoint and the
 weight-1 shared-gradient recipe. See
 `iter-e1020-e1022-fast-binder-component-20260722.md`.
+
+E1023 lowers binder-component loss weight to 0.25 for 450 matched steps.
+E1024 smoke remains strict/fidelity 1.0, but E1025 held reaches only
+parse/strict/fidelity/structure/recall 0.8/0.4/0.4733/0.3232/0.3619 with one
+timeout and four fallbacks. The head still applies zero times. Reject E1023,
+close the scalar sweep, and isolate auxiliary gradients next. See
+`iter-e1023-e1025-low-binder-component-20260722.md`.

@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E1023 low-weight binder-component scratch diagnostic | `e1023-role-safe-binder-component025-450-v267-r1/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 49.07s; E1025 held strict-v2 0.4 / fidelity 0.4733 / recall 0.3619 / one timeout / four fallbacks, AgentV 0/2 — rejected, scalar sweep closed |
 | E1020 fast binder-component scratch diagnostic | `e1020-role-safe-binder-component450-v267-r1/last.pt` | `outputs/runs/...` (local) | 450 fresh E937 steps / 61.04s; v267 extractor is 12.08x faster, but E1022 held strict-v2 0.4 / fidelity 0.4333 / recall 0.2952 / two timeouts, AgentV 0/2 — checkpoint rejected, never use as parent |
 | E1016 binder-component scratch diagnostic | `e1016-role-safe-binder-component80-r1/last.pt` | `outputs/runs/...` (local) | 80 fresh E937 steps / 58.58s; E1019 held strict-v2 0.4 / fidelity 0.5 / structure 0.2290 / one timeout / three fallbacks, AgentV 0/2 — Tabs succeeds narrowly, aggregate rejected, never use as parent |
 | E1015 binder-component partial | `e1015-role-safe-binder-component100-r1/last.pt` | `outputs/runs/...` (local) | Invalid 59/100 wall-budget partial at 96.65s; never evaluate, resume, sync, promote, or use as parent |
