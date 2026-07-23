@@ -32,7 +32,11 @@ from slm_training.evals.eval_cache import (
     EvalCacheMode,
     suite_result_key,
 )
-from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
+from slm_training.evals.power_protocol import binomial_rate_evidence
+from slm_training.harnesses.model_build.ship_gates import (
+    DEFAULT_MIN_SUITE_N,
+    DEFAULT_SHIP_GATES,
+)
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.versioning import component_version
 
@@ -44,6 +48,7 @@ def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
         "config.levers",
         "harness.model_build.eval",
         "evals.meaningful_program",
+        "evals.power_protocol",
         "evals.scoring",
     )
     return components + (("model.twotower",) if config.model_name == "twotower" else ())
@@ -1074,15 +1079,41 @@ def evaluate(
         fallback_count = None
 
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
-    from slm_training.lineage.promotion import wilson_lower_bound
+    evidence_class = (
+        "diagnostic_subset"
+        if suite_limit is not None or suite_offset > 0
+        else (
+            "ship_gate_eligible"
+            if document_n >= DEFAULT_MIN_SUITE_N
+            else "fixture_under_minimum_n"
+        )
+    )
 
-    def _wilson_ci95(successes: int, total: int) -> list[float] | None:
-        """95% Wilson interval — makes tiny-n quantization visible (n=3 → ±0.5)."""
-        if total <= 0:
-            return None
-        lower = wilson_lower_bound(successes, total)
-        upper = 1.0 - wilson_lower_bound(total - successes, total)
-        return [round(lower, 4), round(upper, 4)]
+    def _rate_evidence(successes: int, total: int) -> dict[str, Any]:
+        return binomial_rate_evidence(
+            successes,
+            total,
+            seed_count=1,
+            evidence_class=evidence_class,
+        )
+
+    syntax_rate_evidence = _rate_evidence(syntax_parse_ok, document_n)
+    meaningful_rate_evidence = _rate_evidence(parse_ok, document_n)
+    unmeasured_rate_evidence = {
+        "schema": "binomial_rate_evidence/v1",
+        "numerator": None,
+        "denominator": 0,
+        "seed_count": 1,
+        "interval": {
+            "method": "wilson_score",
+            "n": 0,
+            "estimate": None,
+            "low": None,
+            "high": None,
+            "confidence_level": 0.95,
+        },
+        "evidence_class": "unmeasured",
+    }
 
     run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
     metrics = {
@@ -1108,8 +1139,32 @@ def evaluate(
             (syntax_parse_ok / document_n) if document_n else None
         ),
         "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
-        "parse_rate_ci95": _wilson_ci95(syntax_parse_ok, document_n),
-        "meaningful_program_rate_ci95": _wilson_ci95(parse_ok, document_n),
+        "parse_rate_ci95": [
+            round(float(bound), 4)
+            for bound in (
+                syntax_rate_evidence["interval"]["low"],
+                syntax_rate_evidence["interval"]["high"],
+            )
+            if bound is not None
+        ]
+        or None,
+        "meaningful_program_rate_ci95": [
+            round(float(bound), 4)
+            for bound in (
+                meaningful_rate_evidence["interval"]["low"],
+                meaningful_rate_evidence["interval"]["high"],
+            )
+            if bound is not None
+        ]
+        or None,
+        "rate_evidence": {
+            "parse_rate": syntax_rate_evidence,
+            "syntax_parse_rate": syntax_rate_evidence,
+            "raw_syntax_validity": _rate_evidence(raw_syntax_ok, document_n),
+            "meaningful_program_rate": meaningful_rate_evidence,
+            "residual_mask_rate": unmeasured_rate_evidence,
+            "oov_rate": unmeasured_rate_evidence,
+        },
         "contract_precision": _mean_or_none(contract_precision_vals),
         "contract_recall": _mean_or_none(contract_recall_vals),
         # Not computed by any current decode path; None (not a fake 0.0) until
@@ -1176,6 +1231,12 @@ def evaluate(
     from slm_training.evals.meaningful_program import aggregate_meaning_reports_v2
 
     meaning_v2 = aggregate_meaning_reports_v2(semantic_meaning_reports_v2)
+    strict_positive_n = sum(report.verdict for report in semantic_meaning_reports_v2)
+    covered_reports_v2 = [
+        report for report in semantic_meaning_reports_v2 if report.coverage_known
+    ]
+    covered_positive_n = sum(report.verdict for report in covered_reports_v2)
+    covered_n = len(covered_reports_v2)
     metrics.update(
         {
             "meaningful_program_v1_rate": metrics["meaningful_program_rate"],
@@ -1189,6 +1250,20 @@ def evaluate(
                 "meaningful_program_v1": "1.0.0",
                 "binding_aware_meaningful_v2": meaning_v2,
             },
+        }
+    )
+    metrics["rate_evidence"].update(
+        {
+            "meaningful_program_v1_rate": _rate_evidence(parse_ok, document_n),
+            "binding_aware_meaningful_v2_rate_strict": _rate_evidence(
+                strict_positive_n, len(semantic_meaning_reports_v2)
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": _rate_evidence(
+                covered_positive_n, covered_n
+            ),
+            "binding_aware_meaningful_v2_coverage": _rate_evidence(
+                covered_n, len(semantic_meaning_reports_v2)
+            ),
         }
     )
     from slm_training.evals.task_scoreboard import build_task_scoreboard
@@ -1297,6 +1372,12 @@ def evaluate(
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
         retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
+        metrics["rate_evidence"]["constrained_fallback_rate"] = binomial_rate_evidence(
+            retries,
+            len(decode_stats_rows),
+            seed_count=1,
+            evidence_class="decode_attempt_telemetry",
+        )
 
     # Metrics the active decode policy enforces by construction: consumers must
     # not read them as learned model skill (e.g. constrained decode guarantees
@@ -1453,7 +1534,18 @@ def evaluate_suites(
     scoreboard["output"] = str(path)
     if write_gates:
         gates = write_ship_gates(run_dir, board)
-        scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
+        scoreboard["gates"] = {
+            k: gates[k]
+            for k in (
+                "pass",
+                "failures",
+                "evidence_volume_failures",
+                "measurement_integrity_failures",
+                "quality_threshold_failures",
+                "runtime_failures",
+                "output",
+            )
+        }
     gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
     if gate_suites:
         from slm_training.evals.agentv import publish_model_evaluation

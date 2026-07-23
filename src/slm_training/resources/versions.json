@@ -400,13 +400,18 @@
       ]
     },
     "evals.power_protocol": {
-      "version": "v1",
+      "version": "v2",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/power_protocol.py",
         "tests/test_evals/test_power_protocol.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "Add configurable fail-closed Wilson intervals and canonical binomial rate-evidence metadata"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
@@ -435,12 +440,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v14",
+      "version": "v15",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-23",
+          "note": "Add count-provenanced configurable Wilson evidence for canonical evaluator binomial rates"
+        },
         {
           "version": "v14",
           "date": "2026-07-22",
@@ -633,6 +643,11 @@
       "history": [
         {
           "version": "openui_ship_gates_v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add failure-category diagnostics without changing thresholds, gate checks, or pass decisions"
+        },
+        {
+          "version": "openui_ship_gates_v1",
           "date": "2026-07-22",
           "note": "no-bump: align the ungated binding_aware_meaningful_v2 provenance descriptor from 2.12.0 to 2.13.0; thresholds remain disabled and ship policy is unchanged"
         },
@@ -730,12 +745,17 @@
       ]
     },
     "harness.core": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "Return an exact evidence, integrity, quality, and runtime failure partition from the generic gate engine"
+        },
         {
           "version": "v3",
           "date": "2026-07-22",
@@ -2728,7 +2748,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v45",
+      "version": "v46",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2739,6 +2759,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v46",
+          "date": "2026-07-23",
+          "note": "Attach numerator, denominator, seed count, Wilson interval, and evidence class to canonical binomial rates"
+        },
         {
           "version": "v45",
           "date": "2026-07-22",

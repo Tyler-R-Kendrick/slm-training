@@ -142,13 +142,12 @@ def evaluate_ship_gates(
     reported as `missing_suite` failures (cannot claim pass without evidence).
     """
     policy = thresholds or DEFAULT_SHIP_GATES
-    actual, checks, failures = run_gate_checks(
+    actual, checks, failures, categorized = run_gate_checks(
         suites,
         policy,
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
     )
-
     return {
         "policy": policy,
         "meaningful_metric_policy": _meaningful_metric_policy(
@@ -157,6 +156,7 @@ def evaluate_ship_gates(
         "actual": actual,
         "gates": checks,
         "failures": failures,
+        **categorized,
         "pass": all(checks.values()) if checks else False,
         "note": (
             "Honest ship gates require all policy suites and score structure only "

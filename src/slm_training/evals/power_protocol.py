@@ -7,6 +7,7 @@ All functions degrade gracefully on zero-denominator inputs.
 from __future__ import annotations
 
 import math
+from statistics import NormalDist
 from collections import defaultdict
 from collections.abc import Callable, Hashable, Sequence
 from typing import Any
@@ -15,6 +16,7 @@ import numpy as np
 
 __all__ = [
     "wilson_interval",
+    "binomial_rate_evidence",
     "exact_binomial_interval",
     "bootstrap_paired_ci",
     "cluster_bootstrap_ci",
@@ -26,18 +28,35 @@ __all__ = [
 
 
 def wilson_interval(
-    successes: int, n: int, *, z: float = 1.959963984540054
-) -> dict[str, float | int]:
-    """Two-sided Wilson score interval for a binomial proportion.
+    successes: int,
+    n: int,
+    *,
+    confidence_level: float = 0.95,
+) -> dict[str, float | int | None]:
+    """Return a two-sided Wilson score interval for a binomial proportion.
 
-    Reuses the math from ``slm_training.evals.judge_independence``.
+    Invalid counts fail closed instead of being clamped. A zero denominator is
+    explicitly unmeasured, so its estimate and bounds are ``None``.
     """
-    if n < 1:
-        return {"n": n, "estimate": 0.0, "low": 0.0, "high": 0.0}
-    if successes < 0:
-        successes = 0
-    if successes > n:
-        successes = n
+    if isinstance(successes, bool) or not isinstance(successes, int):
+        raise TypeError("successes must be an integer")
+    if isinstance(n, bool) or not isinstance(n, int):
+        raise TypeError("n must be an integer")
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if successes < 0 or successes > n:
+        raise ValueError("successes must satisfy 0 <= successes <= n")
+    if not 0.0 < confidence_level < 1.0:
+        raise ValueError("confidence_level must be in (0, 1)")
+    if n == 0:
+        return {
+            "n": 0,
+            "estimate": None,
+            "low": None,
+            "high": None,
+            "confidence_level": confidence_level,
+        }
+    z = NormalDist().inv_cdf(0.5 + confidence_level / 2.0)
     rate = successes / n
     denominator = 1.0 + z * z / n
     center = (rate + z * z / (2.0 * n)) / denominator
@@ -51,6 +70,39 @@ def wilson_interval(
         "estimate": rate,
         "low": max(0.0, center - margin),
         "high": min(1.0, center + margin),
+        "confidence_level": confidence_level,
+    }
+
+
+def binomial_rate_evidence(
+    successes: int,
+    n: int,
+    *,
+    seed_count: int,
+    evidence_class: str,
+    confidence_level: float = 0.95,
+) -> dict[str, Any]:
+    """Build the count provenance attached to one binomial scoreboard rate."""
+    if isinstance(seed_count, bool) or not isinstance(seed_count, int):
+        raise TypeError("seed_count must be an integer")
+    if seed_count < 1:
+        raise ValueError("seed_count must be positive")
+    if not evidence_class:
+        raise ValueError("evidence_class must be non-empty")
+    return {
+        "schema": "binomial_rate_evidence/v1",
+        "numerator": successes,
+        "denominator": n,
+        "seed_count": seed_count,
+        "interval": {
+            "method": "wilson_score",
+            **wilson_interval(
+                successes,
+                n,
+                confidence_level=confidence_level,
+            ),
+        },
+        "evidence_class": evidence_class,
     }
 
 

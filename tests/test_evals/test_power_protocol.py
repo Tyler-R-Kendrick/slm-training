@@ -9,6 +9,7 @@ import pytest
 
 from slm_training.evals.power_protocol import (
     benjamini_hochberg,
+    binomial_rate_evidence,
     bootstrap_paired_ci,
     classify_power,
     cluster_bootstrap_ci,
@@ -28,14 +29,55 @@ def test_wilson_interval_basic() -> None:
 
 def test_wilson_interval_degrades_on_zero_n() -> None:
     result = wilson_interval(0, 0)
-    assert result == {"n": 0, "estimate": 0.0, "low": 0.0, "high": 0.0}
+    assert result == {
+        "n": 0,
+        "estimate": None,
+        "low": None,
+        "high": None,
+        "confidence_level": 0.95,
+    }
 
 
-def test_wilson_interval_clamps_successes() -> None:
-    result = wilson_interval(-5, 10)
-    assert result["estimate"] == 0.0
-    result = wilson_interval(15, 10)
-    assert result["estimate"] == 1.0
+@pytest.mark.parametrize("successes,n", [(-5, 10), (15, 10)])
+def test_wilson_interval_rejects_invalid_successes(successes: int, n: int) -> None:
+    with pytest.raises(ValueError):
+        wilson_interval(successes, n)
+
+
+@pytest.mark.parametrize(
+    "successes,n,low,high",
+    [
+        (0, 5, 0.0, 0.43448246478317465),
+        (1, 4, 0.0455872608097006, 0.699358157417598),
+        (5, 5, 0.5655175352168254, 1.0),
+        (20, 20, 0.8388748419471808, 1.0),
+    ],
+)
+def test_wilson_interval_fixed_examples(
+    successes: int, n: int, low: float, high: float
+) -> None:
+    result = wilson_interval(successes, n)
+    assert result["low"] == pytest.approx(low)
+    assert result["high"] == pytest.approx(high)
+
+
+def test_wilson_interval_supports_configurable_confidence() -> None:
+    narrow = wilson_interval(5, 10, confidence_level=0.80)
+    wide = wilson_interval(5, 10, confidence_level=0.99)
+    assert float(narrow["high"]) - float(narrow["low"]) < (
+        float(wide["high"]) - float(wide["low"])
+    )
+
+
+def test_binomial_rate_evidence_discloses_counts_and_seed_class() -> None:
+    evidence = binomial_rate_evidence(
+        1, 4, seed_count=1, evidence_class="fixture_under_minimum_n"
+    )
+    assert evidence["numerator"] == 1
+    assert evidence["denominator"] == 4
+    assert evidence["seed_count"] == 1
+    assert evidence["interval"]["method"] == "wilson_score"
+    assert evidence["evidence_class"] == "fixture_under_minimum_n"
 
 
 def test_exact_binomial_interval_basic() -> None:
