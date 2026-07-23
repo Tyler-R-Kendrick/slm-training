@@ -9,7 +9,7 @@ a model, or make a ship claim.
 Machine-readable authority:
 [`dsh0-08-foundation-disposition-20260723.json`](dsh0-08-foundation-disposition-20260723.json),
 disposition SHA
-`33f5179a608c67dcca39cae59e513fb072ba0969af1db1abc522a169079da558`.
+`23b343e328048586a8284b51bf67af98c13b654f8fdeca5c98855b79fb5be409`.
 
 ## Fail-closed disposition
 

@@ -11,7 +11,7 @@
       "artifacts": [
         {
           "path": "docs/design/dsh0-02-symbolic-surface-policy-20260723.json",
-          "sha256": "12466aab22e64c25fd456f7537f3da28887e00ddbe705cde275e21efbac0ca0c"
+          "sha256": "c94e1f7d749432f77bc0178884abb97aaae6383740bef2a3a8b3ddc4d969c364"
         },
         {
           "path": "src/slm_training/dsl/language_contract.py",
@@ -218,5 +218,5 @@
     },
     "stamped_at": "2026-07-23T21:14:14.538095+00:00"
   },
-  "disposition_sha256": "33f5179a608c67dcca39cae59e513fb072ba0969af1db1abc522a169079da558"
+  "disposition_sha256": "23b343e328048586a8284b51bf67af98c13b654f8fdeca5c98855b79fb5be409"
 }

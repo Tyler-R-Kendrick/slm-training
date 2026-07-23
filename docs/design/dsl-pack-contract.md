@@ -119,6 +119,20 @@ static/schema oracle, scope, property-order, canonicalization, and round-trip
 authorities before it can become a new immutable state. See
 [dsh3-02-pack-operator-registry-20260723.md](dsh3-02-pack-operator-registry-20260723.md).
 
+### DSH1 declared grammar capabilities
+
+SLM-353 adds the optional `grammar_capability_authority` slot without adding a
+registry. `GrammarCapabilityAdapterV1` resolves one `DslPack` and exposes only
+that pack's declared start symbols, productions, terminals, grammar analyses,
+fragment parser, canonical serializer, validator, scope policy, and completion
+frontier. Missing declarations return typed `UNSUPPORTED` values, so partial
+packs cannot appear complete.
+
+OpenUI declares its authority from the strict Lark grammar inside its pack
+wiring. The generic adapter imports no OpenUI implementation and has no
+corpus-example fallback. See
+[dsh1-01-grammar-capability-adapter-20260723.md](dsh1-01-grammar-capability-adapter-20260723.md).
+
 ## End-to-end fixture run (executed, not hypothetical)
 
 `tests/test_dsl/test_pack.py::test_end_to_end_fixture_run_through_pack_interface`

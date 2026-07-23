@@ -382,6 +382,21 @@
         }
       ]
     },
+    "dsl.grammar_capabilities": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/dsl/grammar_capabilities.py",
+        "tests/test_dsl/test_grammar_capabilities.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial pack-owned exact grammar capability adapter with typed unsupported results, analyses, fingerprints, and shared conformance"
+        }
+      ]
+    },
     "dsl.operators.merge": {
       "version": "v1",
       "kind": "harness",
@@ -421,6 +436,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: add an independent grammar capability authority slot without changing operator registry behavior"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -4256,6 +4276,11 @@
         "docs/design/dsh0-08-foundation-disposition-20260723.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh pinned DslPack source hashes after adding the independent grammar capability authority slot"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",

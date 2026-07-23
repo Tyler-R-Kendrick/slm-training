@@ -1683,6 +1683,21 @@ corpus, model, checkpoint, capability certificate, or ship claim was produced.
 Evidence:
 [`dsh0-06-synthesis-materialization-20260723.md`](dsh0-06-synthesis-materialization-20260723.md).
 
+## Declared grammar capability conformance (DSH1-01 / SLM-353)
+
+| | |
+| --- | --- |
+| **Paper** | Macedo, Viera, and Saraiva, *Property-based Testing of Attribute Grammars*, SLE 2025. [ACM DOI: 10.1145/3732771.3742710](https://doi.org/10.1145/3732771.3742710) |
+| **Fidelity** | **Adapted** — shared language-agnostic conformance over declared grammar authority; not an implementation of the paper's attribute-grammar testing system |
+| **Code** | [`grammar_capabilities.py`](../../src/slm_training/dsl/grammar_capabilities.py), pack wiring in [`pack.py`](../../src/slm_training/dsl/pack.py), and shared fixtures in [`test_grammar_capabilities.py`](../../tests/test_dsl/test_grammar_capabilities.py) |
+| **Evidence** | [`dsh1-01-grammar-capability-adapter-20260723.md`](dsh1-01-grammar-capability-adapter-20260723.md) |
+
+The relevant principle is to derive properties from the declared grammar and
+attribute authority, then reuse the property surface across languages. The
+adapter applies that boundary to exact productions, grammar analyses, pack
+operations, and authority fingerprints. It deliberately has no
+example-to-production inference path.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
