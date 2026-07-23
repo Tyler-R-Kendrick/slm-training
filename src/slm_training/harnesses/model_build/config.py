@@ -129,6 +129,10 @@ class ModelBuildConfig:
     mixture_max_importance_weight: float | None = None
     # P1d: after base training, write promoted.pt from best_weighted_nll / last.
     register_promoted: bool = False
+    campaign_manifest: Path | None = None
+    campaign_result: Path | None = None
+    campaign_store_root: Path | None = None
+    campaign_artifact_root: Path | None = None
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).

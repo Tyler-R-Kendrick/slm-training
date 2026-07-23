@@ -21,6 +21,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
+    parser.add_argument("--campaign-manifest", type=Path)
+    parser.add_argument("--campaign-result", type=Path)
+    parser.add_argument("--campaign-store-root", type=Path)
+    parser.add_argument("--campaign-artifact-root", type=Path)
     parser.add_argument(
         "--skip-rl",
         action="store_true",
@@ -32,6 +36,27 @@ def main(argv: list[str] | None = None) -> int:
         help="Persist grammar allowed_id_set on commits (E64 support match).",
     )
     args = parser.parse_args(argv)
+    campaign_paths = (
+        args.campaign_manifest,
+        args.campaign_result,
+        args.campaign_store_root,
+        args.campaign_artifact_root,
+    )
+    if any(path is None for path in campaign_paths):
+        parser.error(
+            "climb promotion requires --campaign-manifest, --campaign-result, "
+            "--campaign-store-root, and --campaign-artifact-root"
+        )
+    from slm_training.harnesses.experiments.promotion import (
+        load_campaign_governance,
+    )
+
+    manifest, result, campaign_store, artifact_root = load_campaign_governance(
+        manifest_path=args.campaign_manifest,
+        result_path=args.campaign_result,
+        store_root=args.campaign_store_root,
+        artifact_root=args.campaign_artifact_root,
+    )
     readiness = None
     if not args.skip_rl:
         from slm_training.autoresearch.rl_gate import assert_rl_ready
@@ -40,7 +65,10 @@ def main(argv: list[str] | None = None) -> int:
 
     from scripts.collect_trajectories import main as collect_main
     from slm_training.harnesses.distill.trace_store import TraceStore, checkpoint_sha
-    from slm_training.harnesses.experiments.promotion import register_promoted_checkpoint
+    from slm_training.harnesses.experiments.promotion import (
+        evaluate_promotion,
+        register_promoted_checkpoint,
+    )
     from slm_training.harnesses.model_build import ModelBuildConfig, evaluate_suites
     from slm_training.harnesses.model_build.ship_gates import (
         DEFAULT_SHIP_GATES,
@@ -122,10 +150,22 @@ def main(argv: list[str] | None = None) -> int:
         write_gates=True,
     )
     gates = evaluate_ship_gates(board["suites"])
-    if gates.get("pass"):
+    promotion = evaluate_promotion(
+        ship_suites=board["suites"],
+        campaign_manifest=manifest,
+        campaign_result=result,
+        campaign_store=campaign_store,
+        artifact_root=artifact_root,
+    )
+    if gates.get("pass") and promotion.get("promotable"):
         register_promoted_checkpoint(
             out / "checkpoints",
             source=model_out,
+            promotion_result=promotion,
+            campaign_manifest=manifest,
+            campaign_result=result,
+            campaign_store=campaign_store,
+            artifact_root=artifact_root,
             meta={"policy_sha": policy_sha, "gates": gates},
         )
 
@@ -133,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
         "traces": len(traces),
         "rl": rl_summary,
         "gates": gates,
+        "promotion": promotion,
         "checkpoint": str(model_out),
     }
     (out / "climb_summary.json").write_text(

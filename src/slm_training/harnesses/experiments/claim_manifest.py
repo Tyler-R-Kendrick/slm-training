@@ -349,13 +349,23 @@ def freeze_manifest(
     output_dir.mkdir(parents=True, exist_ok=True)
     frozen_path = output_dir / _FROZEN_FILE_NAME
     manifest_payload = manifest.to_dict()
+    manifest_sha = hashlib.sha256(
+        canonical_json(manifest_payload).encode("utf-8")
+    ).hexdigest()
+    if frozen_path.exists():
+        if not is_frozen(frozen_path):
+            raise RuntimeError("existing frozen manifest failed integrity verification")
+        existing = json.loads(frozen_path.read_text(encoding="utf-8"))
+        if existing.get("manifest_sha256") != manifest_sha:
+            raise FileExistsError(
+                "frozen manifest already exists with different content"
+            )
+        return frozen_path
     payload = {
         "schema": "ExperimentClaimManifestV1Frozen",
         "frozen_at": _now_iso(),
         "manifest": manifest_payload,
-        "manifest_sha256": hashlib.sha256(
-            canonical_json(manifest_payload).encode("utf-8")
-        ).hexdigest(),
+        "manifest_sha256": manifest_sha,
         "version_stamp": build_version_stamp(
             "harness.experiments",
             "harness.experiments.claim_manifest",

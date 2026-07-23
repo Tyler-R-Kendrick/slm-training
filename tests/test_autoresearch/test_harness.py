@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -38,7 +39,11 @@ from slm_training.autoresearch.providers import (
 )
 from slm_training.autoresearch.researchers import IsolatedResearcher, ResearcherSpec
 from slm_training.autoresearch.persistence import sync_campaign
-from slm_training.autoresearch.rl_gate import assert_rl_ready, assess_rl_readiness
+from slm_training.autoresearch.rl_gate import (
+    assert_rl_ready,
+    assess_rl_readiness,
+    write_rl_readiness,
+)
 from slm_training.autoresearch.schemas import (
     CampaignBudget,
     CampaignSpec,
@@ -109,11 +114,11 @@ def experiment_campaign(**overrides) -> ExperimentCampaignV1:
                 kind="negative",
             ),
         ),
-        "negative_controls": ("Matched baseline must not improve spuriously.",),
+        "negative_controls": ("matched-control",),
         "multiplicity_families": (
             MultiplicityFamilyV1(
                 family_id="primary-family",
-                hypothesis_ids=("candidate-vs-control",),
+                hypothesis_ids=("primary",),
                 alpha=0.05,
             ),
         ),
@@ -535,8 +540,48 @@ def test_campaign_store_requires_lock_before_experiment_start(tmp_path: Path) ->
         status="running",
     )
 
-    with pytest.raises(RuntimeError, match="after experiment start"):
+    with pytest.raises(RuntimeError, match="after experiment outcome access"):
         store.lock_experiment_campaign(experiment_campaign())
+
+
+def test_campaign_store_rejects_lock_after_finish_without_start(
+    tmp_path: Path,
+) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        status="failed",
+    )
+    with pytest.raises(RuntimeError, match="after experiment outcome access"):
+        store.lock_experiment_campaign(experiment_campaign())
+
+
+def test_campaign_store_serializes_conflicting_locks(tmp_path: Path) -> None:
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    first = experiment_campaign()
+    second = first.model_copy(
+        update={"hypothesis": "A conflicting preregistered hypothesis is rejected."}
+    )
+
+    def attempt(manifest: ExperimentCampaignV1) -> str:
+        try:
+            return store.lock_experiment_campaign(manifest).manifest_sha256
+        except FileExistsError:
+            return "rejected"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(attempt, (first, second)))
+    assert results.count("rejected") == 1
+    assert len(
+        [
+            event
+            for event in store.verify_event_chain()
+            if event["event_type"] == "experiment_campaign_locked"
+        ]
+    ) == 1
 
 
 def test_campaign_store_detects_event_chain_tampering(tmp_path: Path) -> None:
@@ -1661,6 +1706,19 @@ def test_rl_readiness_is_fail_closed() -> None:
         assert_rl_ready(failed)
     with pytest.raises(ValueError, match="provide an approved"):
         assert_rl_ready(None)
+
+
+def test_rl_readiness_report_uses_portable_evaluation_reference(
+    tmp_path: Path,
+) -> None:
+    evaluation = tmp_path / "evidence" / "evaluation.json"
+    evaluation.parent.mkdir()
+    evaluation.write_text(json.dumps(passing_evaluation()), encoding="utf-8")
+    report = assess_rl_readiness(evaluation)
+    report_path = write_rl_readiness(tmp_path / "reports" / "ready.json", report)
+    stored = json.loads(report_path.read_text(encoding="utf-8"))
+    assert not Path(stored["evaluation_uri"]).is_absolute()
+    assert assert_rl_ready(report_path).approved
 
 
 def test_remote_sync_is_explicit_and_non_destructive(tmp_path: Path) -> None:

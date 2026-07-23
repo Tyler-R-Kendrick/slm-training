@@ -84,18 +84,20 @@ repository lever currently caps campaigns at two minutes. No simulation ran in
 that failed preflight; the bridge was corrected to the stricter two-minute
 budget before the documented fixture execution.
 
-The corrected CPU fixture completed in 4.05 seconds:
+The final CPU fixture completed in 3.70 seconds:
 
 ```bash
 PYTHONPATH=src python -m scripts.run_flow_power_protocol --mode fixture \
-  --output-dir /tmp/slm337-power-protocol --n-targets 10 \
-  --paths-per-target 2 --n-seeds 5 --seeds 0,1,2,3,4
+  --output-dir outputs/runs/slm337-campaign-governance-fixture \
+  --n-targets 10 --paths-per-target 2 --n-seeds 5 \
+  --seeds 0,1,2,3,4 --write-design-docs
 ```
 
 It emitted canonical campaign digest
-`a8368b2f6472e0e4d4d8279fc69166d6df5ea9faa16500ff3648b85980c98432`,
-50 seed/target cells, target variance `0.03833`, seed variance `0.015`, and
-Holm-family evidence. The result remains a no-go for promotion:
+`ac0ceafb811a9cdf061973403eec80bf0016bfc0237b58612f4f835217632205`,
+100 arm/seed/target cells, target variance `0.03833`, seed variance `0.015`,
+paired-binary success delta `0.03`, and zero Holm rejections. The result remains
+a no-go for promotion:
 `wiring`, synthetic outcomes, no GPU, no trained weights, and no ship-gate
 claim. Machine-readable and rendered evidence remain in
 [`iter-slm183-power-protocol-20260720.json`](iter-slm183-power-protocol-20260720.json)

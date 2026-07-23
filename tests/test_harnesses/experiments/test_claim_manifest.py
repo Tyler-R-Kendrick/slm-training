@@ -97,12 +97,13 @@ def test_freeze_manifest_writes_file(tmp_path) -> None:
 def test_frozen_manifest_is_create_once_and_detects_mutation(tmp_path) -> None:
     manifest = _valid_manifest()
     frozen_path = freeze_manifest(manifest, tmp_path)
-    with pytest.raises(FileExistsError):
-        freeze_manifest(manifest, tmp_path)
+    assert freeze_manifest(manifest, tmp_path) == frozen_path
     payload = json.loads(frozen_path.read_text(encoding="utf-8"))
     payload["manifest"]["primary_hypothesis"] = "changed after observation"
     frozen_path.write_text(json.dumps(payload), encoding="utf-8")
     assert is_frozen(frozen_path) is False
+    with pytest.raises(RuntimeError, match="integrity"):
+        freeze_manifest(manifest, tmp_path)
 
 
 def test_is_frozen_false_for_missing_path(tmp_path) -> None:

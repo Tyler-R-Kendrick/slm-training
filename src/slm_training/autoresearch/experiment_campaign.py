@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, StrictInt, field_validator, model_validator
 
 from slm_training.autoresearch.schemas import CampaignBudget, StrictModel, utc_now
 from slm_training.lineage.records import canonical_json
@@ -21,6 +21,17 @@ ClaimClass = Literal[
     "promotion_candidate",
     "ship_gate",
 ]
+_PROMOTION_ARTIFACT_KINDS = frozenset(
+    {
+        "version_stamp",
+        "seed_result",
+        "paired_examples",
+        "endpoint_result",
+        "holm_family",
+        "agentevals",
+        "agentv",
+    }
+)
 
 
 def _unique(values: tuple[str, ...], label: str) -> None:
@@ -165,6 +176,13 @@ class ExperimentCampaignV1(StrictModel):
             raise ValueError("at least one control arm is required")
         if not any(item.role == "candidate" for item in self.arms):
             raise ValueError("at least one candidate arm is required")
+        negative_control_ids = {
+            item.control_id for item in self.controls if item.kind == "negative"
+        }
+        if set(self.negative_controls) != negative_control_ids:
+            raise ValueError(
+                "negative_controls must name every and only negative control"
+            )
         if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in self.seeds):
             raise TypeError("seeds must contain only integer identifiers")
         if len(self.seeds) != len(set(self.seeds)):
@@ -185,6 +203,21 @@ class ExperimentCampaignV1(StrictModel):
         }
         if not declared_hypotheses:
             raise ValueError("at least one multiplicity hypothesis is required")
+        if sum(
+            len(family.hypothesis_ids) for family in self.multiplicity_families
+        ) != len(declared_hypotheses):
+            raise ValueError("multiplicity hypotheses may belong to only one family")
+        if not declared_hypotheses.issubset(set(endpoint_ids)):
+            raise ValueError("multiplicity hypotheses must reference declared endpoints")
+        if self.claim_class in {"promotion_candidate", "ship_gate"}:
+            required_kinds = set(_PROMOTION_ARTIFACT_KINDS)
+            if self.claim_class == "ship_gate":
+                required_kinds.add("ship_gates")
+            missing_kinds = required_kinds - set(requirement_kinds)
+            if missing_kinds:
+                raise ValueError(
+                    f"promotion artifact requirements missing: {sorted(missing_kinds)}"
+                )
         if self.requires_rl and (
             not self.rl_readiness_report_sha256 or not self.rl_evaluation_sha256
         ):
@@ -237,15 +270,33 @@ class CampaignResultV1(StrictModel):
     experiment_id: str
     manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     claim_class: ClaimClass
-    arm_seed_results: tuple[tuple[str, int], ...] = ()
+    arm_seed_results: tuple[tuple[str, StrictInt], ...] = ()
     paired_example_ids: dict[str, tuple[str, ...]] = Field(default_factory=dict)
-    endpoint_ids: tuple[str, ...] = ()
-    holm_hypothesis_ids: tuple[str, ...] = ()
-    promotion_gate_ids_passed: tuple[str, ...] = ()
-    rollback_gate_ids_passed: tuple[str, ...] = ()
+    endpoint_values: dict[str, float] = Field(default_factory=dict)
+    holm_results: tuple[HolmResultV1, ...] = ()
     artifacts: tuple[CampaignArtifactV1, ...] = ()
     exploratory: bool = False
     ship_gates_passed: bool = False
+
+
+class HolmResultV1(StrictModel):
+    hypothesis_id: str = Field(min_length=1)
+    raw_p_value: float = Field(ge=0, le=1)
+    rank: int = Field(ge=1)
+    threshold: float = Field(gt=0, lt=1)
+    adjusted_p_value: float = Field(ge=0, le=1)
+    rejected: bool
+
+    @model_validator(mode="after")
+    def finite_statistics(self) -> HolmResultV1:
+        values = (
+            self.raw_p_value,
+            self.threshold,
+            self.adjusted_p_value,
+        )
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError("Holm statistics must be finite")
+        return self
 
 
 def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
@@ -256,13 +307,20 @@ def campaign_manifest_sha256(manifest: ExperimentCampaignV1) -> str:
 def load_ap001_certification(path: Path | None) -> AP001CertificationV1 | None:
     if path is None or not path.is_file():
         return None
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    certification = AP001CertificationV1.model_validate(payload)
-    signed_payload = certification.model_dump(mode="json", exclude={"artifact_sha256"})
-    if (
-        hashlib.sha256(canonical_json(signed_payload).encode("utf-8")).hexdigest()
-        != certification.artifact_sha256
-    ):
+    certification = AP001CertificationV1.model_validate_json(
+        path.read_text(encoding="utf-8")
+    )
+    artifact_path = (path.parent / certification.artifact_path).resolve()
+    if not artifact_path.is_file():
+        return None
+    raw = artifact_path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != certification.artifact_sha256:
+        return None
+    try:
+        artifact = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if artifact.get("disposition") != certification.disposition:
         return None
     return certification
 
@@ -278,6 +336,8 @@ def select_primary_endpoint(
 def validate_result_claim(
     manifest: ExperimentCampaignV1,
     result: CampaignResultV1,
+    *,
+    artifact_root: Path | None = None,
 ) -> tuple[str, ...]:
     """Return fail-closed governance failures for a claimed result."""
     failures: list[str] = []
@@ -298,31 +358,46 @@ def validate_result_claim(
     expected_arm_seeds = {
         (arm.arm_id, seed) for arm in manifest.arms for seed in manifest.seeds
     }
-    if set(result.arm_seed_results) != expected_arm_seeds:
+    if (
+        len(result.arm_seed_results) != len(set(result.arm_seed_results))
+        or set(result.arm_seed_results) != expected_arm_seeds
+    ):
         failures.append("incomplete_arm_seed_results")
     control_ids = {arm.arm_id for arm in manifest.arms if arm.role == "control"}
     candidate_ids = {arm.arm_id for arm in manifest.arms if arm.role == "candidate"}
     paired = result.paired_example_ids
-    if set(paired) != control_ids | candidate_ids or (
-        paired and len({ids for ids in paired.values()}) != 1
+    if (
+        set(paired) != control_ids | candidate_ids
+        or any(not ids or len(ids) != len(set(ids)) for ids in paired.values())
+        or (paired and len({ids for ids in paired.values()}) != 1)
     ):
         failures.append("incomplete_paired_examples")
-    if set(result.endpoint_ids) != {item.endpoint_id for item in manifest.endpoints}:
+    if set(result.endpoint_values) != {
+        item.endpoint_id for item in manifest.endpoints
+    } or any(not math.isfinite(value) for value in result.endpoint_values.values()):
         failures.append("incomplete_endpoints")
     expected_holm = {
         item
         for family in manifest.multiplicity_families
         for item in family.hypothesis_ids
     }
-    if set(result.holm_hypothesis_ids) != expected_holm:
+    holm_ids = tuple(item.hypothesis_id for item in result.holm_results)
+    ranks = tuple(item.rank for item in result.holm_results)
+    if (
+        len(holm_ids) != len(set(holm_ids))
+        or set(holm_ids) != expected_holm
+        or set(ranks) != set(range(1, len(expected_holm) + 1))
+    ):
         failures.append("incomplete_holm_family")
-    if set(result.promotion_gate_ids_passed) != {
-        gate.gate_id for gate in manifest.promotion_gates
-    }:
+    if any(
+        not _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
+        for gate in manifest.promotion_gates
+    ):
         failures.append("promotion_gates_not_passed")
-    if set(result.rollback_gate_ids_passed) != {
-        gate.gate_id for gate in manifest.rollback_gates
-    }:
+    if any(
+        _gate_matches(gate, result.endpoint_values.get(gate.endpoint_id))
+        for gate in manifest.rollback_gates
+    ):
         failures.append("rollback_gates_not_passed")
     artifact_counts: dict[str, int] = {}
     artifact_keys: set[tuple[str, str, str]] = set()
@@ -335,6 +410,29 @@ def validate_result_claim(
     for requirement in manifest.artifact_requirements:
         if artifact_counts.get(requirement.kind, 0) < requirement.minimum_count:
             failures.append(f"missing_artifact:{requirement.kind}")
+    if artifact_root is None:
+        failures.append("artifact_root_missing")
+    else:
+        root = artifact_root.resolve()
+        for artifact in result.artifacts:
+            path = (root / artifact.uri).resolve()
+            if root not in path.parents or not path.is_file():
+                failures.append(f"artifact_unverified:{artifact.kind}")
+                continue
+            if hashlib.sha256(path.read_bytes()).hexdigest() != artifact.sha256:
+                failures.append(f"artifact_digest_mismatch:{artifact.kind}")
     if result.claim_class == "ship_gate" and not result.ship_gates_passed:
         failures.append("ship_gates_not_passed")
     return tuple(failures)
+
+
+def _gate_matches(gate: CampaignGateV1, value: float | None) -> bool:
+    if value is None or not math.isfinite(value):
+        return False
+    return {
+        "ge": value >= gate.threshold,
+        "gt": value > gate.threshold,
+        "le": value <= gate.threshold,
+        "lt": value < gate.threshold,
+        "eq": value == gate.threshold,
+    }[gate.operator]

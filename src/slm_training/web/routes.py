@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -348,6 +349,10 @@ class PromotionEvalRequest(BaseModel):
     category_regression_tolerance: float = 0.02
     eg_time_lcb_min: float = 1.0
     require_rank_stable_top2: bool = True
+    campaign_manifest: dict[str, Any] | None = None
+    campaign_result: dict[str, Any] | None = None
+    campaign_store_root: Path | None = None
+    campaign_artifact_root: Path | None = None
 
 
 @observability_router.post("/promotion/evaluate")
@@ -357,12 +362,25 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         require_rank_stable_top2=payload.require_rank_stable_top2,
         eg_time_lcb_min=payload.eg_time_lcb_min,
     )
+    campaign_store = None
+    if payload.campaign_manifest is not None and payload.campaign_store_root is not None:
+        from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
+        from slm_training.autoresearch.storage import CampaignStore
+
+        manifest = ExperimentCampaignV1.model_validate(payload.campaign_manifest)
+        campaign_store = CampaignStore(
+            manifest.campaign_id, payload.campaign_store_root
+        )
     return evaluate_promotion(
         integrity=payload.integrity,
         rankings=payload.rankings,
         eg_time_by_seed=payload.eg_time_by_seed,
         ship_suites=payload.ship_suites,
         criteria=criteria,
+        campaign_manifest=payload.campaign_manifest,
+        campaign_result=payload.campaign_result,
+        campaign_store=campaign_store,
+        artifact_root=payload.campaign_artifact_root,
     )
 
 

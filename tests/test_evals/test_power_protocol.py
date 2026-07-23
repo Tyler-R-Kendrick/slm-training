@@ -15,6 +15,7 @@ from slm_training.evals.power_protocol import (
     classify_power,
     cluster_bootstrap_ci,
     exact_binomial_interval,
+    exact_paired_binary_test,
     holm_bonferroni,
     intraclass_correlation,
     mde_simulation,
@@ -283,6 +284,29 @@ def test_holm_bonferroni_preserves_order_and_breaks_ties_by_id() -> None:
     result = holm_bonferroni([("b", 0.01), ("a", 0.01), ("c", 0.5)])
     assert [entry["hypothesis_id"] for entry in result] == ["b", "a", "c"]
     assert [entry["rank"] for entry in result] == [2, 1, 3]
+
+
+def test_exact_paired_binary_test_uses_only_discordant_pairs() -> None:
+    result = exact_paired_binary_test(
+        [0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1, 0],
+    )
+    assert result["candidate_only"] == 3
+    assert result["control_only"] == 1
+    assert result["discordant"] == 4
+    assert result["effect"] == pytest.approx(2 / 6)
+    assert result["p_value"] == pytest.approx(0.625)
+
+
+@pytest.mark.parametrize(
+    ("control", "candidate"),
+    [([], []), ([0], [0, 1]), ([0, 2], [0, 1])],
+)
+def test_exact_paired_binary_test_rejects_invalid_pairs(
+    control: list[int], candidate: list[int]
+) -> None:
+    with pytest.raises(ValueError):
+        exact_paired_binary_test(control, candidate)
 
 
 @pytest.mark.parametrize(
