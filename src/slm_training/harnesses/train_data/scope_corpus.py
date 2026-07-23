@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from slm_training.data.scope_extract import (
@@ -35,6 +35,14 @@ from slm_training.data.scope_extract import (
     typed_render,
 )
 from slm_training.dsl.parser import ParseError, validate, validate_output
+from slm_training.dsl.harness_dsl import (
+    HarnessOperation,
+    HarnessPayloadKind,
+    HarnessTaskV1,
+    harness_grammar_fingerprint,
+    runtime_symbols_for_payload,
+    serialize_harness_task,
+)
 from slm_training.dsl.schema import ExampleRecord, OutputKind
 
 TYPED_FAMILY = "lexical_typed_map"
@@ -45,6 +53,14 @@ _STRING_RE = re.compile(r'"(?:\\.|[^"\\])*"')
 IDENTITY_PROMPT = "Emit the OpenUI {scope} for this input.\n---INPUT---\n{text}"
 REPAIR_PROMPT = "Repair this OpenUI {scope}.\n---BROKEN---\n{text}"
 TYPED_PROMPT = "Type this OpenUI token: {text}"
+
+_HARNESS_KIND = {
+    "document": HarnessPayloadKind.DOCUMENT,
+    "statement": HarnessPayloadKind.STATEMENT,
+    "expression": HarnessPayloadKind.EXPRESSION,
+    "lexical": HarnessPayloadKind.LEXICAL,
+    "typed_node": HarnessPayloadKind.NODE,
+}
 
 
 def scope_families() -> tuple[str, ...]:
@@ -161,6 +177,50 @@ def _record(
     )
 
 
+def scope_record_to_harness(
+    record: ExampleRecord, *, pack_id: str = "openui"
+) -> ExampleRecord:
+    """Convert one legacy CAP0 identity/canonical scope row fail-closed."""
+    if record.source.startswith("scope_identity_"):
+        operation = HarnessOperation.IDENTITY
+    elif record.source.startswith("scope_canonical_"):
+        operation = HarnessOperation.CANONICALIZE
+    else:
+        raise ValueError(
+            f"scope family {record.source!r} has no reserved Harness operation"
+        )
+    scope_meta = record.meta.get("scope_slice")
+    if not isinstance(scope_meta, dict):
+        raise ValueError("scope record lacks scope_slice authority")
+    scope = str(scope_meta.get("scope") or "")
+    prefix = f"Emit the OpenUI {scope} for this input.\n---INPUT---\n"
+    if not record.prompt.startswith(prefix):
+        raise ValueError("legacy scope prompt does not match the exact CAP0 framing")
+    payload = record.prompt[len(prefix) :]
+    if not payload:
+        raise ValueError("legacy scope prompt has an empty payload")
+    grammar_category = str(scope_meta.get("category") or "") or None
+    task = HarnessTaskV1(
+        operation=operation,
+        pack_id=pack_id,
+        payload_kind=_HARNESS_KIND[record.target_kind],
+        grammar_category=grammar_category,
+        payload=payload,
+        runtime_symbols=runtime_symbols_for_payload(payload),
+    )
+    prompt = serialize_harness_task(task)
+    meta = dict(record.meta)
+    meta["harness_dsl"] = {
+        "schema": task.schema,
+        "grammar_fingerprint": harness_grammar_fingerprint(),
+        "operation": task.operation.value,
+        "pack_id": task.pack_id,
+        "payload_kind": task.payload_kind.value,
+        "grammar_category": task.grammar_category,
+    }
+    return replace(record, prompt=prompt, meta=meta)
+
+
 # --------------------------------------------------------------------------- #
 # Deterministic de-canonicalization variants (fail-closed round-trip check)
 # --------------------------------------------------------------------------- #
@@ -241,13 +301,16 @@ def _identity_records(
     for scope, slices in by_scope.items():
         for slice_ in slices[: config.identity_per_scope]:
             records.append(
-                _record(
-                    root,
-                    slice_,
-                    family=f"scope_identity_{scope}",
-                    prompt=IDENTITY_PROMPT.format(scope=scope, text=slice_.text),
-                    openui=slice_.text,
-                    task="identity",
+                scope_record_to_harness(
+                    _record(
+                        root,
+                        slice_,
+                        family=f"scope_identity_{scope}",
+                        prompt=IDENTITY_PROMPT.format(scope=scope, text=slice_.text),
+                        openui=slice_.text,
+                        task="identity",
+                    ),
+                    pack_id=config.dsl,
                 )
             )
     return records
@@ -300,14 +363,14 @@ def _canonical_records(
                     target = match.text
                 if target == slice_.text:
                     continue
-                prompt = IDENTITY_PROMPT.format(scope=scope, text=slice_.text)
+                legacy_prompt = IDENTITY_PROMPT.format(scope=scope, text=slice_.text)
                 pair_id = _record_id(root.root_id, "canonical_pair", scope, slice_.text)
-                records.append(
+                canonical_record = scope_record_to_harness(
                     _record(
                         root,
                         slice_,
                         family=f"scope_canonical_{scope}",
-                        prompt=prompt,
+                        prompt=legacy_prompt,
                         openui=target,
                         task="edit",
                         extra_meta={
@@ -315,23 +378,29 @@ def _canonical_records(
                             "variant_transform": variant_name,
                             "quality_bias": "high",
                         },
-                    )
+                    ),
+                    pack_id=config.dsl,
                 )
+                prompt = canonical_record.prompt
+                records.append(canonical_record)
                 # The identity twin shares the exact prompt but echoes the
                 # verbatim input — the ranking bias decides between them.
                 if scope != "document" or identity_safe:
                     records.append(
-                        _record(
-                            root,
-                            slice_,
-                            family=f"scope_identity_{scope}",
-                            prompt=prompt,
-                            openui=slice_.text,
-                            task="identity",
-                            extra_meta={
-                                "canonical_pair_id": pair_id,
-                                "variant_transform": variant_name,
-                            },
+                        scope_record_to_harness(
+                            _record(
+                                root,
+                                slice_,
+                                family=f"scope_identity_{scope}",
+                                prompt=legacy_prompt,
+                                openui=slice_.text,
+                                task="identity",
+                                extra_meta={
+                                    "canonical_pair_id": pair_id,
+                                    "variant_transform": variant_name,
+                                },
+                            ),
+                            pack_id=config.dsl,
                         )
                     )
                 pairs.append(
@@ -376,9 +445,7 @@ def _repair_records(
                         root,
                         slice_,
                         family=f"scope_repair_{scope}",
-                        prompt=REPAIR_PROMPT.format(
-                            scope=scope, text=case.broken_text
-                        ),
+                        prompt=REPAIR_PROMPT.format(scope=scope, text=case.broken_text),
                         openui=case.clean_text,
                         task="repair",
                         extra_meta={

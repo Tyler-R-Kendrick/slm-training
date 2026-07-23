@@ -141,6 +141,23 @@ blocks every unexplained gap. OpenUI sources and lexer/semantic exclusions
 remain behind `pack.py`. See
 [dsh1-02-minimal-alternative-witnesses-20260723.md](dsh1-02-minimal-alternative-witnesses-20260723.md).
 
+### DSH1 symbolic Harness task boundary
+
+SLM-355 adds `harness_dsl/v1`, a separate closed grammar for CAP0 task intent.
+The Harness parser owns only reserved operation/type framing, exact pack and
+grammar-category symbols, digest artifact refs, declared runtime markers, and
+the embedded payload boundary. It does not parse the target language itself.
+
+After the outer prompt parses, generic code resolves the named `DslPack` and
+requires its `fragment_parser` slot. OpenUI populates that existing slot with a
+typed adapter around its document/statement/expression/lexical/node validator;
+OpenUI-specific parsing remains behind `pack.py`. The symbolic-surface policy
+then rejects comments, open strings/numbers, and undeclared identifiers or
+runtime refs. Partial packs without typed fragment validation fail closed.
+
+See
+[dsh1-03-symbolic-harness-dsl-20260723.md](dsh1-03-symbolic-harness-dsl-20260723.md).
+
 ## End-to-end fixture run (executed, not hypothetical)
 
 `tests/test_dsl/test_pack.py::test_end_to_end_fixture_run_through_pack_interface`

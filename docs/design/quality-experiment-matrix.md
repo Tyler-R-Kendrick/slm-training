@@ -6200,3 +6200,19 @@ deterministic contract fixture over a finite pack-declared candidate authority,
 not a train, model eval, benchmark, corpus synthesis, checkpoint, certificate,
 or ship claim. Full evidence:
 [`dsh1-02-minimal-alternative-witnesses-20260723.md`](dsh1-02-minimal-alternative-witnesses-20260723.md).
+
+# DSH1-03 — symbolic Harness DSL for CAP0 tasks (2026-07-23)
+
+Replace English identity/canonicalization instructions with the closed
+`harness_dsl/v1` protocol. Four reserved operations and five typed payload
+kinds round-trip canonically while retaining exact pack, grammar-category,
+artifact, and declared-marker identity. Embedded fragments validate only
+through the selected pack; malformed prompts fail before model-data
+construction.
+
+The focused contract suites pass 46/46 tests. Existing identity and canonical
+scope families convert; repair and typed-map families remain unchanged because
+they have no matching reserved operation. This is deterministic contract
+evidence, not a corpus build, model evaluation, certificate, or ship claim.
+Full evidence:
+[`dsh1-03-symbolic-harness-dsl-20260723.md`](dsh1-03-symbolic-harness-dsl-20260723.md).

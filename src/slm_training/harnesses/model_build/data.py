@@ -8,6 +8,11 @@ from pathlib import Path
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.data.store import DataStore
 from slm_training.dsl.language_contract import assert_symbol_only_output
+from slm_training.dsl.harness_dsl import (
+    HARNESS_SCHEMA,
+    is_harness_prompt,
+    parse_harness_task,
+)
 
 
 def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
@@ -15,6 +20,23 @@ def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
     records = load_jsonl(path)
     for record in records:
         try:
+            harness_meta = record.meta.get("harness_dsl")
+            if harness_meta is not None or is_harness_prompt(record.prompt):
+                if not isinstance(harness_meta, dict):
+                    raise ValueError(
+                        "symbolic Harness prompt lacks harness_dsl metadata"
+                    )
+                task = parse_harness_task(record.prompt)
+                expected = {
+                    "schema": HARNESS_SCHEMA,
+                    "grammar_fingerprint": task.grammar_fingerprint,
+                    "operation": task.operation.value,
+                    "pack_id": task.pack_id,
+                    "payload_kind": task.payload_kind.value,
+                    "grammar_category": task.grammar_category,
+                }
+                if harness_meta != expected:
+                    raise ValueError("Harness prompt metadata mismatch")
             assert_symbol_only_output(
                 record.openui,
                 output_kind=record.target_kind,

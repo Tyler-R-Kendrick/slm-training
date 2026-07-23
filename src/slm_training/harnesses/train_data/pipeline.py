@@ -209,6 +209,9 @@ def _normalize_record(
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
+    verbatim_openui = (
+        record.openui if bool(record.meta.get("preserve_verbatim")) else None
+    )
     record = normalize_example_record(record)
     if record.target_kind != "document":
         from slm_training.dsl.analysis.templatize import templatize_fragment
@@ -416,7 +419,7 @@ def _normalize_record(
     out = ExampleRecord(
         id=emitted.id,
         prompt=emitted.prompt,
-        openui=emitted.openui,
+        openui=(verbatim_openui if verbatim_openui is not None else emitted.openui),
         placeholders=placeholders,
         split=emitted.split,
         source=emitted.source,
@@ -1822,6 +1825,9 @@ def build_train_data(
             )
         contracted = []
         for record in deduped:
+            if isinstance(record.meta.get("harness_dsl"), dict):
+                contracted.append(record)
+                continue
             prompt = record.prompt.rstrip()
             counts = sorted(component_counts(record.openui).items())
             if config.prompt_component_contract and not any(

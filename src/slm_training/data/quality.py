@@ -739,8 +739,19 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
         and record.meta.get("task") == "identity"
     ):
         # Identity anchors must echo the embedded source byte-for-byte.
-        _, marker, embedded = prompt.partition("---INPUT---\n")
-        if not marker or embedded != openui:
+        harness_meta = record.meta.get("harness_dsl")
+        if isinstance(harness_meta, dict):
+            from slm_training.dsl.harness_dsl import parse_harness_task
+
+            try:
+                embedded = parse_harness_task(prompt).payload
+            except ValueError:
+                embedded = None
+        else:
+            _, marker, embedded = prompt.partition("---INPUT---\n")
+            if not marker:
+                embedded = None
+        if embedded != openui:
             reasons.append("identity_echo_mismatch")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")

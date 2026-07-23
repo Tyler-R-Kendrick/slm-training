@@ -1712,6 +1712,22 @@ contexts as authority, selects lexicographic minimum admitted witnesses, and
 blocks unexplained reachable/productive gaps. It does not train or reproduce
 the cited models.
 
+## Symbolic Harness DSL for CAP0 tasks (DSH1-03 / SLM-355)
+
+| | |
+| --- | --- |
+| **Mechanism** | Versioned repository protocol; no new paper mechanism |
+| **Fidelity** | **Repository contract** — closed symbolic task framing and pack-owned fragment validation, not a learned semantic parser |
+| **Code** | [`harness_dsl.py`](../../src/slm_training/dsl/harness_dsl.py), grammar authority in [`harness.lark`](../../src/slm_training/dsl/grammars/harness.lark), pack adapter in [`pack.py`](../../src/slm_training/dsl/pack.py), and CAP0 conversion in [`scope_corpus.py`](../../src/slm_training/harnesses/train_data/scope_corpus.py) |
+| **Evidence** | [`dsh1-03-symbolic-harness-dsl-20260723.md`](dsh1-03-symbolic-harness-dsl-20260723.md) |
+
+The protocol removes open natural-language task instructions from CAP0
+identity/canonicalization rows. It reserves typed operations, carries exact
+pack/category/artifact/marker authority, validates embedded fragments only
+through the active pack, and fails before model input construction. It adds no
+learned mechanism and does not establish suffix-completion or composition
+capability.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
