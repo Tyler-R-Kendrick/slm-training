@@ -67,20 +67,32 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
 
 def _strict_root_reference_identity_records(records, tokenizer) -> list:
     """Find records whose terminal root uses a nonempty strict section subset."""
-    from slm_training.models.choice_tokenizer import (
-        structural_root_reference_identity_target,
-    )
+    if hasattr(tokenizer, "bind_slot_of"):
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            root_declaration_reference_identity_target,
+        )
+
+        def identity_target(record, token_ids):
+            return root_declaration_reference_identity_target(tokenizer, token_ids)
+
+    else:
+        from slm_training.models.choice_tokenizer import (
+            structural_root_reference_identity_target,
+        )
+
+        def identity_target(record, token_ids):
+            return structural_root_reference_identity_target(
+                tokenizer,
+                token_ids,
+                slot_count=len(record.placeholders or ()),
+            )
 
     strict = []
     for record in records:
         token_ids = tokenizer.encode(
             record.openui, placeholders=list(record.placeholders or ())
         )
-        target = structural_root_reference_identity_target(
-            tokenizer,
-            token_ids,
-            slot_count=len(record.placeholders or ()),
-        )
+        target = identity_target(record, token_ids)
         if target is None:
             continue
         references, section_count = target

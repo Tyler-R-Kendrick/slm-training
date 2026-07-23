@@ -4276,6 +4276,11 @@ def test_strict_root_reference_identity_sampler_selects_only_strict_subsets() ->
     selected = _strict_root_reference_identity_records(records, model.tokenizer)
 
     assert [record.id for record in selected] == ["strict"]
+    lexer_model = _model(output_tokenizer="lexer")
+    lexer_selected = _strict_root_reference_identity_records(
+        records, lexer_model.tokenizer
+    )
+    assert [record.id for record in lexer_selected] == ["strict"]
 
 
 def test_rare_slot_owner_sampler_selects_records_by_label_frequency() -> None:
