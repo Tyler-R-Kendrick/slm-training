@@ -14,8 +14,9 @@ surface names), the slot is the prop name, and repeated ``(binder, prop)``
 occurrences get ``_2, _3, …`` ordinals in traversal order. Alpha-equivalent
 inputs therefore templatize to byte-identical canonical output.
 
-Every string outside the schema-derived closed grammar literal set is
-rewritten, including machine-ish values, array members, and extra arguments.
+Only user-facing content properties are rewritten. Open identifiers, actions,
+extra arguments, and other non-content strings remain visible so the caller's
+symbol-only output check rejects them instead of disguising them as slots.
 """
 
 from __future__ import annotations
@@ -27,14 +28,31 @@ from dataclasses import dataclass
 
 from typing import Any
 
-from slm_training.dsl.language_contract import grammar_string_literals
+from slm_training.dsl.language_contract import (
+    STRUCTURAL_ID_ATOMS,
+    grammar_string_literals,
+)
 from slm_training.dsl.lang_core import library_schema
-from slm_training.dsl.placeholders import extract_placeholders, is_placeholder
+from slm_training.dsl.placeholders import (
+    CONTENT_PROPS,
+    extract_placeholders,
+    is_placeholder,
+)
 from slm_training.dsl.production_codec import (
     emit_statement_bindings,
     parse_statement_bindings,
     statement_binding_order,
 )
+
+_TEMPLATIZABLE_PROPS = CONTENT_PROPS | {
+    "codeString",
+    "data",
+    "details",
+    "subtitle",
+    "tags",
+    "textMarkdown",
+}
+_STRUCTURAL_ID_PROPS = frozenset({"category", "language", "name", "src", "value"})
 
 
 @dataclass(frozen=True)
@@ -75,6 +93,10 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
     defs = dict(library_schema().get("$defs") or {})
 
     used_tokens = set(extract_placeholders(source))
+    used_structural_ids = {
+        value for value in STRUCTURAL_ID_ATOMS if json.dumps(value) in source
+    }
+    structural_id_ordinal = 0
     ordinals: dict[tuple[str, str], int] = {}
     replacements: dict[str, str] = {}
     skipped = {
@@ -83,6 +105,7 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
         "enum_like": 0,
         "array_string": 0,
         "extra_arg": 0,
+        "non_content_string": 0,
     }
 
     def next_token(namespace: str, slot: str) -> str:
@@ -99,18 +122,43 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
                 return token
             ordinal += 1
 
+    def next_structural_id() -> str:
+        nonlocal structural_id_ordinal
+        while True:
+            value = f"${structural_id_ordinal}"
+            structural_id_ordinal += 1
+            if value not in used_structural_ids:
+                used_structural_ids.add(value)
+                return value
+
     def rewrite_value(
         value: Any, namespace: str, component: str, prop: str, in_array: bool
     ) -> Any:
         if isinstance(value, str):
             if is_placeholder(value):
+                if prop not in _TEMPLATIZABLE_PROPS:
+                    if prop in _STRUCTURAL_ID_PROPS:
+                        skipped["non_content_string"] += 1
+                        return next_structural_id()
+                    raise ValueError(
+                        f"placeholder {value!r} is not allowed in non-content "
+                        f"property {component}.{prop}"
+                    )
                 return value
             if value in _prop_enum(defs, component, prop):
                 skipped["enum_value"] += 1
                 return value
-            if value in grammar_string_literals():
+            if value in STRUCTURAL_ID_ATOMS and prop in _STRUCTURAL_ID_PROPS:
                 skipped["structural_literal"] += 1
                 return value
+            if prop not in _TEMPLATIZABLE_PROPS:
+                if prop in _STRUCTURAL_ID_PROPS:
+                    skipped["non_content_string"] += 1
+                    return next_structural_id()
+                raise ValueError(
+                    f"open string {value!r} is not allowed in non-content "
+                    f"property {component}.{prop}"
+                )
             token = next_token(namespace, prop)
             replacements[token] = value
             return token
@@ -173,8 +221,34 @@ def templatize(source: str, *, dsl: str | None = None) -> TemplatizeResult:
 _QUOTED_LITERAL_RE = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
 
 
-def templatize_fragment(source: str) -> TemplatizeResult:
+def templatize_fragment(
+    source: str, *, output_kind: str | None = None
+) -> TemplatizeResult:
     """Templatize free-form strings in a non-document output surface."""
+    if output_kind == "document":
+        return templatize(source)
+    if output_kind in {"expression", "statement"}:
+        prefix = ""
+        expression = source.strip()
+        if output_kind == "statement":
+            match = re.fullmatch(r"\s*([a-z][A-Za-z0-9_]*)\s*=\s*(.+)\s*", source, re.S)
+            if not match:
+                raise ValueError("statement target must be one binding")
+            prefix = f"{match.group(1)} = "
+            expression = match.group(2)
+        result = templatize(f"root = {expression}")
+        root_line, *tail = result.source.splitlines()
+        if not root_line.startswith("root = "):
+            raise ValueError("templatized fragment lost root expression")
+        output = prefix + root_line.removeprefix("root = ")
+        if tail:
+            output = "\n".join([output, *tail])
+        return TemplatizeResult(
+            source=output,
+            placeholders=tuple(extract_placeholders(output)),
+            replacements=result.replacements,
+            skipped=result.skipped,
+        )
     allowed = grammar_string_literals()
     used_tokens = set(extract_placeholders(source))
     replacements: dict[str, str] = {}
@@ -205,8 +279,86 @@ def templatize_fragment(source: str) -> TemplatizeResult:
             "enum_like": 0,
             "array_string": 0,
             "extra_arg": 0,
+            "non_content_string": 0,
         },
     )
 
 
-__all__ = ["TemplatizeResult", "templatize"]
+def role_contract_violations(
+    source: str, *, output_kind: str = "document"
+) -> tuple[str, ...]:
+    """Return strings placed in a schema role they are not allowed to occupy."""
+    if output_kind == "expression":
+        source = f"root = {source}"
+    elif output_kind == "statement":
+        match = re.fullmatch(r"\s*[a-z][A-Za-z0-9_]*\s*=\s*(.+)\s*", source, re.S)
+        if not match:
+            return ("statement target must be one binding",)
+        source = f"root = {match.group(1)}"
+    elif output_kind != "document":
+        return ()
+
+    try:
+        bindings = parse_statement_bindings(source, validate=False)
+    except Exception as exc:  # noqa: BLE001 - caller reports contract failure
+        return (f"role-contract parse failed: {exc}",)
+
+    defs = dict(library_schema().get("$defs") or {})
+    violations: list[str] = []
+
+    def check_prop(component: str, prop: str, child: Any) -> None:
+        if isinstance(child, list):
+            for item in child:
+                check_prop(component, prop, item)
+            return
+        if not isinstance(child, str):
+            walk(child)
+            return
+        enum_values = _prop_enum(defs, component, prop)
+        if is_placeholder(child):
+            if prop not in _TEMPLATIZABLE_PROPS:
+                violations.append(
+                    f"placeholder {child!r} in non-content property "
+                    f"{component}.{prop}"
+                )
+        elif child in STRUCTURAL_ID_ATOMS:
+            if prop not in _STRUCTURAL_ID_PROPS:
+                violations.append(
+                    f"structural id {child!r} in content property "
+                    f"{component}.{prop}"
+                )
+        elif child not in enum_values:
+            violations.append(f"open string {child!r} in property {component}.{prop}")
+
+    def walk(value: Any) -> None:
+        if isinstance(value, list):
+            for child in value:
+                walk(child)
+            return
+        if not isinstance(value, dict):
+            return
+        if value.get("type") == "element":
+            component = str(value.get("typeName") or "")
+            for prop, child in (value.get("props") or {}).items():
+                check_prop(component, prop, child)
+        elif value.get("type") == "call":
+            walk(value.get("args") or [])
+
+    for binding in bindings.values():
+        walk(binding)
+    return tuple(dict.fromkeys(violations))
+
+
+def assert_role_safe_output(source: str, *, output_kind: str = "document") -> None:
+    violations = role_contract_violations(source, output_kind=output_kind)
+    if violations:
+        raise ValueError("; ".join(violations[:3]))
+
+
+__all__ = [
+    "TemplatizeResult",
+    "assert_role_safe_output",
+    "role_contract_violations",
+    "templatize",
+    "templatize_fragment",
+]

@@ -89,6 +89,24 @@ def test_sanitize_falls_back_on_unparseable_input() -> None:
     assert outcome.reasons
 
 
+def test_sanitize_opaqueizes_open_non_content_string() -> None:
+    source = 'root = Input("item", "Enter email")'
+
+    outcome = sanitize_openui(source, options=ENFORCE)
+
+    assert outcome.applied and not outcome.fallback
+    assert outcome.openui == 'root = Input("$0", ":root.placeholder")'
+
+
+def test_sanitize_opaqueizes_placeholder_in_non_content_property() -> None:
+    source = 'root = Input(":slot_0")'
+
+    outcome = sanitize_openui(source, options=ENFORCE)
+
+    assert outcome.applied and not outcome.fallback
+    assert outcome.openui == 'root = Input("$0")'
+
+
 def test_sanitized_record_passes_integrity_checks() -> None:
     outcome = sanitize_openui(LITERAL_LAYOUT, options=ENFORCE)
     record = _record(outcome.openui, placeholders=list(outcome.placeholders))

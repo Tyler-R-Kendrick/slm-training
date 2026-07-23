@@ -34,7 +34,7 @@ def test_generalization_slices_and_decontamination_are_deterministic() -> None:
         "root = Stack([card, field])\n"
         "card = Card([title])\n"
         'title = TextContent(":title.text")\n'
-        'field = Input(":field.label")'
+        'field = Input("$0", ":field.label")'
     )
     train = [
         _record(

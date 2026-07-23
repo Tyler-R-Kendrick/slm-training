@@ -54,7 +54,7 @@ def test_paraphrase_with_different_structure_collapses() -> None:
         "b1_distinct",
         "Build a checkout form with quantity stepper and a pay button.",
         'root = Stack([qty, pay], "column")\n'
-        'qty = Slider(":cart.qty")\n'
+        'qty = Slider("$0", "continuous", 0, 100, 1, [40], ":cart.qty")\n'
         'pay = Button(":cart.pay")',
     )
     kept, dropped = apply_semantic_dedup(

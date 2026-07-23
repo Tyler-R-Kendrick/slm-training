@@ -15,6 +15,7 @@ from slm_training.dsl.language_contract import (
     OUTPUT_CONTRACT_VERSION,
     assert_symbol_only_output,
 )
+from slm_training.dsl.analysis.templatize import assert_role_safe_output
 
 
 def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
@@ -28,6 +29,13 @@ def _load_symbol_only_records(path: Path) -> list[ExampleRecord]:
                 record.openui,
                 output_kind=record.target_kind,
             )
+            assert_role_safe_output(
+                record.openui,
+                output_kind=record.target_kind,
+            )
+            for target in record.accepted_outputs:
+                assert_symbol_only_output(target.text, output_kind=target.kind)
+                assert_role_safe_output(target.text, output_kind=target.kind)
         except ValueError as exc:
             raise ValueError(
                 f"{path}: record {record.id!r} violates the symbol-only output "

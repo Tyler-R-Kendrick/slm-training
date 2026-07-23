@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import fields
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,7 +14,7 @@ from slm_training.data.leakage import (
     fingerprint_openui_structure,
     normalize_openui_structure,
 )
-from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.dsl.schema import ExampleRecord, OutputTarget, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig
 from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
@@ -233,6 +234,98 @@ def test_train_loader_rejects_user_defined_marker_names(tmp_path: Path) -> None:
         load_train_records(train_dir)
 
 
+@pytest.mark.parametrize(
+    "openui,placeholders,reason",
+    [
+        (
+            'root = Input(":slot_0")',
+            [":slot_0"],
+            "placeholder ':slot_0' in non-content property Input.name",
+        ),
+        (
+            'root = Input("email", ":slot_0", "email")',
+            [":slot_0"],
+            "open string 'email' in property Input.name",
+        ),
+        (
+            'root = Slider("email", "default", 0, 100, 1, 40, ":slot_0")',
+            [":slot_0"],
+            "open string 'email' in property Slider.name",
+        ),
+    ],
+)
+def test_train_loader_rejects_role_unsafe_strings(
+    tmp_path: Path,
+    openui: str,
+    placeholders: list[str],
+    reason: str,
+) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="role-unsafe",
+                prompt="Input",
+                openui=openui,
+                placeholders=placeholders,
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match=re.escape(reason)):
+        load_train_records(train_dir)
+
+
+def test_train_loader_accepts_opaque_structural_ids(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="role-safe",
+                prompt="Input",
+                openui='root = Input("$0", ":slot_0", "email")',
+                placeholders=[":slot_0"],
+            )
+        ],
+    )
+
+    assert [record.id for record in load_train_records(train_dir)] == ["role-safe"]
+
+
+def test_train_loader_rejects_role_unsafe_accepted_output(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="unsafe-alternate",
+                prompt="Switch group",
+                openui='SwitchGroup("$0", [SwitchItem(null, null, "$1")])',
+                target_kind="expression",
+                accepted_outputs=[
+                    OutputTarget(
+                        'root = SwitchGroup(":slot_0", '
+                        '[SwitchItem(null, null, ":slot_1")])'
+                    )
+                ],
+            )
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "placeholder ':slot_0' in non-content property SwitchGroup.name"
+        ),
+    ):
+        load_train_records(train_dir)
+
+
 def test_suite_loader_rejects_free_form_completion_targets(tmp_path: Path) -> None:
     suite_dir = tmp_path / "suites" / "smoke"
     suite_dir.mkdir(parents=True)
@@ -308,8 +401,8 @@ def test_meaningful_parse_requires_component_recall() -> None:
         openui=(
             'root = Stack([title, notify, volume], "column")\n'
             'title = TextContent(":t")\n'
-            'notify = SwitchItem(":n", ":d", "x")\n'
-            'volume = Slider("volume", "continuous", 0, 100, 1, [40], ":v")'
+            'notify = SwitchItem(":n", ":d", "$0")\n'
+            'volume = Slider("$1", "continuous", 0, 100, 1, [40], ":v")'
         ),
         placeholders=[":t", ":n", ":d", ":v"],
     )

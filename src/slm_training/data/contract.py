@@ -636,12 +636,15 @@ def _normalize_component_signatures(openui: str) -> str:
     """Rewrite common SwitchItem / Slider fixture drift to canonical prop order."""
     lines = (openui or "").splitlines()
     out: list[str] = []
+    structural_id = 0
     for line in lines:
         if re.search(r"\bSwitchItem\s*\(", line):
-            out.append(_normalize_switchitem_line(line))
+            out.append(_normalize_switchitem_line(line, f"${structural_id}"))
+            structural_id += 1
             continue
         if re.search(r"\bSlider\s*\(", line):
-            out.append(_normalize_slider_line(line))
+            out.append(_normalize_slider_line(line, f"${structural_id}"))
+            structural_id += 1
             continue
         out.append(line)
     return "\n".join(out)
@@ -685,7 +688,7 @@ def generated_value_literal(component: str, prop: str, value: str) -> str:
     return value
 
 
-def _normalize_switchitem_line(line: str) -> str:
+def _normalize_switchitem_line(line: str, structural_id: str) -> str:
     m = re.match(r"^(\s*)(\w+)\s*=\s*SwitchItem\((.*)\)\s*$", line)
     if not m:
         return line
@@ -693,13 +696,8 @@ def _normalize_switchitem_line(line: str) -> str:
     args = _split_top_level_args(inner)
     if len(args) < 3:
         return line
-    label, description, third = args[0], args[1], args[2]
-    if third in {"true", "false"}:
-        third = json.dumps(name)
-    elif third.startswith('"') and third.endswith('"') and not third.startswith('":'):
-        pass
-    elif not third.startswith('"'):
-        third = json.dumps(third)
+    label, description = args[0], args[1]
+    third = json.dumps(structural_id)
     rest = ", ".join(args[3:]) if len(args) > 3 else ""
     body = f"{label}, {description}, {third}"
     if rest:
@@ -707,13 +705,14 @@ def _normalize_switchitem_line(line: str) -> str:
     return f"{indent}{name} = SwitchItem({body})"
 
 
-def _normalize_slider_line(line: str) -> str:
+def _normalize_slider_line(line: str, structural_id: str) -> str:
     m = re.match(r"^(\s*)(\w+)\s*=\s*Slider\((.*)\)\s*$", line)
     if not m:
         return line
     indent, name, inner = m.groups()
     args = _split_top_level_args(inner)
     if len(args) >= 7:
+        args[0] = json.dumps(structural_id)
         args[1] = generated_enum_literal("Slider", "variant", args[1])
         args[5] = generated_value_literal("Slider", "defaultValue", args[5])
         return f"{indent}{name} = Slider({', '.join(args)})"
@@ -723,7 +722,7 @@ def _normalize_slider_line(line: str) -> str:
         variant = generated_enum_literal("Slider", "variant")
         default_v = generated_value_literal("Slider", "defaultValue", default_v)
         return (
-            f'{indent}{name} = Slider("{name}", {variant}, {min_v}, {max_v}, 1, '
+            f'{indent}{name} = Slider("{structural_id}", {variant}, {min_v}, {max_v}, 1, '
             f"{default_v}, {label})"
         )
     if len(args) == 3 and args[0].startswith('":'):
@@ -731,7 +730,7 @@ def _normalize_slider_line(line: str) -> str:
         variant = generated_enum_literal("Slider", "variant")
         default_v = generated_value_literal("Slider", "defaultValue", "50")
         return (
-            f'{indent}{name} = Slider("{name}", {variant}, {min_v}, {max_v}, 1, '
+            f'{indent}{name} = Slider("{structural_id}", {variant}, {min_v}, {max_v}, 1, '
             f"{default_v}, {label})"
         )
     return line

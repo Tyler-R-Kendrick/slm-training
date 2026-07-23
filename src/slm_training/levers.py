@@ -50,10 +50,10 @@ VERCEL_FUNCTION_EXCLUDE_FILES: Final = (
 # Active, source-controlled corpora. Historical snapshots remain immutable
 # evidence but fail the canonical marker guard and are never CLI defaults.
 DEFAULT_TRAIN_DATA_DIR: Final = Path(
-    "src/slm_training/resources/data/train/e826_target_slots_only_v4"
+    "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2"
 )
 DEFAULT_EVAL_DATA_DIR: Final = Path(
-    "src/slm_training/resources/data/eval/e842_harness_owned_slots_v1"
+    "src/slm_training/resources/data/eval/e938_role_safe_all_targets_v2"
 )
 DEFAULT_CONTEXT_BACKEND: Final = "scratch"
 

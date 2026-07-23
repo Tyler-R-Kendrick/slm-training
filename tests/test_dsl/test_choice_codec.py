@@ -65,12 +65,12 @@ CORPUS: dict[str, str] = {
     ),
     "modal_bool_null": (
         'root = Modal(":m.title", true, [b])\n'
-        'b = Input("email", ":m.email", "text", null)'
+        'b = Input("$0", ":m.email", "text", null)'
     ),
     "escaped_name": (
         'root = Form("quote \\"q\\" name", btns, [f])\n'
         'f = FormControl(":f.label", i)\n'
-        'i = Input("email", ":f.email")\n'
+        'i = Input("$0", ":f.email")\n'
         "btns = Buttons([s])\n"
         's = Button(":f.submit")'
     ),

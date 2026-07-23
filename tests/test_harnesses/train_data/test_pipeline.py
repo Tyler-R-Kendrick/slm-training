@@ -214,12 +214,12 @@ def test_existing_corpus_can_be_supplemented_from_fixture_registry(
         id="supplement",
         prompt="Three-item switch group",
         openui=(
-            'root = SwitchGroup(":slot_0", [a, b, c])\n'
-            'a = SwitchItem(":slot_1", ":slot_2", ":slot_3")\n'
-            'b = SwitchItem(":slot_4", ":slot_5", ":slot_6")\n'
-            'c = SwitchItem(":slot_7", ":slot_8", ":slot_9")'
+            'root = SwitchGroup("$0", [a, b, c])\n'
+            'a = SwitchItem(":slot_0", ":slot_1", "$1")\n'
+            'b = SwitchItem(":slot_2", ":slot_3", "$2")\n'
+            'c = SwitchItem(":slot_4", ":slot_5", "$3")'
         ),
-        placeholders=[f":slot_{index}" for index in range(10)],
+        placeholders=[f":slot_{index}" for index in range(6)],
         split="train",
     )
     fixture_path = tmp_path / "supplements.jsonl"
@@ -378,8 +378,9 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
             rico_limit=10,
         )
     )
-    # Opaque-slot canonicalization collapses semantic-name-only duplicates.
-    assert result["stats"]["record_count"] >= 3
+    # Opaque role canonicalization collapses semantic-name-only duplicates;
+    # strict decontamination also removes fixtures reserved by the eval corpus.
+    assert result["stats"]["record_count"] >= 1
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
 

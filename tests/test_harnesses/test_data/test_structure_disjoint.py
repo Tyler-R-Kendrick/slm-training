@@ -25,16 +25,16 @@ def test_train_excludes_test_fixture_structures(tmp_path: Path) -> None:
         'root = Stack([tabs], "column")\n'
         'body1 = TextContent(":tab.one.body")\n'
         'body2 = TextContent(":tab.two.body")\n'
-        'i1 = TabItem("one", ":tab.one.trigger", [body1])\n'
-        'i2 = TabItem("two", ":tab.two.trigger", [body2])\n'
+        'i1 = TabItem("$0", ":tab.one.trigger", [body1])\n'
+        'i2 = TabItem("$1", ":tab.two.trigger", [body2])\n'
         "tabs = Tabs([i1, i2])"
     )
     tabs_test = (
         'root = Stack([panel], "column")\n'
         'overview = TextContent(":held.tabs.overview")\n'
         'details = TextContent(":held.tabs.details")\n'
-        'tab1 = TabItem("one", ":held.tabs.tab1", [overview])\n'
-        'tab2 = TabItem("two", ":held.tabs.tab2", [details])\n'
+        'tab1 = TabItem("$0", ":held.tabs.tab1", [overview])\n'
+        'tab2 = TabItem("$1", ":held.tabs.tab2", [details])\n'
         "panel = Tabs([tab1, tab2])"
     )
     write_jsonl(

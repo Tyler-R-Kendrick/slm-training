@@ -27,13 +27,23 @@
       ]
     },
     "config.levers": {
-      "version": "v31",
+      "version": "v33",
       "kind": "harness",
       "paths": [
         "src/slm_training/levers.py",
         "tests/test_levers.py"
       ],
       "history": [
+        {
+          "version": "v33",
+          "date": "2026-07-22",
+          "note": "Default training and evaluation to E935/E936 after auditing primary and alternate targets for schema-role safety"
+        },
+        {
+          "version": "v32",
+          "date": "2026-07-22",
+          "note": "Default training and evaluation to role-audited corpora with opaque structural identifiers and content-only slots"
+        },
         {
           "version": "v31",
           "date": "2026-07-22",
@@ -243,7 +253,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v9",
+      "version": "v10",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -251,6 +261,11 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-22",
+          "note": "Reject placeholders and open literals in non-content properties instead of disguising identifiers as eval completion slots"
+        },
         {
           "version": "v9",
           "date": "2026-07-22",
@@ -532,12 +547,17 @@
       ]
     },
     "evals.scoring": {
-      "version": "v14",
+      "version": "v15",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {
+          "version": "v15",
+          "date": "2026-07-22",
+          "note": "Use opaque structural identifiers in metric-gaming golds so names and values are never learned as content slots or English atoms"
+        },
         {
           "version": "v14",
           "date": "2026-07-22",
@@ -3139,12 +3159,22 @@
       ]
     },
     "harness.model_build.data": {
-      "version": "v3",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/data.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-22",
+          "note": "Apply the role-safe output guard to every accepted alternate target as well as the primary target"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-22",
+          "note": "Reject content slots and English-looking strings in structural schema properties before train or eval records reach a model"
+        },
         {
           "version": "v3",
           "date": "2026-07-22",
@@ -3493,7 +3523,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v22",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3501,11 +3531,27 @@
         "src/slm_training/data/mixture.py",
         "src/slm_training/data/dedup.py",
         "src/slm_training/data/semantic_dedup.py",
+        "src/slm_training/data/progspec/",
+        "src/slm_training/data/awwwards/",
+        "src/slm_training/data/corrupt/",
+        "src/slm_training/data/language_contract/",
+        "src/slm_training/data/rico/",
         "src/slm_training/dsl/packs/openui.py",
+        "src/slm_training/dsl/analysis/templatize.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-22",
+          "note": "Use schema-role-aware templatization for document-kind alternate targets and correct opaque structural fixture identities"
+        },
+        {
+          "version": "v23",
+          "date": "2026-07-22",
+          "note": "Templatize only user-facing content properties so open identifiers and actions are rejected instead of mislabeled as completion slots"
+        },
         {
           "version": "v22",
           "date": "2026-07-22",
@@ -4106,7 +4152,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v248",
+      "version": "v249",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4118,6 +4164,7 @@
         "src/slm_training/models/template_fill.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
         "src/slm_training/dsl/grammar/fastpath/token_map.py",
+        "src/slm_training/dsl/language_contract.py",
         "src/slm_training/data/quality.py",
         "src/slm_training/data/contract.py",
         "src/slm_training/models/adapters/",
@@ -4130,6 +4177,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v249",
+          "date": "2026-07-22",
+          "note": "Represent required structural string identifiers with opaque dollar ordinals instead of borrowed natural-language atoms"
+        },
         {
           "version": "v248",
           "date": "2026-07-22",

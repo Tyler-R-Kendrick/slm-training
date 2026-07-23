@@ -6481,3 +6481,21 @@ role mismatch, leaves dual-card timed out, lowers parse 1.0→0.8 and reward
 off, reject the treatment, and restrict opaque symbols to official placeholder
 properties next. AgentV is 0/2; no ship gates or checkpoint changes. Full
 evidence: [typed-capacity results](iter-e930-e931-typed-array-capacity-20260722.md).
+
+# E932-E938 — role-aware opaque identifiers (2026-07-22)
+
+The symbol-only sanitizer was not property-role-safe: required control IDs could
+become completion slots, and English enum atoms could be borrowed into unrelated
+identifier fields. E932 remained contaminated (116 role violations in 500
+parseable structured targets; 128 sanitizer fallbacks) and is rejected. The
+role-aware repair assigns `"$N"` structural atoms, permits enums only on their
+declaring property, and limits `:slot_N` to content fields across document,
+statement, and expression targets. A follow-up audit found role-unsafe document
+`accepted_outputs` in E933, so E933/E934 are rejected; E935/E936 are also rejected
+because they preceded their owning version bumps. Correctly stamped E937 admits
+524 strict train records with zero fallbacks and 0/582 role violations across
+primary and alternate targets. E938 emits 50 eval records with zero errors,
+rejects six train overlaps, and has 0/50 role violations. Promote E937/E938 as
+defaults. The shared loader now fails closed on every target; it rejects E933 and
+historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
+[role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).

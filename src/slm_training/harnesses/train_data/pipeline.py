@@ -217,13 +217,15 @@ def _normalize_record(
         accepted_outputs = list(record.accepted_outputs)
         fragment_replacements: dict[str, str] = {}
         if sanitize is not None and sanitize.enabled and sanitize.templatize:
-            primary_result = templatize_fragment(primary_source)
+            primary_result = templatize_fragment(
+                primary_source, output_kind=record.target_kind
+            )
             fragment_replacements.update(primary_result.replacements)
             if sanitize.mode == "enforce":
                 primary_source = primary_result.source
             rewritten_outputs: list[OutputTarget] = []
             for target in accepted_outputs:
-                result = templatize_fragment(target.text)
+                result = templatize_fragment(target.text, output_kind=target.kind)
                 fragment_replacements.update(result.replacements)
                 rewritten_outputs.append(
                     OutputTarget(
@@ -329,7 +331,7 @@ def _normalize_record(
             result = (
                 templatize(target_text)
                 if target.kind == "document"
-                else templatize_fragment(target_text)
+                else templatize_fragment(target_text, output_kind=target.kind)
             )
             if sanitize.mode == "enforce":
                 target_text = result.source

@@ -36,8 +36,8 @@ def test_tabs_content_array_not_flagged_as_placeholder_prop() -> None:
         'root = Stack([tabs], "column", "m")\n'
         'body1 = TextContent(":tab.one.body")\n'
         'body2 = TextContent(":tab.two.body")\n'
-        'i1 = TabItem("one", ":tab.one.trigger", [body1])\n'
-        'i2 = TabItem("two", ":tab.two.trigger", [body2])\n'
+        'i1 = TabItem("$0", ":tab.one.trigger", [body1])\n'
+        'i2 = TabItem("$1", ":tab.two.trigger", [body2])\n'
         "tabs = Tabs([i1, i2])"
     )
     validate(src)
@@ -217,7 +217,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
         prompt="Build an email form control with an input.",
         openui=(
             'root = FormControl(":label", input)\n'
-            'input = Input("email", ":placeholder")'
+            'input = Input("$0", ":placeholder")'
         ),
         placeholders=[":label", ":placeholder"],
         meta={"task": "edit"},
@@ -261,7 +261,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
     invalid_enum = ExampleRecord(
         id="judge-schema-enum",
         prompt="Build a Slider component.",
-        openui='root = Slider("volume", "default", 0, 100)',
+        openui='root = Slider("$0", "invalid", 0, 100)',
     )
     assert (
         "schema_value_role_mismatch:Slider.variant"
@@ -294,12 +294,12 @@ def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
     record = ExampleRecord(
         id="normalize-slider-schema",
         prompt="Build a Slider component.",
-        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":slot_0")',
+        openui='root = Slider("$0", "continuous", 0, 100, 1, 40, ":slot_0")',
         placeholders=[":slot_0"],
         design_md="# Design\n",
     )
     normalized = _normalize_record(record, sanitize=SanitizeOptions(mode="enforce"))
-    assert 'Slider(":slot_0", "continuous", 0, 100, 1, [40], ":slot_1")' in (
+    assert 'Slider("$0", "continuous", 0, 100, 1, [40], ":slot_0")' in (
         normalized.openui
     )
     assert independent_judge(normalized)["ok"]

@@ -318,7 +318,7 @@ def test_slot_component_head_trains_on_visible_slot_owners() -> None:
             prompt="email field and submit action",
             openui=(
                 "root = Stack([field, submit])\n"
-                'field = Input("email", ":form.email")\n'
+                'field = Input("$0", ":form.email")\n'
                 'submit = Button(":form.submit")'
             ),
             placeholders=[":form.email", ":form.submit"],
@@ -4297,7 +4297,7 @@ def test_rare_slot_owner_sampler_selects_records_by_label_frequency() -> None:
             openui=(
                 "root = Stack([title, field])\n"
                 'title = TextContent(":title")\n'
-                'field = Input(":field")'
+                'field = Input("$0", ":field")'
             ),
             placeholders=[":title", ":field"],
             split="train",
@@ -4726,13 +4726,13 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     )
 
     first = build_completion_forest(
-        tokenizer, tokenizer.encode('root=SelectItem(":value"', add_special=False)
+        tokenizer, tokenizer.encode('root=SelectItem("$0"', add_special=False)
     )
     assert set(first.candidate_ids) == {tokenizer.token_to_id[","]}
 
     complete = build_completion_forest(
         tokenizer,
-        tokenizer.encode('root=SelectItem(":value",":label"', add_special=False),
+        tokenizer.encode('root=SelectItem("$0",":label"', add_special=False),
     )
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
@@ -4740,14 +4740,14 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
 def test_completion_forest_closes_max_arity_after_array_argument() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=TabItem(":slot_0",":slot_1",[TextContent(":slot_2")]',
+        'root=TabItem("$0",":slot_0",[TextContent(":slot_1")]',
         add_special=False,
     )
 
     forest = build_completion_forest(
         tokenizer,
         prefix,
-        slot_contract=[":slot_0", ":slot_1", ":slot_2"],
+        slot_contract=[":slot_0", ":slot_1"],
         enforce_schema_component_types=True,
     )
 
@@ -4775,7 +4775,7 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
 
     tokenizer = DSLNativeTokenizer.build()
     number_slot = tokenizer.encode(
-        'root=Slider(":value","discrete",', add_special=False
+        'root=Slider("$0","discrete",', add_special=False
     )
     opener = tokenizer.token_to_id["LIT_NUM"]
     opening = build_completion_forest(tokenizer, number_slot, slot_contract=[":value"])
@@ -4812,7 +4812,7 @@ def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
     assert close_path.token_ids == (tokenizer.token_to_id["LIT_END"],)
 
     complete_number = tokenizer.encode(
-        'root=Slider(":value","discrete",1e1', add_special=False
+        'root=Slider("$0","discrete",1e1', add_special=False
     )
     state = GrammarDecodeState(engine=OpenUIIncrementalEngine())
     for token_id in complete_number:
@@ -4833,7 +4833,7 @@ def test_completion_forest_enforces_primitive_array_item_schema() -> None:
     tokenizer = DSLNativeTokenizer.build()
     contract = [":value"]
     prefix = tokenizer.encode(
-        'root=Slider(":value","continuous",0,100,1,[', add_special=False
+        'root=Slider("$0","continuous",0,100,1,[', add_special=False
     )
     item = build_completion_forest(tokenizer, prefix, slot_contract=contract)
     assert tokenizer.token_to_id["LIT_NUM"] in item.candidate_ids
@@ -4842,7 +4842,7 @@ def test_completion_forest_enforces_primitive_array_item_schema() -> None:
     completed = build_completion_forest(
         tokenizer,
         tokenizer.encode(
-            'root=Slider(":value","continuous",0,100,1,[40', add_special=False
+            'root=Slider("$0","continuous",0,100,1,[40', add_special=False
         ),
         slot_contract=contract,
     )
@@ -4992,9 +4992,9 @@ def test_forward_declaration_without_typed_use_keeps_component_choice_open() -> 
 @pytest.mark.parametrize(
     ("prefix_text", "allowed", "rejected"),
     [
-        ('root=Form(":slot_0",', "Buttons", "Button"),
+        ('root=Form("$0",', "Buttons", "Button"),
         (
-            'root=Form(":slot_0",Buttons([]),[FormControl(":slot_1",',
+            'root=Form("$0",Buttons([]),[FormControl(":slot_0",',
             "Input",
             "TextContent",
         ),
@@ -5031,8 +5031,8 @@ def test_completion_forest_enforces_direct_component_property_schema(
 def test_completion_forest_propagates_direct_component_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form(":slot_0",b1,[FormControl(":slot_1",'
-        'Input("email",":slot_2"))])\nb1=',
+        'root=Form("$0",b1,[FormControl(":slot_0",'
+        'Input("$1",":slot_1"))])\nb1=',
         add_special=True,
     )[:-1]
 
@@ -5049,7 +5049,7 @@ def test_completion_forest_propagates_direct_component_binder_type() -> None:
 def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form(":slot_0",b1,[FormControl(":slot_1",b2)])\n'
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
         "b1=Buttons([",
         add_special=True,
     )[:-1]
@@ -5077,11 +5077,11 @@ def test_completion_forest_rejects_conflicting_pending_binder_type() -> None:
 def test_completion_forest_bounds_fresh_typed_binders_by_unused_slots() -> None:
     tokenizer = DSLNativeTokenizer.build()
     prefix = tokenizer.encode(
-        'root=Form(":slot_0",b1,[FormControl(":slot_1",b2)])\n'
+        'root=Form("$0",b1,[FormControl(":slot_0",b2)])\n'
         "b1=Buttons([b3,b4",
         add_special=True,
     )[:-1]
-    contract = [":slot_0", ":slot_1", ":slot_2", ":slot_3"]
+    contract = [":slot_0", ":slot_1", ":slot_2"]
 
     control = build_completion_forest(tokenizer, prefix, slot_contract=contract)
     assert tokenizer.token_to_id[","] in control.candidate_ids

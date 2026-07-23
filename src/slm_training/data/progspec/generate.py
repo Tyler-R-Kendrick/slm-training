@@ -283,6 +283,7 @@ class _TypedBuilder:
             CoverageCell("production", "list"),
         }
         self._counter = 0
+        self._structural_id_counter = 0
 
     def _binder(self, name: str) -> str:
         self._counter += 1
@@ -329,7 +330,11 @@ class _TypedBuilder:
             return str(enum[-1] if variant == "last" else enum[0])
         kind = schema.get("type")
         if kind == "string":
-            return "item" if prop in _LITERAL_STRING_PROPS else f":{prefix}.{prop}"
+            if prop in _LITERAL_STRING_PROPS:
+                value = f"${self._structural_id_counter}"
+                self._structural_id_counter += 1
+                return value
+            return f":{prefix}.{prop}"
         if kind == "boolean":
             return variant == "true"
         if kind == "number":

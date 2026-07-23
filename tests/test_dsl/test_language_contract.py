@@ -59,6 +59,9 @@ def test_to_dict_round_trips_fields() -> None:
 
 def test_symbol_only_output_contract_rejects_free_form_text() -> None:
     assert_symbol_only_output('root = Stack([TextContent(":hero.title")], "column")')
+    assert_symbol_only_output(
+        'root = Slider("$0", "continuous", 0, 100, 1, [40], ":slot_0")'
+    )
     with pytest.raises(OutputContractError, match="free-form strings"):
         assert_symbol_only_output('root = TextContent("Welcome back")')
     with pytest.raises(OutputContractError, match="free-form strings"):

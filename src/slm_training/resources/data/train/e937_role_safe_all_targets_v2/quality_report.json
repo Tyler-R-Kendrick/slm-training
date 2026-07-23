@@ -1,0 +1,476 @@
+{
+  "schema_version": 1,
+  "version": "e937_role_safe_all_targets_v2",
+  "profile": "strict",
+  "built_at": "2026-07-23T00:06:08.416438+00:00",
+  "counts": {
+    "seeds": 924,
+    "candidates": 1714,
+    "collected": 1476,
+    "admitted": 524,
+    "rejected_total": 1197,
+    "source_errors": 0,
+    "by_stage": {
+      "decontamination": 107,
+      "dedup": 629,
+      "normalize": 238,
+      "quality": 70,
+      "verification": 153
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 238,
+    "parse_rate": 0.8611,
+    "tier_histogram": {
+      "Bronze": 190,
+      "Gold": 6,
+      "Silver": 328
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 153,
+    "placeholder_contract_violations": 20,
+    "judge_contract_violations": 50,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 70,
+    "reason_histogram": {
+      "identity_echo_mismatch": 50,
+      "too_few_placeholders": 20,
+      "unknown_components": 20
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 524
+    },
+    "mean_quality_score": 0.9834,
+    "min_quality_score": 0.85
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 537,
+      "fuzzy_minhash": 43,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 49,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 502,
+      "records_per_cluster": {
+        "max": 2,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "0c10c1d5791fb352|8ea1269339f4b187d3bf7a92f7350a3ca0a68791f6f58fc6986510d9d260cd36|7e988d7c54e9621f",
+        "count": 2,
+        "sample_ids": [
+          "program_6bf891b163fb6489",
+          "program_6bf891b163fb6489_syn_0"
+        ]
+      },
+      {
+        "cluster": "161ea93f03e26285|ace9f21c39afd975cc5fa26ef084843b2498e9b2113401e8043911e5e1e3056e|bbc2bda95125d0aa",
+        "count": 2,
+        "sample_ids": [
+          "425d9fac9a5e05d3_scope",
+          "425d9fac9a5e05d3_scope"
+        ]
+      },
+      {
+        "cluster": "164ccbf8bcfd4749|3efb23e9df322e49ed0d33d6b1ed28d3802b41bbea9faa10d07b53b0198f14bb|4000ececf73c49e2",
+        "count": 2,
+        "sample_ids": [
+          "b6cd009461627873_scope",
+          "b6cd009461627873_scope"
+        ]
+      },
+      {
+        "cluster": "2c81ec27036407ad|e87f5208c4cf65f8ee14e3fd78fedc512d79aa292b2e8fb7620114eaff36588a|bbf5b0ad96a727d6",
+        "count": 2,
+        "sample_ids": [
+          "program_383fdd292b9b3125",
+          "program_383fdd292b9b3125_syn_0"
+        ]
+      },
+      {
+        "cluster": "40037df915249b3a|dd134e317f2e382a045298d8f9a85dc17f193b11ef3dec08fef563da07d68db1|909205721044b724",
+        "count": 2,
+        "sample_ids": [
+          "program_6268a15cadc3130f",
+          "program_6268a15cadc3130f_syn_0"
+        ]
+      },
+      {
+        "cluster": "505298e6de47d7cc|4cd041bbc190926c2baf10ae3336303974eaff0a6c8822181f2ceebe27ad20c5|417dc8c59f84a25f",
+        "count": 2,
+        "sample_ids": [
+          "8581745084a56a43_scope",
+          "8581745084a56a43_scope"
+        ]
+      },
+      {
+        "cluster": "5a0007190c99d521|65ff37f8b61be7775e4157f7d3bc86b6e5203be817b3a2904d91163d87c7c23f|7e3145c083fe1856",
+        "count": 2,
+        "sample_ids": [
+          "program_36eb21e823ac68c9",
+          "program_36eb21e823ac68c9_syn_0"
+        ]
+      },
+      {
+        "cluster": "68f33e693e995b77|c2e9365d069d7dcbf55544be73b94f4b2c69a1b6a1660c90699157357ff498a2|a5ce4425b2371208",
+        "count": 2,
+        "sample_ids": [
+          "91003e2817d19365_scope",
+          "91003e2817d19365_scope"
+        ]
+      },
+      {
+        "cluster": "6a917e711ff53047|4cd041bbc190926c2baf10ae3336303974eaff0a6c8822181f2ceebe27ad20c5|417dc8c59f84a25f",
+        "count": 2,
+        "sample_ids": [
+          "program_55dd8069a9cef446",
+          "program_55dd8069a9cef446_syn_0"
+        ]
+      },
+      {
+        "cluster": "7ca0958e33f8a0e9|4c644dba22922645c4b50e983f7df7fcc869086e4e728fa99a52a54e3732bace|275babf8910a67ec",
+        "count": 2,
+        "sample_ids": [
+          "program_effe0f7375001c6c",
+          "program_effe0f7375001c6c_syn_0"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 107,
+    "ngram_flagged": 102,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e934_role_aware_opaque_ids_v1/adversarial",
+      "e934_role_aware_opaque_ids_v1/held_out",
+      "e934_role_aware_opaque_ids_v1/ood",
+      "e934_role_aware_opaque_ids_v1/rico_held",
+      "e934_role_aware_opaque_ids_v1/smoke",
+      "e936_role_safe_all_targets_v1/adversarial",
+      "e936_role_safe_all_targets_v1/held_out",
+      "e936_role_safe_all_targets_v1/ood",
+      "e936_role_safe_all_targets_v1/rico_held",
+      "e936_role_safe_all_targets_v1/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 1476,
+    "changed": 1077,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 1117,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 42,
+      "flatten_opportunities": 138
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 734,
+      "misses": 359
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "abstraction_ladder",
+      "record_count": 5,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 5
+      }
+    },
+    {
+      "source_family": "corruption_repair",
+      "record_count": 13,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.953846,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 13
+      }
+    },
+    {
+      "source_family": "edit_trajectory",
+      "record_count": 26,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.953846,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 13,
+        "patch": 13
+      }
+    },
+    {
+      "source_family": "frontier_described",
+      "record_count": 3,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 3
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 41,
+      "root_parent_count": 21,
+      "mean_quality_score": 0.992683,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 41
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 55,
+      "root_parent_count": 54,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 55
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 95,
+      "root_parent_count": 56,
+      "mean_quality_score": 0.973684,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 95
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 25,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.954,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 25
+      }
+    },
+    {
+      "source_family": "prompt_paraphrase",
+      "record_count": 108,
+      "root_parent_count": 41,
+      "mean_quality_score": 0.980556,
+      "min_quality_score": 0.85,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 108
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    },
+    {
+      "source_family": "rico_real",
+      "record_count": 11,
+      "root_parent_count": 7,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 11
+      }
+    },
+    {
+      "source_family": "scope_canonical_document",
+      "record_count": 19,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.955263,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 19
+      }
+    },
+    {
+      "source_family": "scope_canonical_expression",
+      "record_count": 18,
+      "root_parent_count": 13,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 18
+      }
+    },
+    {
+      "source_family": "scope_canonical_lexical",
+      "record_count": 4,
+      "root_parent_count": 4,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 4
+      }
+    },
+    {
+      "source_family": "scope_canonical_statement",
+      "record_count": 14,
+      "root_parent_count": 12,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 14
+      }
+    },
+    {
+      "source_family": "scope_identity_lexical",
+      "record_count": 14,
+      "root_parent_count": 10,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 14
+      }
+    },
+    {
+      "source_family": "scope_identity_statement",
+      "record_count": 17,
+      "root_parent_count": 13,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "identity": 17
+      }
+    },
+    {
+      "source_family": "scope_repair_expression",
+      "record_count": 16,
+      "root_parent_count": 16,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 16
+      }
+    },
+    {
+      "source_family": "scope_repair_lexical",
+      "record_count": 6,
+      "root_parent_count": 6,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 6
+      }
+    },
+    {
+      "source_family": "scope_repair_statement",
+      "record_count": 31,
+      "root_parent_count": 16,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 31
+      }
+    },
+    {
+      "source_family": "web_distilled",
+      "record_count": 2,
+      "root_parent_count": 2,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 2
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.3057,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "eval_overlap_flagged",
+      "value": 102,
+      "message": "candidates overlapped eval suites by n-gram and were rejected; upstream producers may be leaking eval material"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 20,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d6d25c6f186612b2a535c1aa0565c8188dc3f4fe",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v24"
+    },
+    "stamped_at": "2026-07-23T00:06:08.441067+00:00"
+  }
+}

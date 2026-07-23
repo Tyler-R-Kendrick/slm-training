@@ -138,12 +138,14 @@ def test_generation_request_from_record() -> None:
     record = ExampleRecord(
         id="t",
         prompt="hero",
-        openui=HERO,
-        placeholders=[":hero.title", ":hero.body"],
+        openui=HERO.replace(":hero.title", ":slot_0").replace(
+            ":hero.body", ":slot_1"
+        ),
+        placeholders=[":slot_0", ":slot_1"],
     )
     req = GenerationRequest.from_record(record)
     assert req.prompt == "hero"
-    assert req.slot_contract == (":hero.title", ":hero.body")
+    assert req.slot_contract == (":slot_0", ":slot_1")
 
 
 def test_normalize_switchitem_and_slider_signatures() -> None:
@@ -164,11 +166,11 @@ def test_normalize_switchitem_and_slider_signatures() -> None:
         split="held_out",
     )
     normalized = normalize_example_record(record)
-    assert 'SwitchItem(":held.settings.notify", ":held.settings.notify.desc", "notify")' in (
+    assert 'SwitchItem(":held.settings.notify", ":held.settings.notify.desc", "$0")' in (
         normalized.openui
     )
     assert (
-        'Slider("volume", "continuous", 0, 100, 1, [40], ":held.settings.volume")'
+        'Slider("$1", "continuous", 0, 100, 1, [40], ":held.settings.volume")'
         in normalized.openui
     )
 
@@ -178,21 +180,21 @@ def test_fixture_settings_schema_consistency() -> None:
     train_line = Path("src/slm_training/resources/train_seeds.jsonl").read_text(encoding="utf-8").splitlines()[15]
     test_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(test_line)))
     train_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(train_line)))
-    assert ':held.settings.notify.name' in test_rec.openui
-    assert 'Slider(":held.settings.volume.name", "continuous"' in test_rec.openui
-    assert ':settings.notify.name' in train_rec.openui
-    assert 'Slider(":settings.volume.name", "continuous"' in train_rec.openui
+    assert 'SwitchItem(":held.settings.notify", ":held.settings.notify.desc", "$0")' in test_rec.openui
+    assert 'Slider("$1", "continuous"' in test_rec.openui
+    assert 'SwitchItem(":settings.notify.label", ":settings.notify.description", "$0")' in train_rec.openui
+    assert 'Slider("$1", "continuous"' in train_rec.openui
 
 
 def test_normalize_full_slider_signature_from_generated_schema() -> None:
     record = ExampleRecord(
         id="slider-drift",
         prompt="slider",
-        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":label")',
+        openui='root = Slider("$0", "default", 0, 100, 1, 40, ":label")',
         placeholders=[":label"],
     )
     normalized = normalize_example_record(record)
-    assert 'Slider("volume", "continuous", 0, 100, 1, [40], ":label")' in (
+    assert 'Slider("$0", "continuous", 0, 100, 1, [40], ":label")' in (
         normalized.openui
     )
 

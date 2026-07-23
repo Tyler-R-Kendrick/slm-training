@@ -133,6 +133,9 @@ class OutputContractError(ValueError):
     """An OpenUI target contains text outside the symbol-only language."""
 
 
+STRUCTURAL_ID_ATOMS = frozenset(f"${index}" for index in range(64))
+
+
 @lru_cache(maxsize=1)
 def grammar_string_literals() -> frozenset[str]:
     """Closed string atoms declared by the pinned component schema."""
@@ -155,6 +158,9 @@ def grammar_string_literals() -> frozenset[str]:
     # Structural spellings accepted by the parser but not consistently
     # represented as machine-readable schema enums.
     values.update({"column", "row", "horizontal", "vertical"})
+    # Opaque identifiers satisfy required schema string fields without making
+    # the model reproduce user-facing names or borrowed English enum values.
+    values.update(STRUCTURAL_ID_ATOMS)
     return frozenset(values)
 
 

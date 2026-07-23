@@ -255,11 +255,11 @@ def test_v2_recognizes_singular_prose_for_plural_schema_component() -> None:
     assert "free_form_output_string" in report.reason_codes
 
 
-def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
+def test_v2_rejects_duplicate_overview_slot_across_opaque_tab_ids() -> None:
     source = (
         'overview = TextContent(":tabs.overview")\n'
-        'one = TabItem("one", ":tabs.tab1", [overview])\n'
-        'two = TabItem("two", ":tabs.tab2", [overview])\n'
+        'one = TabItem("$0", ":tabs.tab1", [overview])\n'
+        'two = TabItem("$1", ":tabs.tab2", [overview])\n'
         'root = Tabs([one, two])'
     )
     report = binding_aware_meaningful_v2(
@@ -275,7 +275,7 @@ def test_v2_accepts_numbered_tab_triggers_and_overview_text() -> None:
     )
 
     assert report.verdict is False
-    assert "free_form_output_string" in report.reason_codes
+    assert "duplicate_placeholder_identity" in report.reason_codes
 
 
 def test_v2_preserves_form_slots_in_input_placeholder_property() -> None:

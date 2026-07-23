@@ -509,7 +509,7 @@ def test_exposure_targeted_increases_rare_action_exposure() -> None:
         ExampleRecord(
             id=f"rare_{i}",
             prompt=f"r{i}",
-            openui='root = Map(":x")',
+            openui="root = Map()",
             meta={"source_family": "fixture"},
         )
         for i in range(3)
