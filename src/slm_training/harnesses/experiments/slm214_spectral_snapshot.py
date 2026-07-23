@@ -275,13 +275,21 @@ def _make_null_matrix(
 ) -> torch.Tensor:
     """Draw one null matrix with the requested initializer family."""
     if initializer == "xavier_uniform":
-        w = torch.empty(rows, cols, dtype=dtype, device=device, generator=generator)
-        nn.init.xavier_uniform_(w)
-        return w
+        bound = math.sqrt(6.0 / (rows + cols))
+        return torch.empty((rows, cols), dtype=dtype, device=device).uniform_(
+            -bound,
+            bound,
+            generator=generator,
+        )
     if initializer == "kaiming_uniform":
-        w = torch.empty(rows, cols, dtype=dtype, device=device, generator=generator)
-        nn.init.kaiming_uniform_(w, a=math.sqrt(5))
-        return w
+        # nn.Linear.reset_parameters uses kaiming_uniform_(a=sqrt(5)), whose
+        # bound simplifies to 1/sqrt(fan_in).
+        bound = 1.0 / math.sqrt(cols)
+        return torch.empty((rows, cols), dtype=dtype, device=device).uniform_(
+            -bound,
+            bound,
+            generator=generator,
+        )
     # Default Gaussian/null policy.
     return torch.randn(rows, cols, dtype=dtype, device=device, generator=generator)
 

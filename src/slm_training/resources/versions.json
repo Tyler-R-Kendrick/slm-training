@@ -938,12 +938,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v64",
+      "version": "v65",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v65",
+          "date": "2026-07-23",
+          "note": "add the bounded SLM-216 fixed-token spectral regime matrix and fail-closed gate"
+        },
         {
           "version": "v64",
           "date": "2026-07-23",
@@ -2866,7 +2871,7 @@
       ]
     },
     "harness.experiments.slm214_spectral_snapshot": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm214_spectral_snapshot.py",
@@ -2878,6 +2883,11 @@
         ".agents/skills/autotrain/references/inspect.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "make Xavier and Kaiming null draws deterministic with supported generator-aware uniform sampling"
+        },
         {
           "version": "v2",
           "date": "2026-07-21",
@@ -2931,6 +2941,25 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-215 NCS0-02 SpectralAtlasV1 fixture harness for null-calibrated checkpoint atlas and outcome joins"
+        }
+      ]
+    },
+    "harness.experiments.slm216_spectral_regime": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm216_spectral_regime.py",
+        "scripts/run_spectral_regime_matrix.py",
+        "tests/test_harnesses/experiments/test_slm216_spectral_regime.py",
+        "tests/test_scripts/test_run_spectral_regime_matrix.py",
+        "docs/design/iter-slm216-spectral-regime-20260723.json",
+        "docs/design/iter-slm216-spectral-regime-20260723.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial SLM-216 fixed-token batch/data-scale matrix and SpectralRegimeGateV1"
         }
       ]
     },
