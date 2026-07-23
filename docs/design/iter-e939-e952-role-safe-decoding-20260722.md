@@ -1,4 +1,4 @@
-# E939-E961: role-safe decoding, aligned training, and bounded nesting
+# E939-E962: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -41,6 +41,8 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E959 | E951 lattice-bottom width 2 / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
 | E961 | E951 plan-owned array close / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
 | E961 | E951 plan-owned array close / held_out | 5 | 1.0000 | 0.8000 | 0.8000 | 0.8333 | 0.4434 | 0.6952 | 0.8834 | 0 / 3 | 0/2 campaign |
+| E962 | E951 compiler-native plan close / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.6518 | 0.6667 | 0.8910 | 0 / 0 | 0/2 campaign |
+| E962 | E951 compiler-native plan close / held_out | 5 | 0.8000 | 0.6000 | 0.6000 | 0.6500 | 0.3977 | 0.6000 | 0.7010 | 1 / 2 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -100,3 +102,9 @@ lexer compiler and extended ownership to single authored families, but records
 zero array-close applications and is quality-identical to E957. The runtime
 method still consumes choice-codec frames, so the apparent lexer path was a
 no-op. Revert model v256 and lever registry v34; retain v255/v33.
+
+E962 adds a real compiler-native close bias for arrays owned by a prompt-plan
+component or a single prompt-planned item type. It times out Form with an empty
+prediction and collapses Tabs, reducing held parse 1.0→0.8, strict 0.8→0.6,
+fidelity 0.8333→0.65, structure 0.4434→0.3977, recall 0.6952→0.6, and reward
+0.8834→0.701. Revert the treatment and keep E957/v255.

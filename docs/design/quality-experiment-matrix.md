@@ -6500,7 +6500,7 @@ defaults. The shared loader now fails closed on every target; it rejects E933 an
 historical E826 before model access. No checkpoint, AgentV evaluation, or ship claim. Full evidence:
 [role-aware data results](iter-e932-e934-role-aware-opaque-ids-20260722.md).
 
-# E939-E961 — role-safe decoder boundary and aligned warm start (2026-07-22)
+# E939-E962 — role-safe decoder boundary and aligned warm start (2026-07-22)
 
 E940 exposed the remaining runtime leak: the compiler forest unconditionally
 re-added content-slot IDs to structural string properties. v250-v252 make string
@@ -6530,3 +6530,6 @@ reject wider search as the Form remedy.
 E960 fails before eval on the choice-only array-close capability guard. E961's
 temporary lexer exposure records zero applications and exactly matches E957;
 revert model v256 / lever v34 and retain v255 / lever v33.
+E962's compiler-native implementation is active but regresses held parse to
+0.8, strict to 0.6, reward to 0.701, and adds a Form timeout. Revert it too;
+generic plan-owned array truncation is not the remedy.
