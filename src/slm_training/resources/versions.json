@@ -4157,7 +4157,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v252",
+      "version": "v254",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4182,6 +4182,16 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v254",
+          "date": "2026-07-22",
+          "note": "Bound recursive inline container nesting to the maximum observed in the role-safe train corpus while retaining leaf components and binder references"
+        },
+        {
+          "version": "v253",
+          "date": "2026-07-22",
+          "note": "Terminate compiler-tree documents once the root is complete and every reference is resolved so unused top-level declaration tails are not legal"
+        },
         {
           "version": "v252",
           "date": "2026-07-22",

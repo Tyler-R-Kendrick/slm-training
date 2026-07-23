@@ -1,4 +1,4 @@
-# E939-E952: role-safe string decoding and aligned training
+# E939-E955: role-safe decoding, aligned training, and bounded nesting
 
 E939 established that the E891 checkpoint still produced grammar-valid layouts
 with weak topology on the role-audited E938 suites. E940's strict compiler-tree
@@ -27,6 +27,10 @@ pre-change checkpoint can warm-start onto the expanded role-safe vocabulary.
 | E948 | E891 role-safe strings / held_out | 5 | 0.8000 | 0.0000 | 0.0000 | 0.2500 | 0.0793 | 0.0952 | 0.5606 | 1 / 8 | 0/2 campaign |
 | E952 | E951 role-safe warm start / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.5045 | 0.6667 | 0.8990 | 0 / 0 | 0/2 campaign |
 | E952 | E951 role-safe warm start / held_out | 5 | 0.2000 | 0.2000 | 0.2000 | 0.2000 | 0.2000 | 0.2000 | 0.1874 | 4 / 0 | 0/2 campaign |
+| E953 | E951 resolved-document termination / held_out | 5 | 0.2000 | 0.2000 | 0.2000 | 0.2000 | 0.2000 | 0.2000 | 0.1874 | 4 / 0 | 0/2 campaign |
+| E954 | E951 Form-only, 60s diagnostic | 1 | 1.0000 | 0.0000 | 0.0000 | 1.0000 | 0.0800 | 0.4286 | 0.9430 | 0 / 0 | 0/1 |
+| E955 | E951 depth-3 bound / smoke | 3 | 1.0000 | 1.0000 | 0.6667 | 0.8333 | 0.5045 | 0.6667 | 0.8990 | 0 / 0 | 0/2 campaign |
+| E955 | E951 depth-3 bound / held_out | 5 | 1.0000 | 0.8000 | 0.2000 | 0.7833 | 0.3876 | 0.6524 | 0.8936 | 0 / 0 | 0/2 campaign |
 
 E942 (549/600) and E943 (439/480) hit the cumulative wall cap before checkpoint
 finalization and are invalid. E945 completed only smoke before campaign
@@ -35,10 +39,18 @@ and position-shape mismatches. E950 was a CLI parse failure and created no run.
 None is evidence. E944 completed 350 scratch steps in 25.45 seconds, and E951
 completed its 20-step E891 warm start in 2.91 seconds after the loader repair.
 
-E948 and E952 generated zero request-slot-in-structural-property violations on
-held-out rows; E952 had zero role-contract violations across all eight emitted
-smoke/held predictions. That safety result does not offset quality failure.
-E944 and E951 are local-only rejected checkpoints: do not sync, promote, serve,
-resume, or use either as a parent. The role constraint is retained as a hard
-correctness boundary; the next experiment must improve termination and topology
-without relaxing it. No ship gate passed.
+E953 makes complete, reference-resolved documents terminate immediately. Its
+predictions are byte-identical to E952, but successful held latency improves.
+E954 then shows the timeout is a 193-symbol alternating container tree, not an
+infinite loop. Across 551 structured E937 primary/alternate targets, inline
+element depth has median 1, p95 2, and maximum 3. E955 enforces that observed
+maximum by allowing leaf components and references after two open recursive
+containers while rejecting another recursive wrapper.
+
+E955 preserves zero role violations across all eight outputs and recovers every
+held row: parse 0.2→1.0, timeouts 4→0, meaning-v1 0.2→0.8, fidelity
+0.2→0.7833, structure 0.2→0.3876, recall 0.2→0.6524, and reward
+0.1874→0.8936. Strict-v2 remains 0.2 and AgentV remains 0/2. Retain v253-v254,
+but do not promote or sync E951: its weights descend from pre-role-safe E891 even
+though the current decoder makes outputs role-safe. E944 remains the clean
+scratch lineage. No ship gate passed.

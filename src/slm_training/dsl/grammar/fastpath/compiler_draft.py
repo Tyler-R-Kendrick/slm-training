@@ -283,6 +283,25 @@ def _references_resolved(tokenizer: Any, prefix_ids: list[int]) -> bool:
     return set(references) <= set(declarations)
 
 
+def _active_component_stack(tokenizer: Any, prefix_ids: list[int]) -> tuple[str, ...]:
+    """Return currently open UI component calls from the generated token stream."""
+    component_ids = set(tokenizer.kind_ids("component"))
+    lpar_id = int(tokenizer.token_to_id["("])
+    rpar_id = int(tokenizer.token_to_id[")"])
+    calls: list[str | None] = []
+    pending: str | None = None
+    for raw_token_id in prefix_ids:
+        token_id = int(raw_token_id)
+        if token_id in component_ids:
+            pending = _token_piece(tokenizer, token_id)
+        elif token_id == lpar_id:
+            calls.append(pending)
+            pending = None
+        elif token_id == rpar_id and calls:
+            calls.pop()
+    return tuple(component for component in calls if component is not None)
+
+
 def _binder_component_types(tokenizer: Any, prefix_ids: list[int]) -> dict[int, str]:
     """Return binder-to-component types certified by completed declarations."""
     bind_ids = set(tokenizer.kind_ids("bind"))
@@ -920,6 +939,19 @@ def _schema_component_refs(
     return frozenset(names)
 
 
+def _schema_component_accepts_components(
+    component: str, schema: dict[str, Any]
+) -> bool:
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    properties = definition.get("properties") or {}
+    if "children" in properties:
+        return True
+    return any(
+        _schema_component_refs(property_schema, schema)
+        for property_schema in properties.values()
+    )
+
+
 def _schema_array_item_components(
     state: Any, schema: dict[str, Any]
 ) -> frozenset[str]:
@@ -1202,16 +1234,26 @@ def build_completion_forest(
             _record_one(ConstraintStage.TERMINAL, "eos_admitted", eos_id, admitted=True)
     before_stage = _snapshot()
     if "$END" in terminals and ast_complete:
-        # Lark accepts postfix operators after any expression. Once the
-        # generated AST has a complete document, retain only the grammar's
-        # document-continuation terminals; this derives the boundary from the
-        # parser and AST rather than enumerating punctuation or components.
-        continuation_terminals = frozenset(
-            {"$END", "_NL", "NAME", "STATE_NAME", "COMMENT", "WS_INLINE"}
-        )
-        continuation_ids = allowed_id_set(tokenizer, continuation_terminals) or set()
-        candidates &= continuation_ids | {int(tokenizer.eos_id)}
-    _record_excluded(ConstraintStage.TERMINAL, "terminal_document_continuation", before_stage)
+        if references_resolved and content_met:
+            # A complete document whose references are all declared cannot gain
+            # reachable structure from another top-level binding. Terminate
+            # instead of admitting unused declaration tails.
+            candidates &= {int(tokenizer.eos_id)}
+        else:
+            # Lark accepts postfix operators after any expression. Retain only
+            # document continuations needed to declare unresolved references.
+            continuation_terminals = frozenset(
+                {"$END", "_NL", "NAME", "STATE_NAME", "COMMENT", "WS_INLINE"}
+            )
+            continuation_ids = (
+                allowed_id_set(tokenizer, continuation_terminals) or set()
+            )
+            candidates &= continuation_ids | {int(tokenizer.eos_id)}
+    _record_excluded(
+        ConstraintStage.TERMINAL,
+        "terminal_document_continuation",
+        before_stage,
+    )
     needs_schema = bool(terminals & {"COMPONENT", "STRING"}) or _active_call(engine) is not None
     schema = _official_schema() if needs_schema else None
     before_stage = _snapshot()
@@ -1223,6 +1265,19 @@ def build_completion_forest(
             if _semantic_kind(tokenizer, token_id) != "component"
             or _token_piece(tokenizer, token_id) in component_names
         }
+        active_containers = sum(
+            _schema_component_accepts_components(component, schema)
+            for component in _active_component_stack(tokenizer, prefix_ids)
+        )
+        if active_containers >= 2:
+            candidates = {
+                token_id
+                for token_id in candidates
+                if _semantic_kind(tokenizer, token_id) != "component"
+                or not _schema_component_accepts_components(
+                    _token_piece(tokenizer, token_id), schema
+                )
+            }
     _record_excluded(ConstraintStage.SCHEMA, "schema_component_not_in_library", before_stage)
     if enforce_schema_component_types and schema is not None and "COMPONENT" in terminals:
         slot_components = _schema_slot_components(engine, schema)

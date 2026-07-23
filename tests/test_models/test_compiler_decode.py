@@ -4579,15 +4579,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         ],
         slot_contract=[":hero.title"],
     )
-    continuation_ids = set(
-        compiler_draft.allowed_id_set(
-            tokenizer,
-            frozenset({"$END", "_NL", "NAME", "STATE_NAME", "COMMENT", "WS_INLINE"}),
-        )
-        or set()
-    ) | {tokenizer.eos_id}
-    assert set(complete.candidate_ids) <= continuation_ids
-    assert tokenizer.eos_id in complete.candidate_ids
+    assert set(complete.candidate_ids) == {tokenizer.eos_id}
 
 
 def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
@@ -4792,6 +4784,26 @@ def test_completion_forest_separates_content_and_structural_string_roles() -> No
     assert {
         tokenizer.id_to_token[token_id] for token_id in structural.candidate_ids
     } == {f"STR:${index}" for index in range(64)}
+
+
+def test_completion_forest_bounds_recursive_container_nesting() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+
+    two_containers = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=Stack([Card([", add_special=False),
+        slot_contract=[":slot_0"],
+    )
+    assert tokenizer.token_to_id["Stack"] not in two_containers.candidate_ids
+    assert tokenizer.token_to_id["Card"] not in two_containers.candidate_ids
+    assert tokenizer.token_to_id["TextContent"] in two_containers.candidate_ids
+
+    one_container = build_completion_forest(
+        tokenizer,
+        tokenizer.encode("root=Stack([", add_special=False),
+        slot_contract=[":slot_0"],
+    )
+    assert tokenizer.token_to_id["Card"] in one_container.candidate_ids
 
 
 def test_completion_forest_keeps_numeric_literal_inside_lexer_frame() -> None:
