@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "direct_bridge_policy_fixture_contract", "failures": [], "result": {"confirmation": {"reasons": ["SLM-196 corpus manifest is non-publishable fixture evidence", "D0 X22 and D1 local-corruption controls are not hash-pinned", "only two independent targets and four bridge rows are available"], "status": "blocked"}, "verdict": "inconclusive_fixture_only"}}

@@ -184,6 +184,54 @@ class LegalEditBatch:
             candidate_set_digests=tuple(set_digests),
         )
 
+    @classmethod
+    def pack_inference(
+        cls,
+        candidate_set: ExactLegalEditCandidateSetV1,
+        *,
+        statement_count: int,
+        step_index: int,
+        device: str | torch.device = "cpu",
+    ) -> "LegalEditBatch":
+        """Pack one runtime-enumerated set without inventing supervision.
+
+        Runtime candidates are deliberately marked UNKNOWN until a verifier or
+        corpus label certifies support. Candidate membership and features use
+        the exact same canonical packing path as training batches.
+        """
+        ordered = tuple(
+            sorted(candidate_set.candidates, key=lambda item: item.candidate_id)
+        )
+        count = len(ordered)
+        return cls(
+            state_features=torch.tensor(
+                [[float(statement_count), float(step_index), 0.0, 0.0]],
+                dtype=torch.float32,
+                device=device,
+            ),
+            candidate_features=torch.tensor(
+                [
+                    [_stable_scalar(item.features.get(name)) for name in FEATURE_NAMES]
+                    for item in ordered
+                ],
+                dtype=torch.float32,
+                device=device,
+            ).reshape(count, len(FEATURE_NAMES)),
+            row_offsets=torch.tensor([0, count], dtype=torch.long, device=device),
+            candidate_to_row=torch.zeros(count, dtype=torch.long, device=device),
+            candidate_ids=tuple(item.candidate_id for item in ordered),
+            successor_fingerprints=tuple(
+                item.successor_fingerprint for item in ordered
+            ),
+            positive_mask=torch.zeros(count, dtype=torch.bool, device=device),
+            supported_mask=torch.zeros(count, dtype=torch.bool, device=device),
+            unsupported_mask=torch.zeros(count, dtype=torch.bool, device=device),
+            unknown_mask=torch.ones(count, dtype=torch.bool, device=device),
+            target_distribution=torch.zeros(count, dtype=torch.float32, device=device),
+            row_ids=(candidate_set.state_fingerprint,),
+            candidate_set_digests=(candidate_set.candidate_set_digest,),
+        )
+
     def to_padded(self) -> PaddedLegalEditBatch:
         batch_size = len(self.row_ids)
         widths = [
