@@ -1170,6 +1170,34 @@ Spectral diagnostics remain allowed; spectral LR/RG control, semantic,
 promotion, and ship claims remain blocked. Evidence:
 [`iter-slm216-spectral-regime-20260723.md`](iter-slm216-spectral-regime-20260723.md).
 
+## Decision-conditioned functional spectra (NCS1-01 / SLM-217)
+
+**Fidelity label: adapted diagnostic.** [Yang et al.
+(2021)](https://jmlr.org/papers/v22/20-410.html) analyze weight-matrix spectra.
+SLM-217 extends the repository's null-calibrated spectral contract to the
+input-conditioned operator `W Σ^(1/2)` over exact `DecisionStateV2` strata.
+This is an adaptation for compiler decision evidence, not a claim from the
+paper and not a complete model of nonlinear/residual behavior.
+
+| | |
+| --- | --- |
+| **Evidence unit** | checkpoint × module role × decision kind × abstract state role × split |
+| **Orientation** | PyTorch linear `W[out,in]`; row inputs map as `X @ W.T`; analyze `W @ Σ^(1/2)` |
+| **Covariance** | float64 streaming Welford; explicit support/rank/ridge; train and held-out strata cannot mix |
+| **Nulls** | trace-matched isotropic covariance, initialization weight with observed covariance, cross-group activation permutation, group bootstrap |
+| **Code** | `src/slm_training/harnesses/experiments/slm217_functional_spectra.py`, `scripts/run_functional_spectral_fixture.py` |
+
+The bounded analytical fixture is `inconclusive` at report hash
+`d9953911c42303bb860db40e326a88612ed9bf17c4b822b028404ac263cd1391`.
+It validates orientation, exact-state identity binding, targeted input hooks,
+streaming covariance, support failures, and null/bootstrap plumbing. It does
+not complete the retrospective study: the repository's only committed demo
+checkpoint is output-contract v0 and correctly fails the current
+symbol-only/v2 loader, so there is no compatible durable checkpoint plus
+DecisionEvent manifest pair to analyze. No semantic, predictive, causal,
+optimizer, promotion, or ship claim is authorized. Evidence:
+[`iter-slm217-functional-spectra-20260723.md`](iter-slm217-functional-spectra-20260723.md).
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
