@@ -5183,6 +5183,31 @@ Evidence: [narrative](iter-slm279-depth-supervision-correction-20260723.md) and
 [JSON](iter-slm279-depth-supervision-correction-20260723.json). The refreshed
 SLM-138 fixture is [also recorded](iter-slm138-recursive-denoiser-20260723.md).
 
+## SLM-282 preregistered recurrence-health audit — negative, no ship claim
+
+The fixed CPU scratch audit compared the historical `as_is` recurrence with
+fixture-only `residual_delta` at trained logical depths R=1/2/4, using seeds
+0/1, four AdamW steps at LR 0.001, and two synthetic examples. Initial state,
+config, tokenizer, records, optimizer, and the actual target/noisy/mask digests
+matched across arms. Each trained model emitted all of its anytime depths from
+one post-training denoiser forward; evaluation used a separate declared
+corruption draw.
+
+The preregistered primary-arm condition was applied independently to every raw
+example: `CE(final) <= CE(previous) <= CE(r=1)`, with finite required
+state/update ratios on both seeds. Only seed 0 passed. Seed 1 / R=4 / example
+`b` regressed from CE `17.487688` at depth 3 to `17.855324` at depth 4; the
+token-weighted aggregate improved, but is explicitly forbidden from averaging
+away this failure. The disposition is therefore `recursive_core_negative`.
+AgentV passed 3/4 checks with zero execution errors. The seeded
+finite-difference values are local directional lower bounds—not operator norms
+or contraction proofs—and several exceed one. `residual_delta` cannot promote,
+LAR3 is not activated, the production default is unchanged, no checkpoint was
+created, and this is not quality or ship-gate evidence.
+
+Evidence: [narrative](iter-slm282-recurrence-health-20260723.md) and
+[raw JSON](iter-slm282-recurrence-health-20260723.json).
+
 ## E639 a decode-time margin that floors still-missing required slots directly
 
 ## E640 root-causing why margin=6 hijacks Dashboard's root
