@@ -144,6 +144,7 @@ def test_scientific_report_hash_excludes_runtime_noise() -> None:
         "generated_at": "first",
         "version_stamp": {"code_commit": "abc", "stamped_at": "first"},
         "agentv": {"summary": {"passed": 4, "durationMs": 10}},
+        "observations": [{"latency_ms": 10.0, "loss": 3.0}],
     }
     changed_runtime = {
         **report,
@@ -151,6 +152,7 @@ def test_scientific_report_hash_excludes_runtime_noise() -> None:
         "generated_at": "second",
         "version_stamp": {"code_commit": "abc", "stamped_at": "second"},
         "agentv": {"summary": {"passed": 4, "durationMs": 99}},
+        "observations": [{"latency_ms": 99.0, "loss": 3.0}],
     }
     assert scientific_report_hash(report) == scientific_report_hash(changed_runtime)
     changed_runtime["measurement"] = 8

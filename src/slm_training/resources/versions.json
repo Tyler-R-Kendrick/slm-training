@@ -3665,7 +3665,7 @@
       ]
     },
     "harness.experiments.slm230_recurrence_observability": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
@@ -3674,6 +3674,11 @@
         "tests/test_scripts/test_run_slm230_recurrence_observability.py"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-23",
+          "note": "retain measured CPU latency in reports while excluding nondeterministic timing fields from exact scientific reproduction hashes"
+        },
         {
           "version": "v7",
           "date": "2026-07-23",
