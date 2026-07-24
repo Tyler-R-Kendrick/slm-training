@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {}, "claim": "bounded_latent_state_diagnostic_not_ship", "failures": [], "result": {"checkpoint_sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a", "post_state_sha256": "9c7c431d7ed3b92095a778c02a4090b03cd9798d60413e46a5b7785ed6762480", "pre_state_sha256": "9c7c431d7ed3b92095a778c02a4090b03cd9798d60413e46a5b7785ed6762480"}}

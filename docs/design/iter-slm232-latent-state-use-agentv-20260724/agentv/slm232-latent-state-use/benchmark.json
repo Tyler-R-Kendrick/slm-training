@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/slm232-latent-state-use.eval.jsonl",
+    "timestamp": "2026-07-24T04:09:08.053Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "ablation-coverage-and-selectivity",
+      "checkpoint-and-state-integrity",
+      "honest-censoring-and-prior-join",
+      "pair-manifest-and-support",
+      "schema-and-scientific-hash"
+    ],
+    "experiment": "slm232-latent-state-use"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "is-json:is-json": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "inline-assert-0:inline-assert": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1594188e84f2ba69df5e367ad0b561afa640ee29",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm232_latent_state_use": "v1"
+    },
+    "stamped_at": "2026-07-24T04:09:04.198643+00:00"
+  }
+}

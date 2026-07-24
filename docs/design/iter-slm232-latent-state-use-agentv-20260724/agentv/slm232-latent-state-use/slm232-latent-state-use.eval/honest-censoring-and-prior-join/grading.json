@@ -1,0 +1,70 @@
+{
+  "assertions": [
+    {
+      "text": "Output is valid JSON",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "openui-domain-gate",
+      "passed": true,
+      "evidence": ""
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "is-json",
+      "type": "is-json",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "Output is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "inline-assert-0",
+      "type": "inline-assert",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "openui-domain-gate",
+          "passed": true
+        }
+      ],
+      "details": {
+        "claim": "bounded_latent_state_diagnostic_not_ship",
+        "checks": {},
+        "failedChecks": [],
+        "failures": []
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1594188e84f2ba69df5e367ad0b561afa640ee29",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm232_latent_state_use": "v1"
+    },
+    "stamped_at": "2026-07-24T04:09:04.198643+00:00"
+  }
+}
