@@ -1,0 +1,41 @@
+{
+  "run_id": "iter_slm277_weighting_bug_verification",
+  "issue": "SLM-277",
+  "linear_context": "Filed as a fast-follow finding from SLM-242 (RSC-A06)'s audit; suggested scope was to fix the recursive-depth-supervision per-depth weighting defect",
+  "status": "verification_no_reproduction",
+  "claim_class": "correctness_verification",
+  "quality_claim_made": false,
+  "code_change_made": false,
+  "note": "SLM-277's underlying defect (per-depth weight w summed into the zero-guard total but never multiplied into the per-depth loss term) does not reproduce on main (commit 91edcae). It was already fixed by the independent SLM-237 (RSC-A01) lineage, committed as part of ada0081 'E626-E631 decode-margin lineage + SLM-237/238/239 recursive-denoiser work (#625)', which predates SLM-277's filing. SLM-277 was filed from an audit of PR #660's branch stack (base claude/great-dirac-0wieip @ eb60c600), which forked before ada0081 landed on main and therefore still carries the historical, unfixed formula. This is fleet duplication across independently-forked agent branches, not a live defect on main.",
+  "evidence": {
+    "regression_suite": "python -m pytest -q tests/test_models/test_recursive_denoiser.py",
+    "regression_result": "108 passed, 1 skipped",
+    "key_pinned_test": "tests/test_models/test_recursive_denoiser.py::test_fixture_metrics_agree_with_manual_calculation",
+    "fixture_rerun_on_main": {
+      "recursive_depth_supervision_weights": [0.5, 1.0],
+      "recursive_depth_loss_0": 35.52149200439453,
+      "recursive_depth_loss_1": 32.49333572387695,
+      "recursive_depth_supervision_loss_recorded": 33.502723693847656,
+      "weighted_formula_sum_w_d_L_d_over_sum_w_d": 33.50272115071615,
+      "unweighted_defective_formula_sum_L_d_over_sum_w_d": 45.34321848551432,
+      "conclusion": "recorded loss matches the weighted formula (rel diff < 1e-5), not the defective unweighted formula (diff of ~11.84) -- the fix from SLM-237/RSC-A01 is live on main"
+    },
+    "branch_provenance_check": {
+      "main_head": "91edcae52a7d5593d31e04365c70779475ce5ce6",
+      "fix_commit": "ada0081bc85a9c0dce4d80c32b1ec9d98d1d3ebb (#625, SLM-237/238/239 recursive-denoiser work)",
+      "pr_660_base_branch": "claude/great-dirac-0wieip @ eb60c60090fad9693b7d04197c08f312f9c1c5bd",
+      "pr_660_base_contains_fix_commit": false,
+      "pr_660_base_code_at_defect_site": "total_w = sum(ds_weights[:usable])  -- the w-unused historical formula, confirmed present via git show"
+    }
+  },
+  "recommendation": {
+    "linear": "Close SLM-277 as already-resolved-by-different-lineage (cite ada0081 / iter-rsc-a01-depth-supervision-weighting-fix-20260721.md), not as a duplicate to re-implement.",
+    "github_pr_660": "Stale relative to main for this specific finding: its own body reports the bug as 'deliberately left unfixed', but main fixed it via a parallel branch before PR #660 opened. PR #660's own schedule-validation contribution (harness_core/schedule_validation.py + twotower_schedule_policy.py) may still be independently valuable and non-duplicative of main's SLM-242 implementation (twotower_numeric_gates.py) -- that overlap needs owner triage, not an automated close, since the two implementations differ in shape.",
+    "fleet_coordination": "Multiple concurrent claude/great-dirac-* branches are independently re-solving the same Linear ticket numbers (two independent SLM-242 implementations observed: 91edcae on main vs PR #660). Left for the operator: no automated action taken beyond this evidence record and the Linear comment described above."
+  },
+  "non_goals": [
+    "No code change (nothing to fix on main)",
+    "No re-running of SLM-233's matched recursive-depth campaign (its own scope, contingent on a real fix landing, which already happened via SLM-237)",
+    "No decision on PR #660's disposition (owner/human call)"
+  ]
+}
