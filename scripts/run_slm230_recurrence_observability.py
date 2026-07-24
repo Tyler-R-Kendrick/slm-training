@@ -302,10 +302,11 @@ def _record_observations(
             "reason": "surface fixture has no frozen DecisionEvent candidate artifact",
         }
     )
-    generated = {
-        depth: _decode_at_depth(model, record, depth=depth)
-        for depth in range(1, trained_depth + 1)
-    }
+    generated = {}
+    for depth in range(1, trained_depth + 1):
+        decode_seed = corruption_seed + 10_000 + depth
+        seed_training_corruption(decode_seed, model, override_seed=decode_seed)
+        generated[depth] = _decode_at_depth(model, record, depth=depth)
     rows = []
     previous_logits: torch.Tensor | None = None
     block_layers = len(tower._f_layers) + len(tower._g_layers)
