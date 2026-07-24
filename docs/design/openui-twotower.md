@@ -82,6 +82,14 @@ FTLE `0.3882`) and is joined to `stagnant` free-running outcomes. This is a
 diagnostic block on looped-latent expansion, not a training regularizer,
 adaptive-depth policy, checkpoint promotion, or serving-default change.
 
+SLM-232 adds evaluation-only z0 component decomposition and functional y/z
+path cuts. On the same checkpoint, total z0 varies across four records, but its
+fixed-position rank becomes zero after pooled-context and position removal.
+Path ablations change full-vocabulary logits, yet matched bounded generation
+remains vacuous and exact legal/protected outcomes are unavailable. The joined
+`LatentStateUseGateV1` is therefore `unstable`; this is not evidence of a
+causally useful workspace and changes no production path or default.
+
 **Papers / techniques → code:** see [research-lineage.md](research-lineage.md)
 (MaskGIT, constrained diffusion LLMs, speculative/force-emit, DPO/GRPO surrogates;
 verifier-guided repair Adjacent lineage).

@@ -143,6 +143,11 @@ from slm_training.models.blocks import DenoiserTower, RMSNorm, TransformerBlock
 #: arms C/D.
 Z_STATE_MODES: tuple[str, ...] = ("full", "y_only", "parameter_free")
 RECURSIVE_DIAGNOSTIC_UPDATE_MODES: tuple[str, ...] = ("as_is", "residual_delta")
+RECURSIVE_STATE_PATH_ABLATIONS: tuple[str, ...] = (
+    "none",
+    "detach_z_to_y",
+    "detach_y_to_z",
+)
 
 
 @dataclass(frozen=True)
@@ -325,20 +330,18 @@ class SharedRecursiveDenoiserTower(nn.Module):
             return x, attn
         return x
 
-    def initial_transition_state(
+    def initial_transition_components(
         self,
         noisy_ids: torch.Tensor,
         context: torch.Tensor,
         pad_id: int,
         ctx_pad_mask: torch.Tensor | None = None,
-    ) -> dict[str, torch.Tensor | None]:
-        """Materialize the exact state and fixed conditioning for recurrence.
+    ) -> dict[str, torch.Tensor | bool | None]:
+        """Materialize the exact additive initial-state components.
 
-        The returned tensors are sufficient to replay :meth:`transition_step`
-        without reading request-local symbol state again.  This is an
-        evaluation-neutral boundary for JVP/VJP instrumentation; callers must
-        treat ``context``, masks, and ``runtime_symbol_features`` as fixed when
-        differentiating with respect to ``y``/``z``.
+        Keeping learned-latent, pooled-context, and position terms separate
+        lets evaluation-only ablations remove exactly one declared path
+        without mutating checkpoint parameters.
         """
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
@@ -365,20 +368,50 @@ class SharedRecursiveDenoiserTower(nn.Module):
             mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
             pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
 
-        z: torch.Tensor | None
+        z_latent_component: torch.Tensor | None = None
+        z_context_component: torch.Tensor | None = None
+        z_position_component: torch.Tensor | None = None
         if self.z_state_mode == "full":
-            z = self.z_latent[pos]
-            z = z + self.ctx_proj(pooled).unsqueeze(1)
-            z = z + self.pos(pos)
+            z_latent_component = self.z_latent[pos]
+            z_context_component = self.ctx_proj(pooled).unsqueeze(1).expand(-1, seq, -1)
+            z_position_component = self.pos(pos)
         elif self.z_state_mode == "parameter_free":
-            z = pooled.unsqueeze(1).expand(-1, seq, -1)
-        else:
-            z = None
+            z_context_component = pooled.unsqueeze(1).expand(-1, seq, -1)
         return {
             "y": y,
-            "z": z,
+            "z_latent_component": z_latent_component,
+            "z_context_component": z_context_component,
+            "z_position_component": z_position_component,
+            "context_projection_applied": self.z_state_mode == "full",
             "self_pad_mask": noisy_ids.eq(pad_id),
             "runtime_symbol_features": runtime_features,
+        }
+
+    def initial_transition_state(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor | None]:
+        """Materialize the exact state and fixed conditioning for recurrence."""
+        components = self.initial_transition_components(
+            noisy_ids, context, pad_id, ctx_pad_mask
+        )
+        z_terms = [
+            components[key]
+            for key in (
+                "z_latent_component",
+                "z_context_component",
+                "z_position_component",
+            )
+            if isinstance(components[key], torch.Tensor)
+        ]
+        return {
+            "y": components["y"],
+            "z": sum(z_terms[1:], z_terms[0]) if z_terms else None,
+            "self_pad_mask": components["self_pad_mask"],
+            "runtime_symbol_features": components["runtime_symbol_features"],
         }
 
     def transition_step(
@@ -392,12 +425,22 @@ class SharedRecursiveDenoiserTower(nn.Module):
         runtime_symbol_features: torch.Tensor | None = None,
         return_attn: bool = False,
         update_mode: str = "as_is",
+        state_path_ablation: str = "none",
     ) -> dict[str, torch.Tensor | None]:
         """Apply one canonical shared recurrence transition without mutation."""
         if update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES:
             raise ValueError(
                 f"update_mode={update_mode!r} is not one of "
                 f"{RECURSIVE_DIAGNOSTIC_UPDATE_MODES!r}"
+            )
+        if state_path_ablation not in RECURSIVE_STATE_PATH_ABLATIONS:
+            raise ValueError(
+                f"state_path_ablation={state_path_ablation!r} is not one of "
+                f"{RECURSIVE_STATE_PATH_ABLATIONS!r}"
+            )
+        if state_path_ablation != "none" and z is None:
+            raise ValueError(
+                f"{state_path_ablation} requires an explicit z state"
             )
         y_before = y
         z_before = z
@@ -411,14 +454,14 @@ class SharedRecursiveDenoiserTower(nn.Module):
             y = y + f_update
             g_in = self.norm(y)
         else:
-            f_in = self.norm(z + y)
+            f_in = self.norm(z if state_path_ablation == "detach_y_to_z" else z + y)
             f_out = self._apply_layers(
                 f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
             )
             assert isinstance(f_out, torch.Tensor)
             f_update = f_out if update_mode == "as_is" else f_out - f_in
             z = z + f_update
-            g_in = self.norm(y + z)
+            g_in = self.norm(y if state_path_ablation == "detach_z_to_y" else y + z)
 
         g_out = self._apply_layers(
             g_in,

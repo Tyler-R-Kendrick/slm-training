@@ -1,0 +1,19 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "051c1c5d1b63aa73849bae347c113aac4e6a98aa",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm232_latent_state_use": "v1"
+    },
+    "stamped_at": "2026-07-24T04:11:05.835044+00:00"
+  }
+}

@@ -5253,6 +5253,34 @@ Evidence: [narrative](iter-slm231-recurrence-dynamics-20260724.md),
 [raw JSON](iter-slm231-recurrence-dynamics-20260724.json), and
 [AgentV bundle](iter-slm231-recurrence-dynamics-agentv-20260724/).
 
+## RSC1-03 latent-state causal-use audit (SLM-232) — unstable
+
+SLM-232 reuses the rejected SLM-230 R=4 checkpoint for a bounded four-record
+representation study and two-heldout-record causal matrix. The fixed-position
+z0 projection has effective rank `2.1054`, but rank becomes exactly zero after
+removing pooled-context and position terms: the learned `z_latent` bank is
+identical across records. Recurrent z reaches effective rank `2.0266` at R=4,
+but this descriptive variation is not independently qualified workspace state.
+
+The largest targeted teacher-forced change is the z-to-y path cut
+(`KL=1.7275`, top-1 change `0.1892`); the norm-matched random nuisance reaches
+`KL=1.1473`, and the matched y-only R=4 control reaches `KL=0.9778`. All four
+bounded free-running primary cells retain meaningful parse, structure, and
+reward at `0.0`. Exact legal candidates, protected DecisionEvents, confidence
+intervals, and full frozen suites remain explicitly censored. The checkpoint
+state hash is bit-identical before/after every in-memory cell, and AgentV
+passes 5/5 artifact/honesty cases.
+
+Joined SLM-230 outcomes are `stagnant` and SLM-231 dynamics are
+`expansive_unstable`, so `LatentStateUseGateV1` returns **`unstable`**. This
+blocks RSC2/RSC3 from claiming a causally useful computation workspace while
+allowing diagnostic replication and architecture repair. No checkpoint,
+training/generation default, promotion, or ship claim changes.
+
+Evidence: [narrative](iter-slm232-latent-state-use-20260724.md),
+[raw JSON](iter-slm232-latent-state-use-20260724.json), and
+[AgentV bundle](iter-slm232-latent-state-use-agentv-20260724/).
+
 ## E639 a decode-time margin that floors still-missing required slots directly
 
 ## E640 root-causing why margin=6 hijacks Dashboard's root
