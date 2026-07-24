@@ -1,0 +1,835 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "agentv-dir://agentv/slm231-recurrence-dynamics/benchmark.json",
+      "indexPath": "agentv-dir://agentv/slm231-recurrence-dynamics/index.jsonl",
+      "runDir": "agentv-dir://agentv/slm231-recurrence-dynamics",
+      "timingPath": "agentv-dir://agentv/slm231-recurrence-dynamics/timing.json"
+    },
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "agentv-dir://agentv/slm231-recurrence-dynamics.eval.jsonl",
+    "summary": {
+      "durationMs": 25,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 4,
+      "total": 4
+    }
+  },
+  "checkpoint": {
+    "created": false,
+    "path": "outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt",
+    "promotable": false,
+    "sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a",
+    "trained_recurrence_depth": 4
+  },
+  "checkpoint_created": false,
+  "claim_class": "scratch_checkpoint_not_ship",
+  "elapsed_seconds": 45.779967795999255,
+  "generated_at": "2026-07-24T03:26:31.856130+00:00",
+  "generation_default_changed": false,
+  "issue": "SLM-231",
+  "matrix_set": "slm231-recurrence-dynamics",
+  "matrix_version": "rsc1-02-v1",
+  "recipe": {
+    "backend": "scratch",
+    "device": "cpu",
+    "fixture_n": 1,
+    "heldout_n": 1,
+    "honesty_mode": "bounded_diagnostic_not_ship",
+    "max_wall_minutes": 3.0,
+    "state_projection": {
+      "active_positions": [
+        1
+      ],
+      "hidden_size": 32,
+      "includes_z": true,
+      "policy": "active_token_subset",
+      "schema": "RecurrenceStateProjectionV1",
+      "sequence_length": 79
+    },
+    "synthetic_controls": 4
+  },
+  "report_hash": "d8aa3d100096def83d1e5c32f69ae223fd06914948173261ad58499fd0049aad",
+  "schema": "RecurrenceDynamicsReportV1",
+  "ship_gate_claim": false,
+  "slm138_fixture": {
+    "claim_scope": "api_and_estimator_wiring_only",
+    "composite": {
+      "contracting_fraction": 0.125,
+      "expanding_fraction": 0.5,
+      "frobenius_norm": 5.734152242743523,
+      "neutral_fraction": 0.375,
+      "singular_values": [
+        3.5203405550696236,
+        3.013502322054146,
+        2.492540842039037,
+        1.2070260291941843,
+        0.9996534917883436,
+        0.9975945116649895,
+        0.987583916029925,
+        0.8757924898811589
+      ],
+      "spectral_norm": 3.5203405550696236,
+      "stable_rank": 2.6531944554767053
+    },
+    "estimated_top": [
+      3.520340553876253,
+      3.0134158254222405
+    ],
+    "estimator_residual": 0.001963875324248657,
+    "exact_top": [
+      3.5203405550696236,
+      3.013502322054146
+    ],
+    "increment": {
+      "contracting_fraction": 0.625,
+      "expanding_fraction": 0.375,
+      "frobenius_norm": 3.589687064909492,
+      "neutral_fraction": 0.0,
+      "singular_values": [
+        2.5327420160983545,
+        2.023854308696451,
+        1.5055779845774848,
+        0.3291196946324676,
+        2.336443460218861e-16,
+        1.114532869852451e-16,
+        7.189928542558126e-17,
+        3.326075264796576e-18
+      ],
+      "spectral_norm": 2.5327420160983545,
+      "stable_rank": 2.008774886302396
+    },
+    "maximum_absolute_error": 8.649663190540835e-05,
+    "projection": {
+      "active_positions": [
+        0
+      ],
+      "hidden_size": 4,
+      "includes_z": true,
+      "policy": "active_token_subset",
+      "schema": "RecurrenceStateProjectionV1",
+      "sequence_length": 2
+    },
+    "source": "SLM-138 canonical SharedRecursiveDenoiserTower fixture configuration",
+    "transition_parity_max_abs_error": 0.0
+  },
+  "snapshots": [
+    {
+      "alignment_by_depth": [
+        {
+          "depth": 1,
+          "y_linear_cka": 0.9832697785701718,
+          "y_principal_angles": [
+            0.1904649565776786,
+            0.6875041294949293
+          ],
+          "y_update_cosine_previous": null,
+          "y_update_norm": 55.00687026977539,
+          "z_linear_cka": 0.9860496828432451,
+          "z_principal_angles": [
+            0.16896157038054443,
+            0.9663761824715351
+          ]
+        },
+        {
+          "depth": 2,
+          "y_linear_cka": 0.9970559223237266,
+          "y_principal_angles": [
+            0.13574207410843858,
+            0.7880288445063849
+          ],
+          "y_update_cosine_previous": 0.9945504069328308,
+          "y_update_norm": 56.386531829833984,
+          "z_linear_cka": 0.9971305917199276,
+          "z_principal_angles": [
+            0.16980265643336542,
+            1.0469325047860976
+          ]
+        },
+        {
+          "depth": 3,
+          "y_linear_cka": 0.9989191773988584,
+          "y_principal_angles": [
+            0.10086648088369371,
+            0.8629818371256752
+          ],
+          "y_update_cosine_previous": 0.9973902702331543,
+          "y_update_norm": 57.30397033691406,
+          "z_linear_cka": 0.9988589272613333,
+          "z_principal_angles": [
+            0.07947708178719393,
+            0.1758585156252385
+          ]
+        },
+        {
+          "depth": 4,
+          "y_linear_cka": 0.9994501699117853,
+          "y_principal_angles": [
+            0.07698146514366776,
+            0.18632821733436664
+          ],
+          "y_update_cosine_previous": 0.998496949672699,
+          "y_update_norm": 57.98122787475586,
+          "z_linear_cka": 0.9993987488143562,
+          "z_principal_angles": [
+            0.05585302923860914,
+            0.08931258383235251
+          ]
+        }
+      ],
+      "checkpoint_sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a",
+      "composite_by_depth": [
+        {
+          "depth": 1,
+          "identity_control_top": [
+            1.0,
+            1.0
+          ],
+          "method": "block_jvp_vjp",
+          "residual": 0.04775657184758728,
+          "top_singular_values": [
+            1.7777330139988647,
+            1.733437150367221
+          ]
+        },
+        {
+          "depth": 2,
+          "identity_control_top": [
+            1.0,
+            1.0
+          ],
+          "method": "block_jvp_vjp",
+          "residual": 0.03477491923552592,
+          "top_singular_values": [
+            1.4466605651944686,
+            1.4286617007772495
+          ]
+        },
+        {
+          "depth": 3,
+          "identity_control_top": [
+            1.0,
+            1.0
+          ],
+          "method": "block_jvp_vjp",
+          "residual": 0.03181152131544269,
+          "top_singular_values": [
+            1.312099583104544,
+            1.296251749291244
+          ]
+        },
+        {
+          "depth": 4,
+          "identity_control_top": [
+            1.0,
+            1.0
+          ],
+          "method": "block_jvp_vjp",
+          "residual": 0.028377700841202492,
+          "top_singular_values": [
+            1.2420970604597124,
+            1.2222355206371642
+          ]
+        }
+      ],
+      "estimator": {
+        "group_bootstrap": {
+          "reason": "bounded initial study has one independent request group",
+          "status": "unavailable"
+        },
+        "increment_iterations": 6,
+        "product_estimated_top": [
+          4.509542590121893,
+          4.292369977248615
+        ],
+        "product_exact_top": [
+          4.72429132076811,
+          4.658370007406047
+        ],
+        "product_iterations": 8,
+        "product_max_absolute_error": 0.36600003015743177,
+        "product_residual": 0.04565600892524762,
+        "top_k": 2,
+        "version": "rsc1-02-v1"
+      },
+      "evaluated_depth": 4,
+      "finite_time_lyapunov": [
+        0.3881793911686043,
+        0.3846664007826739,
+        0.3746503335103357,
+        0.37303598120184456,
+        0.3648260181935764,
+        0.3639316436895358,
+        0.3603824173887043,
+        0.35654571305223587,
+        0.3515467359466275,
+        0.34980108749192684,
+        0.3455203795073516,
+        0.34476507632298065,
+        0.3422704022616442,
+        0.33632694455907386,
+        0.33434901113578464,
+        0.3338329156856696,
+        0.32914959648519015,
+        0.3267092192084719,
+        0.3224425133457121,
+        0.3189447032939918,
+        0.3169781315636476,
+        0.31529637563895285,
+        0.3119947400599527,
+        0.3108447452435268,
+        0.30739690351906246,
+        0.29987481174018016,
+        0.29632452633117645,
+        0.2942062763718585,
+        0.288984728659354,
+        0.2805910289885946,
+        0.2762710196839357,
+        0.005872507504111942,
+        -2.102556445212661e-08,
+        -2.4827419542485736e-06,
+        -6.48401528715896e-06,
+        -1.8551051262398466e-05,
+        -4.779633762816365e-05,
+        -8.520873199835177e-05,
+        -9.128708670578216e-05,
+        -0.00010686864621124831,
+        -0.00013805790480773828,
+        -0.00018156309126661835,
+        -0.00026072122976770465,
+        -0.0003284473500742807,
+        -0.0003654273295834093,
+        -0.00045134138555592244,
+        -0.0005113599386225979,
+        -0.0005759568431288687,
+        -0.0006597361646200261,
+        -0.0008322642073901536,
+        -0.000911338142784268,
+        -0.0009440496458494003,
+        -0.0012394605569012779,
+        -0.0014173114230154615,
+        -0.0018356717359970128,
+        -0.0019364142612579485,
+        -0.0023150619456868563,
+        -0.002439203168763682,
+        -0.0026390578239838336,
+        -0.0028318495932077815,
+        -0.004052756899935013,
+        -0.004200872779364551,
+        -0.004290575794064187,
+        -0.006519142971453466
+      ],
+      "floor_gate_claim_scope": "diagnostic_only_semantic_floor_inconclusive",
+      "group_id": "held_out_form_01",
+      "increment_by_depth": [
+        {
+          "depth": 1,
+          "method": "block_jvp_vjp",
+          "residual": 0.06493569546694018,
+          "top_singular_values": [
+            0.8466583210151547,
+            0.8104229749535368
+          ]
+        },
+        {
+          "depth": 2,
+          "method": "block_jvp_vjp",
+          "residual": 0.06376194075874318,
+          "top_singular_values": [
+            0.48946620456469425,
+            0.47113684332847344
+          ]
+        },
+        {
+          "depth": 3,
+          "method": "block_jvp_vjp",
+          "residual": 0.07299522129618038,
+          "top_singular_values": [
+            0.3392426438918498,
+            0.31919481116993437
+          ]
+        },
+        {
+          "depth": 4,
+          "method": "block_jvp_vjp",
+          "residual": 0.05939612437057318,
+          "top_singular_values": [
+            0.2612714951668131,
+            0.2421000276184877
+          ]
+        }
+      ],
+      "nulls": {
+        "depth_order_shuffle": "not_interpretable_for_shared_identical_transition",
+        "group_permutation": "unavailable_n_equals_1",
+        "identity_composite_top": [
+          1.0,
+          1.0
+        ],
+        "identity_increment_top": [
+          0.0,
+          0.0
+        ],
+        "random_matched_increment": "synthetic_control_only"
+      },
+      "numerical_flags": [
+        "product_estimator_not_converged"
+      ],
+      "outcome_join": {
+        "observations": [
+          {
+            "block_evaluations": 6,
+            "candidate_set_hash": "b8476c2bb8ca7ec20014be9a71940bfda1d6d784cb40f2862e952448e76627ff",
+            "candidate_set_scope": "unavailable_exact_compiler_legal_set",
+            "checkpoint_sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a",
+            "decode_config_hash": "6dc8e45d874a4891979b6782c68d093d452d14712a1406482149357854e29fbf",
+            "decoded_output": "",
+            "decoded_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "evaluated_depth": 1,
+            "forwards": 3,
+            "full_entropy": 0.03896092250943184,
+            "full_js_from_previous": null,
+            "full_kl_from_previous": null,
+            "full_top1_stable": null,
+            "full_top_ids": [
+              3,
+              266,
+              489,
+              7,
+              7
+            ],
+            "good_bad_status": "censored_no_exact_decision_labels",
+            "grammar_valid": false,
+            "latency_ms": 53.59146700357087,
+            "legal_js_from_previous": null,
+            "legal_kl_from_previous": null,
+            "logit_cosine_from_previous": null,
+            "logit_l2_from_previous": null,
+            "model_config_hash": "bd2c1ed011d4c967926de3ce76c8bc0d72acaf3999d5f847ae8c9c441a532470",
+            "numerical_status": "finite",
+            "record_id": "held_out_form_01",
+            "request_fingerprint": "99341e167c9315df7686bd0389ca7fb2c7af810a5ee2f71d5156ee62669264ce",
+            "reward_score": 0.0,
+            "runtime_symbol_hash": null,
+            "schema": "RecurrenceObservabilityV1",
+            "split": "heldout",
+            "structural_similarity": 0.0,
+            "suite": "held_out",
+            "target_accuracy": 0.0,
+            "target_count": 43,
+            "target_cross_entropy": 24.253564834594727,
+            "test_time_extrapolation": false,
+            "tokenizer_hash": "d07b3e00cc808eb9d822e4acbc66caf47856efee5560fa31b89ac90ac9eb5b63",
+            "trained_recurrence_depth": 4,
+            "y_residual_norm": 54.27166748046875,
+            "z_residual_norm": 51.620361328125
+          },
+          {
+            "block_evaluations": 12,
+            "candidate_set_hash": "b8476c2bb8ca7ec20014be9a71940bfda1d6d784cb40f2862e952448e76627ff",
+            "candidate_set_scope": "unavailable_exact_compiler_legal_set",
+            "checkpoint_sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a",
+            "decode_config_hash": "6dc8e45d874a4891979b6782c68d093d452d14712a1406482149357854e29fbf",
+            "decoded_output": "b29",
+            "decoded_output_sha256": "2b04fa6f77e5b1b2b57e077764574c83742262339a391dad19bdf9f6524dcb38",
+            "evaluated_depth": 2,
+            "forwards": 3,
+            "full_entropy": 0.11443135887384415,
+            "full_js_from_previous": 0.01217315811663866,
+            "full_kl_from_previous": 0.06742632389068604,
+            "full_top1_stable": false,
+            "full_top_ids": [
+              3,
+              266,
+              489,
+              7,
+              266
+            ],
+            "good_bad_status": "censored_no_exact_decision_labels",
+            "grammar_valid": false,
+            "latency_ms": 96.00616099487524,
+            "legal_js_from_previous": null,
+            "legal_kl_from_previous": null,
+            "logit_cosine_from_previous": 0.9941222071647644,
+            "logit_l2_from_previous": 93.82803344726562,
+            "model_config_hash": "bd2c1ed011d4c967926de3ce76c8bc0d72acaf3999d5f847ae8c9c441a532470",
+            "numerical_status": "finite",
+            "record_id": "held_out_form_01",
+            "request_fingerprint": "99341e167c9315df7686bd0389ca7fb2c7af810a5ee2f71d5156ee62669264ce",
+            "reward_score": 0.0,
+            "runtime_symbol_hash": null,
+            "schema": "RecurrenceObservabilityV1",
+            "split": "heldout",
+            "structural_similarity": 0.0,
+            "suite": "held_out",
+            "target_accuracy": 0.0,
+            "target_count": 43,
+            "target_cross_entropy": 22.22766876220703,
+            "test_time_extrapolation": false,
+            "tokenizer_hash": "d07b3e00cc808eb9d822e4acbc66caf47856efee5560fa31b89ac90ac9eb5b63",
+            "trained_recurrence_depth": 4,
+            "y_residual_norm": 55.533992767333984,
+            "z_residual_norm": 53.27360153198242
+          },
+          {
+            "block_evaluations": 18,
+            "candidate_set_hash": "b8476c2bb8ca7ec20014be9a71940bfda1d6d784cb40f2862e952448e76627ff",
+            "candidate_set_scope": "unavailable_exact_compiler_legal_set",
+            "checkpoint_sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a",
+            "decode_config_hash": "6dc8e45d874a4891979b6782c68d093d452d14712a1406482149357854e29fbf",
+            "decoded_output": "b29 \"discrete\"",
+            "decoded_output_sha256": "085329dbad1ac70fd552e73d021494afa91ac62e91f6868dc8d56e7e18887a18",
+            "evaluated_depth": 3,
+            "forwards": 3,
+            "full_entropy": 0.2159585803747177,
+            "full_js_from_previous": 0.011526927351951599,
+            "full_kl_from_previous": 0.0574309341609478,
+            "full_top1_stable": false,
+            "full_top_ids": [
+              3,
+              266,
+              489,
+              42,
+              266
+            ],
+            "good_bad_status": "censored_no_exact_decision_labels",
+            "grammar_valid": false,
+            "latency_ms": 162.7944760111859,
+            "legal_js_from_previous": null,
+            "legal_kl_from_previous": null,
+            "logit_cosine_from_previous": 0.9973278641700745,
+            "logit_l2_from_previous": 63.04924774169922,
+            "model_config_hash": "bd2c1ed011d4c967926de3ce76c8bc0d72acaf3999d5f847ae8c9c441a532470",
+            "numerical_status": "finite",
+            "record_id": "held_out_form_01",
+            "request_fingerprint": "99341e167c9315df7686bd0389ca7fb2c7af810a5ee2f71d5156ee62669264ce",
+            "reward_score": 0.0,
+            "runtime_symbol_hash": null,
+            "schema": "RecurrenceObservabilityV1",
+            "split": "heldout",
+            "structural_similarity": 0.0,
+            "suite": "held_out",
+            "target_accuracy": 0.0,
+            "target_count": 43,
+            "target_cross_entropy": 20.947107315063477,
+            "test_time_extrapolation": false,
+            "tokenizer_hash": "d07b3e00cc808eb9d822e4acbc66caf47856efee5560fa31b89ac90ac9eb5b63",
+            "trained_recurrence_depth": 4,
+            "y_residual_norm": 56.38734436035156,
+            "z_residual_norm": 54.337059020996094
+          },
+          {
+            "block_evaluations": 24,
+            "candidate_set_hash": "b8476c2bb8ca7ec20014be9a71940bfda1d6d784cb40f2862e952448e76627ff",
+            "candidate_set_scope": "unavailable_exact_compiler_legal_set",
+            "checkpoint_sha256": "1604b2cb9282928fa0969ecbbe7d78c9aa4b9907f74d0d58936bfc298a88b28a",
+            "decode_config_hash": "6dc8e45d874a4891979b6782c68d093d452d14712a1406482149357854e29fbf",
+            "decoded_output": "\":sym26\" b29 \"discrete\"_",
+            "decoded_output_sha256": "83efff12cdb4265c96f46ab0c0ec237bc76ac2047d9a1ec94c89ea5c1e617a7f",
+            "evaluated_depth": 4,
+            "forwards": 3,
+            "full_entropy": 0.3383989930152893,
+            "full_js_from_previous": 0.011393624357879162,
+            "full_kl_from_previous": 0.052159909158945084,
+            "full_top1_stable": false,
+            "full_top_ids": [
+              3,
+              266,
+              489,
+              214,
+              214
+            ],
+            "good_bad_status": "censored_no_exact_decision_labels",
+            "grammar_valid": false,
+            "latency_ms": 192.26974000048358,
+            "legal_js_from_previous": null,
+            "legal_kl_from_previous": null,
+            "logit_cosine_from_previous": 0.9984960556030273,
+            "logit_l2_from_previous": 47.201053619384766,
+            "model_config_hash": "bd2c1ed011d4c967926de3ce76c8bc0d72acaf3999d5f847ae8c9c441a532470",
+            "numerical_status": "finite",
+            "record_id": "held_out_form_01",
+            "request_fingerprint": "99341e167c9315df7686bd0389ca7fb2c7af810a5ee2f71d5156ee62669264ce",
+            "reward_score": 0.0,
+            "runtime_symbol_hash": null,
+            "schema": "RecurrenceObservabilityV1",
+            "split": "heldout",
+            "structural_similarity": 0.0,
+            "suite": "held_out",
+            "target_accuracy": 0.0,
+            "target_count": 43,
+            "target_cross_entropy": 20.076065063476562,
+            "test_time_extrapolation": false,
+            "tokenizer_hash": "d07b3e00cc808eb9d822e4acbc66caf47856efee5560fa31b89ac90ac9eb5b63",
+            "trained_recurrence_depth": 4,
+            "y_residual_norm": 57.02548599243164,
+            "z_residual_norm": 55.11598587036133
+          }
+        ],
+        "slm220_verifier_subspace": {
+          "handling": "censored_not_zero",
+          "status": "unavailable_for_checkpoint_state"
+        },
+        "source": "docs/design/iter-slm230-recurrence-observability-20260724.json",
+        "source_report_hash": "7e9534057fa22bd041366f62cd1ba24e02c97b3b3095b4d726601f17063a8cbc",
+        "source_verdict": "stagnant"
+      },
+      "product_singular_values": [
+        4.72429132076811,
+        4.658370007406047,
+        4.475425066043054,
+        4.4466185228129795,
+        4.3029639363536045,
+        4.287597594325568,
+        4.227157027385491,
+        4.1627788839472375,
+        4.080367034418505,
+        4.051974730109104,
+        3.9831840739368363,
+        3.9711681878907092,
+        3.9317381641041806,
+        3.839368032692433,
+        3.8091118226311553,
+        3.8012564725192424,
+        3.730709335460928,
+        3.6944691495281696,
+        3.631951304807725,
+        3.5814896355240347,
+        3.5534271290142914,
+        3.52960336186965,
+        3.4832959590977373,
+        3.4673096664059315,
+        3.4198189602568294,
+        3.318454780291897,
+        3.2716619759640286,
+        3.2440582927186994,
+        3.1770049540579297,
+        3.0721084455681122,
+        3.0194783320539305,
+        1.0237680937436915,
+        0.9999999158967458,
+        0.9999900690804949,
+        0.9999740642741881,
+        0.9999257985470144,
+        0.9998088329232419,
+        0.9996592231486322,
+        0.9996349183107208,
+        0.9995726167683977,
+        0.9994479208315855,
+        0.9992740112913513,
+        0.9989576586954139,
+        0.9986870732421784,
+        0.9985393584574089,
+        0.9981962631488712,
+        0.9979566507308401,
+        0.9976988243999654,
+        0.997364534294047,
+        0.9966764783351293,
+        0.9963612836592968,
+        0.9962309222873779,
+        0.9950544275855294,
+        0.9943467941547026,
+        0.9926842047215069,
+        0.992284263254864,
+        0.9907824962688252,
+        0.9902906305969841,
+        0.9894992901750783,
+        0.9887365150512158,
+        0.9839196639394516,
+        0.9833369000844097,
+        0.9829841302396194,
+        0.9742604857888374
+      ],
+      "projection": {
+        "active_positions": [
+          1
+        ],
+        "hidden_size": 32,
+        "includes_z": true,
+        "policy": "active_token_subset",
+        "schema": "RecurrenceStateProjectionV1",
+        "sequence_length": 79
+      },
+      "request_id": "held_out_form_01",
+      "schema": "RecurrenceDynamicsSnapshotV1",
+      "split": "heldout",
+      "suite": "e763_symbol_only_eval_r2_20260722/held_out",
+      "trained_depth": 4,
+      "transition_hash": "2485f9ce68448ab87cb0a76f01d7e3f757ca29ed625d215f92ca6d2da2ed87ee",
+      "verdict": "expansive_unstable",
+      "version_stamp": {
+        "code_commit": "216dea50767273b0183177ea72c45032eb146ac9",
+        "code_dirty": true,
+        "components": {
+          "harness.experiments.slm231_recurrence_dynamics": "v1"
+        },
+        "stamp_schema": "version_stamp/v1",
+        "stamped_at": "2026-07-24T03:25:50.696856+00:00"
+      }
+    }
+  ],
+  "status": "bounded_checkpoint_diagnostic",
+  "synthetic_validation": {
+    "identity": {
+      "composite": {
+        "contracting_fraction": 0.0,
+        "expanding_fraction": 0.0,
+        "frobenius_norm": 2.0,
+        "neutral_fraction": 1.0,
+        "singular_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "spectral_norm": 1.0,
+        "stable_rank": 4.0
+      },
+      "estimated_top": [
+        1.0,
+        1.0
+      ],
+      "estimator_residual": 0.0,
+      "exact_top": [
+        1.0,
+        1.0
+      ],
+      "increment": {
+        "contracting_fraction": 1.0,
+        "expanding_fraction": 0.0,
+        "frobenius_norm": 0.0,
+        "neutral_fraction": 0.0,
+        "singular_values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "spectral_norm": 0.0,
+        "stable_rank": 0.0
+      },
+      "maximum_absolute_error": 0.0
+    },
+    "known_product": {
+      "ftle": [
+        0.009901313648580105,
+        -0.015229603741838835,
+        -0.06391668575437422,
+        -0.30809306971098255
+      ],
+      "order": "rotating @ stable_diagonal",
+      "singular_values": [
+        1.02,
+        0.97,
+        0.8800000000000001,
+        0.54
+      ]
+    },
+    "rotating": {
+      "composite": {
+        "contracting_fraction": 0.25,
+        "expanding_fraction": 0.25,
+        "frobenius_norm": 2.004993765576342,
+        "neutral_fraction": 0.5,
+        "singular_values": [
+          1.1,
+          1.0,
+          1.0,
+          0.9
+        ],
+        "spectral_norm": 1.1,
+        "stable_rank": 3.322314049586776
+      },
+      "estimated_top": [
+        1.0998537928806327,
+        0.9999900051345118
+      ],
+      "estimator_residual": 0.0036757862726332375,
+      "exact_top": [
+        1.1,
+        1.0
+      ],
+      "increment": {
+        "contracting_fraction": 0.5,
+        "expanding_fraction": 0.5,
+        "frobenius_norm": 2.004993765576342,
+        "neutral_fraction": 0.0,
+        "singular_values": [
+          1.4142135623730951,
+          1.414213562373095,
+          0.10000000000000009,
+          0.09999999999999996
+        ],
+        "spectral_norm": 1.4142135623730951,
+        "stable_rank": 2.0099999999999993
+      },
+      "maximum_absolute_error": 0.00014620711936741415
+    },
+    "stable_diagonal": {
+      "composite": {
+        "contracting_fraction": 0.5,
+        "expanding_fraction": 0.0,
+        "frobenius_norm": 1.726644143997251,
+        "neutral_fraction": 0.5,
+        "singular_values": [
+          1.02,
+          0.97,
+          0.8,
+          0.6
+        ],
+        "spectral_norm": 1.02,
+        "stable_rank": 2.865532487504806
+      },
+      "estimated_top": [
+        1.0199999996760614,
+        0.9699998907221168
+      ],
+      "estimator_residual": 0.00013108900192568715,
+      "exact_top": [
+        1.02,
+        0.97
+      ],
+      "increment": {
+        "contracting_fraction": 1.0,
+        "expanding_fraction": 0.0,
+        "frobenius_norm": 0.44866468548349114,
+        "neutral_fraction": 0.0,
+        "singular_values": [
+          0.4,
+          0.19999999999999996,
+          0.030000000000000027,
+          0.020000000000000018
+        ],
+        "spectral_norm": 0.4,
+        "stable_rank": 1.258125
+      },
+      "maximum_absolute_error": 1.0927788318682019e-07
+    }
+  },
+  "thresholds": {
+    "dead_increment_spectral_norm_max": 1e-05,
+    "expansive_ftle_min": 0.35,
+    "expansive_product_spectral_norm_min": 4.0,
+    "identity_only_increment_spectral_norm_max": 0.05,
+    "identity_only_product_band": [
+      0.95,
+      1.05
+    ],
+    "oscillatory_update_cosine_max": -0.25,
+    "overcontractive_product_spectral_norm_max": 0.1
+  },
+  "training_default_changed": false,
+  "verdict": "expansive_unstable",
+  "version_stamp": {
+    "code_commit": "216dea50767273b0183177ea72c45032eb146ac9",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm231_recurrence_dynamics": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T03:25:50.696856+00:00"
+  }
+}

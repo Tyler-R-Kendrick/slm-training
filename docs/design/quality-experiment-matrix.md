@@ -5230,6 +5230,29 @@ Evidence: [narrative](iter-slm230-recurrence-observability-20260724.md),
 [raw JSON](iter-slm230-recurrence-observability-20260724.json), and
 [AgentV bundle](iter-slm230-recurrence-observability-agentv-20260724/).
 
+## RSC1-02 residual recurrence dynamics (SLM-231) — expansive unstable
+
+SLM-231 separates the learned increment Jacobian from the residual identity:
+`J_T = I + J_Delta`. Synthetic linear systems and the SLM-138 architecture
+fixture validate exact Jacobians, product order, FTLE, and JVP/VJP estimates;
+the fixture transition matches the normal recurrence exactly (`0.0` maximum
+logit error). AgentV passes 4/4 contract and honesty cases.
+
+The bounded real profile reuses the rejected SLM-230 R=4 checkpoint and one
+held-out request, with the state Jacobian restricted to one active token's
+`(y,z)` tuple. Increment spectral norms fall from `0.8467` to `0.2613`, while
+the exact ordered R=4 composite product reaches top singular value `4.7243`
+and maximum FTLE `0.3882`. The iterative real-product estimate did not converge
+at the bounded iteration budget and is flagged rather than substituted for the
+exact result. Joined SLM-230 outcomes remain `stagnant` with zero accuracy,
+parse, structure, and reward, so the honest verdict is `expansive_unstable`.
+This blocks RSC2/RSC3 expansion; no training, generation, promotion, or ship
+default changes.
+
+Evidence: [narrative](iter-slm231-recurrence-dynamics-20260724.md),
+[raw JSON](iter-slm231-recurrence-dynamics-20260724.json), and
+[AgentV bundle](iter-slm231-recurrence-dynamics-agentv-20260724/).
+
 ## E639 a decode-time margin that floors still-missing required slots directly
 
 ## E640 root-causing why margin=6 hijacks Dashboard's root

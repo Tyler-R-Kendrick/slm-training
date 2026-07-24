@@ -2106,7 +2106,7 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     ]
     assert (
         report["version_stamp"]["components"]["model.recursive_denoiser"]
-        == "v15"
+        == "v16"
     )
 
 
