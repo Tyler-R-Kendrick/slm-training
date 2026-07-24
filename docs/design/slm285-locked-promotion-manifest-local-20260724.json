@@ -31,6 +31,15 @@
     "model_or_ship_claim": false,
     "legal_action_entropy": "requires_decode_trace; not inferred"
   },
+  "local_decode_trace_attempt": {
+    "status": "interrupted_not_evidence",
+    "checkpoint": "outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt",
+    "device": "local CPU",
+    "records": 1,
+    "policies": ["strict_compiler_tree", "maskgit"],
+    "interrupt_after_seconds": 170,
+    "reason": "both probes reached the completion-forest path before the canonical interrupt cap"
+  },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
     "code_commit": "cdd5869b56633dd405d5d6a066804e6ff2d6c25f",

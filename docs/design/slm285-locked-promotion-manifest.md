@@ -19,3 +19,14 @@ must carry this manifest digest, and promoted-anchor metadata persists it.
 This is corpus wiring and decontamination evidence, not a model-quality or
 ship claim. `legal_action_entropy` is deliberately recorded as requiring a
 decode trace; no model-selection or promotion result was run here.
+
+### Local decode-trace attempt (2026-07-24)
+
+Two one-record local CPU probes against the compatible
+`slm230_bounded_recursive_r4_r2` checkpoint were stopped by the canonical
+170-second interrupt cap before a trace was emitted: once through
+`strict_compiler_tree`, once through MaskGIT. Both were inside the completion
+forest, so neither is evidence and neither changes the manifest. The older
+CPU-smoke checkpoint was rejected before decode because its output contract is
+not symbol-only/v2. A bounded grammar-trace path is still required before
+legal-action entropy can be claimed as a populated manifest dimension.
