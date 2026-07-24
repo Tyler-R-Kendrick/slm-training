@@ -10,6 +10,10 @@ src/slm_training/resources/data/**/governance/**
 # expose the corrected immutable r2 snapshot, not this rejected candidate.
 src/slm_training/resources/data/train/e530_visible_semantic_roles_r1_20260719/**
 
+# SLM-230's bounded scratch corpus is experiment evidence, not a deployed
+# dashboard dataset. Keep its 1.3 MB source/governance bundle offline.
+src/slm_training/resources/data/train/slm230_symbol_only_v1/**
+
 # Human narratives are served from the repository, not opened by the FastAPI
 # function. Machine-readable experiment JSON remains deployable.
 docs/design/**/*.md

@@ -3383,6 +3383,11 @@
         {
           "version": "v2",
           "date": "2026-07-23",
+          "note": "no-bump: replace the ineffective SLM-230 function glob with a source-upload ignore for the offline corpus without changing web runtime behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
           "note": "no-bump: exclude SLM-230 offline corpus and evidence directories from the Vercel function bundle without changing web runtime behavior"
         },
         {
