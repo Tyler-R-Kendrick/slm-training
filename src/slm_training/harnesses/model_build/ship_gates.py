@@ -139,12 +139,22 @@ def evaluate_ship_gates(
     suites: dict[str, dict[str, Any]],
     *,
     thresholds: dict[str, dict[str, float]] | None = None,
+    suite_reachability: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """
     Check every suite present in `suites` against the ship policy.
 
     Missing metrics fail that threshold. Suites absent from the scoreboard are
     reported as `missing_suite` failures (cannot claim pass without evidence).
+
+    When `suite_reachability` is provided (SLM-299 edit-space reachability
+    audit: suite name → fraction of decided cases proven reachable from the
+    X22 seed), any gated suite whose fraction is below 1.0 adds a blocking
+    `reachability_unproven:<suite>` measurement-integrity failure — model
+    quality on that suite is partially unmeasurable by the decode space, so
+    model-quality claims are blocked. Suites absent from the map are
+    unaffected (backwards compatible); UNKNOWN_BUDGET cases are never counted
+    as unreachable by the audit that produces the map.
     """
     policy = thresholds or DEFAULT_SHIP_GATES
     actual, checks, failures, categorized = run_gate_checks(
@@ -153,6 +163,20 @@ def evaluate_ship_gates(
         normalize_suite=_slim_suite,
         default_min_n=DEFAULT_MIN_SUITE_N,
     )
+    if suite_reachability:
+        for suite_name, fraction in suite_reachability.items():
+            if suite_name not in policy:
+                continue
+            if (
+                isinstance(fraction, (int, float))
+                and not isinstance(fraction, bool)
+                and fraction < 1.0
+            ):
+                key = f"{suite_name}:reachability_unproven"
+                message = f"reachability_unproven:{suite_name} actual={fraction!r} need=1.0"
+                checks[key] = False
+                failures.append(message)
+                categorized["measurement_integrity_failures"].append(message)
     return {
         "authority": "Python preview; durable ship verdicts require AgentEvals assertions",
         "policy": policy,
@@ -171,6 +195,8 @@ def evaluate_ship_gates(
             "semantic-density floor: shorter-but-emptier output cannot pass on "
             "syntax alone. Syntax parse is reported separately and is not a "
             "learned-quality substitute. DESIGN.md style lint is never a ship gate. "
+            "When suite_reachability is supplied, gated suites below 1.0 reachable "
+            "fail as reachability_unproven (measurement integrity). "
             "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
         ),
     }

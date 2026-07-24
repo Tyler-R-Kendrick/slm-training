@@ -1186,13 +1186,18 @@
       ]
     },
     "gates.ship": {
-      "version": "openui_ship_gates_v3",
+      "version": "openui_ship_gates_v4",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v4",
+          "date": "2026-07-24",
+          "note": "Fail closed on audited X22 suite reachability below 1.0 as a measurement-integrity failure"
+        },
         {
           "version": "openui_ship_gates_v3",
           "date": "2026-07-24",
@@ -4456,6 +4461,25 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-288 reason-code histograms, frozen blinded annotation packet, agent-rater agreement analysis, and metric disposition"
+        }
+      ]
+    },
+    "harness.experiments.slm299_edit_reachability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
+        "scripts/run_slm299_reachability_audit.py",
+        "tests/test_harnesses/experiments/test_slm299_edit_reachability.py",
+        "docs/design/iter-slm299-edit-reachability-20260724.json",
+        "docs/design/iter-slm299-edit-reachability-20260724.md",
+        "src/slm_training/models/tree_edit_diffusion.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; real X22 tree-edit reachability analyzer, suite audit CLI, and reachability-unproven gate input"
         }
       ]
     },
