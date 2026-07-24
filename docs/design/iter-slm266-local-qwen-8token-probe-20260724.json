@@ -1,0 +1,48 @@
+{
+  "schema": "slm266_local_teacher_transport_probe/v1",
+  "run_id": "slm266-local-qwen-8token-probe-20260724",
+  "status": "completed_transport_only",
+  "campaign_manifest_sha256": "a4345a5f31906096d9353dfc5d88e1114cc3a68c4bdfe655edb4a069c78d12e6",
+  "generation_manifest_sha256": "e28911c1e5a6e850c27327e49816fb417872a262c57a67e5755b20127f1550ae",
+  "request_count": 1,
+  "completed_request_count": 1,
+  "recipe": {
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "device": "cpu",
+    "dtype": "bfloat16",
+    "local_files_only": true,
+    "max_output_tokens": 8,
+    "max_wall_minutes": 3,
+    "provider_cost_usd": 0.0
+  },
+  "outcome": {
+    "input_tokens": 56,
+    "output_tokens": 8,
+    "latency_ms": 95650,
+    "raw_attempt_artifact_sha256": "f416e4e6bb6ab59b045ab94a1b0d45cd44f25659b25cb2a492d7903f5dbee6b8",
+    "completion_class": "truncated_non_program_fragment",
+    "attention_mask_warning": "not observed after the explicit-mask repair"
+  },
+  "honesty": {
+    "teacher_candidate": false,
+    "accepted_corpus": false,
+    "admission_or_judge_run": false,
+    "training_run": false,
+    "ship_claim": false,
+    "human_rating_gate": false,
+    "hosted_inference_or_hf_job": false,
+    "hundred_thousand_corpus_run": false,
+    "archive_event_experiment_id": "empty in the v8 artifact; fixed prospectively in v9"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "379e4b309c4fc65f40c3a8af4e1fe23ba8769bf4",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v84",
+      "harness.experiments.slm266_teacher_programs": "v8"
+    },
+    "stamped_at": "2026-07-24T19:33:29Z"
+  }
+}

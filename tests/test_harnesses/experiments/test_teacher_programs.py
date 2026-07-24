@@ -3,6 +3,7 @@ import sys
 from types import SimpleNamespace
 
 import pytest
+import torch
 
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.data.leakage import fingerprint_prompt
@@ -20,6 +21,7 @@ from slm_training.harnesses.experiments.teacher_programs import (
     TeacherRawArchiveRefV1,
     admit_teacher_programs,
     materialize_teacher_admission,
+    verify_teacher_generation_campaign_lock,
 )
 
 
@@ -300,10 +302,36 @@ def test_executor_archives_usage_and_resume_skips_completed_request(tmp_path):
     assert first.spent_dollars == pytest.approx(0.005)
     assert second.skipped_request_ids == ("request-1",)
     assert calls == 1
-    assert [event["event_type"] for event in executor.archive.verify_event_chain()] == [
+    events = executor.archive.verify_event_chain()
+    assert [event["event_type"] for event in events] == [
         "teacher_program_attempted",
         "teacher_program_completed",
     ]
+    assert {event["experiment_id"] for event in events} == {"manifest"}
+
+
+def test_generation_requires_the_matching_pre_execution_campaign_lock(tmp_path, monkeypatch):
+    archive = CampaignStore("teacher", tmp_path)
+    lock = SimpleNamespace(
+        manifest_sha256="b" * 64,
+        manifest=SimpleNamespace(campaign_id="teacher"),
+    )
+    monkeypatch.setattr(archive, "load_experiment_campaign", lambda _experiment: lock)
+
+    assert (
+        verify_teacher_generation_campaign_lock(_executable_manifest(), archive)
+        == "b" * 64
+    )
+
+    mismatched = SimpleNamespace(
+        manifest_sha256="c" * 64,
+        manifest=SimpleNamespace(campaign_id="teacher"),
+    )
+    monkeypatch.setattr(
+        archive, "load_experiment_campaign", lambda _experiment: mismatched
+    )
+    with pytest.raises(ValueError, match="does not match"):
+        verify_teacher_generation_campaign_lock(_executable_manifest(), archive)
 
 
 def test_local_transformers_transport_requires_pinned_local_configuration():
@@ -371,3 +399,34 @@ def test_local_transformers_transport_loads_only_from_the_pinned_local_cache(mon
             },
         ),
     ]
+
+
+def test_local_transformers_transport_supplies_an_attention_mask():
+    class Tokenizer:
+        pad_token_id = 0
+        eos_token_id = 0
+
+        def apply_chat_template(self, _messages, **_kwargs):
+            return torch.tensor([[1, 2]])
+
+        def decode(self, _token_ids, **_kwargs):
+            return "root = Card(\":x\")"
+
+    class Model:
+        def generate(self, input_ids, **kwargs):
+            self.attention_mask = kwargs["attention_mask"]
+            return torch.cat((input_ids, torch.tensor([[3]])), dim=1)
+
+    transport = LocalTransformersTeacherTransport(
+        model="Qwen/Qwen2.5-7B-Instruct",
+        revision="a" * 40,
+        system_prompt="Return one OpenUI program.",
+    )
+    model = Model()
+    transport._model = model
+    transport._tokenizer = Tokenizer()
+
+    response = transport(TeacherProgramExecutionRequestV1("request-1", "intent", 4, 1))
+
+    assert torch.equal(model.attention_mask, torch.ones((1, 2), dtype=torch.long))
+    assert response["usage"] == {"input_tokens": 2, "output_tokens": 1}

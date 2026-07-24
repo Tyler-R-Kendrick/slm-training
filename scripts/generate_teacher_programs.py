@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.autoresearch.experiment_campaign import ExperimentCampaignV1
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.experiments.teacher_programs import (
     LocalTransformersTeacherTransport,
@@ -14,6 +15,7 @@ from slm_training.harnesses.experiments.teacher_programs import (
     TeacherProgramExecutionRequestV1,
     TeacherProgramExecutor,
     TeacherProgramGenerationManifestV1,
+    verify_teacher_generation_campaign_lock,
 )
 
 
@@ -33,6 +35,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", default="bfloat16")
+    parser.add_argument(
+        "--campaign-manifest",
+        type=Path,
+        help="Preregistered ExperimentCampaignV1 JSON; required with --execute.",
+    )
     parser.add_argument("--execute", action="store_true", help="Actually call the configured provider")
     args = parser.parse_args(argv)
     manifest = TeacherProgramGenerationManifestV1.from_dict(
@@ -57,7 +64,25 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
-    executor = TeacherProgramExecutor(manifest, CampaignStore(args.campaign_id, args.archive_root))
+    if args.campaign_manifest is None:
+        parser.error("--campaign-manifest is required with --execute")
+    campaign = ExperimentCampaignV1.model_validate_json(
+        args.campaign_manifest.read_text(encoding="utf-8")
+    )
+    if campaign.campaign_id != args.campaign_id:
+        parser.error("campaign manifest campaign_id must match --campaign-id")
+    if campaign.experiment_id != manifest.manifest_id:
+        parser.error("campaign manifest experiment_id must match generation manifest_id")
+    archive = CampaignStore(args.campaign_id, args.archive_root)
+    archive.lock_experiment_campaign(campaign)
+    campaign_manifest_sha256 = verify_teacher_generation_campaign_lock(manifest, archive)
+    archive.append_event(
+        "experiment_started",
+        experiment_id=manifest.manifest_id,
+        status="running",
+        detail={"campaign_manifest_sha256": campaign_manifest_sha256},
+    )
+    executor = TeacherProgramExecutor(manifest, archive)
     if args.local_transformers:
         transport = LocalTransformersTeacherTransport(
             model=manifest.model,
@@ -75,9 +100,21 @@ def main(argv: list[str] | None = None) -> int:
             model=manifest.model,
             system_prompt=args.system_prompt,
         )
-    result = executor.execute(
-        requests,
-        transport,
+    try:
+        result = executor.execute(requests, transport)
+    except BaseException:
+        archive.append_event(
+            "experiment_finished",
+            experiment_id=manifest.manifest_id,
+            status="interrupted",
+            detail={"campaign_manifest_sha256": campaign_manifest_sha256},
+        )
+        raise
+    archive.append_event(
+        "experiment_finished",
+        experiment_id=manifest.manifest_id,
+        status="completed",
+        detail={"campaign_manifest_sha256": campaign_manifest_sha256},
     )
     print(
         json.dumps(

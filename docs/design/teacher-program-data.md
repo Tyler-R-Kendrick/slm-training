@@ -30,7 +30,16 @@ The local path never downloads a model or calls hosted inference; it records
 device, dtype, model revision, and actual token usage in the same
 content-addressed raw request/response/error archive plus hash-chained attempt events under
 `outputs/autoresearch/<campaign>/`. Missing usage, price, or campaign lock
-fails closed; no human rating is involved.
+fails closed; no human rating is involved. Execution additionally loads the
+declared `ExperimentCampaignV1`, locks it in that archive before the first
+outcome event, and requires its digest to equal the generation manifest's
+`campaign_manifest_sha256`.
+
+Local transport supplies an explicit all-ones attention mask for the generated
+prompt. Any process interruption records an `interrupted` experiment-finished
+event; interrupted work is diagnostic only and cannot be counted as corpus
+evidence. Every raw attempt and completion event is also bound to the same
+generation manifest's experiment ID.
 
 ## Admission modes
 
@@ -63,9 +72,16 @@ copied into Git. The ordinary strict train-data builder and explicit
 
 ## Current disposition — 2026-07-24
 
-This is implementation and fixture evidence only, not a teacher generation,
-accepted corpus, training result, or ship claim. The local transport adds no
-corpus, raw archive, independent judge evidence, or approved execution budget.
-Therefore the required 10k/100k corpora and three-seed factorial remain
-**unrun**; any bounded local calibration must first create a locked manifest and
-durable raw archive. The 100k rung is explicitly deferred.
+The one-request local CPU screening is recorded in
+[`iter-slm266-local-qwen-screening-20260724.json`](iter-slm266-local-qwen-screening-20260724.json).
+Qwen loaded from four cached local shards, but the 96-token generation did not
+finish before the three-minute cap; it produced zero completed requests. The
+archive was closed as interrupted and is diagnostic only: it is not a teacher
+generation result, accepted corpus, admission/judge run, training result, or
+ship claim. The required 10k corpus, three-seed factorial, and 100k rung remain
+**unrun**; the 100k rung is explicitly deferred.
+
+The follow-up [eight-token probe](iter-slm266-local-qwen-8token-probe-20260724.json)
+did complete locally: 56 input tokens plus 8 output tokens in 95.65 seconds at
+zero provider cost. Its response was a truncated fenced `<Panel>` fragment, so
+it is transport evidence only and was not parsed, admitted, or materialized.

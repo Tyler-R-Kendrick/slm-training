@@ -1,0 +1,44 @@
+{
+  "schema": "slm266_local_teacher_screening/v1",
+  "run_id": "slm266-local-qwen-calibration-20260724",
+  "status": "interrupted_no_evidence",
+  "campaign_manifest_sha256": "a6d39a69cd22ff8b441354810e8701f5c7d141e68c81dbb1c37a22ccdd369ddd",
+  "generation_manifest_sha256": "3fa0cf8a250a00689ca0e9140d29443a1d944349cb84aa7425815cbb6a9707a6",
+  "request_count": 1,
+  "completed_request_count": 0,
+  "recipe": {
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "device": "cpu",
+    "dtype": "bfloat16",
+    "local_files_only": true,
+    "max_output_tokens": 96,
+    "max_wall_minutes": 3,
+    "provider_cost_usd": 0.0
+  },
+  "outcome": {
+    "checkpoint_load": "completed locally from four cached shards",
+    "generation": "interrupted at the hard run cap before any completion",
+    "raw_archive": "outputs/autoresearch/slm266-local-qwen-calibration-20260724/",
+    "attention_mask_warning": "observed during this v7 run; the v8 transport now supplies an explicit attention mask"
+  },
+  "honesty": {
+    "accepted_corpus": false,
+    "admission_or_judge_run": false,
+    "training_run": false,
+    "ship_claim": false,
+    "human_rating_gate": false,
+    "hosted_inference_or_hf_job": false,
+    "hundred_thousand_corpus_run": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0261daf2d907bd1741450eefdfb288783319c4ff",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v83",
+      "harness.experiments.slm266_teacher_programs": "v7"
+    },
+    "stamped_at": "2026-07-24T19:25:06Z"
+  }
+}
