@@ -22,6 +22,9 @@ docs/design/**/*.md
 # The compact top-level docs/design JSON remains available to observability.
 docs/design/*-agentv-*/**
 
+# Source maps are useful locally but are never served by the production app.
+src/slm_training/web/static/**/*.map
+
 # SLM-231's derivative library and bounded runner are offline experiment
 # machinery. The deployed dashboard reads only their committed result JSON.
 scripts/run_slm231_recurrence_dynamics.py
