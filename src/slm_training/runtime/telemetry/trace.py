@@ -46,6 +46,12 @@ def _load_local_env() -> None:
     try:
         from dotenv import load_dotenv
     except ImportError:
+        if not _ENV_PATH.is_file():
+            return
+        for line in _ENV_PATH.read_text(encoding="utf-8").splitlines():
+            key, separator, value = line.partition("=")
+            if separator and key.strip() and not key.lstrip().startswith("#"):
+                os.environ.setdefault(key.strip(), value.strip())
         return
     load_dotenv(_ENV_PATH, override=False)
 

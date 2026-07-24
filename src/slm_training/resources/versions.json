@@ -4513,7 +4513,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v53",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4526,6 +4526,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-07-24",
+          "note": "load simple local LANGSMITH .env key-value configuration with the standard library when the optional dotenv package is absent"
+        },
         {
           "version": "v53",
           "date": "2026-07-24",

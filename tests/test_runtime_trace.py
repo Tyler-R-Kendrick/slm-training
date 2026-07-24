@@ -118,6 +118,7 @@ def test_langsmith_loads_the_repository_env_file(tmp_path: Path, monkeypatch) ->
     for name in ("LANGSMITH_TRACING", "LANGSMITH_API_KEY", "LANGSMITH_PROJECT"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(trace_module, "_ENV_PATH", env_path)
+    monkeypatch.setitem(sys.modules, "dotenv", None)
     monkeypatch.setitem(sys.modules, "langsmith", SimpleNamespace(Client=FakeClient))
     with run_trace("env", "eval", trace_root=tmp_path) as trace:
         pass
