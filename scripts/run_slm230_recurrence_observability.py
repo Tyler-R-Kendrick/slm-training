@@ -56,7 +56,7 @@ DEFAULT_AGENTV = (
     ROOT / "docs/design/iter-slm230-recurrence-observability-agentv-20260724"
 )
 DEFAULT_CHECKPOINT = (
-    ROOT / "outputs/runs/slm230_bounded_recursive_r4/checkpoints/last.pt"
+    ROOT / "outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt"
 )
 DEFAULT_TEST_DIR = ROOT / "outputs/data/eval/ci"
 MAX_RECORDS_PER_SPLIT = 3
@@ -689,7 +689,7 @@ def _run(
             "device": "cpu",
             "backend": "scratch",
             "train_steps": 4,
-            "train_suite_n": 25,
+            "train_suite_n": 97,
             "calibration_suite": "smoke",
             "calibration_n": len(calibration_records),
             "heldout_suite": "held_out",
@@ -779,7 +779,7 @@ def _markdown(report: dict[str, Any]) -> str:
         "## Recipe and evidence boundary",
         "",
         f"- Checkpoint: `{report['checkpoint']['path']}` (`{report['checkpoint']['sha256']}`)",
-        f"- Train recipe: CPU scratch, 4 optimizer steps, 25 fixture-source records, trained R={report['checkpoint']['trained_recurrence_depth']}",
+        f"- Train recipe: CPU scratch, 4 optimizer steps, 97 fixture-source records, trained R={report['checkpoint']['trained_recurrence_depth']}",
         f"- Calibration/final: smoke n={report['recipe']['calibration_n']} / held_out n={report['recipe']['heldout_n']}",
         f"- AgentV: `{report['agentv']['summary']}`",
         f"- Clean evidence: `{not report['evidence_gate']['code_dirty']}`",
