@@ -9,6 +9,8 @@ import secrets
 import time
 import urllib.request
 import uuid
+import warnings
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -16,6 +18,163 @@ from typing import Any
 _CURRENT: contextvars.ContextVar["RunTrace | None"] = contextvars.ContextVar(
     "slm_run_trace", default=None
 )
+_ENV_PATH = Path(__file__).resolve().parents[4] / ".env"
+
+
+def _enabled(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _key_value_env(name: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for pair in os.getenv(name, "").split(","):
+        key, sep, value = pair.partition("=")
+        if sep and key.strip():
+            values[key.strip()] = value.strip()
+    return values
+
+
+def _timeout_seconds(name: str, default: float, maximum: float = 5.0) -> float:
+    try:
+        return min(maximum, max(0.1, float(os.getenv(name, default))))
+    except ValueError:
+        return default
+
+
+def _load_local_env() -> None:
+    """Load the repository's ignored local configuration without overriding CI."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        if not _ENV_PATH.is_file():
+            return
+        for line in _ENV_PATH.read_text(encoding="utf-8").splitlines():
+            key, separator, value = line.partition("=")
+            if separator and key.strip() and not key.lstrip().startswith("#"):
+                os.environ.setdefault(key.strip(), value.strip())
+        return
+    load_dotenv(_ENV_PATH, override=False)
+
+
+def _langsmith_api_key() -> str | None:
+    value = os.getenv("LANGSMITH_API_KEY", "").strip()
+    if not value or value == "replace_with_rotated_langsmith_key":
+        return None
+    return value
+
+
+def _langsmith_flush_seconds() -> float:
+    return _timeout_seconds("SLM_LANGSMITH_FLUSH_SECONDS", 2.0)
+
+
+def _otlp_timeout_seconds() -> float:
+    """Convert the standard OTLP millisecond setting to a bounded timeout."""
+    try:
+        value = float(os.getenv("OTEL_EXPORTER_OTLP_TIMEOUT", "1000")) / 1000
+    except ValueError:
+        value = 1.0
+    return min(5.0, max(0.1, value))
+
+
+class _LangSmithTrace:
+    """Best-effort summary exporter; local OTLP remains the source of truth."""
+
+    def __init__(self, trace: "RunTrace") -> None:
+        _load_local_env()
+        self.trace = trace
+        self.client: Any | None = None
+        self.error: str | None = None
+        api_key = _langsmith_api_key()
+        self.config = {
+            "enabled": bool(api_key) and _enabled("LANGSMITH_TRACING"),
+            "api_key_configured": bool(api_key),
+            "project": os.getenv("LANGSMITH_PROJECT", "slm-training"),
+            "endpoint": os.getenv("LANGSMITH_ENDPOINT") or None,
+            "workspace_id_configured": bool(os.getenv("LANGSMITH_WORKSPACE_ID")),
+        }
+        self.run_id = uuid.UUID(hex=trace.trace_id)
+
+    def start(self) -> None:
+        if not self.config["enabled"]:
+            return
+        try:
+            from langsmith import Client
+
+            self.client = Client(
+                api_key=_langsmith_api_key(),
+                api_url=self.config["endpoint"],
+                workspace_id=os.getenv("LANGSMITH_WORKSPACE_ID") or None,
+                omit_traced_runtime_info=True,
+            )
+            self.client.create_run(
+                id=self.run_id,
+                project_name=self.config["project"],
+                name=f"slm.{self.trace.operation}",
+                run_type="chain",
+                inputs={"run_id": self.trace.run_id, "operation": self.trace.operation},
+                start_time=datetime.fromtimestamp(self.trace.start_ns / 1e9, tz=timezone.utc),
+                extra={
+                    "metadata": {
+                        "w3c_trace_id": self.trace.trace_id,
+                        "service": "slm-training",
+                        **self.trace.attributes,
+                    }
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 - observability must never stop a run
+            self.client = None
+            self._failed(exc)
+
+    def summary(
+        self,
+        name: str,
+        *,
+        inputs: dict[str, Any],
+        outputs: dict[str, Any],
+        metadata: dict[str, Any],
+    ) -> None:
+        if self.client is None:
+            return
+        try:
+            now = datetime.now(timezone.utc)
+            self.client.create_run(
+                id=uuid.uuid4(),
+                trace_id=self.run_id,
+                parent_run_id=self.run_id,
+                project_name=self.config["project"],
+                name=name,
+                run_type="tool",
+                inputs=inputs,
+                outputs=outputs,
+                start_time=now,
+                end_time=now,
+                extra={"metadata": {"w3c_trace_id": self.trace.trace_id, **metadata}},
+            )
+        except Exception as exc:  # noqa: BLE001 - observability must never stop a run
+            self._failed(exc)
+
+    def finish(self, error: BaseException | None) -> None:
+        if self.client is None:
+            return
+        try:
+            self.client.update_run(
+                self.run_id,
+                end_time=datetime.now(timezone.utc),
+                outputs={"status": "failed" if error else "completed"},
+                error="run failed; inspect local trace" if error else None,
+            )
+            self.client.flush(timeout=_langsmith_flush_seconds())
+        except Exception as exc:  # noqa: BLE001 - observability must never stop a run
+            self._failed(exc)
+
+    def manifest(self) -> dict[str, Any]:
+        return {**self.config, "trace_id": self.trace.trace_id, "last_export_error": self.error}
+
+    def _failed(self, exc: Exception) -> None:
+        self.error = type(exc).__name__
+        warnings.warn(
+            f"LangSmith export failed: {self.error}", RuntimeWarning, stacklevel=3
+        )
 
 
 def _hex_id(size: int) -> str:
@@ -53,17 +212,16 @@ def _endpoint(signal: str) -> str | None:
     base = specific or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") or _first_peer()
     if not base:
         return None
-    return base if specific else f"{base.rstrip('/')}/v1/{signal}"
+    if specific:
+        return base
+    normalized = base.rstrip("/")
+    suffix = f"/v1/{signal}"
+    return normalized if normalized.endswith(suffix) else f"{normalized}{suffix}"
 
 
 def _headers() -> dict[str, str]:
-    raw = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
-    if raw:
-        headers: dict[str, str] = {}
-        for pair in raw.split(","):
-            key, sep, value = pair.partition("=")
-            if sep and key.strip():
-                headers[key.strip()] = value.strip()
+    headers = _key_value_env("OTEL_EXPORTER_OTLP_HEADERS")
+    if headers:
         return headers
     token = os.getenv("SLM_OTEL_TOKEN")
     if not token and os.getenv("SLM_OTEL_AUTH", "").strip().lower() == "hf":
@@ -100,6 +258,7 @@ class RunTrace:
         self.bundle = self.trace_root / self.trace_id
         self.instance_id = str(uuid.uuid4())
         self._token = None
+        self._langsmith = _LangSmithTrace(self)
         self._write_manifest()
         if reference:
             reference.parent.mkdir(parents=True, exist_ok=True)
@@ -125,6 +284,7 @@ class RunTrace:
 
     def __enter__(self) -> "RunTrace":
         self._token = _CURRENT.set(self)
+        self._langsmith.start()
         self.log("run.started", attributes={"slm.operation": self.operation})
         return self
 
@@ -138,8 +298,21 @@ class RunTrace:
         payload = self._trace_payload(time.time_ns(), status, str(exc) if exc else "")
         self._append("traces", payload)
         self._mirror("traces", payload)
+        self._langsmith.finish(exc)
+        self._write_manifest()
         if self._token is not None:
             _CURRENT.reset(self._token)
+
+    def record_summary(
+        self,
+        name: str,
+        *,
+        inputs: dict[str, Any],
+        outputs: dict[str, Any],
+        metadata: dict[str, Any],
+    ) -> None:
+        """Export a caller-curated aggregate only; never pass raw samples here."""
+        self._langsmith.summary(name, inputs=inputs, outputs=outputs, metadata=metadata)
 
     def domain_path(self, kind: str, name: str = "records.jsonl") -> Path:
         if not kind.replace("_", "").replace("-", "").isalnum():
@@ -213,11 +386,17 @@ class RunTrace:
         return {"slm.run.id": self.run_id, "slm.operation": self.operation, **self.attributes}
 
     def _resource_attributes(self) -> dict[str, Any]:
+        configured = _key_value_env("OTEL_RESOURCE_ATTRIBUTES")
         return {
-            "service.name": "slm-training",
-            "service.namespace": "openui",
-            "service.version": "0.1.0",
+            "service.name": (
+                os.getenv("OTEL_SERVICE_NAME")
+                or configured.pop("service.name", None)
+                or "slm-training"
+            ),
+            "service.namespace": configured.pop("service.namespace", "openui"),
+            "service.version": configured.pop("service.version", "0.1.0"),
             "service.instance.id": self.instance_id,
+            **configured,
         }
 
     def _append(self, signal: str, payload: dict[str, Any]) -> None:
@@ -237,7 +416,8 @@ class RunTrace:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=2):  # noqa: S310
+            timeout = _otlp_timeout_seconds()
+            with urllib.request.urlopen(request, timeout=timeout):  # noqa: S310
                 pass
         except OSError as exc:
             self._write_manifest(export_error=str(exc))
@@ -263,6 +443,7 @@ class RunTrace:
             "otlp_json": True,
             "remote_endpoint_configured": bool(_endpoint("traces")),
             "last_export_error": export_error,
+            "langsmith": self._langsmith.manifest(),
         }
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 

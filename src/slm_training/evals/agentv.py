@@ -101,19 +101,23 @@ def publish_agentv_evaluation(
     spec_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     runner, runtime_root = _agentv_runtime(repo_root)
+    trace_id = _run_trace_id(Path(run_dir))
+    command = [
+        "node",
+        str(runner),
+        "--spec",
+        str(spec_path),
+        "--output-dir",
+        str(output_dir),
+        "--experiment",
+        slug,
+        "--sdk-root",
+        str(runtime_root),
+    ]
+    if trace_id is not None:
+        command.extend(("--trace-id", trace_id, "--run-id", Path(run_dir).name))
     completed = subprocess.run(
-        [
-            "node",
-            str(runner),
-            "--spec",
-            str(spec_path),
-            "--output-dir",
-            str(output_dir),
-            "--experiment",
-            slug,
-            "--sdk-root",
-            str(runtime_root),
-        ],
+        command,
         cwd=runtime_root,
         check=False,
         capture_output=True,
@@ -157,6 +161,18 @@ def publish_agentv_evaluation(
         "spec": str(spec_path),
         **published,
     }
+
+
+def _run_trace_id(run_dir: Path) -> str | None:
+    """Return a valid W3C trace ID if the AgentV call is inside a run trace."""
+    path = run_dir / "trace.json"
+    if not path.is_file():
+        return None
+    try:
+        trace_id = str(json.loads(path.read_text(encoding="utf-8")).get("trace_id", ""))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return trace_id if re.fullmatch(r"[0-9a-f]{32}", trace_id) else None
 
 
 def _read_agentv_criterion_results(published: dict[str, Any]) -> list[dict[str, Any]]:

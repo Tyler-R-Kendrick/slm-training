@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import slm_training.evals.agentv as agentv_module
 
@@ -130,6 +131,39 @@ def test_agentv_contract_checks_fail_even_when_pass_flag_is_true(tmp_path) -> No
     )
     assert published["criteria"]["pass"] is False
     assert published["criteria"]["failed"] == 1
+
+
+def test_agentv_forwards_w3c_trace_id_to_the_node_runner(tmp_path, monkeypatch) -> None:
+    runner = tmp_path / "runner.mjs"
+    runner.write_text("// fixture")
+    sdk_root = tmp_path / "sdk-root"
+    captured = {}
+    (tmp_path / "trace.json").write_text(
+        json.dumps({"trace_id": "0123456789abcdef0123456789abcdef"})
+    )
+    monkeypatch.setattr(agentv_module, "_agentv_runtime", lambda _: (runner, sdk_root))
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps({"summary": {}, "artifacts": {}}),
+            stderr="",
+        )
+
+    monkeypatch.setattr(agentv_module.subprocess, "run", fake_run)
+    publish_agentv_evaluation(
+        tmp_path,
+        name="trace-link",
+        claim="fixture_wiring_not_ship",
+        cases=[{"id": "case", "criteria": "passes", "pass": True}],
+    )
+    assert captured["command"][-4:] == [
+        "--trace-id",
+        "0123456789abcdef0123456789abcdef",
+        "--run-id",
+        tmp_path.name,
+    ]
 
 
 def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:

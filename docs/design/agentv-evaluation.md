@@ -29,6 +29,10 @@ AgentEvals assertion results has `authority: "AgentEvals assertions"`.
    under `<run-dir>/evals/`.
 5. `write_ship_gates` projects those assertion results into the compatibility
    `gates.json` shape and records the AgentEvals authority.
+6. With opt-in LangSmith tracing, the runner publishes its aggregate AgentV
+   summary as a child of the existing W3C-correlated trace. This is
+   observational only; AgentEvals assertions, local artifacts, and ship gates
+   retain authority if export fails.
 
 The `agentv` npm package is retained for the canonical CLI and dashboard. In
 the pinned release its published package is CLI-only, so programmatic execution
@@ -82,3 +86,4 @@ The implementation check is recorded in
 | --- | --- | --- | --- |
 | 2026-07-14 | CPU, steps 0, no model backend; AgentV SDK fixture plus model/loss/task/train-loop harness tests | 34/34 focused tests passed; SDK fixture wrote valid AgentEvals JSONL and AgentV artifacts; dependency audit has 0 high/critical findings | Tooling wiring only; no checkpoint, model score, or ship gate was produced |
 | 2026-07-23 | CPU, steps 0, no model backend; focused assertion-authority tests with the pinned SDK | AgentEvals JSONL carried required code-graders over raw criteria; the runner produced 1/1 passing fixture criteria with 0 execution errors; 135 focused gate/consumer checks and all 6 interpreted page validations passed. Dashboard production build remained environment-blocked because the locked `@openfeature/web-sdk` dependency was unavailable and automatic review rejected installation before execution. | Tooling and gate-authority wiring only; no checkpoint or model-quality claim |
+| 2026-07-24 | Local summary-only telemetry configuration smoke; LangSmith `slm-training` project, two-second bounded flush, standard OTLP resource defaults | W3C root trace `fdf78e5360a6647b09fa0882a2c5d4ec` was published and read back as `slm.telemetry.config` | Tooling wiring only; no checkpoint, model score, or ship gate was produced ([JSON](langsmith-telemetry-smoke-20260724.json)) |
