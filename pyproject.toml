@@ -125,7 +125,10 @@ slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
 [tool.setuptools.exclude-package-data]
-slm_training = ["resources/data/**/governance/records.jsonl"]
+slm_training = [
+  "resources/data/**/governance/records.jsonl",
+  "resources/data/train/slm230_symbol_only_v1/**",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

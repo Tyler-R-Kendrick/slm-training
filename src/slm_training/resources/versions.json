@@ -3663,6 +3663,11 @@
         {
           "version": "v4",
           "date": "2026-07-24",
+          "note": "no-bump: assert the wheel matches the existing Vercel exclusion for the offline SLM-230 corpus"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
           "note": "no-bump: exclude offline experiment harness modules from the Vercel function bundle without changing deployed web behavior"
         },
         {
