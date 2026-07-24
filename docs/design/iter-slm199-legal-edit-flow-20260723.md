@@ -39,8 +39,8 @@ set-ranking pressure.
 - Device/backend: `cpu` / `torch+numpy exact closed fixture`.
 - Train steps/seeds: `8` / `[0, 1, 2, 3, 4]`.
 - Exact samples: `256`.
-- Wall: `1.138s` (cap `2.8m`).
-- AgentV: `{'total': 5, 'passed': 5, 'failed': 0, 'executionErrors': 0, 'durationMs': 23, 'meanScore': 1}`.
+- Wall: `1.115s` (cap `3.0m`).
+- AgentV: `{'total': 5, 'passed': 5, 'failed': 0, 'executionErrors': 0, 'durationMs': 21, 'meanScore': 1}`.
 
 Flow is default-off, no checkpoint was written, and existing direct
 training/decode paths are unchanged. VFA1-02 owns powered confirmation;

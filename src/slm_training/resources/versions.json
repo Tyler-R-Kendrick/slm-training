@@ -3348,6 +3348,11 @@
         {
           "version": "v2",
           "date": "2026-07-23",
+          "note": "no-bump: regenerate SLM-199 evidence from clean v2 code with field-level AgentV checks and stamped result artifacts"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
           "note": "enforce field-level AgentV checks, restricted checkpoint loading, contained certificate failures, and canonical shared run budgets"
         },
         {
