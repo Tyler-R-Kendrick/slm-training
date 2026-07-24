@@ -4818,9 +4818,15 @@
         "scripts/audit_gold_scoring.py",
         "tests/test_evals/test_oracle_scoring_replay.py",
         "docs/design/oracle-scoring-replay.md",
-        "docs/design/iter-slm260-oracle-scoring-replay-20260721.json"
+        "docs/design/iter-slm260-oracle-scoring-replay-20260721.json",
+        "docs/design/iter-slm260-oracle-scoring-replay-20260724.json"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: record a local 66-row oracle replay under unchanged scorer and harness behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-21",
