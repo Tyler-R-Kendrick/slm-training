@@ -3309,6 +3309,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append the SLM-230 measured recurrence disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: append the SLM-200 measured fixture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3655,6 +3660,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: add the SLM-230 rejected checkpoint and adapted recurrence evidence to shared roster and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: refresh the generated disposition with its clean provenance-pinning implementation commit"
         },
         {
@@ -3671,9 +3681,17 @@
         "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
         "scripts/run_slm230_recurrence_observability.py",
         "tests/test_harnesses/experiments/test_slm230_recurrence_observability.py",
-        "tests/test_scripts/test_run_slm230_recurrence_observability.py"
+        "tests/test_scripts/test_run_slm230_recurrence_observability.py",
+        "docs/design/iter-slm230-recurrence-observability-20260724.json",
+        "docs/design/iter-slm230-recurrence-observability-20260724.md",
+        "docs/design/iter-slm230-recurrence-observability-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible report and pinned AgentV bundle for the already-versioned v11 harness"
+        },
         {
           "version": "v11",
           "date": "2026-07-23",

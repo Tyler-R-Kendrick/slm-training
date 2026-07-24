@@ -65,6 +65,7 @@ scratch baseline.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2` | CPU scratch symbol-only shared-recursive R=4 diagnostic | `outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt` (local) | 4 steps / 1.70s, SHA `1604b2cb…8b28a`; held-out depth 1→4 CE improves on both records, but accuracy/parse/structure/reward stay 0.0, no anytime exit qualifies, and verdict is `stagnant` — **explicit no-sync, rejected, not ship** ([results](design/iter-slm230-recurrence-observability-20260724.md)) |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1` | CPU scratch output-contract-v2 corrected root-arity objective | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/checkpoints/last.pt` (local) | 140 steps / 82.07s, SHA `710e2dbe…68b970`; impossible smoke argmax class 41 becomes class 1, but weight 0/1 quality is identical and strict-v2 remains 0.0 — **objective fix retained, checkpoint rejected** ([results](design/iter-e735-root-arity-full-head-20260722.md)) |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1` | CPU scratch output-contract-v2 invalid capability declaration | `outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt` (local) | 140 steps / 78.98s, SHA `cddb5f28…5167fc`; matched weight 0/1 eval has zero identity applications — **invalidated; never sync, promote, serve, resume, or use as parent** ([results](design/iter-e733-lexer-root-identity-reachability-20260722.md)) |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1` | CPU scratch output-contract-v2 root-arity objective | `outputs/runs/e731-symbol-only-root-arity140-r1/checkpoints/last.pt` (local) | 140 steps / 82.20s, SHA `bff1e0e6…2fbb88`; weights 0/1/2 are prediction-identical and strict-v2 remains 0.0 — **capability retained, checkpoint rejected** ([results](design/iter-e731-lexer-root-arity-symbol-only-20260722.md)) |
@@ -310,6 +311,8 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| smoke calibration (`slm230_bounded_recursive_r4_r2`, depths 1–4) | 2 | 0.0 | 0.0 | 0.0 | 0.0 | No — policy calibration only; no meaningful output, no ship claim |
+| held_out (`slm230_bounded_recursive_r4_r2`, fixed R=4) | 2 | 0.0 | 0.0 | 0.0 | 0.0 | No — CE improves with depth but token accuracy remains 0.0; AgentV contract audit 4/4, verdict `stagnant` |
 | smoke (`e714-symbol-only-scratch600-r1`) | 3 | 0.3333 | 1.0 | 0.0880 | 0.0 | No — strict-v2 0.0, AgentV 0/1; compatible diagnostic subset |
 | smoke (`e720-component-inventory-tree-smoke-r1`, bias 4) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No — 3/3 timeouts, strict-v2 0.0, AgentV 0/1 |
 | smoke (`e720-component-inventory-tree-bias0-smoke-r2`, bias 0) | 3 | 0.0 | 0.8056 | 0.2903 | 0.0 | No — non-empty diagnostic overlap recovered, but strict-v2 0.0 and AgentV 0/1 |
@@ -939,6 +942,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-24 | `slm230_bounded_recursive_r4_r2` | `outputs/runs/slm230_bounded_recursive_r4_r2/` (local) | Held-out n=2: CE 24.2536→20.0761 and 25.1835→20.5992 from R=1→4, but accuracy/parse/structure/reward 0.0; AgentV 4/4 | Four CPU scratch steps on 97 strict symbol-only records, 1.70s, explicit `--no-sync-checkpoints`; observability verdict `stagnant`, no early exit, no promotion |
 | 2026-07-22 | `e735-symbol-only-root-arity-fullhead140-r1` | `outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/` (local) | E731 smoke head argmax 41 becomes 1; weight 0/1 smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0, AgentV 0/1 | 140-step / 82.07s explicit no-sync CPU scratch diagnostic; objective correction retained, checkpoint rejected |
 | 2026-07-22 | `e733-symbol-only-root-identity140-r1` | `outputs/runs/e733-symbol-only-root-identity140-r1/` (local) | Weight 0/1 smoke outputs and metrics identical; treatment has zero identity applications, strict-v2 0.0, AgentV 0/1 | 140-step / 78.98s explicit no-sync CPU run under an invalid transient capability declaration; checkpoint invalidated and final config rejects lexer identity before artifacts |
 | 2026-07-22 | `e731-symbol-only-root-arity140-r1` | `outputs/runs/e731-symbol-only-root-arity140-r1/` (local) | Smoke meaning-v1 0.6667 / structure 0.5614 / strict-v2 0.0; weights 0/1/2 identical, AgentV 0/1 | 140-step / 82.20s explicit no-sync CPU scratch diagnostic; capability retained, checkpoint rejected |
