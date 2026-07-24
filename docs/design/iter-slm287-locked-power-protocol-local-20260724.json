@@ -1,0 +1,36 @@
+{
+  "schema": "Slm287LockedPowerProtocolAttemptV1",
+  "experiment_id": "slm287-locked-power-protocol",
+  "status": "interrupted_not_evidence",
+  "claim_class": "diagnostic",
+  "recipe": {
+    "model": "TwoTower zero-update initialization",
+    "device": "cpu",
+    "seeds": [0, 1, 2, 3, 4],
+    "backends": ["scratch_design_off", "scratch_design_on"],
+    "locked_manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+    "locked_test_n": 1,
+    "decode_variants": ["raw", "constrained", "repaired"],
+    "per_record_timeout_seconds": null,
+    "outer_interrupt_seconds": 170,
+    "outer_kill_grace_seconds": 10
+  },
+  "outcome": {
+    "completed_cells": 0,
+    "numeric_metrics": null,
+    "failure": "The first constrained grammar-completion decode did not return before the canonical outer interrupt budget.",
+    "ship_gate": "not_evaluated",
+    "human_rating_gate": "not_required"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "34c70de1dc67a62517e54e45cacd326f6ca5a32b",
+    "code_dirty": true,
+    "components": {
+      "data.locked_eval_manifest": "v2",
+      "evals.power_protocol": "v7",
+      "harness.experiments": "v91"
+    },
+    "stamped_at": "2026-07-24T23:38:08.254337+00:00"
+  }
+}

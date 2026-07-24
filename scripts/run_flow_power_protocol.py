@@ -32,6 +32,12 @@ from slm_training.harnesses.experiments.slm183_power_protocol import (
     render_markdown,
     run_variance_fixture,
 )
+from slm_training.harnesses.experiments.slm287_power_protocol import (
+    LOCKED_MANIFEST,
+    execute_local_grid,
+    load_locked_protocol,
+    summarize_cells,
+)
 from slm_training.versioning import build_version_stamp
 
 _DESIGN_JSON = "docs/design/iter-slm183-power-protocol-20260720.json"
@@ -58,7 +64,49 @@ def _build_payload(
     paths_per_target: int,
     n_seeds: int,
     iter_json: Path | None,
+    locked_manifest: Path,
+    locked_limit: int | None,
 ) -> tuple[dict[str, Any], str]:
+    if mode == "locked-plan":
+        protocol = load_locked_protocol(locked_manifest, limit=locked_limit)
+        return (
+            {
+                "schema": "Slm287LockedPowerProtocolPlanV1",
+                "experiment_id": "slm287-locked-power-protocol",
+                "status": "planned",
+                "claim_class": "diagnostic",
+                "protocol": protocol.to_dict(),
+                "version_stamp": build_version_stamp(
+                    "harness.experiments",
+                    "evals.power_protocol",
+                    "data.locked_eval_manifest",
+                ),
+            },
+            "python -m scripts.run_flow_power_protocol --mode locked-plan",
+        )
+    if mode == "locked-analyze":
+        if iter_json is None:
+            raise ValueError("--mode locked-analyze requires --iter-json cells JSON")
+        protocol = load_locked_protocol(locked_manifest, limit=locked_limit)
+        raw = json.loads(iter_json.read_text(encoding="utf-8"))
+        cells = raw.get("cells", raw) if isinstance(raw, dict) else raw
+        if not isinstance(cells, list):
+            raise ValueError("locked cells JSON must be a list or contain cells")
+        return summarize_cells(protocol, cells), (
+            "python -m scripts.run_flow_power_protocol --mode locked-analyze "
+            f"--iter-json {iter_json}"
+        )
+    if mode == "locked-run":
+        protocol = load_locked_protocol(locked_manifest, limit=locked_limit)
+        cells = execute_local_grid(
+            protocol,
+            manifest_path=locked_manifest,
+            output_dir=output_dir,
+        )
+        return summarize_cells(protocol, cells), (
+            "python -m scripts.run_flow_power_protocol --mode locked-run "
+            f"--locked-manifest {locked_manifest}"
+        )
     manifest = build_default_manifest(seeds=seeds)
     campaign = build_experiment_campaign(seeds=seeds)
     campaign_payload = campaign.model_dump(mode="json")
@@ -162,6 +210,57 @@ def _build_payload(
 
 def _build_markdown(payload: dict[str, Any], command: str) -> str:
     status = payload.get("status", "fixture")
+    if status == "planned" and "protocol" in payload:
+        protocol = payload["protocol"]
+        return "\n".join(
+            [
+                "# SLM-287: locked five-seed × two-config baseline protocol",
+                "",
+                "**Claim class:** diagnostic protocol; no model result is claimed.",
+                "",
+                f"- locked manifest: `{protocol['locked_eval_manifest_sha256']}`",
+                f"- locked test records: `{len(protocol['record_ids'])}`",
+                f"- seeds: `{protocol['seeds']}`",
+                f"- local configurations: `{protocol['backends']}`",
+                "- primary metric: `binding_aware_meaningful_v2`",
+                "- human rating: optional audit only, never a gate.",
+                "",
+                "The protocol fails closed: no numeric conclusion is emitted until all",
+                "ten cells score the exact frozen record set under raw, constrained,",
+                "and repaired decode with matching repeated-initialization hashes.",
+                "",
+                "## Exact command",
+                "",
+                f"```bash\n{command}\n```",
+                "",
+            ]
+        )
+    if status == "complete_local_grid" and "protocol" in payload:
+        protocol = payload["protocol"]
+        paired = payload["paired"]["bootstrap_ci"]
+        return "\n".join(
+            [
+                "# SLM-287: locked five-seed × two-config local baseline",
+                "",
+                "**Claim class:** local diagnostic; not a ship or promotion result.",
+                "",
+                f"- locked manifest: `{protocol['locked_eval_manifest_sha256']}`",
+                f"- locked test records: `{len(protocol['record_ids'])}`",
+                f"- cells: `{len(payload['cells'])}` (five seeds × two local configurations)",
+                f"- primary paired delta (design-on minus design-off): `{paired['estimate']:.6f}`",
+                f"- paired 95% bootstrap CI: `[{paired['low']:.6f}, {paired['high']:.6f}]`",
+                "- no best seed was selected; human ratings are not a gate.",
+                "",
+                "All cells used the canonical evaluator's raw, constrained, and repaired",
+                "variants. This result is diagnostic only when a bounded locked prefix is",
+                "used; a full 226-record sweep is required before any promotion decision.",
+                "",
+                "## Exact command",
+                "",
+                f"```bash\n{command}\n```",
+                "",
+            ]
+        )
     if status == "plan_only":
         manifest = ConfirmationSuiteManifest.from_dict(payload["manifest"])
         lines = [
@@ -242,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--mode",
-        choices={"plan-only", "fixture", "analyze-existing"},
+        choices={"plan-only", "fixture", "analyze-existing", "locked-plan", "locked-analyze", "locked-run"},
         default="plan-only",
         help="Run mode: plan-only writes the manifest; fixture runs the CPU simulation; "
         "analyze-existing reads an iter JSON.",
@@ -279,7 +378,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--iter-json",
         type=Path,
-        help="Path to an existing iter JSON for --mode analyze-existing.",
+        help="Path to existing iter JSON or SLM-287 locked cells JSON.",
+    )
+    parser.add_argument(
+        "--locked-manifest",
+        type=Path,
+        default=LOCKED_MANIFEST,
+        help="Immutable SLM-285 promotion manifest used by SLM-287.",
+    )
+    parser.add_argument(
+        "--locked-limit",
+        type=int,
+        help="Bounded diagnostic prefix of locked_test; never a promotion result.",
     )
     parser.add_argument(
         "--write-design-docs",
@@ -311,6 +421,8 @@ def main(argv: list[str] | None = None) -> int:
             args.paths_per_target,
             args.n_seeds,
             args.iter_json,
+            args.locked_manifest,
+            args.locked_limit,
         )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -327,20 +439,33 @@ def main(argv: list[str] | None = None) -> int:
         if args.write_design_docs:
             command += " --write-design-docs"
 
-    payload["schema"] = "Slm183PowerProtocolReportV1"
-    payload["claim_class"] = "wiring"
+    if args.mode in {"plan-only", "fixture", "analyze-existing"}:
+        payload["schema"] = "Slm183PowerProtocolReportV1"
+        payload["claim_class"] = "wiring"
     payload["status"] = payload.get("status", "fixture")
     payload["timestamp"] = _now()
 
     report_text = json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n"
 
-    run_json = output_dir / "slm183_power_protocol_report.json"
+    run_json = output_dir / (
+        "slm287_locked_power_protocol_report.json"
+        if args.mode.startswith("locked-")
+        else "slm183_power_protocol_report.json"
+    )
     run_json.write_text(report_text, encoding="utf-8")
 
-    if args.mode == "fixture":
+    if args.mode in {"fixture", "locked-plan", "locked-analyze", "locked-run"} and args.write_design_docs:
         root = Path(__file__).resolve().parents[1]
-        json_path = root / _DESIGN_JSON
-        md_path = root / _DESIGN_MD
+        json_path = root / (
+            "docs/design/iter-slm287-locked-power-protocol-20260724.json"
+            if args.mode.startswith("locked-")
+            else _DESIGN_JSON
+        )
+        md_path = root / (
+            "docs/design/iter-slm287-locked-power-protocol-20260724.md"
+            if args.mode.startswith("locked-")
+            else _DESIGN_MD
+        )
         json_path.parent.mkdir(parents=True, exist_ok=True)
         md_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(report_text, encoding="utf-8")

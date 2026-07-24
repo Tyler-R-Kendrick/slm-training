@@ -1513,12 +1513,32 @@
       ]
     },
     "harness.experiments": {
-      "version": "v87",
+      "version": "v91",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v91",
+          "date": "2026-07-24",
+          "note": "SLM-287 reject any local cell with a decode timeout instead of aggregating empty output"
+        },
+        {
+          "version": "v90",
+          "date": "2026-07-24",
+          "note": "SLM-287 publish AgentEvals and AgentV bundles for every local protocol evaluation"
+        },
+        {
+          "version": "v89",
+          "date": "2026-07-24",
+          "note": "SLM-287 execute the fail-closed local zero-update five-seed by two-config protocol through the canonical evaluator"
+        },
+        {
+          "version": "v88",
+          "date": "2026-07-24",
+          "note": "SLM-287 add fail-closed locked five-seed by two-config power protocol"
+        },
         {
           "version": "v87",
           "date": "2026-07-24",
@@ -3400,7 +3420,7 @@
       ]
     },
     "harness.experiments.slm183_power_protocol": {
-      "version": "v3",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm183_power_protocol.py",
@@ -3411,6 +3431,21 @@
         "docs/design/iter-slm183-power-protocol-20260720.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-24",
+          "note": "Render SLM-287 bounded local-grid evidence through the shared CLI"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-24",
+          "note": "Expose the SLM-287 local executor on the shared power-protocol CLI"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Make SLM-183 fixture doc writes opt-in while sharing the power-protocol CLI with SLM-287"
+        },
         {
           "version": "v3",
           "date": "2026-07-23",
