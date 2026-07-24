@@ -665,7 +665,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -673,6 +673,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Replace the optional Node LangSmith SDK with bounded native fetch so Vercel does not bundle CLI-only dependencies"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
