@@ -249,6 +249,9 @@ def migrate_to_shared_recursive_denoiser(
         "recursive_depth_supervision_weights",
         "recursive_depth_aux_mode",
         "recursive_depth_aux_weight",
+        "recursive_update_mode",
+        "recursive_empty_f_mode",
+        "recursive_norm_mode",
     ):
         if key in user_cfg:
             cfg_kwargs[key] = user_cfg[key]

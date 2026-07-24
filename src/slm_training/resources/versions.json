@@ -4040,6 +4040,23 @@
         }
       ]
     },
+    "harness.experiments.slm243_recursive_update_gate": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py",
+        "scripts/run_slm243_recursive_update_gate.py",
+        "tests/test_harnesses/experiments/test_slm243_recursive_update_gate.py",
+        "tests/test_scripts/test_run_slm243_recursive_update_gate.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial six-arm, five-depth, three-paired-seed recurrence update, empty-F, and private-norm architecture gate"
+        }
+      ]
+    },
     "harness.model_build.eval": {
       "version": "v48",
       "kind": "harness",
@@ -5304,7 +5321,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v17",
+      "version": "v18",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -5331,6 +5348,11 @@
         "docs/design/iter-slm282-recurrence-health-20260723.md"
       ],
       "history": [
+        {
+          "version": "v18",
+          "date": "2026-07-23",
+          "note": "add default-preserving SLM-243 current, delta-only, LayerScale, gated, true-empty-F, and private-norm recurrence controls"
+        },
         {
           "version": "v17",
           "date": "2026-07-23",
@@ -5514,7 +5536,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v230",
+      "version": "v231",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5538,6 +5560,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v231",
+          "date": "2026-07-23",
+          "note": "persist and validate SLM-243 recurrence update, empty-F, and norm modes while migrating old checkpoints to historical defaults"
+        },
         {
           "version": "v230",
           "date": "2026-07-23",

@@ -641,6 +641,110 @@ def test_recursive_residual_delta_removes_empty_f_layer_identity_update() -> Non
     assert not torch.equal(as_is.y, residual_delta.y)
 
 
+def test_recursive_update_default_is_exact_historical_current_v1() -> None:
+    torch.manual_seed(243)
+    implicit = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2,
+    )
+    torch.manual_seed(243)
+    explicit = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=2, update_mode="current_v1",
+        empty_f_mode="pass_through", norm_mode="shared",
+    )
+    assert implicit.state_dict().keys() == explicit.state_dict().keys()
+    for key in implicit.state_dict():
+        assert torch.equal(implicit.state_dict()[key], explicit.state_dict()[key])
+    noisy = torch.randint(1, 23, (2, 5))
+    context = torch.randn(2, 3, 16)
+    assert torch.equal(
+        implicit(noisy, context, pad_id=0),
+        explicit(noisy, context, pad_id=0),
+    )
+
+
+def test_recursive_true_empty_f_zero_is_independent_of_outer_update() -> None:
+    torch.manual_seed(243)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=1, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=1,
+        update_mode="current_v1", empty_f_mode="zero",
+    )
+    initial = tower.initial_transition_state(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 16), pad_id=0
+    )
+    step = tower.transition_step(
+        initial["y"], initial["z"], torch.randn(2, 3, 16),
+        initial["self_pad_mask"],
+    )
+    assert step["z_update"] is not None
+    assert torch.equal(step["z_update"], torch.zeros_like(step["z_update"]))
+
+    nonempty = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
+        recursive_steps=1, recursive_transition_layers=2,
+        update_mode="current_v1", empty_f_mode="zero",
+    )
+    assert len(nonempty._f_layers) == 1
+
+
+@pytest.mark.parametrize("update_mode", ["delta_only", "layerscale", "gated"])
+def test_recursive_repair_updates_are_finite_and_trainable(update_mode: str) -> None:
+    torch.manual_seed(243)
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=8, n_layers=2, n_heads=1, max_len=16,
+        recursive_steps=8, update_mode=update_mode, empty_f_mode="zero",
+        norm_mode="private" if update_mode == "gated" else "shared",
+    )
+    output = tower(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 8), pad_id=0
+    )
+    assert torch.isfinite(output).all()
+    output.square().mean().backward()
+    assert all(
+        parameter.grad is not None and torch.isfinite(parameter.grad).all()
+        for name, parameter in tower.named_parameters()
+        if "update_" in name
+    )
+    if update_mode == "layerscale":
+        assert torch.allclose(
+            tower.f_update_scale.detach(), torch.full((8,), 1e-3)
+        )
+    if update_mode == "gated":
+        assert float(torch.sigmoid(tower.f_update_gate).max()) < 0.02
+
+
+def test_recursive_private_norms_are_distinct_and_receive_gradients() -> None:
+    tower = SharedRecursiveDenoiserTower(
+        vocab_size=23, d_model=8, n_layers=2, n_heads=1, max_len=16,
+        recursive_steps=2, update_mode="gated", norm_mode="private",
+    )
+    assert tower.f_norm is not tower.g_norm
+    assert tower.f_norm is not tower.norm
+    assert tower.g_norm is not tower.norm
+    tower(
+        torch.randint(1, 23, (2, 5)), torch.randn(2, 3, 8), pad_id=0
+    ).square().mean().backward()
+    assert tower.f_norm.weight.grad is not None
+    assert tower.g_norm.weight.grad is not None
+    assert tower.norm.weight.grad is not None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("update_mode", "unknown"),
+        ("empty_f_mode", "unknown"),
+        ("norm_mode", "unknown"),
+    ],
+)
+def test_recursive_repair_modes_fail_closed(field: str, value: str) -> None:
+    kwargs = {field: value}
+    with pytest.raises(ValueError, match=field):
+        SharedRecursiveDenoiserTower(vocab_size=7, d_model=4, n_heads=1, **kwargs)
+
+
 def test_recursive_diagnostics_y_only_uses_nullable_z_fields() -> None:
     tower = SharedRecursiveDenoiserTower(
         vocab_size=23, d_model=16, n_layers=2, n_heads=2, max_len=32,
@@ -2106,7 +2210,7 @@ def test_slm282_runner_uses_fixed_grid_and_agentv_fixture_claim(
     ]
     assert (
         report["version_stamp"]["components"]["model.recursive_denoiser"]
-        == "v16"
+        == "v18"
     )
 
 

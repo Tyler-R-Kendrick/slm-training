@@ -327,6 +327,24 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--recursive-update-mode",
+        choices=("current_v1", "delta_only", "layerscale", "gated"),
+        default="current_v1",
+        help="SLM-243: checkpointed recurrence update rule.",
+    )
+    parser.add_argument(
+        "--recursive-empty-f-mode",
+        choices=("pass_through", "zero"),
+        default="pass_through",
+        help="SLM-243: historical or true-zero behavior for an empty F stack.",
+    )
+    parser.add_argument(
+        "--recursive-norm-mode",
+        choices=("shared", "private"),
+        default="shared",
+        help="SLM-243: shared or private F/G/readout recurrence norms.",
+    )
+    parser.add_argument(
         "--recursive-depth-supervision-weights",
         default="",
         help="SLM-138: comma-separated depth CE weights (empty = off).",
@@ -1146,6 +1164,9 @@ def main(argv: list[str] | None = None) -> int:
         recursive_steps=args.recursive_steps,
         recursive_transition_layers=args.recursive_transition_layers,
         recursive_detach_between_steps=bool(args.recursive_detach_between_steps),
+        recursive_update_mode=args.recursive_update_mode,
+        recursive_empty_f_mode=args.recursive_empty_f_mode,
+        recursive_norm_mode=args.recursive_norm_mode,
         recursive_depth_supervision_weights=tuple(
             float(v.strip())
             for v in args.recursive_depth_supervision_weights.split(",")
