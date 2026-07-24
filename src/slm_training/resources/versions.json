@@ -665,7 +665,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -673,6 +673,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Make raw AgentEvals criteria code-graded authority and derive verdicts from AgentV's published artifact index"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -1103,7 +1108,7 @@
       ]
     },
     "features.openfeature": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/features/keys.py",
@@ -1123,6 +1128,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "Expose AgentEvals authoritative criterion summaries beside AgentV runner status on experiment scoreboards"
+        },
         {
           "version": "v8",
           "date": "2026-07-24",
@@ -1176,13 +1186,18 @@
       ]
     },
     "gates.ship": {
-      "version": "openui_ship_gates_v2",
+      "version": "openui_ship_gates_v3",
       "kind": "gate",
       "paths": [
         "src/slm_training/harnesses/model_build/ship_gates.py",
         "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {
+          "version": "openui_ship_gates_v3",
+          "date": "2026-07-24",
+          "note": "Make raw AgentEvals assertions the canonical ship-gate authority while retaining strict integrity and runtime policy"
+        },
         {
           "version": "openui_ship_gates_v2",
           "date": "2026-07-23",
@@ -1297,7 +1312,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -1310,6 +1325,11 @@
         "tests/test_autoresearch/test_harness.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Require AgentEvals-authoritative ship criteria rather than a self-reported AgentV boolean for RL readiness"
+        },
         {
           "version": "v3",
           "date": "2026-07-23",
@@ -4353,7 +4373,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v50",
+      "version": "v51",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4364,6 +4384,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v51",
+          "date": "2026-07-24",
+          "note": "Publish AgentEvals-authoritative criteria with every policy evaluation and route CLI ship outcomes through that evidence"
+        },
         {
           "version": "v50",
           "date": "2026-07-24",
@@ -5511,12 +5536,17 @@
       ]
     },
     "matrix.quality": {
-      "version": "v6",
+      "version": "v7",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-24",
+          "note": "Retain authoritative evaluation criteria and runner provenance in quality-matrix summaries"
+        },
         {
           "version": "v6",
           "date": "2026-07-23",

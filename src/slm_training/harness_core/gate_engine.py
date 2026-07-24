@@ -16,6 +16,171 @@ from typing import Any, Callable, Mapping
 SuiteNormalizer = Callable[[Mapping[str, Any]], dict[str, Any]]
 
 
+def _finite_real(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+
+
+def _integral_count(value: Any) -> bool:
+    return _finite_real(value) and float(value).is_integer() and float(value) >= 0
+
+
+def _json_scalar(value: Any) -> Any:
+    """Keep criterion evidence JSON-safe without making it passable."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return repr(value)
+    return value
+
+
+def build_gate_criteria(
+    suites: Mapping[str, Mapping[str, Any]],
+    policy: Mapping[str, Mapping[str, float]],
+    *,
+    normalize_suite: SuiteNormalizer,
+    default_min_n: int,
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """Lower a gate policy to raw deterministic AgentEvals criteria."""
+    actual: dict[str, dict[str, Any]] = {}
+    criteria: list[dict[str, Any]] = []
+
+    for suite_name, mins in policy.items():
+        metrics = suites.get(suite_name)
+        if metrics is None:
+            criteria.append(
+                {
+                    "id": f"{suite_name}:missing_suite",
+                    "suite": suite_name,
+                    "actual": None,
+                    "operator": "present",
+                    "expected": True,
+                }
+            )
+            continue
+        slim = normalize_suite(metrics)
+        actual[suite_name] = slim
+        fallback_count = metrics.get("fallback_count")
+        criteria.append(
+            {
+                "id": f"{suite_name}:certified_fallback",
+                "suite": suite_name,
+                "actual": (
+                    int(fallback_count)
+                    if _integral_count(fallback_count)
+                    else _json_scalar(fallback_count)
+                ),
+                "operator": "eq",
+                "expected": 0,
+            }
+        )
+        criteria.append(
+            {
+                "id": f"{suite_name}:insufficient_n",
+                "suite": suite_name,
+                "actual": _json_scalar(metrics.get("n")),
+                "operator": "gte",
+                "expected": int(mins.get("min_n", default_min_n)),
+            }
+        )
+        criteria.extend(
+            {
+                "id": f"{suite_name}:{metric}",
+                "suite": suite_name,
+                "actual": _json_scalar(slim.get(metric, metrics.get(metric))),
+                "operator": "gte",
+                "expected": minimum,
+            }
+            for metric, minimum in mins.items()
+            if metric != "min_n"
+        )
+        timeout_count = metrics.get("decode_timeout_count")
+        if (
+            isinstance(timeout_count, (int, float))
+            and not isinstance(timeout_count, bool)
+            and timeout_count > 0
+        ):
+            criteria.append(
+                {
+                    "id": f"{suite_name}:decode_timeout_count",
+                    "suite": suite_name,
+                    "actual": _json_scalar(timeout_count),
+                    "operator": "eq",
+                    "expected": 0,
+                }
+            )
+    return actual, criteria
+
+
+def criterion_passes(criterion: Mapping[str, Any]) -> bool:
+    """Project one raw criterion to a boolean for non-authoritative previews."""
+    actual = criterion.get("actual")
+    operator = criterion.get("operator")
+    expected = criterion.get("expected")
+    criterion_id = str(criterion.get("id", ""))
+    if operator == "present":
+        return actual is not None
+    if operator == "eq":
+        if criterion_id.endswith(":certified_fallback"):
+            return _integral_count(actual) and int(actual) == expected
+        return actual is not None and actual == expected
+    if operator == "gte":
+        valid = (
+            _integral_count(actual)
+            if criterion_id.endswith(":insufficient_n")
+            else _finite_real(actual)
+        )
+        return valid and _finite_real(expected) and float(actual) >= float(expected)
+    raise ValueError(f"unsupported gate criterion operator: {operator!r}")
+
+
+def criterion_failure(criterion: Mapping[str, Any]) -> str:
+    """Render the stable legacy failure text for a failed raw criterion."""
+    key = str(criterion["id"])
+    actual = criterion.get("actual")
+    expected = criterion.get("expected")
+    if key.endswith(":missing_suite"):
+        return key
+    if key.endswith(":certified_fallback"):
+        if actual is None:
+            return (
+                f"{key} unmeasured (fallback_count absent) need=0 "
+                "for learned-quality claims"
+            )
+        if not _integral_count(actual):
+            return (
+                f"{key} invalid (fallback_count={actual!r}) need=0 "
+                "for learned-quality claims"
+            )
+        return f"{key} actual={actual} need=0 for learned-quality claims"
+    if criterion.get("operator") == "eq":
+        return f"{key} actual={actual!r} need={expected}"
+    return f"{key} actual={actual!r} need>={expected}"
+
+
+def criterion_failure_category(criterion: Mapping[str, Any]) -> str:
+    key = str(criterion["id"])
+    actual = criterion.get("actual")
+    if key.endswith(":missing_suite"):
+        return "evidence_volume_failures"
+    if key.endswith(":certified_fallback"):
+        return "measurement_integrity_failures"
+    if key.endswith(":decode_timeout_count"):
+        return "runtime_failures"
+    if key.endswith(":insufficient_n"):
+        return (
+            "evidence_volume_failures"
+            if _integral_count(actual)
+            else "measurement_integrity_failures"
+        )
+    return (
+        "quality_threshold_failures"
+        if _finite_real(actual)
+        else "measurement_integrity_failures"
+    )
+
+
 def run_gate_checks(
     suites: Mapping[str, Mapping[str, Any]],
     policy: Mapping[str, Mapping[str, float]],
@@ -35,96 +200,27 @@ def run_gate_checks(
     Suites absent from the scoreboard fail evidence volume. A policy entry may
     override the evidence floor per suite via a ``"min_n"`` key.
     """
-    checks: dict[str, bool] = {}
-    actual: dict[str, dict[str, Any]] = {}
-    failures: list[str] = []
+    actual, criteria = build_gate_criteria(
+        suites,
+        policy,
+        normalize_suite=normalize_suite,
+        default_min_n=default_min_n,
+    )
+    checks = {str(item["id"]): criterion_passes(item) for item in criteria}
+    failures = [
+        criterion_failure(item) for item in criteria if not checks[str(item["id"])]
+    ]
     categories: dict[str, list[str]] = {
         "evidence_volume_failures": [],
         "measurement_integrity_failures": [],
         "quality_threshold_failures": [],
         "runtime_failures": [],
     }
-
-    def fail(message: str, category: str) -> None:
-        failures.append(message)
-        categories[category].append(message)
-
-    def finite_real(value: Any) -> bool:
-        return (
-            isinstance(value, (int, float))
-            and not isinstance(value, bool)
-            and math.isfinite(float(value))
-        )
-
-    def integral_count(value: Any) -> bool:
-        return finite_real(value) and float(value).is_integer() and float(value) >= 0
-
-    for suite_name, mins in policy.items():
-        metrics = suites.get(suite_name)
-        if metrics is None:
-            key = f"{suite_name}:missing_suite"
-            checks[key] = False
-            fail(key, "evidence_volume_failures")
-            continue
-        slim = normalize_suite(metrics)
-        actual[suite_name] = slim
-        fallback_count = metrics.get("fallback_count")
-        fallback_key = f"{suite_name}:certified_fallback"
-        if not integral_count(fallback_count):
-            # Unmeasured must never certify: a board without fallback telemetry
-            # cannot claim learned (fallback-free) quality.
-            checks[fallback_key] = False
-            detail = (
-                "unmeasured (fallback_count absent)"
-                if fallback_count is None
-                else f"invalid (fallback_count={fallback_count!r})"
-            )
-            fail(
-                f"{fallback_key} {detail} need=0 "
-                "for learned-quality claims",
-                "measurement_integrity_failures",
-            )
-        else:
-            normalized_fallback_count = int(fallback_count)
-            checks[fallback_key] = normalized_fallback_count == 0
-            if normalized_fallback_count:
-                fail(
-                    f"{fallback_key} actual={normalized_fallback_count} "
-                    "need=0 for learned-quality claims",
-                    "measurement_integrity_failures",
-                )
-        min_n = int(mins.get("min_n", default_min_n))
-        n_value = metrics.get("n")
-        n_key = f"{suite_name}:insufficient_n"
-        n_valid = integral_count(n_value)
-        n_ok = n_valid and int(n_value) >= min_n
-        checks[n_key] = n_ok
-        if not n_ok:
-            fail(
-                f"{n_key} actual={n_value!r} need>={min_n}",
-                (
-                    "evidence_volume_failures"
-                    if n_valid
-                    else "measurement_integrity_failures"
-                ),
-            )
-        for metric, minimum in mins.items():
-            if metric == "min_n":
-                continue
-            key = f"{suite_name}:{metric}"
-            value = slim.get(metric, metrics.get(metric))
-            value_valid = finite_real(value)
-            ok = value_valid and float(value) >= float(minimum)
-            checks[key] = ok
-            if not ok:
-                category = (
-                    "measurement_integrity_failures"
-                    if not value_valid
-                    else "quality_threshold_failures"
-                )
-                fail(
-                    f"{key} actual={value!r} need>={minimum}",
-                    category,
-                )
+    for item, failure in zip(
+        (item for item in criteria if not checks[str(item["id"])]),
+        failures,
+        strict=True,
+    ):
+        categories[criterion_failure_category(item)].append(failure)
 
     return actual, checks, failures, categories

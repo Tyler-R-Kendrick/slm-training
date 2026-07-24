@@ -203,6 +203,7 @@ export const toolProvider: Record<string, QueryFn> = {
         { key: "pass_status", label: "gate" },
         ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" })),
         { key: "agentv", label: "AgentV", align: "right" },
+        { key: "eval_criteria", label: "Eval criteria", align: "right" },
         { key: "checkpoint", label: "checkpoint" },
         { key: "trace", label: "trace", align: "right" },
       ],
@@ -223,6 +224,7 @@ export const toolProvider: Record<string, QueryFn> = {
           return [c.key, `${f(v, 2)}${legacy ? "*" : ""}`];
         })),
         agentv: r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+        eval_criteria: r.eval_criteria?.total === undefined ? "—" : `${r.eval_criteria.passed ?? 0}/${r.eval_criteria.total}`,
         checkpoint: r.checkpoint
           ? String(r.checkpoint).split("/").slice(-2).join("/")
           : "—",

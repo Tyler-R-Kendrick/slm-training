@@ -58,7 +58,7 @@ def approved_rl_report() -> RLReadinessReport:
             "rico_held": 1500,
         },
         ship_gates_pass=True,
-        agentv_pass=True,
+        eval_criteria_pass=True,
         reward_sample_count=3,
         reward_variance=0.02,
         approved=True,

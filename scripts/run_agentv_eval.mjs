@@ -22,33 +22,6 @@ const { evaluate } = await import(sdkUrl.href);
 const result = await evaluate({
   specFile,
   task: async (input) => input,
-  assert: [({ output }) => {
-    try {
-      const payload = JSON.parse(output);
-      const checks = payload.checks ?? {};
-      const entries = Object.entries(checks);
-      const failedChecks = entries
-        .filter(([, passed]) => passed !== true)
-        .map(([name]) => name);
-      const contractPassed = entries.length === 0 || failedChecks.length === 0;
-      return {
-        name: "openui-domain-gate",
-        score: payload.agentv_pass === true && contractPassed ? 1 : 0,
-        metadata: {
-          claim: payload.claim ?? "unspecified",
-          checks,
-          failedChecks,
-          failures: payload.failures ?? [],
-        },
-      };
-    } catch (error) {
-      return {
-        name: "openui-domain-gate",
-        score: 0,
-        metadata: { error: String(error) },
-      };
-    }
-  }],
   threshold: 1,
   workers: 1,
   cache: false,

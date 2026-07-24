@@ -1601,11 +1601,24 @@ def evaluate_suites(
     scoreboard["feature_flags"] = load_snapshot(run_dir)
     path = run_dir / "scoreboard.json"
     scoreboard["output"] = str(path)
+    gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
+    if gate_suites:
+        from slm_training.evals.agentv import publish_model_evaluation
+
+        scoreboard["evals"] = publish_model_evaluation(
+            run_dir,
+            board,
+            include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
+        )
+        scoreboard["evals"]["suites_run"] = gate_suites
+    else:
+        scoreboard["evals"] = {"skipped": "no ship-gate policy suites evaluated"}
     if write_gates:
-        gates = write_ship_gates(run_dir, board)
+        gates = write_ship_gates(run_dir, board, evals_result=scoreboard["evals"])
         scoreboard["gates"] = {
-            k: gates[k]
-            for k in (
+            key: gates[key]
+            for key in (
+                "authority",
                 "pass",
                 "failures",
                 "evidence_volume_failures",
@@ -1615,17 +1628,5 @@ def evaluate_suites(
                 "output",
             )
         }
-    gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
-    if gate_suites:
-        from slm_training.evals.agentv import publish_model_evaluation
-
-        scoreboard["agentv"] = publish_model_evaluation(
-            run_dir,
-            board,
-            include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
-        )
-        scoreboard["agentv"]["suites_run"] = gate_suites
-    else:
-        scoreboard["agentv"] = {"skipped": "no ship-gate policy suites evaluated"}
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     return scoreboard
