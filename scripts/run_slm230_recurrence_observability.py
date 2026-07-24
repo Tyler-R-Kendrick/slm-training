@@ -904,7 +904,11 @@ def main(argv: list[str] | None = None) -> int:
         checkpoint=args.checkpoint,
         test_dir=args.test_dir,
         agentv_dir=args.agentv_dir,
-        allow_dirty=args.allow_dirty or args.check,
+        allow_dirty=args.allow_dirty
+        or bool(
+            committed
+            and committed.get("evidence_gate", {}).get("allow_dirty")
+        ),
         pinned_version_stamp=(
             committed["version_stamp"] if committed is not None else None
         ),

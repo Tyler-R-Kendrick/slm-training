@@ -3665,7 +3665,7 @@
       ]
     },
     "harness.experiments.slm230_recurrence_observability": {
-      "version": "v9",
+      "version": "v10",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
@@ -3674,6 +3674,11 @@
         "tests/test_scripts/test_run_slm230_recurrence_observability.py"
       ],
       "history": [
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "preserve the committed dirty-evidence policy during reproduction instead of changing the hashed allow_dirty gate in check mode"
+        },
         {
           "version": "v9",
           "date": "2026-07-23",
