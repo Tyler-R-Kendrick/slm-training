@@ -1362,12 +1362,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v71",
+      "version": "v72",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v72",
+          "date": "2026-07-23",
+          "note": "add SLM-230 bounded recurrence observability and evaluation-only exit contracts"
+        },
         {
           "version": "v71",
           "date": "2026-07-23",
@@ -3646,6 +3651,23 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial final spectral disposition, evidence hashes, narrative, and promotion guards"
+        }
+      ]
+    },
+    "harness.experiments.slm230_recurrence_observability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
+        "scripts/run_slm230_recurrence_observability.py",
+        "tests/test_harnesses/experiments/test_slm230_recurrence_observability.py",
+        "tests/test_scripts/test_run_slm230_recurrence_observability.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial RecurrenceObservabilityV1, RecurrenceExitPolicyV1, bounded checkpoint audit, and anytime controls"
         }
       ]
     },
