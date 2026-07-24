@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
+from urllib.parse import quote
 
 import torch
 import torch.nn.functional as F
@@ -78,6 +79,31 @@ VARIANTS: dict[str, dict[str, str]] = {
         "norm_mode": "private",
     },
 }
+
+
+def _portable(value: Any, output_dir: Path) -> Any:
+    prefix = str(output_dir.resolve())
+    if isinstance(value, str) and value.startswith(prefix):
+        return "agentv-dir://" + value[len(prefix) :].lstrip("/")
+    if isinstance(value, list):
+        return [_portable(item, output_dir) for item in value]
+    if isinstance(value, dict):
+        return {key: _portable(item, output_dir) for key, item in value.items()}
+    return value
+
+
+def _rewrite_agentv_paths(output_dir: Path) -> None:
+    replacements = {
+        str(output_dir.resolve()): "agentv-dir://",
+        quote(str(output_dir.resolve()), safe=""): quote("agentv-dir://", safe=""),
+    }
+    for path in (output_dir / "agentv").rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl", ".md"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for source, replacement in replacements.items():
+            text = text.replace(source, replacement)
+        path.write_text(text, encoding="utf-8")
 
 
 def _select(records: list[Any], ids: tuple[str, ...]) -> list[Any]:
@@ -508,6 +534,7 @@ def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
         version_stamp=stamp,
         cases=cases,
     )
+    _rewrite_agentv_paths(agentv_dir)
     report: dict[str, Any] = {
         "schema": "RecursiveUpdateMatrixReportV1",
         "issue": "SLM-243",
@@ -542,7 +569,7 @@ def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
         "rows": rows,
         "gate": gate.to_dict(),
         "prior_evidence": list(gate.evidence_refs),
-        "agentv": agentv,
+        "agentv": _portable(agentv, agentv_dir),
         "version_stamp": stamp,
         "checkpoint_created": False,
         "production_default_changed": False,
