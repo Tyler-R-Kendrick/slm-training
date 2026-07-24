@@ -69,6 +69,10 @@ research = [
   "openai>=2.0,<3",
   "trackio>=0.1,<1",
 ]
+observability = [
+  "langsmith>=0.9,<1",
+  "python-dotenv>=1.0,<2",
+]
 web = [
   "fastapi>=0.110,<1",
   "onnx>=1.16,<2",

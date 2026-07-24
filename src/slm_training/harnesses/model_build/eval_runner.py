@@ -48,6 +48,13 @@ from slm_training.harnesses.model_build.decode_outcome import outcome_counts
 from slm_training.versioning import component_version
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+_LANGSMITH_METRIC_KEYS = (
+    "n",
+    "parse_rate",
+    "placeholder_fidelity",
+    "structural_similarity",
+    "reward_score",
+)
 
 
 def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
@@ -60,6 +67,43 @@ def _evaluation_version_components(config: ModelBuildConfig) -> tuple[str, ...]:
         "evals.scoring",
     )
     return components + (("model.twotower",) if config.model_name == "twotower" else ())
+
+
+def _record_langsmith_evaluation(config, *, suites: dict[str, dict], scoreboard: dict) -> None:
+    """Publish only aggregate evaluation data to the active summary trace."""
+    from slm_training.runtime.telemetry import current_trace
+
+    trace = current_trace()
+    if trace is None:
+        return
+    summary = {
+        suite: {
+            key: metrics[key]
+            for key in _LANGSMITH_METRIC_KEYS
+            if key in metrics
+        }
+        for suite, metrics in suites.items()
+    }
+    trace.record_summary(
+        "evaluation.summary",
+        inputs={"run_id": config.run_id, "suites": sorted(suites)},
+        outputs={
+            "suites": summary,
+            "gates": scoreboard.get("gates"),
+            "agentv": scoreboard.get("agentv"),
+        },
+        metadata={
+            key: scoreboard.get(key)
+            for key in (
+                "run_class",
+                "checkpoint_sha256",
+                "eval_data_manifest_sha",
+                "code_git_sha",
+                "version_stamp",
+            )
+            if scoreboard.get(key) is not None
+        },
+    )
 
 
 def _annotate_decode_trace_records(
@@ -1706,6 +1750,19 @@ def evaluate(
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
         (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    if publish_agentv:
+        _record_langsmith_evaluation(
+            config,
+            suites={config.suite: metrics},
+            scoreboard={
+                "run_class": config.run_class,
+                "checkpoint_sha256": metrics.get("checkpoint_sha256"),
+                "eval_data_manifest_sha": metrics.get("eval_data_manifest_sha"),
+                "code_git_sha": metrics.get("code_git_sha"),
+                "version_stamp": metrics["version_stamp"],
+                "agentv": metrics.get("agentv"),
+            },
+        )
     return metrics
 
 
@@ -1830,4 +1887,5 @@ def evaluate_suites(
             )
         }
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
+    _record_langsmith_evaluation(config, suites=board, scoreboard=scoreboard)
     return scoreboard

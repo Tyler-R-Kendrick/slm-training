@@ -319,6 +319,18 @@ instead of memorizing paths. Selected immutable snapshots publish to Git with
 Every new run writes `outputs/runs/<id>/trace.json` and OTLP JSONL signals under
 `outputs/traces/<trace-id>/`. Set `OTEL_EXPORTER_OTLP_ENDPOINT` for an optional
 remote OTLP mirror; detailed domain traces remain local and linked by trace ID.
+Set `LANGSMITH_TRACING=true` and provide `LANGSMITH_API_KEY` to export an
+additional, best-effort aggregate trace to the `slm-training` LangSmith project
+(`LANGSMITH_PROJECT`, `LANGSMITH_ENDPOINT`, and `LANGSMITH_WORKSPACE_ID` are
+optional overrides). This exports run/suite metrics, version stamps, gate
+verdicts, and AgentV summaries only—never prompts, targets, completions,
+checkpoints, raw logs, or credentials. Local evidence and AgentEvals remain
+authoritative when LangSmith is unavailable. Install the harness-side client
+with `pip install -e '.[observability]'`; the shared trace boundary loads the
+repository's ignored `.env` without overriding environment variables provided
+by CI or a shell. Standard OTLP settings are honored as well:
+`OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`, signal-specific endpoints,
+and `OTEL_EXPORTER_OTLP_TIMEOUT` (milliseconds; bounded to five seconds).
 
 The flush pipeline remains: curated seeds + RICO + Awwwards → deterministic
 quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable

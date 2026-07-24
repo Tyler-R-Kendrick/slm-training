@@ -23,6 +23,7 @@ from slm_training.harnesses.model_build.data import (
 from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
+    _record_langsmith_evaluation,
     component_type_recall,
     evaluate,
     evaluate_suites,
@@ -36,6 +37,44 @@ from slm_training.harnesses.model_build.ship_gates import (
 )
 from slm_training.harnesses.preference import composite_reward
 from slm_training.models.decode_stats import DecodeStats
+
+
+def test_langsmith_evaluation_summary_excludes_per_example_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured = {}
+
+    class Trace:
+        def record_summary(self, name, **kwargs) -> None:
+            captured["name"] = name
+            captured.update(kwargs)
+
+    monkeypatch.setattr(
+        "slm_training.runtime.telemetry.current_trace", lambda: Trace()
+    )
+    _record_langsmith_evaluation(
+        SimpleNamespace(run_id="safe-summary"),
+        suites={
+            "smoke": {
+                "n": 1,
+                "parse_rate": 1.0,
+                "details": [{"prompt": "do not export", "completion": "secret"}],
+            }
+        },
+        scoreboard={
+            "run_class": "scratch_matrix",
+            "checkpoint_sha256": "a" * 64,
+            "eval_data_manifest_sha": "b" * 64,
+            "code_git_sha": "c" * 40,
+            "version_stamp": {"stamp_schema": "version_stamp/v1"},
+            "gates": {"pass": False, "failures": ["smoke:parse_rate"]},
+            "agentv": {"summary": {"passed": 0, "failed": 1}},
+        },
+    )
+    assert captured["name"] == "evaluation.summary"
+    assert captured["outputs"]["suites"]["smoke"] == {"n": 1, "parse_rate": 1.0}
+    assert "details" not in str(captured)
+    assert "do not export" not in str(captured)
 
 
 def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:

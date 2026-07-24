@@ -665,7 +665,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -673,6 +673,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Forward valid W3C run traces to the pinned AgentV runner for summary-only observational telemetry"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -696,6 +701,11 @@
         "tests/test_scripts/test_run_cap2_operator_eval_fixture.py"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: document opt-in LangSmith telemetry configuration in the shared README without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -4540,7 +4550,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v53",
+      "version": "v54",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4551,6 +4561,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v54",
+          "date": "2026-07-24",
+          "note": "Add bounded opt-in LangSmith aggregate telemetry to the shared evaluation trace while keeping local evidence authoritative"
+        },
         {
           "version": "v53",
           "date": "2026-07-24",
@@ -6188,6 +6203,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v234",
+          "date": "2026-07-24",
+          "note": "no-bump: add tree-edit checkpoint format migration without changing TwoTower behavior"
+        },
         {
           "version": "v234",
           "date": "2026-07-24",

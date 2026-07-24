@@ -101,8 +101,7 @@ def publish_agentv_evaluation(
     spec_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     runner, runtime_root = _agentv_runtime(repo_root)
-    completed = subprocess.run(
-        [
+    command = [
             "node",
             str(runner),
             "--spec",
@@ -113,7 +112,12 @@ def publish_agentv_evaluation(
             slug,
             "--sdk-root",
             str(runtime_root),
-        ],
+    ]
+    trace_id = _run_trace_id(Path(run_dir))
+    if trace_id is not None:
+        command.extend(("--trace-id", trace_id, "--run-id", Path(run_dir).name))
+    completed = subprocess.run(
+        command,
         cwd=runtime_root,
         check=False,
         capture_output=True,
@@ -180,6 +184,18 @@ def _read_agentv_criterion_results(published: dict[str, Any]) -> list[dict[str, 
                 }
             )
     return results
+
+
+def _run_trace_id(run_dir: Path) -> str | None:
+    """Return the valid W3C trace ID associated with a local run, if present."""
+    path = run_dir / "trace.json"
+    if not path.is_file():
+        return None
+    try:
+        trace_id = str(json.loads(path.read_text(encoding="utf-8")).get("trace_id", ""))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return trace_id if re.fullmatch(r"[0-9a-f]{32}", trace_id) else None
 
 
 def _stamp_agentv_artifacts(
