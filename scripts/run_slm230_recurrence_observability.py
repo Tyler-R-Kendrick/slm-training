@@ -63,7 +63,8 @@ DEFAULT_TEST_DIR = (
     / "src/slm_training/resources/data/eval"
     / "e763_symbol_only_eval_r2_20260722"
 )
-MAX_RECORDS_PER_SPLIT = 3
+MAX_RECORDS_PER_SPLIT = 2
+EVAL_MAX_LEN = 32
 
 
 def _sha256_file(path: Path) -> str:
@@ -226,8 +227,8 @@ def _decode_at_depth(
         prediction, stats = model.generate_with_stats(
             record.prompt,
             gold=record,
-            max_len=min(96, int(model.config.max_target_len)),
-            grammar_constrained=bool(model.config.grammar_constrained),
+            max_len=min(EVAL_MAX_LEN, int(model.config.max_target_len)),
+            grammar_constrained=False,
             design_md=record.design_md,
         )
     meaningful, _, serialized = _is_meaningful_program(prediction, gold=record)
@@ -700,6 +701,7 @@ def _run(
             "heldout_n": len(heldout_records),
             "evaluated_depths": list(range(1, trained_depth + 1)),
             "test_time_extrapolation": False,
+            "decode_policy": "unconstrained_fixed_32_token_canvas",
             "honesty_mode": "scratch_checkpoint_not_ship",
             "max_wall_minutes": 3.0,
         },
