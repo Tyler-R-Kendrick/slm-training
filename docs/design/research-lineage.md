@@ -1803,6 +1803,22 @@ is only a two-target non-publishable fixture screen: confirmation remains
 untouched, the shuffled control does not degrade, and no causal weighting,
 hazard, transport, checkpoint, or ship conclusion is supported.
 
+## Recursive update architecture gate (RSC1-04 / SLM-243)
+
+| | |
+| --- | --- |
+| **Papers** | Parisotto et al., *Stabilizing Transformers for Reinforcement Learning*, [arXiv:1910.06764](https://arxiv.org/abs/1910.06764). Touvron et al., *Going deeper with Image Transformers*, [arXiv:2103.17239](https://arxiv.org/abs/2103.17239). |
+| **Fidelity** | **Adapted / diagnostic** — residual-delta, learned LayerScale, sigmoid-gated, true-empty-F, and private-norm controls applied to the repository's shared recursive denoiser; not a reproduction of either paper's full architecture or training regime |
+| **Code** | [`recursive_denoiser.py`](../../src/slm_training/models/recursive_denoiser.py), [`slm243_recursive_update_gate.py`](../../src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py), and [`run_slm243_recursive_update_gate.py`](../../scripts/run_slm243_recursive_update_gate.py) |
+| **Evidence** | [`iter-slm243-recursive-update-gate-20260724.md`](iter-slm243-recursive-update-gate-20260724.md) |
+
+The experiment isolates nested residual identity, empty-F pass-through, and
+shared-norm interference with checkpoint-recorded, default-off controls.
+LayerScale clears the bounded three-seed stability gate through R=8, but the
+evidence is an untrained scratch architecture screen. It authorizes only a
+later `layerscale_diagnostic` SLM-233 mode and leaves semantic, promotion,
+shipping, and production-default claims blocked.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

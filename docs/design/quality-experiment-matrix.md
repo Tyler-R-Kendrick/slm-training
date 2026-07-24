@@ -6362,3 +6362,22 @@ identical-state input. SLM-183 measured only 0.11 power at the preregistered
 written, and the disposition is `no_conclusion_underpowered_fixture`. Full
 evidence:
 [`iter-slm200-flow-objective-attribution-20260723.md`](iter-slm200-flow-objective-attribution-20260723.md).
+
+# RSC1-04 — recursive update architecture gate (2026-07-23)
+
+Select `layerscale_preferred` for diagnostic recurrence work through measured
+depth R=8. The bounded CPU matrix covers six architecture variants, depths
+1/2/4/6/8, and three paired seeds (90 cells) over four frozen smoke/held-out
+records. Every cell was finite. At R=8, LayerScale reduced the maximum update
+ratio from 1.0148–1.1187 under historical `current_v1` to
+0.000360–0.000489, while improving cross-entropy on all three paired seeds
+within the preregistered tolerance. AgentV passes 5/5.
+
+Mechanism fixtures separately reproduce the historical empty-F pass-through,
+prove exact zero under the true-empty switch, verify near-identity LayerScale
+and gate initialization, and prove private F/G/readout norm object separation.
+The one-forward masked reconstruction parse rate is not free-running reasoning.
+Prior SLM-282/230/231/232 negative recurrence evidence remains authoritative:
+semantic workspace, checkpoint promotion, ship readiness, and a production
+default change remain blocked. No checkpoint was written. Full evidence:
+[`iter-slm243-recursive-update-gate-20260724.md`](iter-slm243-recursive-update-gate-20260724.md).

@@ -3309,6 +3309,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append the SLM-243 measured recursive-update architecture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: append the SLM-232 measured latent-state disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3680,6 +3685,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: add the SLM-243 adapted recursive-update evidence to shared research lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: add the SLM-232 bounded latent-state evidence to shared roster and lineage docs without changing the SLM-228 disposition"
         },
         {
@@ -4047,9 +4057,17 @@
         "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py",
         "scripts/run_slm243_recursive_update_gate.py",
         "tests/test_harnesses/experiments/test_slm243_recursive_update_gate.py",
-        "tests/test_scripts/test_run_slm243_recursive_update_gate.py"
+        "tests/test_scripts/test_run_slm243_recursive_update_gate.py",
+        "docs/design/iter-slm243-recursive-update-gate-20260724.json",
+        "docs/design/iter-slm243-recursive-update-gate-20260724.md",
+        "docs/design/iter-slm243-recursive-update-gate-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible SLM-243 report and AgentV bundle generated against implementation commit c926cb05"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

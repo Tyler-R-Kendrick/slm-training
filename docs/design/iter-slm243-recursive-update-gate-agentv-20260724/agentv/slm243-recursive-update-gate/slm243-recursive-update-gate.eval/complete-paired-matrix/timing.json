@@ -1,0 +1,21 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c926cb057e1d652f8d0992a2c119f3e7d864eb77",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm243_recursive_update_gate": "v1",
+      "model.recursive_denoiser": "v18",
+      "model.twotower": "v231"
+    },
+    "stamped_at": "2026-07-24T04:47:54.519327+00:00"
+  }
+}

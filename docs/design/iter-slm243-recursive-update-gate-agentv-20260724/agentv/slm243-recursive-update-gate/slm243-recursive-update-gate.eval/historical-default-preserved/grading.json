@@ -1,0 +1,72 @@
+{
+  "assertions": [
+    {
+      "text": "Output is valid JSON",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "openui-domain-gate",
+      "passed": true,
+      "evidence": ""
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "is-json",
+      "type": "is-json",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "Output is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "inline-assert-0",
+      "type": "inline-assert",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "openui-domain-gate",
+          "passed": true
+        }
+      ],
+      "details": {
+        "claim": "bounded_architecture_repair_not_ship",
+        "checks": {},
+        "failedChecks": [],
+        "failures": []
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c926cb057e1d652f8d0992a2c119f3e7d864eb77",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm243_recursive_update_gate": "v1",
+      "model.recursive_denoiser": "v18",
+      "model.twotower": "v231"
+    },
+    "stamped_at": "2026-07-24T04:47:54.519327+00:00"
+  }
+}
