@@ -11,6 +11,7 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     assert "docs/design/*.json" in function["includeFiles"]
     assert "docs/design/**" not in function["includeFiles"]
     assert "docs/design/{*-agentv-*/**,iter-slm200-*.json}" in function["excludeFiles"]
+    assert "**/slm230*/**" in function["excludeFiles"]
     assert len(function["excludeFiles"]) <= 256
     for fragment in (
         "flow/{samplers,targets}",

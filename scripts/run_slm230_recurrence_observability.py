@@ -10,10 +10,11 @@ import math
 import statistics
 import subprocess
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Iterator
 from urllib.parse import quote
 
@@ -901,19 +902,25 @@ def main(argv: list[str] | None = None) -> int:
         if args.check
         else None
     )
-    report = _run(
-        checkpoint=args.checkpoint,
-        test_dir=args.test_dir,
-        agentv_dir=args.agentv_dir,
-        allow_dirty=args.allow_dirty
-        or bool(
-            committed
-            and committed.get("evidence_gate", {}).get("allow_dirty")
-        ),
-        pinned_version_stamp=(
-            committed["version_stamp"] if committed is not None else None
-        ),
+    agentv_context = (
+        TemporaryDirectory(prefix="slm230-agentv-check-")
+        if args.check
+        else nullcontext(str(args.agentv_dir))
     )
+    with agentv_context as agentv_dir:
+        report = _run(
+            checkpoint=args.checkpoint,
+            test_dir=args.test_dir,
+            agentv_dir=Path(agentv_dir),
+            allow_dirty=args.allow_dirty
+            or bool(
+                committed
+                and committed.get("evidence_gate", {}).get("allow_dirty")
+            ),
+            pinned_version_stamp=(
+                committed["version_stamp"] if committed is not None else None
+            ),
+        )
     markdown = _markdown(report)
     if args.check:
         assert committed is not None
