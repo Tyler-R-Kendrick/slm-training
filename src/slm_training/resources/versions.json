@@ -4122,7 +4122,7 @@
       ]
     },
     "harness.experiments.slm233_recursive_campaign": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py",
@@ -4131,6 +4131,11 @@
         "tests/test_scripts/test_run_slm233_recursive_campaign.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "scope common initialization hash equality within each paired seed instead of incorrectly requiring different seed initializations to be identical"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",

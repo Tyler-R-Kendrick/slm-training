@@ -578,11 +578,13 @@ def _build_manifest(
     heldout: list[Any],
     schedules: dict[str, Any],
 ) -> dict[str, Any]:
-    common_hashes = seed_manifests[0]["common_tensor_hashes"]
-    common_match = all(
-        manifest["common_tensor_hashes_match"]
-        and manifest["common_tensor_hashes"] == common_hashes
+    common_hashes = {
+        f"seed_{manifest['seed']}::{name}": digest
         for manifest in seed_manifests
+        for name, digest in manifest["common_tensor_hashes"].items()
+    }
+    common_match = all(
+        manifest["common_tensor_hashes_match"] for manifest in seed_manifests
     )
     all_records = train_records + heldout
     corpus_payload = [asdict(record) for record in all_records]
