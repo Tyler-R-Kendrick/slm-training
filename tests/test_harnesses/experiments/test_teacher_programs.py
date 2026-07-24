@@ -1,11 +1,15 @@
 import pytest
 
+from slm_training.autoresearch.storage import CampaignStore
 from slm_training.data.leakage import fingerprint_prompt
 from slm_training.data.store import DataStore
 from slm_training.dsl.schema import load_jsonl
 from slm_training.harnesses.experiments.teacher_programs import (
     AdmissionMode,
+    TeacherBudgetExceeded,
     TeacherProgramCandidate,
+    TeacherProgramExecutionRequestV1,
+    TeacherProgramExecutor,
     TeacherProgramGenerationManifestV1,
     TeacherProgramRequestV1,
     TeacherRawArchiveRefV1,
@@ -99,3 +103,67 @@ def test_materialize_rejects_controls(tmp_path):
             dataset_id="teacher_v1",
             raw_archive=TeacherRawArchiveRefV1("hf://datasets/example/raw", "a" * 64),
         )
+
+
+def _executable_manifest():
+    return TeacherProgramGenerationManifestV1(
+        "manifest",
+        "provider",
+        "model",
+        "revision",
+        ("request-1",),
+        1.0,
+        10,
+        10,
+        "protected",
+        input_cost_per_1k_usd=1.0,
+        output_cost_per_1k_usd=1.0,
+        campaign_manifest_sha256="b" * 64,
+    )
+
+
+def test_executor_blocks_budget_before_provider_call(tmp_path):
+    calls = 0
+
+    def transport(_request):
+        nonlocal calls
+        calls += 1
+        return {"usage": {"input_tokens": 1, "output_tokens": 1}}
+
+    executor = TeacherProgramExecutor(
+        _executable_manifest(), CampaignStore("teacher", tmp_path)
+    )
+    with pytest.raises(TeacherBudgetExceeded):
+        executor.execute(
+            [TeacherProgramExecutionRequestV1("request-1", "intent", 11, 1)],
+            transport,
+        )
+    assert calls == 0
+    assert executor.archive.verify_event_chain() == []
+
+
+def test_executor_archives_usage_and_resume_skips_completed_request(tmp_path):
+    calls = 0
+
+    def transport(_request):
+        nonlocal calls
+        calls += 1
+        return {
+            "raw": {"response_id": "response-1"},
+            "usage": {"input_tokens": 2, "output_tokens": 3},
+        }
+
+    executor = TeacherProgramExecutor(
+        _executable_manifest(), CampaignStore("teacher", tmp_path)
+    )
+    request = TeacherProgramExecutionRequestV1("request-1", "intent", 4, 5)
+    first = executor.execute([request], transport)
+    second = executor.execute([request], transport)
+    assert first.completed_request_ids == ("request-1",)
+    assert first.spent_dollars == pytest.approx(0.005)
+    assert second.skipped_request_ids == ("request-1",)
+    assert calls == 1
+    assert [event["event_type"] for event in executor.archive.verify_event_chain()] == [
+        "teacher_program_attempted",
+        "teacher_program_completed",
+    ]
