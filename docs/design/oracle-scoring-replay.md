@@ -83,3 +83,24 @@ Runtime is a few seconds; no torch or GPU is required.
 
 A trimmed manifest from the built-in fixture records lives at
 ``docs/design/iter-slm260-oracle-scoring-replay-20260721.json``.
+
+## Local replay — 2026-07-24
+
+`python -m scripts.audit_gold_scoring` was rerun locally through the managed
+Python 3.12 environment (CPU-only scorer; no model, GPU, teacher, corpus, or
+hosted job) over the built-in 66-row oracle fixture. The durable manifest is
+[`iter-slm260-oracle-scoring-replay-20260724.json`](iter-slm260-oracle-scoring-replay-20260724.json)
+and the local run directory is `outputs/runs/slm260-oracle-replay-20260724/`.
+
+| Metric | Result |
+| --- | ---: |
+| Rows | 66 |
+| Parse / meaningful-program-v1 | 0.7273 |
+| Binding-aware meaningful-program-v2 (primary) | 0.3636 |
+| Reward score | 0.8949 |
+| Expected-polarity mismatches | 0 |
+
+The primary strict rate and every expected positive/negative verdict match the
+fixture contract. Parse and reward aggregates differ from the 2026-07-21
+artifact because the current scoring stack is `evals.scoring` v22; this is a
+scorer-regression check only, not model, corpus, or ship evidence.
