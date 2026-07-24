@@ -5208,6 +5208,28 @@ created, and this is not quality or ship-gate evidence.
 Evidence: [narrative](iter-slm282-recurrence-health-20260723.md) and
 [raw JSON](iter-slm282-recurrence-health-20260723.json).
 
+## RSC1-01 depth-wise recurrence observability and anytime exits (SLM-230) — stagnant
+
+The bounded audit uses the canonical shared-recursive forward at trained depths
+R=1/2/3/4 and disjoint smoke calibration / held-out splits (`n=2` each). On the
+held-out records, teacher-forced CE improves from `24.2536` to `20.0761` and
+from `25.1835` to `20.5992`, while token accuracy, free-running parse,
+structure, and reward remain `0.0`. Directly charged recurrence work scales
+from 6 to 24 block evaluations.
+
+KL-plateau and top-k-stability policies both select R=4. The fixed-average and
+histogram-matched controls therefore match fixed R=4, while the hindsight
+oracle selects R=1 only because every depth has zero free-running quality. No
+early exit qualifies and the honest verdict is `stagnant`. The scratch
+checkpoint is local-only and rejected; serving/training defaults and ship gates
+are unchanged. Exact-state legal candidates and good/bad partitions are absent,
+so their metrics are censored rather than replaced with vocabulary-wide
+surrogates. AgentV passes 4/4 contract/honesty cases.
+
+Evidence: [narrative](iter-slm230-recurrence-observability-20260724.md),
+[raw JSON](iter-slm230-recurrence-observability-20260724.json), and
+[AgentV bundle](iter-slm230-recurrence-observability-agentv-20260724/).
+
 ## E639 a decode-time margin that floors still-missing required slots directly
 
 ## E640 root-causing why margin=6 hijacks Dashboard's root

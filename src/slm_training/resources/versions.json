@@ -213,7 +213,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v5",
+      "version": "v6",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -221,6 +221,16 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "no-bump: clarify that the preceding v6 entry was misattributed registry metadata from SLM-230 and made no test-data builder behavior change"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -1362,12 +1372,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v71",
+      "version": "v72",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v72",
+          "date": "2026-07-23",
+          "note": "add SLM-230 bounded recurrence observability and evaluation-only exit contracts"
+        },
         {
           "version": "v71",
           "date": "2026-07-23",
@@ -3294,6 +3309,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append the SLM-230 measured recurrence disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: append the SLM-200 measured fixture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3360,6 +3380,16 @@
         "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: replace the ineffective SLM-230 function glob with a source-upload ignore for the offline corpus without changing web runtime behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "no-bump: exclude SLM-230 offline corpus and evidence directories from the Vercel function bundle without changing web runtime behavior"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -3640,12 +3670,97 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: add the SLM-230 rejected checkpoint and adapted recurrence evidence to shared roster and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: refresh the generated disposition with its clean provenance-pinning implementation commit"
         },
         {
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial final spectral disposition, evidence hashes, narrative, and promotion guards"
+        }
+      ]
+    },
+    "harness.experiments.slm230_recurrence_observability": {
+      "version": "v12",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
+        "scripts/run_slm230_recurrence_observability.py",
+        "tests/test_harnesses/experiments/test_slm230_recurrence_observability.py",
+        "tests/test_scripts/test_run_slm230_recurrence_observability.py",
+        "docs/design/iter-slm230-recurrence-observability-20260724.json",
+        "docs/design/iter-slm230-recurrence-observability-20260724.md",
+        "docs/design/iter-slm230-recurrence-observability-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v12",
+          "date": "2026-07-23",
+          "note": "run reproduction AgentV publishing in a temporary directory so check mode never rewrites committed evidence artifacts"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible report and pinned AgentV bundle for the already-versioned v11 harness"
+        },
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "render AgentV summaries and policy rows in canonical key order so Markdown is stable across JSON serialization"
+        },
+        {
+          "version": "v10",
+          "date": "2026-07-23",
+          "note": "preserve the committed dirty-evidence policy during reproduction instead of changing the hashed allow_dirty gate in check mode"
+        },
+        {
+          "version": "v9",
+          "date": "2026-07-23",
+          "note": "seed every record-depth free-running decode independently so exact reproduction is invariant to preceding process RNG state"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-23",
+          "note": "retain measured CPU latency in reports while excluding nondeterministic timing fields from exact scientific reproduction hashes"
+        },
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "centralize the scientific report hash so generation and validation share runtime-noise exclusions while preserving the pinned evidence stamp"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
+        },
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "count canonical recursive_outputs calls directly so every recurrence block evaluation is charged"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "bound free-running depth evaluation to two records per split and one hashed 32-token decoder policy under the hard run cap"
+        },
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "bind heldout evaluation to the committed symbol-only suite and record the canonical three-minute run cap"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "bind the runner to the clean retry checkpoint and the measured 97-record strict corpus"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial RecurrenceObservabilityV1, RecurrenceExitPolicyV1, bounded checkpoint audit, and anytime controls"
         }
       ]
     },
