@@ -256,3 +256,22 @@ E1077 evaluates the targeted Dual Card row. It still reaches the canonical
 E1073 at parse/strict 0.0. AgentV is `0/1`; root identity does not repair the
 failure-defining row. Run only the matched Settings diagnostic before rejecting
 or retaining the checkpoint.
+
+## E1079 v272 root-identity reproduction (invalid transport interruption)
+
+E1079 begins a fresh, local-only reproduction of the E1075 recipe to recover a
+valid decode-off control without resuming or parenting the rejected E1075
+checkpoint: audited E937, CPU scratch, lexer/tree compiler path, batch 4, seed
+0, 395 requested steps, typed binder-component loss 1, bound-only binder-arity
+loss 1, and root-identity loss 1. The CLI capability preflight first rejected
+the default non-lexer configuration; the corrected lexer/tree command then
+started successfully.
+
+The local command transport terminated the corrected process at approximately
+30 seconds, before the harness's derived wall budget and before it serialized a
+checkpoint or `train_summary.json`. Its last metrics line is step 71 with loss
+13.6302 and root-identity loss/exact/positive-recall/negative-accuracy
+0.7050/0.0000/0.8333/0.0000. This is an invalid interrupted run, not training
+or quality evidence: it must not be resumed, evaluated, synced, promoted,
+served, or used as a parent. Restart a fresh E1079-equivalent arm through a
+persistent terminal session, then evaluate only a fully serialized checkpoint.

@@ -479,6 +479,46 @@
       "prediction": "",
       "matches_e1073_failure": true,
       "agentv": "0/1"
+    },
+    "E1079": {
+      "status": "invalid_transport_interrupted",
+      "run_id": "e1079_v272_root_identity_repro",
+      "intent": "fresh local reproduction of the E1075 v272 recipe to recover a valid decode-off control; not a checkpoint resume or promotion candidate",
+      "recipe": {
+        "train_version": "e937_role_safe_all_targets_v2",
+        "device": "cpu",
+        "context_backend": "scratch",
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "batch_size": 4,
+        "seed": 0,
+        "steps_requested": 395,
+        "binder_component_plan_loss_weight": 1.0,
+        "binder_arity_loss_weight": 1.0,
+        "root_reference_identity_loss_weight": 1.0,
+        "checkpoint_sync": "disabled_scratch"
+      },
+      "observed": {
+        "last_serialized_step": 71,
+        "last_loss": 13.630189895629883,
+        "root_reference_identity_loss": 0.7049738764762878,
+        "root_reference_identity_exact_accuracy": 0.0,
+        "root_reference_identity_positive_recall": 0.8333333134651184,
+        "root_reference_identity_negative_accuracy": 0.0
+      },
+      "invalid_reason": "The local command transport terminated the process at about 30 seconds, before the harness reached its own derived wall budget or serialized a checkpoint/train_summary.json.",
+      "checkpoint_created": false,
+      "eligible_for_eval_sync_promotion_or_parent": false,
+      "next_action": "Restart fresh in a persistent terminal session; do not resume this interrupted process.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "f0cb53ef4c3fdaf484ab4629bab1e348c708aad2",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v23"
+        },
+        "stamped_at": "2026-07-24T06:57:52.733138+00:00"
+      }
     }
   },
   "disposition": {
