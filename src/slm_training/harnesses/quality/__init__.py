@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
+from slm_training.dsl.openui_tokens import PREFERRED_COMPONENT_NAMES, STRUCTURAL_TOKENS
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.quality.retrieval import (
     SkeletonHit,
@@ -15,7 +16,6 @@ from slm_training.harnesses.quality.retrieval import (
     format_retrieved_skeleton,
     nearest_skeletons,
 )
-from slm_training.models.grammar import PREFERRED_COMPONENT_NAMES, STRUCTURAL_TOKENS
 
 __all__ = [
     "SkeletonHit",
