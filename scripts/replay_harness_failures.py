@@ -42,17 +42,20 @@ def main(argv: list[str] | None = None) -> int:
         "required_n": args.limit,
         "meets_required_n": len(rows) >= args.limit,
         "classification_counts": dict(sorted(classes.items())),
-        "labels_flip_rate": 0.0,
-        "architecture_claims_blocked": False,
-        "caveat": "No output was regenerated; absent source provenance remains unknown and this result cannot support ship or architecture claims.",
+        "labels_flip_rate": None,
+        "architecture_claims_blocked": None,
+        "matrix_status": "not_run_missing_original_decoder_traces",
+        "caveat": "No output was regenerated. This byte-preserving audit cannot measure label flips or architecture blocking without original decode traces and complete perturbation provenance.",
         "rows": [
             {
                 "event_id": row["case"]["event_id"],
                 "suite": row["case"]["suite"],
                 "record_id": row["case"]["record_id"],
                 "raw_prediction_sha256": row["raw_prediction_sha256"],
+                "raw_prediction_id": row["raw_prediction_id"],
                 "constrained_id": row["case"]["constrained_id"],
                 "repaired_id": row["case"]["repaired_id"],
+                "harness_provenance_id": row["harness_provenance_id"],
                 "classifications": row["classifications"],
                 "raw_prediction_preserved": row["raw_prediction_preserved"],
             }

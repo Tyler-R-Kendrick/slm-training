@@ -5,20 +5,32 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import platform
 import re
 import signal
 import time
 from dataclasses import fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from slm_training.data.contract import RuntimeSymbol
 from slm_training.data.structure import strip_style_literals
-from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
+from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.evals.eval_cache import (
+    EvalCache,
+    EvalCacheMode,
+    suite_result_key,
+)
+from slm_training.harnesses.eval.harness_replay import (
+    UNKNOWN_NOT_CAPTURED,
+    HarnessProvenanceV1,
+    harness_provenance_id,
+    prediction_lineage,
+)
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import (
     load_suite_records,
@@ -27,11 +39,6 @@ from slm_training.harnesses.model_build.data import (
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.full_state import _git_dirty, _git_sha
 from slm_training.harnesses.model_build.plugin import GenerationRequest
-from slm_training.evals.eval_cache import (
-    EvalCache,
-    EvalCacheMode,
-    suite_result_key,
-)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_MIN_SUITE_N,
     DEFAULT_SHIP_GATES,
@@ -175,7 +182,7 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
 
 def _normalize_placeholder(token: str) -> str:
     """Drop leading namespace segment so :smoke.hero.title ~= :hero.title."""
-    body = token[1:] if token.startswith(":") else token
+    body = token.removeprefix(":")
     parts = body.split(".")
     if len(parts) >= 3:
         return ".".join(parts[1:])
@@ -671,6 +678,33 @@ def evaluate(
         Path(config.test_dir) / "suites" / config.suite
     )
     evaluation_policy = _effective_evaluation_policy(config, plugin)
+    harness_provenance = HarnessProvenanceV1(
+        source_eval_sha256=eval_suite_manifest_sha or UNKNOWN_NOT_CAPTURED,
+        evaluation_policy=evaluation_policy,
+        timeout_seconds=(
+            float(config.decode_timeout_seconds)
+            if config.decode_timeout_seconds is not None
+            else None
+        ),
+        canvas_cap=canvas_cap,
+        parser_fallback=(
+            "allow_unconstrained_fallback"
+            if evaluation_policy["allow_unconstrained_fallback"]
+            else "forbidden"
+        ),
+        repair_policy=(
+            str(evaluation_policy["grammar_ltr_repair"])
+            if evaluation_policy["grammar_ltr_repair"] is not None
+            else UNKNOWN_NOT_CAPTURED
+        ),
+        runtime=(
+            f"python/{platform.python_version()} "
+            f"{platform.system().lower()}/{platform.machine().lower()}"
+        ),
+        verifier="meaningful_program/v1+binding_aware_meaningful_v2",
+        target_length=canvas_cap,
+    )
+    harness_provenance_ref = harness_provenance_id(harness_provenance)
     cache_key = None
     cache_dependencies: dict[str, Any] = {}
     if cache is not None and cache.config.mode is not EvalCacheMode.OFF:
@@ -867,6 +901,7 @@ def evaluate(
             from slm_training.evals.task_scoreboard import score_output_targets
 
             target_score = score_output_targets(pred, record.output_targets)
+            lineage = prediction_lineage(pred)
             topology_evidence.append(evidence)
             details.append(
                 {
@@ -874,7 +909,18 @@ def evaluate(
                     "target_kind": record.target_kind,
                     "target_score": target_score,
                     "latency_ms": round(latency_ms, 2),
-                    "prediction": pred[:500],
+                    "prediction": pred,
+                    # Keep the legacy digest while recording explicit replay
+                    # lineage. There is no captured intermediate decoder output.
+                    "prediction_sha256": lineage["raw_prediction_sha256"],
+                    **lineage,
+                    "harness_provenance_id": harness_provenance_ref,
+                    "generation_request": _effective_request_for(record).to_dict(),
+                    "source_record_sha256": hashlib.sha256(
+                        json.dumps(
+                            record.to_dict(), sort_keys=True, separators=(",", ":")
+                        ).encode("utf-8")
+                    ).hexdigest(),
                     "topology_evidence": evidence or None,
                 }
             )
@@ -972,6 +1018,7 @@ def evaluate(
                 defined_values.append(float(value))
         if gold_dscore is not None:
             gold_design_scores.append(gold_dscore)
+        lineage = prediction_lineage(pred)
         details.append(
             {
                 "id": record.id,
@@ -997,7 +1044,9 @@ def evaluate(
                 "latency_ms": round(latency_ms, 2),
                 # Full text + digest make every new metric report replayable.
                 "prediction": pred,
-                "prediction_sha256": hashlib.sha256(pred.encode("utf-8")).hexdigest(),
+                "prediction_sha256": lineage["raw_prediction_sha256"],
+                **lineage,
+                "harness_provenance_id": harness_provenance_ref,
                 "generation_request": _effective_request_for(record).to_dict(),
                 "source_record_sha256": hashlib.sha256(
                     json.dumps(
@@ -1081,8 +1130,8 @@ def evaluate(
     else:
         fallback_count = None
 
-    from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
     from slm_training.evals.power_protocol import binomial_rate_evidence
+    from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
     def _rate_evidence(successes: int, total: int) -> dict[str, Any]:
         evidence_class = (
             "unmeasured"
@@ -1137,7 +1186,9 @@ def evaluate(
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout
         # metrics even when the checkpoint hash is identical.
-        "evaluation_policy": _effective_evaluation_policy(config, plugin),
+        "evaluation_policy": evaluation_policy,
+        "harness_provenance": harness_provenance.to_dict(),
+        "harness_provenance_id": harness_provenance_ref,
         # Rates are None (JSON null) when no document records were measured —
         # "not measured" must never render as a fabricated 0.0.
         "parse_rate": (syntax_parse_ok / document_n) if document_n else None,
@@ -1223,7 +1274,7 @@ def evaluate(
         "model": config.model_name,
         "code_git_sha": _git_sha(),
         "code_dirty": _git_dirty(),
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "evaluated_at": datetime.now(UTC).isoformat(),
         "failure_breakdown": failure_breakdown,
         "decode_timeout_count": decode_timeout_count,
         "decode_canvas_cap": canvas_cap,
@@ -1447,7 +1498,7 @@ def evaluate(
     ):
         try:
             cache.put(cache_key, metrics, dependencies=cache_dependencies)
-        except Exception:  # noqa: BLE001 - cache write must never break eval
+        except Exception:  # noqa: BLE001,S110 - cache write must never break eval
             pass
 
     payload = json.dumps(metrics, indent=2) + "\n"
@@ -1505,7 +1556,7 @@ def evaluate_suites(
         "code_git_sha": next(iter(board.values()), {}).get("code_git_sha"),
         "code_dirty": next(iter(board.values()), {}).get("code_dirty"),
         "suites": board,
-        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "evaluated_at": datetime.now(UTC).isoformat(),
         "version_stamp": build_version_stamp(*_evaluation_version_components(config)),
     }
     # Ceiling + length-budget diagnostics ride with every board so a zero

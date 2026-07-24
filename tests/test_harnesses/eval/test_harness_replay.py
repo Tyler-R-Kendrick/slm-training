@@ -57,7 +57,12 @@ def test_cli_does_not_publish_raw_predictions(tmp_path) -> None:
     )
     output = tmp_path / "audit.json"
     assert main(["--archive-root", str(tmp_path), "--limit", "1", "--output", str(output)]) == 0
-    assert prediction not in output.read_text(encoding="utf-8")
+    payload = __import__("json").loads(output.read_text(encoding="utf-8"))
+    assert prediction not in str(payload)
+    assert payload["labels_flip_rate"] is None
+    assert payload["architecture_claims_blocked"] is None
+    assert payload["matrix_status"] == "not_run_missing_original_decoder_traces"
+    assert payload["rows"][0]["raw_prediction_id"].startswith("sha256:")
 
 
 def test_cli_requires_explicit_acknowledgement_for_design_output(tmp_path) -> None:

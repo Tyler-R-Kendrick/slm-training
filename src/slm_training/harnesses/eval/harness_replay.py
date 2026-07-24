@@ -16,11 +16,16 @@ from typing import Any
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
+    "UNKNOWN_NOT_CAPTURED",
     "ArchivedFailureV1",
     "HarnessProvenanceV1",
     "collect_archived_failures",
+    "harness_provenance_id",
+    "prediction_lineage",
     "replay_failure",
 ]
+
+UNKNOWN_NOT_CAPTURED = "unknown_not_captured"
 
 
 def _sha256(value: str) -> str:
@@ -39,6 +44,8 @@ class HarnessProvenanceV1:
     repair_policy: str
     runtime: str
     verifier: str
+    target_length: int | None = None
+    browser: str = "not_applicable"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -70,6 +77,23 @@ class ArchivedFailureV1:
         return data
 
 
+def harness_provenance_id(provenance: HarnessProvenanceV1) -> str:
+    """Return the stable ID used by individual rows to reference suite policy."""
+    payload = json.dumps(provenance.to_dict(), sort_keys=True, separators=(",", ":"))
+    return f"sha256:{_sha256(payload)}"
+
+
+def prediction_lineage(raw_prediction: str) -> dict[str, str]:
+    """Describe only captured output bytes; never invent intermediate outputs."""
+    digest = _sha256(raw_prediction)
+    return {
+        "raw_prediction_sha256": digest,
+        "raw_prediction_id": f"sha256:{digest}",
+        "constrained_id": UNKNOWN_NOT_CAPTURED,
+        "repaired_id": UNKNOWN_NOT_CAPTURED,
+    }
+
+
 def replay_failure(case: ArchivedFailureV1) -> dict[str, Any]:
     """Classify replay-time sensitivity without changing archived bytes.
 
@@ -89,10 +113,12 @@ def replay_failure(case: ArchivedFailureV1) -> dict[str, Any]:
         classifications.append("canvas_sensitive")
     if case.provenance.timeout_seconds is not None and not raw.strip():
         classifications.append("timeout_sensitive")
+    lineage = prediction_lineage(raw)
     return {
         "case": case.to_dict(),
-        "raw_prediction_sha256": _sha256(raw),
-        "raw_prediction_preserved": _sha256(raw) == case.raw_prediction_sha256,
+        **lineage,
+        "harness_provenance_id": harness_provenance_id(case.provenance),
+        "raw_prediction_preserved": lineage["raw_prediction_sha256"] == case.raw_prediction_sha256,
         "classifications": classifications,
         "actual_decode_replayed": False,
         "caveat": "Archived bytes were reclassified only; no model output was regenerated.",

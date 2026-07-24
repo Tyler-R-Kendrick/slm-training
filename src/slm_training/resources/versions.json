@@ -4222,7 +4222,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v48",
+      "version": "v49",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4233,6 +4233,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-07-24",
+          "note": "Persist suite harness provenance and explicit raw, constrained, and repaired lineage IDs on every evaluation detail"
+        },
         {
           "version": "v48",
           "date": "2026-07-23",
@@ -7291,7 +7296,7 @@
       ]
     },
     "harness.eval.replay": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/eval/harness_replay.py",
@@ -7300,6 +7305,11 @@
         "docs/design/harness-artifact-audit.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "Represent missing causal perturbation traces as unknown rather than fabricated zero label flips"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
