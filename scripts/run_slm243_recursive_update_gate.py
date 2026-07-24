@@ -135,6 +135,81 @@ def _architecture_hash(tower: SharedRecursiveDenoiserTower) -> str:
     )
 
 
+def _mechanism_fixtures() -> dict[str, Any]:
+    """Prove the three repair seams independently of corpus outcomes."""
+    torch.manual_seed(243)
+    historical = SharedRecursiveDenoiserTower(
+        vocab_size=17,
+        d_model=8,
+        n_layers=1,
+        n_heads=1,
+        max_len=8,
+        recursive_steps=1,
+        update_mode="current_v1",
+        empty_f_mode="pass_through",
+        norm_mode="shared",
+    )
+    true_empty = SharedRecursiveDenoiserTower(
+        vocab_size=17,
+        d_model=8,
+        n_layers=1,
+        n_heads=1,
+        max_len=8,
+        recursive_steps=1,
+        update_mode="current_v1",
+        empty_f_mode="zero",
+        norm_mode="shared",
+    )
+    true_empty.load_state_dict(historical.state_dict())
+    noisy = torch.tensor([[1, 2, 3, 4]])
+    context = torch.randn(1, 2, 8)
+    initial = historical.initial_transition_state(noisy, context, 0)
+    historical_step = historical.transition_step(
+        initial["y"], initial["z"], context, initial["self_pad_mask"]
+    )
+    true_empty_step = true_empty.transition_step(
+        initial["y"], initial["z"], context, initial["self_pad_mask"]
+    )
+    historical_z = historical_step["z_update"]
+    true_empty_z = true_empty_step["z_update"]
+    assert isinstance(historical_z, torch.Tensor)
+    assert isinstance(true_empty_z, torch.Tensor)
+    layerscale = SharedRecursiveDenoiserTower(
+        vocab_size=17,
+        d_model=8,
+        n_layers=2,
+        n_heads=1,
+        update_mode="layerscale",
+    )
+    gated_private = SharedRecursiveDenoiserTower(
+        vocab_size=17,
+        d_model=8,
+        n_layers=2,
+        n_heads=1,
+        update_mode="gated",
+        norm_mode="private",
+    )
+    return {
+        "historical_empty_f_update_norm": float(historical_z.norm()),
+        "true_empty_f_update_norm": float(true_empty_z.norm()),
+        "true_empty_f_exact_zero": torch.equal(
+            true_empty_z, torch.zeros_like(true_empty_z)
+        ),
+        "layerscale_initial_value": float(layerscale.f_update_scale[0]),
+        "gated_initial_sigmoid": float(
+            torch.sigmoid(gated_private.f_update_gate[0])
+        ),
+        "private_norm_objects_distinct": len(
+            {
+                id(gated_private.f_norm),
+                id(gated_private.g_norm),
+                id(gated_private.norm),
+            }
+        )
+        == 3,
+    }
+
+
 def _gradient_norm(tower: SharedRecursiveDenoiserTower) -> tuple[float, dict[str, float]]:
     groups = {"f": [], "g": [], "norm": [], "other": []}
     for name, parameter in tower.named_parameters():
@@ -324,6 +399,7 @@ def _scientific_hash(report: dict[str, Any]) -> str:
 
 def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
     started = time.perf_counter()
+    mechanisms = _mechanism_fixtures()
     tokenizer, noisy, targets, context, records = _corpus_batch(test_dir)
     rows = []
     baseline_logits: dict[tuple[int, int], torch.Tensor] = {}
@@ -386,14 +462,14 @@ def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
         },
         {
             "id": "historical-default-preserved",
-            "criteria": "current_v1 retains pass-through empty F and shared norm controls.",
+            "criteria": "current_v1 retains pass-through empty F; the true-empty arm is exact zero and repair initializers are near identity.",
             "pass": VARIANTS["current_v1"]
             == {
                 "update_mode": "current_v1",
                 "empty_f_mode": "pass_through",
                 "norm_mode": "shared",
             },
-            "result": VARIANTS["current_v1"],
+            "result": mechanisms,
         },
         {
             "id": "finite-accounted-architecture",
@@ -462,6 +538,7 @@ def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
             "recommendation_requires_all_three_seeds": True,
         },
         "variants": VARIANTS,
+        "mechanism_fixtures": mechanisms,
         "rows": rows,
         "gate": gate.to_dict(),
         "prior_evidence": list(gate.evidence_refs),

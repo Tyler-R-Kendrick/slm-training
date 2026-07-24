@@ -4053,6 +4053,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: add deterministic mechanism fixtures proving historical empty-F pass-through, exact true-empty zero, near-identity scales and gates, and private norm identity"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "initial six-arm, five-depth, three-paired-seed recurrence update, empty-F, and private-norm architecture gate"
         }
       ]
