@@ -114,6 +114,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_trust_model",
         "grammar_sample_decode",
         "grammar_sample_temperature",
+        "grammar_uniform_at_unforced",
         "grammar_block_decode",
         "grammar_block_size",
         "use_amp",
@@ -439,6 +440,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_trust_model=getattr(config, "grammar_trust_model", False),
         grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
         grammar_sample_temperature=getattr(config, "grammar_sample_temperature", 0.8),
+        grammar_uniform_at_unforced=getattr(
+            config, "grammar_uniform_at_unforced", False
+        ),
         grammar_block_decode=getattr(config, "grammar_block_decode", False),
         grammar_block_size=getattr(config, "grammar_block_size", 32),
         output_tokenizer=getattr(config, "output_tokenizer", "lexer"),

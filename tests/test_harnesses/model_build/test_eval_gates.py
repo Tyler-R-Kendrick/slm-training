@@ -26,6 +26,7 @@ from slm_training.harnesses.model_build.eval_runner import (
     _record_langsmith_evaluation,
     component_type_recall,
     evaluate,
+    evaluate_grammar_leakage_audit,
     evaluate_suites,
     structural_similarity,
 )
@@ -193,6 +194,70 @@ def test_evaluate_applies_offset_before_limit(
     assert metrics["eval_offset"] == 2
     assert metrics["eval_limit"] == 1
     assert metrics["details"][0]["id"] == "s2"
+
+
+def test_grammar_leakage_audit_runs_explicit_decode_variants(
+    tmp_path: Path,
+) -> None:
+    test_dir = tmp_path / "eval"
+    suite_dir = test_dir / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    gold = 'root = TextContent(":value")'
+    write_jsonl(
+        suite_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="audit",
+                prompt="Value",
+                openui=gold,
+                placeholders=[":value"],
+                split="smoke",
+                meta={"semantic_factor": "content"},
+            )
+        ],
+    )
+
+    class AuditModel:
+        def __init__(self) -> None:
+            self.calls: list[bool | None] = []
+            self.config = SimpleNamespace(
+                grammar_constrained=True,
+                grammar_ltr_repair=False,
+                grammar_uniform_at_unforced=False,
+            )
+
+        def generate_batch_requests(
+            self,
+            requests: list[GenerationRequest],
+            *,
+            grammar_constrained: bool | None = None,
+            max_len: int | None = None,
+        ) -> list[str]:
+            self.calls.append(grammar_constrained)
+            return [gold for _ in requests]
+
+    model = AuditModel()
+    config = ModelBuildConfig(
+        train_dir=tmp_path / "train",
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="audit",
+        model_name="stub",
+    )
+    payload = evaluate_grammar_leakage_audit(
+        config, model=model, publish_agentv=False
+    )
+
+    assert model.calls == [False, True, True, True]
+    assert model.config.grammar_constrained is True
+    assert model.config.grammar_ltr_repair is False
+    assert model.config.grammar_uniform_at_unforced is False
+    assert set(payload["variants"]) == {
+        "raw", "constrained", "repaired", "uniform_at_unforced"
+    }
+    assert payload["strata"]["raw"]["semantic_factor"]["content"]["n"] == 1
+    assert Path(payload["output"]).is_file()
 
 
 def test_evaluate_rejects_negative_offset(tmp_path: Path) -> None:

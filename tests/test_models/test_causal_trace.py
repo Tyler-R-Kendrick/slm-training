@@ -23,6 +23,7 @@ from slm_training.models.causal_trace import (
     CausalTraceIdentity,
     CausalTraceWriter,
     GeneratedOutcome,
+    TraceDecodeMode,
     TracePolicy,
     TraceSelection,
     capture_raw_steps,
@@ -30,6 +31,7 @@ from slm_training.models.causal_trace import (
     fold_policy_identity,
     legal_set_reference,
     load_causal_decision_states,
+    summarize_decode_audit,
 )
 
 # vocab 6, eos=0. A four-step decode over exact prefixes:
@@ -70,6 +72,19 @@ def _capture(policy: TracePolicy | None = None, role_of=None):
     )
 
 
+def _capture_with_mode(
+    mode: TraceDecodeMode, *, seed: int = 0, max_new_tokens: int = 16
+):
+    return capture_raw_steps(
+        forward_logits=_forward,
+        allowed_ids=_allowed,
+        eos_id=0,
+        max_new_tokens=max_new_tokens,
+        decode_mode=mode,
+        uniform_seed=seed,
+    )
+
+
 def _identity(adapter: str = "adapterA") -> CausalTraceIdentity:
     return CausalTraceIdentity(
         group_id="grp",
@@ -102,6 +117,40 @@ def test_constraint_shadow_only_when_raw_illegal_and_selection_legal() -> None:
     # Forced (single-legal) steps are deductions, never shadows.
     assert forced_step.forced is True and forced_step.constraint_shadow is False
     assert eos_step.selected_token_id == 0
+
+
+def test_uniform_at_unforced_keeps_forced_tokens_and_is_seeded() -> None:
+    first = _capture_with_mode(
+        TraceDecodeMode.UNIFORM_AT_UNFORCED, seed=0, max_new_tokens=2
+    )
+    second = _capture_with_mode(
+        TraceDecodeMode.UNIFORM_AT_UNFORCED, seed=0, max_new_tokens=2
+    )
+    assert first.generated_token_ids == second.generated_token_ids
+    assert first.observations[1].forced is True
+    assert first.observations[1].selected_token_id == 4
+    assert all(obs.decode_mode == "uniform_at_unforced" for obs in first.observations)
+
+
+def test_raw_control_and_legal_mass_use_the_same_logit_row() -> None:
+    result = _capture_with_mode(TraceDecodeMode.RAW, max_new_tokens=1)
+    obs = result.observations[0]
+    assert obs.selected_token_id == obs.raw_argmax_id == 5
+    assert obs.constraint_shadow is False
+    assert 0.0 < obs.legal_probability_mass < 1.0
+
+
+def test_decode_audit_summary_reports_trace_facts_without_quality_claims() -> None:
+    constrained = _capture()
+    raw = _capture_with_mode(TraceDecodeMode.RAW, max_new_tokens=1)
+    summary = summarize_decode_audit(
+        {"raw": raw, "constrained": constrained},
+        repair_edit_counts={"constrained": 2},
+    )
+    assert summary["raw"]["positions"] == 1
+    assert summary["constrained"]["override_positions"] == 1
+    assert summary["constrained"]["repair_edit_count"] == 2
+    assert 0.0 <= summary["constrained"]["mean_legal_probability_mass"] <= 1.0
 
 
 def test_decision_index_counts_only_non_forced_steps() -> None:

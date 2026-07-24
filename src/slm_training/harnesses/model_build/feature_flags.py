@@ -150,6 +150,10 @@ def catalog() -> dict[str, Any]:
 
 def _coerce(value: Any, default: Any) -> Any:
     """Restore JSON/provider values to the config's declared runtime shape."""
+    # Optional ModelBuildConfig fields intentionally use None to preserve a
+    # checkpoint value. Never coerce that sentinel through a numeric default.
+    if value is None:
+        return None
     if isinstance(default, tuple):
         return tuple(value) if isinstance(value, list) else default
     if isinstance(default, bool):

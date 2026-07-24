@@ -311,6 +311,7 @@ class TwoTowerConfig:
     # Sample from renormalized legal distribution instead of greedy argmax.
     grammar_sample_decode: bool = False
     grammar_sample_temperature: float = 0.8
+    grammar_uniform_at_unforced: bool = False
     # Semi-AR block decode: fill contiguous spans left-to-right (block diffusion).
     grammar_block_decode: bool = False
     grammar_block_size: int = 32
@@ -8850,14 +8851,39 @@ class TwoTowerModel(nn.Module):
         # disabled this is a no-op and leaves ``paths`` unchanged.
         paths, _shortlist_trace = self._maybe_apply_action_shortlist(paths, prefix)
 
+        def uniform_legal_index() -> int:
+            """Seeded, stateless control choice for an otherwise legal decision."""
+            material = json.dumps(
+                {
+                    "seed": int(getattr(self.config, "seed", 0)),
+                    "prefix": prefix,
+                    "candidates": [list(path.token_ids) for path in paths],
+                },
+                separators=(",", ":"),
+            ).encode("utf-8")
+            return int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % len(paths)
+
         def record_choice(
             chosen: int,
             scores: list[float],
             phase: str,
             *,
             first_edge_scores: list[float] | None = None,
+            raw_logits: torch.Tensor | None = None,
         ) -> None:
             if stats is not None and len(stats.constrained_selection_traces) < 64:
+                legal_token_ids = tuple(
+                    sorted({int(path.token_ids[0]) for path in paths})
+                )
+                raw_top_token_id: int | None = None
+                legal_probability_mass: float | None = None
+                if raw_logits is not None:
+                    raw_top_token_id = int(raw_logits.argmax().item())
+                    probabilities = F.softmax(raw_logits.float(), dim=0)
+                    legal_probability_mass = float(
+                        probabilities[list(legal_token_ids)].sum().item()
+                    )
+                chosen_token_id = int(paths[chosen].token_ids[0])
                 ranked = sorted(
                     range(len(paths)), key=scores.__getitem__, reverse=True
                 )[:5]
@@ -8866,7 +8892,23 @@ class TwoTowerModel(nn.Module):
                         "position": len(prefix),
                         "prefix_text": self.tokenizer.decode(prefix),
                         "chosen_token": self.tokenizer.id_to_token.get(
-                            int(paths[chosen].token_ids[0]), ""
+                            chosen_token_id, ""
+                        ),
+                        "raw_top1_token": (
+                            self.tokenizer.id_to_token.get(raw_top_token_id, "")
+                            if raw_top_token_id is not None
+                            else None
+                        ),
+                        "raw_top1_legal": (
+                            raw_top_token_id in legal_token_ids
+                            if raw_top_token_id is not None
+                            else None
+                        ),
+                        "legal_probability_mass": legal_probability_mass,
+                        "override": (
+                            raw_top_token_id != chosen_token_id
+                            if raw_top_token_id is not None
+                            else None
                         ),
                         "legal_candidates": len(paths),
                         "forced": False,
@@ -8926,7 +8968,8 @@ class TwoTowerModel(nn.Module):
             canvas = self._compiler_canvas(prefix, length)
             hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
             candidates = tuple(int(path.token_ids[0]) for path in paths)
-            scores = self._project_candidates(hidden[0, len(prefix)], candidates)
+            raw_logits = self.denoiser.project(hidden[0, len(prefix)])
+            scores = raw_logits[list(candidates)]
             inventory_bias = self._component_inventory_bias(ctx, ctx_pad, candidates)
             if inventory_bias is not None:
                 scores = scores + inventory_bias
@@ -9050,7 +9093,9 @@ class TwoTowerModel(nn.Module):
             )
             if repeated_slot_bias is not None:
                 scores = scores + repeated_slot_bias
-            if bool(getattr(self.config, "grammar_sample_decode", False)):
+            if bool(getattr(self.config, "grammar_uniform_at_unforced", False)) and len(scores) > 1:
+                chosen = uniform_legal_index()
+            elif bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
                 )
@@ -9061,6 +9106,7 @@ class TwoTowerModel(nn.Module):
                 chosen,
                 [float(score) for score in scores.detach().cpu().tolist()],
                 "compiler_restricted",
+                raw_logits=raw_logits,
             )
             return tuple(paths[chosen].token_ids)
 
@@ -9318,7 +9364,9 @@ class TwoTowerModel(nn.Module):
                 float(value)
                 for value in (path_tensor + repeated_slot_bias).detach().cpu().tolist()
             ]
-        if bool(getattr(self.config, "grammar_sample_decode", False)):
+        if bool(getattr(self.config, "grammar_uniform_at_unforced", False)) and len(paths) > 1:
+            chosen = uniform_legal_index()
+        elif bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)
             probs = F.softmax(torch.tensor(path_scores) / temp, dim=0)
             chosen = int(torch.multinomial(probs, 1).item())

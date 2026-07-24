@@ -10,7 +10,10 @@ from pathlib import Path
 from slm_training.evals.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
 from slm_training.evals.record_schema import RUN_CLASSES
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
-from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.eval_runner import (
+    evaluate_grammar_leakage_audit,
+    evaluate_suites,
+)
 from slm_training.harnesses.model_build.experiment_flags import (
     apply_levers_from_environ,
     apply_levers_from_mapping,
@@ -558,6 +561,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Sample from renormalized legal-token distribution (DINGO-lite).",
     )
     parser.add_argument(
+        "--grammar-leakage-audit",
+        action="store_true",
+        help=(
+            "Evaluation-only raw/constrained/repaired/uniform-at-unforced "
+            "audit for one suite; never changes production decode defaults."
+        ),
+    )
+    parser.add_argument(
         "--grammar-ltr-max-tokens",
         type=int,
         default=None,
@@ -826,6 +837,9 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
+    if args.grammar_leakage_audit and args.suites:
+        raise SystemExit("--grammar-leakage-audit evaluates one --suite; omit --suites")
+
     if args.suites:
         from slm_training.runtime.telemetry import run_trace
 
@@ -861,6 +875,33 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.runtime.telemetry import run_trace
 
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
+        if args.grammar_leakage_audit:
+            audit = evaluate_grammar_leakage_audit(
+                config, checkpoint=args.checkpoint
+            )
+            summary = {
+                "schema_version": audit["schema_version"],
+                "suite": audit["suite"],
+                "variants": {
+                    name: {
+                        key: metrics.get(key)
+                        for key in (
+                            "n",
+                            "meaningful_program_rate",
+                            "parse_rate",
+                            "placeholder_fidelity",
+                            "contract_precision",
+                            "contract_recall",
+                            "structural_similarity",
+                        )
+                    }
+                    for name, metrics in audit["variants"].items()
+                },
+                "raw_deltas": audit["raw_deltas"],
+                "output": audit["output"],
+            }
+            print(json.dumps(summary, indent=2))
+            return 0
         metrics = evaluate(config, checkpoint=args.checkpoint, cache=cache)
     summary = {k: v for k, v in metrics.items() if k != "details"}
     if flag_assignments:
