@@ -1,0 +1,324 @@
+{
+  "analysis": {
+    "coverage": {
+      "adjudication_rate": 0.0,
+      "fully_labeled": 33,
+      "needs_adjudication": 0,
+      "packet_n": 33,
+      "unknown_labels_excluded": 0
+    },
+    "human_agreement": {
+      "cohen_kappa": 1.0,
+      "meets_threshold": true,
+      "n_pairs": 33,
+      "threshold": 0.6
+    },
+    "metric_pr_by_reason": {
+      "<metric_pass>": {
+        "fn": 0,
+        "fp": 4,
+        "n": 7,
+        "precision": 0.42857142857142855,
+        "recall": 1.0,
+        "tn": 0,
+        "tp": 3
+      },
+      "empty_root_stack": {
+        "fn": 0,
+        "fp": 0,
+        "n": 9,
+        "precision": null,
+        "recall": null,
+        "tn": 9,
+        "tp": 0
+      },
+      "low_component_recall": {
+        "fn": 1,
+        "fp": 0,
+        "n": 26,
+        "precision": null,
+        "recall": 0.0,
+        "tn": 25,
+        "tp": 0
+      },
+      "no_content_components": {
+        "fn": 0,
+        "fp": 0,
+        "n": 13,
+        "precision": null,
+        "recall": null,
+        "tn": 13,
+        "tp": 0
+      },
+      "no_placeholders": {
+        "fn": 0,
+        "fp": 0,
+        "n": 9,
+        "precision": null,
+        "recall": null,
+        "tn": 9,
+        "tp": 0
+      }
+    },
+    "metric_vs_labels": {
+      "fn": 1,
+      "fp": 4,
+      "n": 33,
+      "precision": 0.42857142857142855,
+      "recall": 0.75,
+      "tn": 25,
+      "tp": 3
+    },
+    "packet_sha256": "0980b71da1dce898689c505edf9d7acf0fe5d2c7caca5649bfdc258c43d6161a",
+    "rater_ids": [
+      "rater_a",
+      "rater_b"
+    ],
+    "recall_floor_sweep": {
+      "predeclared_floors": [
+        0.3,
+        0.5,
+        0.7
+      ],
+      "results": {
+        "0.3": {
+          "fn": 1,
+          "fp": 4,
+          "n": 33,
+          "precision": 0.42857142857142855,
+          "recall": 0.75,
+          "tn": 25,
+          "tp": 3
+        },
+        "0.5": {
+          "fn": 1,
+          "fp": 4,
+          "n": 33,
+          "precision": 0.42857142857142855,
+          "recall": 0.75,
+          "tn": 25,
+          "tp": 3
+        },
+        "0.7": {
+          "fn": 4,
+          "fp": 0,
+          "n": 33,
+          "precision": null,
+          "recall": 0.0,
+          "tn": 29,
+          "tp": 0
+        }
+      }
+    },
+    "schema": "slm288_meaningful_validation/v1"
+  },
+  "artifacts": {
+    "harness": "scripts/run_slm288_meaningful_validation.py",
+    "labels": "docs/design/slm288-annotation-labels-20260724.json",
+    "packet": "src/slm_training/resources/evals/slm288_annotation_packet_v1.json",
+    "packet_sha256": "0980b71da1dce898689c505edf9d7acf0fe5d2c7caca5649bfdc258c43d6161a",
+    "rubric": "src/slm_training/resources/evals/slm288_meaningful_rubric_v1.md",
+    "rubric_sha256": "ba09ece7b4d08baf328f48ca41606c45dab152344b10b016aea2a53564aba4ce",
+    "tests": "tests/test_scripts/test_run_slm288_meaningful_validation.py",
+    "typed_report": "src/slm_training/harnesses/model_build/eval_runner.py#meaningful_program_v1_report"
+  },
+  "claim_class": "diagnostic",
+  "disposition": {
+    "consequences": [
+      "meaningful_program_rate (v1) remains the ship-gate primary; NO retroactive metric, threshold, or gate change is made by this issue",
+      "for LAR1+ program decisions, meaningful-program rate is diagnostic-only until a powered, human-labeled packet certifies kappa >= 0.6 with documented precision/recall",
+      "binding_aware_meaningful_v2 stays candidate_pending_calibration",
+      "v1 now emits typed ordered reason codes (meaningful_program_v1_reasons/v1) with UNKNOWN/unobservable cases explicit and never counted as failures; verdict and legacy reason strings are unchanged"
+    ],
+    "decision": "demote_to_diagnostic_for_lar_decisions",
+    "rationale": [
+      "primary validity threshold requires HUMAN agreement kappa >= 0.6; the two raters here are independent agent passes from the same model family (kappa 1.0), which is wiring/diagnostic evidence, not human validation",
+      "packet n=33 vs declared ~100 target (only 33 prompt-available retained rows exist); statistics are underpowered by the issue's own bar",
+      "diagnostic signal: metric precision 0.43 / recall 0.75 against agent labels, with 4 metric-pass false positives and recall collapsing to 0.0 at the predeclared 0.7 floor"
+    ]
+  },
+  "histograms": {
+    "overall": {
+      "fail_reason_histogram": {
+        "empty_root_stack": 9,
+        "low_component_recall": 26,
+        "no_content_components": 13,
+        "no_placeholders": 9
+      },
+      "n": 33,
+      "unknown_reason_histogram": {},
+      "verdicts": {
+        "false": 26,
+        "true": 7
+      }
+    },
+    "per_set": {
+      "e228": {
+        "fail_reason_histogram": {
+          "low_component_recall": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e229": {
+        "fail_reason_histogram": {
+          "empty_root_stack": 1,
+          "low_component_recall": 2,
+          "no_content_components": 1,
+          "no_placeholders": 1
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e249": {
+        "fail_reason_histogram": {
+          "low_component_recall": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e252": {
+        "fail_reason_histogram": {
+          "low_component_recall": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e262": {
+        "fail_reason_histogram": {
+          "low_component_recall": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e264": {
+        "fail_reason_histogram": {
+          "low_component_recall": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e265": {
+        "fail_reason_histogram": {
+          "low_component_recall": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 2,
+          "true": 1
+        }
+      },
+      "e293": {
+        "fail_reason_histogram": {
+          "empty_root_stack": 2,
+          "low_component_recall": 3,
+          "no_content_components": 3,
+          "no_placeholders": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 3
+        }
+      },
+      "e294": {
+        "fail_reason_histogram": {
+          "empty_root_stack": 2,
+          "low_component_recall": 3,
+          "no_content_components": 3,
+          "no_placeholders": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 3
+        }
+      },
+      "e295": {
+        "fail_reason_histogram": {
+          "empty_root_stack": 2,
+          "low_component_recall": 3,
+          "no_content_components": 3,
+          "no_placeholders": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 3
+        }
+      },
+      "e296": {
+        "fail_reason_histogram": {
+          "empty_root_stack": 2,
+          "low_component_recall": 3,
+          "no_content_components": 3,
+          "no_placeholders": 2
+        },
+        "n": 3,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 3
+        }
+      }
+    },
+    "per_suite": {
+      "smoke": {
+        "fail_reason_histogram": {
+          "empty_root_stack": 9,
+          "low_component_recall": 26,
+          "no_content_components": 13,
+          "no_placeholders": 9
+        },
+        "n": 33,
+        "unknown_reason_histogram": {},
+        "verdicts": {
+          "false": 26,
+          "true": 7
+        }
+      }
+    },
+    "report_schema": "meaningful_program_v1_reasons/v1",
+    "schema": "slm288_reason_histograms/v1"
+  },
+  "issue": "SLM-288",
+  "matrix_set": "slm288-meaningful-validation",
+  "matrix_version": "slm288-v1",
+  "run_id": "slm288_meaningful_validation",
+  "schema": "slm288_meaningful_validation_report/v1",
+  "status": "complete",
+  "version_stamp": {
+    "code_commit": "c5ab8bb9334a4d4befc7b48827118655c1a32295",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v22",
+      "harness.model_build.eval": "v48"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T10:10:59.561946+00:00"
+  }
+}
