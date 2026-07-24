@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"analytic_endpoint_tv": 0.0, "empirical_endpoint_tv": 2.220446049250313e-16, "event_count_tv": 0.0, "exact_event_count_distribution": {"5": 1.0}, "samples": 256}}

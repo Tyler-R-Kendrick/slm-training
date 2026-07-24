@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"edges": 5, "final_mse": 6.312777713901596e-07, "initial_mse": 0.09415864944458008, "max_abs_error": 0.0003113746643066406, "rows": 5, "source_predicted_hazard": 1.0003113746643066, "source_target_hazard": 1.0}}

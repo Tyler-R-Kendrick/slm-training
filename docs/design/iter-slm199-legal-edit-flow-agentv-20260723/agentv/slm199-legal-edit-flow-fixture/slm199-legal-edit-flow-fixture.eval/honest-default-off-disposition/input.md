@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"confirmation": {"owner": "VFA1-02", "reason": "SLM-199 does not establish a held-out flow win", "status": "blocked"}, "verdict": "adapted_time_conditioned_edit_policy_fixture_only"}}

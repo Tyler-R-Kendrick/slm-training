@@ -3268,6 +3268,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append SLM-199 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: append SLM-198 measured-results pointer to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3299,6 +3304,33 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "initial registration; SLM-198 target-first bridge curriculum manifest, deterministic scheduling features, exposure proofs, resumable sampler, and honest fixture matrix"
+        }
+      ]
+    },
+    "harness.experiments.slm199_legal_edit_flow": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
+        "src/slm_training/models/legal_edit_flow.py",
+        "src/slm_training/flow/targets.py",
+        "src/slm_training/flow/samplers.py",
+        "scripts/run_legal_edit_flow_fixture.py",
+        "scripts/train_legal_edit_flow.py",
+        "tests/test_harnesses/experiments/test_slm199_legal_edit_flow.py",
+        "tests/test_models/test_legal_edit_flow.py",
+        "tests/test_flow/test_targets.py",
+        "tests/test_flow/test_samplers.py",
+        "tests/test_scripts/test_run_legal_edit_flow_fixture.py",
+        "docs/design/iter-slm199-legal-edit-flow-20260723.json",
+        "docs/design/iter-slm199-legal-edit-flow-20260723.md",
+        "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-199 exact finite-graph rate targets, UNKNOWN-safe adapted bridge targets, positive-rate model, exact Gillespie oracle, bounded production sampler, and honest fixture evidence"
         }
       ]
     },

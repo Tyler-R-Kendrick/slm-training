@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"samples": [{"all_selected_live": true, "candidate_sets_refreshed": true, "edits": 2, "record_id": "hero_bridge", "stop_reason": "FIXED_K_END", "target_exact": false, "unknown_candidate_events": 51, "verified_output": true}, {"all_selected_live": true, "candidate_sets_refreshed": true, "edits": 2, "record_id": "cta_bridge", "stop_reason": "FIXED_K_END", "target_exact": false, "unknown_candidate_events": 28, "verified_output": true}]}}

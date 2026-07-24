@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"fidelity": "adapted_path_approximation", "unknown_events": [51, 28], "unknown_rate_mass_after_fit": 0.011322579346597195}}
