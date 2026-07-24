@@ -39,7 +39,9 @@ jobs:
           need_node=false
           if ! git diff --quiet "$BASE_SHA"...HEAD -- \
             package.json package-lock.json src/apps \
-            src/slm_training/web/static/openui scripts/validate_page_dsl.py; then
+            src/slm_training/web/static/openui scripts/validate_page_dsl.py \
+            scripts/run_agentv_eval.mjs src/slm_training/evals/agentv.py \
+            tests/test_evals/test_agentv.py; then
             need_node=true
             npm ci &
             root_pid=$!
