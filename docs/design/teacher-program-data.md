@@ -85,3 +85,19 @@ The follow-up [eight-token probe](iter-slm266-local-qwen-8token-probe-20260724.j
 did complete locally: 56 input tokens plus 8 output tokens in 95.65 seconds at
 zero provider cost. Its response was a truncated fenced `<Panel>` fragment, so
 it is transport evidence only and was not parsed, admitted, or materialized.
+
+The corresponding [local yield disposition](iter-slm266-local-yield-disposition-20260724.json)
+is `budget_blocked` for this exact CPU/model configuration: the only completed
+request yielded zero accepted roots, while the 96-token request hit the
+mandatory 170-second interrupt point. The 95.65-second completed-request
+measurement permits at most one such request per capped command; even an
+optimistic 10,000-request attempt sequence would take at least 11.07 continuous
+days before parsing, deep verification, independent judging, deduplication, or
+retries. This is a request-attempt lower bound, not a valid-program throughput
+estimate. The 100k corpus remains unrun by direction; its 110.71-day
+request-attempt lower bound is a bottleneck record, not an authorized run.
+
+SLM-266 remains open: no accepted 10k principal corpus, matched controls, or
+three-seed factorial exists. The disposition applies only to this local CPU
+Qwen configuration and does not weaken corpus-admission, training, or ship
+gates.

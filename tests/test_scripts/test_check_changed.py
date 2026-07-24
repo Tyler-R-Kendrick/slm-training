@@ -6,6 +6,9 @@ from scripts.check_changed import hook_test_targets, select_changed_tests, selec
 
 def test_select_tests_is_scoped_and_conservative() -> None:
     assert select_tests(["src/slm_training/web/routes.py"]) == ["tests/test_web"]
+    assert select_tests(["src/slm_training/harnesses/model_build/ship_gates.py"]) == [
+        "tests/test_harnesses/model_build/test_eval_gates.py"
+    ]
     assert select_tests(["tests/test_dsl/test_parser.py"]) == [
         "tests/test_dsl/test_parser.py"
     ]
