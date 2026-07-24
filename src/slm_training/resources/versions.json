@@ -4051,7 +4051,7 @@
       ]
     },
     "harness.experiments.slm243_recursive_update_gate": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py",
@@ -4063,6 +4063,11 @@
         "docs/design/iter-slm243-recursive-update-gate-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "deduplicate triangular depth telemetry and retain raw semantic rows at R=8 so dashboard evidence stays deployable without changing any gate input or verdict"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

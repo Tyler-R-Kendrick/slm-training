@@ -353,7 +353,6 @@ def _run_cell(
     semantic = _semantic_rows(tokenizer, logits.detach(), records)
     row = {
         "variant": variant,
-        "controls": controls,
         "architecture_hash": _architecture_hash(tower),
         "depth": depth,
         "seed": seed,
@@ -370,27 +369,35 @@ def _run_cell(
         "parameter_count": sum(parameter.numel() for parameter in tower.parameters()),
         "block_evaluations": depth * 2,
         "all_finite": all(torch.isfinite(value).all() for value in finite_tensors),
-        "depth_metrics": [
-            {
-                "depth": record.step,
-                "cross_entropy": float(record.cross_entropy.mean()),
-                "entropy": float(record.entropy.mean()),
-                "y_norm": float(record.y_norm.mean()),
-                "z_norm": (
-                    None if record.z_norm is None else float(record.z_norm.mean())
-                ),
-                "y_update_ratio": float(record.y_update_state_ratio.mean()),
-                "z_update_ratio": (
-                    None
-                    if record.z_update_state_ratio is None
-                    else float(record.z_update_state_ratio.mean())
-                ),
-            }
-            for record in diagnostics
-        ],
+        # Earlier states are identical to the separately persisted cells at
+        # those depths for the same variant/seed. Retain only the final state
+        # here instead of repeating the triangular trajectory 90 times.
+        "final_depth_metrics": {
+            "depth": diagnostics[-1].step,
+            "cross_entropy": float(diagnostics[-1].cross_entropy.mean()),
+            "entropy": float(diagnostics[-1].entropy.mean()),
+            "y_norm": float(diagnostics[-1].y_norm.mean()),
+            "z_norm": (
+                None
+                if diagnostics[-1].z_norm is None
+                else float(diagnostics[-1].z_norm.mean())
+            ),
+            "y_update_ratio": float(
+                diagnostics[-1].y_update_state_ratio.mean()
+            ),
+            "z_update_ratio": (
+                None
+                if diagnostics[-1].z_update_state_ratio is None
+                else float(diagnostics[-1].z_update_state_ratio.mean())
+            ),
+        },
         "bounded_semantics": {
             "mode": "one_forward_masked_reconstruction",
-            "rows": semantic,
+            # Raw per-record outcomes are retained at the preregistered
+            # recommendation depth; lower-depth cells keep the exact
+            # aggregates used by the gate without duplicating those rows.
+            "rows": semantic if depth == max(DEPTHS) else [],
+            "raw_rows_persisted": depth == max(DEPTHS),
             "meaningful_parse_rate": statistics.mean(
                 float(item["meaningful_parse"]) for item in semantic
             ),
