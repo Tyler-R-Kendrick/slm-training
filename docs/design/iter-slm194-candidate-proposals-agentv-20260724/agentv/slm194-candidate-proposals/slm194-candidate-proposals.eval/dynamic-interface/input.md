@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"compiler_owns_membership": true, "mandatory_fallback": true, "no_future_text": true, "scheduling_prefix_only": true, "shared_by_direct_and_flow": true}, "claim": "fixture_screen_not_confirmation", "failures": [], "result": {"arms": ["complete_exact_cached", "description_retrieval", "direct_policy_logits", "flow_rate_logits", "grammar_partition", "low_rank_cross_attention", "oracle_acceptable", "tiny_mlp"], "training_rows": 4}}

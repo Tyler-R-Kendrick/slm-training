@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v74",
+      "version": "v75",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v75",
+          "date": "2026-07-23",
+          "note": "add SLM-194 legality-neutral candidate proposal and exact-fallback amortization fixture"
+        },
         {
           "version": "v74",
           "date": "2026-07-23",
@@ -3733,6 +3738,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: add SLM-194 adapted proposal-amortization evidence to shared research lineage without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -7158,6 +7168,60 @@
           "version": "ffe3-02-v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-193 FFE3-02 bit-exact flow-cache fixture matrix CLI"
+        }
+      ]
+    },
+    "flow.proposals": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/flow/proposals.py",
+        "tests/test_flow/test_proposals.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; legality-neutral dynamic candidate proposal prefixes with mandatory exact fallback"
+        }
+      ]
+    },
+    "harness.experiments.slm194_candidate_proposals": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm194_candidate_proposals.py",
+        "tests/test_harnesses/experiments/test_slm194_candidate_proposals.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-194 FFE3-03 candidate proposal recall, fallback, parity, and wall-cost fixture"
+        }
+      ]
+    },
+    "matrix.slm194_candidate_proposals": {
+      "version": "ffe3-03-v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_candidate_proposal_matrix.py",
+        "tests/test_scripts/test_run_candidate_proposal_matrix.py",
+        "docs/design/iter-slm194-candidate-proposals-20260724.json",
+        "docs/design/iter-slm194-candidate-proposals-20260724.md",
+        "docs/design/iter-slm194-candidate-proposals-agentv-20260724/",
+        "docs/design/perf-experiment-matrix.md"
+      ],
+      "history": [
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-23",
+          "note": "no-bump: regenerate measured evidence after final prerequisite squash lineage without changing matrix behavior"
+        },
+        {
+          "version": "ffe3-03-v1",
+          "date": "2026-07-23",
+          "note": "initial registration; SLM-194 FFE3-03 k-grid and true-wall proposal amortization matrix"
         }
       ]
     }
