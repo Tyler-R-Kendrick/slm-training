@@ -1,0 +1,2757 @@
+{
+  "agentv": {
+    "artifacts": {
+      "benchmarkPath": "outputs/runs/slm301_prompt_observability/agentv/slm301-prompt-observability/benchmark.json",
+      "indexPath": "outputs/runs/slm301_prompt_observability/agentv/slm301-prompt-observability/index.jsonl",
+      "runDir": "outputs/runs/slm301_prompt_observability/agentv/slm301-prompt-observability",
+      "timingPath": "outputs/runs/slm301_prompt_observability/agentv/slm301-prompt-observability/timing.json"
+    },
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "outputs/runs/slm301_prompt_observability/agentv/slm301-prompt-observability.eval.jsonl",
+    "summary": {
+      "durationMs": 35,
+      "executionErrors": 0,
+      "failed": 0,
+      "meanScore": 1,
+      "passed": 2,
+      "total": 2
+    }
+  },
+  "generated_at": "2026-07-24T18:18:24Z",
+  "phase0": {
+    "slm294_rico": {
+      "class_histogram": {
+        "OBSERVABLE_REQUEST_ONLY": 35
+      },
+      "n": 35,
+      "rows": [
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_0",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_1",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 6,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_2",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_4",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_8",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_9",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_12",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 12,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_17",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_20",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_25",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 8,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_34",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_35",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_38",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_40",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 10,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_41",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 12,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_42",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 8,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_47",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 7,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_48",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_51",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_53",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 10,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_55",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 9,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_56",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_57",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 9,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_58",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_59",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 7,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_60",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_68",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_69",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_77",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 8,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_81",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 12,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_91",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_95",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_97",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 12,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_99",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "not_run",
+          "id": "rico_eval_test_104",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 11,
+          "prompt_has_inventory": false
+        }
+      ]
+    },
+    "test_seeds": {
+      "class_histogram": {
+        "OBSERVABLE_REQUEST_ONLY": 16
+      },
+      "n": 16,
+      "rows": [
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "smoke_hero_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "smoke_button_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 1,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "smoke_callout_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 3,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "held_out_form_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 7,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "held_out_dual_card_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 5,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "held_out_input_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 2,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "held_out_tabs_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 6,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "held_out_settings_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 5,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": false,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "adv_empty_prompt_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 1,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "adv_dual_card_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 4,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "adv_deep_nest_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 3,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "adv_many_buttons_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 3,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "ood_dashboard_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 5,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "ood_gallery_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 6,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "ood_modal_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 3,
+          "prompt_has_inventory": false
+        },
+        {
+          "component_coverage_from_prose": true,
+          "coverage_class": "OBSERVABLE_REQUEST_ONLY",
+          "decode": "phase1",
+          "id": "ood_auth_01",
+          "inventory_arm_changes_prompt": true,
+          "n_slot_contract": 3,
+          "prompt_has_inventory": false
+        }
+      ]
+    }
+  },
+  "phase1": {
+    "ar_tiny": {
+      "arm_A": {
+        "mean_placeholder_fidelity": 0.0,
+        "mean_structural_similarity": 0.2784,
+        "n": 16,
+        "n_measured": 2,
+        "n_timeout_or_unrun": 14,
+        "reason_prevalence": {
+          "binding_analysis_unavailable": 2,
+          "canonical_roundtrip_unavailable": 2,
+          "gaming_analysis_unavailable": 2,
+          "no_nontrivial_content": 2,
+          "official_parse_failed": 2,
+          "required_component_missing": 2,
+          "required_placeholder_missing": 2,
+          "schema_parser_error:excess-args:Stack": 1,
+          "schema_value_role_mismatch:Stack.align": 1,
+          "schema_value_role_mismatch:Stack.direction": 2,
+          "schema_value_role_mismatch:Stack.gap": 1,
+          "schema_value_role_mismatch:Stack.justify": 1,
+          "schema_value_role_mismatch:Stack.wrap": 1,
+          "verifier_g1_failed": 2,
+          "verifier_g8_failed": 2
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.6576197724933468,
+          "low": 0.0,
+          "n": 2
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.6576197724933468,
+          "low": 0.0,
+          "n": 2
+        }
+      },
+      "arm_A.observable_prompt": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "arm_A.observable_request_only": {
+        "mean_placeholder_fidelity": 0.0,
+        "mean_structural_similarity": 0.2784,
+        "n": 16,
+        "n_measured": 2,
+        "n_timeout_or_unrun": 14,
+        "reason_prevalence": {
+          "binding_analysis_unavailable": 2,
+          "canonical_roundtrip_unavailable": 2,
+          "gaming_analysis_unavailable": 2,
+          "no_nontrivial_content": 2,
+          "official_parse_failed": 2,
+          "required_component_missing": 2,
+          "required_placeholder_missing": 2,
+          "schema_parser_error:excess-args:Stack": 1,
+          "schema_value_role_mismatch:Stack.align": 1,
+          "schema_value_role_mismatch:Stack.direction": 2,
+          "schema_value_role_mismatch:Stack.gap": 1,
+          "schema_value_role_mismatch:Stack.justify": 1,
+          "schema_value_role_mismatch:Stack.wrap": 1,
+          "verifier_g1_failed": 2,
+          "verifier_g8_failed": 2
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.6576197724933468,
+          "low": 0.0,
+          "n": 2
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.6576197724933468,
+          "low": 0.0,
+          "n": 2
+        }
+      },
+      "arm_A.unknown": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "arm_B": {
+        "mean_placeholder_fidelity": 0.0,
+        "mean_structural_similarity": 0.3097,
+        "n": 16,
+        "n_measured": 4,
+        "n_timeout_or_unrun": 12,
+        "reason_prevalence": {
+          "binding_analysis_unavailable": 4,
+          "canonical_roundtrip_unavailable": 4,
+          "gaming_analysis_unavailable": 4,
+          "no_nontrivial_content": 4,
+          "official_parse_failed": 4,
+          "required_component_missing": 4,
+          "required_placeholder_missing": 4,
+          "schema_parser_error:excess-args:ImageBlock": 1,
+          "schema_parser_error:excess-args:Stack": 3,
+          "schema_value_role_mismatch:Stack.align": 3,
+          "schema_value_role_mismatch:Stack.direction": 2,
+          "schema_value_role_mismatch:Stack.gap": 1,
+          "schema_value_role_mismatch:Stack.justify": 2,
+          "schema_value_role_mismatch:Stack.wrap": 3,
+          "verifier_g1_failed": 4,
+          "verifier_g8_failed": 4
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.4898908364545972,
+          "low": 0.0,
+          "n": 4
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.4898908364545972,
+          "low": 0.0,
+          "n": 4
+        }
+      },
+      "arm_B.observable_prompt": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "arm_B.observable_request_only": {
+        "mean_placeholder_fidelity": 0.0,
+        "mean_structural_similarity": 0.3097,
+        "n": 16,
+        "n_measured": 4,
+        "n_timeout_or_unrun": 12,
+        "reason_prevalence": {
+          "binding_analysis_unavailable": 4,
+          "canonical_roundtrip_unavailable": 4,
+          "gaming_analysis_unavailable": 4,
+          "no_nontrivial_content": 4,
+          "official_parse_failed": 4,
+          "required_component_missing": 4,
+          "required_placeholder_missing": 4,
+          "schema_parser_error:excess-args:ImageBlock": 1,
+          "schema_parser_error:excess-args:Stack": 3,
+          "schema_value_role_mismatch:Stack.align": 3,
+          "schema_value_role_mismatch:Stack.direction": 2,
+          "schema_value_role_mismatch:Stack.gap": 1,
+          "schema_value_role_mismatch:Stack.justify": 2,
+          "schema_value_role_mismatch:Stack.wrap": 3,
+          "verifier_g1_failed": 4,
+          "verifier_g8_failed": 4
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.4898908364545972,
+          "low": 0.0,
+          "n": 4
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.4898908364545972,
+          "low": 0.0,
+          "n": 4
+        }
+      },
+      "arm_B.unknown": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "paired.all": {
+        "delta": 0.0,
+        "meets_min_useful_delta": false,
+        "min_useful_delta": 0.1,
+        "n_measured": 1,
+        "n_unpaired": 15,
+        "rows": [
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "smoke_hero_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "adv_empty_prompt_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": false,
+            "id": "smoke_button_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": null,
+            "id": "adv_dual_card_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "smoke_callout_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "adv_deep_nest_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_form_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "adv_many_buttons_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": false,
+            "id": "held_out_dual_card_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "ood_dashboard_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "held_out_input_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "ood_gallery_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "held_out_tabs_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "ood_modal_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "held_out_settings_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": false,
+            "id": "ood_auth_01"
+          }
+        ],
+        "table": {
+          "a_fail_b_pass": 0,
+          "a_pass_b_fail": 0,
+          "both_fail": 1,
+          "both_pass": 0,
+          "unpaired": 15
+        }
+      },
+      "paired.no_regression": {
+        "delta": null,
+        "meets_min_useful_delta": false,
+        "min_useful_delta": 0.1,
+        "n_measured": 0,
+        "n_unpaired": 0,
+        "rows": [],
+        "table": {
+          "a_fail_b_pass": 0,
+          "a_pass_b_fail": 0,
+          "both_fail": 0,
+          "both_pass": 0,
+          "unpaired": 0
+        }
+      },
+      "paired.target": {
+        "delta": 0.0,
+        "meets_min_useful_delta": false,
+        "min_useful_delta": 0.1,
+        "n_measured": 1,
+        "n_unpaired": 15,
+        "rows": [
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "smoke_hero_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "adv_empty_prompt_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": false,
+            "id": "smoke_button_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": null,
+            "id": "adv_dual_card_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "smoke_callout_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "adv_deep_nest_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_form_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "adv_many_buttons_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": false,
+            "id": "held_out_dual_card_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "ood_dashboard_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "held_out_input_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "ood_gallery_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "held_out_tabs_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "ood_modal_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": null,
+            "id": "held_out_settings_01"
+          },
+          {
+            "arm_a": null,
+            "arm_b": false,
+            "id": "ood_auth_01"
+          }
+        ],
+        "table": {
+          "a_fail_b_pass": 0,
+          "a_pass_b_fail": 0,
+          "both_fail": 1,
+          "both_pass": 0,
+          "unpaired": 15
+        }
+      },
+      "per_record": {
+        "adv_deep_nest_01": {
+          "A": {
+            "elapsed_s": 60.35,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.33,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "adv_dual_card_01": {
+          "A": {
+            "elapsed_s": 6.98,
+            "prediction": "root = Stack([b1]b8\nb9]b4\n\":sym1\" = \":sym0\"(\":sym0\"(\":sym0\" b2 = \":sym1\"(\":sym1\"(\":sym1\" Card( = (((\n( = Card \":sym1\"(\":sym2\"](b5 =\n( =  = \"row\" b4\n[\n= = ((\":sym3\"\n\n=Card(]b5]\nb8 = Card b8 b4 b8 b4]]Card\n] = Stack(\nb5 =  = ], \"row\")\nCard = Button(\":sym5\")\":sym5\"(Button = ,  = (,\n\n\n]\":sym1\"\n(((b3\nCard(\n\n\n]\nb4(b3(",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.1909,
+              "syntax_valid": false,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "official_parse_failed",
+                "canonical_roundtrip_unavailable",
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing",
+                "binding_analysis_unavailable",
+                "schema_value_role_mismatch:Stack.direction",
+                "verifier_g1_failed",
+                "verifier_g8_failed",
+                "gaming_analysis_unavailable"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 60.79,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "adv_empty_prompt_01": {
+          "A": {
+            "elapsed_s": 60.37,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.31,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "adv_many_buttons_01": {
+          "A": {
+            "elapsed_s": 60.32,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.24,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "held_out_dual_card_01": {
+          "A": {
+            "elapsed_s": 60.82,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 14.54,
+            "prediction": "root = Stack([b1, b4\nb9] =\nImageBlock\n\n(\":sym0\"(\":sym0\" b2 = ImageBlock(\":sym1\" b3 b3 b3( = (ImageBlock \":sym1\" \":sym3\"\nb4 b4 \":sym1\" b4 = Stack(Stack]\nb3 = b3 \"row\" \":sym3\" \":sym6\"\n=Button = (\":sym4\" \":sym3\"]\":sym5\" = Card(]b5,  = ] = ImageBlock( = Stack b4]b4]b4], Stack(\nb5 = Button]\":sym5\" \"row\"",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.4071,
+              "syntax_valid": false,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "official_parse_failed",
+                "canonical_roundtrip_unavailable",
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing",
+                "binding_analysis_unavailable",
+                "schema_parser_error:excess-args:ImageBlock",
+                "schema_value_role_mismatch:Stack.gap",
+                "verifier_g1_failed",
+                "verifier_g8_failed",
+                "gaming_analysis_unavailable"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_form_01": {
+          "A": {
+            "elapsed_s": 11.76,
+            "prediction": "root = Stack([b1, b6\nb5],\n\":sym1\"\n\":sym1\"(\":sym0\"(\":sym0\" \":sym1\"\n\":sym2\"(\":sym1\" b3 \":sym1\"\n\":sym3\" = \":sym3\" \":sym2\" \":sym1\" \":sym3\"\n=FormControl \":sym1\" FormControl \":sym2\" \":sym2\"\n\":sym3\"\n\nFormControl(\":sym3\" \":sym3\" \":sym3\"\n\":sym3\"\nb6\n(\":sym1\" \":sym3\" \":sym1\"\n= = , ]b5",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3659,
+              "syntax_valid": false,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "official_parse_failed",
+                "canonical_roundtrip_unavailable",
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing",
+                "binding_analysis_unavailable",
+                "schema_parser_error:excess-args:Stack",
+                "schema_value_role_mismatch:Stack.align",
+                "schema_value_role_mismatch:Stack.direction",
+                "schema_value_role_mismatch:Stack.gap",
+                "schema_value_role_mismatch:Stack.justify",
+                "schema_value_role_mismatch:Stack.wrap",
+                "verifier_g1_failed",
+                "verifier_g8_failed",
+                "gaming_analysis_unavailable"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 17.05,
+            "prediction": "root = Stack([b1, b4\nb3],\n\":sym1\" = \":sym0\"(\n(\n\":sym1\"\n\":sym1\"(\":sym1\" b3\nb3(\"email\"(]\":sym1\"]",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.2784,
+              "syntax_valid": false,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "official_parse_failed",
+                "canonical_roundtrip_unavailable",
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing",
+                "binding_analysis_unavailable",
+                "schema_parser_error:excess-args:Stack",
+                "schema_value_role_mismatch:Stack.align",
+                "schema_value_role_mismatch:Stack.direction",
+                "schema_value_role_mismatch:Stack.justify",
+                "schema_value_role_mismatch:Stack.wrap",
+                "verifier_g1_failed",
+                "verifier_g8_failed",
+                "gaming_analysis_unavailable"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_input_01": {
+          "A": {
+            "elapsed_s": 60.58,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.67,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "held_out_settings_01": {
+          "A": {
+            "elapsed_s": 60.52,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.55,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "held_out_tabs_01": {
+          "A": {
+            "elapsed_s": 60.38,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.46,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "ood_auth_01": {
+          "A": {
+            "elapsed_s": 60.51,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 8.01,
+            "prediction": "root = Stack([b1]b4\nb3\n,\n\":sym1\" =\n(\":sym0\"(\n\":sym1\"\n\":sym2\"(\":sym1\"(\":sym1\", \":sym3\" \"email\" \":sym3\" \":sym3\" \":sym1\"]\n=FormControl \":sym1\" FormControl \":sym2\"](\":sym3\"\n\nFormControl(\":sym3\" \":sym3\" \":sym3\"\n\n\n]\n(\":sym1\" \":sym3\" \":sym1\" \":sym3\" =  = , ]b5",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.2,
+              "syntax_valid": false,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "official_parse_failed",
+                "canonical_roundtrip_unavailable",
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing",
+                "binding_analysis_unavailable",
+                "schema_parser_error:excess-args:Stack",
+                "schema_value_role_mismatch:Stack.align",
+                "schema_value_role_mismatch:Stack.wrap",
+                "verifier_g1_failed",
+                "verifier_g8_failed",
+                "gaming_analysis_unavailable"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "ood_dashboard_01": {
+          "A": {
+            "elapsed_s": 60.31,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.36,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "ood_gallery_01": {
+          "A": {
+            "elapsed_s": 60.45,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.39,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "ood_modal_01": {
+          "A": {
+            "elapsed_s": 60.36,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.35,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "smoke_button_01": {
+          "A": {
+            "elapsed_s": 60.62,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 10.07,
+            "prediction": "root = Stack([b1, b2, b9],\n\":sym1\" = \":sym1\"(\":sym0\"(\":sym0\" b2\n\":sym2\"(\":sym1\"(\":sym1\", \":sym3\" = \":sym3\" \":sym3\" \":sym1\" \":sym3\" \":sym1\" \":sym4\" FormControl \":sym1\" FormControl \":sym2\", \":sym2\", ,\nFormControl Button \":sym3\", \":sym3\" \":sym3\" \":sym3\"\nButton, ((\":sym3\", \":sym3\", ), ]\":sym4\",",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3533,
+              "syntax_valid": false,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "official_parse_failed",
+                "canonical_roundtrip_unavailable",
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing",
+                "binding_analysis_unavailable",
+                "schema_parser_error:excess-args:Stack",
+                "schema_value_role_mismatch:Stack.align",
+                "schema_value_role_mismatch:Stack.direction",
+                "schema_value_role_mismatch:Stack.justify",
+                "schema_value_role_mismatch:Stack.wrap",
+                "verifier_g1_failed",
+                "verifier_g8_failed",
+                "gaming_analysis_unavailable"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "smoke_callout_01": {
+          "A": {
+            "elapsed_s": 60.73,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.6,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        },
+        "smoke_hero_01": {
+          "A": {
+            "elapsed_s": 61.22,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          },
+          "B": {
+            "elapsed_s": 60.58,
+            "prediction": null,
+            "scores": null,
+            "status": "decode_timeout"
+          }
+        }
+      }
+    },
+    "x22_deterministic": {
+      "arm_A": {
+        "mean_placeholder_fidelity": 0.0,
+        "mean_structural_similarity": 0.2563,
+        "n": 16,
+        "n_measured": 16,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {
+          "no_nontrivial_content": 16,
+          "required_component_missing": 15,
+          "required_placeholder_missing": 16
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 1.0,
+          "high": 1.0,
+          "low": 0.8063923194655636,
+          "n": 16
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.19360768053443644,
+          "low": 0.0,
+          "n": 16
+        }
+      },
+      "arm_A.observable_prompt": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "arm_A.observable_request_only": {
+        "mean_placeholder_fidelity": 0.0,
+        "mean_structural_similarity": 0.2563,
+        "n": 16,
+        "n_measured": 16,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {
+          "no_nontrivial_content": 16,
+          "required_component_missing": 15,
+          "required_placeholder_missing": 16
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 1.0,
+          "high": 1.0,
+          "low": 0.8063923194655636,
+          "n": 16
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.0,
+          "high": 0.19360768053443644,
+          "low": 0.0,
+          "n": 16
+        }
+      },
+      "arm_A.unknown": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "arm_B": {
+        "mean_placeholder_fidelity": 1.0,
+        "mean_structural_similarity": 0.6727,
+        "n": 16,
+        "n_measured": 16,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {
+          "duplicate_placeholder_identity": 1,
+          "placeholder_semantic_role_mismatch": 1,
+          "prompt_component_missing": 8,
+          "prompt_contract_unknown": 1,
+          "required_component_missing": 8,
+          "required_inventory_unknown": 1
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 1.0,
+          "high": 1.0,
+          "low": 0.8063923194655636,
+          "n": 16
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.3125,
+          "high": 0.5559564416525933,
+          "low": 0.14164643854782039,
+          "n": 16
+        }
+      },
+      "arm_B.observable_prompt": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "arm_B.observable_request_only": {
+        "mean_placeholder_fidelity": 1.0,
+        "mean_structural_similarity": 0.6727,
+        "n": 16,
+        "n_measured": 16,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {
+          "duplicate_placeholder_identity": 1,
+          "placeholder_semantic_role_mismatch": 1,
+          "prompt_component_missing": 8,
+          "prompt_contract_unknown": 1,
+          "required_component_missing": 8,
+          "required_inventory_unknown": 1
+        },
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": 1.0,
+          "high": 1.0,
+          "low": 0.8063923194655636,
+          "n": 16
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": 0.3125,
+          "high": 0.5559564416525933,
+          "low": 0.14164643854782039,
+          "n": 16
+        }
+      },
+      "arm_B.unknown": {
+        "mean_placeholder_fidelity": null,
+        "mean_structural_similarity": null,
+        "n": 0,
+        "n_measured": 0,
+        "n_timeout_or_unrun": 0,
+        "reason_prevalence": {},
+        "syntax_valid_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        },
+        "v2_strict_rate": {
+          "confidence_level": 0.95,
+          "estimate": null,
+          "high": null,
+          "low": null,
+          "n": 0
+        }
+      },
+      "paired.all": {
+        "delta": 0.3125,
+        "meets_min_useful_delta": true,
+        "min_useful_delta": 0.1,
+        "n_measured": 16,
+        "n_unpaired": 0,
+        "rows": [
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "smoke_hero_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "adv_empty_prompt_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "smoke_button_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "adv_dual_card_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "smoke_callout_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "adv_deep_nest_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_form_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "adv_many_buttons_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_dual_card_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "ood_dashboard_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "held_out_input_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "ood_gallery_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_tabs_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "ood_modal_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_settings_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "ood_auth_01"
+          }
+        ],
+        "table": {
+          "a_fail_b_pass": 5,
+          "a_pass_b_fail": 0,
+          "both_fail": 11,
+          "both_pass": 0,
+          "unpaired": 0
+        }
+      },
+      "paired.no_regression": {
+        "delta": null,
+        "meets_min_useful_delta": false,
+        "min_useful_delta": 0.1,
+        "n_measured": 0,
+        "n_unpaired": 0,
+        "rows": [],
+        "table": {
+          "a_fail_b_pass": 0,
+          "a_pass_b_fail": 0,
+          "both_fail": 0,
+          "both_pass": 0,
+          "unpaired": 0
+        }
+      },
+      "paired.target": {
+        "delta": 0.3125,
+        "meets_min_useful_delta": true,
+        "min_useful_delta": 0.1,
+        "n_measured": 16,
+        "n_unpaired": 0,
+        "rows": [
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "smoke_hero_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "adv_empty_prompt_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "smoke_button_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "adv_dual_card_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "smoke_callout_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "adv_deep_nest_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_form_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "adv_many_buttons_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_dual_card_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "ood_dashboard_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "held_out_input_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "ood_gallery_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_tabs_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "ood_modal_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": false,
+            "id": "held_out_settings_01"
+          },
+          {
+            "arm_a": false,
+            "arm_b": true,
+            "id": "ood_auth_01"
+          }
+        ],
+        "table": {
+          "a_fail_b_pass": 5,
+          "a_pass_b_fail": 0,
+          "both_fail": 11,
+          "both_pass": 0,
+          "unpaired": 0
+        }
+      },
+      "per_record": {
+        "adv_deep_nest_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.1545,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card], \"column\")\ncard = Card([inner_title, inner_body, outer_title])\ninner_title = TextContent(\":adv.nest.inner.title\")\ninner_body = TextContent(\":adv.nest.inner.body\")\nouter_title = TextContent(\":adv.nest.outer.title\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.6909,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [],
+              "v2_strict": true
+            },
+            "status": "ok"
+          }
+        },
+        "adv_dual_card_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.142,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card], \"column\")\ncard = Card([a_title, a_body, b_title, b_body])\na_title = TextContent(\":adv.rare.a.title\")\na_body = TextContent(\":adv.rare.a.body\")\nb_title = TextContent(\":adv.rare.b.title\")\nb_body = TextContent(\":adv.rare.b.body\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.7432,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "adv_empty_prompt_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.55,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([fallback_text], \"column\")\nfallback_text = TextContent(\":adv.fallback.text\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 1.0,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_contract_unknown",
+                "required_inventory_unknown"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "adv_many_buttons_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.295,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([btns_a, btns_b, btns_c], \"column\")\nbtns_a = Button(\":adv.btns.a\")\nbtns_b = Button(\":adv.btns.b\")\nbtns_c = Button(\":adv.btns.c\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 1.0,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [],
+              "v2_strict": true
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_dual_card_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.1129,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card], \"column\")\ncard = Card([col_header, left_title, left_body, right_title, right_body])\ncol_header = TextContent(\":held.col.header\")\nleft_title = TextContent(\":held.col.left.title\")\nleft_body = TextContent(\":held.col.left.body\")\nright_title = TextContent(\":held.col.right.title\")\nright_body = TextContent(\":held.col.right.body\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.6829,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_form_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.142,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card, form_email, email_label, form_submit, form_name], \"column\")\ncard = Card([form_title, hint_title, hint_body])\nform_title = TextContent(\":held.form.title\")\nform_email = Input(\"text\", \":held.form.email\")\nemail_label = Button(\":held.form.email.label\")\nhint_title = TextContent(\":held.form.hint.title\")\nhint_body = TextContent(\":held.form.hint.body\")\nform_submit = Button(\":held.form.submit\")\nform_name = Input(\"text\", \":held.form.name\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.5154,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_input_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3833,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([email_placeholder, login_continue], \"column\")\nemail_placeholder = Input(\"text\", \":held.login.email.placeholder\")\nlogin_continue = Button(\":held.login.continue\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 1.0,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [],
+              "v2_strict": true
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_settings_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3533,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card, notify_name, volume_name], \"column\")\ncard = Card([settings_notify, notify_desc, settings_volume])\nsettings_notify = TextContent(\":held.settings.notify\")\nnotify_desc = TextContent(\":held.settings.notify.desc\")\nsettings_volume = TextContent(\":held.settings.volume\")\nnotify_name = Input(\"text\", \":held.settings.notify.name\")\nvolume_name = Input(\"text\", \":held.settings.volume.name\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.1378,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "held_out_tabs_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.1767,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card], \"column\")\ncard = Card([tabs_overview, tabs_details, tabs_tab1, tabs_tab2, tab1_value, tab2_value])\ntabs_overview = TextContent(\":held.tabs.overview\")\ntabs_details = TextContent(\":held.tabs.details\")\ntabs_tab1 = TextContent(\":held.tabs.tab1\")\ntabs_tab2 = TextContent(\":held.tabs.tab2\")\ntab1_value = TextContent(\":held.tabs.tab1.value\")\ntab2_value = TextContent(\":held.tabs.tab2.value\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.4909,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "ood_auth_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.295,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([auth_name, auth_email, auth_create], \"column\")\nauth_name = Input(\"text\", \":ood.auth.name\")\nauth_email = Input(\"text\", \":ood.auth.email\")\nauth_create = Button(\":ood.auth.create\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 1.0,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [],
+              "v2_strict": true
+            },
+            "status": "ok"
+          }
+        },
+        "ood_dashboard_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.1129,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card], \"column\")\ncard = Card([dash_header, m1_title, m1_body, m2_title, m2_body])\ndash_header = TextContent(\":ood.dash.header\")\nm1_title = TextContent(\":ood.dash.m1.title\")\nm1_body = TextContent(\":ood.dash.m1.body\")\nm2_title = TextContent(\":ood.dash.m2.title\")\nm2_body = TextContent(\":ood.dash.m2.body\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.6829,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "ood_gallery_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.24,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card, gallery_cta], \"column\")\ncard = Card([gallery_img, gallery_alt, gallery_caption, hint_title, hint_body])\ngallery_img = TextContent(\":ood.gallery.img\")\ngallery_alt = TextContent(\":ood.gallery.alt\")\ngallery_caption = TextContent(\":ood.gallery.caption\")\nhint_title = TextContent(\":ood.gallery.hint.title\")\nhint_body = TextContent(\":ood.gallery.hint.body\")\ngallery_cta = Button(\":ood.gallery.cta\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.31,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "ood_modal_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.215,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card, modal_confirm], \"column\")\ncard = Card([modal_body, modal_title])\nmodal_body = TextContent(\":ood.modal.body\")\nmodal_confirm = Button(\":ood.modal.confirm\")\nmodal_title = TextContent(\":ood.modal.title\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.5625,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "prompt_component_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "smoke_button_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3533,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([cta_label], \"column\")\ncta_label = Button(\":smoke.cta.label\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.6467,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [],
+              "v2_strict": true
+            },
+            "status": "ok"
+          }
+        },
+        "smoke_callout_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3833,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([callout_heading, callout_title], \"column\")\ncallout_heading = Callout(\"info\", \":smoke.callout.heading\", \":smoke.callout.heading\")\ncallout_title = Callout(\"info\", \":smoke.callout.title\", \":smoke.callout.body\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.65,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "duplicate_placeholder_identity"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        },
+        "smoke_hero_01": {
+          "A": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([], \"column\")",
+            "program_note": "x22 repair simulated; seed source retained as final program",
+            "scores": {
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.1917,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "no_nontrivial_content",
+                "required_placeholder_missing",
+                "required_component_missing"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          },
+          "B": {
+            "elapsed_s": 0.0,
+            "prediction": "root = Stack([card], \"column\")\ncard = Card([hero_kicker, hero_title, hero_subtitle, hero_body])\nhero_kicker = TextContent(\":smoke.hero.kicker\")\nhero_title = TextContent(\":smoke.hero.title\")\nhero_subtitle = TextContent(\":smoke.hero.subtitle\")\nhero_body = TextContent(\":smoke.hero.body\")\n",
+            "program_note": "x22 repair simulated; seed source retained as final program; seed from prompt-visible inventory",
+            "scores": {
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.65,
+              "syntax_valid": true,
+              "v2_provenance": [
+                {
+                  "kind": "prompt_visible_placeholder_inventory",
+                  "version": "explicit_prompt_inventory_v2"
+                },
+                {
+                  "kind": "generation_request_slot_contract",
+                  "version": "request_v1"
+                },
+                {
+                  "kind": "schema_component_mention",
+                  "version": "prompt_component_mentions_v1"
+                }
+              ],
+              "v2_reason_codes": [
+                "placeholder_semantic_role_mismatch"
+              ],
+              "v2_strict": false
+            },
+            "status": "ok"
+          }
+        }
+      }
+    }
+  },
+  "predeclaration": {
+    "arms": {
+      "A": "prompt as-is (GenerationRequest.from_record)",
+      "B": "prompt + visible Placeholders inventory via ensure_prompt_inventory over the arm-A slot contract"
+    },
+    "baselines": {
+      "ar_tiny": {
+        "checkpoint": "outputs/runs/slm294_tiny_baseline/checkpoints/last.pt",
+        "decode": "unconstrained + post-validation (grammar-constrained infeasible per SLM-294)",
+        "device": "cpu",
+        "run_class": "scratch_matrix"
+      },
+      "x22_deterministic": {
+        "equal_edit_budget_forwards": 64,
+        "note": "x22 repair simulated; seed source retained as final program",
+        "path": "slm155 minimal seed (arm A) vs inventory-derived certified-minimal skeleton (arm B) + simulated conflict-slice repair"
+      }
+    },
+    "claim_class": "diagnostic",
+    "experiment_id": "slm301-prompt-observability",
+    "falsifier": "Arm B v2-strict paired delta on OBSERVABLE_REQUEST_ONLY/UNKNOWN rows is below the predeclared minimum useful delta, or arm B regresses on OBSERVABLE_PROMPT rows.",
+    "hypothesis": "Adding the production visible slot inventory to the prompt (arm B) closes the OBSERVABLE_REQUEST_ONLY coverage gap and does not regress v2-strict meaning on already-observable rows.",
+    "min_useful_paired_delta": 0.1,
+    "n_test_seeds": 16,
+    "no_regression_population": "OBSERVABLE_PROMPT rows (paired B - A must not be negative beyond noise)",
+    "primary_metric": "binding_aware_meaningful_v2 strict verdict (explicit arm request)",
+    "primary_population": "OBSERVABLE_REQUEST_ONLY + UNKNOWN rows (paired B - A)",
+    "rico": {
+      "evidence": "SLM-294 measured >280s for 16 tokens with this checkpoint at rico prompt scale; 35 rico rows declared not_run (classification only, phase 0).",
+      "status": "not_run"
+    },
+    "seeds": [
+      0
+    ]
+  },
+  "schema": "slm301_prompt_observability/v1",
+  "shard": {
+    "index": "merged",
+    "num_shards": 8
+  },
+  "slot_observability_audit": {
+    "artifact": "docs/design/slm301-slot-observability-audit-20260724.json",
+    "cohen_kappa": 0.0,
+    "finding": "3/100 mismatches (train_hero_01_fd_0/1/2): prompts name exact slots inline (e.g. 'using :hero.title and :hero.body') but the v2 prompt-visible coverage detector only recognizes inventory SECTIONS, not inline slot enumeration -> false prompt_contract_unknown on inline-enumerated prompts. Metric revision belongs to SLM-288's owner; this is an append-only finding, no metric change made.",
+    "kappa_caveat": "kappa collapses under extreme marginal skew (97/100 not_observable); raw agreement 97% is the honest summary",
+    "n": 100,
+    "rater_provenance": "one blind agent rater pass (non-human, disclosed)",
+    "raw_agreement": 0.97
+  },
+  "version_stamp": {
+    "code_commit": "0afdc5e2d0bbf8efeeb510bcf4faf8c16482080a",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm301_prompt_observability": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T18:18:24.769754+00:00"
+  }
+}
