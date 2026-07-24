@@ -4837,6 +4837,11 @@
       "history": [
         {
           "version": "ffe2-03-v1",
+          "date": "2026-07-23",
+          "note": "no-bump: minify the unchanged measured JSON payload to restore Vercel function-size headroom; semantic JSON content and matrix behavior are identical"
+        },
+        {
+          "version": "ffe2-03-v1",
           "date": "2026-07-21",
           "note": "no-bump: CLI test passes --no-write-design-docs so committed design docs are not overwritten during pytest; matrix semantics unchanged"
         },
