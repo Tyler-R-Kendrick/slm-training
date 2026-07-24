@@ -248,14 +248,14 @@ use a distinct `b2` reference where E1072 reused `b1`. All three predictions
 pass the role-safe output assertion. Relative to E1072, strict/fidelity/recall
 are unchanged, reward rises from 0.957, and structure falls from 0.5717, so
 this is a mixed but reachable intervention rather than a smoke-quality
-promotion. AgentV is `0/1`. Proceed only to the targeted Dual Card and Settings
-rows before disposition.
+promotion. The named evaluation criteria do not pass. Proceed only to the
+targeted Dual Card and Settings rows before disposition.
 
 E1077 evaluates the targeted Dual Card row. It still reaches the canonical
 12-second decode timeout and produces an empty prediction, exactly matching
-E1073 at parse/strict 0.0. AgentV is `0/1`; root identity does not repair the
-failure-defining row. Run only the matched Settings diagnostic before rejecting
-or retaining the checkpoint.
+E1073 at parse/strict 0.0. The named evaluation criteria fail; root identity
+does not repair the failure-defining row. Run only the matched Settings
+diagnostic before rejecting or retaining the checkpoint.
 
 ## E1079 v272 root-identity reproduction (invalid transport interruption)
 
@@ -291,5 +291,188 @@ The first invocation's throughput differs materially from E1075's host, so
 loss and wall time are not quality comparisons. E1080 is a completed scratch
 diagnostic only: it remains unsynced, unpromoted, unserved, and non-parentable.
 It is now eligible solely for the preregistered decode-off Settings diagnostic;
-that AgentEvals/AgentV result determines whether the earlier Settings regression
-was decode-ranking-specific or checkpoint-level.
+the named AgentEvals grader result determines whether the earlier Settings
+regression was decode-ranking-specific or checkpoint-level.
+
+E1081 runs that Settings row with the identity decode weight explicitly zero.
+It completes without a timeout (parse 1.0, timeout 0), unlike E1078's empty
+12-second result, but it is not meaningful: strict-v2 0, fidelity 0.3333,
+structure 0.0600, component recall 0, and reward 0.707. These named domain
+metrics are evaluated through the AgentV SDK; AgentV itself has no score.
+This is neither a ship result nor a quality gain. Because E1081 uses a fresh
+checkpoint produced under a later dirty code state, it cannot by itself assign
+the E1078 timeout to ranking. Run the paired identity-decode-on Settings replay
+against the exact same E1080 checkpoint next.
+
+E1082 is that paired replay, differing only by identity decode weight 1. The
+path is active (17 applications and seven changed choices), yet every reported
+final metric is identical to E1081: parse 1.0, strict-v2 0, fidelity 0.3333,
+structure 0.0600, component recall 0, reward 0.707, and no timeout. The eval
+component stamps match; concurrent work changed the code
+commit between E1081 and E1082, which is disclosed in both stamped payloads.
+Identity ranking is therefore not a sufficient explanation for E1078's timeout.
+Reject E1080 as a scratch checkpoint: both paired Settings paths are
+strict-invalid. The next hypothesis must change root-list representation, not
+continue scalar ranking sweeps.
+
+## E1278-E1285 required-component ProgramSpec corpus loop
+
+This bounded data-only loop tests whether ProgramSpec generation can create
+strict, natural-language examples with TextContent, Form, and Input in the
+same topology. No model was trained, evaluated, promoted, or synced from these
+snapshots.
+
+| Build | Recipe | Admitted | Result |
+| --- | --- | ---: | --- |
+| E1278 broad | ordered trio with default derivative producers | 128 / 962 | Non-promotable: 358 normalization errors, 102 verifier quarantines, 60 quality rejections, and multiple feedback warnings make it unsuitable as a topology isolate. |
+| E1278 direct | same roots; only direct ProgramSpec records | 3 / 20 | Non-promotable: 9 verifier quarantines, 4 quality rejections, and 3 decontamination drops. |
+| E1280 direct | hard required trio with natural prompts | 0 / 20 | Rejected producer diagnosis: Form implicitly realizes Buttons, while the prompt named `buttons`; the independent component judge searched for singular Button. |
+| E1281 direct | omit implicit Buttons/Stack from natural prompts | 8 / 20 | Strictly clean: parse and judge 1.0, zero quarantines, zero quality rejects, zero n-gram flags. Dedup removes 60%, so it is too small to train. |
+| E1282 direct | E1281 producer at 100 roots | 9 / 100 | Strictly clean but saturated: 29 exact, 33 fuzzy, and 29 semantic duplicates. The feedback recommendation is producer diversity, not a gate change. |
+| E1283 direct | optional Card superstructure | 8 / 20 | Strictly clean but no yield gain; Card survives in only one of eight records and dedup remains 60%. |
+| E1284 direct | force Card with the required triple | 8 / 20 | Strictly clean and Card appears in all eight records, but 12 semantic duplicates remain. The current builder makes every component a sibling, so permutations are not topology diversity. |
+| E1285 direct | schema-valid Card containment | 7 / 20 | Strictly clean but worse than E1284: 5 fuzzy and 6 semantic duplicates. Card containment alone does not create a usable standalone corpus. |
+
+The durable source reports are the immutable snapshots under
+`src/slm_training/resources/data/train/`; their embedded `version_stamp/v1`
+records preserve the actual producer versions. The E1282 result falsifies
+simple expansion as a remedy: increasing seed count from 20 to 100 adds one
+admitted record while duplicate share rises from 0.60 to 0.91. The next arm
+is closed as non-promotable data evidence. The next model run returns to the
+524-row E937 role-safe corpus; no checkpoint will be trained on the 7-9 row
+ProgramSpec isolates.
+
+## E1286 fresh E937 control (invalid transport interruption)
+
+E1286 starts a fresh CPU scratch control on immutable E937 with the E1080
+training recipe and root-reference decode disabled. The command transport
+ended at step 203 before the harness serialized a checkpoint or
+`train_summary.json`. Its final streamed loss is 8.2223, but that partial
+stream is not training or quality evidence. Do not resume, evaluate, sync,
+promote, serve, or parent it; rerun the fresh arm only through a persistent
+terminal session.
+
+## E1287 fresh E937 own-state control (smoke only)
+
+E1287 is the fresh replacement for invalid E1286: the immutable 524-row E937
+role-safe corpus, CPU scratch lexer/tree path, batch 4, seed 0, 395 steps, and
+the E1080 structural losses with root-reference identity decode explicitly
+zero. The harness resumed its own serialized state across two wall-budget
+boundaries and completed at step 395; it did not resume E1286. The local
+checkpoint SHA is `52974b70a6119ea6baa360e4c58bbba40840e10c67a2c3f31f8f39fc7ed1dc3e`.
+
+Strict smoke n=3 has parse, meaningful-program, strict-v2, and placeholder
+fidelity all 1.0; structural similarity/tree edit similarity 0.5717; component
+recall 0.75; reward 0.957; and no decode timeouts. The `@agentv/core` SDK
+executed all 25 named domain graders with zero execution errors; no SDK
+aggregate is reported or used as a model metric. This is a single-suite local
+scratch diagnostic, not a ship result and not eligible for sync, promotion,
+serving, or parent use. Its next bounded evidence is the same-checkpoint
+held-out Settings diagnostic, not a new training variant.
+
+## E1288 E1287 Settings decode-off diagnostic
+
+E1288 evaluates only held_out_settings_01 (n=1, offset 4) from E938 against
+the E1287 checkpoint under the same strict compiler-tree policy with
+root-reference identity decode weight zero. It completes in 5.01 seconds with
+no timeout, but is strict-invalid: parse 1.0, meaningful-program/strict-v2 0,
+placeholder fidelity 0.3333, structural similarity 0.0600, component recall
+0, and reward 0.707. The @agentv/core SDK executed all 25 named domain graders
+with zero execution errors; those named values, rather than an SDK aggregate,
+are the reported metrics. This eliminates the smoke result as a readiness
+signal and keeps the checkpoint non-promotable. E1289 will run the
+preregistered same-checkpoint decode-on pair.
+
+## E1289 E1287 Settings decode-on pair
+
+E1289 differs from E1288 only by root-reference identity decode weight 1. The
+same checkpoint and held-out Settings record now produce an empty prediction
+at the 12-second decode limit: parse, meaningful-program, strict-v2,
+placeholder fidelity, structural similarity, component recall, and reward are
+all 0; the decode timeout count is 1. The @agentv/core SDK again executed all
+25 named domain graders with zero execution errors. Root-identity ranking
+therefore worsens this same-checkpoint target rather than repairing it.
+
+Reject E1287 and close this scalar decode sweep. Its smoke result is not
+representative, decode-off is structurally invalid, and decode-on regresses to
+timeout. The next hypothesis must alter the root-list representation or its
+deterministic completion constraints, not train another root-identity scalar
+variant.
+
+## E1290 timeout-trace replay
+
+E1290 replays E1289 exactly after evaluator v58 preserves the active
+`DecodeStats` object when the signal timeout interrupts batch generation. The
+same named `@agentv/core` graders again report parse/meaning/strict-v2 0 and
+one 12-second timeout with zero SDK execution errors, so this is
+instrumentation-only evidence, not a new quality result. The retained trace
+shows 19 emitted tokens and two root-identity applications with zero choice
+changes: the decoder first selects one forward binder reference, then chooses
+an inline Slider continuation and exhausts the decode budget. The frontier is
+therefore legal but incorrectly ranked; a scalar root-identity reweight is not
+the next intervention.
+
+## E1291-E1292 document-generation control
+
+E1291 corrects the stronger training/evaluation mismatch exposed by the E1290
+trace. E1287 trained on the E937 all-target corpus, whose admitted records also
+include lexical and fragment scope slices, while the target evaluator requests
+complete documents. The canonical strict builder now retains only
+`target_kind=document`: 350 of 1,077 candidates are admitted, all 350 are
+complete `root = ...` documents, parse and independent-judge rates are 1.0,
+and 637 excluded scope targets remain explicitly recorded in `rejected.jsonl`.
+It retains 82 Card and 7 Settings-shaped programs; no admission gate changed.
+
+E1292 is a fresh local CPU scratch control on E1291, holding E1287's lexer/tree
+architecture, seed 0, batch size 4, learning rate 0.0003, binder-component,
+binder-arity, root-identity, and fidelity losses fixed. It completes three
+data passes (263 steps) through four own-state wall-budget continuations; SHA
+`7d48e2b91d6b14f1ffce523e6dcef221883b38d215af34fc5575bbf3fdf852b8` remains
+local-only and non-promotable. The failure-defining Settings n=1 diagnostic no
+longer times out: parse and v1 meaningfulness are 1.0, structural similarity
+0.5200, component recall 0.5, and reward 0.749. The named strict-v2 grader is
+still 0 because `:slot_1` and `:slot_2` are missing and `SwitchGroup.items` has
+the wrong role; fidelity remains 0.3333. The `@agentv/core` SDK executed all 25
+named domain graders with zero execution errors and no SDK aggregate metric.
+The full held-out n=5 follow-up completes without timeout or fallback: parse
+1.0, v1 meaningfulness 0.8, structural similarity/tree edit 0.6087, component
+recall 0.6524, and reward 0.7632. Strict-v2 remains 0/5: every row misses a
+required slot, with Form, Tabs, and Settings also placing content in an invalid
+schema role. E1292 is rejected, unsynced, and never a promotion, serving, or
+parent candidate. The next hypothesis is a deterministic request-contract
+coverage constraint that permits only schema-compatible realization, not a
+reopened slot-margin scalar sweep.
+
+## E1293 required-slot root-completion decode control
+
+E1293 evaluates the same E1292 Settings row with the new default-off
+root-close constraint enabled. It avoids timeout but reaches one constrained
+dead end; retry returns `root = TextContent(":slot_0")`. Parse remains 1.0,
+but v1/strict-v2 are 0, fidelity 0.3333, structure 0.0600, recall 0, and
+reward 0.707. The `@agentv/core` SDK executed all 25 named domain graders with
+zero execution errors. Reject this root-only completion rule; it does not prove
+a schema-compatible route to the remaining slots and must not be widened.
+
+## E1294 fidelity-1 document control
+
+E1294 is the only remaining matched scalar check justified by the E1292
+full-document result: it repeats E1292's fresh CPU scratch recipe on E1291,
+but raises `fidelity_loss_weight` from 0.5 to 1.0. The run completes all 263
+steps with the same lexer/tree decoder, seed 0, batch size 4, learning rate
+0.0003, binder-component, binder-arity, and root-identity losses. The final
+local-only checkpoint SHA is
+`a737aa49977ee046870cd7cd38a6007193a695c1d16ca06855d9d83f814cec1f`.
+
+An initial invocation resolved the default `smoke` suite and selected zero
+rows, so it is retained as an explicit non-evidence preflight. The corrected
+matched held-out Settings n=1 probe (offset 4, strict compiler-tree policy,
+root completion disabled) against the final SHA produces an empty 12-second
+timeout: parse, v1 meaningfulness, strict-v2, fidelity, structure, tree edit,
+component recall, and reward are all 0. The named strict grader reports parse
+unavailable, missing required placeholders/components, unavailable binding
+analysis, and an empty verifier input. The `@agentv/core` SDK executed and
+published all 25 named domain graders with zero execution errors; it is not
+reported as a metric. Reject E1294 without a wider suite. This closes the
+fidelity scalar lever for this corpus: it regresses the E1292 Settings behavior
+and the checkpoint must never be synced, promoted, served, resumed, or used as
+a parent.

@@ -788,6 +788,52 @@ def test_evaluate_interrupts_a_blocked_decoder_before_harness_deadline(
     assert metrics["empty_prediction_count"] == 1
 
 
+def test_evaluate_preserves_live_batch_stats_on_signal_timeout(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="blocked-batch-1",
+        prompt="Copy value",
+        openui='root = TextContent(":slot_0")',
+        placeholders=[":slot_0"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class BlockedBatchModel:
+        def generate_batch_requests(
+            self, _requests: list[GenerationRequest]
+        ) -> list[str]:
+            from slm_training.models.decode_stats import get_active_stats
+
+            stats = get_active_stats()
+            assert stats is not None
+            stats.tokens_emitted = 7
+            stats.constrained_selection_traces.append({"row": 0, "phase": "root"})
+            while True:
+                pass
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="blocked-batch-generation",
+        model_name="twotower",
+        decode_timeout_seconds=0.01,
+    )
+    metrics = evaluate(config, model=BlockedBatchModel(), publish_agentv=False)
+    assert metrics["decode_timeout_count"] == 1
+    assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
+    assert metrics["decode_stats"]["constrained_selection_traces"] == [
+        {"row": 0, "phase": "root", "record_id": "blocked-batch-1"}
+    ]
+
+
 def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"

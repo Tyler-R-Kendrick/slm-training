@@ -17,6 +17,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-depth", type=int, default=5)
     parser.add_argument("--max-width", type=int, default=4)
     parser.add_argument(
+        "--components",
+        default="",
+        help="Comma-separated component inventory; defaults to the pinned schema.",
+    )
+    parser.add_argument(
+        "--required-components",
+        default="",
+        help="Comma-separated components that must co-occur in generated topology variants.",
+    )
+    parser.add_argument(
         "--output", type=Path, default=Path("outputs/data/programspec/programs.jsonl")
     )
     parser.add_argument(
@@ -25,7 +35,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     result = ProgramGenerator(
-        GeneratorConfig(max_depth=args.max_depth, max_width=args.max_width),
+        GeneratorConfig(
+            components=tuple(item for item in args.components.split(",") if item)
+            or None,
+            required_components=tuple(
+                item for item in args.required_components.split(",") if item
+            ),
+            max_depth=args.max_depth,
+            max_width=args.max_width,
+        ),
         seed=args.seed,
     ).generate(args.count)
     args.output.parent.mkdir(parents=True, exist_ok=True)

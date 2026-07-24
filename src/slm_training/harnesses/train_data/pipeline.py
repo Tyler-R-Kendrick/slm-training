@@ -115,6 +115,7 @@ class TrainDataConfig:
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
     programspec_count: int = 16
     programspec_seed: int = 0
+    programspec_natural_prompts: bool = False
     include_language_contract: bool = True
     # Optional output-contract projection/selection for codec-specific corpora.
     # Projection is explicit and provenance-tagged; unselected kinds remain in
@@ -660,7 +661,11 @@ def _records_from_progspec(
         try:
             record = emit_record(
                 spec,
-                prompt=f"Generate the {spec.program_family_id} OpenUI program.",
+                prompt=(
+                    _programspec_natural_prompt(spec)
+                    if config.programspec_natural_prompts
+                    else f"Generate the {spec.program_family_id} OpenUI program."
+                ),
                 task="generation",
                 record_id=spec.id,
                 source="programspec_generated",
@@ -679,6 +684,32 @@ def _records_from_progspec(
         except (RuntimeError, ValueError) as exc:
             errors.append({"id": spec.id, "error": str(exc)})
     return out, errors
+
+
+def _programspec_natural_prompt(spec) -> str:
+    facts = getattr(spec, "facts", {})
+    component_names = {
+        "Button": "a button",
+        "Buttons": "buttons",
+        "Card": "a card",
+        "Form": "a form",
+        "Input": "an input field",
+        "Slider": "a slider",
+        "Tabs": "tabs",
+        "TextContent": "text content",
+    }
+    components = [
+        component_names.get(component, component.replace("_", " ").lower())
+        for component in facts.get("components", getattr(spec, "components", ()))
+        if component not in {"Buttons", "Stack"}
+    ]
+    component_text = ", ".join(components) if components else "content"
+    direction = "horizontal" if int(facts.get("width", getattr(spec, "width", 1))) > 1 else "vertical"
+    return (
+        f"Create a {facts.get('viewport', getattr(spec, 'viewport', 'responsive'))} "
+        f"{facts.get('render_state', getattr(spec, 'render_state', 'ready'))} interface with {component_text}. "
+        f"Arrange the content in a {direction} layout."
+    )
 
 
 def _records_from_language_contract(

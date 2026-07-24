@@ -139,6 +139,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "semantic_role_decode_weight",
         "semantic_role_schema_candidates",
         "slot_coverage_close_decode_weight",
+        "required_slot_root_completion",
         "schema_value_decode_weight",
         "schema_enum_close_decode_weight",
         "schema_open_decode_weight",
@@ -506,6 +507,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         slot_coverage_close_decode_weight=float(
             getattr(config, "slot_coverage_close_decode_weight", 0.0) or 0.0
+        ),
+        required_slot_root_completion=bool(
+            getattr(config, "required_slot_root_completion", False)
         ),
         schema_value_decode_weight=float(
             getattr(config, "schema_value_decode_weight", 0.0) or 0.0

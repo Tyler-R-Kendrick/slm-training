@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "version": "e1280_text_form_input_required_direct_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:07:01.691543+00:00",
+  "counts": {
+    "seeds": 20,
+    "candidates": 20,
+    "collected": 20,
+    "admitted": 0,
+    "rejected_total": 20,
+    "source_errors": 0,
+    "by_stage": {
+      "verification": 20
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {},
+    "judge_pass_rate": null,
+    "quarantined": 20,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 0
+    },
+    "mean_quality_score": null,
+    "min_quality_score": null
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 0,
+      "records_per_cluster": {
+        "max": 0,
+        "p50": 0,
+        "p95": 0
+      }
+    },
+    "top_clusters": []
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 20,
+    "changed": 20,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 63,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 19,
+      "flatten_opportunities": 19
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 0,
+      "misses": 36
+    }
+  },
+  "per_family": [],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.0,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v28"
+    },
+    "stamped_at": "2026-07-24T07:07:01.730875+00:00"
+  }
+}

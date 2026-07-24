@@ -343,6 +343,9 @@ class TwoTowerConfig:
     semantic_role_decode_weight: float = 0.0
     semantic_role_schema_candidates: bool = False
     slot_coverage_close_decode_weight: float = 0.0
+    # Reject a root-list close while its prompt-visible slot contract remains
+    # incomplete, but only when the grammar offers another legal continuation.
+    required_slot_root_completion: bool = False
     schema_value_decode_weight: float = 0.0
     schema_enum_close_decode_weight: float = 0.0
     schema_open_decode_weight: float = 0.0
@@ -8005,6 +8008,48 @@ class TwoTowerModel(nn.Module):
             for index in range(len(paths))
         ]
 
+    def _required_slot_root_completion_path_bias(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        slot_contract: list[str] | None,
+    ) -> list[float] | None:
+        """Reject a premature root-list close without selecting a slot value.
+
+        The request contract makes every visible slot a hard evaluator
+        requirement. Closing the root list while one remains absent cannot
+        satisfy that contract, whereas another grammar-legal list continuation
+        can still reach a schema-compatible realization. This rule deliberately
+        does not select a placeholder token or an argument position.
+        """
+        if not bool(getattr(self.config, "required_slot_root_completion", False)):
+            return None
+        if not slot_contract or len(paths) < 2:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_declaration_binder_id,
+        )
+
+        try:
+            if active_declaration_binder_id(self.tokenizer, prefix) != self.tokenizer.bind_id(0):
+                return None
+            required = {
+                int(self.tokenizer.sym_id(index))
+                for index in range(min(len(slot_contract), int(self.tokenizer.sym_slots)))
+            }
+            close_id = int(self.tokenizer.token_to_id["]"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return None
+        if not required.difference(prefix):
+            return None
+        closes = [
+            bool(path.token_ids and int(path.token_ids[0]) == close_id)
+            for path in paths
+        ]
+        if not any(closes) or all(closes):
+            return None
+        return [-1e9 if closes[index] else 0.0 for index in range(len(paths))]
+
     def _semantic_plan_outer_group_target(
         self,
         row: int,
@@ -9582,6 +9627,14 @@ class TwoTowerModel(nn.Module):
                     max(range(len(paths)), key=path_scores.__getitem__)
                     != before_coverage_close
                 )
+        required_root_completion_bias = self._required_slot_root_completion_path_bias(
+            prefix, paths, slot_contract
+        )
+        if required_root_completion_bias is not None:
+            path_scores = [
+                score + required_root_completion_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
         path_candidates = tuple(int(path.token_ids[0]) for path in paths)
         path_tensor = torch.tensor(path_scores, device=ctx.device)
         repeated_slot_bias = self._semantic_plan_repeated_slot_bias(

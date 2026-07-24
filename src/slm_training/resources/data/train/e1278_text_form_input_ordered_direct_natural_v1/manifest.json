@@ -1,0 +1,186 @@
+{
+  "version": "e1278_text_form_input_ordered_direct_natural_v1",
+  "kind": "train",
+  "profile": "strict",
+  "source": "programspec",
+  "records": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/stats.json",
+  "quality_report": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/quality_report.json",
+  "rejected": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/rejected.jsonl",
+  "synthesis_feedback": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/synthesis_feedback.json",
+  "record_count": 3,
+  "ids": [
+    "program_6ceff88b829429cb",
+    "program_7f3090d773ea11e5",
+    "program_bd39738fb0a17d4b"
+  ],
+  "split_group_ids": [
+    "group_13ee9b767f7c",
+    "group_1f7abd6cc0f8",
+    "group_cbf6e10a0698"
+  ],
+  "prompt_fingerprints": [
+    "6849e7f891d9754a485873fa1af3bd3e2eb48d3b4997c6011c6caefa6f2e5987",
+    "8edc1fbfa22e3151255adeeecc56bb169856c403715bdd647a6b2981d137ed5b",
+    "d77d05e99c75308c0c7a11e07a7592e4eea884c20eae8a0fcceba104493e081f"
+  ],
+  "openui_fingerprints": [
+    "8bd1aca8a4e9b783833974ef1598e89332352efeaeab58f0f5d9026f777e8faa",
+    "ac54b0a6189b0930ca3e24d61168ab4e7a8998fe0e0bede672a38cc5717bd7eb"
+  ],
+  "structure_fingerprints": [
+    "19300cd1dda009c0e7e6eabeba054c07348173f674f81caa4c6e288b3ecb3c92",
+    "5e6175bdb1cfa64513890c0cc906f5098aef373b44665c2f2e15209f2fd65ae4"
+  ],
+  "pair_fingerprints": [
+    "8f01f00fed82d5920d4fe5be6adb84dba1a49dfe99fefa221b54b7e832838426",
+    "b68a4b800670c6a91858e71f1d972bde52da47c95ea2c2cc85b9506ff46b8f23",
+    "c593c640416a5bafc160d29c3379285763a705535c8485ba8188c5472d519357"
+  ],
+  "design_md_fingerprints": [
+    "045b7c765cdab34f10beecad209548adea4509e92f5d6775ccf41f6c52e36e2a",
+    "c497ec70b60575b02eb2db4e4fef1d78f354ebbfdee3584f5c3ee752e1145d79",
+    "d18c3eaab138267552ec3419c6a6bfe46fcfe50c67ec5057a33a2d97b9ae81dc"
+  ],
+  "content_fingerprint": "57b2aacfcf8650a4292caba2edd01b30e67b6cb232959402b10bcc4b85742c26",
+  "source_families": {
+    "families": {
+      "programspec_generated": {
+        "unique_records": 3,
+        "unique_root_parents": 3,
+        "prompt_chars": 284,
+        "target_chars": 152,
+        "target_tokens": 75,
+        "records_per_root_parent": {
+          "max": 1,
+          "p50": 1,
+          "p95": 1
+        }
+      }
+    },
+    "total_records": 3,
+    "unique_root_parents": 3,
+    "records_per_root_parent": {
+      "max": 1,
+      "p50": 1,
+      "p95": 1
+    },
+    "cluster_exposure": {
+      "unique_clusters": 3,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    }
+  },
+  "governance": {
+    "croissant.json": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/governance/dataset.spdx.json"
+  },
+  "mixture": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e1278_text_form_input_ordered_direct_natural_v1/synthesis_telemetry.jsonl",
+  "synthesis_telemetry_sha256": "16aad6c9343f3920be980a75a1666937268f95311f47ee3854cc533967a58d09",
+  "diffusion_online": {
+    "policies": [
+      "uniform",
+      "contiguous",
+      "statement",
+      "ast_subtree",
+      "reference",
+      "edit_local",
+      "disjoint",
+      "all_mask",
+      "expansion",
+      "contraction",
+      "reorder",
+      "macro_substitution"
+    ],
+    "mask_min": 0.15,
+    "mask_max": 0.85,
+    "overallocate": 8,
+    "length_buckets": [
+      32,
+      64,
+      96,
+      128,
+      192,
+      256,
+      384,
+      512
+    ],
+    "max_length": null
+  },
+  "built_at": "2026-07-24T07:05:08.258863+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v27"
+    },
+    "stamped_at": "2026-07-24T07:05:08.285896+00:00"
+  },
+  "schema_version": 2,
+  "dataset_id": "e1278_text_form_input_ordered_direct_natural_v1",
+  "immutable": true,
+  "trace_id": "ebf6512e3915f9f6a94af18434ec0a66",
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "be6fff51c82daf7ae342d66da116ce7372e596a8af3ba3ea72239c09bc7cd43f",
+      "size": 2543
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "4681b0d69a272212723be552b16d83a1722bd7f34cf9257dfef43d3b703df42e",
+      "size": 433
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "0a810d9d56d65b310139a0be90e191b9209bed134ad5f67a3e4e0680eeaf34c4",
+      "size": 1045
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "e1dbac8fc2b1ea9ea1afd3976c5cef83c3000c3e4a13b60c9455ecb447267f6d",
+      "size": 21141
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "064d5d1733c6d37f54a0fc9a535d27c6682ea044baec59b2b2fc68bb14a88484",
+      "size": 3847
+    },
+    {
+      "path": "quality_report.json",
+      "sha256": "1d22a48117f33d6b45705765263724a8c553e68fe00d41f7f7fc127b58e847b3",
+      "size": 4878
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "00ab65f88e960d7d3407c6af930d4b46a125a1b1b4bdc2f2d5991574765c0bcc",
+      "size": 22134
+    },
+    {
+      "path": "rejected.jsonl",
+      "sha256": "45bd89585fe58981fffdeaf0d1c6a930b398280bbcba04a553e6278d8f8ca542",
+      "size": 95644
+    },
+    {
+      "path": "stats.json",
+      "sha256": "adc8d6f31b198bd3f63a79f25e2c18e57a713225612ccd4daebed36decb54cf2",
+      "size": 11448
+    },
+    {
+      "path": "synthesis_feedback.json",
+      "sha256": "64c4737dee83818fd3e0deeca2e2de0c10239f8eedc22a77f21658fc1ab91b1d",
+      "size": 3077
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "16aad6c9343f3920be980a75a1666937268f95311f47ee3854cc533967a58d09",
+      "size": 199
+    }
+  ]
+}

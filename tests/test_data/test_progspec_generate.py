@@ -150,6 +150,55 @@ def test_partial_run_reports_uncovered_cells_and_rejects_bad_config() -> None:
         GeneratorConfig(max_depth=0)
 
 
+def test_required_component_groups_include_ordered_topology_variants() -> None:
+    config = GeneratorConfig(
+        components=("TextContent", "Form", "Input"),
+        required_components=("TextContent", "Form", "Input"),
+        max_width=3,
+    )
+    generator = ProgramGenerator(config, seed=7)
+    orders = {
+        candidate.components
+        for candidate in generator._candidates
+    }
+
+    assert len(orders) == 6
+    assert all(set(config.required_components) <= set(order) for order in orders)
+
+
+def test_required_component_groups_include_configured_supersets() -> None:
+    config = GeneratorConfig(
+        components=("TextContent", "Form", "Input", "Card"),
+        required_components=("TextContent", "Form", "Input"),
+        max_width=4,
+    )
+    generator = ProgramGenerator(config, seed=7)
+
+    orders = {
+        candidate.components
+        for candidate in generator._candidates
+        if len(candidate.components) == 4
+    }
+
+    assert len(orders) == 24
+    assert all(set(config.required_components) <= set(order) for order in orders)
+
+
+def test_required_card_topology_contains_the_required_components() -> None:
+    config = GeneratorConfig(
+        components=("TextContent", "Form", "Input", "Card"),
+        required_components=("TextContent", "Form", "Input", "Card"),
+        max_width=4,
+    )
+    result = ProgramGenerator(config, seed=1284).generate(1)
+
+    openui = result.programs[0].canonical_openui
+    assert "Card([" in openui
+    assert "Card([])" not in openui
+    assert "Input(" in openui
+    assert "Form(" in openui
+
+
 def test_cli_writes_programs_and_authoritative_coverage(tmp_path) -> None:
     programs_path = tmp_path / "programs.jsonl"
     coverage_path = tmp_path / "coverage.json"
@@ -176,3 +225,17 @@ def test_cli_writes_programs_and_authoritative_coverage(tmp_path) -> None:
     )
     assert coverage["axes"]["component"]["total"] == 54
     assert coverage["verifier"] == {"failed": 0, "passed": 2}
+
+
+def test_cli_accepts_required_component_topology_inventory(tmp_path) -> None:
+    programs_path = tmp_path / "programs.jsonl"
+    coverage_path = tmp_path / "coverage.json"
+
+    assert generate_main(
+        [
+            "--count", "2", "--output", str(programs_path), "--coverage", str(coverage_path),
+            "--components", "TextContent,Form,Input",
+            "--required-components", "TextContent,Form,Input",
+            "--max-width", "3",
+        ]
+    ) == 0

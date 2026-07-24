@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "version": "e1278_text_form_input_ordered_direct_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:05:08.258863+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "programspec_generated": {
+      "admitted": 3,
+      "rejected": 17,
+      "by_stage": {
+        "decontamination": 3,
+        "dedup": 1,
+        "quality": 4,
+        "verification": 9
+      },
+      "by_reason": {
+        "quarantine": 9,
+        "quality_gate_failed": 4,
+        "test_fixture_structure": 3,
+        "fuzzy_minhash": 1
+      },
+      "candidates": 20,
+      "yield": 0.15
+    }
+  },
+  "synthesizers": {},
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.15,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 4,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "eval_leakage_source",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "decontamination_drops": 3
+      },
+      "suggestion": "this source emitted eval-overlapping or reserved-structure candidates; audit its inputs for leakage"
+    },
+    {
+      "code": "low_yield",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "yield": 0.15,
+        "top_reason": "quarantine",
+        "candidates": 20
+      },
+      "suggestion": "under 40% of candidates were admitted (top reason: quarantine) \u2014 fix the producer/synthesizer instead of relaxing gates"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "family:programspec_generated inputs contain eval-adjacent material; filtering its source removes decontamination drops",
+      "rationale": "build e1278_text_form_input_ordered_direct_natural_v1: {'decontamination_drops': 3}",
+      "expected_effect": "decontamination drops reach 0 for this source",
+      "falsification_criteria": "drops persist after source filtering",
+      "knobs": [
+        "producer_inputs",
+        "decontam_eval_root"
+      ]
+    },
+    {
+      "hypothesis": "Fixing the dominant rejection reason for family:programspec_generated raises its yield above 0.4",
+      "rationale": "build e1278_text_form_input_ordered_direct_natural_v1: {'yield': 0.15, 'top_reason': 'quarantine', 'candidates': 20}",
+      "expected_effect": "family:programspec_generated yield >= 0.4",
+      "falsification_criteria": "yield unchanged after producer fix",
+      "knobs": [
+        "producer_inputs",
+        "synthesizer"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v27"
+    },
+    "stamped_at": "2026-07-24T07:05:08.285896+00:00"
+  }
+}

@@ -764,7 +764,14 @@ def evaluate(
                 try:
                     predictions = generate_batch_requests(requests, max_len=canvas_cap)
                 except TypeError:
-                    predictions = generate_batch_requests(requests)
+                    try:
+                        predictions = generate_batch_requests(requests)
+                    except TimeoutError as exc:
+                        exc.decode_stats = stats  # type: ignore[attr-defined]
+                        raise
+                except TimeoutError as exc:
+                    exc.decode_stats = stats  # type: ignore[attr-defined]
+                    raise
             _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             consume = getattr(plugin, "consume_generation_evidence", None)

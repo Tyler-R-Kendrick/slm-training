@@ -2766,6 +2766,46 @@ def test_lexer_slot_coverage_close_stops_after_declared_symbols(
     assert incomplete == paths[1].token_ids
 
 
+@pytest.mark.parametrize("tree", [True])
+def test_lexer_required_slot_root_completion_rejects_premature_close(
+    monkeypatch, tree: bool
+) -> None:
+    model = _model(required_slot_root_completion=True)
+    tokenizer = model.tokenizer
+    close_id = tokenizer.token_to_id["]"]
+    text = tokenizer.token_to_id["TextContent"]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root = Stack([", add_special=False),
+    ]
+    state = make_grammar_state()
+    for token_id in prefix[1:]:
+        state.advance_token(tokenizer, token_id)
+    paths = (
+        CompletionPath((close_id,), "grammar_rsqb_populated"),
+        CompletionPath((text, tokenizer.token_to_id["("]), "component"),
+    )
+    monkeypatch.setattr(
+        model,
+        "_project_candidates",
+        lambda _hidden, candidate_ids: torch.tensor(
+            [5.0 if token_id == close_id else 1.0 for token_id in candidate_ids]
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["Single label."])
+
+    selected = model._select_compiler_path(
+        prefix, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
+    )
+    assert selected == paths[1].token_ids
+
+    covered = [*prefix, tokenizer.sym_id(0)]
+    selected = model._select_compiler_path(
+        covered, paths, ctx, ctx_pad, 32, tree=tree, slot_contract=[":label"], state=state
+    )
+    assert selected == paths[0].token_ids
+
+
 @pytest.mark.parametrize("tree", [False, True])
 def test_lexer_required_slot_margin_uses_missing_visible_symbol(
     monkeypatch, tree: bool

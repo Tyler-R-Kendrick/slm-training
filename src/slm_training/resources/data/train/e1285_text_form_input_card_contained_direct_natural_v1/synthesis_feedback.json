@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "version": "e1285_text_form_input_card_contained_direct_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:21:23.268636+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "programspec_generated": {
+      "admitted": 7,
+      "rejected": 13,
+      "by_stage": {
+        "dedup": 13
+      },
+      "by_reason": {
+        "semantic_cosine": 6,
+        "fuzzy_minhash": 5,
+        "exact_pair_duplicate": 2
+      },
+      "candidates": 20,
+      "yield": 0.35
+    }
+  },
+  "synthesizers": {},
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.35,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "programspec_generated",
+      "evidence": {
+        "dup_share": 0.65,
+        "candidates": 20
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:programspec_generated raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e1285_text_form_input_card_contained_direct_natural_v1: {'dup_share': 0.65, 'candidates': 20}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v32"
+    },
+    "stamped_at": "2026-07-24T07:21:23.291980+00:00"
+  }
+}

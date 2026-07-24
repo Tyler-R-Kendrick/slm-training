@@ -253,6 +253,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Floor the best legal candidate that fills a still-missing required slot.",
     )
     parser.add_argument(
+        "--required-slot-root-completion",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Reject a premature root-list close while visible required slots remain.",
+    )
+    parser.add_argument(
         "--semantic-plan-decode-weight",
         type=float,
         default=None,
@@ -680,6 +686,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_opaque_decode_weight=args.schema_opaque_decode_weight,
         schema_opaque_close_decode_weight=args.schema_opaque_close_decode_weight,
         required_slot_margin_decode_weight=(args.required_slot_margin_decode_weight),
+        required_slot_root_completion=args.required_slot_root_completion,
         semantic_plan_decode_weight=args.semantic_plan_decode_weight,
         semantic_plan_margin_decode_weight=(args.semantic_plan_margin_decode_weight),
         semantic_plan_seed_decode_weight=args.semantic_plan_seed_decode_weight,

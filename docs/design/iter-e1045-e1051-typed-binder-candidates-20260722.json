@@ -9,6 +9,65 @@
     "targets_checked": 1214,
     "violations": 0
   },
+  "data_builds": {
+    "E1278_broad": {
+      "version": "e1278_text_form_input_ordered_natural_v1",
+      "recipe": "ordered TextContent/Form/Input ProgramSpecs with default derivative producers and natural prompts",
+      "counts": {"candidates": 962, "admitted": 128, "normalization_errors": 358, "verifier_quarantines": 102, "quality_rejections": 60},
+      "disposition": "non_promotable; derivative producers obscure the topology isolate",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "2caa893a5b820836ef73768c45d258b33c806241", "code_dirty": true, "components": {"harness.train_data": "v27"}, "stamped_at": "2026-07-24T07:04:34.833761+00:00"}
+    },
+    "E1278_direct": {
+      "version": "e1278_text_form_input_ordered_direct_natural_v1",
+      "recipe": "same ProgramSpecs, direct records only",
+      "counts": {"candidates": 20, "admitted": 3, "verifier_quarantines": 9, "quality_rejections": 4, "decontamination_rejections": 3},
+      "disposition": "non_promotable; fix the producer rather than loosen admission",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "2caa893a5b820836ef73768c45d258b33c806241", "code_dirty": true, "components": {"harness.train_data": "v27"}, "stamped_at": "2026-07-24T07:05:08.285896+00:00"}
+    },
+    "E1280": {
+      "version": "e1280_text_form_input_required_direct_natural_v1",
+      "recipe": "hard required TextContent/Form/Input topology, direct records and natural prompts",
+      "counts": {"candidates": 20, "admitted": 0, "verifier_quarantines": 20},
+      "failure": "The prompt named implicit Form helper Buttons, which the independent judge interpreted as a missing singular Button.",
+      "disposition": "rejected producer diagnosis; no gate changed",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "2caa893a5b820836ef73768c45d258b33c806241", "code_dirty": true, "components": {"harness.train_data": "v28"}, "stamped_at": "2026-07-24T07:07:01.730875+00:00"}
+    },
+    "E1281": {
+      "version": "e1281_text_form_input_required_direct_natural_v1",
+      "recipe": "E1280 roots after omitting implicit Buttons/Stack from prompts",
+      "counts": {"candidates": 20, "admitted": 8, "verifier_quarantines": 0, "quality_rejections": 0, "ngram_flags": 0, "duplicate_share": 0.6},
+      "disposition": "clean but too small for a model run; feedback requires producer diversity",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f", "code_dirty": true, "components": {"harness.train_data": "v29"}, "stamped_at": "2026-07-24T07:08:42.190030+00:00"}
+    },
+    "E1282": {
+      "version": "e1282_text_form_input_required_direct_natural_v1",
+      "recipe": "E1281 producer at 100 ProgramSpec roots",
+      "counts": {"candidates": 100, "admitted": 9, "verifier_quarantines": 0, "quality_rejections": 0, "ngram_flags": 0, "exact_duplicates": 29, "fuzzy_duplicates": 33, "semantic_duplicates": 29, "duplicate_share": 0.91},
+      "disposition": "clean but saturated; do not train on nine rows; add structural diversity without relaxing gates",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f", "code_dirty": true, "components": {"harness.train_data": "v29"}, "stamped_at": "2026-07-24T07:09:05.916684+00:00"}
+    },
+    "E1283": {
+      "version": "e1283_text_form_input_card_required_direct_natural_v1",
+      "recipe": "optional Card superstructure with required TextContent/Form/Input",
+      "counts": {"candidates": 20, "admitted": 8, "verifier_quarantines": 0, "quality_rejections": 0, "ngram_flags": 0, "exact_duplicates": 1, "fuzzy_duplicates": 5, "semantic_duplicates": 6, "duplicate_share": 0.6, "admitted_card_records": 1},
+      "disposition": "clean but no diversity gain; force Card in the next matched producer arm",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f", "code_dirty": true, "components": {"harness.train_data": "v30"}, "stamped_at": "2026-07-24T07:15:50.971495+00:00"}
+    },
+    "E1284": {
+      "version": "e1284_text_form_input_card_forced_direct_natural_v1",
+      "recipe": "forced TextContent/Form/Input/Card topology after repairing superset candidate expansion",
+      "counts": {"candidates": 20, "admitted": 8, "verifier_quarantines": 0, "quality_rejections": 0, "ngram_flags": 0, "semantic_duplicates": 12, "duplicate_share": 0.6, "admitted_card_records": 8},
+      "disposition": "clean but sibling-only realization is not structural diversity; compose Card containment next",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f", "code_dirty": true, "components": {"harness.train_data": "v31"}, "stamped_at": "2026-07-24T07:18:12.260413+00:00"}
+    },
+    "E1285": {
+      "version": "e1285_text_form_input_card_contained_direct_natural_v1",
+      "recipe": "forced TextContent/Form/Input/Card with schema-valid Card containment",
+      "counts": {"candidates": 20, "admitted": 7, "verifier_quarantines": 0, "quality_rejections": 0, "ngram_flags": 0, "fuzzy_duplicates": 5, "semantic_duplicates": 6, "duplicate_share": 0.65, "admitted_card_records": 7},
+      "disposition": "clean but worse than E1284; close standalone ProgramSpec corpus loop without training",
+      "version_stamp": {"stamp_schema": "version_stamp/v1", "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f", "code_dirty": true, "components": {"harness.train_data": "v32"}, "stamped_at": "2026-07-24T07:21:23.291980+00:00"}
+    }
+  },
   "runs": {
     "E1045": {
       "status": "completed_rejected",
@@ -545,7 +604,7 @@
       },
       "eligible_for_eval": true,
       "eligible_for_sync_promotion_or_parent": false,
-      "next_action": "Run the decode-off Settings diagnostic against this completed local-only checkpoint.",
+      "next_action": "Reject this scratch checkpoint; the same-checkpoint decode pair is strict-invalid at both identity weights.",
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
         "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
@@ -554,6 +613,586 @@
           "harness.model_build.train": "v23"
         },
         "stamped_at": "2026-07-24T07:03:21.189039+00:00"
+      }
+    },
+    "E1286": {
+      "status": "invalid_transport_interruption",
+      "run_id": "e1286_v272_e937_fresh_control",
+      "recipe": "fresh E937 CPU scratch control; E1080 structural losses with root-reference decode weight zero",
+      "last_serialized_step": 203,
+      "last_streamed_loss": 8.222293853759766,
+      "checkpoint_created": false,
+      "invalid_reason": "Command transport ended before the harness serialized a checkpoint or train_summary.json.",
+      "eligible_for_eval_sync_promotion_or_parent": false,
+      "next_action": "Start a fresh identical arm in a persistent terminal; do not resume this interrupted process.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v23"
+        },
+        "stamped_at": "2026-07-24T07:23:32.169482+00:00"
+      }
+    },
+    "E1287": {
+      "status": "completed_rejected_targeted_decode_pair",
+      "run_id": "e1287_v272_e937_fresh_control_tty",
+      "checkpoint": "outputs/runs/e1287_v272_e937_fresh_control_tty/checkpoints/last.pt",
+      "checkpoint_sha256": "52974b70a6119ea6baa360e4c58bbba40840e10c67a2c3f31f8f39fc7ed1dc3e",
+      "train_data": "src/slm_training/resources/data/train/e937_role_safe_all_targets_v2",
+      "train_data_manifest_sha256": "23e81f05616592a29c755a96849da1af279e40ee075a4353277b36739af679e1",
+      "recipe": {
+        "model": "twotower",
+        "device": "cpu",
+        "context_backend": "scratch",
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "honest_slot_contract": true,
+        "seed": 0,
+        "batch_size": 4,
+        "learning_rate": 0.0003,
+        "steps": 395,
+        "root_reference_identity_decode_weight": 0.0,
+        "own_state_continuations": 2
+      },
+      "smoke": {
+        "suite": "smoke",
+        "n": 3,
+        "evaluation_policy": "strict_compiler_tree",
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 1.0,
+        "binding_aware_meaningful_v2_rate_strict": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.5716666666666667,
+        "tree_edit_similarity": 0.5716666666666667,
+        "component_type_recall": 0.75,
+        "reward_score": 0.957,
+        "decode_timeout_count": 0
+      },
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv/openui-model-ship-gates-2026-07-24t07-30-11-939776-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv"
+      },
+      "eligible_for_sync_promotion_serving_or_parent": false,
+      "conclusion": "Smoke-only evidence was not representative: E1288 is structurally invalid decode-off and E1289 regresses to an empty timeout decode-on. Reject E1287 and close the scalar root-identity decode sweep.",
+      "train_version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v23"
+        },
+        "stamped_at": "2026-07-24T07:29:36.250395+00:00"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v57",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T07:30:11.956670+00:00"
+      }
+    },
+    "E1288": {
+      "status": "completed_decode_off_settings",
+      "run_id": "e1287_v272_e937_fresh_control_tty",
+      "checkpoint_run_id": "e1287_v272_e937_fresh_control_tty",
+      "suite": "held_out",
+      "id": "held_out_settings_01",
+      "n": 1,
+      "eval_limit": 1,
+      "eval_offset": 4,
+      "evaluation_policy": "strict_compiler_tree",
+      "root_reference_identity_decode_weight": 0.0,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.06,
+      "component_type_recall": 0.0,
+      "reward_score": 0.707,
+      "decode_timeout_count": 0,
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv/openui-model-ship-gates-2026-07-24t07-35-23-563283-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv"
+      },
+      "conclusion": "Smoke is not representative. The same-checkpoint decode-on pair is required before attributing the failure to root-reference identity ranking.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v57",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T07:35:23.578210+00:00"
+      }
+    },
+    "E1289": {
+      "status": "completed_decode_on_settings_timeout",
+      "run_id": "e1287_v272_e937_fresh_control_tty",
+      "checkpoint_run_id": "e1287_v272_e937_fresh_control_tty",
+      "paired_control": "E1288",
+      "suite": "held_out",
+      "id": "held_out_settings_01",
+      "n": 1,
+      "eval_limit": 1,
+      "eval_offset": 4,
+      "evaluation_policy": "strict_compiler_tree",
+      "root_reference_identity_decode_weight": 1.0,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 1,
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv/openui-model-ship-gates-2026-07-24t07-37-24-110196-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv"
+      },
+      "conclusion": "Relative to E1288, enabling root-reference identity decode worsens the same checkpoint and Settings record from structurally invalid output to empty timeout. Reject E1287 and close this scalar decode sweep.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v57",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T07:37:24.123895+00:00"
+      }
+    },
+    "E1290": {
+      "status": "completed_timeout_trace_replay",
+      "run_id": "e1287_v272_e937_fresh_control_tty",
+      "checkpoint_run_id": "e1287_v272_e937_fresh_control_tty",
+      "paired_control": "E1289",
+      "suite": "held_out",
+      "id": "held_out_settings_01",
+      "n": 1,
+      "eval_limit": 1,
+      "eval_offset": 4,
+      "evaluation_policy": "strict_compiler_tree",
+      "root_reference_identity_decode_weight": 1.0,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "decode_timeout_count": 1,
+      "decode_stats": {
+        "tokens_emitted": 19,
+        "root_reference_identity_applications": 2,
+        "root_reference_identity_choice_changes": 0,
+        "finding": "one forward binder reference then an inline Slider continuation exhausted the legal frontier budget"
+      },
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv/openui-model-ship-gates-2026-07-24t07-47-10-502903-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1287_v272_e937_fresh_control_tty/agentv"
+      },
+      "conclusion": "Evaluator v58 preserves timeout telemetry. The legal frontier is not dead; do not reopen the scalar root-identity sweep.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v58",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T07:47:10.590856+00:00"
+      }
+    },
+    "E1291": {
+      "status": "completed_document_only_data_build",
+      "version": "e1291_document_only_full_program_v1",
+      "records": 350,
+      "candidate_count": 1077,
+      "selection_rejected": 637,
+      "all_records_root_documents": true,
+      "parse_rate": 1.0,
+      "independent_judge_pass_rate": 1.0,
+      "content_fingerprint": "50b88f2a037eae6e7e02157d301a8e7da885370819469313659e4885c9144366",
+      "lineage_snapshot": "81ad87ab2a1da10e21ba62599b3444737e86daa716252f4e9c1fb2d046f68724",
+      "conclusion": "Full document targets correct the scope-target mismatch without changing admission gates.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "harness.train_data": "v32"
+        },
+        "stamped_at": "2026-07-24T07:49:41.434674+00:00"
+      }
+    },
+    "E1292": {
+      "status": "completed_rejected_document_only_control",
+      "run_id": "e1292_v272_e1291_document_control",
+      "checkpoint": "outputs/runs/e1292_v272_e1291_document_control/checkpoints/last.pt",
+      "checkpoint_sha256": "7d48e2b91d6b14f1ffce523e6dcef221883b38d215af34fc5575bbf3fdf852b8",
+      "checkpoint_sync": "disabled_scratch",
+      "train_data": "src/slm_training/resources/data/train/e1291_document_only_full_program_v1",
+      "train_data_manifest_sha256": "50b88f2a037eae6e7e02157d301a8e7da885370819469313659e4885c9144366",
+      "recipe": {
+        "model": "twotower",
+        "device": "cpu",
+        "context_backend": "scratch",
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "honest_slot_contract": true,
+        "seed": 0,
+        "batch_size": 4,
+        "learning_rate": 0.0003,
+        "steps": 263,
+        "data_passes": 3,
+        "own_state_continuations": 4,
+        "binder_component_plan_loss_weight": 1.0,
+        "binder_arity_loss_weight": 1.0,
+        "root_reference_identity_loss_weight": 1.0,
+        "root_reference_identity_decode_weight": 0.0,
+        "fidelity_loss_weight": 0.5
+      },
+      "settings": {
+        "suite": "held_out",
+        "id": "held_out_settings_01",
+        "n": 1,
+        "eval_limit": 1,
+        "eval_offset": 4,
+        "evaluation_policy": "strict_compiler_tree",
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 1.0,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_coverage": 1.0,
+        "placeholder_fidelity": 0.3333333333333333,
+        "structural_similarity": 0.52,
+        "tree_edit_similarity": 0.52,
+        "component_type_recall": 0.5,
+        "reward_score": 0.749,
+        "decode_timeout_count": 0,
+        "strict_failure_reasons": [
+          "required_placeholder_missing",
+          "schema_value_role_mismatch:SwitchGroup.items"
+        ]
+      },
+      "held_out": {
+        "suite": "held_out",
+        "n": 5,
+        "evaluation_policy": "strict_compiler_tree",
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.8,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+        "binding_aware_meaningful_v2_coverage": 1.0,
+        "placeholder_fidelity": 0.39666666666666667,
+        "structural_similarity": 0.60868,
+        "tree_edit_similarity": 0.60868,
+        "component_type_recall": 0.6523809523809524,
+        "reward_score": 0.7632,
+        "decode_timeout_count": 0,
+        "constrained_fallback_rate": 0.0,
+        "strict_failure_breakdown": {
+          "required_placeholder_missing": 5,
+          "schema_value_role_mismatch:Form.buttons": 1,
+          "schema_value_role_mismatch:Form.fields": 1,
+          "schema_value_role_mismatch:Tabs.items": 1,
+          "schema_value_role_mismatch:SwitchGroup.items": 1
+        }
+      },
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1292_v272_e1291_document_control/agentv/openui-model-ship-gates-2026-07-24t08-02-16-059350-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1292_v272_e1291_document_control/agentv"
+      },
+      "eligible_for_sync_promotion_serving_or_parent": false,
+      "conclusion": "The data-only control removes all held-out timeouts and improves structure, but strict-v2 remains zero on every row because required slots are not realized in schema-compatible roles. Reject E1292; do not reopen scalar slot-margin or root-identity sweeps.",
+      "train_version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v23"
+        },
+        "stamped_at": "2026-07-24T07:58:42.448990+00:00"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v58",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T08:02:16.079523+00:00"
+      }
+    },
+    "E1293": {
+      "status": "completed_rejected_root_completion_settings",
+      "run_id": "e1292_v272_e1291_document_control",
+      "checkpoint_run_id": "e1292_v272_e1291_document_control",
+      "paired_control": "E1292",
+      "suite": "held_out",
+      "id": "held_out_settings_01",
+      "n": 1,
+      "eval_limit": 1,
+      "eval_offset": 4,
+      "evaluation_policy": "strict_compiler_tree",
+      "required_slot_root_completion": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.06,
+      "component_type_recall": 0.0,
+      "reward_score": 0.707,
+      "decode_timeout_count": 0,
+      "constrained_dead_end_count": 1,
+      "prediction": "root = TextContent(\":slot_0\")",
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1292_v272_e1291_document_control/agentv/openui-model-ship-gates-2026-07-24t08-08-21-387898-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1292_v272_e1291_document_control/agentv"
+      },
+      "conclusion": "Root-only close blocking forces a constrained dead end and reverts through retry to the E1288-style trivial program. Reject; no wider suite.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v59",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v273"
+        },
+        "stamped_at": "2026-07-24T08:08:21.413089+00:00"
+      }
+    },
+    "E1294": {
+      "status": "completed_rejected_fidelity1_document_control",
+      "run_id": "e1294_v273_e1291_fidelity1_control",
+      "checkpoint": "outputs/runs/e1294_v273_e1291_fidelity1_control/checkpoints/last.pt",
+      "checkpoint_sha256": "a737aa49977ee046870cd7cd38a6007193a695c1d16ca06855d9d83f814cec1f",
+      "checkpoint_sync": "disabled_scratch",
+      "paired_control": "E1292",
+      "train_data": "src/slm_training/resources/data/train/e1291_document_only_full_program_v1",
+      "train_data_manifest_sha256": "50b88f2a037eae6e7e02157d301a8e7da885370819469313659e4885c9144366",
+      "recipe": {
+        "model": "twotower",
+        "device": "cpu",
+        "context_backend": "scratch",
+        "output_tokenizer": "lexer",
+        "compiler_decode_mode": "tree",
+        "honest_slot_contract": true,
+        "seed": 0,
+        "batch_size": 4,
+        "learning_rate": 0.0003,
+        "steps": 263,
+        "data_passes": 3,
+        "binder_component_plan_loss_weight": 1.0,
+        "binder_arity_loss_weight": 1.0,
+        "root_reference_identity_loss_weight": 1.0,
+        "root_reference_identity_decode_weight": 0.0,
+        "fidelity_loss_weight": 1.0
+      },
+      "preflight": {
+        "suite": "smoke",
+        "n": 0,
+        "eval_limit": 1,
+        "eval_offset": 4,
+        "status": "non_evidence_default_suite_zero_rows",
+        "evaluation_artifact": "outputs/runs/e1294_v273_e1291_fidelity1_control/agentv/openui-model-ship-gates-2026-07-24t08-25-22-789817-00-00.eval.jsonl"
+      },
+      "settings": {
+        "suite": "held_out",
+        "id": "held_out_settings_01",
+        "n": 1,
+        "eval_limit": 1,
+        "eval_offset": 4,
+        "evaluation_policy": "strict_compiler_tree",
+        "parse_rate": 0.0,
+        "meaningful_program_rate": 0.0,
+        "binding_aware_meaningful_v2_rate_strict": 0.0,
+        "binding_aware_meaningful_v2_rate_coverage_conditioned": 0.0,
+        "binding_aware_meaningful_v2_coverage": 1.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0,
+        "tree_edit_similarity": 0.0,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "decode_timeout_count": 1,
+        "empty_prediction_count": 1,
+        "constrained_fallback_rate": 0.0,
+        "strict_failure_reasons": [
+          "official_parse_failed",
+          "canonical_roundtrip_unavailable",
+          "no_nontrivial_content",
+          "required_placeholder_missing",
+          "required_component_missing",
+          "binding_analysis_unavailable",
+          "judge_schema_parse_failed",
+          "verifier_input_empty",
+          "gaming_analysis_unavailable"
+        ]
+      },
+      "metric_evaluator": {
+        "sdk": "@agentv/core",
+        "execution_errors": 0,
+        "named_metric_count": 25,
+        "aggregate_metric_reported": false
+      },
+      "evaluation_artifacts": {
+        "agentevals_jsonl": "outputs/runs/e1294_v273_e1291_fidelity1_control/agentv/openui-model-ship-gates-2026-07-24t08-25-50-509852-00-00.eval.jsonl",
+        "bundle_directory": "outputs/runs/e1294_v273_e1291_fidelity1_control/agentv"
+      },
+      "eligible_for_sync_promotion_serving_resume_or_parent": false,
+      "conclusion": "Increasing fidelity loss from 0.5 to 1.0 regresses the final Settings probe to an empty timeout. Reject E1294 without a wider suite and close this scalar fidelity lever for E1291.",
+      "train_version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v23"
+        },
+        "stamped_at": "2026-07-24T08:24:30.951644+00:00"
+      },
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v59",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v273"
+        },
+        "stamped_at": "2026-07-24T08:25:50.523638+00:00"
+      }
+    },
+    "E1081": {
+      "status": "completed_decode_off_settings",
+      "run_id": "e1081_v272_root_identity_repro_settings_decode0",
+      "checkpoint_run_id": "e1080_v272_root_identity_repro",
+      "suite": "held_out",
+      "id": "held_out_settings_01",
+      "n": 1,
+      "eval_limit": 1,
+      "eval_offset": 4,
+      "evaluation_policy": "strict_compiler_tree",
+      "root_reference_identity_decode_weight": 0.0,
+      "parse": 1.0,
+      "meaningful_program": 0.0,
+      "strict_v2": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.06,
+      "component_type_recall": 0.0,
+      "reward": 0.707,
+      "decode_timeouts": 0,
+      "metric_evaluator": "@agentv/core named domain graders",
+      "comparison_to_E1078": "Decode-off removes the earlier E1078 empty timeout, but this is a fresh checkpoint under a later dirty code state and is not yet a causal attribution or quality improvement.",
+      "next_action": "E1082 completed the paired identity-decode-on replay against the same checkpoint.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v57",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T07:06:49.210313+00:00"
+      }
+    },
+    "E1082": {
+      "status": "completed_decode_on_settings",
+      "run_id": "e1082_v272_root_identity_repro_settings_decode1",
+      "checkpoint_run_id": "e1080_v272_root_identity_repro",
+      "paired_control": "E1081",
+      "suite": "held_out",
+      "id": "held_out_settings_01",
+      "n": 1,
+      "eval_limit": 1,
+      "eval_offset": 4,
+      "evaluation_policy": "strict_compiler_tree",
+      "root_reference_identity_decode_weight": 1.0,
+      "root_reference_identity_applications": 17,
+      "root_reference_identity_choice_changes": 7,
+      "parse": 1.0,
+      "meaningful_program": 0.0,
+      "strict_v2": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.06,
+      "component_type_recall": 0.0,
+      "reward": 0.707,
+      "decode_timeouts": 0,
+      "metric_evaluator": "@agentv/core named domain graders",
+      "comparison_to_E1081": "All reported named domain metrics are identical despite active identity applications and seven changed choices. The component version stamps match; the code commit drifted during concurrent work and is disclosed below.",
+      "conclusion": "Identity decode is not a sufficient explanation for E1078's earlier Settings timeout. E1080 is strict-invalid at both weights and is rejected as a scratch checkpoint.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "078f584beadea10da625a61e0f605b587cf34c2f",
+        "code_dirty": true,
+        "components": {
+          "config.levers": "v40",
+          "harness.model_build.eval": "v57",
+          "evals.meaningful_program": "2.13.0",
+          "evals.scoring": "v15",
+          "model.twotower": "v272"
+        },
+        "stamped_at": "2026-07-24T07:08:22.393835+00:00"
       }
     }
   },
@@ -579,8 +1218,10 @@
     "e1075_pending_eval": false,
     "e1075_pending_targeted_held": true,
     "e1077_completed": true,
-    "e1075_checkpoint_rejected": false,
-    "next_hypothesis": "complete matched v272 lexer-native root-identity exposure, then test strict smoke before any targeted held rows"
+    "e1075_checkpoint_rejected": true,
+    "e1080_checkpoint_rejected": true,
+    "e1287_checkpoint_rejected": true,
+    "next_hypothesis": "Move from scalar root-list ranking to a different structural representation or deterministic completion constraint; do not promote or parent E1075/E1080/E1287."
   },
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",

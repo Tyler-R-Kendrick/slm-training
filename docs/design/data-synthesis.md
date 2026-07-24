@@ -326,3 +326,32 @@ fingerprint); reserved-structure decontamination reserves both raw and
 sanitized fingerprint families so the test firewall never weakens. Measured
 evidence, gate-interaction analysis, and follow-ups:
 [train-target-sanitization-20260719.md](train-target-sanitization-20260719.md).
+
+### E1278-E1284 required-component ProgramSpec loop (2026-07-24)
+
+The strict direct ProgramSpec isolate now hard-requires TextContent, Form, and
+Input and realizes those components in natural prompts. E1280 exposed an
+implicit-Form Buttons wording mismatch that quarantined all 20 candidates;
+removing implicit Buttons/Stack from the prompt yields E1281's 8/20 and
+E1282's 9/100 clean admissions. Optional-Card E1283 remains 8/20 because Card
+survives in only one row; forced-Card E1284 keeps Card in all eight records but
+still has 60% semantic deduplication. Schema-valid Card containment E1285 falls
+to 7/20. All have parse/judge 1.0 and zero quality or n-gram rejects. This
+standalone producer loop is closed without a training run; its next use is a
+separate mixture experiment against E937, not relaxed gates. Full
+measured results and stamps: [E1278-E1285](iter-e1045-e1051-typed-binder-candidates-20260722.md).
+
+### E1291 document-only generation corpus (2026-07-24)
+
+E1291 separates complete-document generation from scope-target supervision
+without weakening any quality, verifier, deduplication, or decontamination
+gate. The strict canonical build selects only `target_kind=document`: 350 of
+1,077 collected candidates are admitted, all 350 begin with `root =`, parse
+and independent-judge pass rates are 1.0, and excluded scope targets remain
+auditable as 637 `target_kind_excluded` rows in `rejected.jsonl`. The corpus
+contains 82 Card and 7 Settings-shaped programs. This was built because E1290
+showed the former all-target corpus trained short lexical/fragment continuations
+while the held-out harness asks for full documents. The first matched E1292
+control removes the Settings timeout but remains strict-v2 invalid, so no
+promotion or gate change follows. Full evidence:
+[E1290-E1292](iter-e1045-e1051-typed-binder-candidates-20260722.md).

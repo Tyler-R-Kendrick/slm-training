@@ -1,0 +1,35 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "1970-01-01T00:00:00Z",
+    "creators": [
+      "Tool: slm-training-governance"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentDescribes": [
+    "SPDXRef-Dataset"
+  ],
+  "documentNamespace": "https://slm-training.invalid/spdx/c9ebb0f067b01adca9360a47a799f85d9df955d316d486d1af368a05ffcc09e1",
+  "name": "OpenUI training corpus",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Dataset",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c9ebb0f067b01adca9360a47a799f85d9df955d316d486d1af368a05ffcc09e1"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "OpenUI training corpus",
+      "sourceInfo": "External source rights are recorded per row.",
+      "versionInfo": "e1281_text_form_input_required_direct_natural_v1"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}

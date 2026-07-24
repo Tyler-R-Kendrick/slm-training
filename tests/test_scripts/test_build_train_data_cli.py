@@ -90,3 +90,13 @@ def test_sanitize_mode_defaults_to_profile(tmp_path: Path) -> None:
         )
     )
     assert stats["sanitize_mode"] == "enforce"
+
+
+def test_programspec_natural_prompts_opt_in(tmp_path: Path) -> None:
+    assert build_main(_args(tmp_path, "--no-publish", "--programspec-natural-prompts")) == 0
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "out" / "train" / "vtest" / "records.jsonl").read_text().splitlines()
+    ]
+    generated = next(row for row in rows if row["meta"]["source_family"] == "programspec_generated")
+    assert generated["prompt"].startswith("Create a ")

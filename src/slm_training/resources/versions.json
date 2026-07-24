@@ -2895,7 +2895,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v57",
+      "version": "v59",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -2908,6 +2908,16 @@
         "scripts/run_agentv_eval.mjs"
       ],
       "history": [
+        {
+          "version": "v59",
+          "date": "2026-07-24",
+          "note": "Expose the opt-in deterministic required-slot root-completion decoder constraint"
+        },
+        {
+          "version": "v58",
+          "date": "2026-07-24",
+          "note": "Preserve partial decoder counters and constrained-choice traces when the evaluator's signal timeout interrupts batch generation"
+        },
         {
           "version": "v57",
           "date": "2026-07-24",
@@ -3600,7 +3610,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v26",
+      "version": "v32",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3619,6 +3629,36 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v32",
+          "date": "2026-07-24",
+          "note": "Compose schema-valid Card containment around required topology components instead of emitting Card as a sibling"
+        },
+        {
+          "version": "v31",
+          "date": "2026-07-24",
+          "note": "Flatten required-component superset combinations so every configured topology order is available to the coverage generator"
+        },
+        {
+          "version": "v30",
+          "date": "2026-07-24",
+          "note": "Generate configured required-component supersets so strict topology corpora can add structural diversity without relaxing admission"
+        },
+        {
+          "version": "v29",
+          "date": "2026-07-24",
+          "note": "Keep implicit Form helper components out of natural ProgramSpec prompts so the independent judge sees only requested UI components"
+        },
+        {
+          "version": "v28",
+          "date": "2026-07-24",
+          "note": "Make required ProgramSpec components a hard root-topology constraint rather than a permutation-only hint"
+        },
+        {
+          "version": "v27",
+          "date": "2026-07-24",
+          "note": "Add ordered required-component ProgramSpec topologies and deterministic natural prompt realization"
+        },
         {
           "version": "v26",
           "date": "2026-07-22",
@@ -4264,7 +4304,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v272",
+      "version": "v273",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -4289,6 +4329,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v273",
+          "date": "2026-07-24",
+          "note": "Reject premature root-list closure while an explicit visible slot contract remains incomplete and another compiler-legal continuation exists"
+        },
         {
           "version": "v272",
           "date": "2026-07-23",

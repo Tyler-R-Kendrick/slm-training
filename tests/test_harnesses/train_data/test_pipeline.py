@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,6 +12,7 @@ from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+from slm_training.harnesses.train_data.pipeline import _programspec_natural_prompt
 
 
 def _seed_file(tmp_path: Path) -> Path:
@@ -40,6 +42,29 @@ def _seed_file(tmp_path: Path) -> Path:
         ],
     )
     return path
+
+
+def test_programspec_natural_prompt_describes_components_and_layout() -> None:
+    spec = SimpleNamespace(
+        components=("TextContent", "Form", "Input"),
+        facts={
+            "components": ["Buttons", "Form", "Input", "Stack", "TextContent"],
+            "viewport": "mobile",
+            "render_state": "success",
+            "width": 3,
+        },
+        viewport="mobile",
+        render_state="success",
+        width=3,
+    )
+
+    prompt = _programspec_natural_prompt(spec)
+
+    assert "text content" in prompt
+    assert "a form" in prompt
+    assert "an input field" in prompt
+    assert "horizontal layout" in prompt
+    assert "buttons" not in prompt
 
 
 @pytest.mark.skipif(

@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "version": "e1278_text_form_input_ordered_direct_natural_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T07:05:08.258863+00:00",
+  "counts": {
+    "seeds": 20,
+    "candidates": 20,
+    "collected": 20,
+    "admitted": 3,
+    "rejected_total": 17,
+    "source_errors": 0,
+    "by_stage": {
+      "decontamination": 3,
+      "dedup": 1,
+      "quality": 4,
+      "verification": 9
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Silver": 3
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 9,
+    "placeholder_contract_violations": 4,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 4,
+    "reason_histogram": {
+      "too_few_placeholders": 4
+    },
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 3
+    },
+    "mean_quality_score": 1.0,
+    "min_quality_score": 1.0
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 1,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 3,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "9a4eff91de8b23a8|5e6175bdb1cfa64513890c0cc906f5098aef373b44665c2f2e15209f2fd65ae4|483b6aea98eed587",
+        "count": 1,
+        "sample_ids": [
+          "program_6ceff88b829429cb"
+        ]
+      },
+      {
+        "cluster": "adc0346e52ae3013|19300cd1dda009c0e7e6eabeba054c07348173f674f81caa4c6e288b3ecb3c92|0540142b7b79c5da",
+        "count": 1,
+        "sample_ids": [
+          "program_bd39738fb0a17d4b"
+        ]
+      },
+      {
+        "cluster": "b984faa0368b45a4|19300cd1dda009c0e7e6eabeba054c07348173f674f81caa4c6e288b3ecb3c92|0540142b7b79c5da",
+        "count": 1,
+        "sample_ids": [
+          "program_7f3090d773ea11e5"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 3,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "e827_target_slots_only_v4/adversarial",
+      "e827_target_slots_only_v4/held_out",
+      "e827_target_slots_only_v4/ood",
+      "e827_target_slots_only_v4/rico_held",
+      "e827_target_slots_only_v4/smoke",
+      "e842_harness_owned_slots_v1/adversarial",
+      "e842_harness_owned_slots_v1/held_out",
+      "e842_harness_owned_slots_v1/ood",
+      "e842_harness_owned_slots_v1/rico_held",
+      "e842_harness_owned_slots_v1/smoke",
+      "e938_role_safe_all_targets_v2/adversarial",
+      "e938_role_safe_all_targets_v2/held_out",
+      "e938_role_safe_all_targets_v2/ood",
+      "e938_role_safe_all_targets_v2/rico_held",
+      "e938_role_safe_all_targets_v2/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 20,
+    "changed": 20,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 55,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 29,
+      "flatten_opportunities": 29
+    },
+    "literals_templatized": 0,
+    "records_templatized": 0,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 0,
+      "misses": 36
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "programspec_generated",
+      "record_count": 3,
+      "root_parent_count": 3,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 3
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.15,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    },
+    {
+      "code": "placeholder_contract_violations",
+      "value": 4,
+      "message": "records breached the placeholder/template contract at the quality gate"
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v27"
+    },
+    "stamped_at": "2026-07-24T07:05:08.285896+00:00"
+  }
+}

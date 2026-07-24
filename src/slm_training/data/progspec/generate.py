@@ -9,7 +9,7 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from itertools import combinations
+from itertools import combinations, permutations, product
 from typing import Any
 
 from slm_training.bridge_utils import repo_root
@@ -172,6 +172,7 @@ class GeneratorConfig:
     render_states: tuple[str, ...] = ("empty", "loading", "success", "error")
     content_classes: tuple[str, ...] = ("plain", "escaped", "dsl_like")
     selected_triples: tuple[tuple[str, str, str], ...] = ()
+    required_components: tuple[str, ...] = ()
     split: str = "train"
     # DSL-pack seams (F1): default None resolves to the pinned OpenUI
     # library schema / prop-order file, byte-identical to the old behavior.
@@ -185,6 +186,8 @@ class GeneratorConfig:
             raise ValueError(
                 "viewports, render_states, and content_classes must be non-empty"
             )
+        if not set(self.required_components) <= set(self.components or component_names()):
+            raise ValueError("required_components must be drawn from components")
 
 
 @dataclass(frozen=True)
@@ -584,13 +587,18 @@ class ProgramGenerator:
         prop_target: _PropTarget | None = None,
         depth: int | None = None,
         width: int | None = None,
+        viewport: str | None = None,
+        render_state: str | None = None,
+        content_class: str | None = None,
     ) -> _Candidate:
         selected = tuple(components[: self.config.max_width])
         depth = depth or 1 + index % self.config.max_depth
         width = width or min(self.config.max_width, max(1, len(selected)))
-        viewport = self.config.viewports[index % len(self.config.viewports)]
-        state = self.config.render_states[index % len(self.config.render_states)]
-        content_class = self.config.content_classes[
+        viewport = viewport or self.config.viewports[index % len(self.config.viewports)]
+        state = render_state or self.config.render_states[
+            index % len(self.config.render_states)
+        ]
+        content_class = content_class or self.config.content_classes[
             index % len(self.config.content_classes)
         ]
         return _Candidate(
@@ -618,8 +626,40 @@ class ProgramGenerator:
         if self.config.max_width >= 2:
             groups.extend(combinations(self.components, 2))
         groups.extend(self.triples)
+        if self.config.required_components:
+            required = set(self.config.required_components)
+            groups.extend(
+                group
+                for width in range(
+                    len(required), min(self.config.max_width, len(self.components)) + 1
+                )
+                for group in combinations(self.components, width)
+            )
+            groups = [group for group in groups if required <= set(group)]
+            groups.extend(
+                order
+                for group in tuple(groups)
+                if len(group) > 1
+                for order in permutations(group)
+            )
         for index, group in enumerate(groups):
             candidates.append(self._candidate(group, index))
+        if self.config.required_components:
+            for group, viewport, state, content_class in product(
+                groups,
+                self.config.viewports,
+                self.config.render_states,
+                self.config.content_classes,
+            ):
+                candidates.append(
+                    self._candidate(
+                        group,
+                        len(candidates),
+                        viewport=viewport,
+                        render_state=state,
+                        content_class=content_class,
+                    )
+                )
         offset = len(candidates)
         for name in self.components:
             properties = self.definitions[name].get("properties", {})
@@ -688,6 +728,13 @@ class ProgramGenerator:
                     ),
                 )
             )
+        if self.config.required_components:
+            required = set(self.config.required_components)
+            candidates = [
+                candidate
+                for candidate in candidates
+                if required <= set(candidate.components)
+            ]
         unique = {candidate.key(): candidate for candidate in candidates}
         return tuple(unique.values())
 
@@ -729,13 +776,55 @@ class ProgramGenerator:
         selected = list(candidate.components)
         while len(selected) < candidate.width:
             selected.append(self.components[len(selected) % len(self.components)])
-        refs = [
-            builder.build(
+        selected = selected[: candidate.width]
+        card_selected = "Card" in selected
+        leaves = [name for name in selected if name != "Card"]
+        built = [
+            (
                 name,
-                f"gen{index}_{name.lower()}_{candidate.content_class}",
+                builder.build(
+                    name,
+                    f"gen{index}_{name.lower()}_{candidate.content_class}",
+                ),
             )
-            for index, name in enumerate(selected[: candidate.width])
+            for index, name in enumerate(leaves)
         ]
+        refs = [ref for _, ref in built]
+        if card_selected:
+            input_refs = [ref for name, ref in built if name == "Input"]
+            direct_refs = [ref for name, ref in built if name != "Input"]
+            if candidate.depth % 2:
+                content_binder = builder._binder("cardcontent")
+                builder.statements.append(
+                    TypedStatement(
+                        content_binder,
+                        ComponentCall("Stack", (tuple(refs), "column")),
+                    )
+                )
+                card_children = (Reference(content_binder),)
+            else:
+                input_binder = builder._binder("cardinput")
+                builder.statements.append(
+                    TypedStatement(
+                        input_binder,
+                        ComponentCall("Stack", (tuple(input_refs), "column")),
+                    )
+                )
+                card_children = (*direct_refs, Reference(input_binder))
+            card_binder = builder._binder("card")
+            builder.statements.append(
+                TypedStatement(card_binder, ComponentCall("Card", (card_children,)))
+            )
+            builder.covered.update(
+                {
+                    CoverageCell("component", "Card"),
+                    CoverageCell("component", "Stack"),
+                    CoverageCell("prop", "Card.children"),
+                    CoverageCell("prop_value_class", "Card.children=nonempty"),
+                    CoverageCell("production", "list"),
+                }
+            )
+            refs = [Reference(card_binder)]
         for layer in range(1, candidate.depth):
             binder = builder._binder("layer")
             builder.statements.append(
