@@ -33,6 +33,11 @@ src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py
 scripts/run_slm243_recursive_update_gate.py
 src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py
 
+# SLM-233's matched recursive-depth campaign is offline experiment machinery.
+# The deployed dashboard consumes only its compact top-level summary JSON.
+scripts/run_slm233_recursive_campaign.py
+src/slm_training/harnesses/experiments/slm233_recursive_campaign.py
+
 # Predecessor recurrence fixture/audit runners are likewise offline. Their
 # result JSON remains available to the deployed experiment reader.
 scripts/run_slm138_recursive_denoiser_fixture.py

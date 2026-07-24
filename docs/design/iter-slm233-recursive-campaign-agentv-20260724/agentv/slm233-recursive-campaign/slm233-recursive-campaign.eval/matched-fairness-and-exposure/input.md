@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {}, "claim": "bounded_matched_proxy_architecture_not_identifiable_not_ship", "failures": [], "result": {"controls_matched": true, "manifest_hash": "f9055c2635f80ef6f0e8c4ba25df39934419bf2f40ab803192aaee75d920f155", "matrix_complete": true}}

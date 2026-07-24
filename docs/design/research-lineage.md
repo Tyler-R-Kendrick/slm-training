@@ -1819,6 +1819,32 @@ evidence is an untrained scratch architecture screen. It authorizes only a
 later `layerscale_diagnostic` SLM-233 mode and leaves semantic, promotion,
 shipping, and production-default claims blocked.
 
+## Matched recursive-depth campaign (RSC2-01 / SLM-233)
+
+| | |
+| --- | --- |
+| **Mechanism** | Existing shared-recursive denoiser plus SLM-243's selected LayerScale diagnostic; no new tower or paper mechanism |
+| **Fidelity** | **Repository diagnostic** — paired scratch proxy/control campaign under repaired floor, observability, dynamics, z-use, and update gates; not production-scale semantic evidence |
+| **Code** | [`slm233_recursive_campaign.py`](../../src/slm_training/harnesses/experiments/slm233_recursive_campaign.py) and [`run_slm233_recursive_campaign.py`](../../scripts/run_slm233_recursive_campaign.py) |
+| **Evidence** | [`iter-slm233-recursive-campaign-20260724.md`](iter-slm233-recursive-campaign-20260724.md) |
+
+The five-arm primary comparison fixes each denoiser call at four transformer
+block evaluations while isolating stacked execution, shared recurrence,
+normalized all-depth supervision, y-only recurrence, and R=4 recurrence.
+Three paired seeds share initialization, data order, corruption, exposure, and
+decode/evaluator budgets. A secondary pair matches active trainable parameters
+and exposes rather than hides LayerScale's serialized parameter/byte residual.
+Test depths 1/2/4/6/8 remain diagnostic and explicitly label train R.
+
+`RecursiveCoreGateV2` returns `architecture_not_identifiable`: the semantic
+floor is inconclusive and the joined recurrence gates are stagnant,
+expansive-unstable, and unstable. Descriptive NLL/structure/resource movement
+therefore cannot identify a semantic architecture effect or falsify recurrence.
+Protected/recovery outcomes are censored, prior mechanistic values are not
+transplanted onto new scratch states, no durable checkpoint exists, and
+RSC3/RSC4, promotion, production defaults, readiness, and ship claims remain
+blocked.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
