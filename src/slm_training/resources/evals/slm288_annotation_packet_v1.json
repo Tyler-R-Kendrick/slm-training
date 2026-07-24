@@ -1,0 +1,1318 @@
+{
+  "declared_target_n": 100,
+  "items": [
+    {
+      "blinded": true,
+      "packet_id": "pkt_001",
+      "prediction": "root = Stack([b1])\nb1 = TextContent(\":smoke.hero.title\")",
+      "prediction_sha256": "01fcc67e4f9748d3ad86c43f61dd0eec1de3f787893f8cf6095d3f7ff9918b9c",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e228",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.25",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.25,
+          "legacy_reason": "low_component_recall:0.25",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1])\nb1 = TextContent(\":smoke.hero.title\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_002",
+      "prediction": "root = Stack([b1])\nb1 = TextContent(\":smoke.cta.label\")",
+      "prediction_sha256": "b83b36af484cdfe824af5a6f05288a0d6b2a9d237056ca23c795152a1aca328d",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e228",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1])\nb1 = TextContent(\":smoke.cta.label\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_003",
+      "prediction": "root = Stack([b1])\nb1 = TextContent(\":smoke.callout.title\")",
+      "prediction_sha256": "c4880b6c918f4dfa47663eef93729df3f41a819b88f6f4a7cfd2c865ef3eac4f",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e228",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1])\nb1 = TextContent(\":smoke.callout.title\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_004",
+      "prediction": "root = Stack([b1, b2])\nb1 = Stack([])\nb2 = Stack([])",
+      "prediction_sha256": "1b943e60923ed98f1f239ff5bd8f9ca68e54cf970101aeb2d650021ee8f70da9",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e229",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1, b2])\nb1 = Stack([])\nb2 = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_005",
+      "prediction": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.cta.label\")\nb2 = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+      "prediction_sha256": "31bf43139e9e39e2d50adc53e7928985bf82c0a5ca66b395094f3f45f55e450a",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e229",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.cta.label\")\nb2 = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_006",
+      "prediction": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.callout.title\")\nb2 = TextContent(\":smoke.callout.heading\", \"small-heavy\")",
+      "prediction_sha256": "dcd5f141c21cf9a1592d23d8f7cfa766a5b628cbe191441923fe35ec0cd95261",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e229",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.callout.title\")\nb2 = TextContent(\":smoke.callout.heading\", \"small-heavy\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_007",
+      "prediction": "root = TextContent(\":smoke.hero.title\", \"small-heavy\")",
+      "prediction_sha256": "5bc11e2eb312b27139fb42603465775a070781cf79f586f2c92b9b1b2aa0c521",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e249",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.25",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.25,
+          "legacy_reason": "low_component_recall:0.25",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = TextContent(\":smoke.hero.title\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_008",
+      "prediction": "root = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+      "prediction_sha256": "00ba9cb2eca991c5c17614853871d93e213a3d7bc91a4f2af6451ba0e82a02df",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e249",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_009",
+      "prediction": "root = TextContent(\":smoke.callout.title\", \"small-heavy\")",
+      "prediction_sha256": "c58ccaeb7837f06c209c2df782881c64d2ab2ab150d00bf8f6d5cad7aad70cd4",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e249",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = TextContent(\":smoke.callout.title\", \"small-heavy\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_010",
+      "prediction": "root = Button(\":cta.label\")",
+      "prediction_sha256": "818d9c84958af961fd7ce0e06a6512adc9befd0ce097ac22c43d362659eff148",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e252",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Button(\":cta.label\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_011",
+      "prediction": "root = Button(\":cta.label\")",
+      "prediction_sha256": "818d9c84958af961fd7ce0e06a6512adc9befd0ce097ac22c43d362659eff148",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e252",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Button(\":cta.label\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "required_inventory_unknown"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_012",
+      "prediction": "root = Button(\":cta.label\")",
+      "prediction_sha256": "818d9c84958af961fd7ce0e06a6512adc9befd0ce097ac22c43d362659eff148",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e252",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Button(\":cta.label\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_013",
+      "prediction": "root = TextContent(\":smoke.hero.title\", \"small-heavy\")",
+      "prediction_sha256": "5bc11e2eb312b27139fb42603465775a070781cf79f586f2c92b9b1b2aa0c521",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e262",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.25",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.25,
+          "legacy_reason": "low_component_recall:0.25",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = TextContent(\":smoke.hero.title\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_014",
+      "prediction": "root = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+      "prediction_sha256": "00ba9cb2eca991c5c17614853871d93e213a3d7bc91a4f2af6451ba0e82a02df",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e262",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_015",
+      "prediction": "root = TextContent(\":smoke.callout.title\", \"small-heavy\")",
+      "prediction_sha256": "c58ccaeb7837f06c209c2df782881c64d2ab2ab150d00bf8f6d5cad7aad70cd4",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e262",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = TextContent(\":smoke.callout.title\", \"small-heavy\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_016",
+      "prediction": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.hero.title\")\nb2 = TextContent(\":smoke.hero.kicker\", \"small-heavy\")",
+      "prediction_sha256": "41b2f9da02228871d30baff1fc7ec6a5db5f5bafd091470772f52e93deb3a96d",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e264",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.25",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.25,
+          "legacy_reason": "low_component_recall:0.25",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.hero.title\")\nb2 = TextContent(\":smoke.hero.kicker\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_017",
+      "prediction": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.cta.label\")\nb2 = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+      "prediction_sha256": "31bf43139e9e39e2d50adc53e7928985bf82c0a5ca66b395094f3f45f55e450a",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e264",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.cta.label\")\nb2 = TextContent(\":smoke.cta.label\", \"small-heavy\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_018",
+      "prediction": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.callout.title\")\nb2 = TextContent(\":smoke.callout.heading\", \"small-heavy\")",
+      "prediction_sha256": "dcd5f141c21cf9a1592d23d8f7cfa766a5b628cbe191441923fe35ec0cd95261",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e264",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1, b2])\nb1 = TextContent(\":smoke.callout.title\")\nb2 = TextContent(\":smoke.callout.heading\", \"small-heavy\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_019",
+      "prediction": "root = Stack([b1], \"column\")\nb1 = TextContent(\":smoke.hero.title\")",
+      "prediction_sha256": "69bf259ee6f47c48b43626462ee6ffd15936dec328d78e80c480e7212ce7f067",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e265",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.25",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.25,
+          "legacy_reason": "low_component_recall:0.25",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1], \"column\")\nb1 = TextContent(\":smoke.hero.title\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_020",
+      "prediction": "root = Stack([b1], \"column\")\nb1 = TextContent(\":smoke.cta.label\")",
+      "prediction_sha256": "68f19d7e287d8e942674a55b652db553a94035afd65b5d1da8fcadaf2d84ecce",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e265",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "low_component_recall:0.00",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1], \"column\")\nb1 = TextContent(\":smoke.cta.label\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_021",
+      "prediction": "root = Stack([b1], \"column\")\nb1 = TextContent(\":smoke.callout.title\")",
+      "prediction_sha256": "62daf739760660682019fdf203334e8092f73626e82c8ba16992ee4bb7c9fa10",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e265",
+        "v1_report": {
+          "checks": [],
+          "component_recall": 0.5,
+          "legacy_reason": null,
+          "min_component_recall": 0.5,
+          "reason_codes": [],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([b1], \"column\")\nb1 = TextContent(\":smoke.callout.title\")",
+          "verdict": true
+        },
+        "v2_reason_codes": [
+          "prompt_component_missing",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_022",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e293",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_023",
+      "prediction": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")])",
+      "prediction_sha256": "1c86f81cbf7a23b3a9b91a0725fb0ccc211c8fe08327604d209670b373fbd17d",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e293",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "no_content_components",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "no_content_components",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing",
+          "schema_value_role_mismatch:Stack.align",
+          "schema_value_role_mismatch:Stack.direction",
+          "schema_value_role_mismatch:Stack.gap",
+          "schema_value_role_mismatch:Stack.justify",
+          "placeholder_spam"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_024",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e293",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_025",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e294",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_026",
+      "prediction": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")])",
+      "prediction_sha256": "1c86f81cbf7a23b3a9b91a0725fb0ccc211c8fe08327604d209670b373fbd17d",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e294",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "no_content_components",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "no_content_components",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing",
+          "schema_value_role_mismatch:Stack.align",
+          "schema_value_role_mismatch:Stack.direction",
+          "schema_value_role_mismatch:Stack.gap",
+          "schema_value_role_mismatch:Stack.justify",
+          "placeholder_spam"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_027",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e294",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_028",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e295",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_029",
+      "prediction": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")], \":smoke.cta.label\")",
+      "prediction_sha256": "14c11ca0f353c94288e0df2b1dd6f6590e08cd96e7fb95425e0767aa07c941d8",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e295",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "no_content_components",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "no_content_components",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")], \":smoke.cta.label\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing",
+          "schema_value_role_mismatch:Stack.align",
+          "schema_value_role_mismatch:Stack.direction",
+          "schema_value_role_mismatch:Stack.gap",
+          "schema_value_role_mismatch:Stack.justify",
+          "placeholder_spam"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_030",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e295",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_031",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Build a hero card with title and body in a vertical stack.",
+      "provenance": {
+        "detail_id": "smoke_hero_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e296",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_032",
+      "prediction": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")], \":smoke.cta.label\")",
+      "prediction_sha256": "14c11ca0f353c94288e0df2b1dd6f6590e08cd96e7fb95425e0767aa07c941d8",
+      "prompt": "Single button labeled via placeholder.",
+      "provenance": {
+        "detail_id": "smoke_button_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e296",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "no_content_components",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "no_content_components",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", [\":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\"], Stack([\":smoke.cta.label\"], \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\", \":smoke.cta.label\")], \":smoke.cta.label\")",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing",
+          "schema_value_role_mismatch:Stack.align",
+          "schema_value_role_mismatch:Stack.direction",
+          "schema_value_role_mismatch:Stack.gap",
+          "schema_value_role_mismatch:Stack.justify",
+          "placeholder_spam"
+        ]
+      },
+      "suite": "smoke"
+    },
+    {
+      "blinded": true,
+      "packet_id": "pkt_033",
+      "prediction": "root = Stack([])",
+      "prediction_sha256": "26c51fecce3596f118aa92de6c6145c2a5cf9190d37b42477d903e012d36029d",
+      "prompt": "Show an informational callout with title and body.",
+      "provenance": {
+        "detail_id": "smoke_callout_01",
+        "replay_bundle": "src/slm_training/resources/evals/meaningful_v2_frontier_replay.json",
+        "set_label": "e296",
+        "v1_report": {
+          "checks": [
+            {
+              "code": "empty_root_stack",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_content_components",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "no_placeholders",
+              "detail": null,
+              "status": "fail"
+            },
+            {
+              "code": "low_component_recall",
+              "detail": "0.00",
+              "status": "fail"
+            }
+          ],
+          "component_recall": 0.0,
+          "legacy_reason": "empty_root_stack",
+          "min_component_recall": 0.5,
+          "reason_codes": [
+            "empty_root_stack",
+            "no_content_components",
+            "no_placeholders",
+            "low_component_recall"
+          ],
+          "schema": "meaningful_program_v1_reasons/v1",
+          "serialized": "root = Stack([])",
+          "verdict": false
+        },
+        "v2_reason_codes": [
+          "no_nontrivial_content",
+          "required_component_missing"
+        ]
+      },
+      "suite": "smoke"
+    }
+  ],
+  "n": 33,
+  "packet_sha256": "0980b71da1dce898689c505edf9d7acf0fe5d2c7caca5649bfdc258c43d6161a",
+  "rubric_sha256": "ba09ece7b4d08baf328f48ca41606c45dab152344b10b016aea2a53564aba4ce",
+  "schema": "slm288_annotation_packet/v1",
+  "shortfall": "retained corpus holds 33 prompt-available rows; the ~100-output target is unmet, so agreement statistics on this packet are diagnostic/wiring evidence, not a powered human-validation result",
+  "strata": {
+    "fail": 26,
+    "pass": 7
+  }
+}
