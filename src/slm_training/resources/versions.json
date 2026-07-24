@@ -3751,6 +3751,11 @@
         {
           "version": "v1",
           "date": "2026-07-24",
+          "note": "no-bump: record the SLM-234 not_authorized gate closeout in shared research lineage without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
           "note": "no-bump: add the SLM-233 repository-diagnostic evidence to shared research lineage without changing the SLM-228 disposition"
         },
         {

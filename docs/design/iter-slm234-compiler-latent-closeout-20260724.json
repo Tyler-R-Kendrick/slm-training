@@ -1,0 +1,83 @@
+{
+  "allowed_arms": [],
+  "blocked_arms": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H"
+  ],
+  "claim_class": "wiring",
+  "compiler_or_verifier_authority_changed": false,
+  "decision": "not_authorized",
+  "downstream_effect": "RSC4 typed expansion (SLM-235) and the RSC4 disposition (SLM-236) stay blocked; defaults unchanged. Reopen or supersede only if SLM-229 is re-authorized with a contract hash AND the floor gate returns floor_escaped AND a recursive-core campaign returns an authorizing verdict with bounded stable dynamics.",
+  "failed_gates": [
+    "gate_1_differentiation_contract",
+    "gate_2_semantic_floor",
+    "gate_3_recursive_core",
+    "gate_4_recurrence_range",
+    "gate_5_target_support"
+  ],
+  "gates": {
+    "gate_1_differentiation_contract": {
+      "evidence": "docs/design/iter-slm229-looped-latent-differentiation-20260721.json",
+      "issue": "SLM-229",
+      "observed_outcome": "blocked_by_recurrence; contract_hash null (no contract published)",
+      "passed": false,
+      "required_outcome": "authorize_minimal_probe with exact MinimalCompilerLatentContractV1 hash"
+    },
+    "gate_2_semantic_floor": {
+      "evidence": "docs/design/semantic-floor-gate-v1.json",
+      "gate_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+      "issue": "SLM-213",
+      "observed_outcome": "inconclusive",
+      "passed": false,
+      "required_outcome": "floor_escaped for the selected recipe/evaluator scope"
+    },
+    "gate_3_recursive_core": {
+      "evidence": "docs/design/iter-slm233-recursive-campaign-20260724.json",
+      "fairness_manifest_hash": "f9055c2635f80ef6f0e8c4ba25df39934419bf2f40ab803192aaee75d920f155",
+      "issue": "SLM-233",
+      "observed_outcome": "architecture_not_identifiable (explicitly blocking; rsc3/rsc4 in blocked_claims)",
+      "passed": false,
+      "required_outcome": "recursive_core_positive | explicit_z_positive | other explicit authorizing verdict/checkpoint"
+    },
+    "gate_4_recurrence_range": {
+      "evidence": [
+        "docs/design/iter-slm230-recurrence-observability-20260724.json",
+        "docs/design/iter-slm231-recurrence-dynamics-20260724.json"
+      ],
+      "issue": "SLM-230/SLM-231",
+      "observed_outcome": "SLM-230 observability verdict stagnant; SLM-231 dynamics verdict expansive_unstable",
+      "passed": false,
+      "required_outcome": "bounded stable/refining recurrence range and maximum R"
+    },
+    "gate_5_target_support": {
+      "issue": "SLM-229",
+      "observed_outcome": "no minimums published: SLM-229 closed blocked_by_recurrence without a contract; inventory-target ambiguity audit remains an open gap",
+      "passed": false,
+      "required_outcome": "target support/ambiguity counts meet SLM-229 minimums"
+    }
+  },
+  "issue": "SLM-234",
+  "matrix_set": "slm234-compiler-latent-probe",
+  "matrix_version": "slm234-v1",
+  "production_code_added": false,
+  "production_default_changed": false,
+  "reason": "Hard activation gates are not satisfied: SLM-229 verdict is blocked_by_recurrence with no MinimalCompilerLatentContractV1 hash, SemanticFloorGateV1 verdict is inconclusive (not floor_escaped), SLM-233 RecursiveCoreGateV2 verdict is architecture_not_identifiable (an explicitly blocking verdict that lists rsc3 in blocked_claims), and the SLM-230/231 recurrence gates are stagnant/expansive_unstable rather than a bounded stable/refining range. Target-support minimums were never published because SLM-229 closed without a contract.",
+  "run_id": "slm234_gate_closeout",
+  "schema": "MinimalCompilerLatentCloseoutV1",
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "4cccc221153bfc9189469f94576bc27232e19a35",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v72"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T07:17:28.446976+00:00"
+  }
+}

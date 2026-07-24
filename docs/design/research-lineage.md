@@ -1866,6 +1866,24 @@ and no eligible arm reaches the frozen 30% warm-p50 threshold. Exact cached
 enumeration remains the decision; confirmation, checkpoints, defaults,
 promotion, and shipping remain untouched.
 
+## Minimal compiler-latent probe gate closeout (RSC3-01 / SLM-234)
+
+| | |
+| --- | --- |
+| **Mechanism** | None implemented — the proposed two-slot internal looped latent (root/inventory, adapted from LOTUS, arXiv:2606.31779) was never authorized |
+| **Fidelity** | **Gate closeout** — zero-compute authorization audit only; no probe exists to classify as faithful/adapted |
+| **Evidence** | [`iter-slm234-compiler-latent-closeout-20260724.md`](iter-slm234-compiler-latent-closeout-20260724.md) |
+
+SLM-234 closed `not_authorized` with no production code: SLM-229 returned
+`blocked_by_recurrence` without publishing a `MinimalCompilerLatentContractV1`
+hash, the semantic floor gate is `inconclusive`, SLM-233's
+`RecursiveCoreGateV2` returned `architecture_not_identifiable` with `rsc3` in
+its blocked claims, and the SLM-230/231 recurrence gates are
+`stagnant`/`expansive_unstable`. RSC4 typed expansion stays blocked. The probe
+may be reopened only if a differentiation memo authorizes a contract, the
+floor escapes, and a matched recursive campaign returns an authorizing verdict
+with stable dynamics.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
