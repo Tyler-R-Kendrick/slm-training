@@ -1,0 +1,79 @@
+{
+  "schema": "slm266_local_teacher_yield_disposition/v1",
+  "run_id": "slm266-local-yield-disposition-20260724",
+  "status": "budget_blocked",
+  "source_runs": [
+    {
+      "run_id": "slm266-local-qwen-8token-probe-20260724",
+      "artifact": "iter-slm266-local-qwen-8token-probe-20260724.json",
+      "completed_request_count": 1,
+      "accepted_root_count": 0,
+      "input_tokens": 56,
+      "output_tokens": 8,
+      "latency_ms": 95650,
+      "completion_class": "truncated_non_program_fragment"
+    },
+    {
+      "run_id": "slm266-local-qwen-calibration-20260724",
+      "artifact": "iter-slm266-local-qwen-screening-20260724.json",
+      "completed_request_count": 0,
+      "accepted_root_count": 0,
+      "max_output_tokens": 96,
+      "result": "interrupted_at_the_hard_run_cap"
+    }
+  ],
+  "recipe": {
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "device": "cpu",
+    "dtype": "bfloat16",
+    "local_files_only": true,
+    "hosted_inference_or_hf_job": false,
+    "human_rating_gate": false
+  },
+  "cap": {
+    "max_run_minutes": 3,
+    "interrupt_after_seconds": 170,
+    "kill_grace_seconds": 10,
+    "source": "slm_training.levers"
+  },
+  "measured_yield": {
+    "completed_requests": 1,
+    "accepted_roots": 0,
+    "accepted_root_yield": 0.0,
+    "measured_output_tokens_per_second": 0.0836382645
+  },
+  "conservative_capacity_bound": {
+    "basis": "The completed eight-token local request took 95.65 seconds. This is a request-attempt lower bound, not an estimate of valid-program or accepted-root throughput.",
+    "max_completed_eight_token_requests_per_capped_command": 1,
+    "remaining_seconds_after_one_completed_request": 74.35,
+    "minimum_wall_seconds_for_10000_such_request_attempts": 956500,
+    "minimum_wall_days_for_10000_such_request_attempts": 11.07,
+    "minimum_wall_days_for_100000_such_request_attempts": 110.71
+  },
+  "disposition": {
+    "issue_disposition": "budget_blocked",
+    "ten_thousand": "No accepted roots were produced by the only completed local request, and the 96-token request could not finish within the mandatory cap. A 10k accepted corpus cannot be claimed from this configuration.",
+    "hundred_thousand": "Not run by direction. Even the optimistic request-attempt lower bound is 110.71 continuous days before parsing, deep verification, independent judging, deduplication, or retry; it is not an authorized corpus plan.",
+    "factorial": "Not run: it requires an accepted 10k principal corpus and matched controls, which do not exist.",
+    "scope": "This is a local-CPU/configuration-specific bottleneck disposition. It does not generalize to other local hardware or models."
+  },
+  "honesty": {
+    "teacher_candidate": false,
+    "accepted_corpus": false,
+    "admission_or_judge_run": false,
+    "training_run": false,
+    "ship_claim": false,
+    "hundred_thousand_corpus_run": false
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "c29c883654a180418f7fc08e281cd89d0478ae45",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v86",
+      "harness.experiments.slm266_teacher_programs": "v9"
+    },
+    "stamped_at": "2026-07-24T20:40:00Z"
+  }
+}

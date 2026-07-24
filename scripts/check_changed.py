@@ -190,6 +190,9 @@ def select_tests(paths: list[str]) -> list[str]:
         if path.startswith("tests/") and path.endswith(".py"):
             targets.add(path)
             continue
+        if path == "src/slm_training/harnesses/model_build/ship_gates.py":
+            targets.add("tests/test_harnesses/model_build/test_eval_gates.py")
+            continue
         matches = [suites for prefix, suites in SUITES_BY_PREFIX if path.startswith(prefix)]
         if matches:
             targets.update(suite for suites in matches for suite in suites)

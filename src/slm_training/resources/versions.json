@@ -1201,6 +1201,11 @@
         {
           "version": "openui_ship_gates_v4",
           "date": "2026-07-24",
+          "note": "no-bump: mirror the existing v4 gate version in meaningful-metric provenance; thresholds and gate decisions are unchanged"
+        },
+        {
+          "version": "openui_ship_gates_v4",
+          "date": "2026-07-24",
           "note": "Fail closed on audited X22 suite reachability below 1.0 as a measurement-integrity failure"
         },
         {
@@ -5086,6 +5091,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "no-bump: document the measured local-only SLM-266 yield bottleneck; harness behavior is unchanged"
+        },
         {
           "version": "v9",
           "date": "2026-07-24",
