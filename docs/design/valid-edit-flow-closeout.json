@@ -1,0 +1,166 @@
+{
+  "artifact_lock": [
+    {
+      "consequence": "no powered confirmation authority",
+      "issue": "SLM-183",
+      "path": "docs/design/iter-slm183-power-protocol-20260720.md",
+      "sha256": "a0126085ee61f0135b3900ffa0df4632d3abe5d3f765b84b9ec591ef672cc0ab",
+      "status": "blocked",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "no production judge-resolution floor",
+      "issue": "SLM-185",
+      "path": "docs/design/iter-slm185-judge-resolution-20260720.md",
+      "sha256": "bfa7925c85411da27ef566c3971d6ebefd8de6cbb2608195224163d8814ad96d",
+      "status": "blocked",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "no deployment utility/canary authority",
+      "issue": "SLM-186",
+      "path": "docs/design/iter-slm186-verified-utility-20260721.md",
+      "sha256": "cdb8ee65d18fb56eae9f5c5062bddd8b74f26a8cdd5bbcf884afd5a67f8b5389",
+      "status": "blocked",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "CPU fixture cost only",
+      "issue": "SLM-192",
+      "path": "docs/design/iter-slm192-profile-flow-pipeline-20260721.md",
+      "sha256": "73d4b106d6f2f1826e84e2e0b0b09ca0176403f24100c43573241f5803de92b2",
+      "status": "blocked",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "bit-exact cache wiring only",
+      "issue": "SLM-193",
+      "path": "docs/design/iter-slm193-flow-caches-20260721.md",
+      "sha256": "cc292e992938133c6cd66ad0d2a7ecb78ef582095e069275f1022c7f13649363",
+      "status": "retain_as_control",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "retain exact cached enumeration",
+      "issue": "SLM-194",
+      "path": "docs/design/iter-slm194-candidate-proposals-20260724.md",
+      "sha256": "b12821a061fbb2132a8c4e460999b60f4afdff23c558f4dbf755c4bba9571c36",
+      "status": "reject",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "non-publishable two-target bridge corpus",
+      "issue": "SLM-196",
+      "path": "docs/design/iter-slm196-legal-edit-bridge-20260723.md",
+      "sha256": "f1ceab2acf134068a7be0d453f36e95fec2cf97679b604dfd37c9f8d803c7dd7",
+      "status": "blocked",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "no frozen direct checkpoint",
+      "issue": "SLM-197",
+      "path": "docs/design/iter-slm197-direct-bridge-policy-20260723.md",
+      "sha256": "0453d6fdb8c6e821a41a38a6874b1e0f232238307d398c030fb96607d37bc53d",
+      "status": "inconclusive",
+      "tier": "fixture"
+    },
+    {
+      "consequence": "no objective attribution conclusion",
+      "issue": "SLM-200",
+      "path": "docs/design/iter-slm200-flow-objective-attribution-20260723.md",
+      "sha256": "da47d46e5c32577d7abd06422a424466eddfad1861fd3211d40817a6487e962f",
+      "status": "inconclusive",
+      "tier": "fixture"
+    }
+  ],
+  "claim_class": "blocked_or_fixture_evidence",
+  "decision": "no_learned_flow_value_supported",
+  "dispositions": [
+    {
+      "claim": "choice/AST representation",
+      "classification": "retain_as_control",
+      "lever_id": "choice_ast",
+      "reason": "exact representation substrate remains a control"
+    },
+    {
+      "claim": "complete valid-state bridges",
+      "classification": "blocked",
+      "lever_id": "complete_bridges",
+      "reason": "only a non-publishable fixture corpus exists"
+    },
+    {
+      "claim": "direct legal-edit policy",
+      "classification": "inconclusive",
+      "lever_id": "direct_policy",
+      "reason": "no frozen selected checkpoint"
+    },
+    {
+      "claim": "time, weighting, and termination",
+      "classification": "inconclusive",
+      "lever_id": "time_weight_hazard",
+      "reason": "no powered matched attribution"
+    },
+    {
+      "claim": "full edge-rate/flow matching",
+      "classification": "inconclusive",
+      "lever_id": "flow_matching",
+      "reason": "SLM-200 did not license causal attribution"
+    },
+    {
+      "claim": "few-step distillation and batch commits",
+      "classification": "blocked",
+      "lever_id": "few_step_batch",
+      "reason": "no selected few-step or shared batch manifest"
+    },
+    {
+      "claim": "exact state/candidate caches",
+      "classification": "retain_as_control",
+      "lever_id": "cache",
+      "reason": "bit-exact fixture contract only"
+    },
+    {
+      "claim": "learned candidate proposal",
+      "classification": "reject",
+      "lever_id": "proposal",
+      "reason": "exact fallback avoided no final work"
+    },
+    {
+      "claim": "on-policy and solver-trace distillation",
+      "classification": "blocked",
+      "lever_id": "dagger_trace",
+      "reason": "no real selected model or powered corpus"
+    },
+    {
+      "claim": "solver-only and learned/exact hybrid",
+      "classification": "blocked",
+      "lever_id": "solver_hybrid",
+      "reason": "no deployment solver ceiling or learned candidate"
+    },
+    {
+      "claim": "terminal utility, energy, and abstention",
+      "classification": "blocked",
+      "lever_id": "utility",
+      "reason": "utility and judge inputs remain fixture-only"
+    }
+  ],
+  "issue": "SLM-207",
+  "schema": "ValidEditFlowCloseoutV1",
+  "selected_stack": {
+    "default_action": "retain_default_off_research_paths",
+    "guarantee": "No learned candidate is promoted; exact candidate membership remains compiler-owned.",
+    "learned_objective": "none",
+    "runtime": "exact_cached_decoder_control"
+  },
+  "status": "closeout",
+  "version_stamp": {
+    "code_commit": "ac8b8c03dfabcf975acf7a0643d13e9db46c8e7c",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v76",
+      "harness.experiments.valid_edit_flow_closeout": "v2",
+      "matrix.valid_edit_flow_closeout": "vfa3-04-v2"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T07:21:08.004112+00:00"
+  }
+}
