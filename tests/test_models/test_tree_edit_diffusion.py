@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import random
 
 import pytest
@@ -91,6 +92,9 @@ def test_training_loss_decode_all_valid_and_checkpoint(tmp_path) -> None:
 
     path = tmp_path / "ckpt.pt"
     model.save(path)
+    metadata = json.loads(path.with_suffix(".meta.json").read_text(encoding="utf-8"))
+    assert metadata["parameter_count"] == sum(p.numel() for p in model.parameters())
+    assert metadata["serialized_weight_bytes"] == metadata["parameter_count"] * 4
     loaded = TreeEditDiffusionModel.from_checkpoint(path, device="cpu")
     reproduced = loaded.generate_batch_requests(
         [
