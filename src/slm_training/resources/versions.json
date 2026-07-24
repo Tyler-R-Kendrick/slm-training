@@ -4221,8 +4221,28 @@
         }
       ]
     },
+    "harness.experiments.slm288_meaningful_validation": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm288_meaningful_validation.py",
+        "tests/test_scripts/test_run_slm288_meaningful_validation.py",
+        "src/slm_training/resources/evals/slm288_annotation_packet_v1.json",
+        "src/slm_training/resources/evals/slm288_meaningful_rubric_v1.md",
+        "docs/design/iter-slm288-meaningful-validation-20260724.json",
+        "docs/design/iter-slm288-meaningful-validation-20260724.md",
+        "docs/design/slm288-annotation-labels-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-288 reason-code histograms, frozen blinded annotation packet, agent-rater agreement analysis, and metric disposition"
+        }
+      ]
+    },
     "harness.model_build.eval": {
-      "version": "v48",
+      "version": "v49",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4233,6 +4253,11 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {
+          "version": "v49",
+          "date": "2026-07-24",
+          "note": "add SLM-288 typed ordered reason-code report for meaningful_program_v1 (additive; v1 verdict and legacy reason strings unchanged)"
+        },
         {
           "version": "v48",
           "date": "2026-07-23",
