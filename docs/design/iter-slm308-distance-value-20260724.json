@@ -1,0 +1,150 @@
+{
+  "experiment": "slm308-distance-value",
+  "issue": "SLM-308",
+  "question": "Do bounded-distance oracle value labels beat mutation-count value labels at equal fixture budget (rank correlation + beam regret)?",
+  "preregistered_thresholds": {
+    "beam_regret_improvement_min": 0.05,
+    "rank_correlation_improvement_min": 0.1,
+    "direction": "arm_b(bounded_distance) minus arm_a(mutation_count)",
+    "verdict_rule": "adopted iff both thresholds are met, else rejected"
+  },
+  "config": {
+    "steps": 8,
+    "batch_size": 4,
+    "seed": 0,
+    "n_records": 8,
+    "eval_max_depth": 8,
+    "eval_node_budget": 8
+  },
+  "oracle_cost": {
+    "n_states": 40,
+    "n_unknown": 7,
+    "unknown_coverage": 0.175,
+    "n_measurable": 17,
+    "wall_ms_total": 26468.863566005894,
+    "ms_per_state": 661.7215891501473,
+    "cache": {
+      "label_hits": 0,
+      "label_misses": 40,
+      "map_builds": 8,
+      "target_maps": 8,
+      "labels": 40,
+      "map_nodes": 64
+    }
+  },
+  "arms": {
+    "arm_a": {
+      "value_label_mode": "mutation_count",
+      "metrics": {
+        "n_measurable": 17,
+        "rank_correlation": 0.4330127018922193,
+        "concordance": 0.75,
+        "brier": 0.030793564056903686,
+        "calibration_bins": [
+          {
+            "distance_bin": 1,
+            "n": 8,
+            "mean_predicted_value": 0.6458271443843842,
+            "mean_target": 0.875
+          },
+          {
+            "distance_bin": 2,
+            "n": 9,
+            "mean_predicted_value": 0.6430932150946723,
+            "mean_target": 0.75
+          }
+        ],
+        "beam_regret_mean": 0.8888888888888888,
+        "beam_regret_n": 9,
+        "beam_regret_excluded": 8,
+        "by_origin": {
+          "near_gold": {
+            "n": 14,
+            "rank_correlation": 0.35805743701971643
+          },
+          "seed_trajectory": {
+            "n": 3,
+            "rank_correlation": null
+          }
+        }
+      },
+      "training_metrics": {
+        "action": 1.8480353355407715,
+        "stmt": 2.9644241333007812,
+        "slot": 0.3795056641101837,
+        "value": 0.08967626839876175,
+        "value_bounded": 0.0,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0
+      }
+    },
+    "arm_b": {
+      "value_label_mode": "bounded_distance",
+      "metrics": {
+        "n_measurable": 17,
+        "rank_correlation": 0.5051814855409226,
+        "concordance": 0.7916666666666666,
+        "brier": 0.004281158882868815,
+        "calibration_bins": [
+          {
+            "distance_bin": 1,
+            "n": 8,
+            "mean_predicted_value": 0.7873154133558273,
+            "mean_target": 0.875
+          },
+          {
+            "distance_bin": 2,
+            "n": 9,
+            "mean_predicted_value": 0.7852203448613485,
+            "mean_target": 0.75
+          }
+        ],
+        "beam_regret_mean": 0.8888888888888888,
+        "beam_regret_n": 9,
+        "beam_regret_excluded": 8,
+        "by_origin": {
+          "near_gold": {
+            "n": 14,
+            "rank_correlation": 0.4296689244236597
+          },
+          "seed_trajectory": {
+            "n": 3,
+            "rank_correlation": null
+          }
+        }
+      },
+      "training_metrics": {
+        "action": 1.8418681621551514,
+        "stmt": 2.97049617767334,
+        "slot": 0.37653154134750366,
+        "value": 0.031629983335733414,
+        "pairwise_progress": 0.10255739837884903,
+        "value_bounded": 0.0,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0
+      }
+    }
+  },
+  "improvements": {
+    "rank_correlation": 0.07216878364870327,
+    "concordance": 0.04166666666666663,
+    "beam_regret": 0.0,
+    "brier": 0.026512405174034873
+  },
+  "threshold_checks": {
+    "rank_correlation_ok": false,
+    "beam_regret_ok": false
+  },
+  "verdict": "rejected",
+  "honesty": "Fixture-scale matched arms; UNKNOWN/unbounded states are excluded from distance-referenced metrics and counted, never coerced. A fixture verdict is wiring/label evidence, not a production ship claim.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "6dd710a7d13753052e3c44cef8ae3d311f05e467",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm308_distance_value": "v1",
+      "harness.experiments.slm299_edit_reachability": "v3"
+    },
+    "stamped_at": "2026-07-24T21:40:05.585150+00:00"
+  }
+}

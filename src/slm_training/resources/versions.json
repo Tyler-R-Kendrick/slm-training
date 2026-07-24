@@ -665,7 +665,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -673,6 +673,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Replace the optional Node LangSmith SDK with bounded native fetch so Vercel does not bundle CLI-only dependencies"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -4475,7 +4480,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -4489,6 +4494,11 @@
         "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "SLM-308: tree_edit_diffusion gains value_label_mode (bounded_distance default for new trainings, mutation_count parity for pre-field checkpoints), oracle-backed normalized cost-to-go value targets with UNKNOWN exclusion, and pairwise parent/improving-child progress loss; edit space and reachability machinery unchanged"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -4554,6 +4564,24 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-303 decode-budget audit with hash pins, preregistered budget sweep, and taxonomy disposition"
+        }
+      ]
+    },
+    "harness.experiments.slm308_distance_value": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm308_distance_oracle.py",
+        "scripts/run_slm308_distance_value.py",
+        "tests/test_harnesses/experiments/test_slm308_distance_value.py",
+        "docs/design/iter-slm308-distance-value-20260724.json",
+        "docs/design/iter-slm308-distance-value-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-308 LAR2-02 bounded reverse-BFS distance oracle (EXACT/BOUNDED/UNKNOWN) over canonical AST fingerprints, distance value supervision + pairwise progress ranking in the X22 tree-edit model, matched fixture experiment with preregistered thresholds"
         }
       ]
     },

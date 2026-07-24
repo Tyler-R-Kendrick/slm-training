@@ -876,6 +876,41 @@ class TreeEditDiffusionConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = True
     seed: int = 0
+    # SLM-308 (LAR2-02): value supervision mode. "bounded_distance" (default
+    # for NEW trainings) labels values with the SLM-308 distance oracle's
+    # normalized cost-to-go plus pairwise parent/improving-child ranking;
+    # "mutation_count" keeps the historical 1 - applied/(max_chain+1) labels.
+    # Checkpoints written before this field existed load as "mutation_count"
+    # (see ``from_checkpoint``) for behavior parity.
+    value_label_mode: str = "bounded_distance"
+    pairwise_progress_margin: float = 0.1
+
+
+# SLM-308: oracle depth/budget used for training-time value labels. The
+# budget is shallow by design (extended-space enumeration is parser-backed
+# and expensive); states beyond the explored layers get witness-bounded
+# BOUNDED labels or are excluded (UNKNOWN), never coerced.
+VALUE_ORACLE_MAX_DEPTH = 8
+VALUE_ORACLE_NODE_BUDGET = 8
+
+
+def pairwise_progress_loss(
+    parent_values: torch.Tensor,
+    child_values: torch.Tensor,
+    *,
+    margin: float = 0.1,
+) -> torch.Tensor:
+    """Margin ranking: an improving child (oracle-proven closer to the target)
+    must score at least ``margin`` higher on value than its parent.
+
+    Higher value = closer to target. Pairs are pre-filtered by the caller to
+    strictly-improving, oracle-comparable pairs only — ties and unmeasurable
+    (UNKNOWN / unbounded) pairs never enter here, so several comparably-close
+    states are never forced into a strict order.
+    """
+    if parent_values.numel() == 0:
+        return parent_values.new_zeros(())
+    return F.relu(parent_values - child_values + margin).mean()
 
 
 class TreeEditPolicy(nn.Module):
@@ -1029,15 +1064,45 @@ class TreeEditDiffusionModel(nn.Module):
 
     # --- training ---------------------------------------------------------
 
+    def _distance_label(self, statements, target, inventory, witness: int):
+        """Training-time ONLY gold-distance label (SLM-308 oracle).
+
+        Imported lazily: the oracle reads the gold target and must never be
+        reachable from any decode path (see the SLM-308 no-gold-at-inference
+        audit test).
+        """
+        from slm_training.harnesses.experiments.slm308_distance_oracle import (
+            distance_to_target,
+        )
+
+        return distance_to_target(
+            statements,
+            target,
+            space=self.space,
+            inventory=inventory,
+            max_depth=VALUE_ORACLE_MAX_DEPTH,
+            node_budget=VALUE_ORACLE_NODE_BUDGET,
+            upper_bound_witness=witness,
+        )
+
     def forward(self, batch: list[ExampleRecord]) -> float:
         return float(self.training_loss(batch).detach().cpu())
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
+        if self.config.value_label_mode not in {"mutation_count", "bounded_distance"}:
+            raise ValueError(
+                f"unknown value_label_mode {self.config.value_label_mode!r}"
+            )
+        bounded_mode = self.config.value_label_mode == "bounded_distance"
         prompts: list[str] = []
         states: list[str] = []
         targets: list[Edit] = []
         values: list[float] = []
+        value_mask: list[bool] = []
+        pair_rows: list[tuple[int, str]] = []  # (parent row, child source)
         skipped = 0
+        n_bounded = 0
+        n_unknown_excluded = 0
         for record in batch:
             source = (record.openui or "").strip()
             statements = parse_statements(source) if source else None
@@ -1054,20 +1119,24 @@ class TreeEditDiffusionModel(nn.Module):
                 slot_contract=inventory,
             )
             if self._rng.random() < 0.2:
-                # Clean state: the correct move is STOP with full value.
+                # Clean state: the correct move is STOP with full value
+                # (oracle distance 0 in bounded mode, so the modes agree).
                 prompts.append(prompt)
                 states.append(source)
                 targets.append(Edit(ACTION_STOP))
                 values.append(1.0)
+                value_mask.append(True)
                 continue
             k = self._rng.randint(1, self.config.max_chain)
             current = statements
+            prev = None
             inverse: Edit | None = None
             applied = 0
             for _ in range(k):
                 step = self.space.sample_mutation(current, inventory, self._rng)
                 if step is None:
                     break
+                prev = current
                 current, inverse = step
                 applied += 1
             if inverse is None:
@@ -1076,16 +1145,61 @@ class TreeEditDiffusionModel(nn.Module):
             prompts.append(prompt)
             states.append(render_statements(current))
             targets.append(inverse)
-            values.append(1.0 - applied / float(self.config.max_chain + 1))
+            if not bounded_mode:
+                values.append(1.0 - applied / float(self.config.max_chain + 1))
+                value_mask.append(True)
+                continue
+            # SLM-308: normalized cost-to-go from the bounded distance oracle.
+            # UNKNOWN / unbounded states are excluded from value loss, never
+            # coerced; the mutation chain length is a proven witness upper
+            # bound (the inverse edits walk back to gold).
+            label = self._distance_label(current, statements, inventory, applied)
+            target_value = label.value_target(VALUE_ORACLE_MAX_DEPTH)
+            if target_value is None:
+                values.append(0.0)
+                value_mask.append(False)
+                n_unknown_excluded += 1
+            else:
+                values.append(target_value)
+                value_mask.append(True)
+                if label.kind.value == "BOUNDED":
+                    n_bounded += 1
+            if prev is not None:
+                # Pairwise progress: prev is one inverse-edit closer to gold.
+                # The pair enters the ranking loss only when the oracle proves
+                # a strict improvement on comparable (finite) estimates.
+                from slm_training.harnesses.experiments.slm308_distance_oracle import (  # noqa: E501
+                    effective_distance,
+                )
+
+                child_label = self._distance_label(
+                    prev, statements, inventory, applied - 1
+                )
+                d_parent = effective_distance(label)
+                d_child = effective_distance(child_label)
+                if (
+                    d_parent is not None
+                    and d_child is not None
+                    and d_child < d_parent
+                ):
+                    pair_rows.append((len(states) - 1, render_statements(prev)))
         if not states:
             return torch.zeros((), device=self.device_name, requires_grad=True)
+        n_main = len(states)
+        pair_child_rows = list(range(n_main, n_main + len(pair_rows)))
+        states.extend(child_source for _, child_source in pair_rows)
         ctx, ctx_pad = self._encode_context(prompts)
+        if pair_rows:
+            # Pairwise-ranking child rows reuse their parent's prompt context.
+            ctx_rows = [row for row, _ in pair_rows]
+            ctx = torch.cat([ctx, ctx[ctx_rows]], dim=0)
+            ctx_pad = torch.cat([ctx_pad, ctx_pad[ctx_rows]], dim=0)
         out = self.policy(
             self._state_batch(states), self.tokenizer.pad_id, ctx, ctx_pad
         )
         device = self.device_name
         action_t = torch.tensor([e.action for e in targets], device=device)
-        loss = F.cross_entropy(out["action"], action_t)
+        loss = F.cross_entropy(out["action"][:n_main], action_t)
         losses = {"action": float(loss.detach().cpu())}
         stmt_rows = [i for i, e in enumerate(targets) if e.action != ACTION_STOP]
         if stmt_rows:
@@ -1130,9 +1244,21 @@ class TreeEditDiffusionModel(nn.Module):
             loss = loss + slot_loss
             losses["slot"] = float(slot_loss.detach().cpu())
         value_t = torch.tensor(values, device=device, dtype=out["value"].dtype)
-        value_loss = F.mse_loss(out["value"], value_t)
-        loss = loss + value_loss
-        losses["value"] = float(value_loss.detach().cpu())
+        mask_t = torch.tensor(value_mask, device=device, dtype=torch.bool)
+        if bool(mask_t.any()):
+            value_loss = F.mse_loss(out["value"][:n_main][mask_t], value_t[mask_t])
+            loss = loss + value_loss
+            losses["value"] = float(value_loss.detach().cpu())
+        if pair_rows:
+            pair_loss = pairwise_progress_loss(
+                out["value"][torch.tensor([row for row, _ in pair_rows], device=device)],
+                out["value"][torch.tensor(pair_child_rows, device=device)],
+                margin=self.config.pairwise_progress_margin,
+            )
+            loss = loss + pair_loss
+            losses["pairwise_progress"] = float(pair_loss.detach().cpu())
+        losses["value_bounded"] = float(n_bounded)
+        losses["value_unknown_excluded"] = float(n_unknown_excluded)
         losses["skipped"] = float(skipped)
         self.last_training_metrics = losses
         return loss
@@ -1444,7 +1570,11 @@ class TreeEditDiffusionModel(nn.Module):
                 "slm_training.models.checkpoint_migrate.migrate_tree_edit_checkpoint"
             )
         tokenizer = OpenUITokenizer.load(path.with_suffix(".tokenizer.json"))
-        config = TreeEditDiffusionConfig(**payload["config"])
+        config_payload = dict(payload["config"])
+        # SLM-308: checkpoints written before value_label_mode existed were
+        # trained with mutation-count labels — preserve that behavior exactly.
+        config_payload.setdefault("value_label_mode", "mutation_count")
+        config = TreeEditDiffusionConfig(**config_payload)
         model = cls(tokenizer, config=config, device=device)
         model.load_state_dict(payload["state_dict"], strict=True)
         return model
