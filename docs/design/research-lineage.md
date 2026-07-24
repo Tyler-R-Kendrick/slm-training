@@ -1170,6 +1170,34 @@ Spectral diagnostics remain allowed; spectral LR/RG control, semantic,
 promotion, and ship claims remain blocked. Evidence:
 [`iter-slm216-spectral-regime-20260723.md`](iter-slm216-spectral-regime-20260723.md).
 
+## Absolute spectral finite-size boundary (NCS4-01 / SLM-226)
+
+**Fidelity label: adapted descriptive diagnostic.** The HTSR literature
+motivates heavy-tail fitting, but SLM-226 tests the narrower repository
+question: can an absolute alpha target be distinguished from same-shape random
+nulls at the small widths currently under discussion? It does not treat raw
+alpha or alpha near 2 as evidence of criticality.
+
+| | |
+| --- | --- |
+| **Shapes** | `128x128`, `256x128`, and `512x128` `ctx_proj` probes |
+| **Nulls** | 200 deterministic Gaussian draws per exact shape plus same-shape Pareto and spiked controls |
+| **Trained stage** | three seeds, eight AdamW steps, 8,192 synthetic target tokens per shape/seed |
+| **Code** | `src/slm_training/harnesses/experiments/slm226_absolute_spectral_gate.py`, `scripts/run_absolute_spectral_gate.py` |
+
+The gate verdict is **`descriptive_only`** at report hash
+`5f582c011734a9d5c6c5f8ab8300c361661e48f1d94d5be640ed332f7a79d697`.
+The Gaussian-null mean alpha changes from `2.273991` at `128x128` to
+`3.468501` at `256x128` and `4.973008` at `512x128`; the trained scratch probes
+remain close to their exact-shape nulls. These are CPU linear-role probes, not
+durable TwoTower checkpoints or quality evidence. SLM-221 found no causal
+singular-value-shape effect, no provenance-resolvable checkpoint family exists,
+and the semantic floor remains inconclusive. Consequently the versioned guard
+authorizes only null-calibrated diagnostics and blocks `ww_pgd`, `trace_log`,
+and `alpha_target` for every role/shape. No checkpoint, model evaluation,
+AgentV run, promotion, or ship claim was produced. Evidence:
+[`iter-slm226-absolute-spectral-gate-20260723.md`](iter-slm226-absolute-spectral-gate-20260723.md).
+
 ## Decision-conditioned functional spectra (NCS1-01 / SLM-217)
 
 **Fidelity label: adapted diagnostic.** [Yang et al.
