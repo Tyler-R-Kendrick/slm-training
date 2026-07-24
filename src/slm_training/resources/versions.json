@@ -7859,6 +7859,26 @@
           "note": "initial registration; SLM-312 LAR2-04 state sources: offline seedward oracle-guided valid intermediates + immutable content-addressed on-policy beam-trajectory snapshots labeled with the SLM-308 distance oracle and SLM-305 legal edits, fail-closed AST-fingerprint leak guards, matched {gold_only, seedward, on_policy, mixed} mixture arms with preregistered thresholds"
         }
       ]
+    },
+    "harness.experiments.slm314_winner_take_all": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm314_winner_take_all.py",
+        "scripts/run_slm314_winner_take_all.py",
+        "tests/test_harnesses/experiments/test_slm314_winner_take_all.py",
+        "src/slm_training/resources/data/slm314_multimode/modes.jsonl",
+        "src/slm_training/resources/data/slm314_multimode/modes.jsonl.manifest.json",
+        "docs/design/iter-slm314-winner-take-all-20260724.json",
+        "docs/design/iter-slm314-winner-take-all-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-314 LAR2-05 winner-take-all (MCL): frozen 8-prompt x 2-mode verifier-accepted canonical-AST dataset (alpha-invariant fingerprints + sha256 manifest), min-loss-mode loss with preregistered 0.1 coverage/floor term, deterministic two-mode synthetic collapse-vs-retain proof, matched {single_gold, multi_gold, wta} arms"
+        }
+      ]
     }
   }
 }

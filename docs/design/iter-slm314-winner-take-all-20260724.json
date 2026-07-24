@@ -1,0 +1,844 @@
+{
+  "experiment": "slm314-winner-take-all",
+  "issue": "SLM-314",
+  "question": "Does winner-take-all (MCL) training with a preregistered floor term retain more hard-valid canonical AST modes than single-gold CE without a semantic regression, at equal budget?",
+  "preregistered_thresholds": {
+    "floor_epsilon": 0.1,
+    "retained_improvement_min": 0.0,
+    "retention_gap_margin": 0.5,
+    "semantic_regression_max_points": 0.05,
+    "verdict_rule": "wta_preserves_modes iff coverage(wta) > coverage(single_gold) AND v2 semantic verdict regression vs single_gold <= 0.05, else rejected"
+  },
+  "arms": [
+    "single_gold",
+    "multi_gold",
+    "wta"
+  ],
+  "config": {
+    "steps": 5,
+    "lr": 0.003,
+    "seed": 0,
+    "n_prompts": 8,
+    "n_modes": 16,
+    "dataset": "src/slm_training/resources/data/slm314_multimode/modes.jsonl",
+    "dataset_manifest": {
+      "dataset_schema": "slm314-multimode-dataset/v1",
+      "n_prompts": 8,
+      "n_modes": 16,
+      "modes_per_prompt": [
+        2
+      ],
+      "row_sha256": [
+        "17bd182f4bddf979caabdf1248fe325418a4047575600ae6d10cad1c47314774",
+        "f6ac316055c35daefbdb864879ff504f269326d8d0bde64fc585b14d8be28882",
+        "015568fa00c3a12f895aeb58af0b85cb799e28f2c315d42fe02bfb573dbca89e",
+        "b22959ee91c136cbb9814a20ef9b4cf579924bab79c7c2f15fc3497e6ac9df62",
+        "35bd9d295405696d90b4748c671460a2db892552d824760b1a170ee56b436347",
+        "aad565646ad04affe14603d1eb0de57fed8d189e1ed2c7c360bf72ed8c78a5f6",
+        "708f07f6793b1832d3bee49b1f62fa2ab7ef3157b8de5f938c631888fa056b99",
+        "4b29cac7b71e9aff55a1914f674bc5f54656e01210bdcb6db714f34abccd73fd"
+      ],
+      "manifest_sha256": "10d1edc939cc74c159858bf423aa3b457d691526efc41a125c50c5e97c7d42f9"
+    },
+    "fixture_config_overrides": {
+      "d_model": 64,
+      "denoiser_layers": 2,
+      "context_layers": 1,
+      "max_chain": 3,
+      "max_search_steps": 6,
+      "beam_width": 3,
+      "expand_per_state": 3
+    },
+    "torch_num_threads": 1
+  },
+  "synthetic_two_mode": {
+    "probabilities": {
+      "single_gold": {
+        "p_mode_a": 0.9873679876327515,
+        "p_mode_b": 4.0145620005205274e-05,
+        "p_invalid_hybrid": 0.012591822072863579
+      },
+      "multi_gold": {
+        "p_mode_a": 0.25,
+        "p_mode_b": 0.25,
+        "p_invalid_hybrid": 0.5
+      },
+      "wta": {
+        "p_mode_a": 0.8264458775520325,
+        "p_mode_b": 0.008264509029686451,
+        "p_invalid_hybrid": 0.16528968513011932
+      }
+    },
+    "assertions": {
+      "single_gold_collapses": true,
+      "wta_retains_loser_mode": true,
+      "wta_winner_dominant": true,
+      "multi_gold_hybrid_invalid": true
+    },
+    "all_assertions_pass": true
+  },
+  "arm_results": {
+    "single_gold": {
+      "per_mode": {
+        "n_modes": 16,
+        "n_retained": 12,
+        "coverage": 0.75,
+        "collapse_indicator": 0.25,
+        "per_group": [
+          {
+            "group_id": "mm_00",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "80c5eda1a6896342816a9794926f6f9595c3c2b2f4a36b5beb68cb7fd91b3341",
+                "eval_loss": 8.701364517211914,
+                "baseline_loss": 8.232380867004395,
+                "improvement": -0.46898365020751953,
+                "retained": false
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "6c454c79cac92994ad15f07e1e43019515d4df7a4dab2b09ab88a7133a0ba913",
+                "eval_loss": 7.9676361083984375,
+                "baseline_loss": 9.193222045898438,
+                "improvement": 1.2255859375,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_01",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "8c94a6a1e407ac005e58301670afa9aaccd0c2b1a04552693289f51a5a48ddf3",
+                "eval_loss": 4.781002521514893,
+                "baseline_loss": 5.63767147064209,
+                "improvement": 0.8566689491271973,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "8b2366208036fe324c2584d98e62cd697d1e0c2e1d2fc4461f19788d6510d691",
+                "eval_loss": 1.9130592346191406,
+                "baseline_loss": 2.660956621170044,
+                "improvement": 0.7478973865509033,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_02",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "4d0cafaed2d1d426605275844c7ffe9cbccb8c017cf18b7c4bff0932199f6fc8",
+                "eval_loss": 4.843299865722656,
+                "baseline_loss": 5.75419807434082,
+                "improvement": 0.9108982086181641,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "29b4a54a4aa6b58ea3cd3ef25a8b282da7a08459de3959cd97443f1eec8e5d2d",
+                "eval_loss": 6.901802062988281,
+                "baseline_loss": 8.262958526611328,
+                "improvement": 1.3611564636230469,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_03",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "5a798e31a8ce98a2a1a616a7e61531c632036bfc150d151bd775edc8903bff5b",
+                "eval_loss": 11.471742630004883,
+                "baseline_loss": 12.366077423095703,
+                "improvement": 0.8943347930908203,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "97b12398d55fd0836abcb35011122985efeb8dfbaf47d9d8d211f331aa598952",
+                "eval_loss": 4.823297500610352,
+                "baseline_loss": 6.045340538024902,
+                "improvement": 1.2220430374145508,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_04",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "b8528408c1ecc2292846532b492e323dec85034f4d98c445a1bfcb22d5120f58",
+                "eval_loss": 4.774424076080322,
+                "baseline_loss": 5.668830394744873,
+                "improvement": 0.8944063186645508,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "9a2d5f9922a1612e18ac88aaed8a1c807f9d61f214ffab1787ede721e85db843",
+                "eval_loss": 5.237826347351074,
+                "baseline_loss": 6.058230876922607,
+                "improvement": 0.8204045295715332,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_05",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "13b7964bf2252bdbe82c5ce990ada9242baffb0f3b0b269be614ecefeedf6dd9",
+                "eval_loss": 6.782610893249512,
+                "baseline_loss": 12.469882011413574,
+                "improvement": 5.6872711181640625,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "1b9cd54f0cf1b9a5bac1f2c7bc8120ab78bccc0f7dc7c247705e065e7591c89a",
+                "eval_loss": 1.9315738677978516,
+                "baseline_loss": 2.6750247478485107,
+                "improvement": 0.7434508800506592,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_06",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "de0096e262a8a20e11bb2338b2b99f3b38fca2034d657bf90c39ee7287d7d958",
+                "eval_loss": 7.448744297027588,
+                "baseline_loss": 12.19206714630127,
+                "improvement": 4.743322849273682,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "54f7897efa57c43a2166b33229c3b1a8f043c020d84d78ef193c2aa4bfc0fd88",
+                "eval_loss": 4.377158164978027,
+                "baseline_loss": 6.348398208618164,
+                "improvement": 1.9712400436401367,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_07",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "d60cd88bf91091b9ffc0087cf970ba229baa342ba8b955b32c4a906da8e881a3",
+                "eval_loss": 4.873033046722412,
+                "baseline_loss": 6.304152488708496,
+                "improvement": 1.431119441986084,
+                "retained": false
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "c7f2a0d70546000767905aa498e7eaea65cdbfe66095ad6e9d93eab629e01969",
+                "eval_loss": 8.81863784790039,
+                "baseline_loss": 12.366247177124023,
+                "improvement": 3.547609329223633,
+                "retained": true
+              }
+            ]
+          }
+        ]
+      },
+      "decode": {
+        "n_prompts": 8,
+        "hard_valid_rate": 1.0,
+        "mode_hit_rate": 0.125,
+        "v2_verdict_rate": 0.0,
+        "per_group": [
+          {
+            "group_id": "mm_00",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_01",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_02",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_03",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_04",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_05",
+            "valid": true,
+            "mode_hit": true,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_06",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_07",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          }
+        ]
+      },
+      "coverage": 0.75,
+      "collapse_indicator": 0.25,
+      "training_metrics": {
+        "action": 2.8104822635650635,
+        "stmt": 2.094724178314209,
+        "comp": 3.1520068645477295,
+        "slot": 0.7475554347038269,
+        "value": 0.013868428766727448,
+        "value_bounded": 0.0,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0
+      }
+    },
+    "multi_gold": {
+      "per_mode": {
+        "n_modes": 16,
+        "n_retained": 8,
+        "coverage": 0.5,
+        "collapse_indicator": 0.5,
+        "per_group": [
+          {
+            "group_id": "mm_00",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "80c5eda1a6896342816a9794926f6f9595c3c2b2f4a36b5beb68cb7fd91b3341",
+                "eval_loss": 7.716122627258301,
+                "baseline_loss": 8.232380867004395,
+                "improvement": 0.5162582397460938,
+                "retained": false
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "6c454c79cac92994ad15f07e1e43019515d4df7a4dab2b09ab88a7133a0ba913",
+                "eval_loss": 6.424439907073975,
+                "baseline_loss": 9.193222045898438,
+                "improvement": 2.768782138824463,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_01",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "8c94a6a1e407ac005e58301670afa9aaccd0c2b1a04552693289f51a5a48ddf3",
+                "eval_loss": 3.271097183227539,
+                "baseline_loss": 5.63767147064209,
+                "improvement": 2.366574287414551,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "8b2366208036fe324c2584d98e62cd697d1e0c2e1d2fc4461f19788d6510d691",
+                "eval_loss": 2.3212692737579346,
+                "baseline_loss": 2.660956621170044,
+                "improvement": 0.3396873474121094,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_02",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "4d0cafaed2d1d426605275844c7ffe9cbccb8c017cf18b7c4bff0932199f6fc8",
+                "eval_loss": 3.285755157470703,
+                "baseline_loss": 5.75419807434082,
+                "improvement": 2.468442916870117,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "29b4a54a4aa6b58ea3cd3ef25a8b282da7a08459de3959cd97443f1eec8e5d2d",
+                "eval_loss": 7.695723056793213,
+                "baseline_loss": 8.262958526611328,
+                "improvement": 0.5672354698181152,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_03",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "5a798e31a8ce98a2a1a616a7e61531c632036bfc150d151bd775edc8903bff5b",
+                "eval_loss": 7.438523292541504,
+                "baseline_loss": 12.366077423095703,
+                "improvement": 4.927554130554199,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "97b12398d55fd0836abcb35011122985efeb8dfbaf47d9d8d211f331aa598952",
+                "eval_loss": 5.40690803527832,
+                "baseline_loss": 6.045340538024902,
+                "improvement": 0.638432502746582,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_04",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "b8528408c1ecc2292846532b492e323dec85034f4d98c445a1bfcb22d5120f58",
+                "eval_loss": 3.2084126472473145,
+                "baseline_loss": 5.668830394744873,
+                "improvement": 2.4604177474975586,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "9a2d5f9922a1612e18ac88aaed8a1c807f9d61f214ffab1787ede721e85db843",
+                "eval_loss": 7.189324855804443,
+                "baseline_loss": 6.058230876922607,
+                "improvement": -1.131093978881836,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_05",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "13b7964bf2252bdbe82c5ce990ada9242baffb0f3b0b269be614ecefeedf6dd9",
+                "eval_loss": 9.23392105102539,
+                "baseline_loss": 12.469882011413574,
+                "improvement": 3.2359609603881836,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "1b9cd54f0cf1b9a5bac1f2c7bc8120ab78bccc0f7dc7c247705e065e7591c89a",
+                "eval_loss": 2.3135123252868652,
+                "baseline_loss": 2.6750247478485107,
+                "improvement": 0.3615124225616455,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_06",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "de0096e262a8a20e11bb2338b2b99f3b38fca2034d657bf90c39ee7287d7d958",
+                "eval_loss": 8.623126029968262,
+                "baseline_loss": 12.19206714630127,
+                "improvement": 3.568941116333008,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "54f7897efa57c43a2166b33229c3b1a8f043c020d84d78ef193c2aa4bfc0fd88",
+                "eval_loss": 5.369912624359131,
+                "baseline_loss": 6.348398208618164,
+                "improvement": 0.9784855842590332,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_07",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "d60cd88bf91091b9ffc0087cf970ba229baa342ba8b955b32c4a906da8e881a3",
+                "eval_loss": 5.448168754577637,
+                "baseline_loss": 6.304152488708496,
+                "improvement": 0.8559837341308594,
+                "retained": false
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "c7f2a0d70546000767905aa498e7eaea65cdbfe66095ad6e9d93eab629e01969",
+                "eval_loss": 6.5001139640808105,
+                "baseline_loss": 12.366247177124023,
+                "improvement": 5.866133213043213,
+                "retained": true
+              }
+            ]
+          }
+        ]
+      },
+      "decode": {
+        "n_prompts": 8,
+        "hard_valid_rate": 1.0,
+        "mode_hit_rate": 0.0,
+        "v2_verdict_rate": 0.0,
+        "per_group": [
+          {
+            "group_id": "mm_00",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_01",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_02",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_03",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_04",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_05",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_06",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_07",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          }
+        ]
+      },
+      "coverage": 0.5,
+      "collapse_indicator": 0.5,
+      "training_metrics": {
+        "action": 2.5397448539733887,
+        "stmt": 1.467846393585205,
+        "comp": 1.6208996772766113,
+        "slot": 0.8510135412216187,
+        "value": 0.02060924842953682,
+        "value_bounded": 0.0,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0
+      }
+    },
+    "wta": {
+      "per_mode": {
+        "n_modes": 16,
+        "n_retained": 8,
+        "coverage": 0.5,
+        "collapse_indicator": 0.5,
+        "per_group": [
+          {
+            "group_id": "mm_00",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "80c5eda1a6896342816a9794926f6f9595c3c2b2f4a36b5beb68cb7fd91b3341",
+                "eval_loss": 7.4052324295043945,
+                "baseline_loss": 8.232380867004395,
+                "improvement": 0.8271484375,
+                "retained": false
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "6c454c79cac92994ad15f07e1e43019515d4df7a4dab2b09ab88a7133a0ba913",
+                "eval_loss": 7.391336441040039,
+                "baseline_loss": 9.193222045898438,
+                "improvement": 1.8018856048583984,
+                "retained": true
+              }
+            ]
+          },
+          {
+            "group_id": "mm_01",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "8c94a6a1e407ac005e58301670afa9aaccd0c2b1a04552693289f51a5a48ddf3",
+                "eval_loss": 2.9950571060180664,
+                "baseline_loss": 5.63767147064209,
+                "improvement": 2.6426143646240234,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "8b2366208036fe324c2584d98e62cd697d1e0c2e1d2fc4461f19788d6510d691",
+                "eval_loss": 2.2241077423095703,
+                "baseline_loss": 2.660956621170044,
+                "improvement": 0.43684887886047363,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_02",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "4d0cafaed2d1d426605275844c7ffe9cbccb8c017cf18b7c4bff0932199f6fc8",
+                "eval_loss": 3.1677842140197754,
+                "baseline_loss": 5.75419807434082,
+                "improvement": 2.586413860321045,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "29b4a54a4aa6b58ea3cd3ef25a8b282da7a08459de3959cd97443f1eec8e5d2d",
+                "eval_loss": 7.574008941650391,
+                "baseline_loss": 8.262958526611328,
+                "improvement": 0.6889495849609375,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_03",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "5a798e31a8ce98a2a1a616a7e61531c632036bfc150d151bd775edc8903bff5b",
+                "eval_loss": 8.58497428894043,
+                "baseline_loss": 12.366077423095703,
+                "improvement": 3.7811031341552734,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "97b12398d55fd0836abcb35011122985efeb8dfbaf47d9d8d211f331aa598952",
+                "eval_loss": 4.4556169509887695,
+                "baseline_loss": 6.045340538024902,
+                "improvement": 1.5897235870361328,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_04",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "b8528408c1ecc2292846532b492e323dec85034f4d98c445a1bfcb22d5120f58",
+                "eval_loss": 2.9114532470703125,
+                "baseline_loss": 5.668830394744873,
+                "improvement": 2.7573771476745605,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "9a2d5f9922a1612e18ac88aaed8a1c807f9d61f214ffab1787ede721e85db843",
+                "eval_loss": 6.242021560668945,
+                "baseline_loss": 6.058230876922607,
+                "improvement": -0.1837906837463379,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_05",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "13b7964bf2252bdbe82c5ce990ada9242baffb0f3b0b269be614ecefeedf6dd9",
+                "eval_loss": 9.684586524963379,
+                "baseline_loss": 12.469882011413574,
+                "improvement": 2.7852954864501953,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "1b9cd54f0cf1b9a5bac1f2c7bc8120ab78bccc0f7dc7c247705e065e7591c89a",
+                "eval_loss": 2.2146434783935547,
+                "baseline_loss": 2.6750247478485107,
+                "improvement": 0.46038126945495605,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_06",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "de0096e262a8a20e11bb2338b2b99f3b38fca2034d657bf90c39ee7287d7d958",
+                "eval_loss": 11.33463191986084,
+                "baseline_loss": 12.19206714630127,
+                "improvement": 0.8574352264404297,
+                "retained": true
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "54f7897efa57c43a2166b33229c3b1a8f043c020d84d78ef193c2aa4bfc0fd88",
+                "eval_loss": 6.33472204208374,
+                "baseline_loss": 6.348398208618164,
+                "improvement": 0.013676166534423828,
+                "retained": false
+              }
+            ]
+          },
+          {
+            "group_id": "mm_07",
+            "modes": [
+              {
+                "mode_index": 0,
+                "canonical_fingerprint": "d60cd88bf91091b9ffc0087cf970ba229baa342ba8b955b32c4a906da8e881a3",
+                "eval_loss": 4.460836410522461,
+                "baseline_loss": 6.304152488708496,
+                "improvement": 1.8433160781860352,
+                "retained": false
+              },
+              {
+                "mode_index": 1,
+                "canonical_fingerprint": "c7f2a0d70546000767905aa498e7eaea65cdbfe66095ad6e9d93eab629e01969",
+                "eval_loss": 8.877434730529785,
+                "baseline_loss": 12.366247177124023,
+                "improvement": 3.4888124465942383,
+                "retained": true
+              }
+            ]
+          }
+        ]
+      },
+      "decode": {
+        "n_prompts": 8,
+        "hard_valid_rate": 1.0,
+        "mode_hit_rate": 0.125,
+        "v2_verdict_rate": 0.0,
+        "per_group": [
+          {
+            "group_id": "mm_00",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_01",
+            "valid": true,
+            "mode_hit": true,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_02",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_03",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_04",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_05",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_06",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          },
+          {
+            "group_id": "mm_07",
+            "valid": true,
+            "mode_hit": false,
+            "v2_verdict": false
+          }
+        ]
+      },
+      "coverage": 0.5,
+      "collapse_indicator": 0.5,
+      "training_metrics": {
+        "action": 3.007995367050171,
+        "stmt": 1.427188754081726,
+        "comp": 2.3815364837646484,
+        "slot": 2.056959390640259,
+        "value": 0.003755042562261224,
+        "value_bounded": 0.0,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0
+      }
+    }
+  },
+  "comparison": {
+    "coverage_gain_wta_vs_single_gold": -0.25,
+    "semantic_regression_wta_vs_single_gold": 0.0,
+    "coverage_multi_gold": 0.5
+  },
+  "threshold_checks": {
+    "coverage_ok": false,
+    "semantic_ok": true,
+    "synthetic_ok": true
+  },
+  "telemetry_path": "outputs/slm314/wta_telemetry.jsonl",
+  "verdict": "rejected",
+  "wall_seconds": 75.39187614799448,
+  "honesty": "Fixture-scale: 8 prompts x 2 modes is far below any ship-gate prompt count \u2014 mechanism evidence only, not a production ship claim. Mode identity is alpha-invariant canonical AST fingerprints (never serialization strings); the frozen dataset is hash-verified before training. All arms share model init, steps, optimizer, per-step prompt coverage, and seeds. Decode is deterministic beam search (unique valid ASTs per prompt == 1 by construction); coverage is measured by deterministic per-mode eval loss instead. The SLM-130 ambiguity sets are wiring reports without a committed multi-mode corpus, so this dataset is synthesized and frozen in-repo.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0dd815193a4fccb41f229751393ed18a989718d7",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm314_winner_take_all": "v1",
+      "harness.experiments.slm299_edit_reachability": "v4"
+    },
+    "stamped_at": "2026-07-24T23:47:05.065449+00:00"
+  }
+}

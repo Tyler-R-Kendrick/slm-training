@@ -1,0 +1,19 @@
+{
+  "dataset_schema": "slm314-multimode-dataset/v1",
+  "manifest_sha256": "10d1edc939cc74c159858bf423aa3b457d691526efc41a125c50c5e97c7d42f9",
+  "modes_per_prompt": [
+    2
+  ],
+  "n_modes": 16,
+  "n_prompts": 8,
+  "row_sha256": [
+    "17bd182f4bddf979caabdf1248fe325418a4047575600ae6d10cad1c47314774",
+    "f6ac316055c35daefbdb864879ff504f269326d8d0bde64fc585b14d8be28882",
+    "015568fa00c3a12f895aeb58af0b85cb799e28f2c315d42fe02bfb573dbca89e",
+    "b22959ee91c136cbb9814a20ef9b4cf579924bab79c7c2f15fc3497e6ac9df62",
+    "35bd9d295405696d90b4748c671460a2db892552d824760b1a170ee56b436347",
+    "aad565646ad04affe14603d1eb0de57fed8d189e1ed2c7c360bf72ed8c78a5f6",
+    "708f07f6793b1832d3bee49b1f62fa2ab7ef3157b8de5f938c631888fa056b99",
+    "4b29cac7b71e9aff55a1914f674bc5f54656e01210bdcb6db714f34abccd73fd"
+  ]
+}
