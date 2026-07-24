@@ -566,6 +566,120 @@ def _is_meaningful_program(
 # Public version lock: historical scoreboards and ship thresholds remain v1.
 meaningful_program_v1 = _is_meaningful_program
 
+#: Schema marker for the typed v1 reason-code report (SLM-288).
+MEANINGFUL_V1_REASON_SCHEMA = "meaningful_program_v1_reasons/v1"
+
+#: Typed clause codes in evaluation order. ``component_recall_unobservable``
+#: is an UNKNOWN/unobservable annotation, never a failure.
+MEANINGFUL_V1_CLAUSE_CODES: tuple[str, ...] = (
+    "parse_failed",
+    "free_form_output_string",
+    "empty_root_stack",
+    "empty_card",
+    "empty_children",
+    "no_content_components",
+    "no_placeholders",
+    "low_component_recall",
+    "component_recall_unobservable",
+)
+
+
+def meaningful_program_v1_report(
+    pred: str,
+    *,
+    gold: ExampleRecord | None = None,
+    min_component_recall: float = 0.5,
+) -> dict[str, Any]:
+    """Typed, ordered reason-code view of :func:`meaningful_program_v1` (SLM-288).
+
+    Every clause is evaluated (no short-circuit) so downstream analysis sees
+    the full failure profile; ``verdict`` and the first failure's legacy
+    reason string remain byte-identical to v1. UNKNOWN/unobservable contract
+    cases (gold missing, or recall undefined because gold has only Stacks)
+    are reported explicitly as ``component_recall_unobservable`` and are never
+    counted as semantic failures.
+    """
+    checks: list[dict[str, Any]] = []
+
+    def _add(code: str, status: str, detail: str | None = None) -> None:
+        checks.append({"code": code, "status": status, "detail": detail})
+
+    serialized: str | None = None
+    program: Any = None
+    try:
+        program = validate(pred)
+    except ParseError as exc:
+        _add("parse_failed", "fail", str(exc))
+        fails = [c for c in checks if c["status"] == "fail"]
+        return {
+            "schema": MEANINGFUL_V1_REASON_SCHEMA,
+            "verdict": False,
+            "reason_codes": [c["code"] for c in checks if c["status"] != "pass"],
+            "checks": checks,
+            "legacy_reason": fails[0]["detail"],
+            "serialized": None,
+            "component_recall": None,
+            "min_component_recall": min_component_recall,
+        }
+    serialized = (program.serialized or pred).strip()
+    from slm_training.dsl.language_contract import output_contract_violations
+
+    if output_contract_violations(serialized):
+        _add("free_form_output_string", "fail")
+    compact = serialized.replace(" ", "")
+    empty_literal_stack = "Stack([])" in compact or "Stack([]," in compact
+    empty_literal_card = "Card([])" in compact
+    empty_type = _first_empty_children_component(program.root)
+    if empty_literal_stack or empty_type == "Stack":
+        _add("empty_root_stack", "fail")
+    if empty_literal_card or empty_type == "Card":
+        _add("empty_card", "fail")
+    if empty_type is not None and empty_type not in {"Stack", "Card"}:
+        _add("empty_children", "fail", empty_type)
+    comps = _component_multiset(serialized)
+    non_stack = {k: v for k, v in comps.items() if k != "Stack"}
+    if not non_stack:
+        _add("no_content_components", "fail")
+    if not extract_placeholders(serialized):
+        _add("no_placeholders", "fail")
+    recall: float | None = None
+    if gold is not None and min_component_recall > 0:
+        recall = component_type_recall(serialized, gold.openui)
+        if recall is None:
+            _add(
+                "component_recall_unobservable",
+                "unknown",
+                "recall undefined: gold has only Stack components",
+            )
+        elif recall < min_component_recall:
+            _add("low_component_recall", "fail", f"{recall:.2f}")
+    else:
+        _add(
+            "component_recall_unobservable",
+            "unknown",
+            "no gold reference or recall floor disabled",
+        )
+    fails = [c for c in checks if c["status"] == "fail"]
+    first = fails[0] if fails else None
+    legacy_reason: str | None = None
+    if first is not None:
+        if first["code"] == "low_component_recall":
+            legacy_reason = f"low_component_recall:{first['detail']}"
+        elif first["code"] == "empty_children":
+            legacy_reason = f"empty_children:{first['detail']}"
+        else:
+            legacy_reason = first["detail"] or first["code"]
+    return {
+        "schema": MEANINGFUL_V1_REASON_SCHEMA,
+        "verdict": not fails,
+        "reason_codes": [c["code"] for c in checks if c["status"] != "pass"],
+        "checks": checks,
+        "legacy_reason": legacy_reason,
+        "serialized": serialized,
+        "component_recall": recall,
+        "min_component_recall": min_component_recall,
+    }
+
 
 def _eval_data_sha(directory: Path) -> str | None:
     """Content fingerprint of an eval dataset dir (manifest or records hash)."""
