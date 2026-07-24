@@ -801,7 +801,7 @@ def _markdown(report: dict[str, Any]) -> str:
         f"- Checkpoint: `{report['checkpoint']['path']}` (`{report['checkpoint']['sha256']}`)",
         f"- Train recipe: CPU scratch, 4 optimizer steps, 97 fixture-source records, trained R={report['checkpoint']['trained_recurrence_depth']}",
         f"- Calibration/final: smoke n={report['recipe']['calibration_n']} / held_out n={report['recipe']['heldout_n']}",
-        f"- AgentV: `{report['agentv']['summary']}`",
+        f"- AgentV: `{json.dumps(report['agentv']['summary'], sort_keys=True)}`",
         f"- Clean evidence: `{not report['evidence_gate']['code_dirty']}`",
         "- No test-R extrapolation; no checkpoint sync or promotion.",
         "",
@@ -838,7 +838,8 @@ def _markdown(report: dict[str, Any]) -> str:
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
-    for key, result in report["policy_results"].items():
+    for key in sorted(report["policy_results"]):
+        result = report["policy_results"][key]
         lines.append(
             f"| `{key}` | {_fmt(result['mean_depth'])} | "
             f"{_fmt(result['mean_block_evaluations'])} | "

@@ -3665,7 +3665,7 @@
       ]
     },
     "harness.experiments.slm230_recurrence_observability": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
@@ -3674,6 +3674,11 @@
         "tests/test_scripts/test_run_slm230_recurrence_observability.py"
       ],
       "history": [
+        {
+          "version": "v11",
+          "date": "2026-07-23",
+          "note": "render AgentV summaries and policy rows in canonical key order so Markdown is stable across JSON serialization"
+        },
         {
           "version": "v10",
           "date": "2026-07-23",
