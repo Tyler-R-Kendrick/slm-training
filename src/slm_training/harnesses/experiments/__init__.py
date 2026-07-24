@@ -388,6 +388,22 @@ _LAZY_SLM191_EXPORTS = {
     "validate_slm191_manifest": "validate_manifest",
 }
 
+_LAZY_SLM192_EXPORTS = {
+    "SLM192_EXPERIMENT_ID": "EXPERIMENT_ID",
+    "SLM192_MATRIX_SET": "MATRIX_SET",
+    "SLM192_MATRIX_VERSION": "MATRIX_VERSION",
+    "SLM192_ARM_NAMES": "ARM_NAMES",
+    "CostSpanRecord": "CostSpanRecord",
+    "FlowCostProfileV1": "FlowCostProfileV1",
+    "OnPolicyFeasibilityV1": "OnPolicyFeasibilityV1",
+    "CostGateManifestV1": "CostGateManifestV1",
+    "FlowPipelineProfileCase": "FlowPipelineProfileCase",
+    "FlowPipelineManifestV1": "FlowPipelineManifestV1",
+    "run_slm192_fixture": "run_profile_flow_pipeline",
+    "render_slm192_markdown": "render_markdown",
+    "validate_slm192_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
     if name in _LAZY_B3_EXPORTS:
@@ -438,6 +454,12 @@ def __getattr__(name: str):
         from slm_training.harnesses.experiments import slm191_termination_matrix
 
         value = getattr(slm191_termination_matrix, _LAZY_SLM191_EXPORTS[name])
+        globals()[name] = value
+        return value
+    if name in _LAZY_SLM192_EXPORTS:
+        from slm_training.harnesses.experiments import slm192_profile_flow_pipeline
+
+        value = getattr(slm192_profile_flow_pipeline, _LAZY_SLM192_EXPORTS[name])
         globals()[name] = value
         return value
     if name in _LAZY_LADDER_EXPORTS:
@@ -563,6 +585,19 @@ __all__ = [
     "run_slm191_fixture",
     "render_slm191_markdown",
     "validate_slm191_manifest",
+    "SLM192_EXPERIMENT_ID",
+    "SLM192_MATRIX_SET",
+    "SLM192_MATRIX_VERSION",
+    "SLM192_ARM_NAMES",
+    "CostSpanRecord",
+    "FlowCostProfileV1",
+    "OnPolicyFeasibilityV1",
+    "CostGateManifestV1",
+    "FlowPipelineProfileCase",
+    "FlowPipelineManifestV1",
+    "run_slm192_fixture",
+    "render_slm192_markdown",
+    "validate_slm192_manifest",
     "DATA_SAMPLING_ARMS",
     "RETRIEVAL_MODES",
     "AstSketchRetrievalArm",
