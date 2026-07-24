@@ -44,9 +44,11 @@ split leakage checker.
 The generic verifier normally marks teacher rows Bronze until a human audit.
 SLM-266 keeps that raw verifier result but derives an admission Silver tier after
 the automated deep policy clears. G12 is retained as optional evidence, never a
-human-rating gate. G11 remains the required independent automated judge; its
-family must differ from the generator. Protected overlap is rejected before
-mode-specific materialization.
+human-rating gate. G11 remains the required independent automated judge; deep
+admission requires its persisted candidate, cross-provider/model-family,
+raw-artifact, prompt-hash, and program-hash evidence — a bare boolean cannot
+clear the gate. Protected overlap is rejected before mode-specific
+materialization.
 
 `python -m scripts.materialize_teacher_programs` accepts only a
 `deep_verified` admission result and produces `outputs/data/train/<id>/` with
