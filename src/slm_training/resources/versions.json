@@ -5835,7 +5835,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v232",
+      "version": "v233",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5861,6 +5861,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v233",
+          "date": "2026-07-24",
+          "note": "expose existing decode-time model-build levers through the train CLI so periodic evaluation receives the configured values"
+        },
         {
           "version": "v232",
           "date": "2026-07-24",
