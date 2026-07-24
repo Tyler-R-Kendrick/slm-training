@@ -213,7 +213,7 @@
       ]
     },
     "data.test_build": {
-      "version": "v5",
+      "version": "v6",
       "kind": "data_builder",
       "paths": [
         "scripts/build_test_data.py",
@@ -221,6 +221,11 @@
         "src/slm_training/resources/test_seeds.jsonl"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
+        },
         {
           "version": "v5",
           "date": "2026-07-22",
@@ -3655,7 +3660,7 @@
       ]
     },
     "harness.experiments.slm230_recurrence_observability": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
@@ -3664,6 +3669,11 @@
         "tests/test_scripts/test_run_slm230_recurrence_observability.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-23",
+          "note": "count canonical recursive_outputs calls directly so every recurrence block evaluation is charged"
+        },
         {
           "version": "v4",
           "date": "2026-07-23",

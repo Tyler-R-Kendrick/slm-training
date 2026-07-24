@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import math
@@ -223,14 +224,30 @@ def _decode_at_depth(
     *,
     depth: int,
 ) -> dict[str, Any]:
-    with _evaluation_depth(model, depth):
-        prediction, stats = model.generate_with_stats(
-            record.prompt,
-            gold=record,
-            max_len=min(EVAL_MAX_LEN, int(model.config.max_target_len)),
-            grammar_constrained=False,
-            design_md=record.design_md,
-        )
+    tower = model.denoiser
+    assert isinstance(tower, SharedRecursiveDenoiserTower)
+    original_outputs = tower.recursive_outputs
+    forward_calls = 0
+
+    def counted_outputs(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        nonlocal forward_calls
+        forward_calls += 1
+        return original_outputs(*args, **kwargs)
+
+    tower.recursive_outputs = counted_outputs  # type: ignore[method-assign]
+    try:
+        with _evaluation_depth(model, depth):
+            prediction, stats = model.generate_with_stats(
+                record.prompt,
+                gold=record,
+                max_len=min(EVAL_MAX_LEN, int(model.config.max_target_len)),
+                grammar_constrained=False,
+                design_md=record.design_md,
+            )
+    finally:
+        tower.recursive_outputs = original_outputs  # type: ignore[method-assign]
+    if forward_calls < 1:
+        raise RuntimeError("free-running depth evaluation used no denoiser forward")
     meaningful, _, serialized = _is_meaningful_program(prediction, gold=record)
     scored = serialized or prediction
     try:
@@ -245,7 +262,7 @@ def _decode_at_depth(
         ),
         "reward_score": reward,
         "latency_ms": float(stats.total_ms),
-        "forwards": int(stats.forwards_count),
+        "forwards": forward_calls,
     }
 
 
@@ -476,6 +493,7 @@ def _run(
     test_dir: Path,
     agentv_dir: Path,
     allow_dirty: bool,
+    pinned_version_stamp: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     checkpoint_sha = _sha256_file(checkpoint)
@@ -589,7 +607,7 @@ def _run(
         heldout_record_ids=heldout_ids,
         early_exit_qualified=early_exit_qualified,
     )
-    stamp = build_version_stamp(
+    stamp = pinned_version_stamp or build_version_stamp(
         "harness.experiments.slm230_recurrence_observability",
         "model.recursive_denoiser",
         "evals.scoring",
@@ -751,11 +769,13 @@ def _run(
         "ship_gate_claim": False,
         "elapsed_seconds": time.perf_counter() - started,
     }
-    hash_payload = dict(report)
+    hash_payload = copy.deepcopy(report)
     hash_payload.pop("generated_at", None)
+    hash_payload.pop("elapsed_seconds", None)
     stamp_payload = dict(hash_payload["version_stamp"])
     stamp_payload.pop("stamped_at", None)
     hash_payload["version_stamp"] = stamp_payload
+    hash_payload["agentv"]["summary"].pop("durationMs", None)
     report["report_hash"] = stable_hash(hash_payload)
     errors = validate_report(report)
     if errors:
@@ -881,15 +901,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-dirty", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
+    committed = (
+        json.loads(args.json_out.read_text(encoding="utf-8"))
+        if args.check
+        else None
+    )
     report = _run(
         checkpoint=args.checkpoint,
         test_dir=args.test_dir,
         agentv_dir=args.agentv_dir,
         allow_dirty=args.allow_dirty or args.check,
+        pinned_version_stamp=(
+            committed["version_stamp"] if committed is not None else None
+        ),
     )
     markdown = _markdown(report)
     if args.check:
-        committed = json.loads(args.json_out.read_text(encoding="utf-8"))
+        assert committed is not None
         if committed["report_hash"] != report["report_hash"]:
             raise SystemExit(
                 "SLM-230 report hash mismatch: "
