@@ -2,7 +2,7 @@
 
 Verdict: **unstable**
 
-Report hash: `b745f23241f294213d8c9b3baff6d40bf1a4d0c8d91be7917d78b57360b617e4`
+Report hash: `10361c3e225b4e7d5669e14665af93170e38717831e9d101e87b2aa5a970dce6`
 
 This bounded CPU audit reuses the rejected SLM-230 scratch checkpoint. It changes no source weights, training default, generation default, or promotion state.
 
@@ -54,7 +54,7 @@ The largest targeted full-vocabulary effect is `detach_z_to_y`. This is sensitiv
 
 - SLM-230: `stagnant` (`7e9534057fa22bd041366f62cd1ba24e02c97b3b3095b4d726601f17063a8cbc`).
 - SLM-231: `expansive_unstable` (`06bfd4ecd68f936b4c548b2a7a5fad39bbe56e0bdf76dc7308477635bb2e6913`).
-- AgentV: `{"durationMs": 28, "executionErrors": 0, "failed": 0, "meanScore": 1, "passed": 5, "total": 5}`.
+- AgentV: `{"durationMs": 20, "executionErrors": 0, "failed": 0, "meanScore": 1, "passed": 5, "total": 5}`.
 
 The current z is measurably variable and its removal can alter full-vocabulary logits, but the authoritative disposition is **unstable**: joined recurrence dynamics are expansive, bounded outputs remain vacuous, and no provenance-compatible legal/protected outcome artifact exists. RSC2/RSC3 must not treat this checkpoint as evidence for a causally useful reasoning workspace. Diagnostic replication and architecture repair remain allowed.
 
