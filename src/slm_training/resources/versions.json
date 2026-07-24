@@ -7207,13 +7207,18 @@
       ]
     },
     "harness.experiments.valid_edit_flow_closeout": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/valid_edit_flow_closeout.py",
         "tests/test_harnesses/experiments/test_valid_edit_flow_closeout.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "expand the deterministic closeout to the required 18-lever causal table and explicit authorities"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -7227,15 +7232,23 @@
       ]
     },
     "matrix.valid_edit_flow_closeout": {
-      "version": "vfa3-04-v2",
+      "version": "vfa3-04-v3",
       "kind": "matrix",
       "paths": [
         "scripts/run_valid_edit_flow_closeout.py",
         "tests/test_scripts/test_run_valid_edit_flow_closeout.py",
         "docs/design/valid-edit-flow-closeout.json",
-        "docs/design/valid-edit-flow-closeout.md"
+        "docs/design/valid-edit-flow-closeout.md",
+        "docs/design/valid-edit-flow-selected-stack.json",
+        "docs/design/adr-valid-edit-flow-closeout.md",
+        "docs/design/valid-edit-flow-architecture.md"
       ],
       "history": [
+        {
+          "version": "vfa3-04-v3",
+          "date": "2026-07-24",
+          "note": "emit ADR, selected-stack inventory, and hard-soft authority map with the complete causal table"
+        },
         {
           "version": "vfa3-04-v2",
           "date": "2026-07-24",
