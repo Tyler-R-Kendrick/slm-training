@@ -3395,6 +3395,11 @@
         {
           "version": "v4",
           "date": "2026-07-23",
+          "note": "no-bump: make the portable-path helper recognize its stable artifact-directory marker so the existing worktree-independent contract is testable on CI"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-23",
           "note": "rewrite AgentV artifact paths and encoded projection identities to portable agentv-dir references before committing evidence"
         },
         {

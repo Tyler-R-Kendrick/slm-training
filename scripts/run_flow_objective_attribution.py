@@ -25,9 +25,9 @@ AGENTV_DIR = ROOT / "docs/design/iter-slm200-flow-objective-attribution-agentv-2
 
 
 def _portable(value: Any) -> Any:
-    prefix = str(AGENTV_DIR.resolve())
-    if isinstance(value, str) and value.startswith(prefix):
-        return "agentv-dir://" + value[len(prefix) :].lstrip("/")
+    marker = f"/{AGENTV_DIR.name}/"
+    if isinstance(value, str) and marker in value:
+        return "agentv-dir://" + value.split(marker, 1)[1]
     if isinstance(value, list):
         return [_portable(item) for item in value]
     if isinstance(value, dict):
