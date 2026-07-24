@@ -1,0 +1,1713 @@
+{
+  "artifacts": {
+    "adjudications": "docs/design/slm291-evidence-bar-adjudications-20260724.json",
+    "census_module": "src/slm_training/harnesses/model_build/evidence_bundle_census.py",
+    "cli": "scripts/verify_evidence_bundles.py",
+    "module": "src/slm_training/harness_core/evidence_bundle.py",
+    "tests": [
+      "tests/test_harness_core/test_evidence_bundle.py",
+      "tests/test_scripts/test_verify_evidence_bundles.py"
+    ]
+  },
+  "census": {
+    "census_sha256": "23b6e9a008837c2454f3f3b75e08b20850b5973881f246bd66464ef58460b05b",
+    "design_dir": "docs/design",
+    "evidence_bundles": [],
+    "model_card": "docs/MODEL_CARD.md",
+    "roster": [
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 68,
+        "location": "outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt",
+        "role": "SLM-230 bounded recurrence diagnostic",
+        "run_id": "slm230_bounded_recursive_r4_r2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 69,
+        "location": "outputs/runs/e735-symbol-only-root-arity-fullhead140-r1/checkpoints/last.pt",
+        "role": "E735 full-head root-arity diagnostic",
+        "run_id": "e735-symbol-only-root-arity-fullhead140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 70,
+        "location": "outputs/runs/e733-symbol-only-root-identity140-r1/checkpoints/last.pt",
+        "role": "E733 invalid lexer root-identity attempt",
+        "run_id": "e733-symbol-only-root-identity140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 71,
+        "location": "outputs/runs/e731-symbol-only-root-arity140-r1/checkpoints/last.pt",
+        "role": "E731 lexer root-arity diagnostic",
+        "run_id": "e731-symbol-only-root-arity140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 72,
+        "location": "outputs/runs/e714-symbol-only-scratch600-r1/checkpoints/last.pt",
+        "role": "E714 symbol-only baseline",
+        "run_id": "e714-symbol-only-scratch600-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 73,
+        "location": "outputs/runs/e720-symbol-only-component-inventory600-r1/checkpoints/last.pt",
+        "role": "E720 component-inventory diagnostic",
+        "run_id": "e720-symbol-only-component-inventory600-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 74,
+        "location": "outputs/runs/e721-symbol-only-component-plan190-r4/checkpoints/last.pt",
+        "role": "E721 role/count plan diagnostic",
+        "run_id": "e721-symbol-only-component-plan190-r4",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 75,
+        "location": "outputs/runs/e722-symbol-only-component-edge150-r1/checkpoints/last.pt",
+        "role": "E722 component-edge diagnostic",
+        "run_id": "e722-symbol-only-component-edge150-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 76,
+        "location": "outputs/runs/e723-symbol-only-slot-owner140-r1/checkpoints/last.pt",
+        "role": "E723 slot-owner diagnostic",
+        "run_id": "e723-symbol-only-slot-owner140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 77,
+        "location": "outputs/runs/e725-symbol-only-component-inventory130-r1/checkpoints/last.pt",
+        "role": "E725 cumulative inventory diagnostic",
+        "run_id": "e725-symbol-only-component-inventory130-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 78,
+        "location": "outputs/runs/e726-symbol-only-root-arity140-r1/checkpoints/last.pt",
+        "role": "E726 invalid root-arity attempt",
+        "run_id": "e726-symbol-only-root-arity140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 79,
+        "location": "outputs/runs/e727-symbol-only-binder-arity140-r1/checkpoints/last.pt",
+        "role": "E727 binder-arity diagnostic",
+        "run_id": "e727-symbol-only-binder-arity140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 80,
+        "location": "outputs/runs/e729-symbol-only-binder-topology140-r1/checkpoints/last.pt",
+        "role": "E729 binder-topology diagnostic",
+        "run_id": "e729-symbol-only-binder-topology140-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 81,
+        "location": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+        "role": "Playground demo",
+        "run_id": "playground_demo",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 82,
+        "location": "outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt",
+        "role": "Restructure CPU verify",
+        "run_id": "restructure_cpu_scratch_v0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 83,
+        "location": "outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt",
+        "role": "Local DirectML verify",
+        "run_id": "local_directml_adreno_20260714",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "ephemeral_local",
+        "failures": [],
+        "line": 84,
+        "location": "<ephemeral-local>",
+        "role": "Overnight retrain",
+        "run_id": "overnight_retrain_200",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "ephemeral_local",
+        "failures": [],
+        "line": 85,
+        "location": "<ephemeral-local>",
+        "role": "Overnight retrain extended",
+        "run_id": "overnight_retrain_1000",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 86,
+        "location": "outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed/checkpoints/last.pt",
+        "role": "E120 singleton diagnostic",
+        "run_id": "e120_unsandboxed",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 87,
+        "location": "outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt",
+        "role": "E121 judged-corpus E53 iteration",
+        "run_id": "qx_e53_honest_v5_champion",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 88,
+        "location": "outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt",
+        "role": "E123 judged-corpus 32-step iteration",
+        "run_id": "e123_judged_32step_b",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 89,
+        "location": "outputs/runs/iter-e127-schema-slots-20260715/e127_judged_schema_slots/checkpoints/last.pt",
+        "role": "E127 schema/slot-contract iteration",
+        "run_id": "e127_judged_schema_slots",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 90,
+        "location": "outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64/checkpoints/last.pt",
+        "role": "E128 schema/slot 64-step iteration",
+        "run_id": "e128_judged_schema_slots_64",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 91,
+        "location": "outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights/checkpoints/last.pt",
+        "role": "E129 schema/slot 64-step low-weight control",
+        "run_id": "e129_judged_schema_slots_64_lowweights",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 92,
+        "location": "outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1/checkpoints/last.pt",
+        "role": "E130 schema/slot seed-1 control",
+        "run_id": "e130_judged_schema_slots_seed1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 93,
+        "location": "outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus/checkpoints/last.pt",
+        "role": "E132 generation-focused mixture",
+        "run_id": "e132_generation_focus",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 94,
+        "location": "outputs/runs/iter-e133-no-fuse-ltr-20260715/e133_no_fuse_ltr/checkpoints/last.pt",
+        "role": "E133 no-fused-LTR path",
+        "run_id": "e133_no_fuse_ltr",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 95,
+        "location": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt",
+        "role": "E135 HF context control",
+        "run_id": "e135_hf_context_control",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 96,
+        "location": "outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/checkpoints/last.pt",
+        "role": "E136 HF context 32-step control",
+        "run_id": "e136_hf_context_32",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 97,
+        "location": "outputs/runs/iter-e137-hf-context-20260715/e137_hf_context_16/checkpoints/last.pt",
+        "role": "E137 HF context 16-step midpoint",
+        "run_id": "e137_hf_context_16",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 98,
+        "location": "outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt",
+        "role": "E138 HF context seed-1 8-step control",
+        "run_id": "e138_hf_context_seed1_8",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 99,
+        "location": "outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt",
+        "role": "E139 HF context seed-2 8-step control",
+        "run_id": "e139_hf_context_seed2_8",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 100,
+        "location": "outputs/runs/e173-schema-context-32step/checkpoints/last.pt",
+        "role": "E173 schema-context 32-step control",
+        "run_id": "e173-schema-context-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 101,
+        "location": "outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt",
+        "role": "E174 unfrozen-context 8-step control",
+        "run_id": "e174-unfrozen-context-8step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 102,
+        "location": "outputs/runs/e175-retrieval-8step/checkpoints/last.pt",
+        "role": "E175 retrieval 8-step control",
+        "run_id": "e175-retrieval-8step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 103,
+        "location": "outputs/runs/e176-broad-corpus-8step/checkpoints/last.pt",
+        "role": "E176 broad-corpus 8-step control",
+        "run_id": "e176-broad-corpus-8step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 104,
+        "location": "outputs/runs/e177-semantic-judge-32step/checkpoints/last.pt",
+        "role": "E177 semantic-judge 32-step control",
+        "run_id": "e177-semantic-judge-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 105,
+        "location": "outputs/runs/e181-semantic-balanced-32step/checkpoints/last.pt",
+        "role": "E181 balanced-mixture control",
+        "run_id": "e181-semantic-balanced-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 106,
+        "location": "outputs/runs/e184-compiler-aligned-32step/checkpoints/last.pt",
+        "role": "E184 component-aligned diagnostic",
+        "run_id": "e184-compiler-aligned-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 107,
+        "location": "outputs/runs/e191-full-compiler-aligned-32step/checkpoints/last.pt",
+        "role": "E191 all-branch aligned diagnostic",
+        "run_id": "e191-full-compiler-aligned-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 108,
+        "location": "outputs/runs/e195-stratified-compiler-aligned-32step/checkpoints/last.pt",
+        "role": "E195 stratified-alignment invalid control",
+        "run_id": "e195-stratified-compiler-aligned-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 109,
+        "location": "outputs/runs/e196-stratified-compiler-aligned-matched-32step/checkpoints/last.pt",
+        "role": "E196 matched stratified alignment",
+        "run_id": "e196-stratified-compiler-aligned-matched-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 110,
+        "location": "outputs/runs/e201-role-stratified-compiler-aligned-32step/checkpoints/last.pt",
+        "role": "E201 generated-role alignment",
+        "run_id": "e201-role-stratified-compiler-aligned-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 111,
+        "location": "outputs/runs/e205-lark-terminal-stratified-32step/checkpoints/last.pt",
+        "role": "E205 Lark-terminal alignment",
+        "run_id": "e205-lark-terminal-stratified-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 112,
+        "location": "outputs/runs/e208-list-occupancy-stratified-32step/checkpoints/last.pt",
+        "role": "E208 occupancy alignment",
+        "run_id": "e208-list-occupancy-stratified-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 113,
+        "location": "outputs/runs/e210-list-scope-occupancy-stratified-32step/checkpoints/last.pt",
+        "role": "E210 scoped occupancy alignment",
+        "run_id": "e210-list-scope-occupancy-stratified-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 114,
+        "location": "outputs/runs/e212-contextual-decision-stratified-32step/checkpoints/last.pt",
+        "role": "E212 contextual decision alignment",
+        "run_id": "e212-contextual-decision-stratified-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 115,
+        "location": "outputs/runs/e215-schema-role-judged-32step/checkpoints/last.pt",
+        "role": "E215 overfiltered schema-role control",
+        "run_id": "e215-schema-role-judged-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 116,
+        "location": "outputs/runs/e219-schema-normalized-32step/checkpoints/last.pt",
+        "role": "E219 corrected schema-admission control",
+        "run_id": "e219-schema-normalized-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 117,
+        "location": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/checkpoints/last.pt",
+        "role": "E221 task-balanced exposure diagnostic",
+        "run_id": "e221-canonical-task-balanced",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 118,
+        "location": "outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/checkpoints/last.pt",
+        "role": "E222 capacity-aware exposure diagnostic",
+        "run_id": "e222-capacity-aware-matched",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 119,
+        "location": "outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/checkpoints/last.pt",
+        "role": "E223 quota-capacity exposure diagnostic",
+        "run_id": "e223-quota-capacity-matched",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 120,
+        "location": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/checkpoints/last.pt",
+        "role": "E224 semantic-exhaustive alignment diagnostic",
+        "run_id": "e224-semantic-exhaustive-matched",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 121,
+        "location": "outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/checkpoints/last.pt",
+        "role": "E227 legal-candidate alignment diagnostic",
+        "run_id": "e227-candidate-set-matched",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 122,
+        "location": "outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+        "role": "E228 legal-candidate margin diagnostic",
+        "run_id": "e228-candidate-margin-matched",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 123,
+        "location": "outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/checkpoints/last.pt",
+        "role": "E229 64-step margin continuation",
+        "run_id": "e229-margin-64step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 124,
+        "location": "outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/checkpoints/last.pt",
+        "role": "E230 diverse judged roots",
+        "run_id": "e230-diverse-roots-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 125,
+        "location": "outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/checkpoints/last.pt",
+        "role": "E231 component inventory",
+        "run_id": "e231-component-inventory-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 126,
+        "location": "outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/checkpoints/last.pt",
+        "role": "E232 role component plan",
+        "run_id": "e232-role-component-plan-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 127,
+        "location": "outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/checkpoints/last.pt",
+        "role": "E233 resolved-AST component edges",
+        "run_id": "e233-component-edges-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 128,
+        "location": "outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/checkpoints/last.pt",
+        "role": "E234 edge decision alignment",
+        "run_id": "e234-edge-decision-alignment-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 129,
+        "location": "outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/checkpoints/last.pt",
+        "role": "E235 binder-instance plan",
+        "run_id": "e235-binder-instance-plan-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 130,
+        "location": "outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/checkpoints/last.pt",
+        "role": "E236 binder topology",
+        "run_id": "e236-binder-topology-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 131,
+        "location": "outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/checkpoints/last.pt",
+        "role": "E237 detached topology",
+        "run_id": "e237-detached-topology-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 132,
+        "location": "outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/checkpoints/last.pt",
+        "role": "E238 binder arity (invalidated)",
+        "run_id": "e238-binder-arity-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 133,
+        "location": "outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/checkpoints/last.pt",
+        "role": "E239 isolated binder arity",
+        "run_id": "e239d-binder-arity-fully-isolated-32step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 134,
+        "location": "outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/checkpoints/last.pt",
+        "role": "E249 exact-event CE plus margin",
+        "run_id": "qx_e249_local_ce_margin",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 135,
+        "location": "outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/checkpoints/last.pt",
+        "role": "E252 verifier-backed set FTPO",
+        "run_id": "qx_e252_local_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 136,
+        "location": "outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E277 broad gold-AST set FTPO",
+        "run_id": "qx_e262_broad_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 137,
+        "location": "outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E278 guarded gold-AST set FTPO",
+        "run_id": "qx_e278_guarded_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 138,
+        "location": "outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E265 safe gold-AST set FTPO",
+        "run_id": "qx_e265_safe_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 139,
+        "location": "outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E266 stratified safe set FTPO",
+        "run_id": "qx_e266_stratified_safe_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 140,
+        "location": "outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E267 block-coordinate safe set FTPO",
+        "run_id": "qx_e267_block_stratified_safe_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 141,
+        "location": "outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E268 projected safe set FTPO",
+        "run_id": "qx_e268_projected_stratified_safe_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 142,
+        "location": "outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E269 MGDA safe set FTPO",
+        "run_id": "qx_e269_mgda_stratified_safe_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 143,
+        "location": "outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+        "role": "E272 MGDA plus SGD preflight",
+        "run_id": "qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 144,
+        "location": "outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt",
+        "role": "E174 unfrozen-context 8-step control",
+        "run_id": "e174-unfrozen-context-8step",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 145,
+        "location": "outputs/runs/",
+        "role": "Matrix honest champion (scratch)",
+        "run_id": "qx_e53_*` (V6 E53 family)",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "ephemeral_local",
+        "failures": [],
+        "line": 146,
+        "location": "<ephemeral-local>",
+        "role": "P13 fixture E50 control",
+        "run_id": "qx_e50_core_remask",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "ephemeral_local",
+        "failures": [],
+        "line": 147,
+        "location": "<ephemeral-local>",
+        "role": "P13 integrated E50 candidate",
+        "run_id": "qx_e50_core_remask",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "ephemeral_local",
+        "failures": [],
+        "line": 148,
+        "location": "<ephemeral-local>",
+        "role": "Frozen X2 baseline",
+        "run_id": "gx_x2_codec` seeds 0/1/2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "unparsed",
+        "failures": [],
+        "line": 149,
+        "location": "pytest temporary checkpoint (local)",
+        "role": "Topology implementation smoke",
+        "run_id": "grammar_diffusion_overfit",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "ephemeral_local",
+        "failures": [],
+        "line": 150,
+        "location": "<ephemeral-local>",
+        "role": "Topology X9/X14 confirmation",
+        "run_id": "gx_x9_topology_base`, `gx_x14_buffer` seeds 0/1/2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 151,
+        "location": "outputs/runs/gx_x18_scope_noise_confirm_200/",
+        "role": "ScopeDiff X18 confirmation",
+        "run_id": "gx_x18_scope_noise_confirm_200` seeds 0/1/2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 152,
+        "location": "outputs/runs/gx_x21_scoped_topology_confirm_200/",
+        "role": "ScopeDiff X21 confirmation",
+        "run_id": "gx_x21_scoped_topology_confirm_200` seeds 0/1/2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 153,
+        "location": "outputs/runs/gx_x22_kapur_tree_edit_s0/checkpoints/last.pt",
+        "role": "EFS0-04 X22 reproduction",
+        "run_id": "gx_x22_kapur_tree_edit_s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 154,
+        "location": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+        "role": "B3 five-minute lexer control",
+        "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 155,
+        "location": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+        "role": "B3 five-minute choice arm",
+        "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 156,
+        "location": "outputs/ladders/e289-choice-state-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+        "role": "E289 cached choice arm",
+        "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 157,
+        "location": "outputs/ladders/e290-choice-direct-candidates/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+        "role": "E290 direct-candidate choice arm",
+        "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 158,
+        "location": "outputs/ladders/e291-choice-completion-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+        "role": "E291 completion-cached choice arm",
+        "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 159,
+        "location": "outputs/ladders/e292-choice-loss-suite-complete-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+        "role": "E292 complete-loss choice arm",
+        "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 160,
+        "location": "outputs/runs/e293-choice-component-plan-r3/checkpoints/last.pt",
+        "role": "E293 choice-native component plan",
+        "run_id": "e293-choice-component-plan-r3",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 161,
+        "location": "outputs/runs/e294-choice-no-design-control-r1/checkpoints/last.pt",
+        "role": "E294 no-DESIGN choice control",
+        "run_id": "e294-choice-no-design-control-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 162,
+        "location": "outputs/runs/e295-choice-design-dropout-r1/checkpoints/last.pt",
+        "role": "E295 DESIGN-dropout choice arm",
+        "run_id": "e295-choice-design-dropout-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 163,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/",
+        "role": "E396 durable diagnostic checkpoint",
+        "run_id": "e396-balanced-type-head-continuation-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 164,
+        "location": "outputs/runs/e499-remediated-roots-hf-choice-control-r4/checkpoints/last.pt",
+        "role": "E499 diverse-root control",
+        "run_id": "e499-remediated-roots-hf-choice-control-r4",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 165,
+        "location": "outputs/runs/e499-strict-r4-hf-choice-candidate-r4/checkpoints/last.pt",
+        "role": "E499 strict-r4 candidate",
+        "run_id": "e499-strict-r4-hf-choice-candidate-r4",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 166,
+        "location": "outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/checkpoints/last.pt",
+        "role": "E499 choice-compatible strict candidate",
+        "run_id": "e499-choice-compatible-strict-hf-choice-candidate-r6",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 167,
+        "location": "outputs/runs/e500-document-control-hf-choice-r1/checkpoints/last.pt",
+        "role": "E500 1k document control",
+        "run_id": "e500-document-control-hf-choice-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 168,
+        "location": "outputs/runs/e500-documentized-expression-hf-choice-r2/checkpoints/last.pt",
+        "role": "E500 1k projected candidate",
+        "run_id": "e500-documentized-expression-hf-choice-r2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 169,
+        "location": "outputs/runs/e500-document-control-hf-choice-r3-5k/checkpoints/last.pt",
+        "role": "E500 5k document control",
+        "run_id": "e500-document-control-hf-choice-r3-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 170,
+        "location": "outputs/runs/e500-documentized-expression-hf-choice-r4-5k/checkpoints/last.pt",
+        "role": "E500 5k projected candidate",
+        "run_id": "e500-documentized-expression-hf-choice-r4-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 171,
+        "location": "outputs/runs/e501-e396-e500-init-r1/checkpoints/last.pt",
+        "role": "E501 task-balanced 5k warm-start",
+        "run_id": "e501-e396-e500-init-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 172,
+        "location": "outputs/runs/e501-e396-e500-uniform-init-r2/checkpoints/last.pt",
+        "role": "E501 uniform 5k warm-start",
+        "run_id": "e501-e396-e500-uniform-init-r2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 173,
+        "location": "outputs/runs/e501-e396-e500-uniform-init-r3-1k/checkpoints/last.pt",
+        "role": "E501 uniform 1k warm-start",
+        "run_id": "e501-e396-e500-uniform-init-r3-1k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 174,
+        "location": "outputs/runs/e502-e396-e500-uniform-lr1e4-r1/checkpoints/last.pt",
+        "role": "E502 1e-4 warm-start",
+        "run_id": "e502-e396-e500-uniform-lr1e4-r1",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 175,
+        "location": "outputs/runs/e502-e396-e500-uniform-lr3e5-r2/checkpoints/last.pt",
+        "role": "E502 3e-5 warm-start",
+        "run_id": "e502-e396-e500-uniform-lr3e5-r2",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 176,
+        "location": "outputs/runs/e502-e396-e500-prior-retained-lr3e4-r3/checkpoints/last.pt",
+        "role": "E502 retained-prior 1k",
+        "run_id": "e502-e396-e500-prior-retained-lr3e4-r3",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 177,
+        "location": "outputs/runs/e502-e396-e500-prior-retained-lr3e4-r4-5k/checkpoints/last.pt",
+        "role": "E502 retained-prior 5k",
+        "run_id": "e502-e396-e500-prior-retained-lr3e4-r4-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 178,
+        "location": "outputs/runs/e503-e396-e500-retention0-r1-5k/checkpoints/last.pt",
+        "role": "E503 0% retention control",
+        "run_id": "e503-e396-e500-retention0-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 179,
+        "location": "outputs/runs/e503-e396-e500-retention001-r2-5k/checkpoints/last.pt",
+        "role": "E503 1% retention",
+        "run_id": "e503-e396-e500-retention001-r2-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 180,
+        "location": "outputs/runs/e503-e396-e500-retention005-r3-5k/checkpoints/last.pt",
+        "role": "E503 5% retention",
+        "run_id": "e503-e396-e500-retention005-r3-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 181,
+        "location": "outputs/runs/e503-e396-e500-retention003-r4-5k/checkpoints/last.pt",
+        "role": "E503 3% retention",
+        "run_id": "e503-e396-e500-retention003-r4-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 182,
+        "location": "outputs/runs/e504-e396-e500-replay000-r1-5k/checkpoints/last.pt",
+        "role": "E504 0% replay control",
+        "run_id": "e504-e396-e500-replay000-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 183,
+        "location": "outputs/runs/e504-e396-e500-replay0125-r2-5k/checkpoints/last.pt",
+        "role": "E504 12.5% parent replay",
+        "run_id": "e504-e396-e500-replay0125-r2-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 184,
+        "location": "outputs/runs/e504-e396-e500-replay025-r3-5k/checkpoints/last.pt",
+        "role": "E504 25% parent replay",
+        "run_id": "e504-e396-e500-replay025-r3-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 185,
+        "location": "outputs/runs/e504-e396-e500-replay050-r4-5k/checkpoints/last.pt",
+        "role": "E504 50% parent replay",
+        "run_id": "e504-e396-e500-replay050-r4-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 186,
+        "location": "outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/checkpoints/last.pt",
+        "role": "E504 50% replay + 1% retention",
+        "run_id": "e504-e396-e500-replay050-retention001-r5-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 187,
+        "location": "outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/checkpoints/last.pt",
+        "role": "E505 50% replay loss attribution",
+        "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 188,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/",
+        "role": "E513 durable slot-role continuation",
+        "run_id": "e513-e396-e500-replay050-slotrole4-focal2-r3-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 189,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k/",
+        "role": "E515 focal-zero slot-role control",
+        "run_id": "e515-e396-e500-replay050-slotrole4-focal0-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 190,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k/",
+        "role": "E517 slot-loss-1 context control",
+        "run_id": "e517-e396-e500-replay050-slotrole1-context-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 191,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e519-e396-e500-replay050-slotrole1-honest-context-r1-5k/",
+        "role": "E519 honest slot-context control",
+        "run_id": "e519-e396-e500-replay050-slotrole1-honest-context-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 192,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e522-e396-e521-replay050-slotrole1-honest-context-r2-5k/",
+        "role": "E522 visible-inventory continuation",
+        "run_id": "e522-e396-e521-replay050-slotrole1-honest-context-r2-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 193,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k/",
+        "role": "E525 visible-component continuation",
+        "run_id": "e525-e396-e524-replay050-slotrole1-honest-context-r2-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 194,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k/",
+        "role": "E528 visible-component-types continuation",
+        "run_id": "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 195,
+        "location": "outputs/runs/e616-object-property-slot-bias-scratch80-20260720/checkpoints/last.pt",
+        "role": "E616 object-frame slot-bias replay (80-step)",
+        "run_id": "e616-object-property-slot-bias-scratch80-20260720",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 196,
+        "location": "outputs/runs/e620-required-slot-coverage-scratch800-20260720/checkpoints/last.pt",
+        "role": "E620 required-slot coverage replay (800-step)",
+        "run_id": "e620-required-slot-coverage-scratch800-20260720",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 197,
+        "location": "outputs/runs/e548_training_loop_twotower_scratch_20260720/checkpoints/last.pt",
+        "role": "E548 fresh TwoTower training-loop iteration",
+        "run_id": "e548_training_loop_twotower_scratch_20260720",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 198,
+        "location": "outputs/runs/e547_training_loop_twotower_scratch_20260720/checkpoints/last.pt",
+        "role": "E547 fresh TwoTower training-loop iteration",
+        "run_id": "e547_training_loop_twotower_scratch_20260720",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 199,
+        "location": "outputs/runs/e546_training_loop_twotower_scratch_20260720/checkpoints/last.pt",
+        "role": "E546 fresh TwoTower training-loop iteration",
+        "run_id": "e546_training_loop_twotower_scratch_20260720",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 200,
+        "location": "outputs/runs/e545_training_loop_twotower_scratch_20260719/checkpoints/last.pt",
+        "role": "E545 fresh TwoTower training-loop iteration",
+        "run_id": "e545_training_loop_twotower_scratch_20260719",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 201,
+        "location": "outputs/runs/e544_training_loop_twotower_scratch_20260719/checkpoints/last.pt",
+        "role": "E544 fresh TwoTower training-loop iteration",
+        "run_id": "e544_training_loop_twotower_scratch_20260719",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 202,
+        "location": "outputs/runs/e543_training_loop_twotower_resume_scratch_20260719/checkpoints/last.pt",
+        "role": "E543 resumed TwoTower training-loop iteration",
+        "run_id": "e543_training_loop_twotower_resume_scratch_20260719",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 203,
+        "location": "outputs/runs/e542_training_loop_twotower_resume_scratch_20260719/checkpoints/last.pt",
+        "role": "E542 resumed TwoTower training-loop iteration",
+        "run_id": "e542_training_loop_twotower_resume_scratch_20260719",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 204,
+        "location": "outputs/runs/e541_training_loop_twotower_scratch_20260719/checkpoints/last.pt",
+        "role": "E541 TwoTower training-loop iteration",
+        "run_id": "e541_training_loop_twotower_scratch_20260719",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 205,
+        "location": "outputs/runs/e540_training_loop_scratch_20260719/checkpoints/last.pt",
+        "role": "E540 training-loop sentinel",
+        "run_id": "e540_training_loop_scratch_20260719",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 206,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k/",
+        "role": "E531 visible-semantic-role continuation",
+        "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 207,
+        "location": "outputs/runs/e542-e531-root-reference-arity1-r1-24s/checkpoints/last.pt",
+        "role": "E542 learned root-arity continuation",
+        "run_id": "e542-e531-root-reference-arity1-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 208,
+        "location": "outputs/runs/e543-e531-root-reference-bounded-r1-24s/checkpoints/last.pt",
+        "role": "E543 bounded root-arity continuation",
+        "run_id": "e543-e531-root-reference-bounded-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 209,
+        "location": "outputs/runs/e544-e543-root-identity1-r2-24s/checkpoints/last.pt",
+        "role": "E544 root-reference identity continuation",
+        "run_id": "e544-e543-root-identity1-r2-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 210,
+        "location": "outputs/runs/e545-e544-root-identity-neg1-control-r1-24s/checkpoints/last.pt",
+        "role": "E545 identity negative-weight-1 control",
+        "run_id": "e545-e544-root-identity-neg1-control-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 211,
+        "location": "outputs/runs/e545-e544-root-identity-neg4-r2-24s/checkpoints/last.pt",
+        "role": "E545 identity negative-weight-4 treatment",
+        "run_id": "e545-e544-root-identity-neg4-r2-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 212,
+        "location": "outputs/runs/e546-e544-strict-subset1-control-r1-24s/checkpoints/last.pt",
+        "role": "E546 strict-subset multiplier-1 control",
+        "run_id": "e546-e544-strict-subset1-control-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 213,
+        "location": "outputs/runs/e546-e544-strict-subset5-r2-24s/checkpoints/last.pt",
+        "role": "E546 strict-subset multiplier-5 treatment",
+        "run_id": "e546-e544-strict-subset5-r2-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 214,
+        "location": "outputs/runs/e547-e544-strict-subset2-r1-24s/checkpoints/last.pt",
+        "role": "E547 strict-subset multiplier-2 treatment",
+        "run_id": "e547-e544-strict-subset2-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 215,
+        "location": "outputs/runs/e551-e544-strict-subset2-no-lexeme-r1-24s/checkpoints/last.pt",
+        "role": "E551 no-lexeme-prior treatment",
+        "run_id": "e551-e544-strict-subset2-no-lexeme-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 216,
+        "location": "outputs/runs/e552-e544-strict-subset2-lexeme05-r1-24s/checkpoints/last.pt",
+        "role": "E552 half-strength lexeme-prior treatment",
+        "run_id": "e552-e544-strict-subset2-lexeme05-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 217,
+        "location": "outputs/runs/e553-e544-prior-proportional-r3-24s/checkpoints/last.pt",
+        "role": "E553 corpus-local proportional-prior treatment",
+        "run_id": "e553-e544-prior-proportional-r3-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 218,
+        "location": "outputs/runs/e554-e544-slot-next-context-r2-24s/checkpoints/last.pt",
+        "role": "E554 next-slot-context treatment",
+        "run_id": "e554-e544-slot-next-context-r2-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 219,
+        "location": "outputs/runs/e555-e544-slot-pair-interaction-r2-24s/checkpoints/last.pt",
+        "role": "E555 slot-pair-interaction treatment",
+        "run_id": "e555-e544-slot-pair-interaction-r2-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 220,
+        "location": "outputs/runs/e556-e544-slot-context-combined-r1-24s/checkpoints/last.pt",
+        "role": "E556 combined-slot-context treatment",
+        "run_id": "e556-e544-slot-context-combined-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 221,
+        "location": "outputs/runs/e557-e544-slot-pair-balance1-r1-24s/checkpoints/last.pt",
+        "role": "E557 full-balance treatment",
+        "run_id": "e557-e544-slot-pair-balance1-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 222,
+        "location": "outputs/runs/e558-e544-owner-coverage-r1-24s/checkpoints/last.pt",
+        "role": "E558 owner-coverage engineering trial",
+        "run_id": "e558-e544-owner-coverage-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 223,
+        "location": "outputs/runs/e558-e544-owner-coverage-r2-24s/checkpoints/last.pt",
+        "role": "E558 owner-coverage treatment",
+        "run_id": "e558-e544-owner-coverage-r2-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 224,
+        "location": "outputs/runs/e559-e544-owner-coverage2-r1-24s/checkpoints/last.pt",
+        "role": "E559 twofold owner-coverage treatment",
+        "run_id": "e559-e544-owner-coverage2-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 225,
+        "location": "outputs/runs/e560-e544-owner-threshold4-r1-24s/checkpoints/last.pt",
+        "role": "E560 narrow owner-coverage treatment",
+        "run_id": "e560-e544-owner-threshold4-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 226,
+        "location": "outputs/runs/e561-e544-owner-threshold7-r1-24s/checkpoints/last.pt",
+        "role": "E561 midpoint owner-coverage treatment",
+        "run_id": "e561-e544-owner-threshold7-r1-24s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 227,
+        "location": "outputs/runs/e568-e561-cont48-r1-48s/checkpoints/last.pt",
+        "role": "E568 design-context continuation",
+        "run_id": "e568-e561-cont48-r1-48s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 228,
+        "location": "outputs/runs/e569-e561-matched-cont48-r1-48s/checkpoints/last.pt",
+        "role": "E569 matched continuation",
+        "run_id": "e569-e561-matched-cont48-r1-48s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 229,
+        "location": "outputs/runs/e572-e569-fidelity2-r1-48s/checkpoints/last.pt",
+        "role": "E572 fidelity-loss treatment",
+        "run_id": "e572-e569-fidelity2-r1-48s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 230,
+        "location": "outputs/runs/e573-e569-fidelity1-r1-48s/checkpoints/last.pt",
+        "role": "E573 midpoint fidelity treatment",
+        "run_id": "e573-e569-fidelity1-r1-48s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "repo_local",
+        "failures": [],
+        "line": 231,
+        "location": "outputs/runs/e574-e569-slotloss2-r1-48s/checkpoints/last.pt",
+        "role": "E574 slot-loss treatment",
+        "run_id": "e574-e569-slotloss2-r1-48s",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "unparsed",
+        "failures": [],
+        "line": 232,
+        "location": "docs/design/calculated-arity-adaptive-precision-results.md",
+        "role": "CAP5 evidence package",
+        "run_id": "cap5-03-evidence",
+        "verdict": "pass"
+      },
+      {
+        "claims_durable": false,
+        "durability": "durable_remote",
+        "failures": [],
+        "line": 233,
+        "location": "hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/",
+        "role": "Production HF ship",
+        "run_id": "\u2014",
+        "verdict": "pass"
+      }
+    ],
+    "schema": "evidence_bundle_census/v1",
+    "summary": {
+      "evidence_bundles": 0,
+      "failures": 0,
+      "roster_claims_durable": 0,
+      "roster_durable_remote": 10,
+      "roster_ephemeral_local": 6,
+      "roster_repo_local": 148,
+      "roster_rows": 166
+    },
+    "verifier_version": "evidence_bundle_verifier/v1"
+  },
+  "claim_class": "wiring",
+  "issue": "SLM-291",
+  "matrix_set": "slm291-evidence-bundles",
+  "matrix_version": "slm291-v1",
+  "notes": [
+    "0 committed evidence_bundle/v1 payloads exist yet; the census verifies them from now on",
+    "0 roster rows positively claim a durable class; all 166 rows are honestly classified",
+    "9 durable bucket checkpoints satisfy the bar only as diagnostic evidence; they are below the frontier/ship_candidate bar because no bundle was recorded"
+  ],
+  "run_id": "slm291_evidence_census",
+  "schema": "slm291_evidence_bundles/v1",
+  "status": "complete",
+  "version_stamp": {
+    "code_commit": "c5ab8bb9334a4d4befc7b48827118655c1a32295",
+    "code_dirty": true,
+    "components": {
+      "harness.core": "v9",
+      "harness_core.evidence_bundle": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T07:49:16.402913+00:00"
+  }
+}
