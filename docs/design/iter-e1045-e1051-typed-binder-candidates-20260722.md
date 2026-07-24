@@ -275,3 +275,18 @@ checkpoint or `train_summary.json`. Its last metrics line is step 71 with loss
 or quality evidence: it must not be resumed, evaluated, synced, promoted,
 served, or used as a parent. Restart a fresh E1079-equivalent arm through a
 persistent terminal session, then evaluate only a fully serialized checkpoint.
+
+## E1080 v272 root-identity reproduction (own-state partial)
+
+E1080 restarts E1079's E1075-recipe reproduction in a persistent terminal with
+the same E937 manifest, CPU scratch lexer/tree path, batch 4, seed 0, and the
+three structural loss weights of 1. It cleanly reaches the harness wall budget
+at 37/395 steps in 96.03 seconds and serializes its own full-state checkpoint.
+The strict-subset audit remains 220 rows. Its last loss is 17.7302.
+
+This host is materially slower than the E1075 machine: E1075 reached 378 steps
+in about 95 seconds while E1080 reached 37 (9.79% of the step throughput).
+The partial loss is therefore not a quality comparison and no evaluation,
+sync, promotion, serving, or parenting is allowed. Resume only E1080's own
+full state until the requested 395 steps complete; the next eligible diagnostic
+is then the decode-off Settings row.

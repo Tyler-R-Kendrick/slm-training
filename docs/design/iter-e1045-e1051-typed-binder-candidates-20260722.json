@@ -519,6 +519,37 @@
         },
         "stamped_at": "2026-07-24T06:57:52.733138+00:00"
       }
+    },
+    "E1080": {
+      "status": "completed_own_state_partial",
+      "run_id": "e1080_v272_root_identity_repro",
+      "relation": "fresh E1075-recipe reproduction after E1079 transport interruption; no prior checkpoint used",
+      "steps_requested": 395,
+      "steps_completed": 37,
+      "stopped_on": "wall_time_budget",
+      "elapsed_wall_seconds": 96.03330002400003,
+      "last_loss": 17.730154037475586,
+      "checkpoint": "outputs/runs/e1080_v272_root_identity_repro/checkpoints/last.pt",
+      "checkpoint_sync": "disabled_scratch",
+      "data_manifest_sha": "23e81f05616592a29c755a96849da1af279e40ee075a4353277b36739af679e1",
+      "root_reference_identity_strict_subset_records": 220,
+      "comparison": {
+        "E1075_steps_at_approximately_95_seconds": 378,
+        "E1080_steps_at_96_seconds": 37,
+        "throughput_ratio_E1080_over_E1075": 0.0979,
+        "interpretation": "Different local host throughput; partial losses are not quality-comparable."
+      },
+      "eligible_for_eval_sync_promotion_or_parent": false,
+      "next_action": "Resume only E1080's serialized full state until 395 steps complete, then run the decode-off Settings diagnostic.",
+      "version_stamp": {
+        "stamp_schema": "version_stamp/v1",
+        "code_commit": "f0cb53ef4c3fdaf484ab4629bab1e348c708aad2",
+        "code_dirty": true,
+        "components": {
+          "harness.model_build.train": "v23"
+        },
+        "stamped_at": "2026-07-24T07:00:31.760912+00:00"
+      }
     }
   },
   "disposition": {
