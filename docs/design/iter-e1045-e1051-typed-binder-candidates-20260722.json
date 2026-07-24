@@ -521,15 +521,19 @@
       }
     },
     "E1080": {
-      "status": "completed_own_state_partial",
+      "status": "completed_train_pending_decode_off_settings",
       "run_id": "e1080_v272_root_identity_repro",
       "relation": "fresh E1075-recipe reproduction after E1079 transport interruption; no prior checkpoint used",
       "steps_requested": 395,
-      "steps_completed": 37,
-      "stopped_on": "wall_time_budget",
-      "elapsed_wall_seconds": 96.03330002400003,
-      "last_loss": 17.730154037475586,
+      "steps_completed": 395,
+      "first_stop": "wall_time_budget",
+      "first_elapsed_wall_seconds": 96.03330002400003,
+      "resume_stop": "steps",
+      "resume_elapsed_wall_seconds": 83.904931433,
+      "cumulative_elapsed_wall_seconds": 179.93823145700002,
+      "last_loss": 5.794217586517334,
       "checkpoint": "outputs/runs/e1080_v272_root_identity_repro/checkpoints/last.pt",
+      "checkpoint_sha256": "eae1afd2bdfe587538e0bd2a44edc6a87600fb897f02970a10d3a723bc54623d",
       "checkpoint_sync": "disabled_scratch",
       "data_manifest_sha": "23e81f05616592a29c755a96849da1af279e40ee075a4353277b36739af679e1",
       "root_reference_identity_strict_subset_records": 220,
@@ -539,16 +543,17 @@
         "throughput_ratio_E1080_over_E1075": 0.0979,
         "interpretation": "Different local host throughput; partial losses are not quality-comparable."
       },
-      "eligible_for_eval_sync_promotion_or_parent": false,
-      "next_action": "Resume only E1080's serialized full state until 395 steps complete, then run the decode-off Settings diagnostic.",
+      "eligible_for_eval": true,
+      "eligible_for_sync_promotion_or_parent": false,
+      "next_action": "Run the decode-off Settings diagnostic against this completed local-only checkpoint.",
       "version_stamp": {
         "stamp_schema": "version_stamp/v1",
-        "code_commit": "f0cb53ef4c3fdaf484ab4629bab1e348c708aad2",
+        "code_commit": "2caa893a5b820836ef73768c45d258b33c806241",
         "code_dirty": true,
         "components": {
           "harness.model_build.train": "v23"
         },
-        "stamped_at": "2026-07-24T07:00:31.760912+00:00"
+        "stamped_at": "2026-07-24T07:03:21.189039+00:00"
       }
     }
   },

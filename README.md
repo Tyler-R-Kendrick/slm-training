@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E1080 v272 root-identity reproduction | `e1080_v272_root_identity_repro/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 179.94 cumulative train seconds; fresh E1075-recipe reproduction, pending decode-off Settings diagnostic; unsynced/not promoted/served/parentable |
 | E1075 v272 root-identity diagnostic | `e1075_v272_root_identity_395/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 100.16 cumulative train seconds; E1076 smoke strict-v2/fidelity 1.0 with two identity-driven choice changes, but E1077 Dual Card still times out. AgentV 0/2; pending Settings only, not synced/promoted/served/parentable |
 | E1071 v271 395-step exposure diagnostic | `e1071_v271_bound_only_arity_395/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 107.13 cumulative train seconds; E1072 smoke strict-v2 1.0, but E1073 Dual Card times out while E1074 Settings is strict-valid. AgentV 0/3 — exposure sweep closed, rejected |
 | E1069 331-step exposure control | `e1069_v271_331_step_control/last.pt` | `outputs/runs/...` (local) | 331 steps / 100.92 cumulative train seconds; E1070 smoke exactly matches root-decode-off E1068 at strict-v2/recall 0.6667, proving insufficient exposure rather than root-loss interference; AgentV 0/1 — rejected |
