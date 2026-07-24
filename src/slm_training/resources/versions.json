@@ -1466,12 +1466,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v82",
+      "version": "v83",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v83",
+          "date": "2026-07-24",
+          "note": "Implement SLM-294 frontier chunked execution and scoring pass in the external-ceiling harness"
+        },
         {
           "version": "v82",
           "date": "2026-07-24",

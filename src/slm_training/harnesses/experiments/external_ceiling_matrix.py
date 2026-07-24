@@ -11,9 +11,12 @@ and pinned checkpoints are available. No ship claim is made by the fixture.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import time
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,19 +32,42 @@ from slm_training.models.external_scorer import (
 from slm_training.versioning import build_version_stamp
 
 __all__ = [
+    "DEFAULT_FROZEN_REQUESTS_FILE",
+    "DEFAULT_FROZEN_REQUESTS_SHA256",
+    "FRONTIER_ARMS",
+    "FRONTIER_SYSTEM_PROMPT",
     "ExternalCeilingArm",
     "ExternalCeilingManifest",
     "ExternalCeilingReport",
     "MATRIX_SET",
     "MATRIX_VERSION",
     "build_external_ceiling_manifest",
+    "frontier_prompt_template_sha256",
+    "load_frozen_requests",
     "render_markdown",
     "run_fixture_matrix",
+    "run_frontier_chunk",
+    "run_score_pass",
     "validate_external_ceiling_manifest",
 ]
 
 MATRIX_VERSION = "efs1-01-v1"
 MATRIX_SET = "external-ceiling"
+
+# SLM-294 frontier execution constants (preregistration-locked).
+FRONTIER_SYSTEM_PROMPT = (
+    "Return only one valid OpenUI program using placeholder content."
+)
+FRONTIER_ARMS = {
+    "B": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "C": "Qwen/Qwen2.5-7B-Instruct",
+}
+DEFAULT_FROZEN_REQUESTS_FILE = Path(
+    "src/slm_training/resources/evals/slm294_frozen_requests_v1.jsonl"
+)
+DEFAULT_FROZEN_REQUESTS_SHA256 = (
+    "8466b402452c055a794057eb5a1853fb8e1548a398949cdb35ce51bca0e2d50e"
+)
 
 
 @dataclass(frozen=True)
@@ -392,3 +418,257 @@ def _fixture_requests() -> list[GenerationRequest]:
             slot_contract=(":username", ":password"),
         ),
     ]
+
+
+# ---------------------------------------------------------------------------
+# SLM-294 frontier execution (chunked, resumable, deterministic per chunk)
+# ---------------------------------------------------------------------------
+
+
+def frontier_prompt_template_sha256() -> str:
+    """Content hash of the published prompt template (arms B and C)."""
+    template = {
+        "system": FRONTIER_SYSTEM_PROMPT,
+        "user": "{prompt}",
+    }
+    return hashlib.sha256(
+        json.dumps(template, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def load_frozen_requests(
+    path: Path = DEFAULT_FROZEN_REQUESTS_FILE,
+    *,
+    expected_sha256: str = DEFAULT_FROZEN_REQUESTS_SHA256,
+) -> list[Any]:
+    """Load frozen SLM-294 requests as ExampleRecords; fail closed on sha mismatch."""
+    from slm_training.dsl.schema import ExampleRecord
+
+    raw = path.read_bytes()
+    actual = hashlib.sha256(raw).hexdigest()
+    if actual != expected_sha256:
+        raise ValueError(
+            f"frozen requests sha256 mismatch for {path}: "
+            f"expected {expected_sha256}, got {actual}"
+        )
+    records: list[Any] = []
+    for line in raw.decode("utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        records.append(
+            ExampleRecord(
+                id=row["id"],
+                prompt=row["prompt"],
+                openui=row["openui"],
+                placeholders=list(row.get("placeholders", [])),
+                split=row.get("split", "held_out"),
+                source=row.get("source", "slm294_frozen"),
+            )
+        )
+    return records
+
+
+def _append_jsonl_atomic(path: Path, record: dict[str, Any]) -> None:
+    """Append one JSONL record via tmp-file + os.replace (never partial)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(
+        existing + json.dumps(record, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(tmp, path)
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def run_frontier_chunk(
+    *,
+    arm: str,
+    output_dir: Path,
+    requests_file: Path = DEFAULT_FROZEN_REQUESTS_FILE,
+    expected_sha256: str = DEFAULT_FROZEN_REQUESTS_SHA256,
+    chunk_size: int = 5,
+    scorer: ExternalLegalActionScorer | None = None,
+    scorer_kind: str = "transformers_causal_lm",
+    max_new_tokens: int = 384,
+) -> dict[str, Any]:
+    """Generate raw outputs for the next ``chunk_size`` unfinished requests.
+
+    Deterministic resume: requests already present in ``raw/<arm>.jsonl`` are
+    skipped. Each record is appended atomically, so a timed-out or killed
+    chunk never leaves partial evidence behind.
+    """
+    if arm not in FRONTIER_ARMS:
+        raise ValueError(
+            f"unknown frontier arm {arm!r}; choose from {sorted(FRONTIER_ARMS)}"
+        )
+    requests = load_frozen_requests(requests_file, expected_sha256=expected_sha256)
+    raw_path = output_dir / "raw" / f"{arm}.jsonl"
+    done_ids = {row["id"] for row in _read_jsonl(raw_path)}
+    pending = [record for record in requests if record.id not in done_ids]
+    chunk = pending[:chunk_size]
+
+    if chunk and scorer is None:
+        scorer = build_external_scorer(
+            ExternalScorerConfig(
+                model_id=FRONTIER_ARMS[arm],
+                revision="main",
+                claim_class="diagnostic",
+            ),
+            kind=scorer_kind,
+        )
+
+    processed: list[str] = []
+    for record in chunk:
+        started_at = _utc_now_iso()
+        t0 = time.perf_counter()
+        raw_output = scorer.generate(record.prompt, max_new_tokens=max_new_tokens)
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+        finished_at = _utc_now_iso()
+        config = scorer.config
+        row = {
+            "id": record.id,
+            "prompt": record.prompt,
+            "arm": arm,
+            "model_id": config.model_id,
+            "revision": scorer.resolved_revision,
+            "device": config.device,
+            "dtype": config.dtype,
+            "prompt_template_sha256": frontier_prompt_template_sha256(),
+            "raw_output": raw_output,
+            "raw_output_sha256": hashlib.sha256(
+                raw_output.encode("utf-8")
+            ).hexdigest(),
+            "latency_ms": latency_ms,
+            "started_at": started_at,
+            "finished_at": finished_at,
+        }
+        _append_jsonl_atomic(raw_path, row)
+        processed.append(record.id)
+
+    summary = {
+        "arm": arm,
+        "processed": processed,
+        "completed": len(done_ids) + len(processed),
+        "total": len(requests),
+        "remaining": len(pending) - len(processed),
+        "raw_path": str(raw_path),
+    }
+    return summary
+
+
+def run_score_pass(
+    *,
+    output_dir: Path,
+    requests_file: Path = DEFAULT_FROZEN_REQUESTS_FILE,
+    expected_sha256: str = DEFAULT_FROZEN_REQUESTS_SHA256,
+    arms: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    """(Re)score every arm raw JSONL; deterministic and idempotent.
+
+    Writes ``<output_dir>/scoreboard.json`` with per-request verdicts and
+    per-arm Wilson 95% intervals for the v2 strict rate (primary), the v1
+    verdict rate, and the official syntax rate.
+    """
+    from slm_training.dsl.parser import ParseError, validate
+    from slm_training.evals.meaningful_program import (
+        aggregate_meaning_reports_v2,
+        binding_aware_meaningful_v2,
+    )
+    from slm_training.evals.power_protocol import wilson_interval
+    from slm_training.harnesses.model_build.eval_runner import meaningful_program_v1
+
+    requests = load_frozen_requests(requests_file, expected_sha256=expected_sha256)
+    gold_by_id = {record.id: record for record in requests}
+
+    raw_dir = output_dir / "raw"
+    raw_files = sorted(raw_dir.glob("*.jsonl")) if raw_dir.exists() else []
+    if arms is not None:
+        wanted = set(arms)
+        raw_files = [p for p in raw_files if p.stem in wanted]
+
+    def _rate(successes: int, n: int) -> dict[str, Any]:
+        return {
+            "successes": successes,
+            "n": n,
+            "rate": successes / n if n else 0.0,
+            "wilson_95": wilson_interval(successes, n),
+        }
+
+    scoreboard: dict[str, Any] = {
+        "schema": "slm294_external_ceiling_scoreboard/v1",
+        "requests_file": str(requests_file),
+        "requests_sha256": expected_sha256,
+        "prompt_template_sha256": frontier_prompt_template_sha256(),
+        "arms": {},
+        "version_stamp": build_version_stamp("harness.experiments.external_ceiling"),
+    }
+    for raw_file in raw_files:
+        arm = raw_file.stem
+        per_request: list[dict[str, Any]] = []
+        v2_reports = []
+        syntax_ok = v1_ok = v2_ok = 0
+        for row in _read_jsonl(raw_file):
+            pred = row["raw_output"]
+            gold = gold_by_id.get(row["id"])
+            try:
+                validate(pred)
+                syntax_valid = True
+            except ParseError:
+                syntax_valid = False
+            v1_verdict, v1_reason, _ = meaningful_program_v1(pred, gold=gold)
+            v1_reason_codes = [v1_reason] if v1_reason else []
+            v2_report = None
+            v2_reason_codes: list[str] = []
+            v2_verdict = False
+            if gold is not None:
+                v2_report = binding_aware_meaningful_v2(pred, record=gold)
+                v2_reports.append(v2_report)
+                v2_verdict = bool(v2_report.verdict)
+                v2_reason_codes = list(v2_report.reason_codes)
+            syntax_ok += int(syntax_valid)
+            v1_ok += int(v1_verdict)
+            v2_ok += int(v2_verdict)
+            per_request.append(
+                {
+                    "id": row["id"],
+                    "syntax_valid": syntax_valid,
+                    "v1_verdict": bool(v1_verdict),
+                    "v1_reason_codes": v1_reason_codes,
+                    "v2_verdict": v2_verdict,
+                    "v2_reason_codes": v2_reason_codes,
+                }
+            )
+        n = len(per_request)
+        scoreboard["arms"][arm] = {
+            "n": n,
+            "per_request": per_request,
+            "v2_strict": _rate(v2_ok, n),
+            "v1_verdict": _rate(v1_ok, n),
+            "syntax": _rate(syntax_ok, n),
+            "v2_aggregate": aggregate_meaning_reports_v2(v2_reports),
+        }
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = output_dir / "scoreboard.json"
+    tmp = out_path.with_name(out_path.name + ".tmp")
+    tmp.write_text(
+        json.dumps(scoreboard, indent=2, sort_keys=True, default=str) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(tmp, out_path)
+    return scoreboard
