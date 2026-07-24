@@ -7289,6 +7289,23 @@
           "note": "initial registration; SLM-194 FFE3-03 k-grid and true-wall proposal amortization matrix"
         }
       ]
+    },
+    "harness.eval.replay": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/eval/harness_replay.py",
+        "scripts/replay_harness_failures.py",
+        "tests/test_harnesses/eval/test_harness_replay.py",
+        "docs/design/harness-artifact-audit.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; byte-preserving archived harness replay records"
+        }
+      ]
     }
   }
 }
