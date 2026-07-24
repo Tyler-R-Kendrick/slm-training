@@ -665,7 +665,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -673,6 +673,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "publish summary-only LangSmith AgentV child traces correlated to the canonical W3C run trace without changing AgentEvals authority"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
@@ -3935,6 +3940,11 @@
         {
           "version": "v1",
           "date": "2026-07-24",
+          "note": "no-bump: document repository-wide LangSmith summary telemetry without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
           "note": "no-bump: add the SLM-294 diagnostic checkpoint row to the shared model card without changing the SLM-228 disposition"
         },
         {
@@ -4503,7 +4513,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v52",
+      "version": "v53",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4511,9 +4521,16 @@
         "src/slm_training/harnesses/model_build/eval_policy.py",
         "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
-        "scripts/evaluate_model.py"
+        "scripts/evaluate_model.py",
+        "src/slm_training/runtime/telemetry/trace.py",
+        "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v53",
+          "date": "2026-07-24",
+          "note": "publish curated summary-only LangSmith evaluation spans and honor bounded standard OTLP export configuration through the shared W3C trace"
+        },
         {
           "version": "v52",
           "date": "2026-07-24",

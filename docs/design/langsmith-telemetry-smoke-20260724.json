@@ -1,0 +1,51 @@
+{
+  "schema": "langsmith_telemetry_wiring/v1",
+  "run": {
+    "kind": "langsmith_telemetry_config_smoke",
+    "date": "2026-07-24",
+    "device": "local",
+    "steps": 0,
+    "context_backend": "none",
+    "matrix_set": "telemetry-config",
+    "suite_n": 0,
+    "honesty": "tooling_wiring_not_model_eval",
+    "checkpoint": null,
+    "ship_gates": {
+      "status": "not_run",
+      "pass": null,
+      "reason": "No model checkpoint or quality suite was evaluated."
+    }
+  },
+  "configuration": {
+    "langsmith": {
+      "enabled": true,
+      "project": "slm-training",
+      "api_key": "configured_not_recorded",
+      "flush_seconds": 2.0,
+      "payload": "summary_only"
+    },
+    "otlp": {
+      "service_name": "slm-training",
+      "resource_namespace": "openui",
+      "export_timeout_ms": 1000,
+      "endpoint": "not_configured"
+    }
+  },
+  "verification": {
+    "trace_id": "fdf78e5360a6647b09fa0882a2c5d4ec",
+    "root_run_name": "slm.telemetry.config",
+    "remote_readback": true,
+    "remote_run_id_matches_w3c_trace_id": true
+  },
+  "verdict": "configured_and_readback_verified",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cc2521119d6d89d4663131a7001ce45897ca8cdd",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v53",
+      "evals.agentv": "v3"
+    },
+    "stamped_at": "2026-07-24T19:21:28.616031+00:00"
+  }
+}
