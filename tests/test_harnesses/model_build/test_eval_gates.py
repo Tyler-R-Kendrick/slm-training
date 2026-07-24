@@ -13,8 +13,13 @@ from slm_training.data.leakage import (
     fingerprint_openui_structure,
     normalize_openui_structure,
 )
+from slm_training.dsl.production_codec import ProductionCodec
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig
+from slm_training.harnesses.model_build.data import (
+    load_suite_records,
+    load_train_records,
+)
 from slm_training.harnesses.model_build.eval_runner import (
     _effective_evaluation_policy,
     _is_meaningful_program,
@@ -23,10 +28,6 @@ from slm_training.harnesses.model_build.eval_runner import (
     evaluate_suites,
     structural_similarity,
 )
-from slm_training.harnesses.model_build.data import (
-    load_suite_records,
-    load_train_records,
-)
 from slm_training.harnesses.model_build.plugin import GenerationRequest, StubModel
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
@@ -34,7 +35,6 @@ from slm_training.harnesses.model_build.ship_gates import (
     write_ship_gates,
 )
 from slm_training.harnesses.preference import composite_reward
-from slm_training.dsl.production_codec import ProductionCodec
 from slm_training.models.decode_stats import DecodeStats
 
 
@@ -323,8 +323,8 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
         }
         for suite in DEFAULT_SHIP_GATES
     }
-    for suite in base:
-        base[suite].update(overrides)
+    for metrics in base.values():
+        metrics.update(overrides)
     return base
 
 
@@ -710,6 +710,13 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["contract_precision"] == 1.0
     assert metrics["contract_recall"] == 1.0
     assert metrics["fallback_count"] == 0
+    detail = metrics["details"][0]
+    assert detail["raw_prediction_sha256"] == detail["prediction_sha256"]
+    assert detail["raw_prediction_id"] == f"sha256:{detail['prediction_sha256']}"
+    assert detail["constrained_id"] == "unknown_not_captured"
+    assert detail["repaired_id"] == "unknown_not_captured"
+    assert detail["harness_provenance_id"] == metrics["harness_provenance_id"]
+    assert metrics["harness_provenance"]["browser"] == "not_applicable"
 
 
 def test_evaluate_passes_reported_canvas_cap_to_request_generation(
