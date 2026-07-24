@@ -1,10 +1,16 @@
+import pytest
+
 from slm_training.data.leakage import fingerprint_prompt
+from slm_training.data.store import DataStore
+from slm_training.dsl.schema import load_jsonl
 from slm_training.harnesses.experiments.teacher_programs import (
     AdmissionMode,
     TeacherProgramCandidate,
     TeacherProgramGenerationManifestV1,
     TeacherProgramRequestV1,
+    TeacherRawArchiveRefV1,
     admit_teacher_programs,
+    materialize_teacher_admission,
 )
 
 
@@ -59,3 +65,37 @@ def test_parse_only_is_not_promoted_by_missing_judges():
     result = admit_teacher_programs([_candidate("parse", audit=None, judge=None)], mode="parse_only", protected_fingerprints=_EMPTY)
     assert len(result.accepted) == 1
     assert result.accepted[0]["verification"]["tier"] == "Bronze"
+
+
+def test_materialize_deep_admission_is_train_snapshot_with_raw_pointer(tmp_path):
+    result = admit_teacher_programs(
+        [_candidate("deep", audit=None)],
+        mode="deep_verified",
+        protected_fingerprints=_EMPTY,
+    )
+    directory = tmp_path / "outputs" / "data" / "train" / "teacher_v1"
+    manifest = materialize_teacher_admission(
+        result,
+        output_dir=directory,
+        dataset_id="teacher_v1",
+        raw_archive=TeacherRawArchiveRefV1("hf://datasets/example/raw", "a" * 64),
+    )
+    record = load_jsonl(directory / "records.jsonl")[0]
+    assert record.meta["verification_tier"] == "Silver"
+    assert record.meta["teacher_program_admission"]["raw_archive"]["uri"].startswith("hf://")
+    assert DataStore(tmp_path).resolve("train", "teacher_v1").fingerprint == manifest["content_fingerprint"]
+
+
+def test_materialize_rejects_controls(tmp_path):
+    result = admit_teacher_programs(
+        [_candidate("parse", audit=None, judge=None)],
+        mode="parse_only",
+        protected_fingerprints=_EMPTY,
+    )
+    with pytest.raises(ValueError, match="deep_verified"):
+        materialize_teacher_admission(
+            result,
+            output_dir=tmp_path / "teacher",
+            dataset_id="teacher_v1",
+            raw_archive=TeacherRawArchiveRefV1("hf://datasets/example/raw", "a" * 64),
+        )

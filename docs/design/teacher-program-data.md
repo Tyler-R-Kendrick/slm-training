@@ -42,6 +42,13 @@ human-rating gate. G11 remains the required independent automated judge; its
 family must differ from the generator. Protected overlap is rejected before
 mode-specific materialization.
 
+`python -m scripts.materialize_teacher_programs` accepts only a
+`deep_verified` admission result and produces `outputs/data/train/<id>/` with
+`records.jsonl`, rejected rows, and a `DataStore` manifest. It carries a
+required immutable raw archive URI plus manifest SHA; large provider I/O is not
+copied into Git. The ordinary strict train-data builder and explicit
+`DataStore.publish` remain the only canonical curation/publication path.
+
 ## Current disposition — 2026-07-24
 
 This is implementation and fixture evidence only, not a teacher generation,

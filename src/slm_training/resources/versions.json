@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v78",
+      "version": "v79",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v79",
+          "date": "2026-07-24",
+          "note": "materialize deep SLM-266 admission into canonical train snapshots with raw archive pointers"
+        },
         {
           "version": "v78",
           "date": "2026-07-24",
@@ -4779,16 +4784,22 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
         "scripts/build_teacher_program_generation_manifest.py",
         "scripts/admit_teacher_programs.py",
+        "scripts/materialize_teacher_programs.py",
         "tests/test_harnesses/experiments/test_teacher_programs.py",
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "materialize only deep-admitted teacher rows as canonical train snapshots with immutable raw archive pointer"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",

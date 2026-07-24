@@ -11,9 +11,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
 from slm_training.data.leakage import (
@@ -22,12 +25,14 @@ from slm_training.data.leakage import (
     fingerprint_pair,
 )
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
+from slm_training.data.store import write_common_manifest
 from slm_training.data.verify import (
     Gate,
     GateStatus,
     VerificationContext,
     verify_record,
 )
+from slm_training.dsl.schema import ExampleRecord, write_jsonl
 
 REQUEST_SCHEMA = "teacher_program_request/v1"
 GENERATION_SCHEMA = "teacher_program_generation_manifest/v1"
@@ -150,6 +155,25 @@ class AdmissionResultV1:
             "rejected_n": len(self.rejected),
             "manifest_hash": self.manifest_hash,
         }
+
+
+@dataclass(frozen=True)
+class TeacherRawArchiveRefV1:
+    """Immutable durable archive pointer; raw provider I/O never enters Git data."""
+
+    uri: str
+    manifest_sha256: str
+
+    def __post_init__(self) -> None:
+        if not self.uri or "://" not in self.uri:
+            raise ValueError("raw archive uri must be an absolute URI")
+        if len(self.manifest_sha256) != 64 or any(
+            char not in "0123456789abcdef" for char in self.manifest_sha256
+        ):
+            raise ValueError("raw archive manifest_sha256 must be a lowercase sha256")
+
+    def to_dict(self) -> dict[str, str]:
+        return {"uri": self.uri, "manifest_sha256": self.manifest_sha256}
 
 
 def _required_gates(candidate: TeacherProgramCandidate, mode: AdmissionMode) -> frozenset[Gate]:
@@ -294,8 +318,112 @@ def admit_teacher_programs(
     return AdmissionResultV1(mode, tuple(materialized), tuple(rejected), _hash(payload))
 
 
+def _atomic_jsonl(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            for row in rows:
+                handle.write(json.dumps(dict(row), sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except Exception:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
+def materialize_teacher_admission(
+    result: AdmissionResultV1,
+    *,
+    output_dir: Path | str,
+    dataset_id: str,
+    raw_archive: TeacherRawArchiveRefV1,
+) -> dict[str, Any]:
+    """Project only deep-verified rows into the canonical local train-data shape.
+
+    The raw verifier tier remains in ``verification``. ``verification_tier`` is
+    the separately auditable SLM-266 automated admission tier, so later strict
+    curation can consume this snapshot without mistaking a teacher source for a
+    fixture. Controls are deliberately non-materializable.
+    """
+    if result.mode is not AdmissionMode.DEEP_VERIFIED:
+        raise ValueError("only deep_verified teacher admission can materialize train data")
+    directory = Path(output_dir)
+    if directory.exists():
+        raise FileExistsError(f"teacher dataset already exists: {directory}")
+    records: list[ExampleRecord] = []
+    for row in result.accepted:
+        admission_tier = str(row.get("admission_tier") or "")
+        if admission_tier not in {"Gold", "Silver"}:
+            raise ValueError("deep admission row lacks Gold/Silver admission tier")
+        record = ExampleRecord.from_dict(dict(row["record"]))
+        meta = {
+            **record.meta,
+            "tier": admission_tier,
+            "verification_tier": admission_tier,
+            "teacher_program_admission": {
+                "schema_version": ADMISSION_SCHEMA,
+                "admission_manifest_hash": result.manifest_hash,
+                "candidate_id": row["candidate_id"],
+                "canonical_root_hash": row["canonical_root_hash"],
+                "pair_hash": row["pair_hash"],
+                "admission_tier": admission_tier,
+                "raw_archive": raw_archive.to_dict(),
+            },
+        }
+        records.append(
+            ExampleRecord(
+                id=record.id,
+                prompt=record.prompt,
+                openui=record.openui,
+                placeholders=list(record.placeholders),
+                split=record.split,
+                source=record.source,
+                meta=meta,
+                design_md=record.design_md,
+                target_kind=record.target_kind,
+                target_category=record.target_category,
+                accepted_outputs=list(record.accepted_outputs),
+            )
+        )
+    directory.mkdir(parents=True)
+    records_path = directory / "records.jsonl"
+    write_jsonl(records_path, records)
+    _atomic_jsonl(directory / "rejected.jsonl", result.rejected)
+    records_sha256 = hashlib.sha256(records_path.read_bytes()).hexdigest()
+    manifest = {
+        "schema_version": "teacher_program_train_snapshot/v1",
+        "dataset_id": dataset_id,
+        "records": records_path.as_posix(),
+        "rejected": (directory / "rejected.jsonl").as_posix(),
+        "records_sha": records_sha256,
+        "content_fingerprint": _hash(
+            {
+                "admission_manifest_hash": result.manifest_hash,
+                "records_sha256": records_sha256,
+                "raw_archive": raw_archive.to_dict(),
+            }
+        ),
+        "admission": {
+            "mode": result.mode.value,
+            "manifest_hash": result.manifest_hash,
+            "accepted_n": len(records),
+            "rejected_n": len(result.rejected),
+        },
+        "raw_archive": raw_archive.to_dict(),
+    }
+    (directory / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return write_common_manifest(directory, kind="train", dataset_id=dataset_id)
+
+
 __all__ = [
     "ADMISSION_SCHEMA", "GENERATION_SCHEMA", "REQUEST_SCHEMA", "AdmissionMode",
     "AdmissionResultV1", "TeacherProgramCandidate", "TeacherProgramGenerationManifestV1",
-    "TeacherProgramRequestV1", "admit_teacher_programs",
+    "TeacherProgramRequestV1", "TeacherRawArchiveRefV1", "admit_teacher_programs",
+    "materialize_teacher_admission",
 ]
