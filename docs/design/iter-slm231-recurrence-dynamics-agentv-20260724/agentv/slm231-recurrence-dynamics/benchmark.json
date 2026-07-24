@@ -1,7 +1,7 @@
 {
   "metadata": {
     "eval_file": "agentv-dir:///agentv/slm231-recurrence-dynamics.eval.jsonl",
-    "timestamp": "2026-07-24T03:26:31.796Z",
+    "timestamp": "2026-07-24T03:34:24.299Z",
     "targets": [
       "custom-task"
     ],
@@ -42,11 +42,11 @@
   "notes": [],
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "216dea50767273b0183177ea72c45032eb146ac9",
-    "code_dirty": true,
+    "code_commit": "9d22aa81f56638196d1ab7d7eaabe8e0dfdf54ee",
+    "code_dirty": false,
     "components": {
       "harness.experiments.slm231_recurrence_dynamics": "v1"
     },
-    "stamped_at": "2026-07-24T03:25:50.696856+00:00"
+    "stamped_at": "2026-07-24T03:33:38.739174+00:00"
   }
 }

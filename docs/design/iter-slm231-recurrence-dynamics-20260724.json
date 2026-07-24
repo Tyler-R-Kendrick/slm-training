@@ -10,7 +10,7 @@
     "sdk": "@agentv/core",
     "spec": "agentv-dir://agentv/slm231-recurrence-dynamics.eval.jsonl",
     "summary": {
-      "durationMs": 25,
+      "durationMs": 30,
       "executionErrors": 0,
       "failed": 0,
       "meanScore": 1,
@@ -27,8 +27,8 @@
   },
   "checkpoint_created": false,
   "claim_class": "scratch_checkpoint_not_ship",
-  "elapsed_seconds": 45.779967795999255,
-  "generated_at": "2026-07-24T03:26:31.856130+00:00",
+  "elapsed_seconds": 47.78933505600435,
+  "generated_at": "2026-07-24T03:34:24.376141+00:00",
   "generation_default_changed": false,
   "issue": "SLM-231",
   "matrix_set": "slm231-recurrence-dynamics",
@@ -52,7 +52,7 @@
     },
     "synthetic_controls": 4
   },
-  "report_hash": "d8aa3d100096def83d1e5c32f69ae223fd06914948173261ad58499fd0049aad",
+  "report_hash": "06bfd4ecd68f936b4c548b2a7a5fad39bbe56e0bdf76dc7308477635bb2e6913",
   "schema": "RecurrenceDynamicsReportV1",
   "ship_gate_claim": false,
   "slm138_fixture": {
@@ -661,13 +661,13 @@
       "transition_hash": "2485f9ce68448ab87cb0a76f01d7e3f757ca29ed625d215f92ca6d2da2ed87ee",
       "verdict": "expansive_unstable",
       "version_stamp": {
-        "code_commit": "216dea50767273b0183177ea72c45032eb146ac9",
-        "code_dirty": true,
+        "code_commit": "9d22aa81f56638196d1ab7d7eaabe8e0dfdf54ee",
+        "code_dirty": false,
         "components": {
           "harness.experiments.slm231_recurrence_dynamics": "v1"
         },
         "stamp_schema": "version_stamp/v1",
-        "stamped_at": "2026-07-24T03:25:50.696856+00:00"
+        "stamped_at": "2026-07-24T03:33:38.739174+00:00"
       }
     }
   ],
@@ -824,12 +824,12 @@
   "training_default_changed": false,
   "verdict": "expansive_unstable",
   "version_stamp": {
-    "code_commit": "216dea50767273b0183177ea72c45032eb146ac9",
-    "code_dirty": true,
+    "code_commit": "9d22aa81f56638196d1ab7d7eaabe8e0dfdf54ee",
+    "code_dirty": false,
     "components": {
       "harness.experiments.slm231_recurrence_dynamics": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-24T03:25:50.696856+00:00"
+    "stamped_at": "2026-07-24T03:33:38.739174+00:00"
   }
 }
