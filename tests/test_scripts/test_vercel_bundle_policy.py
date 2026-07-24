@@ -11,3 +11,10 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     assert "docs/design/*.json" in function["includeFiles"]
     assert "docs/design/**" not in function["includeFiles"]
     assert "docs/design/*-agentv-*/**" in function["excludeFiles"]
+    for path in (
+        "src/slm_training/flow/samplers.py",
+        "src/slm_training/flow/targets.py",
+        "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
+        "src/slm_training/models/legal_edit_flow.py",
+    ):
+        assert path in function["excludeFiles"]

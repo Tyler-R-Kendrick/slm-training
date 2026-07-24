@@ -3322,11 +3322,18 @@
         "tests/test_flow/test_targets.py",
         "tests/test_flow/test_samplers.py",
         "tests/test_scripts/test_run_legal_edit_flow_fixture.py",
+        "tests/test_scripts/test_vercel_bundle_policy.py",
+        "vercel.json",
         "docs/design/iter-slm199-legal-edit-flow-20260723.json",
         "docs/design/iter-slm199-legal-edit-flow-20260723.md",
         "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: exclude offline-only SLM-199 train and experiment modules from the Vercel runtime bundle without changing rate, sampler, or evidence behavior"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
