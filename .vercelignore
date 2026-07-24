@@ -17,3 +17,8 @@ src/slm_training/resources/data/train/slm230_symbol_only_v1/**
 # Human narratives are served from the repository, not opened by the FastAPI
 # function. Machine-readable experiment JSON remains deployable.
 docs/design/**/*.md
+
+# SLM-231's derivative library and bounded runner are offline experiment
+# machinery. The deployed dashboard reads only their committed result JSON.
+scripts/run_slm231_recurrence_dynamics.py
+src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py
