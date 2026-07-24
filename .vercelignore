@@ -22,3 +22,9 @@ docs/design/**/*.md
 # machinery. The deployed dashboard reads only their committed result JSON.
 scripts/run_slm231_recurrence_dynamics.py
 src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py
+
+# Predecessor recurrence fixture/audit runners are likewise offline. Their
+# result JSON remains available to the deployed experiment reader.
+scripts/run_slm138_recursive_denoiser_fixture.py
+scripts/run_slm230_recurrence_observability.py
+src/slm_training/harnesses/experiments/slm230_recurrence_observability.py
