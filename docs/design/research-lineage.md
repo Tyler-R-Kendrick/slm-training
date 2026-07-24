@@ -1186,7 +1186,7 @@ alpha or alpha near 2 as evidence of criticality.
 | **Code** | `src/slm_training/harnesses/experiments/slm226_absolute_spectral_gate.py`, `scripts/run_absolute_spectral_gate.py` |
 
 The gate verdict is **`descriptive_only`** at report hash
-`6eff650522e6ec503520e39ed5a094cc468ec2707e9cfeb59b563262f0aa6dda`.
+`c413d33274206d2e68552c351a2b0bd959b4ffd1969f1d23e7478cc78ba0fd2e`.
 The Gaussian-null mean alpha changes from `2.273991` at `128x128` to
 `3.468501` at `256x128` and `4.973008` at `512x128`; the trained scratch probes
 remain close to their exact-shape nulls. These are CPU linear-role probes, not

@@ -3602,6 +3602,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: refresh measured docs from the clean provenance-pinning implementation commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: pin check-mode provenance to the clean evidence commit across docs-only follow-up commits"
         },
         {
