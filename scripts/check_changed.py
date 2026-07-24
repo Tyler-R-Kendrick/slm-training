@@ -25,6 +25,12 @@ GLOBAL_TEST_FILES = {
     "setup.py",
     "tests/conftest.py",
 }
+NON_PYTHON_LOCKFILES = {
+    "package-lock.json",
+    "src/apps/dashboard/package-lock.json",
+    "src/apps/design_md_bridge/package-lock.json",
+    "src/apps/openui_bridge/package-lock.json",
+}
 SUITES_BY_PREFIX = (
     (".agents/skills/autotrain/", ("tests/test_scripts/test_slm_cli.py",)),
     (".agents/skills/autoresearch/", ("tests/test_scripts/test_autoresearch_skill.py",)),
@@ -177,6 +183,10 @@ def select_tests(paths: list[str]) -> list[str]:
     for path in paths:
         if path in GLOBAL_TEST_FILES:
             return ["tests"]
+        if path in NON_PYTHON_LOCKFILES:
+            # The CI install step validates lockfile integrity. Do not spend the
+            # bounded Python-test budget on an unrelated full suite.
+            continue
         if path.startswith("tests/") and path.endswith(".py"):
             targets.add(path)
             continue

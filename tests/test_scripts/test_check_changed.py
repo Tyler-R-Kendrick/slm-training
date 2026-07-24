@@ -13,6 +13,7 @@ def test_select_tests_is_scoped_and_conservative() -> None:
     assert select_tests([".github/workflows/ci.yml"]) == []
     assert select_tests(["pyproject.toml"]) == ["tests"]
     assert select_tests(["unknown/tool.ts"]) == ["tests"]
+    assert select_tests(["package-lock.json"]) == []
 
 
 def test_select_tests_deduplicates_nested_targets() -> None:
