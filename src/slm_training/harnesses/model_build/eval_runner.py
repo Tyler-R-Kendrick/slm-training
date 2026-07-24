@@ -44,6 +44,7 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
 )
 from slm_training.models.decode_stats import collect_decode_stats
+from slm_training.harnesses.model_build.decode_outcome import outcome_counts
 from slm_training.versioning import component_version
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
@@ -1014,6 +1015,11 @@ def evaluate(
         return out, list(evidence)
 
     decode_timeout_count = 0
+    # SLM-303: per-chunk decode-outcome evidence (parallel to the chunk loop);
+    # each entry carries the timeout fact plus the chunk's DecodeStats row (or
+    # None when the plugin exposes no stats) so every scored record can be
+    # classified into the decode-outcome taxonomy.
+    chunk_decode_meta: list[dict[str, Any]] = []
 
     def _generate_chunk(
         chunk: list[ExampleRecord],
@@ -1021,8 +1027,18 @@ def evaluate(
         """Generate a chunk, converting an explicit diagnostic timeout to failures."""
         nonlocal decode_timeout_count
         seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+
+        def _run(timed_out: bool) -> tuple[list[str], list[dict[str, Any]]]:
+            stats_before = len(decode_stats_rows)
+            result = _generate_chunk_unbounded(chunk)
+            stats = (
+                decode_stats_rows[-1] if len(decode_stats_rows) > stats_before else None
+            )
+            chunk_decode_meta.append({"timed_out": timed_out, "stats": stats})
+            return result
+
         if seconds <= 0 or not hasattr(signal, "setitimer"):
-            return _generate_chunk_unbounded(chunk)
+            return _run(timed_out=False)
 
         def _alarm(_signum: int, _frame: object) -> None:
             raise TimeoutError(f"decode exceeded {seconds:g}s")
@@ -1030,23 +1046,80 @@ def evaluate(
         previous = signal.signal(signal.SIGALRM, _alarm)
         signal.setitimer(signal.ITIMER_REAL, seconds)
         try:
-            return _generate_chunk_unbounded(chunk)
+            return _run(timed_out=False)
         except TimeoutError as exc:
             stats = getattr(exc, "decode_stats", None)
             if stats is not None:
                 _annotate_decode_trace_records(stats, chunk)
                 decode_stats_rows.append(stats)
+            chunk_decode_meta.append({"timed_out": True, "stats": stats})
             decode_timeout_count += len(chunk)
             return ["" for _ in chunk], []
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0)
             signal.signal(signal.SIGALRM, previous)
 
+    def _decode_outcome_fields(
+        pred: str,
+        *,
+        parse_ok: bool | None,
+        error: str | None,
+        decode_meta: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """SLM-303 additive per-record decode-outcome classification.
+
+        Computed from the same evidence the runner already has (chunk timeout
+        fact, chunk DecodeStats fallback counters, parse verdict); never
+        changes any existing field.
+        """
+        from slm_training.harnesses.model_build.decode_outcome import (
+            MODEL_VALID,
+            classify_decode_outcome,
+            fallback_counter_total,
+        )
+
+        meta = decode_meta or {}
+        stats = meta.get("stats")
+        fallbacks = fallback_counter_total(stats)
+        timed_out = bool(meta.get("timed_out"))
+        outcome = classify_decode_outcome(
+            parse_ok=parse_ok,
+            error=error,
+            fallback_counters=fallbacks,
+            timed_out=timed_out,
+            abstained=not pred.strip(),
+            harness_exception=False,
+        )
+        if timed_out:
+            stop_reason = "decode_timeout"
+        else:
+            stop_reason = ""
+            for name in (
+                "compiler_lattice_termination_reason",
+                "solver_terminal_status",
+            ):
+                value = str(getattr(stats, name, "") or "") if stats is not None else ""
+                if value:
+                    stop_reason = value
+                    break
+            if not stop_reason:
+                stop_reason = "empty_prediction" if not pred.strip() else "completed"
+        detail = None
+        if outcome == MODEL_VALID and parse_ok is None:
+            detail = "parse_not_evaluated"
+        return {
+            "decode_outcome": outcome,
+            "stop_reason": stop_reason,
+            "fallback_used": fallbacks > 0,
+            "decode_outcome_detail": detail,
+        }
+
     def _score_one(
         record: ExampleRecord,
         pred: str,
         latency_ms: float,
         prediction_evidence: dict[str, Any] | None = None,
+        decode_meta: dict[str, Any] | None = None,
     ) -> None:
         nonlocal parse_ok, syntax_parse_ok, raw_syntax_ok
         nonlocal match_error_count, reward_error_count, empty_prediction_count
@@ -1080,6 +1153,9 @@ def evaluate(
                         ).encode("utf-8")
                     ).hexdigest(),
                     "topology_evidence": evidence or None,
+                    **_decode_outcome_fields(
+                        pred, parse_ok=None, error=None, decode_meta=decode_meta
+                    ),
                 }
             )
             task_cases.append(
@@ -1213,6 +1289,9 @@ def evaluate(
                 ).hexdigest(),
                 "serialized": serialized,
                 "topology_evidence": evidence or None,
+                **_decode_outcome_fields(
+                    pred, parse_ok=ok, error=error, decode_meta=decode_meta
+                ),
             }
         )
         task_cases.append(
@@ -1238,16 +1317,18 @@ def evaluate(
             chunk = records[start : start + batch_size]
             t0 = time.perf_counter()
             preds, evidence_rows = _generate_chunk(chunk)
+            chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
             elapsed = (time.perf_counter() - t0) * 1000.0
             per = elapsed / max(1, len(chunk))
             for index, (record, pred) in enumerate(zip(chunk, preds)):
                 latencies.append(per)
                 evidence = evidence_rows[index] if index < len(evidence_rows) else None
-                _score_one(record, pred, per, evidence)
+                _score_one(record, pred, per, evidence, chunk_meta)
     else:
         for record in records:
             t0 = time.perf_counter()
             predictions, evidence_rows = _generate_chunk([record])
+            chunk_meta = chunk_decode_meta[-1] if chunk_decode_meta else None
             pred = predictions[0]
             latencies.append((time.perf_counter() - t0) * 1000.0)
             _score_one(
@@ -1255,6 +1336,7 @@ def evaluate(
                 pred,
                 latencies[-1],
                 evidence_rows[0] if evidence_rows else None,
+                chunk_meta,
             )
 
     lat_sorted = sorted(latencies)
@@ -1436,6 +1518,11 @@ def evaluate(
         "failure_breakdown": failure_breakdown,
         "decode_timeout_count": decode_timeout_count,
         "decode_canvas_cap": canvas_cap,
+        # SLM-303: per-taxonomy decode-outcome counts over details[] rows
+        # (additive; every taxonomy key always present).
+        "decode_outcome_counts": outcome_counts(
+            [str(row.get("decode_outcome")) for row in details]
+        ),
         "details": details,
         "generation_evidence_schemas": sorted(
             {

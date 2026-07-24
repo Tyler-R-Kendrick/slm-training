@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,6 +15,10 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     assert len(function["excludeFiles"]) <= 256
     ignored = (ROOT / ".vercelignore").read_text(encoding="utf-8")
     assert "src/slm_training/resources/data/train/slm230_symbol_only_v1/**" in ignored
+    package_data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "resources/data/train/slm230_symbol_only_v1/**" in package_data["tool"][
+        "setuptools"
+    ]["exclude-package-data"]["slm_training"]
     assert "docs/design/*-agentv-*/**" in ignored
     assert "scripts/run_slm243_recursive_update_gate.py" in ignored
     assert (
@@ -27,7 +32,7 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     )
     for fragment in (
         "flow/{samplers,targets}",
-        "harnesses/experiments/slm{199,200}_*",
+            "harnesses/experiments/**",
         "models/legal_edit_flow",
     ):
         assert fragment in function["excludeFiles"]

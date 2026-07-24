@@ -31,31 +31,33 @@ async function publishLangSmithSummary({ traceId, runId, experiment, result }) {
   const parentRunId = traceUuid(traceId);
   if (!langsmithEnabled() || !parentRunId) return;
   try {
-    const { Client } = await import("langsmith");
-    const client = new Client({
-      apiKey: process.env.LANGSMITH_API_KEY,
-      apiUrl: process.env.LANGSMITH_ENDPOINT,
-      workspaceId: process.env.LANGSMITH_WORKSPACE_ID,
-      omitTracedRuntimeInfo: true,
-    });
     const now = new Date().toISOString();
-    await client.createRun({
-      id: randomUUID(),
-      trace_id: parentRunId,
-      parent_run_id: parentRunId,
-      project_name: process.env.LANGSMITH_PROJECT || "slm-training",
-      name: "agentv.publication",
-      run_type: "tool",
-      inputs: { run_id: runId, experiment },
-      outputs: { summary: result.summary },
-      start_time: now,
-      end_time: now,
-      extra: { metadata: { w3c_trace_id: traceId, sdk: "@agentv/core" } },
+    const endpoint = `${(process.env.LANGSMITH_ENDPOINT || "https://api.smith.langchain.com").replace(/\/$/, "")}/runs`;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": process.env.LANGSMITH_API_KEY,
+        ...(process.env.LANGSMITH_WORKSPACE_ID
+          ? { "x-tenant-id": process.env.LANGSMITH_WORKSPACE_ID }
+          : {}),
+      },
+      body: JSON.stringify({
+        id: randomUUID(),
+        trace_id: parentRunId,
+        parent_run_id: parentRunId,
+        project_name: process.env.LANGSMITH_PROJECT || "slm-training",
+        name: "agentv.publication",
+        run_type: "tool",
+        inputs: { run_id: runId, experiment },
+        outputs: { summary: result.summary },
+        start_time: now,
+        end_time: now,
+        extra: { metadata: { w3c_trace_id: traceId, sdk: "@agentv/core" } },
+      }),
+      signal: AbortSignal.timeout(500),
     });
-    await Promise.race([
-      client.flush(),
-      new Promise((resolve) => setTimeout(resolve, 500)),
-    ]);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
   } catch (error) {
     console.warn(`LangSmith AgentV export failed: ${String(error)}`);
   }

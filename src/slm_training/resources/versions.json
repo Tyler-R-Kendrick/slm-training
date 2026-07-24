@@ -665,7 +665,7 @@
       ]
     },
     "evals.agentv": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/evals/agentv.py",
@@ -673,6 +673,11 @@
         "tests/test_evals/test_agentv.py"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "Replace the optional Node LangSmith SDK with bounded native fetch so Vercel does not bundle CLI-only dependencies"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
@@ -3658,6 +3663,16 @@
         {
           "version": "v4",
           "date": "2026-07-24",
+          "note": "no-bump: assert the wheel matches the existing Vercel exclusion for the offline SLM-230 corpus"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "no-bump: exclude offline experiment harness modules from the Vercel function bundle without changing deployed web behavior"
+        },
+        {
+          "version": "v4",
+          "date": "2026-07-24",
           "note": "no-bump: exclude the offline SLM-233 campaign runner from Vercel source upload without changing deployed web behavior"
         },
         {
@@ -4495,7 +4510,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -4503,9 +4518,17 @@
         "tests/test_harnesses/experiments/test_slm299_edit_reachability.py",
         "docs/design/iter-slm299-edit-reachability-20260724.json",
         "docs/design/iter-slm299-edit-reachability-20260724.md",
-        "src/slm_training/models/tree_edit_diffusion.py"
+        "src/slm_training/models/tree_edit_diffusion.py",
+        "docs/design/iter-slm305-edit-language-20260724.json",
+        "docs/design/iter-slm305-edit-language-20260724.md",
+        "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-305: extend the valid-state edit language (ADD_CONTAINER/REMOVE_CONTAINER, INSERT/REPLACE_SUBTREE, V0.5 statement edits, BIND_PLACEHOLDER) with inverses, parser-backed validation, checkpoint format 2 + migration, and extended reachability mode"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -4532,6 +4555,43 @@
         }
       ]
     },
+    "harness.experiments.slm301_prompt_observability": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm301_prompt_observability.py",
+        "scripts/run_slm301_prompt_observability.py",
+        "tests/test_harnesses/experiments/test_slm301_prompt_observability.py",
+        "docs/design/iter-slm301-prompt-observability-20260724.json",
+        "docs/design/iter-slm301-prompt-observability-20260724.md",
+        "docs/design/slm301-slot-observability-audit-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-301 LAR1-04 prompt-observability arms (as-is vs +inventory) with phase-0 coverage classification, AR/X22 baselines, paired predeclared-delta report"
+        }
+      ]
+    },
+    "harness.experiments.slm303_decode_budget_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm303_decode_budget_audit.py",
+        "tests/test_harnesses/model_build/test_decode_outcome.py",
+        "tests/test_scripts/test_run_slm303_decode_budget_audit.py",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.json",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-303 decode-budget audit with hash pins, preregistered budget sweep, and taxonomy disposition"
+        }
+      ]
+    },
     "harness.model_build.eval": {
       "version": "v54",
       "kind": "harness",
@@ -4555,6 +4615,11 @@
           "version": "v53",
           "date": "2026-07-24",
           "note": "publish curated summary-only LangSmith evaluation spans and honor bounded standard OTLP export configuration through the shared W3C trace"
+        },
+        {
+          "version": "v53",
+          "date": "2026-07-24",
+          "note": "Add SLM-303 per-record decode outcome taxonomy and suite outcome counts without changing existing gate inputs"
         },
         {
           "version": "v52",
