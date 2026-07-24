@@ -22,6 +22,9 @@ docs/design/**/*.md
 # The compact top-level docs/design JSON remains available to observability.
 docs/design/*-agentv-*/**
 
+# Source maps are useful locally but are never served by the production app.
+src/slm_training/web/static/**/*.map
+
 # SLM-231's derivative library and bounded runner are offline experiment
 # machinery. The deployed dashboard reads only their committed result JSON.
 scripts/run_slm231_recurrence_dynamics.py
@@ -43,3 +46,7 @@ src/slm_training/harnesses/experiments/slm233_recursive_campaign.py
 scripts/run_slm138_recursive_denoiser_fixture.py
 scripts/run_slm230_recurrence_observability.py
 src/slm_training/harnesses/experiments/slm230_recurrence_observability.py
+
+# The Vercel app only uses the frozen promotion engine; experiment runners are
+# offline harnesses and otherwise pull their entire dependency tree into Lambda.
+src/slm_training/harnesses/experiments/**

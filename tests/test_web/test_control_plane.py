@@ -3020,6 +3020,18 @@ def test_gates_evaluate_matches_pure_function(ro_client: TestClient) -> None:
     assert resp["pass"] is True
 
 
+def test_promotion_evaluate_preserves_governance_gate(ro_client: TestClient) -> None:
+    response = ro_client.post(
+        "/api/promotion/evaluate", json={"ship_suites": SMOKE_SUITE}
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["promotable"] is False
+    assert result["checks"]["campaign_governance"]["pass"] is False
+    assert "campaign_governance_missing" in result["failures"]
+
+
 # --- remote dispatch monitoring --------------------------------------------
 def test_dispatches_endpoint_shape(ro_client: TestClient) -> None:
     payload = ro_client.get("/api/dispatches").json()

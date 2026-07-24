@@ -964,7 +964,7 @@ def _decision_kind(
     return "_".join(parts)
 
 
-def build_completion_forest(
+def _build_openui_completion_forest(
     tokenizer: Any,
     prefix_ids: list[int],
     *,
@@ -1469,6 +1469,84 @@ def build_completion_forest(
     else:
         coverage = "partial"
     return _finalize(paths, coverage)
+
+
+def build_completion_forest(
+    tokenizer: Any,
+    prefix_ids: list[int],
+    *,
+    state: Any | None = None,
+    slot_contract: list[str] | None = None,
+    max_path_tokens: int = 8,
+    min_content: int = 0,
+    remaining_tokens: int | None = None,
+    runtime_symbols: tuple[Any, ...] = (),
+    explain: bool = False,
+) -> CompletionForest:
+    """Return the active pack's exact finite completion domain.
+
+    Decoder code deliberately does not know component names, binders, schemas,
+    or scope rules.  Those belong to the active grammar pack; a missing or
+    incomplete authority has no admissible continuation rather than a model
+    vocabulary fallback.
+    """
+    # Offline analysis and legacy corpus tooling ask for a frontier without a
+    # decode horizon.  They are observational, not constrained generation;
+    # retain their inexpensive OpenUI analysis path.  Every live decoder passes
+    # its remaining-token budget and therefore takes the strict pack authority.
+    if remaining_tokens is None:
+        return _build_openui_completion_forest(
+            tokenizer,
+            prefix_ids,
+            state=state,
+            slot_contract=slot_contract,
+            max_path_tokens=max_path_tokens,
+            min_content=min_content,
+            explain=explain,
+        )
+    from slm_training.dsl.grammar_capabilities import (
+        CompletionDomainRequestV1,
+        GrammarCapabilityAdapterV1,
+        UnsupportedCapabilityV1,
+    )
+    from slm_training.dsl.pack import get_pack
+
+    request = CompletionDomainRequestV1(
+        prefix_ids=tuple(int(token_id) for token_id in prefix_ids),
+        tokenizer=tokenizer,
+        runtime_symbols=tuple(runtime_symbols),
+        remaining_tokens=remaining_tokens,
+        state=state,
+        slot_contract=tuple(slot_contract or ()),
+        max_path_tokens=max_path_tokens,
+        min_content=min_content,
+        explain=explain,
+    )
+    cache_key = (
+        request.prefix_ids,
+        request.runtime_symbols,
+        request.remaining_tokens,
+        request.slot_contract,
+        request.max_path_tokens,
+        request.min_content,
+        request.explain,
+    )
+    cache = getattr(state, "completion_domain_cache", None) if state is not None else None
+    try:
+        domain = cache.get(cache_key) if cache is not None else None
+        if domain is None:
+            domain = GrammarCapabilityAdapterV1(get_pack()).completion_domain(request)
+            if cache is not None:
+                cache[cache_key] = domain
+    except Exception:  # noqa: BLE001 - constrained callers fail closed below
+        return CompletionForest((), "none")
+    if isinstance(domain, UnsupportedCapabilityV1) or domain.status != "complete":
+        return CompletionForest((), "none", tuple(getattr(domain, "terminals", ())) )
+    return CompletionForest(
+        tuple(CompletionPath(item.token_ids, item.kind) for item in domain.candidates),
+        "complete",
+        domain.terminals,
+    )
 
 
 def gold_compiler_decisions(

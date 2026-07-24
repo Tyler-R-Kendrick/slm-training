@@ -10,13 +10,16 @@ from slm_training.data.language_contract import (
     coverage_report,
     iter_negatives,
     iter_positives,
+    iter_root_renderability_pairs,
+    iter_root_renderability_repairs,
 )
 from slm_training.data.language_contract.corpus import NEGATIVE_GATES
 from slm_training.data.contract import GenerationRequest
 from slm_training.data.quality import independent_judge
 from slm_training.data.verify import Gate, GateStatus, evaluate_gate, verify_record
 from slm_training.dsl.lang_core import bridge_available
-from slm_training.dsl.parser import lexical_tokens, validate_output
+from slm_training.dsl.parser import lexical_tokens, validate, validate_output
+from slm_training.dsl.renderability import STRUCTURAL_ROOT_CONTAINERS, root_type
 from slm_training.dsl.schema import TASK_TOKENS, ExampleRecord
 from slm_training.harnesses.model_build.eval_runner import _is_meaningful_program
 from slm_training.harnesses.train_data.catalog import classify_source_family
@@ -136,6 +139,20 @@ def test_every_gate_has_a_negative() -> None:
     assert covered == set(NEGATIVE_GATES)
 
 
+def test_structural_root_repairs_cover_the_shared_playground_policy() -> None:
+    pairs = list(iter_root_renderability_pairs())
+    repairs = list(iter_root_renderability_repairs())
+    assert {pair.component for pair in pairs} == set(STRUCTURAL_ROOT_CONTAINERS)
+    assert {record.meta["root_renderability"]["root_type"] for record in repairs} == set(
+        STRUCTURAL_ROOT_CONTAINERS
+    )
+    for pair, repair in zip(pairs, repairs, strict=True):
+        assert root_type(validate(pair.rejected)) == pair.component
+        assert root_type(validate(pair.chosen)) not in STRUCTURAL_ROOT_CONTAINERS
+        assert repair.openui == pair.chosen
+        assert pair.rejected not in repair.openui
+
+
 def test_records_carry_contract_id_and_family() -> None:
     for record in build_corpus():
         assert record.source == "language_contract"
@@ -145,7 +162,7 @@ def test_records_carry_contract_id_and_family() -> None:
 
 def test_task_tokens_are_valid() -> None:
     for record in iter_positives():
-        assert record.meta["task"] == "generation"
+        assert record.meta["task"] in {"generation", "repair"}
     for record in iter_negatives():
         assert record.meta["task"] == "adversarial"
     assert {"generation", "adversarial"} <= TASK_TOKENS

@@ -10,7 +10,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, Mapping, Sequence
 
 from lark import Lark, Tree
 from lark.grammar import Terminal
@@ -66,6 +66,44 @@ class GrammarWitnessCandidateV1:
     runtime_symbols: tuple[Any, ...] = ()
 
 
+CompletionDomainStatus = Literal["complete", "incomplete", "unsupported"]
+
+
+@dataclass(frozen=True)
+class CompletionDomainRequestV1:
+    """The complete request-local state that defines a constrained choice."""
+
+    prefix_ids: tuple[int, ...]
+    tokenizer: Any
+    runtime_symbols: tuple[Any, ...] = ()
+    remaining_tokens: int | None = None
+    state: Any | None = None
+    slot_contract: tuple[str, ...] = ()
+    max_path_tokens: int = 8
+    min_content: int = 0
+    explain: bool = False
+
+
+@dataclass(frozen=True)
+class CompletionDomainCandidateV1:
+    """One legal next action and a replayable terminal continuation witness."""
+
+    token_ids: tuple[int, ...]
+    kind: str
+    terminal_witness: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class CompletionDomainV1:
+    """Pack-owned finite next-choice domain for a single decoder position."""
+
+    status: CompletionDomainStatus
+    candidates: tuple[CompletionDomainCandidateV1, ...] = ()
+    scope_fingerprint: str = ""
+    terminals: tuple[str, ...] = ()
+    reason: str = ""
+
+
 @dataclass(frozen=True)
 class GrammarCapabilityAuthorityV1:
     """Pack-owned declarations; grammar structure must not come from examples."""
@@ -78,6 +116,7 @@ class GrammarCapabilityAuthorityV1:
     static_validate: Callable[[str], Any] | None = None
     scope_policy: Callable[[str], Any] | None = None
     completion_frontier: Callable[[str], frozenset[str]] | None = None
+    completion_domain: Callable[[CompletionDomainRequestV1], CompletionDomainV1] | None = None
     production_trace: Callable[[str, str], tuple[ProductionOccurrenceV1, ...]] | None = None
     witness_candidates: Callable[[], Iterable[GrammarWitnessCandidateV1]] | None = None
     unsupported_alternatives: Mapping[str, str] | None = None
@@ -258,6 +297,14 @@ class GrammarCapabilityAdapterV1:
             return frontier
         return frontier(prefix)
 
+    def completion_domain(
+        self, request: CompletionDomainRequestV1
+    ) -> CompletionDomainV1 | UnsupportedCapabilityV1:
+        provider = self._declared("completion_domain", "completion_domain")
+        if isinstance(provider, UnsupportedCapabilityV1):
+            return provider
+        return provider(request)
+
     @property
     def is_complete(self) -> bool:
         if self.authority is None:
@@ -315,6 +362,8 @@ def lark_authority(
     static_validate: Callable[[str], Any],
     scope_policy: Callable[[str], Any],
     completion_frontier: Callable[[str], frozenset[str]],
+    completion_domain: Callable[[CompletionDomainRequestV1], CompletionDomainV1]
+    | None = None,
     witness_candidates: Callable[[], Iterable[GrammarWitnessCandidateV1]]
     | None = None,
     unsupported_alternatives: Mapping[str, str] | None = None,
@@ -432,6 +481,7 @@ def lark_authority(
         static_validate=static_validate,
         scope_policy=scope_policy,
         completion_frontier=completion_frontier,
+        completion_domain=completion_domain,
         production_trace=trace_productions,
         witness_candidates=witness_candidates,
         unsupported_alternatives=unsupported_alternatives,
@@ -441,6 +491,10 @@ def lark_authority(
 __all__ = [
     "GrammarCapabilityAdapterV1",
     "GrammarCapabilityAuthorityV1",
+    "CompletionDomainCandidateV1",
+    "CompletionDomainRequestV1",
+    "CompletionDomainStatus",
+    "CompletionDomainV1",
     "GrammarSymbolV1",
     "GrammarWitnessCandidateV1",
     "NonterminalAnalysisV1",

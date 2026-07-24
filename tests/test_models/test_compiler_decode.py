@@ -23,12 +23,17 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     root_declaration_reference_arity_target,
     semantic_component_edges,
 )
+from slm_training.dsl.grammar_capabilities import (
+    CompletionDomainRequestV1,
+    GrammarCapabilityAdapterV1,
+)
+from slm_training.dsl.pack import get_pack
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-from slm_training.models.grammar import make_grammar_state
+from slm_training.models.grammar import make_grammar_state, pick_constrained_token
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
@@ -4432,6 +4437,47 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert tokenizer.eos_id in complete.candidate_ids
 
 
+def test_budgeted_completion_domain_exposes_only_witnessed_actions() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = (tokenizer.bos_id, tokenizer.bind_id(0), tokenizer.token_to_id["="])
+    domain = GrammarCapabilityAdapterV1(get_pack("openui")).completion_domain(
+        CompletionDomainRequestV1(
+            prefix_ids=prefix,
+            tokenizer=tokenizer,
+            slot_contract=(":hero.title",),
+            remaining_tokens=32,
+        )
+    )
+
+    assert domain.status == "complete"
+    assert domain.candidates
+    assert all(
+        candidate.terminal_witness[: len(candidate.token_ids)]
+        == candidate.token_ids
+        and candidate.terminal_witness[-1] == tokenizer.eos_id
+        for candidate in domain.candidates
+    )
+def test_strict_picker_never_ranks_outside_pack_domain() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = [tokenizer.bos_id, tokenizer.bind_id(0), tokenizer.token_to_id["="]]
+    state = make_grammar_state()
+    state.remaining_tokens = 32
+    logits = torch.zeros(tokenizer.vocab_size)
+    logits[tokenizer.bind_id(1)] = 100.0
+    logits[tokenizer.token_to_id["Button"]] = 1.0
+
+    choice = pick_constrained_token(
+        logits,
+        tokenizer,
+        prefix,
+        slot_contract=[":hero.title"],
+        state=state,
+    )
+
+    assert choice is not None
+    assert choice != tokenizer.bind_id(1)
+
+
 def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
     # A4: an empty/underfull but grammatically complete layout must not be a
     # legal completion while the grammar still offers a way to add content.
@@ -5447,6 +5493,48 @@ def test_maskgit_fallback_keeps_compiler_prefix_visible() -> None:
 def test_compiler_decode_is_opt_in() -> None:
     assert TwoTowerConfig().compiler_decode_mode == "off"
     assert TwoTowerConfig().compiler_search_mode == "greedy"
+
+
+def test_runtime_feature_table_uses_resolved_honest_slot_contract(monkeypatch) -> None:
+    """Runtime slot features must match the visible prompt contract, not a stale arg."""
+    model = _model(
+        grammar_constrained=True,
+        grammar_ltr_primary=True,
+        compiler_decode_mode="tree",
+        slot_contract_constrained_decode=True,
+        honest_slot_contract=True,
+    )
+    captured: list[list[str] | None] = []
+    from slm_training.models.dsl_tokenizer import SymbolTable
+
+    from_placeholders = SymbolTable.from_placeholders
+
+    def capture(placeholders, **kwargs):
+        captured.append(list(placeholders) if placeholders else None)
+        return from_placeholders(placeholders, **kwargs)
+
+    monkeypatch.setattr(SymbolTable, "from_placeholders", capture)
+    monkeypatch.setattr(
+        model,
+        "_greedy_ltr_decode_batch",
+        lambda ctx, _pad, length: torch.full(
+            (ctx.size(0), length), model.tokenizer.eos_id, dtype=torch.long
+        ),
+    )
+    monkeypatch.setattr(
+        model,
+        "_decode_ids",
+        lambda _ids: 'root = TextContent(":visible.title")',
+    )
+    monkeypatch.setattr(model, "_ensure_valid_openui", lambda text, *_a, **_k: text)
+
+    model._generate_batch_once(
+        ["Card\nPlaceholders: :visible.title"],
+        grammar_constrained=True,
+        slot_contracts=[[":stale.title"]],
+    )
+
+    assert captured[-1] == [":visible.title"]
 
 
 def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> None:

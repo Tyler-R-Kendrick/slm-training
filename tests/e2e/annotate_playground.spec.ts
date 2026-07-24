@@ -455,6 +455,17 @@ test.describe("annotate playground", () => {
       "Undefined component reference: missing"
     );
 
+    await page.locator("#output").fill('root = Col(":hero.title", "success")');
+    await expect(page.locator("#dslDiagnosticList")).toContainText(
+      "root Col is structural-only; wrap it in Table(...)"
+    );
+    await page.locator("#output").fill(
+      'root = Table([Col(":hero.title", "success")])'
+    );
+    await expect(page.locator("#dslDiagnosticState")).toContainText("Valid", {
+      timeout: 5_000,
+    });
+
     await page.locator("#output").fill("root = Sta");
     await page.locator("#output").press("Control+Space");
     await expect(page.locator("#dslAutocomplete")).toBeVisible();

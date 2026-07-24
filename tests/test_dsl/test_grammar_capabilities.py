@@ -10,6 +10,9 @@ import pytest
 
 from slm_training.dsl.grammar.backends.lark_backend import LarkFileBackend
 from slm_training.dsl.grammar_capabilities import (
+    CompletionDomainCandidateV1,
+    CompletionDomainRequestV1,
+    CompletionDomainV1,
     GrammarCapabilityAdapterV1,
     GrammarSymbolV1,
     ProductionAlternativeV1,
@@ -34,6 +37,20 @@ def mini_pack(tmp_path: Path) -> DslPack:
         start="start",
         call_as_component=False,
     )
+    def completion_domain(request: CompletionDomainRequestV1) -> CompletionDomainV1:
+        declared = (7,) if not request.prefix_ids else (8,)
+        return CompletionDomainV1(
+            status="complete",
+            candidates=(
+                CompletionDomainCandidateV1(
+                    token_ids=declared,
+                    kind="word",
+                    terminal_witness=(*declared, 9),
+                ),
+            ),
+            scope_fingerprint=f"scope:{request.prefix_ids!r}",
+        )
+
     authority = lark_authority(
         grammar_path=grammar_path,
         start_symbols=("start",),
@@ -43,6 +60,7 @@ def mini_pack(tmp_path: Path) -> DslPack:
         completion_frontier=lambda prefix: (
             frozenset({"WORD"}) if not prefix.strip() else frozenset({"$END"})
         ),
+        completion_domain=completion_domain,
     )
     return DslPack(
         pack_id="test-mini",
@@ -82,6 +100,14 @@ def test_complete_packs_pass_one_conformance_suite(
     assert adapter.static_validate(source) is not None
     assert adapter.scope_policy(source) is not None
     assert isinstance(adapter.completion_frontier(""), frozenset)
+    if pack_fixture == "mini_pack":
+        domain = adapter.completion_domain(
+            CompletionDomainRequestV1(
+                prefix_ids=(), tokenizer=object(), remaining_tokens=3
+            )
+        )
+        assert isinstance(domain, CompletionDomainV1)
+        assert domain.candidates[0].terminal_witness == (7, 9)
     assert set(adapter.authority_fingerprints) == {
         "grammar",
         "backend",
@@ -106,6 +132,9 @@ def test_partial_pack_is_typed_unsupported_and_never_complete() -> None:
         adapter.static_validate(""),
         adapter.scope_policy(""),
         adapter.completion_frontier(""),
+        adapter.completion_domain(
+            CompletionDomainRequestV1(prefix_ids=(), tokenizer=object())
+        ),
     ):
         assert isinstance(value, UnsupportedCapabilityV1)
         assert value.status == "UNSUPPORTED"
@@ -184,3 +213,20 @@ def test_analysis_reports_nullable_recursive_productive_and_reachable(
 def test_fragment_parse_rejects_undeclared_start(mini_pack: DslPack) -> None:
     with pytest.raises(ValueError, match="undeclared start symbol"):
         GrammarCapabilityAdapterV1(mini_pack).fragment_parse("item", "hello")
+
+
+def test_completion_domain_is_scope_local_and_witnessed(mini_pack: DslPack) -> None:
+    adapter = GrammarCapabilityAdapterV1(mini_pack)
+    root = adapter.completion_domain(
+        CompletionDomainRequestV1(prefix_ids=(), tokenizer=object(), remaining_tokens=3)
+    )
+    child = adapter.completion_domain(
+        CompletionDomainRequestV1(prefix_ids=(7,), tokenizer=object(), remaining_tokens=2)
+    )
+
+    assert isinstance(root, CompletionDomainV1)
+    assert isinstance(child, CompletionDomainV1)
+    assert root.candidates[0].token_ids == (7,)
+    assert child.candidates[0].token_ids == (8,)
+    assert root.scope_fingerprint != child.scope_fingerprint
+    assert root.candidates[0].terminal_witness[:1] == root.candidates[0].token_ids

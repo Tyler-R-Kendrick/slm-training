@@ -398,13 +398,18 @@
       ]
     },
     "dsl.grammar_capabilities": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar_capabilities.py",
         "tests/test_dsl/test_grammar_capabilities.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "declare typed pack-owned finite completion domains with scope fingerprints and terminal witnesses"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -481,7 +486,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -489,6 +494,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "bind OpenUI scoped completion domains to the pack contract instead of shared decoder policy"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -1112,6 +1122,11 @@
         "docs/design/openfeature-experiments.md"
       ],
       "history": [
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "no-bump: route the promotion endpoint through the frozen core so the Vercel bundle excludes offline experiment runners without changing the API contract"
+        },
         {
           "version": "v6",
           "date": "2026-07-23",
@@ -4948,17 +4963,24 @@
       ]
     },
     "harness.train_data": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
+        "src/slm_training/data/language_contract/",
+        "src/slm_training/dsl/renderability.py",
         "src/slm_training/data/mixture.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-23",
+          "note": "add runtime-renderability repairs and chosen-over-rejected preference pairs for structural-only OpenUI roots"
+        },
         {
           "version": "v18",
           "date": "2026-07-23",
@@ -5650,7 +5672,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v231",
+      "version": "v232",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5658,6 +5680,8 @@
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/tokenizer.py",
+        "src/slm_training/models/grammar.py",
+        "src/slm_training/models/onnx_inference.py",
         "src/slm_training/models/checkpoint_migrate.py",
         "src/slm_training/models/template_fill.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
@@ -5675,9 +5699,19 @@
       ],
       "history": [
         {
+          "version": "v232",
+          "date": "2026-07-24",
+          "note": "require budgeted pack-owned completion domains for compiler tree, LTR, and one-hole constrained decoding"
+        },
+        {
           "version": "v231",
           "date": "2026-07-23",
           "note": "persist and validate SLM-243 recurrence update, empty-F, and norm modes while migrating old checkpoints to historical defaults"
+        },
+        {
+          "version": "v231",
+          "date": "2026-07-23",
+          "note": "serve compiler-tree slot contracts through runtime feature tables so prompt-derived OpenUI template markers stay the model output contract"
         },
         {
           "version": "v230",
