@@ -1,0 +1,46 @@
+{
+  "schema_version": "slm285_locked_manifest_run/v1",
+  "run_id": "slm285_local_locked_manifest_20260724",
+  "status": "completed",
+  "device": "local CPU",
+  "backend": "offline cached RICO + committed train snapshots",
+  "candidate_records": 1000,
+  "source_records": 6337,
+  "source_sha256": "3dafdd0adad0e0f6ec30a5e4c2b218fdf76fe1f19e0bf9efeb8b0a6e9d68f7df",
+  "manifest_path": "src/slm_training/resources/data/eval/manifests/abstract_planning_locked_v1.jsonl",
+  "manifest_sha256": "b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48",
+  "partition_counts": {
+    "locked_test": 226,
+    "dev": 20,
+    "agentv_calibration": 20,
+    "human_audit": 20
+  },
+  "decontamination_views": [
+    "exact",
+    "normalized",
+    "canonical_ast",
+    "semantic_plan",
+    "prompt_similarity"
+  ],
+  "prompt_similarity": {
+    "engine": "lexical-tfidf",
+    "threshold": 0.95
+  },
+  "honesty": {
+    "human_audit_is_not_a_gate": true,
+    "model_or_ship_claim": false,
+    "legal_action_entropy": "requires_decode_trace; not inferred"
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "cdd5869b56633dd405d5d6a066804e6ff2d6c25f",
+    "code_dirty": true,
+    "components": {
+      "data.test_build": "v6",
+      "data.locked_eval_manifest": "v1",
+      "harness.autoresearch.experiment_campaign": "v5",
+      "harness.experiments": "v87"
+    },
+    "stamped_at": "2026-07-24T22:53:00+00:00"
+  }
+}

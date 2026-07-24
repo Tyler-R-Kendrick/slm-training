@@ -97,6 +97,7 @@ def _manifest_payload(**updates: object) -> dict[str, object]:
             )
         ],
         "claim_class": "promotion_candidate",
+        "locked_eval_manifest_sha256": "e" * 64,
         "source_commit": HEX_40,
         "source_dirty": False,
         "author": "test",
@@ -131,6 +132,7 @@ def _complete_result(
         "experiment_id": manifest.experiment_id,
         "manifest_sha256": campaign_manifest_sha256(manifest),
         "claim_class": manifest.claim_class,
+        "locked_eval_manifest_sha256": manifest.locked_eval_manifest_sha256,
         "arm_seed_results": [
             [arm.arm_id, seed] for arm in manifest.arms for seed in manifest.seeds
         ],
@@ -274,6 +276,19 @@ def test_complete_promotion_candidate_passes(tmp_path: Path) -> None:
             artifact_root=tmp_path,
         )
         == ()
+    )
+
+
+def test_promotion_result_requires_the_locked_manifest_digest(tmp_path: Path) -> None:
+    manifest = _manifest()
+    missing = _complete_result(manifest, tmp_path, locked_eval_manifest_sha256=None)
+    wrong = _complete_result(manifest, tmp_path, locked_eval_manifest_sha256="f" * 64)
+
+    assert "locked_eval_manifest_sha256_missing" in validate_result_claim(
+        manifest, missing, artifact_root=tmp_path
+    )
+    assert "locked_eval_manifest_sha256_mismatch" in validate_result_claim(
+        manifest, wrong, artifact_root=tmp_path
     )
 
 

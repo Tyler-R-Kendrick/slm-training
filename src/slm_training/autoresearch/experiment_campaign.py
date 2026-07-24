@@ -141,6 +141,11 @@ class ExperimentCampaignV1(StrictModel):
     rl_evaluation_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    # Promotion evidence must name the immutable holdout it was measured on.
+    # Wiring and exploratory campaigns intentionally remain usable without one.
+    locked_eval_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
 
     @field_validator("seeds", mode="before")
     @classmethod
@@ -210,6 +215,10 @@ class ExperimentCampaignV1(StrictModel):
         if not declared_hypotheses.issubset(set(endpoint_ids)):
             raise ValueError("multiplicity hypotheses must reference declared endpoints")
         if self.claim_class in {"promotion_candidate", "ship_gate"}:
+            if not self.locked_eval_manifest_sha256:
+                raise ValueError(
+                    "promotion campaigns require locked_eval_manifest_sha256"
+                )
             required_kinds = set(_PROMOTION_ARTIFACT_KINDS)
             if self.claim_class == "ship_gate":
                 required_kinds.add("ship_gates")
@@ -269,6 +278,9 @@ class CampaignResultV1(StrictModel):
     campaign_id: str
     experiment_id: str
     manifest_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    locked_eval_manifest_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     claim_class: ClaimClass
     arm_seed_results: tuple[tuple[str, StrictInt], ...] = ()
     paired_example_ids: dict[str, tuple[str, ...]] = Field(default_factory=dict)
@@ -352,6 +364,10 @@ def validate_result_claim(
         failures.append("claim_class_mismatch")
     if result.claim_class not in {"promotion_candidate", "ship_gate"}:
         return tuple(failures)
+    if not result.locked_eval_manifest_sha256:
+        failures.append("locked_eval_manifest_sha256_missing")
+    elif result.locked_eval_manifest_sha256 != manifest.locked_eval_manifest_sha256:
+        failures.append("locked_eval_manifest_sha256_mismatch")
     if result.exploratory:
         failures.append("exploratory_result")
 
