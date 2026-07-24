@@ -398,13 +398,18 @@
       ]
     },
     "dsl.grammar_capabilities": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/grammar_capabilities.py",
         "tests/test_dsl/test_grammar_capabilities.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "declare typed pack-owned finite completion domains with scope fingerprints and terminal witnesses"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -481,7 +486,7 @@
       ]
     },
     "dsl.operators.registry": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/dsl/operators/registry.py",
@@ -489,6 +494,11 @@
         "tests/test_dsl/test_operator_registry.py"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "bind OpenUI scoped completion domains to the pack contract instead of shared decoder policy"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -5662,7 +5672,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v231",
+      "version": "v232",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5670,6 +5680,8 @@
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
         "src/slm_training/models/tokenizer.py",
+        "src/slm_training/models/grammar.py",
+        "src/slm_training/models/onnx_inference.py",
         "src/slm_training/models/checkpoint_migrate.py",
         "src/slm_training/models/template_fill.py",
         "src/slm_training/dsl/grammar/fastpath/compiler_draft.py",
@@ -5686,6 +5698,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v232",
+          "date": "2026-07-24",
+          "note": "require budgeted pack-owned completion domains for compiler tree, LTR, and one-hole constrained decoding"
+        },
         {
           "version": "v231",
           "date": "2026-07-23",

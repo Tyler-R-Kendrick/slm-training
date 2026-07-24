@@ -21,10 +21,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from slm_training.dsl.openui_tokens import (
-    PREFERRED_COMPONENT_NAMES,
-    STRUCTURAL_TOKENS,
-)
+from slm_training.dsl.openui_tokens import STRUCTURAL_TOKENS
 from slm_training.dsl.stream_types import StreamStatus
 from slm_training.models.tokenizer import OpenUITokenizer
 
@@ -99,16 +96,6 @@ def structural_tokens() -> frozenset[str]:
         return _backend().structural_tokens()
     except Exception:  # noqa: BLE001
         return STRUCTURAL_TOKENS
-
-
-def preferred_components() -> frozenset[str]:
-    try:
-        comps = _backend().component_names()
-        if comps:
-            return frozenset(c for c in comps if c in PREFERRED_COMPONENT_NAMES) or comps
-    except Exception:  # noqa: BLE001
-        pass
-    return PREFERRED_COMPONENT_NAMES
 
 
 def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
@@ -213,10 +200,17 @@ class GrammarDecodeState:
     admit_memo: dict[int, bool] = field(default_factory=dict)
     # Cached whitespace-admit result for the current position (Q2).
     whitespace_ok: bool | None = None
+    # The caller sets this from its actual canvas horizon before each strict
+    # choice.  It is part of the completion-domain cache key.
+    remaining_tokens: int | None = None
+    completion_domain_cache: dict[tuple[object, ...], object] = field(
+        default_factory=dict
+    )
 
     def clear_position_memo(self) -> None:
         self.admit_memo.clear()
         self.whitespace_ok = None
+        self.completion_domain_cache.clear()
 
     def sync_ids(self, tokenizer: OpenUITokenizer, prefix_ids: list[int]) -> str:
         """Update prefix_ids/text incrementally; return current prefix text."""
@@ -343,6 +337,7 @@ def exact_forced_token_id(
     forced_token_id: int | None = None,
     slot_contract: list[str] | None = None,
     state: GrammarDecodeState | None = None,
+    remaining_tokens: int | None = None,
 ) -> int | None:
     """Return a force-emit id only when it is the sole legal tokenizer token.
 
@@ -388,6 +383,11 @@ def exact_forced_token_id(
                 prefix_ids,
                 state=state,
                 slot_contract=slot_contract,
+                remaining_tokens=(
+                    remaining_tokens
+                    if remaining_tokens is not None
+                    else getattr(state, "remaining_tokens", None)
+                ),
             )
             if forest.coverage != "complete":
                 return None
@@ -710,6 +710,8 @@ def pick_constrained_token(
     verify_chosen_only: bool | None = None,
     grammar_equivalence_cache: bool = False,
     active_dynamic_ids: set[int] | None = None,
+    remaining_tokens: int | None = None,
+    runtime_symbols: tuple[object, ...] = (),
 ) -> int | None:
     """
     Speculative constrained pick: only tokens admitted by the grammar DFA
@@ -756,6 +758,12 @@ def pick_constrained_token(
         vco = bool(verify_chosen_only) if verify_chosen_only is not None else False
         skip_exact = True
 
+    domain_budget = (
+        remaining_tokens
+        if remaining_tokens is not None
+        else getattr(state, "remaining_tokens", None) or 64
+    )
+
     contract_allowed = contract_allowed_token_ids(
         tokenizer, prefix_ids, slot_contract
     )
@@ -791,7 +799,9 @@ def pick_constrained_token(
             allowed = allowed_id_set(
                 tokenizer,
                 engine.next_terminals(),
-                active_dynamic_ids=active_dynamic_ids,
+                active_dynamic_ids=(
+                    None if domain_budget is not None else active_dynamic_ids
+                ),
                 use_cache=grammar_equivalence_cache,
             )
             exact_terminals = bool(
@@ -879,10 +889,6 @@ def pick_constrained_token(
     def _compiler_admits(tid: int) -> bool:
         nonlocal compiler_candidates
         try:
-            from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
-
-            if not is_dsl_native_tokenizer(tokenizer):
-                return True
             if compiler_candidates is None:
                 from slm_training.dsl.grammar.fastpath.compiler_draft import (
                     build_completion_forest,
@@ -893,13 +899,15 @@ def pick_constrained_token(
                     prefix_ids,
                     state=state,
                     slot_contract=slot_contract,
+                    remaining_tokens=domain_budget,
+                    runtime_symbols=runtime_symbols,
                 )
                 if forest.coverage != "complete":
-                    return True
+                    return domain_budget is None
                 compiler_candidates = set(forest.candidate_ids)
             return int(tid) in compiler_candidates
-        except Exception:  # noqa: BLE001
-            return True
+        except Exception:  # noqa: BLE001 - strict domain authority fails closed
+            return domain_budget is None
 
     def _legal(token_id: int, *, stream: bool = True) -> bool:
         tid = int(token_id)
@@ -910,37 +918,8 @@ def pick_constrained_token(
             tokenizer.unk_id,
         }:
             return False
-        # MaskGIT commits positions out of order, so lexical grammar alone can
-        # admit a binder before the required OpenUI root binding. Keep
-        # whitespace, otherwise require root at the first significant token.
-        if not prefix_text.strip():
-            token = tokenizer.id_to_token.get(tid, "")
-            native_root = False
-            try:
-                from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
-
-                native_root = is_dsl_native_tokenizer(tokenizer) and tid == tokenizer.bind_id(0)
-            except Exception:  # noqa: BLE001
-                pass
-            if token not in {"root", " ", "\n", "\t", "NL"} and not native_root:
-                return False
         token = tokenizer.id_to_token.get(tid, "")
         line = prefix_text.rstrip().split("\n")[-1].strip()
-        if re.search(r"(?:^|\n)root\s*=\s*$", prefix_text):
-            try:
-                from slm_training.models.dsl_tokenizer import (
-                    TokenKind,
-                    is_dsl_native_tokenizer,
-                )
-
-                if is_dsl_native_tokenizer(tokenizer):
-                    if tokenizer.kind_of(tid) != TokenKind.COMPONENT:
-                        return False
-                elif token not in PREFERRED_COMPONENT_NAMES:
-                    return False
-            except Exception:  # noqa: BLE001
-                if token not in PREFERRED_COMPONENT_NAMES:
-                    return False
         if token in {"[", "LIT_STR"} and prefix_text.rstrip().endswith('"'):
             return False
         if token == "NL" and (
@@ -1132,7 +1111,7 @@ def pick_constrained_token(
             key=lambda tid: logits_list[tid],
             reverse=True,
         )
-        preferred_names = preferred_components() if prefer_structural else frozenset()
+        preferred_names = frozenset()
         struct = structural_tokens() if prefer_structural else frozenset()
         scored: list[tuple[float, int]] = []
         best_score: float | None = None
@@ -1191,7 +1170,7 @@ def pick_constrained_token(
                 stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
             return None
 
-        preferred_names = preferred_components()
+        preferred_names = frozenset()
         struct = structural_tokens()
         preferred: list[int] = []
         acceptable: list[int] = []
@@ -1312,7 +1291,6 @@ def filter_ids_by_stream(
 
 
 __all__ = [
-    "PREFERRED_COMPONENT_NAMES",
     "STRUCTURAL_TOKENS",
     "GrammarDecodeState",
     "StreamStatus",
@@ -1325,7 +1303,6 @@ __all__ = [
     "force_emit_token_id",
     "make_grammar_state",
     "pick_constrained_token",
-    "preferred_components",
     "set_active_dsl",
     "stream_check",
     "structural_token_ids",

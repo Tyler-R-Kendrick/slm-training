@@ -30,11 +30,15 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
 `COMPONENT` / `STRING`.
 
-Exact authority is ordered before every learned preference. Once the DFA, choice
-state, complete compiler forest, or another authoritative decoder proves one legal
-continuation, semantic bias, confidence, plan scoring, and model logits may not
-replace or rerank it. Incomplete proofs remain ambiguous and fail closed to the
-ordinary legal model-ranked path.
+Exact authority is ordered before every learned preference. A constrained decoder
+asks the active DSL pack for a finite, scope-fingerprinted completion domain using
+the current prefix, request-local runtime symbols, tokenizer projection, and its
+remaining-token budget. Every exposed action carries a replayable terminal witness;
+logits rank that domain only. The shared decoder contains no OpenUI component,
+binder, schema, or renderer policy. A missing/incomplete authority, exhausted
+witness proof, or empty domain is a constrained dead end — never a
+`keep_and_rank`/full-vocabulary fallback. Renderer visibility remains an independent
+post-generation product policy, not a grammar rule.
 
 ## Decode wiring
 
@@ -51,6 +55,12 @@ ordinary legal model-ranked path.
   remask-active, incomplete-proof, or rejected cases retain the ordinary neural
   proposal. In `mask`/`hybrid` mode, candidate fills still run `admit_fill`; leave a
   position masked on reject. Grammar-on picks never commit DFA-illegal tokens.
+- **Compiler tree** (`_compiler_ltr_decode_one`): obtains the same pack-owned
+  domain directly. Its former OpenUI-specific semantic filtering is now owned by
+  the OpenUI pack; alternate grammar packs supply their own authority.
+- **ONNX serving** (`OnnxTwoTowerModel`): ranks the same budgeted domain and
+  stops on an unavailable proof instead of substituting EOS or an unconstrained
+  vocabulary token.
 - **Certify** (`_ensure_valid_openui`): LTR repair → minimal valid fallback → raise
   when `grammar_finalize_validate` is set.
 - **Train aux**: `fastpath_aux_weight` (CLI `--fastpath-aux-weight`) adds

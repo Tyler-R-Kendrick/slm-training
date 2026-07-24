@@ -11,11 +11,8 @@ import numpy as np
 import onnxruntime as ort
 
 from slm_training.dsl.parser import validate
-from slm_training.models.grammar import (
-    dfa_admits_token,
-    force_emit_token_id,
-    structural_token_ids,
-)
+from slm_training.dsl.grammar.fastpath.compiler_draft import build_completion_forest
+from slm_training.models.grammar import force_emit_token_id, structural_token_ids
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -125,6 +122,7 @@ class OnnxTwoTowerModel:
         logits: np.ndarray,
         prefix: list[int],
         forced_token_id: int | None,
+        remaining_tokens: int,
     ) -> int | None:
         blocked = {
             self.tokenizer.pad_id,
@@ -132,22 +130,21 @@ class OnnxTwoTowerModel:
             self.tokenizer.bos_id,
             self.tokenizer.unk_id,
         }
+        forest = build_completion_forest(
+            self.tokenizer,
+            prefix,
+            remaining_tokens=remaining_tokens,
+        )
+        if forest.coverage != "complete":
+            return None
+        legal = set(forest.candidate_ids)
         ranked = np.argsort(-logits).tolist()
         if forced_token_id is not None:
             ranked.insert(0, forced_token_id)
         for candidate in dict.fromkeys(int(token_id) for token_id in ranked):
-            if candidate in blocked:
+            if candidate in blocked or candidate not in legal:
                 continue
-            text = self.tokenizer.decode([*prefix, candidate])
-            if candidate == self.tokenizer.eos_id:
-                if self._certify(text) is not None:
-                    return candidate
-                continue
-            try:
-                if dfa_admits_token(self.tokenizer, prefix, candidate):
-                    return candidate
-            except Exception:  # noqa: BLE001
-                continue
+            return candidate
         return None
 
     def generate(
@@ -200,11 +197,13 @@ class OnnxTwoTowerModel:
                     logits,
                     prefix,
                     forced,
+                    length - position,
                 )
             else:
                 choice = int(logits.argmax())
             if choice is None:
-                choice = self.tokenizer.eos_id
+                ids[0, position:] = self.tokenizer.pad_id
+                break
             ids[0, position] = choice
             if choice == self.tokenizer.eos_id:
                 ids[0, position + 1 :] = self.tokenizer.pad_id

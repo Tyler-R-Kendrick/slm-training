@@ -4368,6 +4368,7 @@ class TwoTowerModel(nn.Module):
             prefix = ids[0, :t].tolist()
             if st is not None:
                 st.sync_ids(tok, prefix)
+                st.remaining_tokens = length - len(prefix)
             forced = force_emit_token_id(tok, prefix, state=st) if use_fast else None
             exact = exact_forced_token_id(
                 tok,
@@ -4557,6 +4558,7 @@ class TwoTowerModel(nn.Module):
                     ids[0, pos] = nxt
                     unknown[0, pos] = False
                     if st is not None:
+                        st.remaining_tokens = length - pos
                         st.advance_token(tok, int(nxt))
                     if stats is not None:
                         stats.tokens_emitted += 1
@@ -9560,6 +9562,7 @@ class TwoTowerModel(nn.Module):
         )
         after_bottom = False
         while len(prefix) < length and prefix[-1] != self.tokenizer.eos_id:
+            state.remaining_tokens = length - len(prefix)
             if stats is not None and search_mode != "greedy":
                 stats.compiler_lattice_recurrences += 1
             with timed_ms(stats, "compiler_ms"):
@@ -9572,6 +9575,7 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "grammar_draft_window", 8) or 8
                     ),
                     min_content=self._effective_min_content(slot_contract),
+                    remaining_tokens=length - len(prefix),
                 )
             if getattr(self.config, "verified_solver_decode", False):
                 # VSS1-03: certified exact closure prunes the forest to the live
@@ -10663,6 +10667,8 @@ class TwoTowerModel(nn.Module):
                 if use_fast:
                     for bi in active_idx.tolist():
                         st = states[bi] if states is not None else None
+                        if st is not None:
+                            st.remaining_tokens = canvas - t
                         contract = (
                             self._slot_contracts[bi]
                             if self._slot_contracts and bi < len(self._slot_contracts)
@@ -10775,6 +10781,8 @@ class TwoTowerModel(nn.Module):
                         ):
                             contract = None
                         st = states[bi] if states is not None else None
+                        if st is not None:
+                            st.remaining_tokens = canvas - t
                         choice = pick_constrained_token(
                             row[bi],
                             tok,
@@ -10927,6 +10935,8 @@ class TwoTowerModel(nn.Module):
                             states[bi].sync_ids(tok, ids[bi, :start].tolist())
                         for rt in range(start, frontier + 1):
                             st = states[bi] if states is not None else None
+                            if st is not None:
+                                st.remaining_tokens = canvas - rt
                             forced = (
                                 force_emit_token_id(
                                     tok, ids[bi, :rt].tolist(), state=st
@@ -12493,6 +12503,8 @@ class TwoTowerModel(nn.Module):
                 state_rows = self._new_grammar_states(1)
                 state = state_rows[0] if state_rows is not None else None
                 prefix = ids[0, :position].tolist()
+                if state is not None:
+                    state.remaining_tokens = length - position
                 forced = force_emit_token_id(self.tokenizer, prefix, state=state)
                 contract = (
                     slot_contract
@@ -12712,6 +12724,9 @@ class TwoTowerModel(nn.Module):
                             self.config, "slot_contract_constrained_decode", False
                         )
                         else None,
+                        remaining_tokens=(
+                            length - t if int(unknown[b].sum().item()) == 1 else None
+                        ),
                         **self._pick_kwargs(),
                     )
                     return choice  # None → leave masked for LTR repair

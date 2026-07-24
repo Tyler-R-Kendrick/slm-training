@@ -23,12 +23,17 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     root_declaration_reference_arity_target,
     semantic_component_edges,
 )
+from slm_training.dsl.grammar_capabilities import (
+    CompletionDomainRequestV1,
+    GrammarCapabilityAdapterV1,
+)
+from slm_training.dsl.pack import get_pack
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-from slm_training.models.grammar import make_grammar_state
+from slm_training.models.grammar import make_grammar_state, pick_constrained_token
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
@@ -4430,6 +4435,47 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     ) | {tokenizer.eos_id}
     assert set(complete.candidate_ids) <= continuation_ids
     assert tokenizer.eos_id in complete.candidate_ids
+
+
+def test_budgeted_completion_domain_exposes_only_witnessed_actions() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = (tokenizer.bos_id, tokenizer.bind_id(0), tokenizer.token_to_id["="])
+    domain = GrammarCapabilityAdapterV1(get_pack("openui")).completion_domain(
+        CompletionDomainRequestV1(
+            prefix_ids=prefix,
+            tokenizer=tokenizer,
+            slot_contract=(":hero.title",),
+            remaining_tokens=32,
+        )
+    )
+
+    assert domain.status == "complete"
+    assert domain.candidates
+    assert all(
+        candidate.terminal_witness[: len(candidate.token_ids)]
+        == candidate.token_ids
+        and candidate.terminal_witness[-1] == tokenizer.eos_id
+        for candidate in domain.candidates
+    )
+def test_strict_picker_never_ranks_outside_pack_domain() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = [tokenizer.bos_id, tokenizer.bind_id(0), tokenizer.token_to_id["="]]
+    state = make_grammar_state()
+    state.remaining_tokens = 32
+    logits = torch.zeros(tokenizer.vocab_size)
+    logits[tokenizer.bind_id(1)] = 100.0
+    logits[tokenizer.token_to_id["Button"]] = 1.0
+
+    choice = pick_constrained_token(
+        logits,
+        tokenizer,
+        prefix,
+        slot_contract=[":hero.title"],
+        state=state,
+    )
+
+    assert choice is not None
+    assert choice != tokenizer.bind_id(1)
 
 
 def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
