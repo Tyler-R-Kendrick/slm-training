@@ -2,7 +2,7 @@
 
 **Verdict:** `descriptive_only`
 
-**Report hash:** `5f582c011734a9d5c6c5f8ab8300c361661e48f1d94d5be640ed332f7a79d697`
+**Report hash:** `6eff650522e6ec503520e39ed5a094cc468ec2707e9cfeb59b563262f0aa6dda`
 
 **Status / claim:** `scratch_measured` / `descriptive_diagnostic` (`scratch_cpu_no_durable_checkpoint`)
 

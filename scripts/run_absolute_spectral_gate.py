@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from slm_training.harnesses.experiments.slm226_absolute_spectral_gate import (
@@ -57,21 +58,31 @@ def main(argv: list[str] | None = None) -> int:
         seeds=seeds,
         null_draws=args.null_draws,
     )
-    expected_json = json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n"
-    expected_markdown = render_markdown(report)
     if args.check:
         if not json_path.is_file() or not markdown_path.is_file():
             print("missing committed SLM-226 report")
             return 1
         committed = json.loads(json_path.read_text(encoding="utf-8"))
+        committed_stamp = committed.get("version_stamp", {})
+        pinned_stamp = dict(report.version_stamp)
+        pinned_stamp["code_commit"] = committed_stamp.get("code_commit")
+        pinned_stamp["code_dirty"] = committed_stamp.get("code_dirty")
+        report = replace(
+            report,
+            source_commit=str(committed.get("source_commit", "UNKNOWN")),
+            version_stamp=pinned_stamp,
+        )
         if _without_volatile(committed) != _without_volatile(report.to_dict()):
             print(f"stale result JSON: {json_path}")
             return 1
+        expected_markdown = render_markdown(report)
         if markdown_path.read_text(encoding="utf-8") != expected_markdown:
             print(f"stale result Markdown: {markdown_path}")
             return 1
         print(f"{report.gate.verdict} {report.report_hash}")
         return 0
+    expected_json = json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n"
+    expected_markdown = render_markdown(report)
     json_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.write_text(expected_json, encoding="utf-8")
     markdown_path.write_text(expected_markdown, encoding="utf-8")
