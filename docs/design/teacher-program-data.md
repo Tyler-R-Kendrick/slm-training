@@ -31,20 +31,22 @@ split leakage checker.
 
 | Mode | Required policy | Deduplication | Eligible for canonical training |
 | --- | --- | --- | --- |
-| `deep_verified` | G0-G4, G7-G8, G10-G12, plus G5/G6 when requested; every required gate must be `pass`; Gold/Silver only | one deterministic canonical-root representative | Yes |
+| `deep_verified` | automated G0-G4, G7-G8, G10-G11, plus G5/G6 when requested; every required gate must be `pass`; admitted as Silver unless separately audited | one deterministic canonical-root representative | Yes |
 | `parse_only` | G0-G1 only; later failures are retained | exact prompt/program pair only | No — controlled research only |
 | `no_canonical_dedup` | same deep policy | exact prompt/program pair only | Controlled comparison only |
 
 The generic verifier normally marks teacher rows Bronze until a human audit.
-SLM-266 does not reinterpret that fallback: missing G11/G12 evidence is an
-admission rejection for both principal deep modes. Generator and judge families
-must differ. Protected overlap is rejected before mode-specific materialization.
+SLM-266 keeps that raw verifier result but derives an admission Silver tier after
+the automated deep policy clears. G12 is retained as optional evidence, never a
+human-rating gate. G11 remains the required independent automated judge; its
+family must differ from the generator. Protected overlap is rejected before
+mode-specific materialization.
 
 ## Current disposition — 2026-07-24
 
 This is implementation and fixture evidence only, not a teacher generation,
 accepted corpus, training result, or ship claim. There is no configured provider
-credential, nonzero approved generation budget, raw archive, independent judge,
-or human-audit ledger in this checkout. Therefore the required 10k/100k corpora
+credential, nonzero approved generation budget, raw archive, or independent
+judge configuration in this checkout. Therefore the required 10k/100k corpora
 and three-seed factorial remain **unrun**; the next execution must create a
 locked manifest and durable raw archive before any provider spend.
