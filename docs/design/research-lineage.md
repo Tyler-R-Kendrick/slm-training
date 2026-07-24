@@ -1315,6 +1315,34 @@ for a later coupling perturbation; no semantic, training, optimizer, promotion,
 or ship claim is authorized. Evidence:
 [`iter-slm220-causal-subspace-20260723.md`](iter-slm220-causal-subspace-20260723.md).
 
+## Final null-calibrated spectral disposition (NCS4-03 / SLM-228)
+
+[`SpectralDispositionV1`](null-calibrated-spectral-learning-disposition.json)
+hash-binds the complete SLM-214 through SLM-227 evidence set and records one
+typed disposition for each of sixteen mechanisms. The synthesis adopts four
+diagnostics and no optional or primary training mechanism:
+
+| Adopted diagnostic | Authorized scope |
+| --- | --- |
+| Native spectral snapshot and same-shape null cache | Inspection only |
+| WeightWatcher stable-rank parity | Backend parity diagnostic only |
+| Activation-side analytic estimator | Analytic and future compatible-checkpoint diagnostics only |
+| Absolute target gate | Governance and rejection checks only |
+
+Raw alpha as a quality or criticality signal, correlation-trap operational
+early stopping, and verifier-conditioned spectral learning-rate control are
+rejected. Muon remains available only for explicit scratch replay; it is not a
+default and cannot enter ship evaluation or promotion. Model-cycle
+initialization, branching, promotion, and direct promoted training now reject
+forbidden absolute-target knobs and promotion-ineligible optimizer settings.
+
+The report also makes the evidence dependence explicit: several later studies
+reuse the same scratch checkpoint lineage, so their rows are not treated as
+independent replications. No new experiment, checkpoint, AgentV evaluation,
+model-card roster row, default, champion, or production promotion was produced.
+The rendered decision record is
+[`null-calibrated-spectral-learning-disposition.md`](null-calibrated-spectral-learning-disposition.md).
+
 ## Compiler-owned AST operator contracts (DSH3-01 / SLM-369)
 
 **Fidelity label: adapted contract.** The versioned operator, typed-reference,

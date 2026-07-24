@@ -168,8 +168,22 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     config, flag_snapshot = resolve(config, phase="training")
     from slm_training.harnesses.capability_gates import require_training_authorized
+    from slm_training.harnesses.experiments.slm228_spectral_disposition import (
+        validate_spectral_recipe,
+    )
 
     require_training_authorized(config)
+    requested_spectral_use = (
+        "promotion"
+        if bool(getattr(config, "register_promoted", False))
+        else "ship_eval"
+        if str(getattr(config, "run_class", "")) == "ship_eval"
+        else "scratch"
+    )
+    validate_spectral_recipe(
+        {"optimizer_name": getattr(config, "optimizer_name", "adamw")},
+        requested_use=requested_spectral_use,
+    )
 
     campaign_governance = None
     if bool(getattr(config, "register_promoted", False)):

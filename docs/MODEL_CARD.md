@@ -39,6 +39,13 @@ The SLM-216 fixed-token spectral-regime matrix is also diagnostic-only and
 checkpoint, and did not run a canonical model/AgentV evaluation. It therefore
 does not change this roster or authorize spectral optimizer, promotion, or ship
 claims. See the [measured result](design/iter-slm216-spectral-regime-20260723.md).
+The final SLM-228
+[SpectralDispositionV1](design/null-calibrated-spectral-learning-disposition.md)
+adopts only fail-closed diagnostics and adds promotion guards: raw-alpha claims,
+spectral training controls, causal spectral retention, Muon promotion, and
+WW-PGD/trace-log correction remain rejected or blocked. The disposition is an
+evidence synthesis, created no checkpoint, and makes no roster or README model
+table change.
 
 Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 [checkpoint-provenance.md](design/checkpoint-provenance.md),

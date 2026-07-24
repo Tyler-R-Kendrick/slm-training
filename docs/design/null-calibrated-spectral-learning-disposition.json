@@ -1,0 +1,572 @@
+{
+  "absolute_gate_hash": "c413d33274206d2e68552c351a2b0bd959b4ffd1969f1d23e7478cc78ba0fd2e",
+  "canonical_policy": "Keep SpectralSnapshotV1, the analytic activation-side estimator, and AbsoluteSpectralTargetGateV1 as diagnostic/governance owners. Spectral observables cannot influence champion selection, promotion, or production configuration unless a future versioned disposition reaches adopt_primary.",
+  "claim_class": "governance_disposition",
+  "entries": [
+    {
+      "applicable_scope": "data-free matrix diagnostics by exact role, shape, dtype, and initializer",
+      "category": "measurement",
+      "default_state": "diagnostic_only",
+      "disposition": "adopt_diagnostic",
+      "evidence": [
+        {
+          "artifact_identity": "37a207da1b5f1669a06939478dda3f194590cdef470e164bdae39ecb8b25f7d7",
+          "claim_class": "wiring",
+          "content_sha256": "37a207da1b5f1669a06939478dda3f194590cdef470e164bdae39ecb8b25f7d7",
+          "path": "docs/design/iter-slm214-spectral-snapshot-20260721.json",
+          "schema": "SpectralSnapshotReportV1",
+          "status": "fixture"
+        }
+      ],
+      "falsifier": "Synthetic controls do not separate, aliases double count, or null identity is missing.",
+      "fidelity": "adapted",
+      "hypothesis": "Native SVD statistics with same-shape nulls separate synthetic controls without raw-alpha folklore.",
+      "issue_ids": [
+        "SLM-214"
+      ],
+      "known_confounds": [
+        "fixture model only",
+        "no WeightWatcher production dependency"
+      ],
+      "mechanism_id": "native_spectral_snapshot_and_null_cache",
+      "rationale": "The canonical owner validates deterministic native statistics, synthetic controls, null keys, role classification, and tied-storage deduplication. It makes no quality or ship claim.",
+      "required_action": "Retain as the canonical inspection API; require null evidence beside raw alpha."
+    },
+    {
+      "applicable_scope": "all roles and shapes",
+      "category": "measurement",
+      "default_state": "forbidden",
+      "disposition": "reject",
+      "evidence": [
+        {
+          "artifact_identity": "37a207da1b5f1669a06939478dda3f194590cdef470e164bdae39ecb8b25f7d7",
+          "claim_class": "wiring",
+          "content_sha256": "37a207da1b5f1669a06939478dda3f194590cdef470e164bdae39ecb8b25f7d7",
+          "path": "docs/design/iter-slm214-spectral-snapshot-20260721.json",
+          "schema": "SpectralSnapshotReportV1",
+          "status": "fixture"
+        },
+        {
+          "artifact_identity": "f3184747850d3b85f97f09117fca00e2c306a70689ae960fc5e5b5e2cc3ef514",
+          "claim_class": "wiring",
+          "content_sha256": "f3184747850d3b85f97f09117fca00e2c306a70689ae960fc5e5b5e2cc3ef514",
+          "path": "docs/design/iter-slm215-spectral-atlas-20260721.json",
+          "schema": "SpectralAtlasReportV1",
+          "status": "fixture"
+        },
+        {
+          "artifact_identity": "c413d33274206d2e68552c351a2b0bd959b4ffd1969f1d23e7478cc78ba0fd2e",
+          "claim_class": "descriptive_diagnostic",
+          "content_sha256": "7b4823a7015589f85fadf0aa375215ddd1acb8d48e4a08b3fc4e657d9946cd65",
+          "path": "docs/design/iter-slm226-absolute-spectral-gate-20260723.json",
+          "schema": "AbsoluteSpectralBoundaryReportV1",
+          "status": "scratch_measured"
+        }
+      ],
+      "falsifier": "Same-shape random nulls reproduce or shift the apparent target.",
+      "fidelity": "surrogate",
+      "hypothesis": "Raw fitted alpha, especially alpha near 2, identifies model quality or criticality.",
+      "issue_ids": [
+        "SLM-214",
+        "SLM-215",
+        "SLM-226"
+      ],
+      "known_confounds": [
+        "finite size",
+        "aspect ratio",
+        "initializer",
+        "tail support",
+        "estimator choice"
+      ],
+      "mechanism_id": "raw_alpha_as_quality_or_criticality_signal",
+      "rationale": "The 128x128, 256x128, and 512x128 Gaussian-null means are strongly shape-dependent; proximity to 2 is not positive evidence.",
+      "required_action": "Reject raw-alpha promotion features and require null-calibrated observables."
+    },
+    {
+      "applicable_scope": "committed checkpoint families with exact compatible provenance",
+      "category": "measurement",
+      "default_state": "off",
+      "disposition": "inconclusive",
+      "evidence": [
+        {
+          "artifact_identity": "f3184747850d3b85f97f09117fca00e2c306a70689ae960fc5e5b5e2cc3ef514",
+          "claim_class": "wiring",
+          "content_sha256": "f3184747850d3b85f97f09117fca00e2c306a70689ae960fc5e5b5e2cc3ef514",
+          "path": "docs/design/iter-slm215-spectral-atlas-20260721.json",
+          "schema": "SpectralAtlasReportV1",
+          "status": "fixture"
+        }
+      ],
+      "falsifier": "Coverage is incomplete or predictive relations vanish under role/shape controls.",
+      "fidelity": "adapted",
+      "hypothesis": "Null-calibrated checkpoint spectra predict non-floor protected outcomes.",
+      "issue_ids": [
+        "SLM-215"
+      ],
+      "known_confounds": [
+        "missing checkpoints",
+        "non-independent snapshots",
+        "semantic floor"
+      ],
+      "mechanism_id": "checkpoint_atlas_outcome_prediction",
+      "rationale": "The atlas wiring works, but committed compatible checkpoint/outcome coverage is insufficient for prediction.",
+      "required_action": "Revisit only after a provenance-complete checkpoint family exists."
+    },
+    {
+      "applicable_scope": "bounded CPU scratch batch/data-scale diagnostics",
+      "category": "measurement",
+      "default_state": "diagnostic_only",
+      "disposition": "retain_research",
+      "evidence": [
+        {
+          "artifact_identity": "7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675",
+          "claim_class": "diagnostic",
+          "content_sha256": "ca0c254124fe6c04ca3415152bc9e72e4f76ef27a6aed1313945abeecfada220",
+          "path": "docs/design/iter-slm216-spectral-regime-20260723.json",
+          "schema": "SpectralRegimeReportV1",
+          "status": "scratch_measured"
+        }
+      ],
+      "falsifier": "Effects are step-confounded, null-like, or unavailable on durable checkpoints.",
+      "fidelity": "adapted",
+      "hypothesis": "Batch and data scale create reproducible null-calibrated spectral departures.",
+      "issue_ids": [
+        "SLM-216"
+      ],
+      "known_confounds": [
+        "optimizer-step count",
+        "scratch model",
+        "no durable checkpoint"
+      ],
+      "mechanism_id": "fixed_token_spectral_regime_diagnostics",
+      "rationale": "The measured scratch matrix is useful negative-boundary evidence but is inconclusive and blocks optimizer, semantic, promotion, and ship claims.",
+      "required_action": "Keep the report replayable; do not route it into training defaults."
+    },
+    {
+      "applicable_scope": "exact-state activation covariance with compatible checkpoint manifests",
+      "category": "functional_causal",
+      "default_state": "off",
+      "disposition": "inconclusive",
+      "evidence": [
+        {
+          "artifact_identity": "d9953911c42303bb860db40e326a88612ed9bf17c4b822b028404ac263cd1391",
+          "claim_class": "diagnostic",
+          "content_sha256": "17f9dea5f8f488c9ee8d53d11dd873374761022678d2b032b28a759847663398",
+          "path": "docs/design/iter-slm217-functional-spectra-20260723.json",
+          "schema": "FunctionalSpectralReportV1",
+          "status": "inconclusive"
+        }
+      ],
+      "falsifier": "No compatible checkpoint/state manifest or controls do not separate.",
+      "fidelity": "adapted",
+      "hypothesis": "W Sigma^(1/2) spectra identify decision-kind-specific functional geometry.",
+      "issue_ids": [
+        "SLM-217"
+      ],
+      "known_confounds": [
+        "fixture-only",
+        "missing exact-state checkpoint family"
+      ],
+      "mechanism_id": "decision_conditioned_functional_spectra",
+      "rationale": "Orientation and streaming covariance plumbing are validated only on fixtures; no compatible durable checkpoint plus DecisionEvent manifest exists.",
+      "required_action": "Retain the diagnostic owner but make no predictive or causal inference."
+    },
+    {
+      "applicable_scope": "provenance-complete parent/child checkpoint families",
+      "category": "functional_causal",
+      "default_state": "off",
+      "disposition": "inconclusive",
+      "evidence": [
+        {
+          "artifact_identity": "04fa873a3615b0f695e0bea745bd968516092d5f2ac51ff13e93ba466cf14a72",
+          "claim_class": "diagnostic",
+          "content_sha256": "8e259fc48a4850b6d8656851f6914c390ba9e3be6a5d18a75a116d72af214b65",
+          "path": "docs/design/iter-slm218-cross-attention-retention-20260723.json",
+          "schema": "CrossAttentionRetentionReportV1",
+          "status": "unspecified"
+        }
+      ],
+      "falsifier": "No complete checkpoint family or controls match the proposed geometry.",
+      "fidelity": "adapted",
+      "hypothesis": "Cross-attention bottlenecks or retained parent subspaces support protected decisions.",
+      "issue_ids": [
+        "SLM-218"
+      ],
+      "known_confounds": [
+        "missing parents",
+        "synthetic geometry"
+      ],
+      "mechanism_id": "cross_attention_and_parent_child_retention_geometry",
+      "rationale": "Zero complete provenance-resolvable checkpoint families were available; no cross-attention role or retention target was nominated.",
+      "required_action": "Do not select retention targets from synthetic magnitudes."
+    },
+    {
+      "applicable_scope": "optional pinned WeightWatcher stable-rank parity diagnostics",
+      "category": "measurement",
+      "default_state": "optional_diagnostic",
+      "disposition": "adopt_diagnostic",
+      "evidence": [
+        {
+          "artifact_identity": "0340c57d223df0304bb520da638c56b7af786668620f38ac490ca4574d36fffa",
+          "claim_class": "diagnostic",
+          "content_sha256": "b98f5d71a09290ca52c0bf2be8674960ec30dc21a0a49d99d88fdad1d32df6fe",
+          "path": "docs/design/iter-slm219-correlation-trap-20260723.json",
+          "schema": "CorrelationTrapReportV1",
+          "status": "inconclusive"
+        }
+      ],
+      "falsifier": "The two implementations disagree beyond numerical tolerance.",
+      "fidelity": "faithful",
+      "hypothesis": "Pinned WeightWatcher stable rank agrees with the native canonical owner.",
+      "issue_ids": [
+        "SLM-219"
+      ],
+      "known_confounds": [
+        "optional dependency",
+        "alpha parity is not quality evidence"
+      ],
+      "mechanism_id": "weightwatcher_stable_rank_parity",
+      "rationale": "WeightWatcher 0.7.5 completed 18 comparisons with maximum stable-rank absolute error 8.527e-14. Its fitted alpha remains descriptive only.",
+      "required_action": "Keep WeightWatcher pinned and optional; use native metrics as the canonical owner."
+    },
+    {
+      "applicable_scope": "diagnostic checkpoint trajectories",
+      "category": "functional_causal",
+      "default_state": "not_supported",
+      "disposition": "reject",
+      "evidence": [
+        {
+          "artifact_identity": "0340c57d223df0304bb520da638c56b7af786668620f38ac490ca4574d36fffa",
+          "claim_class": "diagnostic",
+          "content_sha256": "b98f5d71a09290ca52c0bf2be8674960ec30dc21a0a49d99d88fdad1d32df6fe",
+          "path": "docs/design/iter-slm219-correlation-trap-20260723.json",
+          "schema": "CorrelationTrapReportV1",
+          "status": "inconclusive"
+        }
+      ],
+      "falsifier": "Warnings do not lead protected regressions or controls warn equally.",
+      "fidelity": "adapted",
+      "hypothesis": "Spikes/traps precede continuation collapse under a preregistered warning rule.",
+      "issue_ids": [
+        "SLM-219"
+      ],
+      "known_confounds": [
+        "small trajectory",
+        "proxy collapse labels"
+      ],
+      "mechanism_id": "correlation_trap_early_warning",
+      "rationale": "One seed/family and one transient collapse provide no independent non-collapse false-positive denominator; the report explicitly does not support an operational early-stop rule.",
+      "required_action": "Retain the report for research replay; forbid operational early stopping or promotion decisions."
+    },
+    {
+      "applicable_scope": "analytic fixtures and future exact-state checkpoint families",
+      "category": "functional_causal",
+      "default_state": "diagnostic_only",
+      "disposition": "adopt_diagnostic",
+      "evidence": [
+        {
+          "artifact_identity": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+          "claim_class": "diagnostic_fixture",
+          "content_sha256": "170d070da73e1e4fcdd8a7ebd2d94b4869e75d09a03e01e440a623bb0df13ae1",
+          "path": "docs/design/iter-slm220-causal-subspace-20260723.json",
+          "schema": "CausalSubspaceReportV1",
+          "status": "rejected"
+        }
+      ],
+      "falsifier": "Exact/JVP estimators disagree or null controls fail.",
+      "fidelity": "adapted",
+      "hypothesis": "Activation-side restriction energy measures causal support in the mathematically valid orientation.",
+      "issue_ids": [
+        "SLM-220"
+      ],
+      "known_confounds": [
+        "analytic labels are not model evidence",
+        "semantic floor"
+      ],
+      "mechanism_id": "activation_side_causal_restriction_estimator",
+      "rationale": "Analytic exact/JVP/Hutchinson contracts pass, but the current-model retrospective is rejected and nominates no eligible bands.",
+      "required_action": "Keep the estimator; require a provenance-complete family before model use."
+    },
+    {
+      "applicable_scope": "frozen checkpoint and preregistered eligible bands",
+      "category": "functional_causal",
+      "default_state": "blocked",
+      "disposition": "blocked",
+      "evidence": [
+        {
+          "artifact_identity": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+          "claim_class": "diagnostic_fixture",
+          "content_sha256": "170d070da73e1e4fcdd8a7ebd2d94b4869e75d09a03e01e440a623bb0df13ae1",
+          "path": "docs/design/iter-slm220-causal-subspace-20260723.json",
+          "schema": "CausalSubspaceReportV1",
+          "status": "rejected"
+        }
+      ],
+      "falsifier": "Perturbations are inert after controls.",
+      "fidelity": "adapted",
+      "hypothesis": "Singular values, vectors, or bands have reproducible local causal effects.",
+      "issue_ids": [
+        "SLM-221"
+      ],
+      "known_confounds": [
+        "no target artifact",
+        "no source checkpoint"
+      ],
+      "mechanism_id": "isospectral_and_band_causal_hypothesis",
+      "rationale": "No eligible perturbation bands or provenance-resolvable frozen checkpoint/state family exists, so the battery could not start.",
+      "required_action": "Reopen only after the causal estimator nominates nonempty frozen targets."
+    },
+    {
+      "applicable_scope": "optimizer partition wiring fixture",
+      "category": "optimization_retention",
+      "default_state": "off",
+      "disposition": "retain_research",
+      "evidence": [
+        {
+          "artifact_identity": "5b5601362df6bd6e5bcd62578fa596f6056549675dd79015ad0211ab7989b50e",
+          "claim_class": "wiring",
+          "content_sha256": "5b5601362df6bd6e5bcd62578fa596f6056549675dd79015ad0211ab7989b50e",
+          "path": "docs/design/iter-slm222-muon-baseline-20260721.json",
+          "schema": "MuonBaselineReportV1",
+          "status": "fixture"
+        }
+      ],
+      "falsifier": "Matched quality/cost outcomes do not improve.",
+      "fidelity": "surrogate",
+      "hypothesis": "Muon improves convergence/protected outcomes over matched AdamW.",
+      "issue_ids": [
+        "SLM-222"
+      ],
+      "known_confounds": [
+        "single synthetic record",
+        "unmatched downstream evidence"
+      ],
+      "mechanism_id": "muon_hybrid_optimizer",
+      "rationale": "Only a two-step fixture validates partitioning; no matched convergence, protected, downstream, or GPU evidence exists.",
+      "required_action": "Keep optional wiring default-off; do not call it the strongest baseline."
+    },
+    {
+      "applicable_scope": "roles authorized by SpectralRegimeGateV1",
+      "category": "optimization_retention",
+      "default_state": "blocked",
+      "disposition": "blocked",
+      "evidence": [
+        {
+          "artifact_identity": "7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675",
+          "claim_class": "diagnostic",
+          "content_sha256": "ca0c254124fe6c04ca3415152bc9e72e4f76ef27a6aed1313945abeecfada220",
+          "path": "docs/design/iter-slm216-spectral-regime-20260723.json",
+          "schema": "SpectralRegimeReportV1",
+          "status": "scratch_measured"
+        },
+        {
+          "artifact_identity": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+          "claim_class": "diagnostic_fixture",
+          "content_sha256": "170d070da73e1e4fcdd8a7ebd2d94b4869e75d09a03e01e440a623bb0df13ae1",
+          "path": "docs/design/iter-slm220-causal-subspace-20260723.json",
+          "schema": "CausalSubspaceReportV1",
+          "status": "rejected"
+        },
+        {
+          "artifact_identity": "5b5601362df6bd6e5bcd62578fa596f6056549675dd79015ad0211ab7989b50e",
+          "claim_class": "wiring",
+          "content_sha256": "5b5601362df6bd6e5bcd62578fa596f6056549675dd79015ad0211ab7989b50e",
+          "path": "docs/design/iter-slm222-muon-baseline-20260721.json",
+          "schema": "MuonBaselineReportV1",
+          "status": "fixture"
+        }
+      ],
+      "falsifier": "Ordering is unsupported or controls match.",
+      "fidelity": "adapted",
+      "hypothesis": "Null-calibrated relative LR/decay ordering beats permuted and time-shifted controls.",
+      "issue_ids": [
+        "SLM-223"
+      ],
+      "known_confounds": [
+        "no durable checkpoint",
+        "no matched baseline"
+      ],
+      "mechanism_id": "relative_spectral_optimizer_tournament",
+      "rationale": "The regime gate is inconclusive, no causal mechanism exists, and no qualified AdamW/Muon control exists; the tournament was not authorized.",
+      "required_action": "Do not add a controller until a future versioned gate authorizes exact roles."
+    },
+    {
+      "applicable_scope": "winning relative spectral policy with protected geometry",
+      "category": "optimization_retention",
+      "default_state": "not_applicable",
+      "disposition": "reject",
+      "evidence": [
+        {
+          "artifact_identity": "7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675",
+          "claim_class": "diagnostic",
+          "content_sha256": "ca0c254124fe6c04ca3415152bc9e72e4f76ef27a6aed1313945abeecfada220",
+          "path": "docs/design/iter-slm216-spectral-regime-20260723.json",
+          "schema": "SpectralRegimeReportV1",
+          "status": "scratch_measured"
+        },
+        {
+          "artifact_identity": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+          "claim_class": "diagnostic_fixture",
+          "content_sha256": "170d070da73e1e4fcdd8a7ebd2d94b4869e75d09a03e01e440a623bb0df13ae1",
+          "path": "docs/design/iter-slm220-causal-subspace-20260723.json",
+          "schema": "CausalSubspaceReportV1",
+          "status": "rejected"
+        }
+      ],
+      "falsifier": "No supported spectral ordering or mechanism remains.",
+      "fidelity": "adapted",
+      "hypothesis": "Verifier need and conflict gates make spectral LR allocation safer.",
+      "issue_ids": [
+        "SLM-224"
+      ],
+      "known_confounds": [
+        "missing base mechanism"
+      ],
+      "mechanism_id": "verifier_conditioned_spectral_lr",
+      "rationale": "SLM-223 supplied no winning spectral direction or controller state, so layering verifier policy was explicitly not applicable.",
+      "required_action": "No implementation; reopen only after qualified spectral ordering."
+    },
+    {
+      "applicable_scope": "causally supported frozen singular-value/subspace targets",
+      "category": "optimization_retention",
+      "default_state": "not_supported",
+      "disposition": "blocked",
+      "evidence": [
+        {
+          "artifact_identity": "04fa873a3615b0f695e0bea745bd968516092d5f2ac51ff13e93ba466cf14a72",
+          "claim_class": "diagnostic",
+          "content_sha256": "8e259fc48a4850b6d8656851f6914c390ba9e3be6a5d18a75a116d72af214b65",
+          "path": "docs/design/iter-slm218-cross-attention-retention-20260723.json",
+          "schema": "CrossAttentionRetentionReportV1",
+          "status": "unspecified"
+        },
+        {
+          "artifact_identity": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+          "claim_class": "diagnostic_fixture",
+          "content_sha256": "170d070da73e1e4fcdd8a7ebd2d94b4869e75d09a03e01e440a623bb0df13ae1",
+          "path": "docs/design/iter-slm220-causal-subspace-20260723.json",
+          "schema": "CausalSubspaceReportV1",
+          "status": "rejected"
+        }
+      ],
+      "falsifier": "No reproducible singular-value, orientation, or band effect exists.",
+      "fidelity": "adapted",
+      "hypothesis": "Causal spectral retention improves the plasticity/retention frontier.",
+      "issue_ids": [
+        "SLM-225"
+      ],
+      "known_confounds": [
+        "no target artifact"
+      ],
+      "mechanism_id": "causal_spectral_elastic_retention",
+      "rationale": "SLM-221 produced no eligible causal target or frozen weights; implementing a penalty would select from synthetic magnitude or outcomes.",
+      "required_action": "Do not add retention code without a future causal result."
+    },
+    {
+      "applicable_scope": "exact role/shape/initializer finite-size authorization",
+      "category": "absolute_targeting",
+      "default_state": "fail_closed",
+      "disposition": "adopt_diagnostic",
+      "evidence": [
+        {
+          "artifact_identity": "c413d33274206d2e68552c351a2b0bd959b4ffd1969f1d23e7478cc78ba0fd2e",
+          "claim_class": "descriptive_diagnostic",
+          "content_sha256": "7b4823a7015589f85fadf0aa375215ddd1acb8d48e4a08b3fc4e657d9946cd65",
+          "path": "docs/design/iter-slm226-absolute-spectral-gate-20260723.json",
+          "schema": "AbsoluteSpectralBoundaryReportV1",
+          "status": "scratch_measured"
+        }
+      ],
+      "falsifier": "Raw alpha or one checkpoint can authorize a different role/shape.",
+      "fidelity": "adapted",
+      "hypothesis": "A versioned finite-size gate prevents null coincidences from authorizing correction.",
+      "issue_ids": [
+        "SLM-226"
+      ],
+      "known_confounds": [
+        "scratch linear probes",
+        "no production width boundary"
+      ],
+      "mechanism_id": "absolute_spectral_target_gate",
+      "rationale": "The 200-draw width study is descriptive-only, authorizes no roles/shapes, and its guard blocks every absolute intervention.",
+      "required_action": "Retain the gate and require it before any absolute-target manifest."
+    },
+    {
+      "applicable_scope": "exact role/shape authorized by the absolute gate and causal target",
+      "category": "absolute_targeting",
+      "default_state": "not_authorized",
+      "disposition": "blocked",
+      "evidence": [
+        {
+          "artifact_identity": "c413d33274206d2e68552c351a2b0bd959b4ffd1969f1d23e7478cc78ba0fd2e",
+          "claim_class": "descriptive_diagnostic",
+          "content_sha256": "7b4823a7015589f85fadf0aa375215ddd1acb8d48e4a08b3fc4e657d9946cd65",
+          "path": "docs/design/iter-slm226-absolute-spectral-gate-20260723.json",
+          "schema": "AbsoluteSpectralBoundaryReportV1",
+          "status": "scratch_measured"
+        },
+        {
+          "artifact_identity": "5de0f767ff3844b1074c17c3f0b60e6a38ee45ec0ceea40e0ec84576392a5312",
+          "claim_class": "diagnostic_fixture",
+          "content_sha256": "170d070da73e1e4fcdd8a7ebd2d94b4869e75d09a03e01e440a623bb0df13ae1",
+          "path": "docs/design/iter-slm220-causal-subspace-20260723.json",
+          "schema": "CausalSubspaceReportV1",
+          "status": "rejected"
+        },
+        {
+          "artifact_identity": "5b5601362df6bd6e5bcd62578fa596f6056549675dd79015ad0211ab7989b50e",
+          "claim_class": "wiring",
+          "content_sha256": "5b5601362df6bd6e5bcd62578fa596f6056549675dd79015ad0211ab7989b50e",
+          "path": "docs/design/iter-slm222-muon-baseline-20260721.json",
+          "schema": "MuonBaselineReportV1",
+          "status": "fixture"
+        }
+      ],
+      "falsifier": "The absolute gate or causal-shape prerequisite fails.",
+      "fidelity": "adapted",
+      "hypothesis": "Damped alpha/trace-log projection improves protected quality beyond controls.",
+      "issue_ids": [
+        "SLM-227"
+      ],
+      "known_confounds": [
+        "finite size",
+        "norm changes",
+        "SVD overhead",
+        "guard selection"
+      ],
+      "mechanism_id": "ww_pgd_trace_log_projection",
+      "rationale": "AbsoluteSpectralTargetGateV1 is descriptive-only with empty authorization and SLM-221 has no causal target; projection is not authorized.",
+      "required_action": "No projection implementation; the absolute gate remains authoritative."
+    }
+  ],
+  "evidence_cutoff_commit": "0b7bc033953abc7858e5eb7620a1c480d792cfd5",
+  "executive_finding": "The program adopts four fail-closed diagnostics and no training or production mechanism. Raw alpha, verifier-conditioned spectral LR, causal spectral retention, and WW-PGD/trace-log correction are rejected or blocked in the measured scope; negative evidence remains replayable.",
+  "generated_at": "2026-07-24T02:05:00.592575Z",
+  "matrix_set": "slm228_spectral_disposition",
+  "matrix_version": "ncs4-03-v1",
+  "regime_gate_hash": "7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675",
+  "report_hash": "1882a4937d3a7351a9945d29e0ba1887e5722f7cf1d17969e352cb1758b35d7c",
+  "schema": "SpectralDispositionV1",
+  "semantic_floor_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
+  "semantic_floor_verdict": "inconclusive",
+  "status": "complete",
+  "summary": {
+    "adopt_diagnostic": 4,
+    "adopt_optional": 0,
+    "adopt_primary": 0,
+    "blocked": 4,
+    "inconclusive": 3,
+    "reject": 3,
+    "retain_research": 2
+  },
+  "version_stamp": {
+    "code_commit": "0b7bc033953abc7858e5eb7620a1c480d792cfd5",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v71",
+      "harness.experiments.slm228_spectral_disposition": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T02:05:00.962179+00:00"
+  }
+}
