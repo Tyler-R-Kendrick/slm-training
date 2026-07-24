@@ -4697,6 +4697,25 @@
         }
       ]
     },
+    "harness.eval.semantic_failure_census": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/semantic_failure.py",
+        "scripts/audit_semantic_failures.py",
+        "tests/test_evals/test_semantic_failure.py",
+        "tests/test_scripts/test_audit_semantic_failures.py",
+        "docs/design/semantic-failure-census.md",
+        "docs/design/iter-slm263-semantic-failure-census-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-263 deterministic first-semantic-failure taxonomy and immutable-generation census"
+        }
+      ]
+    },
     "harness.preference.constraint_debt": {
       "version": "v1",
       "kind": "harness",
