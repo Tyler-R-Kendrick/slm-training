@@ -70,18 +70,44 @@ def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
                 "id": "case-1",
                 "criteria": "The fixture wiring case passes.",
                 "pass": True,
+                "checks": {"value_is_one": True},
                 "result": {"value": 1},
             }
         ],
+        version_stamp={"stamp_schema": "version_stamp/v1"},
     )
     spec = tmp_path / "agentv" / "sdk-wiring.eval.jsonl"
     row = json.loads(spec.read_text(encoding="utf-8"))
     assert row["assert"] == [{"required": True, "type": "is-json"}]
     assert json.loads(row["input"])["agentv_pass"] is True
+    assert json.loads(row["input"])["checks"] == {"value_is_one": True}
     assert Path(published["spec"]).is_absolute()
     assert published["sdk"] == "@agentv/core"
     assert published["summary"]["passed"] == 1
     assert published["summary"]["executionErrors"] == 0
+    benchmark = json.loads(
+        Path(published["artifacts"]["benchmarkPath"]).read_text(encoding="utf-8")
+    )
+    assert benchmark["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+
+
+def test_agentv_contract_checks_fail_even_when_pass_flag_is_true(tmp_path) -> None:
+    published = publish_agentv_evaluation(
+        tmp_path,
+        name="checked-contract",
+        claim="fixture_wiring_not_ship",
+        cases=[
+            {
+                "id": "bad-value",
+                "criteria": "The named contract value must pass.",
+                "pass": True,
+                "checks": {"value_is_one": False},
+                "result": {"value": 0},
+            }
+        ],
+    )
+    assert published["summary"]["passed"] == 0
+    assert published["summary"]["failed"] == 1
 
 
 def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:

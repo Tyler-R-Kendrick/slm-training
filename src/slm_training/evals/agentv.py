@@ -19,8 +19,13 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         runner = Path(override).resolve()
         return runner, runner.parents[1]
 
+    checkout_runner = repo_root / "scripts" / "run_agentv_eval.mjs"
     for root in checkout_roots(repo_root):
-        runner = root / "scripts" / "run_agentv_eval.mjs"
+        runner = (
+            checkout_runner
+            if checkout_runner.is_file()
+            else root / "scripts" / "run_agentv_eval.mjs"
+        )
         sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
         if runner.is_file() and sdk.is_file():
             return runner, root
@@ -35,6 +40,7 @@ def publish_agentv_evaluation(
     name: str,
     claim: str,
     cases: Sequence[dict[str, Any]],
+    version_stamp: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Write AgentEvals JSONL and evaluate it with the pinned AgentV SDK."""
     slug = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
@@ -53,19 +59,23 @@ def publish_agentv_evaluation(
         payload = {
             "agentv_pass": case.get("pass") is True,
             "claim": claim,
+            "checks": dict(case.get("checks") or {}),
             "failures": list(case.get("failures") or []),
             "result": case.get("result"),
         }
+        metadata = {
+            "claim": claim,
+            **dict(case.get("metadata") or {}),
+        }
+        if version_stamp is not None:
+            metadata["version_stamp"] = version_stamp
         rows.append(
             json.dumps(
                 {
                     "id": case_id,
                     "criteria": str(case["criteria"]),
                     "input": json.dumps(payload, sort_keys=True),
-                    "metadata": {
-                        "claim": claim,
-                        **dict(case.get("metadata") or {}),
-                    },
+                    "metadata": metadata,
                     "assert": [{"type": "is-json", "required": True}],
                 },
                 sort_keys=True,
@@ -85,6 +95,8 @@ def publish_agentv_evaluation(
             str(output_dir),
             "--experiment",
             slug,
+            "--sdk-root",
+            str(runtime_root),
         ],
         cwd=runtime_root,
         check=False,
@@ -100,12 +112,39 @@ def publish_agentv_evaluation(
         raise RuntimeError(
             f"AgentV SDK returned invalid JSON: {completed.stdout!r}"
         ) from exc
+    if version_stamp is not None:
+        if version_stamp.get("stamp_schema") != "version_stamp/v1":
+            raise ValueError("AgentV version stamp must use version_stamp/v1")
+        _stamp_agentv_artifacts(output_dir, version_stamp)
     return {
         "format": "AgentEvals JSONL",
         "sdk": "@agentv/core",
         "spec": str(spec_path),
         **published,
     }
+
+
+def _stamp_agentv_artifacts(
+    output_dir: Path, version_stamp: dict[str, Any]
+) -> None:
+    """Attach the canonical experiment stamp to generated JSON result files."""
+    for path in output_dir.rglob("*.json"):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            payload["version_stamp"] = version_stamp
+            path.write_text(
+                json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+            )
+    for path in output_dir.rglob("*.jsonl"):
+        stamped = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            payload = json.loads(line)
+            if isinstance(payload, dict):
+                payload["version_stamp"] = version_stamp
+            stamped.append(json.dumps(payload, sort_keys=True))
+        path.write_text("\n".join(stamped) + "\n", encoding="utf-8")
 
 
 def model_ship_gate_cases(

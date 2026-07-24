@@ -1,0 +1,19 @@
+{
+  "total_tokens": 0,
+  "duration_ms": 0,
+  "total_duration_seconds": 0,
+  "token_usage": {
+    "input": 0,
+    "output": 0,
+    "reasoning": 0
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "92eb472193ed82eb1ecb10dba7faac7e59569f44",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm199_legal_edit_flow": "v2"
+    },
+    "stamped_at": "2026-07-24T00:28:56.434722+00:00"
+  }
+}

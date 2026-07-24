@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"closed_graph": true, "five_rate_edges": true, "five_rate_rows": true, "max_rate_error_below_1e3": true, "valid_generator": true, "zero_illegal_rate": true}, "claim": "exact_rate_and_adapted_production_contract", "failures": [], "result": {"edges": 5, "final_mse": 6.312777713901596e-07, "initial_mse": 0.09415864944458008, "max_abs_error": 0.0003113746643066406, "rows": 5, "source_predicted_hazard": 1.0003113746643066, "source_target_hazard": 1.0}}

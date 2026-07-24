@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "eval_file": "agentv-dir:///agentv/slm199-legal-edit-flow-fixture.eval.jsonl",
+    "timestamp": "2026-07-24T00:28:56.728Z",
+    "targets": [
+      "custom-task"
+    ],
+    "tests_run": [
+      "bounded-production-safety",
+      "exact-endpoint-and-event-count",
+      "exact-generator-contract",
+      "honest-default-off-disposition",
+      "unknown-remains-live"
+    ],
+    "experiment": "slm199-legal-edit-flow-fixture"
+  },
+  "run_summary": {
+    "custom-task": {
+      "pass_rate": {
+        "mean": 1,
+        "stddev": 0
+      },
+      "time_seconds": {
+        "mean": 0,
+        "stddev": 0
+      },
+      "tokens": {
+        "mean": 0,
+        "stddev": 0
+      }
+    }
+  },
+  "per_grader_summary": {
+    "is-json:is-json": {
+      "mean": 1,
+      "stddev": 0
+    },
+    "inline-assert-0:inline-assert": {
+      "mean": 1,
+      "stddev": 0
+    }
+  },
+  "notes": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "92eb472193ed82eb1ecb10dba7faac7e59569f44",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments.slm199_legal_edit_flow": "v2"
+    },
+    "stamped_at": "2026-07-24T00:28:56.434722+00:00"
+  }
+}

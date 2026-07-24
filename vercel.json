@@ -5,7 +5,7 @@
     "src/slm_training/web/vercel.py": {
       "maxDuration": 180,
       "includeFiles": "{docs/design/*.json,docs/MODEL_CARD.md,src/slm_training/resources/checkpoints/playground_demo/**}",
-      "excludeFiles": "{.venv/**,.vercel/**,node_modules/**,outputs/**,tests/**,src/apps/**,docs/design/*-agentv-*/**,src/slm_training/resources/data/**/governance/records.jsonl}"
+      "excludeFiles": "{{.venv,.vercel,node_modules,outputs,tests,src/apps}/**,docs/design/*-agentv-*/**,**/governance/records.jsonl,src/slm_training/{flow/{samplers,targets},harnesses/experiments/slm199_legal_edit_flow,models/legal_edit_flow}.py}"
     }
   }
 }

@@ -6247,3 +6247,25 @@ balance and staged ordering are therefore scientifically indistinguishable;
 no arm is selected, confirmation fails closed, and no checkpoint or ship claim
 changes. Full evidence:
 [`iter-slm198-bridge-curriculum-20260723.md`](iter-slm198-bridge-curriculum-20260723.md).
+
+# VFA1-01 — discrete legal-edit rate matching (2026-07-23)
+
+Accept the exact-rate and bounded-sampler wiring while making no flow-win or
+ship claim. A learned five-edge rate table fits the closed six-state acyclic
+choice CTMC to maximum absolute error 0.000312, reconstructs a valid generator
+with zero illegal edge rate, and matches analytic/empirical endpoint and
+derived event-count distributions (TV 0.0, with floating-point endpoint noise
+below machine precision) across 256 predicted-generator Gillespie samples.
+This replaces no prior SLM-190 conclusion: its bounded toy/canonical graphs
+remain inconclusive and are not treated as passing oracles.
+
+The OpenUI adapter reuses exact dynamic SLM-196 candidate sets and the SLM-197
+scorer, emits positive rates, refreshes candidates after every one-edit commit,
+and stops under the frozen fixed-K policy. UNKNOWN candidates remain live and
+receive no direct edge/hazard target; their disclosed indirect set-ranking
+pressure leaves 0.011323 rate mass after the fixture fit. Both records return
+parser-verified outputs but miss the target after two edits, so bridge rates are
+truthfully labelled `adapted_path_approximation`, confirmation stays blocked
+for VFA1-02, flow remains default-off, and no checkpoint is written. AgentV
+passes 5/5 contract and honesty cases. Full evidence:
+[`iter-slm199-legal-edit-flow-20260723.md`](iter-slm199-legal-edit-flow-20260723.md).
