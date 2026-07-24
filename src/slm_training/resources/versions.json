@@ -4716,6 +4716,25 @@
         }
       ]
     },
+    "harness.eval.semantic_trajectory": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/semantic_trajectory.py",
+        "scripts/collect_semantic_trajectory.py",
+        "tests/test_evals/test_semantic_trajectory.py",
+        "src/slm_training/resources/evals/slm264_trajectory_fixture.jsonl",
+        "docs/design/semantic-collapse-telemetry.md",
+        "docs/design/iter-slm264-semantic-collapse-telemetry-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-264 default-off semantic trajectory schema and evidence inventory"
+        }
+      ]
+    },
     "harness.preference.constraint_debt": {
       "version": "v1",
       "kind": "harness",

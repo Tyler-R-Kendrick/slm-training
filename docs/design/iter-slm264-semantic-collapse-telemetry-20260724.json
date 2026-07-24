@@ -1,0 +1,45 @@
+{
+  "schema_version": "semantic_trajectory_collection/v1",
+  "input": "src/slm_training/resources/evals/slm264_trajectory_fixture.jsonl",
+  "n": 1,
+  "trajectory_count": 1,
+  "checkpoint_count": 1,
+  "data_family_count": 1,
+  "trajectories_with_four_or_more_checkpoints": 0,
+  "availability": {
+    "partial": 1
+  },
+  "status": "insufficient_trajectory_evidence",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "8d36e52879143224e5f31d7ab0402a3d2e1ac1cd",
+    "code_dirty": true,
+    "components": {
+      "harness.eval.semantic_trajectory": "v1"
+    },
+    "stamped_at": "2026-07-24T16:01:30.807278+00:00"
+  },
+  "evidence_notes": [
+    "Historical run directories retain final/best checkpoints, not four immutable intermediate checkpoints per trajectory.",
+    "Historical scalar loss telemetry lacks raw distributions needed for entropy, margin, and direct/constrained empty-mass estimates."
+  ],
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "outputs/runs/slm264-semantic-trajectory-inventory/agentv/semantic-trajectory-inventory.eval.jsonl",
+    "summary": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "executionErrors": 0,
+      "durationMs": 16,
+      "meanScore": 1
+    },
+    "artifacts": {
+      "runDir": "outputs/runs/slm264-semantic-trajectory-inventory/agentv/semantic-trajectory-inventory",
+      "benchmarkPath": "outputs/runs/slm264-semantic-trajectory-inventory/agentv/semantic-trajectory-inventory/benchmark.json",
+      "indexPath": "outputs/runs/slm264-semantic-trajectory-inventory/agentv/semantic-trajectory-inventory/index.jsonl",
+      "timingPath": "outputs/runs/slm264-semantic-trajectory-inventory/agentv/semantic-trajectory-inventory/timing.json"
+    }
+  }
+}
