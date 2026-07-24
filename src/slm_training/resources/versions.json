@@ -3373,7 +3373,7 @@
       ]
     },
     "harness.experiments.slm200_flow_objective_attribution": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm200_flow_objective_attribution.py",
@@ -3382,6 +3382,11 @@
         "tests/test_scripts/test_run_flow_objective_attribution.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "fix normalized version-stamp construction in the SLM-200 publisher before measured evidence generation"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

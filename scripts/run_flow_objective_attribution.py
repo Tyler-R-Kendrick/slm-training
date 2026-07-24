@@ -183,7 +183,7 @@ def _markdown(report: dict[str, Any]) -> str:
 
 def _publish(report: dict[str, Any]) -> dict[str, Any]:
     stamp = build_version_stamp(
-        ROOT, component_ids=["harness.experiments.slm200_flow_objective_attribution"]
+        "harness.experiments.slm200_flow_objective_attribution"
     )
     report["version_stamp"] = stamp
     published = publish_agentv_evaluation(
