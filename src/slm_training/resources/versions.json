@@ -4745,6 +4745,24 @@
         }
       ]
     },
+    "harness.experiments.slm265_domain_shift_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm265_domain_shift_audit.py",
+        "scripts/audit_domain_shift.py",
+        "tests/test_harnesses/experiments/test_slm265_domain_shift_audit.py",
+        "docs/design/rico-domain-shift-audit.md",
+        "docs/design/iter-slm265-domain-shift-audit-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-265 outcome-blind domain-shift strata and coverage-gap audit"
+        }
+      ]
+    },
     "harness.eval.semantic_trajectory": {
       "version": "v1",
       "kind": "harness",
