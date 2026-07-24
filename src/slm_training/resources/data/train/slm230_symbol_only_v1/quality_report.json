@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "version": "slm230_symbol_only_v1",
+  "profile": "strict",
+  "built_at": "2026-07-24T02:26:19.903197+00:00",
+  "counts": {
+    "seeds": 19,
+    "candidates": 112,
+    "collected": 112,
+    "admitted": 97,
+    "rejected_total": 15,
+    "source_errors": 0,
+    "by_stage": {
+      "dedup": 7,
+      "exposure": 8
+    }
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 78,
+      "Silver": 19
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": null
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 97
+    },
+    "mean_quality_score": 1.0,
+    "min_quality_score": 1.0
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 7,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 8
+    },
+    "cluster_exposure": {
+      "unique_clusters": 97,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "0b767a9e72456c34|982d45cd94b2d2ae976093dafeed8571f3f97de6e5e5ea3e5ea659458f68e702|eab6c02930ca1678",
+        "count": 1,
+        "sample_ids": [
+          "train_hero_01_fd_2"
+        ]
+      },
+      {
+        "cluster": "0fd34841de95f162|2ae4829ce009d3c0a97b9acf1bd406876815b13676f54550267405c16abaefa7|ab7a8ab9dc1f967d",
+        "count": 1,
+        "sample_ids": [
+          "train_auth_01_aug_dir"
+        ]
+      },
+      {
+        "cluster": "10bd309678b2ab42|fcd478515416702c90abce652d2be1e48f91a88d3ad883b1dfadb212b2ba470c|7d4c790b42091a54",
+        "count": 1,
+        "sample_ids": [
+          "train_pricing_01"
+        ]
+      },
+      {
+        "cluster": "116b4725ee903fc2|522b924eeccc45625db84a95b7d5ccc528ba26fd7737a2aeae8fb117a5a99d34|8b7431dda5aa3ac1",
+        "count": 1,
+        "sample_ids": [
+          "train_button_row_01_aug_dir"
+        ]
+      },
+      {
+        "cluster": "12c2899fb5712715|d19d924956db0e8efb459dc11b20cc2647a4a5fb0210635f78280904d4df51cd|1c6e13a021bc906b",
+        "count": 1,
+        "sample_ids": [
+          "train_cta_01_syn_0"
+        ]
+      },
+      {
+        "cluster": "13405ebf7ac390f8|86fb51ff9700835bc06c74d9d1cb1d61b3d4802e47d8335a112d53acb9885d3c|82a4c8b8e1061a37",
+        "count": 1,
+        "sample_ids": [
+          "train_card_header_01_aug_dir"
+        ]
+      },
+      {
+        "cluster": "173587e39b971202|a0802e8cc2e9cd374d0d7d9a92a17b623e1949327058deb48c65592634b092be|4916973866130e0f",
+        "count": 1,
+        "sample_ids": [
+          "train_auth_01_syn_2"
+        ]
+      },
+      {
+        "cluster": "1906d8a359b87d09|009febce80bb4ee2beeb6eaf0463866eb946b224a8df702d07124ecf8939a17e|40a73908d346bd2f",
+        "count": 1,
+        "sample_ids": [
+          "train_button_row_01_syn_1"
+        ]
+      },
+      {
+        "cluster": "19ace68df7fadc39|9598aee2fbd5479496d82b51724e11022c0782bcfbb0a508ab1952a159265563|cd5481b54ee10960",
+        "count": 1,
+        "sample_ids": [
+          "train_header_01_aug_cta"
+        ]
+      },
+      {
+        "cluster": "1aefa7005c870a63|c0a8e65e75af1398133575697acc452273b24206cab0bf8a6fb92703e50433c2|8233b9e0a1b47e05",
+        "count": 1,
+        "sample_ids": [
+          "train_metrics_01"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0,
+    "ngram_flagged": 0,
+    "ngram_size": 8,
+    "ngram_overlap_threshold": 0.5,
+    "suites_indexed": [
+      "e763_symbol_only_eval_r2_20260722/adversarial",
+      "e763_symbol_only_eval_r2_20260722/held_out",
+      "e763_symbol_only_eval_r2_20260722/ood",
+      "e763_symbol_only_eval_r2_20260722/rico_held",
+      "e763_symbol_only_eval_r2_20260722/smoke",
+      "remediated/adversarial",
+      "remediated/held_out",
+      "remediated/ood",
+      "remediated/rico_held",
+      "remediated/smoke",
+      "test_seeds"
+    ]
+  },
+  "sanitization": {
+    "mode": "enforce",
+    "sanitized": 112,
+    "changed": 112,
+    "skipped": {},
+    "rewrites": {
+      "defaults_elided": 90,
+      "dead_bindings_removed": 0,
+      "containers_flattened": 0,
+      "flatten_opportunities": 0
+    },
+    "literals_templatized": 22,
+    "records_templatized": 16,
+    "fallbacks": 0,
+    "fallback_reasons": {},
+    "cache": {
+      "hits": 63,
+      "misses": 65
+    }
+  },
+  "per_family": [
+    {
+      "source_family": "frontier_described",
+      "record_count": 3,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 3
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 19,
+      "root_parent_count": 19,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 19
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 28,
+      "root_parent_count": 19,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 28
+      }
+    },
+    {
+      "source_family": "prompt_paraphrase",
+      "record_count": 47,
+      "root_parent_count": 18,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 47
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": "lexical-tfidf",
+    "decontam": "ngram-8"
+  },
+  "warnings": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "1543376f04ebfe42ebff06be5713c285ca32f2b5",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v18"
+    },
+    "stamped_at": "2026-07-24T02:26:19.935584+00:00"
+  }
+}

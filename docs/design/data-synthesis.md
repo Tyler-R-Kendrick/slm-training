@@ -372,3 +372,26 @@ The parent quality loop again admitted 19/20 source records with mean quality
 removed that train-side duplicate while retaining every gate.
 See
 [DSH3-12 evidence](dsh3-12-collapsed-operator-traces-20260723.md).
+
+## SLM-230 bounded symbol-only recurrence corpus (2026-07-24)
+
+The first SLM-230 training attempt correctly failed before model
+initialization because the legacy local `ci` snapshot contains a free-form
+`"contact"` literal forbidden by the current `symbol_only/v2` output
+contract. The replacement `slm230_symbol_only_v1` snapshot was rebuilt through
+the canonical strict fixture pipeline; no gate was weakened.
+
+The immutable build collected 112 candidates and admitted 97 records with mean
+quality 1.0. All 112 inputs passed deterministic target sanitization, including
+22 templatized literals; 15 records were retained in `rejected.jsonl` (eight
+parent-exposure-cap drops and seven fuzzy duplicates). Decontamination found
+zero eval overlap, and `quality_report.json` contains no warnings.
+`synthesis_feedback.json` emits zero recommendations and zero experiment
+candidates, so no producer repair or follow-up data issue is warranted.
+
+The snapshot is fixture-source, train-only input for a four-step CPU scratch
+checkpoint. It is not a production corpus, benchmark, or model-quality claim.
+Its content fingerprint is
+`cb221fdf48cc116c90e5e05043baa9dd97c64db24b7a38802b60434305bab943`;
+its lineage snapshot is
+`154711d65817ead1c10ea7ae02175e88dc497d3546d899bf185eca050e774799`.

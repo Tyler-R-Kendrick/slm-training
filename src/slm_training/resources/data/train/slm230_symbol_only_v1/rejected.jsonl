@@ -1,0 +1,15 @@
+{"detail": {"duplicate_of": "train_auth_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_auth_01_syn_0", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "train_auth_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_auth_01_syn_1", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "train_card_stack_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_card_stack_01_syn_2", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "train_form_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_form_01_syn_1", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "train_form_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_form_01_syn_2", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "train_form_control_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_form_control_01_syn_1", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"duplicate_of": "train_tabs_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_tabs_01_syn_1", "reason": "fuzzy_minhash", "stage": "dedup"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "abstraction_ladder", "synth": "abstraction_ladder"}, "id": "train_hero_01_ladder_L1", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "abstraction_ladder", "synth": "abstraction_ladder"}, "id": "train_hero_01_ladder_L2", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "abstraction_ladder", "synth": "abstraction_ladder"}, "id": "train_hero_01_ladder_L3", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "abstraction_ladder", "synth": "abstraction_ladder"}, "id": "train_hero_01_ladder_L4", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "abstraction_ladder", "synth": "abstraction_ladder"}, "id": "train_hero_01_ladder_L5", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_hero_01_syn_0", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_hero_01_syn_1", "reason": "max_records_per_parent", "stage": "exposure"}
+{"detail": {"root_parent_id": "train_hero_01", "source_family": "prompt_paraphrase", "synth": "template"}, "id": "train_hero_01_syn_2", "reason": "max_records_per_parent", "stage": "exposure"}
