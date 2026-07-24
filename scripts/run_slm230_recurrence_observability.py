@@ -58,7 +58,11 @@ DEFAULT_AGENTV = (
 DEFAULT_CHECKPOINT = (
     ROOT / "outputs/runs/slm230_bounded_recursive_r4_r2/checkpoints/last.pt"
 )
-DEFAULT_TEST_DIR = ROOT / "outputs/data/eval/ci"
+DEFAULT_TEST_DIR = (
+    ROOT
+    / "src/slm_training/resources/data/eval"
+    / "e763_symbol_only_eval_r2_20260722"
+)
 MAX_RECORDS_PER_SPLIT = 3
 
 
@@ -697,7 +701,7 @@ def _run(
             "evaluated_depths": list(range(1, trained_depth + 1)),
             "test_time_extrapolation": False,
             "honesty_mode": "scratch_checkpoint_not_ship",
-            "max_wall_minutes": 2.0,
+            "max_wall_minutes": 3.0,
         },
         "split_manifests": {
             "calibration": calibration_manifest,
@@ -855,7 +859,9 @@ def _markdown(report: dict[str, Any]) -> str:
             "timeout 170s env PYTHONPATH=src .venv/bin/python -m "
             "scripts.run_slm230_recurrence_observability "
             f"--checkpoint {report['checkpoint']['path']} "
-            "--test-dir outputs/data/eval/ci --check",
+            "--test-dir "
+            "src/slm_training/resources/data/eval/e763_symbol_only_eval_r2_20260722 "
+            "--check",
             "```",
             "",
         ]
