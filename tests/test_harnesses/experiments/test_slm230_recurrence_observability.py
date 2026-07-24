@@ -15,6 +15,7 @@ from slm_training.harnesses.experiments.slm230_recurrence_observability import (
     classify_recurrence,
     distribution_metrics,
     histogram_matched_control,
+    scientific_report_hash,
     select_exit_depth,
 )
 
@@ -134,3 +135,23 @@ def test_contract_schema_is_stable() -> None:
     assert payload["schema"] == EXIT_POLICY_SCHEMA
     assert payload["mode"] == "fixed"
     assert math.isfinite(float(payload["maximum_depth"]))
+
+
+def test_scientific_report_hash_excludes_runtime_noise() -> None:
+    report = {
+        "measurement": 7,
+        "elapsed_seconds": 1.0,
+        "generated_at": "first",
+        "version_stamp": {"code_commit": "abc", "stamped_at": "first"},
+        "agentv": {"summary": {"passed": 4, "durationMs": 10}},
+    }
+    changed_runtime = {
+        **report,
+        "elapsed_seconds": 9.0,
+        "generated_at": "second",
+        "version_stamp": {"code_commit": "abc", "stamped_at": "second"},
+        "agentv": {"summary": {"passed": 4, "durationMs": 99}},
+    }
+    assert scientific_report_hash(report) == scientific_report_hash(changed_runtime)
+    changed_runtime["measurement"] = 8
+    assert scientific_report_hash(report) != scientific_report_hash(changed_runtime)

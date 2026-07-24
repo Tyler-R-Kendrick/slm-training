@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import copy
 import hashlib
 import json
 import math
@@ -30,6 +29,7 @@ from slm_training.harnesses.experiments.slm230_recurrence_observability import (
     classify_recurrence,
     distribution_metrics,
     histogram_matched_control,
+    scientific_report_hash,
     select_exit_depth,
     stable_hash,
     validate_report,
@@ -769,14 +769,7 @@ def _run(
         "ship_gate_claim": False,
         "elapsed_seconds": time.perf_counter() - started,
     }
-    hash_payload = copy.deepcopy(report)
-    hash_payload.pop("generated_at", None)
-    hash_payload.pop("elapsed_seconds", None)
-    stamp_payload = dict(hash_payload["version_stamp"])
-    stamp_payload.pop("stamped_at", None)
-    hash_payload["version_stamp"] = stamp_payload
-    hash_payload["agentv"]["summary"].pop("durationMs", None)
-    report["report_hash"] = stable_hash(hash_payload)
+    report["report_hash"] = scientific_report_hash(report)
     errors = validate_report(report)
     if errors:
         raise RuntimeError("invalid SLM-230 report: " + "; ".join(errors))

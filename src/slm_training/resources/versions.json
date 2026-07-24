@@ -224,6 +224,11 @@
         {
           "version": "v6",
           "date": "2026-07-23",
+          "note": "no-bump: clarify that the preceding v6 entry was misattributed registry metadata from SLM-230 and made no test-data builder behavior change"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
           "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
         },
         {
@@ -3660,7 +3665,7 @@
       ]
     },
     "harness.experiments.slm230_recurrence_observability": {
-      "version": "v5",
+      "version": "v7",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm230_recurrence_observability.py",
@@ -3669,6 +3674,16 @@
         "tests/test_scripts/test_run_slm230_recurrence_observability.py"
       ],
       "history": [
+        {
+          "version": "v7",
+          "date": "2026-07-23",
+          "note": "centralize the scientific report hash so generation and validation share runtime-noise exclusions while preserving the pinned evidence stamp"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
+          "note": "pin committed evidence stamps during reproduction and exclude elapsed runtime noise from the scientific report hash"
+        },
         {
           "version": "v5",
           "date": "2026-07-23",

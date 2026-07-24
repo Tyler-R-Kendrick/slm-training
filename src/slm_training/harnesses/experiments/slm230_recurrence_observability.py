@@ -65,6 +65,23 @@ def stable_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def scientific_report_hash(report: Mapping[str, Any]) -> str:
+    """Hash decisions and measurements while excluding runtime-only noise."""
+    payload = json.loads(json.dumps(report))
+    payload.pop("report_hash", None)
+    payload.pop("generated_at", None)
+    payload.pop("elapsed_seconds", None)
+    stamp = dict(payload.get("version_stamp") or {})
+    stamp.pop("stamped_at", None)
+    payload["version_stamp"] = stamp
+    agentv = payload.get("agentv")
+    if isinstance(agentv, dict):
+        summary = agentv.get("summary")
+        if isinstance(summary, dict):
+            summary.pop("durationMs", None)
+    return stable_hash(payload)
+
+
 @dataclass(frozen=True)
 class RecurrenceExitPolicyV1:
     mode: ExitMode
@@ -463,13 +480,6 @@ def validate_report(report: Mapping[str, Any]) -> list[str]:
     ):
         errors.append("calibration and heldout records overlap")
     expected_hash = report.get("report_hash")
-    if expected_hash:
-        payload = dict(report)
-        payload.pop("report_hash", None)
-        payload.pop("generated_at", None)
-        stamp = dict(payload.get("version_stamp") or {})
-        stamp.pop("stamped_at", None)
-        payload["version_stamp"] = stamp
-        if stable_hash(payload) != expected_hash:
-            errors.append("report_hash mismatch")
+    if expected_hash and scientific_report_hash(report) != expected_hash:
+        errors.append("report_hash mismatch")
     return errors
