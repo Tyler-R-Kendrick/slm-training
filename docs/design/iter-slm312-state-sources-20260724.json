@@ -1,0 +1,468 @@
+{
+  "experiment": "slm312-state-sources",
+  "issue": "SLM-312",
+  "question": "Does closing the gold-corruption vs seed-rollout distribution gap (seedward + on-policy state sources) improve repair more than extra offline near-gold training at equal budget?",
+  "preregistered_thresholds": {
+    "beam_regret_improvement_min": 0.05,
+    "rank_correlation_degradation_max": 0.05,
+    "comparison": "best non-gold arm (seedward/on_policy/mixed) vs gold_only",
+    "verdict_rule": "distribution_gap_closed iff best non-gold arm improves beam regret >= 0.05 AND degrades rank correlation by <= 0.05, else rejected"
+  },
+  "preregistered_arms": {
+    "gold_only": {
+      "gold_only": 1.0
+    },
+    "seedward": {
+      "seedward": 1.0
+    },
+    "on_policy": {
+      "on_policy": 1.0
+    },
+    "mixed": {
+      "gold_only": 0.34,
+      "seedward": 0.33,
+      "on_policy": 0.33
+    }
+  },
+  "config": {
+    "steps": 4,
+    "batch_size": 4,
+    "per_arm_budget": 24,
+    "seed": 0,
+    "n_train_records": 6,
+    "n_held_out_records": 2,
+    "suite_id": "slm312-fixture-v1",
+    "fixture_config_overrides": {
+      "d_model": 64,
+      "denoiser_layers": 2,
+      "context_layers": 1,
+      "max_search_steps": 8,
+      "beam_width": 3,
+      "expand_per_state": 3
+    },
+    "on_policy_max_states_per_record": 3,
+    "torch_num_threads": 1
+  },
+  "snapshot": {
+    "path": "outputs/slm312/state_snapshot.jsonl",
+    "manifest": {
+      "snapshot_schema": "slm312-state-snapshot/v1",
+      "snapshot_id": "slm312-state-sources-fixture",
+      "config": {
+        "suite_id": "slm312-fixture-v1",
+        "arms": {
+          "gold_only": {
+            "gold_only": 1.0
+          },
+          "seedward": {
+            "seedward": 1.0
+          },
+          "on_policy": {
+            "on_policy": 1.0
+          },
+          "mixed": {
+            "gold_only": 0.34,
+            "seedward": 0.33,
+            "on_policy": 0.33
+          }
+        },
+        "per_arm_budget": 24,
+        "steps": 4,
+        "batch_size": 4,
+        "seed": 0,
+        "held_out_fingerprints": [
+          "8008d5caebe08c70e2ccc1a558d30294c8d3c09e334f402b56ef960caab7c034",
+          "b5d4c7824bfcd66ea60732a53d5de59068366a1cd92cc92b58a13c56c23b3dfe",
+          "d12577927c9c7c1e1afd0b86f726611be9a9e901a9269be41d0c19bf3eb22826",
+          "e18b0d82658d1117f34b7704c2537a4112e4c5f3ecd0cd7dc1c6ac7873e4cf9b",
+          "fb34d4793d23dcc327c1677c10bac6d3ca338308a9b96307371ea0cff6325e44"
+        ],
+        "dropped_leak_collisions": [
+          {
+            "record_id": "fixture_01",
+            "source": "gold_only",
+            "kind": "near_gold",
+            "fingerprint": "d12577927c9c7c1e1afd0b86f726611be9a9e901a9269be41d0c19bf3eb22826",
+            "reason": "held_out_fingerprint_collision"
+          }
+        ]
+      },
+      "n_rows": 43,
+      "row_sha256": [
+        "e4c806299e446dd8c66e14488e9ea4f3e7f4e3df53edf8495226594fb646802a",
+        "45ca113c57daed51731f2316082d801e38557e7ef45ed75933296ef86aaf1a76",
+        "3a15f53adb710b15b13fca9073022baa2fc15b4c6901ea9e62be013f878c3100",
+        "6dd53388dde698e988e7d1f5a626e135dbc8e47b1aaf10de40bc2897ae80c43d",
+        "468851f57f3ac185df3ecb4061ebc56f790d321fd1b6fb561ec9d681e449184e",
+        "bfacacc8e17be88bf6025280ba01e1382165ed9fb1fe4770dfcf178a50c6fe77",
+        "bc5495c95a9cc193772dd0bfd66a6f46df6afeb34101b5443d22df1e2d13e58b",
+        "3cf4cd1f147b61fd819a956b459cc7993b7d2e1db9b45ca9d99c074d19bd6f69",
+        "541329e8a4f741bd5e2c165d00de59dd73f47992bcb42dd3639651b30f8abbf0",
+        "3253c262988b27d635204c7f825c684c52e2942d85da53093f2c8406da76d212",
+        "d19ce94773aa0fe4c672a214abe71aad6194052a2061315efc6ced5d666a92d0",
+        "e3824aa7db17af0dfa4e4c0069c464e5dce26cbf78c0c45364c101bb3c111777",
+        "d63ce3d52c05f2bc41081c2f4c7b280359f4666014f21df40e66b3445e4a9764",
+        "b7d17e0e6d789c47be762254e6359e2d30a13953d33c55d70d1e99b797a196a0",
+        "9d19b5dff62d5c37f7c514b6b9c222978114ccba63a5b40a7e9248f7f2ab7970",
+        "3e77f595f255fb0dfb3a77fa06406d75ce43c2bceb2a0f6d7c09bb1daac63ff3",
+        "7b7ec2845c0f96d71d06e1055c46dbf52473a7373e419589b2eb725470b216be",
+        "73082b08c6aadb30c269e27d473ef310d613bda05f75df462cc3b8ab24532c17",
+        "9b1c394db2db6f1f53f4aa5e7a65b84d6632603dced37ae9b00aa27fc71f56ff",
+        "b81f2c4618f162aa60d6000d9165eed6964e339372e1859ac18855ecfc744d1c",
+        "e16506ef496224edf4fcbda3f02e903f9d2417893821e5ab160125b9320ed02d",
+        "ce9e9b3ca03634fbae5909ab778176a36d57efe65b63d65eddff7b7a0c479e62",
+        "cab1651e429d37beda52a0945f2b69ff702e611b1e047bf7e6cf0a7137dc8ab1",
+        "2d1058b70c7630ff6be864d4c2ea9be99d720c2d110b33fd50d97292e274b056",
+        "e0577d5ee84d94ac7d166efa259f77f552f26cbb16a3d4b06e33aa172782426c",
+        "3444ac129fdbd1cc80c5921dc41d0e0952358baad8d1d9d34cc5ad2bcc033df9",
+        "46e4a474ca7130324949b26bcb889f3d598fe7f44b6f232e23f0bfaac3577dab",
+        "c4db64855ca8c7335df1b4097a2675b78740b141c97c656cab153f308c412072",
+        "c7e474e54c16bfc6122d6e975a920d1d3a57ac722b367266b9a43c5788c38739",
+        "4608be6d174bfba6e0423f5924e94a57907a94d009d7ecb23463ac67a158c64b",
+        "5bccd49029d79b60b40fa6097ab4feb734cc97d4dc1dca8f93286f332d7dc67c",
+        "c71f33b629b18e4f28b512f0102de4103a4a5240dc0f9bac39fc559346742ee5",
+        "d2c75520ce823ad8b70e23df7a6b679a398fe8aad1bbf1eb44412d791ab638fe",
+        "fb47281652480bf7210aeb4ed2c4d7dae4892d091ee9fd13eb76b142a43851e6",
+        "515d2607be5696e82e109188d4e7c30bd88d51384febf38a465ce223b74c4705",
+        "9a42b62454c5a568b47d287a25697c82e569d852a6bf2baee472f46bac2d0cd3",
+        "51c5d01b01be5da4be2a5ac3b42915dfcea0426bc64dade805dd1b391e8fc2c7",
+        "7f328c9728482b7b2df76810f15fed1f2569142e37f541962b624242120be1ed",
+        "3798721b3c9c21b3ecba164943a9db6058db8edfffc8f8775cf1b05fdc636fee",
+        "b7f1430f244943bda8efa33753e0630c44cf1e4eae14b0cf5a3ffe01a928ef10",
+        "084b655bca1975150f50af36ec63e372cad6b6b82baeb5b29f4412e381a8c1e2",
+        "54a2405447bc92161495ac9937b925a6b97e82e74d380a3efae04566e8f49985",
+        "e71f2adb4ac78b3e9efdfbbc628c14482dd6246c494ed495538c1f33b8809654"
+      ],
+      "manifest_sha256": "1c5fc80b721b12f4c6541749cade9dd05d926051b682217073d86fa26973fe01"
+    },
+    "coverage": {
+      "rows": 43,
+      "unique_fingerprints": 37,
+      "duplicate_rate": 0.13953488372093026,
+      "per_source": {
+        "gold_only": {
+          "rows": 17,
+          "unique_fingerprints": 17
+        },
+        "on_policy": {
+          "rows": 18,
+          "unique_fingerprints": 18
+        },
+        "seedward": {
+          "rows": 8,
+          "unique_fingerprints": 8
+        }
+      }
+    }
+  },
+  "oracle_cost": {
+    "n_states": 6,
+    "n_unknown": 2,
+    "unknown_coverage": 0.3333333333333333,
+    "n_measurable": 4,
+    "wall_ms_total": 8382.73887700052,
+    "ms_per_state": 1397.1231461667533,
+    "cache": {
+      "label_hits": 0,
+      "label_misses": 6,
+      "map_builds": 2,
+      "target_maps": 2,
+      "labels": 6,
+      "map_nodes": 16
+    }
+  },
+  "arms": {
+    "gold_only": {
+      "n_rows": 17,
+      "coverage": {
+        "rows": 17,
+        "unique_fingerprints": 17,
+        "duplicate_rate": 0.0,
+        "per_source": {
+          "gold_only": {
+            "rows": 17,
+            "unique_fingerprints": 17
+          }
+        }
+      },
+      "metrics": {
+        "n_measurable": 4,
+        "rank_correlation": -0.2581988897471611,
+        "concordance": 0.3333333333333333,
+        "brier": 0.03396308228040912,
+        "calibration_bins": [
+          {
+            "distance_bin": 1,
+            "n": 1,
+            "mean_predicted_value": 0.6047580242156982,
+            "mean_target": 0.875
+          },
+          {
+            "distance_bin": 2,
+            "n": 3,
+            "mean_predicted_value": 0.6053926746050516,
+            "mean_target": 0.75
+          }
+        ],
+        "beam_regret_mean": 0.0,
+        "beam_regret_n": 1,
+        "beam_regret_excluded": 3,
+        "by_origin": {}
+      },
+      "valid_final": {
+        "n": 2,
+        "valid_final_rate": 1.0,
+        "finals": [
+          {
+            "record_id": "fixture_06",
+            "valid": true,
+            "steps": 4,
+            "verifier_calls": 698
+          },
+          {
+            "record_id": "fixture_07",
+            "valid": true,
+            "steps": 5,
+            "verifier_calls": 710
+          }
+        ]
+      },
+      "training_metrics": {
+        "action": 2.2585463523864746,
+        "stmt": 2.9041709899902344,
+        "comp": 1.8313002586364746,
+        "slot": 3.4643394947052,
+        "value": 0.07977510988712311,
+        "pairwise_progress": 0.0953509584069252,
+        "value_unknown_excluded": 2.0,
+        "skipped": 0.0,
+        "rows": 4.0
+      }
+    },
+    "mixed": {
+      "n_rows": 24,
+      "coverage": {
+        "rows": 24,
+        "unique_fingerprints": 24,
+        "duplicate_rate": 0.0,
+        "per_source": {
+          "gold_only": {
+            "rows": 8,
+            "unique_fingerprints": 8
+          },
+          "on_policy": {
+            "rows": 8,
+            "unique_fingerprints": 8
+          },
+          "seedward": {
+            "rows": 8,
+            "unique_fingerprints": 8
+          }
+        }
+      },
+      "metrics": {
+        "n_measurable": 4,
+        "rank_correlation": 0.2581988897471611,
+        "concordance": 0.6666666666666666,
+        "brier": 0.006841517524175167,
+        "calibration_bins": [
+          {
+            "distance_bin": 1,
+            "n": 1,
+            "mean_predicted_value": 0.7193946242332458,
+            "mean_target": 0.875
+          },
+          {
+            "distance_bin": 2,
+            "n": 3,
+            "mean_predicted_value": 0.7179443836212158,
+            "mean_target": 0.75
+          }
+        ],
+        "beam_regret_mean": 0.0,
+        "beam_regret_n": 1,
+        "beam_regret_excluded": 3,
+        "by_origin": {}
+      },
+      "valid_final": {
+        "n": 2,
+        "valid_final_rate": 1.0,
+        "finals": [
+          {
+            "record_id": "fixture_06",
+            "valid": true,
+            "steps": 8,
+            "verifier_calls": 887
+          },
+          {
+            "record_id": "fixture_07",
+            "valid": true,
+            "steps": 8,
+            "verifier_calls": 1816
+          }
+        ]
+      },
+      "training_metrics": {
+        "action": 2.153684139251709,
+        "stmt": 2.635714054107666,
+        "comp": 1.7767260074615479,
+        "slot": 1.1594464778900146,
+        "value": 0.0398101769387722,
+        "pairwise_progress": 0.1034640446305275,
+        "value_unknown_excluded": 3.0,
+        "skipped": 0.0,
+        "rows": 4.0
+      }
+    },
+    "on_policy": {
+      "n_rows": 18,
+      "coverage": {
+        "rows": 18,
+        "unique_fingerprints": 18,
+        "duplicate_rate": 0.0,
+        "per_source": {
+          "on_policy": {
+            "rows": 18,
+            "unique_fingerprints": 18
+          }
+        }
+      },
+      "metrics": {
+        "n_measurable": 4,
+        "rank_correlation": 0.2581988897471611,
+        "concordance": 0.6666666666666666,
+        "brier": 0.014381557280683133,
+        "calibration_bins": [
+          {
+            "distance_bin": 1,
+            "n": 1,
+            "mean_predicted_value": 0.6760445833206177,
+            "mean_target": 0.875
+          },
+          {
+            "distance_bin": 2,
+            "n": 3,
+            "mean_predicted_value": 0.6730026205380758,
+            "mean_target": 0.75
+          }
+        ],
+        "beam_regret_mean": 0.0,
+        "beam_regret_n": 1,
+        "beam_regret_excluded": 3,
+        "by_origin": {}
+      },
+      "valid_final": {
+        "n": 2,
+        "valid_final_rate": 1.0,
+        "finals": [
+          {
+            "record_id": "fixture_06",
+            "valid": true,
+            "steps": 8,
+            "verifier_calls": 2598
+          },
+          {
+            "record_id": "fixture_07",
+            "valid": true,
+            "steps": 8,
+            "verifier_calls": 2598
+          }
+        ]
+      },
+      "training_metrics": {
+        "action": 2.603577136993408,
+        "stmt": 3.4750404357910156,
+        "value": 0.08445368707180023,
+        "pairwise_progress": 0.1012253537774086,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0,
+        "rows": 4.0
+      }
+    },
+    "seedward": {
+      "n_rows": 8,
+      "coverage": {
+        "rows": 8,
+        "unique_fingerprints": 8,
+        "duplicate_rate": 0.0,
+        "per_source": {
+          "seedward": {
+            "rows": 8,
+            "unique_fingerprints": 8
+          }
+        }
+      },
+      "metrics": {
+        "n_measurable": 4,
+        "rank_correlation": 0.2581988897471611,
+        "concordance": 0.6666666666666666,
+        "brier": 0.03013388784179849,
+        "calibration_bins": [
+          {
+            "distance_bin": 1,
+            "n": 1,
+            "mean_predicted_value": 0.6180281043052673,
+            "mean_target": 0.875
+          },
+          {
+            "distance_bin": 2,
+            "n": 3,
+            "mean_predicted_value": 0.6153192520141602,
+            "mean_target": 0.75
+          }
+        ],
+        "beam_regret_mean": null,
+        "beam_regret_n": 0,
+        "beam_regret_excluded": 4,
+        "by_origin": {}
+      },
+      "valid_final": {
+        "n": 2,
+        "valid_final_rate": 1.0,
+        "finals": [
+          {
+            "record_id": "fixture_06",
+            "valid": true,
+            "steps": 2,
+            "verifier_calls": 11
+          },
+          {
+            "record_id": "fixture_07",
+            "valid": true,
+            "steps": 2,
+            "verifier_calls": 11
+          }
+        ]
+      },
+      "training_metrics": {
+        "action": 0.6870732307434082,
+        "value": 0.16490422189235687,
+        "value_unknown_excluded": 0.0,
+        "skipped": 0.0,
+        "rows": 4.0
+      }
+    }
+  },
+  "comparison": {
+    "best_non_gold_arm": "on_policy",
+    "beam_regret_improvement": 0.0,
+    "rank_correlation_degradation": -0.5163977794943222
+  },
+  "threshold_checks": {
+    "beam_regret_ok": false,
+    "rank_ok": true
+  },
+  "verdict": "rejected",
+  "wall_seconds": 84.94782193800347,
+  "honesty": "Fixture-scale matched arms over immutable content-addressed state snapshots; evaluation uses held-out seed trajectories only (fail-closed leak guard ran before training); UNKNOWN/unbounded oracle labels are excluded and counted, never coerced. A fixture verdict is wiring/state-source evidence, not a production ship claim.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "d8f35563d231e3b404b0fb0e213d68aee1b00a9d",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments.slm312_state_sources": "v1",
+      "harness.experiments.slm299_edit_reachability": "v4"
+    },
+    "stamped_at": "2026-07-24T23:08:24.625582+00:00"
+  }
+}

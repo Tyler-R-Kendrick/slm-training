@@ -7841,6 +7841,24 @@
           "note": "initial registration; SLM-310 LAR2-03 action alignment: reason-coded proposal telemetry, train-target vs decode-demand distribution audit, declared inverse-action corruption sampler, legacy/corrected STOP-slot accounting arms, matched 2x2 fixture experiment with preregistered thresholds"
         }
       ]
+    },
+    "harness.experiments.slm312_state_sources": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm312_state_sources.py",
+        "scripts/run_slm312_state_sources.py",
+        "tests/test_harnesses/experiments/test_slm312_state_sources.py",
+        "docs/design/iter-slm312-state-sources-20260724.json",
+        "docs/design/iter-slm312-state-sources-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-312 LAR2-04 state sources: offline seedward oracle-guided valid intermediates + immutable content-addressed on-policy beam-trajectory snapshots labeled with the SLM-308 distance oracle and SLM-305 legal edits, fail-closed AST-fingerprint leak guards, matched {gold_only, seedward, on_policy, mixed} mixture arms with preregistered thresholds"
+        }
+      ]
     }
   }
 }
