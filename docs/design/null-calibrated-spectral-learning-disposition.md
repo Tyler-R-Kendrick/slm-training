@@ -2,9 +2,9 @@
 
 **Schema:** `SpectralDispositionV1`
 
-**Report hash:** `1882a4937d3a7351a9945d29e0ba1887e5722f7cf1d17969e352cb1758b35d7c`
+**Report hash:** `3cb8d19fa4c78961a45169a8825f5e354927945b137bf0d012254d28c07c6028`
 
-**Evidence cutoff:** `0b7bc033953abc7858e5eb7620a1c480d792cfd5`
+**Evidence cutoff:** `ef814affba31f6023b05d11a4327ac4f8662ae60`
 
 **Semantic floor:** `inconclusive` (`7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d`)
 

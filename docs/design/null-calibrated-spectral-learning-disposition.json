@@ -539,13 +539,13 @@
       "required_action": "No projection implementation; the absolute gate remains authoritative."
     }
   ],
-  "evidence_cutoff_commit": "0b7bc033953abc7858e5eb7620a1c480d792cfd5",
+  "evidence_cutoff_commit": "ef814affba31f6023b05d11a4327ac4f8662ae60",
   "executive_finding": "The program adopts four fail-closed diagnostics and no training or production mechanism. Raw alpha, verifier-conditioned spectral LR, causal spectral retention, and WW-PGD/trace-log correction are rejected or blocked in the measured scope; negative evidence remains replayable.",
-  "generated_at": "2026-07-24T02:05:00.592575Z",
+  "generated_at": "2026-07-24T02:06:11.535822Z",
   "matrix_set": "slm228_spectral_disposition",
   "matrix_version": "ncs4-03-v1",
   "regime_gate_hash": "7fd9f53499195a196080a24748451ced1c5eea89fb52c3a1519e2f6ae1e88675",
-  "report_hash": "1882a4937d3a7351a9945d29e0ba1887e5722f7cf1d17969e352cb1758b35d7c",
+  "report_hash": "3cb8d19fa4c78961a45169a8825f5e354927945b137bf0d012254d28c07c6028",
   "schema": "SpectralDispositionV1",
   "semantic_floor_hash": "7839ef6b6e37710d487757da9170017d7b76a9d12ca1fb314bdb0fa23a4dd83d",
   "semantic_floor_verdict": "inconclusive",
@@ -560,13 +560,13 @@
     "retain_research": 2
   },
   "version_stamp": {
-    "code_commit": "0b7bc033953abc7858e5eb7620a1c480d792cfd5",
-    "code_dirty": true,
+    "code_commit": "ef814affba31f6023b05d11a4327ac4f8662ae60",
+    "code_dirty": false,
     "components": {
       "harness.experiments": "v71",
       "harness.experiments.slm228_spectral_disposition": "v1"
     },
     "stamp_schema": "version_stamp/v1",
-    "stamped_at": "2026-07-24T02:05:00.962179+00:00"
+    "stamped_at": "2026-07-24T02:06:11.560333+00:00"
   }
 }
