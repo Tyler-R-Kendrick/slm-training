@@ -1175,6 +1175,11 @@
         {
           "version": "openui_ship_gates_v3",
           "date": "2026-07-24",
+          "note": "no-bump: fix the MEANINGFUL_METRIC_POLICY threshold_version mirror to match the registered v3 (SLM-299 reachability gate); no gate behavior change"
+        },
+        {
+          "version": "openui_ship_gates_v3",
+          "date": "2026-07-24",
           "note": "SLM-299: optional suite_reachability map blocks gated suites with reachable_fraction < 1.0 as reachability_unproven measurement-integrity failures; omitted map leaves behavior unchanged"
         },
         {
@@ -4351,18 +4356,49 @@
         }
       ]
     },
+    "harness.experiments.slm303_decode_budget_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm303_decode_budget_audit.py",
+        "tests/test_harnesses/model_build/test_decode_outcome.py",
+        "tests/test_scripts/test_run_slm303_decode_budget_audit.py",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.json",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-303 LAR1-05 decode-budget audit \u2014 checkpoint/scoreboard census with hash pins, preregistered 10x budget sweep on the two remediated checkpoints, taxonomy disposition"
+        }
+      ]
+    },
     "harness.model_build.eval": {
-      "version": "v49",
+      "version": "v50",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
+        "src/slm_training/harnesses/model_build/decode_outcome.py",
         "src/slm_training/harnesses/model_build/eval_runner.py",
         "src/slm_training/harnesses/model_build/eval_policy.py",
         "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
-        "scripts/evaluate_model.py"
+        "scripts/evaluate_model.py",
+        "src/slm_training/runtime/telemetry/trace.py",
+        "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v50",
+          "date": "2026-07-24",
+          "note": "SLM-303: additive per-record decode_outcome/stop_reason/fallback_used fields and suite decode_outcome_counts via the new decode-outcome taxonomy (decode_outcome.py); no existing field or gate changed"
+        },
+        {
+          "version": "v52",
+          "date": "2026-07-24",
+          "note": "correct standard OTLP timeout units from milliseconds to bounded seconds in the shared W3C telemetry trace"
+        },
         {
           "version": "v49",
           "date": "2026-07-24",
