@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -23,9 +24,11 @@ __all__ = [
     "harness_provenance_id",
     "prediction_lineage",
     "replay_failure",
+    "select_suite_stratified_failures",
 ]
 
 UNKNOWN_NOT_CAPTURED = "unknown_not_captured"
+REPLAY_SUITES = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 
 
 def _sha256(value: str) -> str:
@@ -126,7 +129,9 @@ def replay_failure(case: ArchivedFailureV1) -> dict[str, Any]:
     }
 
 
-def collect_archived_failures(archive_root: Path, limit: int = 100) -> list[ArchivedFailureV1]:
+def collect_archived_failures(
+    archive_root: Path, limit: int | None = 100
+) -> list[ArchivedFailureV1]:
     """Select failed archived detail rows without regenerating their output.
 
     Older envelopes remain usable for diagnostic replay, but absent provenance is
@@ -150,6 +155,15 @@ def collect_archived_failures(archive_root: Path, limit: int = 100) -> list[Arch
             repair_policy=str(policy.get("grammar_ltr_repair", "unknown_not_captured")),
             runtime=str(payload.get("runtime", "unknown_not_captured")),
             verifier=str(payload.get("verifier", "production_metric_replay")),
+            target_length=(
+                int(payload["target_length"])
+                if isinstance(payload.get("target_length"), int)
+                else (
+                    int(policy["grammar_ltr_max_tokens"])
+                    if isinstance(policy.get("grammar_ltr_max_tokens"), int)
+                    else None
+                )
+            ),
         )
         suite = str(payload.get("suite") or path.stem.removeprefix("eval_"))
         for index, detail in enumerate(details):
@@ -174,6 +188,65 @@ def collect_archived_failures(archive_root: Path, limit: int = 100) -> list[Arch
                     provenance=provenance,
                 )
             )
-            if len(cases) >= limit:
+            if limit is not None and len(cases) >= limit:
                 return cases
     return cases
+
+
+def _stratum_key(case: ArchivedFailureV1) -> tuple[str, str, str, str]:
+    """Return archive-only diversity axes; never inspect or transform bytes."""
+    family = case.event_id.split("/", 1)[0]
+    length = len(case.raw_prediction)
+    length_bucket = "short" if length < 128 else "medium" if length < 384 else "long"
+    policy = case.provenance.evaluation_policy
+    decode_path = str(
+        policy.get("compiler_decode_mode")
+        or policy.get("grammar_ltr_primary")
+        or "unknown_not_captured"
+    )
+    return family, length_bucket, decode_path, case.original_failure
+
+
+def select_suite_stratified_failures(
+    cases: Sequence[ArchivedFailureV1],
+    *,
+    suite_quota: int = 20,
+    suites: Sequence[str] = REPLAY_SUITES,
+) -> list[ArchivedFailureV1]:
+    """Select a deterministic, suite-balanced archive sample.
+
+    Each suite round-robins source/failure/length/decode strata before taking a
+    second row from any stratum.  This is selection-only: prediction bytes are
+    neither modified nor used as model input.
+    """
+    if suite_quota < 1:
+        raise ValueError("suite_quota must be positive")
+    by_suite: dict[str, list[ArchivedFailureV1]] = defaultdict(list)
+    for case in cases:
+        by_suite[case.suite].append(case)
+    missing = {
+        suite: suite_quota - len(by_suite[suite])
+        for suite in suites
+        if len(by_suite[suite]) < suite_quota
+    }
+    if missing:
+        details = ", ".join(f"{suite}: short {count}" for suite, count in missing.items())
+        raise ValueError(f"insufficient archived failures for stratified replay ({details})")
+
+    selected: list[ArchivedFailureV1] = []
+    for suite in suites:
+        strata: dict[tuple[str, str, str, str], list[ArchivedFailureV1]] = defaultdict(list)
+        for case in by_suite[suite]:
+            strata[_stratum_key(case)].append(case)
+        queues = [sorted(group, key=lambda case: case.event_id) for _, group in sorted(strata.items())]
+        chosen: list[ArchivedFailureV1] = []
+        while len(chosen) < suite_quota:
+            progressed = False
+            for queue in queues:
+                if queue and len(chosen) < suite_quota:
+                    chosen.append(queue.pop(0))
+                    progressed = True
+            if not progressed:  # Guard against a future sampler regression.
+                raise AssertionError(f"selection exhausted unexpectedly for {suite}")
+        selected.extend(chosen)
+    return selected

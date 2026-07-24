@@ -7662,7 +7662,7 @@
       ]
     },
     "harness.eval.replay": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/eval/harness_replay.py",
@@ -7671,6 +7671,11 @@
         "docs/design/harness-artifact-audit.md"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Run deterministic five-suite local byte-reverification with production scoring, parser cascade, runtime evidence, and automatic evidence-only architecture blocking"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
