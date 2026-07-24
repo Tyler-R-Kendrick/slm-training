@@ -4551,6 +4551,24 @@
         }
       ]
     },
+    "harness.experiments.slm303_decode_budget_audit": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/run_slm303_decode_budget_audit.py",
+        "tests/test_harnesses/model_build/test_decode_outcome.py",
+        "tests/test_scripts/test_run_slm303_decode_budget_audit.py",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.json",
+        "docs/design/iter-slm303-decode-budget-audit-20260724.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-303 decode-budget audit with hash pins, preregistered budget sweep, and taxonomy disposition"
+        }
+      ]
+    },
     "harness.model_build.eval": {
       "version": "v54",
       "kind": "harness",
@@ -4574,6 +4592,11 @@
           "version": "v53",
           "date": "2026-07-24",
           "note": "publish curated summary-only LangSmith evaluation spans and honor bounded standard OTLP export configuration through the shared W3C trace"
+        },
+        {
+          "version": "v53",
+          "date": "2026-07-24",
+          "note": "Add SLM-303 per-record decode outcome taxonomy and suite outcome counts without changing existing gate inputs"
         },
         {
           "version": "v52",
