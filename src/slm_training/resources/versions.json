@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v80",
+      "version": "v81",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v81",
+          "date": "2026-07-24",
+          "note": "require durable cross-family automatic judge evidence for SLM-266 deep admission"
+        },
         {
           "version": "v80",
           "date": "2026-07-24",
@@ -4794,7 +4799,7 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
@@ -4806,6 +4811,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-24",
+          "note": "bind deep teacher admission G11 to persisted cross-family automatic judge evidence"
+        },
         {
           "version": "v4",
           "date": "2026-07-24",

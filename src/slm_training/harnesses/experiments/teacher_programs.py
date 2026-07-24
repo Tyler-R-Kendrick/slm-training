@@ -71,15 +71,26 @@ class TeacherProgramRequestV1:
 
     def __post_init__(self) -> None:
         if not all(
-            (self.request_id, self.coverage_manifest_hash, self.output_kind,
-             self.protected_exclusion_manifest_hash, self.template_hash)
+            (
+                self.request_id,
+                self.coverage_manifest_hash,
+                self.output_kind,
+                self.protected_exclusion_manifest_hash,
+                self.template_hash,
+            )
         ):
             raise ValueError("teacher request fields must be non-empty")
         if not self.coverage_gap_ids or not self.allowed_components:
-            raise ValueError("teacher request requires coverage gaps and allowed components")
+            raise ValueError(
+                "teacher request requires coverage gaps and allowed components"
+            )
 
     def to_dict(self) -> dict[str, Any]:
-        return {**asdict(self), "coverage_gap_ids": list(self.coverage_gap_ids), "allowed_components": list(self.allowed_components)}
+        return {
+            **asdict(self),
+            "coverage_gap_ids": list(self.coverage_gap_ids),
+            "allowed_components": list(self.allowed_components),
+        }
 
 
 @dataclass(frozen=True)
@@ -102,7 +113,15 @@ class TeacherProgramGenerationManifestV1:
     schema_version: str = GENERATION_SCHEMA
 
     def __post_init__(self) -> None:
-        if not all((self.manifest_id, self.provider, self.model, self.revision, self.protected_exclusion_manifest_hash)):
+        if not all(
+            (
+                self.manifest_id,
+                self.provider,
+                self.model,
+                self.revision,
+                self.protected_exclusion_manifest_hash,
+            )
+        ):
             raise ValueError("generation manifest identity fields must be non-empty")
         if not self.request_ids:
             raise ValueError("generation manifest requires at least one request")
@@ -112,15 +131,18 @@ class TeacherProgramGenerationManifestV1:
             self.output_cost_per_1k_usd is None
         ):
             raise ValueError("price schedule must include both input and output rates")
-        if self.input_cost_per_1k_usd is not None and min(
-            self.input_cost_per_1k_usd, self.output_cost_per_1k_usd or 0.0
-        ) < 0:
+        if (
+            self.input_cost_per_1k_usd is not None
+            and min(self.input_cost_per_1k_usd, self.output_cost_per_1k_usd or 0.0) < 0
+        ):
             raise ValueError("price schedule cannot be negative")
         if self.max_attempts < 1:
             raise ValueError("max_attempts must be positive")
         if self.campaign_manifest_sha256 is not None and (
             len(self.campaign_manifest_sha256) != 64
-            or any(char not in "0123456789abcdef" for char in self.campaign_manifest_sha256)
+            or any(
+                char not in "0123456789abcdef" for char in self.campaign_manifest_sha256
+            )
         ):
             raise ValueError("campaign_manifest_sha256 must be a lowercase sha256")
 
@@ -148,7 +170,9 @@ class TeacherProgramGenerationManifestV1:
             input_cost_per_1k_usd=_optional_float(data.get("input_cost_per_1k_usd")),
             output_cost_per_1k_usd=_optional_float(data.get("output_cost_per_1k_usd")),
             max_attempts=int(data.get("max_attempts", 1)),
-            campaign_manifest_sha256=_optional_str(data.get("campaign_manifest_sha256")),
+            campaign_manifest_sha256=_optional_str(
+                data.get("campaign_manifest_sha256")
+            ),
         )
 
 
@@ -184,7 +208,9 @@ class TeacherBudgetExceeded(RuntimeError):
     """Raised before a provider call that could exceed the frozen budget."""
 
 
-TeacherProgramTransport = Callable[[TeacherProgramExecutionRequestV1], Mapping[str, Any]]
+TeacherProgramTransport = Callable[
+    [TeacherProgramExecutionRequestV1], Mapping[str, Any]
+]
 
 
 @dataclass(frozen=True)
@@ -211,10 +237,15 @@ class TeacherProgramExecutor:
         manifest: TeacherProgramGenerationManifestV1,
         archive: CampaignStore,
     ) -> None:
-        if manifest.input_cost_per_1k_usd is None or manifest.output_cost_per_1k_usd is None:
+        if (
+            manifest.input_cost_per_1k_usd is None
+            or manifest.output_cost_per_1k_usd is None
+        ):
             raise ValueError("provider execution requires a pinned price schedule")
         if not manifest.campaign_manifest_sha256:
-            raise ValueError("provider execution requires a locked campaign manifest sha256")
+            raise ValueError(
+                "provider execution requires a locked campaign manifest sha256"
+            )
         self.manifest = manifest
         self.archive = archive
 
@@ -224,7 +255,10 @@ class TeacherProgramExecutor:
         dollars = 0.0
         for event in self.archive.verify_event_chain():
             detail = event.get("detail") or {}
-            if str(detail.get("generation_manifest_hash", "")) != self.manifest.manifest_hash:
+            if (
+                str(detail.get("generation_manifest_hash", ""))
+                != self.manifest.manifest_hash
+            ):
                 continue
             request_id = str(detail.get("request_id", ""))
             if event.get("event_type") == "teacher_program_completed":
@@ -248,10 +282,14 @@ class TeacherProgramExecutor:
         assert self.manifest.output_cost_per_1k_usd is not None
         projected_input = input_tokens + request.max_input_tokens
         projected_output = output_tokens + request.max_output_tokens
-        projected_dollars = dollars + (
-            request.max_input_tokens * self.manifest.input_cost_per_1k_usd
-            + request.max_output_tokens * self.manifest.output_cost_per_1k_usd
-        ) / 1000
+        projected_dollars = (
+            dollars
+            + (
+                request.max_input_tokens * self.manifest.input_cost_per_1k_usd
+                + request.max_output_tokens * self.manifest.output_cost_per_1k_usd
+            )
+            / 1000
+        )
         if (
             projected_input > self.manifest.max_input_tokens
             or projected_output > self.manifest.max_output_tokens
@@ -267,8 +305,12 @@ class TeacherProgramExecutor:
         transport: TeacherProgramTransport,
     ) -> TeacherProgramExecutionResult:
         requests = tuple(sorted(requests, key=lambda request: request.request_id))
-        if tuple(request.request_id for request in requests) != tuple(sorted(self.manifest.request_ids)):
-            raise ValueError("execution request ids must exactly match the frozen manifest")
+        if tuple(request.request_id for request in requests) != tuple(
+            sorted(self.manifest.request_ids)
+        ):
+            raise ValueError(
+                "execution request ids must exactly match the frozen manifest"
+            )
         completed, input_tokens, output_tokens, dollars = self._prior_state()
         completed_now: list[str] = []
         skipped: list[str] = []
@@ -299,7 +341,9 @@ class TeacherProgramExecutor:
                     usage["input_tokens"] > request.max_input_tokens
                     or usage["output_tokens"] > request.max_output_tokens
                 ):
-                    raise ValueError("provider usage exceeded declared request token bound")
+                    raise ValueError(
+                        "provider usage exceeded declared request token bound"
+                    )
                 cost = _cost(usage, self.manifest)
                 input_tokens += usage["input_tokens"]
                 output_tokens += usage["output_tokens"]
@@ -314,7 +358,9 @@ class TeacherProgramExecutor:
                     "cost_usd": cost,
                     "latency_ms": round((time.monotonic() - started) * 1000),
                 }
-                artifact = self.archive.write_artifact("teacher_program_attempts", attempt)
+                artifact = self.archive.write_artifact(
+                    "teacher_program_attempts", attempt
+                )
                 artifacts.append(artifact.stem)
                 self.archive.append_event(
                     "teacher_program_attempted",
@@ -392,7 +438,9 @@ class OpenAICompatibleTeacherTransport:
     def __call__(self, request: TeacherProgramExecutionRequestV1) -> Mapping[str, Any]:
         api_key = os.getenv(self.api_key_env)
         if not api_key:
-            raise RuntimeError(f"required provider credential {self.api_key_env} is unset")
+            raise RuntimeError(
+                f"required provider credential {self.api_key_env} is unset"
+            )
         payload = {
             "model": self.model,
             "messages": [
@@ -413,10 +461,18 @@ class OpenAICompatibleTeacherTransport:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(http_request, timeout=self.timeout_seconds) as response:
+            with urllib.request.urlopen(
+                http_request, timeout=self.timeout_seconds
+            ) as response:
                 raw = json.loads(response.read().decode("utf-8"))
-        except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
-            raise RuntimeError(f"provider request failed: {type(exc).__name__}") from exc
+        except (
+            urllib.error.HTTPError,
+            urllib.error.URLError,
+            json.JSONDecodeError,
+        ) as exc:
+            raise RuntimeError(
+                f"provider request failed: {type(exc).__name__}"
+            ) from exc
         usage = dict(raw.get("usage") or {})
         return {
             "raw": raw,
@@ -476,6 +532,7 @@ class TeacherProgramCandidate:
     split_group_id: str
     provenance_complete: bool
     independent_judge_passed: bool | None = None
+    judge_evidence: Mapping[str, Any] | None = None
     human_audit_passed: bool | None = None
     require_runtime: bool = False
     require_behavior: bool = False
@@ -523,12 +580,20 @@ class TeacherRawArchiveRefV1:
         return {"uri": self.uri, "manifest_sha256": self.manifest_sha256}
 
 
-def _required_gates(candidate: TeacherProgramCandidate, mode: AdmissionMode) -> frozenset[Gate]:
+def _required_gates(
+    candidate: TeacherProgramCandidate, mode: AdmissionMode
+) -> frozenset[Gate]:
     if mode is AdmissionMode.PARSE_ONLY:
         return frozenset({Gate.LEXICAL, Gate.GRAMMAR})
     gates = {
-        Gate.LEXICAL, Gate.GRAMMAR, Gate.SCHEMA, Gate.REFERENCES, Gate.DATAFLOW,
-        Gate.GROUNDING, Gate.CANONICAL, Gate.PROVENANCE,
+        Gate.LEXICAL,
+        Gate.GRAMMAR,
+        Gate.SCHEMA,
+        Gate.REFERENCES,
+        Gate.DATAFLOW,
+        Gate.GROUNDING,
+        Gate.CANONICAL,
+        Gate.PROVENANCE,
         Gate.INDEPENDENT_JUDGE,
     }
     if candidate.require_runtime:
@@ -538,8 +603,63 @@ def _required_gates(candidate: TeacherProgramCandidate, mode: AdmissionMode) -> 
     return frozenset(gates)
 
 
-def _reject(candidate: TeacherProgramCandidate, reason: str, **detail: Any) -> dict[str, Any]:
+def _reject(
+    candidate: TeacherProgramCandidate, reason: str, **detail: Any
+) -> dict[str, Any]:
     return {"candidate_id": candidate.candidate_id, "reason": reason, **detail}
+
+
+def _automatic_judge_passed(candidate: TeacherProgramCandidate) -> bool:
+    """Validate a durable automatic cross-family judge record before G11."""
+    evidence = candidate.judge_evidence
+    if not isinstance(evidence, Mapping):
+        raise TypeError("independent_judge_evidence_missing")
+    required = (
+        "candidate_id",
+        "provider",
+        "model_family",
+        "approved",
+        "raw_artifact_sha256",
+        "prompt_sha256",
+        "program_sha256",
+    )
+    missing = [key for key in required if key not in evidence]
+    if missing:
+        raise ValueError(f"independent_judge_evidence_missing:{','.join(missing)}")
+    if str(evidence["candidate_id"]) != candidate.candidate_id:
+        raise ValueError("independent_judge_candidate_mismatch")
+    if str(evidence["provider"]) == candidate.provider:
+        raise ValueError("independent_judge_provider_not_independent")
+    if str(evidence["model_family"]) == candidate.generator_family:
+        raise ValueError("independent_judge_family_not_independent")
+    if (
+        candidate.judge_family
+        and str(evidence["model_family"]) != candidate.judge_family
+    ):
+        raise ValueError("independent_judge_family_mismatch")
+    for key in ("raw_artifact_sha256", "prompt_sha256", "program_sha256"):
+        value = str(evidence[key])
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError(f"independent_judge_invalid_{key}")
+    if (
+        evidence["prompt_sha256"]
+        != hashlib.sha256(candidate.prompt.encode("utf-8")).hexdigest()
+    ):
+        raise ValueError("independent_judge_prompt_hash_mismatch")
+    if (
+        evidence["program_sha256"]
+        != hashlib.sha256(candidate.program_payloads[0].encode("utf-8")).hexdigest()
+    ):
+        raise ValueError("independent_judge_program_hash_mismatch")
+    approved = evidence["approved"]
+    if not isinstance(approved, bool):
+        raise TypeError("independent_judge_approval_not_boolean")
+    if (
+        candidate.independent_judge_passed is not None
+        and candidate.independent_judge_passed is not approved
+    ):
+        raise ValueError("independent_judge_boolean_disagrees_with_evidence")
+    return approved
 
 
 def _admit_one(
@@ -549,9 +669,20 @@ def _admit_one(
     protected_fingerprints: Mapping[str, set[str]],
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     if len(candidate.program_payloads) != 1:
-        return None, _reject(candidate, "program_payload_count", count=len(candidate.program_payloads))
-    if mode is not AdmissionMode.PARSE_ONLY and candidate.generator_family == candidate.judge_family:
+        return None, _reject(
+            candidate, "program_payload_count", count=len(candidate.program_payloads)
+        )
+    if (
+        mode is not AdmissionMode.PARSE_ONLY
+        and candidate.generator_family == candidate.judge_family
+    ):
         return None, _reject(candidate, "generator_judge_not_independent")
+    judge_passed = candidate.independent_judge_passed
+    if mode is not AdmissionMode.PARSE_ONLY:
+        try:
+            judge_passed = _automatic_judge_passed(candidate)
+        except (TypeError, ValueError) as exc:
+            return None, _reject(candidate, str(exc))
     try:
         spec = ProgramSpec.from_openui(
             id=candidate.candidate_id,
@@ -581,7 +712,8 @@ def _admit_one(
         meta={
             "source_kind": "teacher",
             "provenance_complete": candidate.provenance_complete,
-            "independent_judge_passed": candidate.independent_judge_passed,
+            "independent_judge_passed": judge_passed,
+            "teacher_judge_evidence": dict(candidate.judge_evidence or {}),
             "human_audit_passed": candidate.human_audit_passed,
             "require_runtime": candidate.require_runtime,
             "require_behavior": candidate.require_behavior,
@@ -597,7 +729,7 @@ def _admit_one(
         VerificationContext(
             source_kind="teacher",
             provenance_complete=candidate.provenance_complete,
-            independent_judge_passed=candidate.independent_judge_passed,
+            independent_judge_passed=judge_passed,
             human_audit_passed=candidate.human_audit_passed,
             require_runtime=candidate.require_runtime,
             require_behavior=candidate.require_behavior,
@@ -607,15 +739,23 @@ def _admit_one(
     )
     statuses = {result.gate: result.status for result in report.results}
     missing = sorted(
-        gate.value for gate in _required_gates(candidate, mode)
+        gate.value
+        for gate in _required_gates(candidate, mode)
         if statuses[gate] is not GateStatus.PASS
     )
     if missing:
-        return None, _reject(candidate, "required_gate_not_pass", gates=missing, verification=report.to_dict())
+        return None, _reject(
+            candidate,
+            "required_gate_not_pass",
+            gates=missing,
+            verification=report.to_dict(),
+        )
     admission_tier = (
         None
         if mode is AdmissionMode.PARSE_ONLY
-        else "Gold" if report.tier.value == "Gold" else "Silver"
+        else "Gold"
+        if report.tier.value == "Gold"
+        else "Silver"
     )
     return {
         "candidate_id": candidate.candidate_id,
@@ -642,18 +782,27 @@ def admit_teacher_programs(
     accepted: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
     for candidate in sorted(candidates, key=lambda item: item.candidate_id):
-        row, rejection = _admit_one(candidate, mode=mode, protected_fingerprints=protected_fingerprints)
+        row, rejection = _admit_one(
+            candidate, mode=mode, protected_fingerprints=protected_fingerprints
+        )
         if row is None:
             rejected.append(rejection or _reject(candidate, "unknown"))
         else:
             accepted.append(row)
     seen: set[str] = set()
     materialized: list[dict[str, Any]] = []
-    dedup_key = "canonical_root_hash" if mode is AdmissionMode.DEEP_VERIFIED else "pair_hash"
+    dedup_key = (
+        "canonical_root_hash" if mode is AdmissionMode.DEEP_VERIFIED else "pair_hash"
+    )
     for row in accepted:
         key = str(row[dedup_key])
         if key in seen:
-            rejected.append({"candidate_id": row["candidate_id"], "reason": f"duplicate_{dedup_key}"})
+            rejected.append(
+                {
+                    "candidate_id": row["candidate_id"],
+                    "reason": f"duplicate_{dedup_key}",
+                }
+            )
         else:
             seen.add(key)
             materialized.append(row)
@@ -697,7 +846,9 @@ def materialize_teacher_admission(
     fixture. Controls are deliberately non-materializable.
     """
     if result.mode is not AdmissionMode.DEEP_VERIFIED:
-        raise ValueError("only deep_verified teacher admission can materialize train data")
+        raise ValueError(
+            "only deep_verified teacher admission can materialize train data"
+        )
     directory = Path(output_dir)
     if directory.exists():
         raise FileExistsError(f"teacher dataset already exists: {directory}")
@@ -769,10 +920,20 @@ def materialize_teacher_admission(
 
 
 __all__ = [
-    "ADMISSION_SCHEMA", "GENERATION_SCHEMA", "REQUEST_SCHEMA", "AdmissionMode",
-    "AdmissionResultV1", "OpenAICompatibleTeacherTransport",
-    "TeacherBudgetExceeded", "TeacherProgramCandidate", "TeacherProgramExecutionRequestV1",
-    "TeacherProgramExecutionResult", "TeacherProgramExecutor", "TeacherProgramGenerationManifestV1",
-    "TeacherProgramRequestV1", "TeacherRawArchiveRefV1", "admit_teacher_programs",
+    "ADMISSION_SCHEMA",
+    "GENERATION_SCHEMA",
+    "REQUEST_SCHEMA",
+    "AdmissionMode",
+    "AdmissionResultV1",
+    "OpenAICompatibleTeacherTransport",
+    "TeacherBudgetExceeded",
+    "TeacherProgramCandidate",
+    "TeacherProgramExecutionRequestV1",
+    "TeacherProgramExecutionResult",
+    "TeacherProgramExecutor",
+    "TeacherProgramGenerationManifestV1",
+    "TeacherProgramRequestV1",
+    "TeacherRawArchiveRefV1",
+    "admit_teacher_programs",
     "materialize_teacher_admission",
 ]
