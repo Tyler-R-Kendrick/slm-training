@@ -23,10 +23,14 @@ declared worst-case token/dollar use before the provider call.
 writer for this locked manifest; it does not contact a provider.
 
 `python -m scripts.generate_teacher_programs` is describe-only by default. With
-`--execute`, it uses an explicitly configured OpenAI-compatible endpoint and
-stores content-addressed raw request/response/error artifacts plus hash-chained
-attempt events under `outputs/autoresearch/<campaign>/`. Missing usage, price,
-or campaign lock fails closed; no human rating is involved.
+`--execute`, it uses either an explicitly configured OpenAI-compatible endpoint
+or `--local-transformers`, which loads the manifest's pinned model and revision
+with Transformers `local_files_only=True` (the existing `hf` optional extra).
+The local path never downloads a model or calls hosted inference; it records
+device, dtype, model revision, and actual token usage in the same
+content-addressed raw request/response/error archive plus hash-chained attempt events under
+`outputs/autoresearch/<campaign>/`. Missing usage, price, or campaign lock
+fails closed; no human rating is involved.
 
 ## Admission modes
 
@@ -60,8 +64,8 @@ copied into Git. The ordinary strict train-data builder and explicit
 ## Current disposition — 2026-07-24
 
 This is implementation and fixture evidence only, not a teacher generation,
-accepted corpus, training result, or ship claim. There is no configured provider
-credential, nonzero approved generation budget, raw archive, or independent
-judge configuration in this checkout. Therefore the required 10k/100k corpora
-and three-seed factorial remain **unrun**; the next execution must create a
-locked manifest and durable raw archive before any provider spend.
+accepted corpus, training result, or ship claim. The local transport adds no
+corpus, raw archive, independent judge evidence, or approved execution budget.
+Therefore the required 10k/100k corpora and three-seed factorial remain
+**unrun**; any bounded local calibration must first create a locked manifest and
+durable raw archive. The 100k rung is explicitly deferred.

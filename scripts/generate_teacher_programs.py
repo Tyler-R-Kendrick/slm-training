@@ -9,6 +9,7 @@ from pathlib import Path
 
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.harnesses.experiments.teacher_programs import (
+    LocalTransformersTeacherTransport,
     OpenAICompatibleTeacherTransport,
     TeacherProgramExecutionRequestV1,
     TeacherProgramExecutor,
@@ -22,9 +23,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--requests", type=Path, required=True)
     parser.add_argument("--campaign-id", required=True)
     parser.add_argument("--archive-root", type=Path, default=Path("outputs/autoresearch"))
-    parser.add_argument("--endpoint", required=True)
-    parser.add_argument("--api-key-env", required=True)
+    parser.add_argument("--endpoint")
+    parser.add_argument("--api-key-env")
     parser.add_argument("--system-prompt", required=True)
+    parser.add_argument(
+        "--local-transformers",
+        action="store_true",
+        help="Generate locally from the manifest's pinned model/revision; never downloads or calls a provider.",
+    )
+    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--execute", action="store_true", help="Actually call the configured provider")
     args = parser.parse_args(argv)
     manifest = TeacherProgramGenerationManifestV1.from_dict(
@@ -49,17 +57,27 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
-    executor = TeacherProgramExecutor(
-        manifest, CampaignStore(args.campaign_id, args.archive_root)
-    )
-    result = executor.execute(
-        requests,
-        OpenAICompatibleTeacherTransport(
+    executor = TeacherProgramExecutor(manifest, CampaignStore(args.campaign_id, args.archive_root))
+    if args.local_transformers:
+        transport = LocalTransformersTeacherTransport(
+            model=manifest.model,
+            revision=manifest.revision,
+            system_prompt=args.system_prompt,
+            device=args.device,
+            dtype=args.dtype,
+        )
+    else:
+        if not args.endpoint or not args.api_key_env:
+            parser.error("--endpoint and --api-key-env are required without --local-transformers")
+        transport = OpenAICompatibleTeacherTransport(
             endpoint=args.endpoint,
             api_key_env=args.api_key_env,
             model=manifest.model,
             system_prompt=args.system_prompt,
-        ),
+        )
+    result = executor.execute(
+        requests,
+        transport,
     )
     print(
         json.dumps(
