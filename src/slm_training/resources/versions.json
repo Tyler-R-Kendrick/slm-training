@@ -4147,6 +4147,11 @@
         {
           "version": "v2",
           "date": "2026-07-24",
+          "note": "no-bump: remove Markdown hard-break trailing spaces so repository diff validation remains clean"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
           "note": "no-bump: make Markdown rendering stable across in-memory tuples and JSON-reloaded lists without changing scientific payloads"
         },
         {

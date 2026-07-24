@@ -1,7 +1,7 @@
 # SLM-233: matched recursive-depth campaign
 
-Status: **bounded_matched_proxy_complete**  
-Verdict: **architecture_not_identifiable**  
+Status: **bounded_matched_proxy_complete**
+Verdict: **architecture_not_identifiable**
 Claim class: `architecture_not_identifiable_not_ship`
 
 ## Gate-conditioned scope

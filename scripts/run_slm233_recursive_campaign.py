@@ -1111,8 +1111,8 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# SLM-233: matched recursive-depth campaign",
         "",
-        f"Status: **{report['status']}**  ",
-        f"Verdict: **{gate['verdict']}**  ",
+        f"Status: **{report['status']}**",
+        f"Verdict: **{gate['verdict']}**",
         f"Claim class: `{report['claim_class']}`",
         "",
         "## Gate-conditioned scope",
