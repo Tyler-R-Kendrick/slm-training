@@ -423,7 +423,12 @@ def _scientific_hash(report: dict[str, Any]) -> str:
     return stable_hash(payload)
 
 
-def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
+def _run(
+    test_dir: Path,
+    agentv_dir: Path,
+    *,
+    pinned_version_stamp: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     started = time.perf_counter()
     mechanisms = _mechanism_fixtures()
     tokenizer, noisy, targets, context, records = _corpus_batch(test_dir)
@@ -476,7 +481,7 @@ def _run(test_dir: Path, agentv_dir: Path) -> dict[str, Any]:
                     }
                 rows.append(row)
     gate = classify_recursive_update_gate(rows, depths=DEPTHS, seeds=SEEDS)
-    stamp = build_version_stamp(
+    stamp = pinned_version_stamp or build_version_stamp(
         COMPONENT, "model.recursive_denoiser", "model.twotower"
     )
     cases = [
@@ -657,7 +662,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         committed = json.loads(args.json_out.read_text(encoding="utf-8"))
         with TemporaryDirectory(prefix="slm243-agentv-") as temp_dir:
-            report = _run(args.test_dir, Path(temp_dir))
+            report = _run(
+                args.test_dir,
+                Path(temp_dir),
+                pinned_version_stamp=committed["version_stamp"],
+            )
         if _scientific_hash(committed) != _scientific_hash(report):
             raise SystemExit("SLM-243 committed report does not match a clean rerun")
         return 0

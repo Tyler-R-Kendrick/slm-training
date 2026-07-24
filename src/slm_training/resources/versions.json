@@ -4053,6 +4053,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: make check mode replay the committed version stamp so durable evidence remains reproducible after its docs-only commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: serialize AgentV paths relative to the durable evidence directory so reports are machine-portable"
         },
         {
