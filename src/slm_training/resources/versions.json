@@ -932,12 +932,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v61",
+      "version": "v62",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v62",
+          "date": "2026-07-24",
+          "note": "Remove the synthetic AgentV aggregate from external-ceiling experiment records"
+        },
         {
           "version": "v61",
           "date": "2026-07-22",
@@ -2890,17 +2895,24 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v56",
+      "version": "v57",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
         "src/slm_training/harnesses/model_build/eval_runner.py",
         "src/slm_training/harnesses/model_build/eval_policy.py",
+        "src/slm_training/evals/agentv.py",
         "src/slm_training/models/decode_stats.py",
         "src/slm_training/harnesses/quality/retrieval.py",
-        "scripts/evaluate_model.py"
+        "scripts/evaluate_model.py",
+        "scripts/run_agentv_eval.mjs"
       ],
       "history": [
+        {
+          "version": "v57",
+          "date": "2026-07-24",
+          "note": "Record named domain metrics from @agentv/core SDK graders; remove the synthetic AgentV aggregate"
+        },
         {
           "version": "v56",
           "date": "2026-07-22",
@@ -3904,12 +3916,22 @@
       ]
     },
     "matrix.quality": {
-      "version": "v7",
+      "version": "v9",
       "kind": "matrix",
       "paths": [
         "scripts/run_quality_matrix.py"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "Carry strict compiler-tree semantic-plan decode weights through the typed quality-matrix experiment contract"
+        },
+        {
+          "version": "v8",
+          "date": "2026-07-24",
+          "note": "Expose named SDK-graded domain metrics rather than an AgentV aggregate in quality-matrix records"
+        },
         {
           "version": "v7",
           "date": "2026-07-22",

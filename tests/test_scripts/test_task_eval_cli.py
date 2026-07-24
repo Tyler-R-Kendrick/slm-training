@@ -9,7 +9,7 @@ from scripts.evaluate_tasks import main as evaluate_tasks_main
 from scripts.run_mixture_search import main as mixture_search_main
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 
-PROGRAM = 'root = Stack([cta])\ncta = Button(":cta.label")'
+PROGRAM = 'root = Stack([cta])\ncta = Button(":slot_0")'
 
 
 def test_evaluate_tasks_cli_writes_scoreboard(tmp_path: Path) -> None:
@@ -31,7 +31,7 @@ def test_evaluate_tasks_cli_writes_scoreboard(tmp_path: Path) -> None:
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["task_scoreboard"]["n"] == 1
     assert payload["task_scoreboard"]["tasks"]["generation"]["n"] == 1
-    assert payload["agentv"]["summary"]["failed"] == 1
+    assert payload["evaluation_artifacts"]["sdk"] == "@agentv/core"
 
 
 def test_mixture_search_dry_run_profiles_task_corpus(tmp_path: Path) -> None:

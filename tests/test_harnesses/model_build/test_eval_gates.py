@@ -651,6 +651,10 @@ def test_evaluate_suites_scoreboard(
         "slm_training.evals.agentv.publish_model_evaluation",
         lambda *_args, **_kwargs: {},
     )
+    monkeypatch.setattr(
+        "slm_training.evals.agentv.apply_agentv_metric_results",
+        lambda *_args, **_kwargs: None,
+    )
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
     assert board["version_stamp"]["stamp_schema"] == "version_stamp/v1"

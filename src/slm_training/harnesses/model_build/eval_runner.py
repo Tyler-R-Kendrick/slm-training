@@ -1329,14 +1329,16 @@ def evaluate(
 
             # Single-suite runs publish only the suite that actually ran —
             # never four missing_suite auto-failures dressed up as 5/5 failed.
-            metrics["agentv"] = publish_model_evaluation(
+            publication = publish_model_evaluation(
                 run_dir,
                 {config.suite: metrics},
                 include_missing_suites=False,
             )
-            metrics["agentv"]["suites_run"] = [config.suite]
+            from slm_training.evals.agentv import apply_agentv_metric_results
+
+            apply_agentv_metric_results(metrics, publication, config.suite)
         else:
-            metrics["agentv"] = {
+            metrics["evaluation_artifacts"] = {
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
     # SDE3-01: persist the full suite result for exact replay when enabled.
@@ -1458,13 +1460,24 @@ def evaluate_suites(
     if gate_suites:
         from slm_training.evals.agentv import publish_model_evaluation
 
-        scoreboard["agentv"] = publish_model_evaluation(
+        publication = publish_model_evaluation(
             run_dir,
             board,
             include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
         )
-        scoreboard["agentv"]["suites_run"] = gate_suites
+        from slm_training.evals.agentv import apply_agentv_metric_results
+
+        for suite in gate_suites:
+            apply_agentv_metric_results(board[suite], publication, suite)
+        scoreboard["evaluation_artifacts"] = {
+            "format": publication.get("format"),
+            "sdk": "@agentv/core",
+            "spec": publication.get("spec"),
+            "artifacts": publication.get("artifacts"),
+        }
     else:
-        scoreboard["agentv"] = {"skipped": "no ship-gate policy suites evaluated"}
+        scoreboard["evaluation_artifacts"] = {
+            "skipped": "no ship-gate policy suites evaluated"
+        }
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     return scoreboard

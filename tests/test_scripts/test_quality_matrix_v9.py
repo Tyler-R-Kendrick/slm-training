@@ -55,10 +55,10 @@ def test_v9_uses_parent_read_only_without_training(tmp_path, monkeypatch) -> Non
         return {
             "checkpoint_sha256": "abc123",
             "evaluated_at": "2026-07-16T00:00:00+00:00",
-            "agentv": {
+            "evaluation_artifacts": {
                 "format": "AgentEvals JSONL",
                 "sdk": "@agentv/core",
-                "summary": {"total": 1, "passed": 1, "failed": 0},
+                "spec": "outputs/runs/fixture/evals/fixture.eval.jsonl",
             },
             "suites": {
                 "smoke": {
@@ -105,7 +105,7 @@ def test_v9_uses_parent_read_only_without_training(tmp_path, monkeypatch) -> Non
         (run_root / "qx_e240_compiler_tree_control" / "trace.json").read_text()
     )
     assert trace_reference["trace_id"] == result["trace_id"]
-    assert result["agentv"]["summary"]["passed"] == 1
+    assert result["evaluation_artifacts"]["sdk"] == "@agentv/core"
     assert result["suites"]["smoke"]["meaningful_program_rate"] == 1.0
     assert result["suites"]["smoke"]["latency_ms_p95"] == 3.0
     assert result["suites"]["smoke"]["decode_stats"] == {

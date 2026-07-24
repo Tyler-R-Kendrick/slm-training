@@ -6,7 +6,9 @@ from pathlib import Path
 import slm_training.evals.agentv as agentv_module
 
 from slm_training.evals.agentv import (
+    MODEL_QUALITY_METRICS,
     _agentv_runtime,
+    apply_agentv_metric_results,
     model_ship_gate_cases,
     publish_agentv_evaluation,
     publish_model_evaluation,
@@ -35,7 +37,7 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     assert _agentv_runtime(worktree) == (runner, common_root)
 
 
-def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
+def test_model_cases_publish_every_named_domain_metric() -> None:
     cases = model_ship_gate_cases(
         {
             "smoke": {
@@ -56,8 +58,10 @@ def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
         "ood",
         "rico_held",
     ]
-    assert cases[0]["pass"] is True
-    assert all(case["pass"] is False for case in cases[1:])
+    assert "pass" not in cases[0]
+    assert set(cases[0]["result"]["metrics"]) == set(MODEL_QUALITY_METRICS)
+    assert cases[0]["result"]["metrics"]["parse_rate"] == 1.0
+    assert cases[1]["result"]["metrics"]["parse_rate"] is None
 
 
 def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
@@ -77,14 +81,13 @@ def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
     spec = tmp_path / "agentv" / "sdk-wiring.eval.jsonl"
     row = json.loads(spec.read_text(encoding="utf-8"))
     assert row["assert"] == [{"required": True, "type": "is-json"}]
-    assert json.loads(row["input"])["agentv_pass"] is True
+    assert "agentv_pass" not in json.loads(row["input"])
     assert Path(published["spec"]).is_absolute()
     assert published["sdk"] == "@agentv/core"
-    assert published["summary"]["passed"] == 1
     assert published["summary"]["executionErrors"] == 0
 
 
-def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
+def test_agentv_model_bundle_reports_named_metrics_for_a_smoke_run(tmp_path) -> None:
     published = publish_model_evaluation(
         tmp_path,
         {
@@ -100,5 +103,31 @@ def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
             }
         },
     )
-    assert published["summary"]["passed"] == 1
-    assert published["summary"]["failed"] == 4
+    metrics = published["metric_results"]["smoke"]
+    assert set(metrics) == set(MODEL_QUALITY_METRICS)
+    assert metrics["parse_rate"] == {"value": 1.0, "defined_n": 32}
+    assert metrics["ast_node_f1"] == {"value": None, "defined_n": 0}
+
+
+def test_apply_agentv_metric_results_rejects_missing_or_mismatched_metrics() -> None:
+    local = {
+        "n": 2,
+        "parse_rate": 0.5,
+        "metric_defined_n": {"parse_rate": 2},
+        **{metric: None for metric in MODEL_QUALITY_METRICS if metric != "parse_rate"},
+    }
+    results = {
+        metric: {"value": None, "defined_n": 0}
+        for metric in MODEL_QUALITY_METRICS
+    }
+    results["parse_rate"] = {"value": 0.5, "defined_n": 2}
+    publication = {
+        "format": "AgentEvals JSONL",
+        "summary": {"executionErrors": 0},
+        "metric_results": {"smoke": results},
+    }
+
+    apply_agentv_metric_results(local, publication, "smoke")
+
+    assert local["metric_evaluator"]["sdk"] == "@agentv/core"
+    assert "agentv" not in local

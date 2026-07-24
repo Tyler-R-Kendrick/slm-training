@@ -186,6 +186,5 @@ def test_agentv_single_suite_publishes_one_case() -> None:
     cases = model_ship_gate_cases(suites, include_missing_suites=False)
     assert len(cases) == 1
     assert cases[0]["id"] == "smoke"
-    # The one real suite failed its bars; no missing_suite noise is attached.
-    assert cases[0]["pass"] is False
-    assert all("missing_suite" not in failure for failure in cases[0]["failures"])
+    assert "pass" not in cases[0]
+    assert cases[0]["result"]["metrics"]["meaningful_program_rate"] == 0.0

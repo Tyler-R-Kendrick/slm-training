@@ -6,17 +6,20 @@ portable JSONL/YAML contract and the canonical
 `agentv@4.42.4` for the CLI and `@agentv/core@4.42.4` for the TypeScript SDK.
 Both are exact pins.
 
-AgentV standardizes execution artifacts; it does not redefine model quality.
-The existing honest multi-suite policy in `ship_gates.py` remains the source of
-truth for OpenUI readiness. `agentv.py` lowers that policy to one AgentV case
-per required suite, and missing suites fail closed. Consequently, a successful
-smoke case can never turn a partial run into a production ship claim.
+AgentV standardizes execution artifacts; it does not redefine model quality or
+produce an aggregate “AgentV” score. The existing honest multi-suite policy in
+`ship_gates.py` remains the source of truth for OpenUI readiness. Every model
+suite publishes its named domain graders through `@agentv/core`, including
+parse, meaningful-program, binding-aware, contract, fidelity, structural,
+reward, AST, language, reference-graph, and target-quality metrics. A missing
+or mismatched named SDK result fails the evaluation publication.
 
 ## Flow
 
-1. Python evaluators compute domain metrics using the existing harnesses.
+1. Python evaluators produce the domain metric inputs using the existing harnesses.
 2. `publish_agentv_evaluation` writes standard `*.eval.jsonl` cases.
-3. `run_agentv_eval.mjs` invokes `evaluate()` from `@agentv/core`.
+3. `run_agentv_eval.mjs` invokes one named SDK grader per metric through
+   `evaluate()` from `@agentv/core`.
 4. The source spec and AgentV result bundle land beside the original evidence
    under `<run-dir>/agentv/`.
 
@@ -36,8 +39,9 @@ correctly imports the SDK from `@agentv/core`.
 | Pure gate calculators and web read endpoints | No run is created because they evaluate supplied data without executing a model eval |
 
 New evaluation entrypoints must call the shared publisher instead of inventing
-another result format. The original domain JSON remains for existing research
-tables; the AgentV bundle is the standard cross-evaluator run envelope.
+another result format. The recorded domain JSON carries the named SDK grader
+outputs and denominators; the AgentV bundle is the standard cross-evaluator
+run envelope.
 
 ## Commands and artifacts
 

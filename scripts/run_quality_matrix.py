@@ -171,6 +171,8 @@ class Experiment:
     component_inventory_decode_weight: float = 0.0
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
+    semantic_plan_decode_weight: float = 0.0
+    semantic_plan_margin_decode_weight: float = 0.0
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1705,6 +1707,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         component_plan_decode_weight=float(
             getattr(exp, "component_plan_decode_weight", 0.0) or 0.0
         ),
+        semantic_plan_decode_weight=float(
+            getattr(exp, "semantic_plan_decode_weight", 0.0) or 0.0
+        ),
+        semantic_plan_margin_decode_weight=float(
+            getattr(exp, "semantic_plan_margin_decode_weight", 0.0) or 0.0
+        ),
         component_edge_loss_weight=float(
             getattr(exp, "component_edge_loss_weight", 0.0) or 0.0
         ),
@@ -2257,10 +2265,10 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
         "failures": gates.get("failures"),
         "checkpoint_sha256": board.get("checkpoint_sha256"),
         "evaluated_at": board.get("evaluated_at"),
-        "agentv": {
-            "format": (board.get("agentv") or {}).get("format"),
-            "sdk": (board.get("agentv") or {}).get("sdk"),
-            "summary": (board.get("agentv") or {}).get("summary"),
+        "evaluation_artifacts": {
+            "format": (board.get("evaluation_artifacts") or {}).get("format"),
+            "sdk": (board.get("evaluation_artifacts") or {}).get("sdk"),
+            "spec": (board.get("evaluation_artifacts") or {}).get("spec"),
         },
         "suites": slim,
     }

@@ -124,7 +124,6 @@ class ArmResult:
     records_evaluated: int = 0
     parse_rate: float | None = None
     binding_aware_meaningful_v2_rate_strict: float | None = None
-    agentv_score: float | None = None
     whole_contract_pass: float | None = None
     non_empty_rate: float | None = None
     fallback_rate: float | None = None
