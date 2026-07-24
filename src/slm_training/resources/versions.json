@@ -3309,6 +3309,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: append the SLM-231 measured recurrence-dynamics disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: append the SLM-230 measured recurrence disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3670,6 +3675,11 @@
         {
           "version": "v1",
           "date": "2026-07-23",
+          "note": "no-bump: add the SLM-231 bounded recurrence-dynamics evidence to shared roster, operating reference, and lineage docs without changing the SLM-228 disposition"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
           "note": "no-bump: add the SLM-230 rejected checkpoint and adapted recurrence evidence to shared roster and lineage docs without changing the SLM-228 disposition"
         },
         {
@@ -3967,6 +3977,31 @@
           "version": "v1",
           "date": "2026-07-23",
           "note": "Initial OpenFeature-backed model-build lever registry, run snapshots, and historical evidence backfill"
+        }
+      ]
+    },
+    "harness.experiments.slm231_recurrence_dynamics": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py",
+        "scripts/run_slm231_recurrence_dynamics.py",
+        "tests/test_harnesses/experiments/test_slm231_recurrence_dynamics.py",
+        "tests/test_scripts/test_run_slm231_recurrence_dynamics.py",
+        "docs/design/iter-slm231-recurrence-dynamics-20260724.json",
+        "docs/design/iter-slm231-recurrence-dynamics-20260724.md",
+        "docs/design/iter-slm231-recurrence-dynamics-agentv-20260724/"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: publish the clean reproducible SLM-231 report and AgentV bundle generated against implementation commit 9d22aa81"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial residual-correct increment, composite, trajectory-product, FTLE, and cross-depth alignment diagnostics with synthetic, fixture, and bounded-checkpoint evidence"
         }
       ]
     },
@@ -5234,7 +5269,7 @@
       ]
     },
     "model.recursive_denoiser": {
-      "version": "v15",
+      "version": "v16",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/recursive_denoiser.py",
@@ -5261,6 +5296,11 @@
         "docs/design/iter-slm282-recurrence-health-20260723.md"
       ],
       "history": [
+        {
+          "version": "v16",
+          "date": "2026-07-23",
+          "note": "extract the canonical recurrence into mutation-free initial_transition_state and transition_step APIs so state Jacobians use the exact normal forward math and fixed runtime-symbol conditioning"
+        },
         {
           "version": "v15",
           "date": "2026-07-23",

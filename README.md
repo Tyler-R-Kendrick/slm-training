@@ -51,7 +51,7 @@ checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
-| SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2/last.pt` | `outputs/runs/…` (local) | Four-step CPU scratch R=4 checkpoint; held-out CE falls with depth but accuracy, parse, structure, and reward remain 0.0, so recurrence is `stagnant`, no early exit qualifies, and the checkpoint is rejected |
+| SLM-230 bounded recurrence diagnostic | `slm230_bounded_recursive_r4_r2/last.pt` | `outputs/runs/…` (local) | Four-step CPU scratch R=4 checkpoint; held-out CE falls with depth but accuracy, parse, structure, and reward remain 0.0 (`stagnant`). SLM-231 finds exact bounded product top singular value 4.7243 / max FTLE 0.3882 (`expansive_unstable`), so the checkpoint remains rejected |
 | E735 full-head root-arity diagnostic | `e735-symbol-only-root-arity-fullhead140-r1/last.pt` | `outputs/runs/…` (local) | Removes impossible class-41 tail prediction, but weight 0/1 smoke quality remains identical and strict-v2 0.0 — fix retained, checkpoint rejected |
 | E733 invalid lexer root-identity attempt | `e733-symbol-only-root-identity140-r1/last.pt` | `outputs/runs/…` (local) | Proposed lever has zero reachable decode applications; config now rejects lexer identity before artifacts — checkpoint invalidated |
 | E731 lexer root-arity diagnostic | `e731-symbol-only-root-arity140-r1/last.pt` | `outputs/runs/…` (local) | Lexer-native head is executable, but weights 0/1/2 change no choices; smoke strict-v2 0.0 — checkpoint rejected |

@@ -239,9 +239,7 @@ class SharedRecursiveDenoiserTower(nn.Module):
 
         self.layers = nn.ModuleList(
             [
-                TransformerBlock(
-                    d_model, n_heads, dropout=dropout, cross_attn=True
-                )
+                TransformerBlock(d_model, n_heads, dropout=dropout, cross_attn=True)
                 for _ in range(self.recursive_transition_layers)
             ]
         )
@@ -326,6 +324,133 @@ class SharedRecursiveDenoiserTower(nn.Module):
             assert attn is not None
             return x, attn
         return x
+
+    def initial_transition_state(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor | None]:
+        """Materialize the exact state and fixed conditioning for recurrence.
+
+        The returned tensors are sufficient to replay :meth:`transition_step`
+        without reading request-local symbol state again.  This is an
+        evaluation-neutral boundary for JVP/VJP instrumentation; callers must
+        treat ``context``, masks, and ``runtime_symbol_features`` as fixed when
+        differentiating with respect to ``y``/``z``.
+        """
+        bsz, seq = noisy_ids.shape
+        if seq > self.max_len:
+            noisy_ids = noisy_ids[:, : self.max_len]
+            seq = self.max_len
+        pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
+        runtime_features = self._features_for_batch(bsz)
+        y = self.tok(noisy_ids) + self.pos(pos)
+        if runtime_features is not None:
+            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
+            y = (
+                y
+                + runtime_features[
+                    row, noisy_ids.clamp(0, runtime_features.size(1) - 1)
+                ]
+            )
+        if self.kind is not None:
+            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
+            y = y + self.kind(self.kind_lookup[safe])
+
+        if ctx_pad_mask is None:
+            pooled = context.mean(dim=1)
+        else:
+            mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
+            pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+
+        z: torch.Tensor | None
+        if self.z_state_mode == "full":
+            z = self.z_latent[pos]
+            z = z + self.ctx_proj(pooled).unsqueeze(1)
+            z = z + self.pos(pos)
+        elif self.z_state_mode == "parameter_free":
+            z = pooled.unsqueeze(1).expand(-1, seq, -1)
+        else:
+            z = None
+        return {
+            "y": y,
+            "z": z,
+            "self_pad_mask": noisy_ids.eq(pad_id),
+            "runtime_symbol_features": runtime_features,
+        }
+
+    def transition_step(
+        self,
+        y: torch.Tensor,
+        z: torch.Tensor | None,
+        context: torch.Tensor,
+        self_pad_mask: torch.Tensor | None,
+        ctx_pad_mask: torch.Tensor | None = None,
+        *,
+        runtime_symbol_features: torch.Tensor | None = None,
+        return_attn: bool = False,
+        update_mode: str = "as_is",
+    ) -> dict[str, torch.Tensor | None]:
+        """Apply one canonical shared recurrence transition without mutation."""
+        if update_mode not in RECURSIVE_DIAGNOSTIC_UPDATE_MODES:
+            raise ValueError(
+                f"update_mode={update_mode!r} is not one of "
+                f"{RECURSIVE_DIAGNOSTIC_UPDATE_MODES!r}"
+            )
+        y_before = y
+        z_before = z
+        if z is None:
+            f_in = self.norm(y)
+            f_out = self._apply_layers(
+                f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
+            )
+            assert isinstance(f_out, torch.Tensor)
+            f_update = f_out if update_mode == "as_is" else f_out - f_in
+            y = y + f_update
+            g_in = self.norm(y)
+        else:
+            f_in = self.norm(z + y)
+            f_out = self._apply_layers(
+                f_in, self._f_layers, self_pad_mask, context, ctx_pad_mask
+            )
+            assert isinstance(f_out, torch.Tensor)
+            f_update = f_out if update_mode == "as_is" else f_out - f_in
+            z = z + f_update
+            g_in = self.norm(y + z)
+
+        g_out = self._apply_layers(
+            g_in,
+            self._g_layers,
+            self_pad_mask,
+            context,
+            ctx_pad_mask,
+            return_last_attn=return_attn,
+        )
+        attn: torch.Tensor | None = None
+        if return_attn:
+            assert isinstance(g_out, tuple)
+            g_out, attn = g_out
+        else:
+            assert isinstance(g_out, torch.Tensor)
+        g_update = g_out if update_mode == "as_is" else g_out - g_in
+        y = y + g_update
+        hidden = self.norm(y)
+        logits = self.lm_head(hidden)
+        if runtime_symbol_features is not None:
+            logits = logits + torch.einsum(
+                "btd,bvd->btv", hidden, runtime_symbol_features
+            )
+        return {
+            "y": y,
+            "z": z,
+            "y_update": y - y_before,
+            "z_update": None if z is None else z - z_before,
+            "hidden": hidden,
+            "logits": logits,
+            "attn": attn,
+        }
 
     def recursive_outputs(
         self,
@@ -421,43 +546,17 @@ class SharedRecursiveDenoiserTower(nn.Module):
             if diagnostic_mask is not None:
                 diagnostic_mask = diagnostic_mask[:, : self.max_len]
             seq = self.max_len
-        pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
-
-        y = self.tok(noisy_ids) + self.pos(pos)
-        features = self._features_for_batch(bsz)
-        if features is not None:
-            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
-            y = y + features[row, noisy_ids.clamp(0, features.size(1) - 1)]
-        if self.kind is not None:
-            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
-            y = y + self.kind(self.kind_lookup[safe])
-
-        self_pad = noisy_ids.eq(pad_id)
-
-        # SLM-241 (RSC-A05): initial z state depends on ``z_state_mode``.
-        # "full" (arm B / historical V1): learned max_len latent + learned
-        # pooled-context projection + position -- unchanged from before this
-        # field existed. "parameter_free" (arm D): a deterministic,
-        # parameter-free pooled-context broadcast -- no learned max_len bank,
-        # no learned projection, so this mode declares neither ``z_latent``
-        # nor ``ctx_proj``. "y_only" (arm C) has no distinct z state at all;
-        # ``z`` stays ``None`` and the recursion loop below folds both
-        # updates through ``y``.
-        if ctx_pad_mask is None:
-            pooled = context.mean(dim=1)
-        else:
-            mask = ctx_pad_mask.logical_not().unsqueeze(-1).to(context.dtype)
-            pooled = (context * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
-
-        z: torch.Tensor | None
-        if self.z_state_mode == "full":
-            z = self.z_latent[pos]
-            z = z + self.ctx_proj(pooled).unsqueeze(1)
-            z = z + self.pos(pos)
-        elif self.z_state_mode == "parameter_free":
-            z = pooled.unsqueeze(1).expand(-1, seq, -1)
-        else:  # "y_only"
-            z = None
+        initial = self.initial_transition_state(
+            noisy_ids, context, pad_id, ctx_pad_mask
+        )
+        y = initial["y"]
+        z = initial["z"]
+        self_pad = initial["self_pad_mask"]
+        features = initial["runtime_symbol_features"]
+        assert isinstance(y, torch.Tensor)
+        assert z is None or isinstance(z, torch.Tensor)
+        assert isinstance(self_pad, torch.Tensor)
+        assert features is None or isinstance(features, torch.Tensor)
 
         depth_hiddens: list[torch.Tensor] = []
         depth_logits: list[torch.Tensor] = []
@@ -477,49 +576,30 @@ class SharedRecursiveDenoiserTower(nn.Module):
         for r in range(1, self.recursive_steps + 1):
             y_before = y
             z_before = z
-            if z is None:
-                # "y_only" (arm C): both the F- and G-update layers run on
-                # the same ``y`` state -- there is no separate z variable to
-                # update, only ``y`` ever changes across recursion steps.
-                f_in = self.norm(y)
-                f_out = self._apply_layers(
-                    f_in, self._f_layers, self_pad, context, ctx_pad_mask
-                )
-                assert isinstance(f_out, torch.Tensor)
-                f_update = f_out if diagnostic_update_mode == "as_is" else f_out - f_in
-                y = y + f_update
-                g_in = self.norm(y)
-            else:
-                # z_r = z_{r-1} + F_theta(norm(z_{r-1} + y_{r-1}), context)
-                f_in = self.norm(z + y)
-                f_out = self._apply_layers(
-                    f_in, self._f_layers, self_pad, context, ctx_pad_mask
-                )
-                assert isinstance(f_out, torch.Tensor)
-                f_update = f_out if diagnostic_update_mode == "as_is" else f_out - f_in
-                z = z + f_update
-                g_in = self.norm(y + z)
-
-            # y_r = y_{r-1} + G_theta(norm(y_{r-1} + z_r), context)
             return_last_attn = return_attn and r == self.recursive_steps
-            g_out = self._apply_layers(
-                g_in,
-                self._g_layers,
-                self_pad,
+            step = self.transition_step(
+                y,
+                z,
                 context,
+                self_pad,
                 ctx_pad_mask,
-                return_last_attn=return_last_attn,
+                runtime_symbol_features=features,
+                return_attn=return_last_attn,
+                update_mode=diagnostic_update_mode,
             )
-            if return_last_attn and isinstance(g_out, tuple):
-                g_out, attn = g_out
-            else:
-                assert isinstance(g_out, torch.Tensor)
-            g_update = g_out if diagnostic_update_mode == "as_is" else g_out - g_in
-            y = y + g_update
-
-            h = self.norm(y)
+            y = step["y"]
+            z = step["z"]
+            h = step["hidden"]
+            logits = step["logits"]
+            assert isinstance(y, torch.Tensor)
+            assert z is None or isinstance(z, torch.Tensor)
+            assert isinstance(h, torch.Tensor)
+            assert isinstance(logits, torch.Tensor)
+            if return_last_attn:
+                attn = step["attn"]
+                assert isinstance(attn, torch.Tensor)
             depth_hiddens.append(h)
-            depth_logits.append(self.project(h))
+            depth_logits.append(logits)
 
             if diagnostics:
                 diagnostic_states.append(
@@ -971,9 +1051,7 @@ def _estimate_transformer_block_flops(
     to be cited as an absolute latency/throughput claim.
     """
     self_attn = 4.0 * seq_len * d_model * d_model + 2.0 * seq_len * seq_len * d_model
-    cross_attn = (
-        4.0 * seq_len * d_model * d_model + 4.0 * seq_len * ctx_len * d_model
-    )
+    cross_attn = 4.0 * seq_len * d_model * d_model + 4.0 * seq_len * ctx_len * d_model
     hidden = d_model * mlp_ratio
     mlp = 4.0 * seq_len * d_model * hidden
     return self_attn + cross_attn + mlp
@@ -1130,8 +1208,7 @@ def compare_denoiser_architectures(
         recursive_logits = recursive(noisy_ids, context, pad_id)
     output_shape_compatible = stacked_logits.shape == recursive_logits.shape
     behaviorally_equivalent = bool(
-        output_shape_compatible
-        and torch.allclose(stacked_logits, recursive_logits)
+        output_shape_compatible and torch.allclose(stacked_logits, recursive_logits)
     )
 
     # Canonical (deduplicated-by-identity) declared parameters. Both towers'
