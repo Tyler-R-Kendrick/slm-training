@@ -1893,6 +1893,20 @@ inconclusive, SLM-230/231/232 are stagnant or unstable, SLM-233 cannot identify
 a semantic architecture effect, and SLM-234 did not authorize the minimal
 probe. No latent configuration, checkpoint, or default is promoted.
 
+## LOTUS-to-OpenUI transfer contract (LOT0-01 / SLM-248)
+
+[`lotus-openui-fidelity-contract-v1.md`](lotus-openui-fidelity-contract-v1.md)
+records the mechanism-fidelity, non-duplication, source-provenance, and
+preregistration contract for assessing LOTUS-style looped latent computation
+in the OpenUI track. The accompanying machine-readable contract and source
+manifest are [`lotus-openui-fidelity-contract-v1.json`](lotus-openui-fidelity-contract-v1.json)
+and [`lotus-openui-sources.json`](../../src/slm_training/resources/autoresearch/lotus-openui-sources.json).
+
+The verdict is `needs_target_trace_contract`: this is research intake only.
+It authorizes a follow-up to define the OpenUI target-trace and control
+contract, but it authorizes no model, training, checkpoint, semantic-quality,
+latency, or adoption claim.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
