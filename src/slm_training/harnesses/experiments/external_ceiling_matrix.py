@@ -505,6 +505,7 @@ def run_frontier_chunk(
     scorer: ExternalLegalActionScorer | None = None,
     scorer_kind: str = "transformers_causal_lm",
     max_new_tokens: int = 384,
+    dtype: str | None = None,
 ) -> dict[str, Any]:
     """Generate raw outputs for the next ``chunk_size`` unfinished requests.
 
@@ -528,6 +529,9 @@ def run_frontier_chunk(
                 model_id=FRONTIER_ARMS[arm],
                 revision="main",
                 claim_class="diagnostic",
+                # 7B fp32 exhausts host RAM; bf16 halves it with no
+                # decode-parameter change (greedy, same template).
+                dtype=dtype or ("bfloat16" if arm == "C" else "float32"),
             ),
             kind=scorer_kind,
         )
@@ -571,6 +575,126 @@ def run_frontier_chunk(
     return summary
 
 
+def run_tiny_baseline_chunk(
+    *,
+    output_dir: Path,
+    checkpoint: Path,
+    train_dir: Path,
+    test_dir: Path,
+    requests_file: Path = DEFAULT_FROZEN_REQUESTS_FILE,
+    expected_sha256: str = DEFAULT_FROZEN_REQUESTS_SHA256,
+    chunk_size: int = 5,
+    arm: str = "A",
+) -> dict[str, Any]:
+    """Generate raw outputs for the tiny-SLM baseline (arm A).
+
+    Uses the canonical plugin decode path (``build_model`` + constrained
+    ``generate_batch_requests``) with the same request construction as the
+    eval runner: record-derived request plus declared runtime symbols, no
+    gold fields. Chunked with deterministic resume, same as the external
+    arms; scoring stays unified in :func:`run_score_pass`.
+    """
+    requests = load_frozen_requests(requests_file, expected_sha256=expected_sha256)
+    raw_path = output_dir / "raw" / f"{arm}.jsonl"
+    done_ids = {row["id"] for row in _read_jsonl(raw_path)}
+    pending = [record for record in requests if record.id not in done_ids]
+    chunk = pending[:chunk_size]
+    if not chunk:
+        return {
+            "arm": arm,
+            "processed": [],
+            "completed": len(done_ids),
+            "total": len(requests),
+            "remaining": 0,
+            "raw_path": str(raw_path),
+        }
+
+    import re as _re
+
+    from slm_training.data.contract import RuntimeSymbol
+    from slm_training.harnesses.model_build.config import ModelBuildConfig
+    from slm_training.harnesses.model_build.factory import build_model
+    from slm_training.harnesses.model_build.plugin import GenerationRequest
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        run_id="slm294_tiny_baseline",
+        device="cpu",
+        run_class="scratch_matrix",
+    )
+    from slm_training.harnesses.model_build.data import load_train_records
+
+    try:
+        plugin_records = load_train_records(train_dir)
+    except FileNotFoundError:
+        plugin_records = list(requests)
+    plugin = build_model(config, plugin_records, checkpoint=checkpoint)
+    generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
+    if not callable(generate_batch_requests):
+        raise RuntimeError("tiny baseline plugin lacks generate_batch_requests")
+
+    def _request_for(record) -> GenerationRequest:
+        request = GenerationRequest.from_record(record, schema=None)
+        data = request.to_dict()
+        data["runtime_symbols"] = [
+            RuntimeSymbol(
+                surface=slot,
+                role="external_entity",
+                semantic_role=(
+                    _re.sub(r"\d+$", "", slot.removeprefix(":").split(".")[-1])
+                    or "value"
+                ),
+            ).to_dict()
+            for slot in request.slot_contract
+        ]
+        return GenerationRequest.from_dict(data)
+
+    checkpoint_sha = hashlib.sha256(Path(checkpoint).read_bytes()).hexdigest()
+    processed: list[str] = []
+    for record in chunk:
+        started_at = _utc_now_iso()
+        t0 = time.perf_counter()
+        request = _request_for(record)
+        # Preregistration amendment (pre-results): unconstrained decode +
+        # official post-validation, identical in kind to arms B/C; the
+        # grammar-constrained path is infeasible under the run cap here.
+        predictions = generate_batch_requests(
+            [request], max_len=384, grammar_constrained=False
+        )
+        raw_output = predictions[0]
+        latency_ms = (time.perf_counter() - t0) * 1000.0
+        row = {
+            "id": record.id,
+            "prompt": record.prompt,
+            "arm": arm,
+            "model_id": "slm294_tiny_baseline_twotower_lexer",
+            "revision": checkpoint_sha,
+            "device": "cpu",
+            "dtype": "float32",
+            "prompt_template_sha256": frontier_prompt_template_sha256(),
+            "generation_request": request.to_dict(),
+            "raw_output": raw_output,
+            "raw_output_sha256": hashlib.sha256(
+                raw_output.encode("utf-8")
+            ).hexdigest(),
+            "latency_ms": latency_ms,
+            "started_at": started_at,
+            "finished_at": _utc_now_iso(),
+        }
+        _append_jsonl_atomic(raw_path, row)
+        processed.append(record.id)
+
+    return {
+        "arm": arm,
+        "processed": processed,
+        "completed": len(done_ids) + len(processed),
+        "total": len(requests),
+        "remaining": len(pending) - len(processed),
+        "raw_path": str(raw_path),
+    }
+
+
 def run_score_pass(
     *,
     output_dir: Path,
@@ -590,7 +714,9 @@ def run_score_pass(
         binding_aware_meaningful_v2,
     )
     from slm_training.evals.power_protocol import wilson_interval
-    from slm_training.harnesses.model_build.eval_runner import meaningful_program_v1
+    from slm_training.harnesses.model_build.eval_runner import (
+        meaningful_program_v1_report,
+    )
 
     requests = load_frozen_requests(requests_file, expected_sha256=expected_sha256)
     gold_by_id = {record.id: record for record in requests}
@@ -630,8 +756,9 @@ def run_score_pass(
                 syntax_valid = True
             except ParseError:
                 syntax_valid = False
-            v1_verdict, v1_reason, _ = meaningful_program_v1(pred, gold=gold)
-            v1_reason_codes = [v1_reason] if v1_reason else []
+            v1_report = meaningful_program_v1_report(pred, gold=gold)
+            v1_verdict = bool(v1_report["verdict"])
+            v1_reason_codes = list(v1_report["reason_codes"])
             v2_report = None
             v2_reason_codes: list[str] = []
             v2_verdict = False
@@ -672,3 +799,96 @@ def run_score_pass(
     )
     os.replace(tmp, out_path)
     return scoreboard
+
+
+DISPOSITION_SCHEMA = "slm294_external_ceiling_disposition/v1"
+DISPOSITION_MARGIN = 0.10
+REQUIRED_ARM_N = 20
+
+
+def compute_disposition(
+    scoreboard: dict[str, Any],
+    *,
+    required_n: int = REQUIRED_ARM_N,
+    margin: float = DISPOSITION_MARGIN,
+    not_run: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Apply the locked SLM-294 thresholds to a scoreboard.
+
+    `scale_binding` requires arm C complete with its primary-metric Wilson
+    lower bound above arm A's upper bound by ``margin`` and syntax at least
+    arm A's. `task_or_metric_binding` requires arm C's upper bound at/below
+    ``margin`` or no scale effect versus arm A. Anything else — including any
+    incomplete or not-run arm — is `inconclusive` with named resolving
+    evidence.
+    """
+    arms = scoreboard.get("arms", {})
+    incomplete = [
+        arm
+        for arm in ("A", "B", "C")
+        if arm in not_run or arms.get(arm, {}).get("n", 0) < required_n
+    ]
+
+    def _bounds(arm: str) -> tuple[float | None, float | None]:
+        interval = arms.get(arm, {}).get("v2_strict", {}).get("wilson_95") or {}
+        return interval.get("low"), interval.get("high")
+
+    result: dict[str, Any] = {
+        "schema": DISPOSITION_SCHEMA,
+        "margin": margin,
+        "required_n": required_n,
+        "incomplete_arms": incomplete,
+        "not_run_arms": list(not_run),
+    }
+    if incomplete:
+        result.update(
+            {
+                "disposition": "inconclusive",
+                "reason": (
+                    "arms incomplete under the locked evidence bar: "
+                    + ", ".join(incomplete)
+                ),
+                "resolving_evidence": (
+                    "complete arms A/B/C at n>=%d on identical frozen requests "
+                    "with pinned revisions inside the run policy (managed GPU "
+                    "or HF Jobs for the external arms)" % required_n
+                ),
+            }
+        )
+        return result
+
+    a_low, a_high = _bounds("A")
+    c_low, c_high = _bounds("C")
+    c_syntax = arms["C"]["syntax"]["rate"]
+    a_syntax = arms["A"]["syntax"]["rate"]
+    result["bounds"] = {
+        "A": {"low": a_low, "high": a_high},
+        "C": {"low": c_low, "high": c_high},
+    }
+    if (
+        c_low is not None
+        and a_high is not None
+        and c_low > a_high + margin
+        and c_syntax >= a_syntax
+    ):
+        result["disposition"] = "scale_binding"
+        result["reason"] = (
+            f"arm C Wilson lower {c_low:.3f} > arm A upper {a_high:.3f} + "
+            f"{margin} with syntax preserved ({c_syntax:.3f} >= {a_syntax:.3f})"
+        )
+    elif c_high is not None and (
+        c_high <= margin or (a_low is not None and c_high <= a_low + margin)
+    ):
+        result["disposition"] = "task_or_metric_binding"
+        result["reason"] = (
+            f"arm C Wilson upper {c_high:.3f} <= {margin} or no scale effect "
+            "versus arm A; even a 7B external model cannot clear the "
+            "semantic bar under the current contract"
+        )
+    else:
+        result["disposition"] = "inconclusive"
+        result["reason"] = "intervals overlap within the locked margin"
+        result["resolving_evidence"] = (
+            "larger n or reduced-variance replication under the same thresholds"
+        )
+    return result

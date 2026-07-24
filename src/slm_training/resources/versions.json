@@ -1842,7 +1842,7 @@
       ]
     },
     "harness.experiments.external_ceiling": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/external_scorer.py",
@@ -1851,6 +1851,11 @@
         "tests/test_scripts/test_run_external_ceiling_frontier.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "add arm-A tiny-baseline chunk runner, locked-threshold disposition mode with EvidenceBundleV1 + AgentV, per-arm dtype and max_new_tokens controls"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
@@ -3791,6 +3796,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: add the SLM-294 diagnostic scratch checkpoint row to the model card without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

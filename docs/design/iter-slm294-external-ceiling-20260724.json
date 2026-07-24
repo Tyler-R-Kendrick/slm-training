@@ -1,0 +1,82 @@
+{
+  "amendments": 6,
+  "arms": {
+    "A": {
+      "checkpoint": "outputs/runs/slm294_tiny_baseline/checkpoints/last.pt",
+      "claim_class": "diagnostic",
+      "final_loss": 1.5187,
+      "status": "trained_decode_not_run",
+      "train_steps": 600
+    },
+    "B": {
+      "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+      "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+      "status": "not_run_infeasible"
+    },
+    "C": {
+      "model": "Qwen/Qwen2.5-7B-Instruct",
+      "status": "not_run_infeasible"
+    }
+  },
+  "artifacts": {
+    "agentv": "outputs/runs/slm294_external_ceiling/agentv/slm294-external-ceiling.eval.jsonl",
+    "disposition_json": "outputs/runs/slm294_external_ceiling/disposition.json",
+    "evidence_bundle": "outputs/runs/slm294_external_ceiling/evidence_bundle.json",
+    "harness": "src/slm_training/harnesses/experiments/external_ceiling_matrix.py + scripts/run_external_ceiling.py",
+    "scoreboard": "outputs/runs/slm294_external_ceiling/scoreboard.json",
+    "scorer": "src/slm_training/models/external_scorer.py",
+    "tests": "tests/test_scripts/test_run_external_ceiling_frontier.py"
+  },
+  "claim_class": "diagnostic",
+  "cost_evidence": {
+    "all_over_cap_outputs": "discarded unscored",
+    "arm_A_decode": ">280s for 16 tokens (lark lexer rebuild per token in build_completion_forest); fresh untrained model 8.5s/64 tokens",
+    "arm_B_single_request_fp32_seconds": 296.3,
+    "arm_C_fp32": "OOM on 31GB host; bf16 projected multiple minutes per request",
+    "run_cap_seconds": 170
+  },
+  "decision": "inconclusive",
+  "disposition": {
+    "disposition": "inconclusive",
+    "incomplete_arms": [
+      "A",
+      "B",
+      "C"
+    ],
+    "margin": 0.1,
+    "not_run_arms": [
+      "A",
+      "B",
+      "C"
+    ],
+    "reason": "arms incomplete under the locked evidence bar: A, B, C",
+    "required_n": 20,
+    "resolving_evidence": "complete arms A/B/C at n>=20 on identical frozen requests with pinned revisions inside the run policy (managed GPU or HF Jobs for the external arms)",
+    "schema": "slm294_external_ceiling_disposition/v1"
+  },
+  "frozen_requests": {
+    "evaluated_prefix_n": 20,
+    "file": "src/slm_training/resources/evals/slm294_frozen_requests_v1.jsonl",
+    "n": 35,
+    "sha256": "8466b402452c055a794057eb5a1853fb8e1548a398949cdb35ce51bca0e2d50e"
+  },
+  "issue": "SLM-294",
+  "lar_consequences": "LAR2-LAR4 remain blocked pending the named resolving evidence",
+  "matrix_set": "slm294-external-ceiling",
+  "matrix_version": "efs1-01-v2-slm294",
+  "preregistration": "docs/design/slm294-external-ceiling-preregistration.json",
+  "resolving_evidence": "managed GPU host or HF Jobs (requires HF_TOKEN) for external arms; a completion-forest decode performance fix for the tiny baseline on rico-scale layouts",
+  "run_id": "slm294_external_ceiling",
+  "schema": "slm294_external_ceiling_report/v1",
+  "status": "complete",
+  "version_stamp": {
+    "code_commit": "c4ce3d8e668cc71f454abd0a8aa02520f5b220e4",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v77",
+      "harness.experiments.external_ceiling": "v2"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-24T14:36:24.389446+00:00"
+  }
+}
