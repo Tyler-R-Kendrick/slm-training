@@ -2661,17 +2661,26 @@
       ]
     },
     "harness.experiments.slm155_factorization_comparison": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm155_factorization_comparison.py",
         "scripts/run_slm155_factorization_comparison_fixture.py",
+        "scripts/run_slm297_unified_rescore.py",
         "tests/test_harnesses/experiments/test_slm155_factorization_comparison.py",
         "tests/test_scripts/test_run_slm155_factorization_comparison_fixture.py",
+        "tests/test_scripts/test_run_slm297_unified_rescore.py",
         "docs/design/iter-slm155-factorization-comparison-20260720.json",
-        "docs/design/iter-slm155-factorization-comparison-20260720.md"
+        "docs/design/iter-slm155-factorization-comparison-20260720.md",
+        "docs/design/iter-slm297-unified-rescore-20260724.json",
+        "docs/design/iter-slm297-unified-rescore-20260724.md"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-297: retain per-example final programs in FactorizationRecord (AR via _program_from_actions, X22 seed + program_note, hybrid source), add FinalProgramOutcomeV1 unified final-program scoring + transition/paired-table helpers, run_fixture_campaign_with_records, and the run_slm297_unified_rescore CLI; aggregate rows unchanged"
+        },
         {
           "version": "v1",
           "date": "2026-07-20",
