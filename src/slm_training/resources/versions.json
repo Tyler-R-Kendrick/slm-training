@@ -3374,7 +3374,7 @@
       ]
     },
     "harness.experiments.slm199_legal_edit_flow": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
@@ -3396,6 +3396,11 @@
         "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-23",
+          "note": "move nested AgentV evidence exclusion to Vercel source-upload policy after live previews proved the function-level glob did not remove those files"
+        },
         {
           "version": "v3",
           "date": "2026-07-23",

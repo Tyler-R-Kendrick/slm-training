@@ -18,6 +18,10 @@ src/slm_training/resources/data/train/slm230_symbol_only_v1/**
 # function. Machine-readable experiment JSON remains deployable.
 docs/design/**/*.md
 
+# AgentV SDK bundles are durable review evidence, not dashboard runtime input.
+# The compact top-level docs/design JSON remains available to observability.
+docs/design/*-agentv-*/**
+
 # SLM-231's derivative library and bounded runner are offline experiment
 # machinery. The deployed dashboard reads only their committed result JSON.
 scripts/run_slm231_recurrence_dynamics.py
