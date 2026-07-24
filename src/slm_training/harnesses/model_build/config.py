@@ -479,6 +479,10 @@ class ModelBuildConfig:
         )
 
         apply_evaluation_policy(self)
+        if self.optimizer_name not in {"adamw", "muon_hybrid"}:
+            raise ValueError(
+                "optimizer_name must be one of: adamw, muon_hybrid"
+            )
         # SLM-242: fail-closed numeric/schedule gate.
         try:
             validate_model_build_config(self)

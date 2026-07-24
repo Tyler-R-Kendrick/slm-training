@@ -1362,12 +1362,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v70",
+      "version": "v71",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v71",
+          "date": "2026-07-23",
+          "note": "publish SLM-228 SpectralDispositionV1 and guard lineage/promotion from rejected spectral mechanisms"
+        },
         {
           "version": "v70",
           "date": "2026-07-23",
@@ -3616,6 +3621,34 @@
         }
       ]
     },
+    "harness.experiments.slm228_spectral_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm228_spectral_disposition.py",
+        "scripts/publish_spectral_disposition.py",
+        "scripts/model_cycle.py",
+        "tests/test_harnesses/experiments/test_slm228_spectral_disposition.py",
+        "tests/test_scripts/test_publish_spectral_disposition.py",
+        "docs/design/null-calibrated-spectral-learning-disposition.json",
+        "docs/design/null-calibrated-spectral-learning-disposition.md",
+        "docs/design/research-lineage.md",
+        "docs/MODEL_CARD.md",
+        "README.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "no-bump: refresh the generated disposition with its clean provenance-pinning implementation commit"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial final spectral disposition, evidence hashes, narrative, and promotion guards"
+        }
+      ]
+    },
     "harness.experiments.slm217_functional_spectra": {
       "version": "v1",
       "kind": "harness",
@@ -4131,13 +4164,18 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py",
         "src/slm_training/harnesses/model_build/full_state.py"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-23",
+          "note": "Reject disposition-forbidden spectral controls before direct ship evaluation or promoted training"
+        },
         {
           "version": "v23",
           "date": "2026-07-23",
@@ -5281,7 +5319,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v229",
+      "version": "v230",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -5305,6 +5343,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v230",
+          "date": "2026-07-23",
+          "note": "Constrain configured optimizers to the supported AdamW and scratch-only Muon hybrid choices"
+        },
         {
           "version": "v229",
           "date": "2026-07-23",

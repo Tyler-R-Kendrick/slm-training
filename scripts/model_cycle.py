@@ -38,6 +38,9 @@ from slm_training.lineage.tracks import (
     TWOTOWER_BASE_REVISION,
     TWOTOWER_E53_RECIPE,
 )
+from slm_training.harnesses.experiments.slm228_spectral_disposition import (
+    validate_spectral_recipe,
+)
 from slm_training.integrations.nemo_rl import (
     DEFAULT_BUCKET as NEMO_DEFAULT_BUCKET,
     DEFAULT_FLAVOR as NEMO_DEFAULT_FLAVOR,
@@ -152,6 +155,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         if base_revision != expected:
             raise ValueError(f"unapproved base revision for {base_id}: {base_revision}")
     recipe.update(_json_object(args.recipe_json))
+    validate_spectral_recipe(recipe, requested_use="manifest")
     recipe_sha = content_sha(recipe)
     trace = run_trace(
         args.run_id,
@@ -209,6 +213,7 @@ def cmd_branch(args: argparse.Namespace) -> int:
         )
     recipe = dict(parent.recipe)
     recipe.update(overrides)
+    validate_spectral_recipe(recipe, requested_use="manifest")
     child = replace(
         parent,
         run_id=args.run_id,
@@ -504,6 +509,7 @@ def cmd_promote(args: argparse.Namespace) -> int:
         raise ValueError("legacy and hardware-smoke runs cannot be promoted")
     if manifest.lifecycle_state != "validated":
         raise ValueError("promotion requires a validated run")
+    validate_spectral_recipe(manifest.recipe, requested_use="promotion")
     eval_snapshot = store.load_snapshot(manifest.eval_snapshot_sha)
     if eval_snapshot.metadata.get("kind") != "frozen_production_evaluation":
         raise ValueError("promotion requires a frozen production evaluation snapshot")

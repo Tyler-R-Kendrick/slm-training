@@ -26,6 +26,10 @@ production readiness contract.
 
 See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/grammar-topology-diffusion.md](docs/design/grammar-topology-diffusion.md) (dynamic production-tree diffusion), [docs/design/verified-scope-solver.md](docs/design/verified-scope-solver.md) (VSS0 verified scope-solver contract — prefix legality vs verified support), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/semantic-planning-valid-state-disposition.md](docs/design/semantic-planning-valid-state-disposition.md) (SPV4-02 final disposition — all plan-aware mechanisms remain default-off diagnostics), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X15 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/dsl-pack-contract.md](docs/design/dsl-pack-contract.md) (F1 DSL-pack contract; OpenUI first pack), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/binding-aware-meaningful-v2.md](docs/design/binding-aware-meaningful-v2.md) (versioned binding-aware metric and gaming audit), [docs/design/judge-independence-audit.md](docs/design/judge-independence-audit.md) (EFS0-04 cross-family/human audit contract), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
+Final spectral program policy:
+[null-calibrated spectral learning disposition](docs/design/null-calibrated-spectral-learning-disposition.md)
+(diagnostics only; no spectral training/default/promotion adoption).
+
 Calculated arity, task rate, neural precision, and physical cost are kept distinct
 by the [CAP0 contract](docs/design/calculated-arity-adaptive-precision.md).
 
@@ -39,6 +43,11 @@ checkpoints are provenance-only; current code refuses to load, serve, resume,
 promote, or evaluate them. E714 is the first compatible scratch baseline, but
 it fails semantic gates and is not promoted. See
 [the contract](docs/design/symbol-only-output-contract.md).
+
+**Spectral disposition:** the final NCS audit adopts only fail-closed
+diagnostics. It rejects or blocks raw-alpha quality claims, spectral training
+controls, causal spectral retention, and WW-PGD/trace-log projection. No
+checkpoint, roster, training default, champion, or promotion status changes.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
