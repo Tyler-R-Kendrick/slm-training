@@ -4475,7 +4475,7 @@
       ]
     },
     "harness.experiments.slm299_edit_reachability": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm299_edit_reachability.py",
@@ -4483,9 +4483,17 @@
         "tests/test_harnesses/experiments/test_slm299_edit_reachability.py",
         "docs/design/iter-slm299-edit-reachability-20260724.json",
         "docs/design/iter-slm299-edit-reachability-20260724.md",
-        "src/slm_training/models/tree_edit_diffusion.py"
+        "src/slm_training/models/tree_edit_diffusion.py",
+        "docs/design/iter-slm305-edit-language-20260724.json",
+        "docs/design/iter-slm305-edit-language-20260724.md",
+        "tests/test_models/test_tree_edit_diffusion.py"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-305: extend the valid-state edit language (ADD_CONTAINER/REMOVE_CONTAINER, INSERT/REPLACE_SUBTREE, V0.5 statement edits, BIND_PLACEHOLDER) with inverses, parser-backed validation, checkpoint format 2 + migration, and extended reachability mode"
+        },
         {
           "version": "v1",
           "date": "2026-07-24",
