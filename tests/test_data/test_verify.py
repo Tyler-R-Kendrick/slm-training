@@ -17,6 +17,7 @@ from slm_training.data.verify import (
     stamp_record,
     verify_record,
 )
+from slm_training.data.language_contract import iter_root_renderability_pairs
 from slm_training.dsl.lang_core import Program, bridge_available
 from slm_training.dsl.schema import ExampleRecord
 
@@ -190,6 +191,15 @@ def test_preview_runtime_and_behavior_seeded_failures() -> None:
     assert clean.console_errors == ()
     assert clean.behavior_errors == ()
     assert clean.interaction_trace == ("click:button",)
+
+    assert not run_preview_verifier('root = Col(":hero.title", "success")').rendered
+    assert run_preview_verifier(
+        'root = Table([Col(":hero.title", "success")])'
+    ).rendered
+
+    for pair in iter_root_renderability_pairs():
+        assert not run_preview_verifier(pair.rejected).rendered, pair.component
+        assert run_preview_verifier(pair.chosen).rendered, pair.component
 
     console = run_preview_verifier(VALID, seed_console_error=True)
     assert evaluate_gate(

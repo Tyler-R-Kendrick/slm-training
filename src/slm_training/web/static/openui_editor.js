@@ -38,6 +38,14 @@ const COMPONENTS = [
 ];
 
 const COMPONENT_NAMES = new Set(COMPONENTS.map((item) => item.label));
+const ROOT_CONTAINERS = {
+  Col: "Table",
+  SelectItem: "Select",
+  CheckBoxItem: "CheckBoxGroup",
+  RadioItem: "RadioGroup",
+  SwitchItem: "SwitchGroup",
+  TabItem: "Tabs",
+};
 const WORD_PATTERN = /[A-Za-z_][A-Za-z0-9_]*/g;
 
 function escapeHtml(value) {
@@ -129,7 +137,11 @@ function lintOpenUI(source) {
       errors.push(`Line ${lineNumber}: unsupported component ${component}`);
     }
     for (const array of line.matchAll(/\[([^\]]*)\]/g)) {
-      for (const word of array[1].match(WORD_PATTERN) || []) {
+      const children = array[1].replace(/"(?:\\.|[^"\\])*"/g, "");
+      for (const wordMatch of children.matchAll(WORD_PATTERN)) {
+        const word = wordMatch[0];
+        const following = children.slice((wordMatch.index || 0) + word.length).trimStart();
+        if (COMPONENT_NAMES.has(word) && following.startsWith("(")) continue;
         if (!["true", "false", "null", "row", "column"].includes(word)) {
           references.add(word);
         }
@@ -147,6 +159,11 @@ function lintOpenUI(source) {
   });
 
   if (!definitions.has("root")) errors.push("Define exactly one root assignment");
+  const root = definitions.get("root");
+  const container = ROOT_CONTAINERS[root?.component];
+  if (container) {
+    errors.push(`Line ${root.line}: root ${root.component} is structural-only; wrap it in ${container}(...)`);
+  }
   for (const reference of references) {
     if (!definitions.has(reference)) errors.push(`Undefined component reference: ${reference}`);
   }

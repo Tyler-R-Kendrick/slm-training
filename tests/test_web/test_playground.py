@@ -68,6 +68,55 @@ def test_playground_validation_falls_back_without_node_bridge(
     assert result.stream["ok"] is True
 
 
+def test_playground_retries_structural_only_root(tmp_path: Path) -> None:
+    service = PlaygroundService(
+        checkpoint=Path("/nonexistent.pt"),
+        generation_attempts_path=tmp_path / "attempts.jsonl",
+        bad_outputs_path=tmp_path / "bad_outputs.jsonl",
+    )
+    model = MagicMock()
+    model.config = SimpleNamespace(
+        generate_max_attempts=2,
+        grammar_finalize_on_last_attempt_only=False,
+        grammar_finalize_validate=False,
+    )
+    model.generate.side_effect = [
+        'root = Col(":hero.title", "success")',
+        'root = Table([Col(":hero.title", "success")])',
+    ]
+    service._model = model  # noqa: SLF001
+
+    result = service.generate("Hero table", max_attempts=2)
+
+    assert result.valid is True
+    assert result.openui.startswith("root = Table")
+    assert len(result.attempts) == 2
+    assert result.attempts[0]["valid"] is False
+    assert "structural-only" in result.attempts[0]["error"]
+
+
+def test_playground_load_uses_compiler_tree_marker_contract() -> None:
+    class FakeModel:
+        def __init__(self) -> None:
+            self.config = SimpleNamespace(grammar_ltr_max_tokens=0)
+
+        def eval(self) -> None:
+            return None
+
+    model = FakeModel()
+    service = PlaygroundService(
+        checkpoint=CKPT,
+        model_factory=lambda *_args: model,
+    )
+
+    assert service.load() is model
+    assert model.config.compiler_decode_mode == "tree"
+    assert model.config.slot_contract_constrained_decode is True
+    assert model.config.honest_slot_contract is True
+    assert model.config.slot_contract_in_context is True
+    assert model.config.template_fill_decode is False
+
+
 def test_playground_health_and_generate(tmp_path) -> None:
     app = create_app(
         checkpoint=CKPT,
@@ -126,6 +175,9 @@ def test_react_playground_has_full_annotate_surface() -> None:
         'id="dslLintMount"',
         "trainingModelPipeline",
         "browserFallback",
+        "failedGeneration",
+        "Model marker contract",
+        "isOpenUISource",
         "persistHumanAnnotation",
         "correction_author",
         'mode: "shared"',
@@ -145,6 +197,7 @@ def test_react_playground_has_full_annotate_surface() -> None:
     assert "headers.Authorization" in source
     assert "completionItems" in source
     assert "human_corrected" in source
+    assert "fixtureFallback" not in source
     assert not Path("src/slm_training/web/static/app.js").exists()
     classic_route = next(
         route for route in app.routes if getattr(route, "path", None) == "/playground/classic"

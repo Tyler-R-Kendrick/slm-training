@@ -25,6 +25,7 @@ from typing import Any, Iterator
 from slm_training.bridge_utils import repo_root
 from slm_training.dsl.language_contract import contract_id as current_contract_id
 from slm_training.dsl.lang_core import library_schema
+from slm_training.dsl.renderability import STRUCTURAL_ROOT_CONTAINERS
 from slm_training.dsl.schema import ExampleRecord, OutputKind, OutputTarget
 
 LANGUAGE_CONTRACT_FAMILY = "language_contract"
@@ -147,7 +148,7 @@ def component_expression(name: str) -> str:
 
 def component_program(name: str) -> str:
     """A minimal complete document that exercises ``name``."""
-    return f"root = {component_expression(name)}"
+    return _renderable_component_program(name, component_expression(name))
 
 
 # --------------------------------------------------------------------------- #
@@ -261,6 +262,109 @@ class Negative:
     gate: str
     operator: str
     openui: str
+
+
+@dataclass(frozen=True)
+class RootRenderabilityPair:
+    """A parseable but blank root paired with its visible repair."""
+
+    component: str
+    container: str
+    prompt: str
+    chosen: str
+    rejected: str
+
+
+def _renderable_component_program(name: str, expression: str) -> str:
+    """Place one structural declaration in its smallest visible document."""
+    expression = expression.replace('"item"', '":cov.name"')
+    if name == "Col":
+        program = f"root = Table([{expression}])"
+    elif name == "Series":
+        program = f'root = BarChart([":cov.item"], [{expression}])'
+    elif name == "Slice":
+        # PieChart consumes parallel labels and values rather than Slice nodes.
+        program = 'root = PieChart([":cov.item"], [1])'
+    elif name == "ScatterSeries":
+        program = f"root = ScatterChart([{expression}])"
+    elif name == "Point":
+        program = f'root = ScatterChart([ScatterSeries(":cov.name", [{expression}])])'
+    elif name == "SelectItem":
+        program = f'root = Select(":cov.name", [{expression}])'
+    elif name == "CheckBoxItem":
+        program = f'root = CheckBoxGroup(":cov.name", [{expression}])'
+    elif name == "RadioItem":
+        program = f'root = RadioGroup(":cov.name", [{expression}])'
+    elif name == "SwitchItem":
+        program = f'root = SwitchGroup(":cov.name", [{expression}])'
+    elif name == "TabItem":
+        program = f"root = Tabs([{expression}])"
+    elif name == "AccordionItem":
+        program = f"root = Accordion([{expression}])"
+    elif name == "StepsItem":
+        program = f"root = Steps([{expression}])"
+    else:
+        program = f"root = {expression}"
+    if ":cov." in program:
+        return program
+    # Meaningful-program admission requires a visible slot. Keep data-only
+    # declarations useful without changing their repaired container semantics.
+    return (
+        "root = Stack([content, context])\n"
+        f"content = {program.removeprefix('root = ')}\n"
+        'context = TextContent(":cov.context")'
+    )
+
+
+def iter_root_renderability_pairs() -> Iterator[RootRenderabilityPair]:
+    """Emit one explicit preferred repair for every banned standalone root."""
+    for name, container in STRUCTURAL_ROOT_CONTAINERS.items():
+        expression = component_expression(name)
+        rejected = f"root = {expression}"
+        prompt = (
+            "Repair this OpenUI document so it renders visibly. "
+            f"The root {name} is structural-only; integrate it in {container}(...).\n"
+            f"---BROKEN---\n{rejected}"
+        )
+        yield RootRenderabilityPair(
+            component=name,
+            container=container,
+            prompt=prompt,
+            chosen=_renderable_component_program(name, expression),
+            rejected=rejected,
+        )
+
+
+def iter_root_renderability_repairs(split: str = "train") -> Iterator[ExampleRecord]:
+    """Valid SFT repairs; the banned form is prompt context, never a target."""
+    for pair in iter_root_renderability_pairs():
+        unit_id = f"root_renderability_{pair.component.lower()}"
+        yield ExampleRecord(
+            id=f"lc_{unit_id}",
+            prompt=pair.prompt,
+            openui=pair.chosen,
+            split=split,
+            source=_SOURCE,
+            target_kind="document",
+            meta={
+                "category": "root_renderability",
+                "contract_target": unit_id,
+                "polarity": "positive",
+                "contract_id": current_contract_id(),
+                "program_family_id": f"{LANGUAGE_CONTRACT_FAMILY}:{unit_id}",
+                "lineage_id": f"lc_{unit_id}",
+                "split_group_id": f"lc_{unit_id}",
+                "task": "repair",
+                "determinacy": "deterministic",
+                "tier": "Silver",
+                "source_kind": "deterministic",
+                "root_renderability": {
+                    "root_type": pair.component,
+                    "container": pair.container,
+                    "rejected": pair.rejected,
+                },
+            },
+        )
 
 
 _NEGATIVES: tuple[Negative, ...] = (
@@ -465,8 +569,9 @@ def iter_positives(split: str = "train") -> Iterator[ExampleRecord]:
             split,
             target_kind="expression",
             target_category="component",
-            accepted_outputs=(OutputTarget(f"root = {expression}"),),
+            accepted_outputs=(OutputTarget(component_program(name)),),
         )
+    yield from iter_root_renderability_repairs(split)
 
 
 def iter_negatives(split: str = "train") -> Iterator[ExampleRecord]:

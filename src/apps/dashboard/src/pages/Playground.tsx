@@ -25,7 +25,7 @@ const BROWSER_PROMPT_TIMEOUT_MS = 240_000;
 const DIFFUSION_GLYPHS = ["·", "░", "▒", "▓", "#", "∷", "□", "◇"];
 
 type View = "render" | "dsl";
-type Source = "server" | "browser" | "fixture";
+type Source = "server" | "browser";
 
 interface Diagnostics {
   valid: boolean;
@@ -46,7 +46,7 @@ interface Sample {
   renderError?: string | null;
   status: "loading" | "ready" | "error";
   source?: Source | null;
-  phase?: "server-generation" | "browser-review" | "browser-generation" | "ready";
+  phase?: "server-generation" | "browser-review" | "browser-generation" | "ready" | "failed";
   attempt?: number;
   attemptRecord?: any;
   generationId?: string | null;
@@ -110,9 +110,16 @@ function defaultAnnotator(): string {
   return id;
 }
 
+function isOpenUISource(value: unknown): value is string {
+  return typeof value === "string" && /^\s*root\s*=/m.test(value);
+}
+
 function displayedOpenUI(item: Sample | null): string {
   if (!item) return "";
-  return item.dirty ? item.draftOpenui || "" : item.serialized || item.openui || "";
+  if (item.dirty) return item.draftOpenui || "";
+  // Older responses may contain the validator's JSON AST in `serialized`.
+  // Prefer the raw OpenUI program unless the serialized value is source DSL.
+  return isOpenUISource(item.serialized) || !item.openui ? item.serialized || "" : item.openui;
 }
 
 function waitForPreviewApi(timeoutMs = 15_000): Promise<any> {
@@ -184,6 +191,16 @@ function isAbortError(error: any): boolean {
 const afterPreviewCommit = () => new Promise<void>((resolve) => {
   requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
 });
+
+function hasPreviewContent(root: Element, visible = false): boolean {
+  return [...root.querySelectorAll("*")].some((element) => {
+    if (element.classList.contains("openui-preview-sr") || element.classList.contains("openui-preview-empty")) return false;
+    if (!visible) return true;
+    const bounds = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return bounds.width > 0 && bounds.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+  });
+}
 
 export function Playground() {
   const caps = useCaps();
@@ -271,16 +288,6 @@ export function Playground() {
       id: transformers ? model : "prompt-api-default",
       model: transformers ? model.split("/").pop() : role === "review" ? "prompt-api-baseline-reviewer" : "prompt-api-default",
       runtime,
-    };
-  }
-
-  function fixtureIdentity() {
-    return {
-      kind: "system",
-      provider: "slm-training",
-      id: "playground-wiring-fallback:v1",
-      model: "deterministic-openui-fixture",
-      runtime: "browser",
     };
   }
 
@@ -518,29 +525,20 @@ export function Playground() {
     }
   }
 
-  function fixtureFallback(sample: Sample, slot: number, reason: string): Sample {
-    const openui = [
-      'root = Stack([summary, action], "column")',
-      "summary = Card([title, body])",
-      'title = TextContent(":content.title")',
-      'body = TextContent(":content.body")',
-      'action = Button(":actions.primary")',
-    ].join("\n");
-    appendLog(`Sample ${slot + 1}: model backends unavailable — showing an explicitly non-training wiring fallback (${reason}).`, "warning");
+  function failedGeneration(sample: Sample, slot: number, reason: string, rawOpenUI = ""): Sample {
+    const lastAttempt = [...(sample.attempts || [])].reverse().find((attempt) => String(attempt?.openui || "").trim());
+    const openui = rawOpenUI || String(lastAttempt?.openui || sample.openui || "");
+    appendLog(`Sample ${slot + 1}: all model attempts failed — showing the last raw output and diagnostics (${reason}).`, "error");
     return {
-      prompt: sample.prompt,
+      ...sample,
       openui,
-      serialized: openui,
-      originalOpenui: openui,
-      valid: true,
-      error: null,
-      status: "ready",
-      source: "fixture",
-      phase: "ready",
-      generationId: null,
-      identities: { ...(sample.identities || {}), output_generator: fixtureIdentity() },
+      serialized: null,
+      valid: false,
+      error: reason,
+      status: "error",
+      phase: "failed",
       browserApproved: false,
-      failureReasons: sample.failureReasons,
+      attemptRecord: lastAttempt || sample.attemptRecord,
       note: "",
     };
   }
@@ -555,10 +553,10 @@ export function Playground() {
     appendLog(`Sample ${slot + 1}: real model exhausted; switching to browser inference.`, "warning");
     try {
       const session = await waitForBrowserSession(signal);
-      if (!session) return fixtureFallback(sample, slot, browserRef.current.error?.message || "browser model unavailable");
+      if (!session) return failedGeneration(sample, slot, browserRef.current.error?.message || "browser model unavailable");
     } catch (error: any) {
       if (isAbortError(error)) throw error;
-      return fixtureFallback(sample, slot, error?.message || String(error));
+      return failedGeneration(sample, slot, error?.message || String(error));
     }
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       signal.throwIfAborted();
@@ -582,7 +580,7 @@ export function Playground() {
       }
       signal.throwIfAborted();
       if (inferenceError && browserRef.current.error instanceof BrowserTimeoutError) {
-        return fixtureFallback({ ...sample, failureReasons: [...failureReasons, inferenceError] }, slot, inferenceError);
+        return failedGeneration({ ...sample, failureReasons: [...failureReasons, inferenceError] }, slot, inferenceError, openui);
       }
       const stored = await persistBrowserAttempt({
         prompt: sample.prompt, openui, attempt, error: inferenceError, priorFailures,
@@ -602,9 +600,10 @@ export function Playground() {
       }
       lastError = stored.error || inferenceError || "Browser output failed validation";
       failureReasons.push(`browser attempt ${attempt} failed: ${lastError}.${openui ? ` Output was: ${openui.slice(0, 1200)}` : ""}`);
+      sample.attempts = [...(sample.attempts || []), { ...stored, source: "browser", attempt, openui, error: lastError }];
       appendLog(`Sample ${slot + 1}: browser attempt ${attempt}/3 failed — ${lastError}; training record ${stored.id}.`, "error");
     }
-    return fixtureFallback({ ...sample, failureReasons }, slot, lastError);
+    return failedGeneration({ ...sample, failureReasons }, slot, lastError);
   }
 
   async function trainingModelPipeline(placeholder: Sample, slot: number, signal: AbortSignal): Promise<Sample> {
@@ -656,8 +655,7 @@ export function Playground() {
       signal.throwIfAborted();
       if (review.reviewer_unavailable) {
         // No verdict exists. The candidate already passed lint, and the human
-        // grading it IS the scorer — showing it beats discarding real model
-        // output for a canned fixture.
+        // grading it IS the scorer — show the real model output unreviewed.
         appendLog(`Sample ${slot + 1}: browser baseline unavailable — surfacing lint-passing training attempt ${attempt}/3 unreviewed (${(review.reasons || []).join("; ") || "no reviewer verdict"}).`, "warning");
         const openui = candidate.serialized || candidate.openui;
         return {
@@ -765,9 +763,8 @@ export function Playground() {
         meta: {
           source: "annotate_playground", generation_source: item.source, browser_baseline: item.source === "browser",
           browser_gate_passed: !!item.browserApproved, browser_review_id: item.browserReview?.id || null,
-          browser_review_score: item.browserReview?.score ?? null, usable_for_test_data: rating === "up" && !!item.valid && (item.source !== "fixture" || !!options.humanCorrected),
-          usable_for_training: item.source !== "fixture" || !!options.humanCorrected,
-          fixture_demo: item.source === "fixture",
+          browser_review_score: item.browserReview?.score ?? null, usable_for_test_data: rating === "up" && !!item.valid,
+          usable_for_training: !!item.valid,
           human_corrected: !!options.humanCorrected, view: viewRef.current,
         },
       }),
@@ -867,6 +864,8 @@ export function Playground() {
       if (root?.getAttribute("data-parse-ok") !== "1") {
         const message = root?.textContent?.trim() || "OpenUI renderer rejected this syntax";
         if (!errors.includes(message)) errors.push(message);
+      } else if (root && !hasPreviewContent(root)) {
+        errors.push("OpenUI parsed successfully but produced no renderable component");
       }
       item.dslDiagnostics = { valid: errors.length === 0, pending: false, errors, warnings: staticResult.warnings };
     } catch (error: any) {
@@ -998,6 +997,7 @@ export function Playground() {
       const root = previewRef.current.querySelector(".openui-preview-root");
       if (!root) throw new Error("preview did not mount");
       if (root.getAttribute("data-parse-ok") === "0") throw new Error(root.textContent?.trim() || "preview parse failed");
+      if (!hasPreviewContent(root, true)) throw new Error("OpenUI parsed successfully but produced no visible UI");
       renderedItemRef.current = item;
       appendLog(`Sample ${indexRef.current + 1}: preview rendered.`, "success");
     } catch (error: any) {
@@ -1214,11 +1214,11 @@ export function Playground() {
   const gradable = !!item && item.status === "ready" && item.valid && !item.renderError && !editing && !busyGradeRef.current && !busy;
   const diagnostics = item?.dslDiagnostics || { valid: !!item?.valid, pending: false, errors: item?.valid ? [] : [item?.error || "OpenUI is not valid"], warnings: [] };
   const badge = !item ? "loading" : item.status === "loading" ? "generating" : editing && diagnostics.pending ? "checking DSL" : editing && !diagnostics.valid ? "invalid DSL" : item.status === "error" || item.renderError ? "error" : previewRenderingRef.current || previewNeeded ? "rendering" : item.valid ? "valid" : "invalid";
-  const modelSource = item?.phase === "browser-review" ? "Browser baseline reviewing" : item?.source === "server" ? item.status === "ready" ? item.browserApproved ? "Training model · browser-approved" : "Training model · unreviewed (baseline offline)" : `Training model · attempt ${item.attempt || 1}/3` : item?.source === "browser" ? item.status === "ready" ? "Browser baseline · fallback" : `Browser baseline · attempt ${item.attempt || 1}/3` : item?.source === "fixture" ? "Wiring fallback · not training data" : "Selecting model";
-  const modelClass = item?.phase === "browser-review" ? "review" : item?.source === "server" ? "training" : item?.source === "browser" ? "baseline" : item?.source === "fixture" ? "fixture" : "pending";
+  const modelSource = item?.phase === "browser-review" ? "Browser baseline reviewing" : item?.phase === "failed" ? "Model attempts exhausted · raw output retained" : item?.source === "server" ? item.status === "ready" ? item.browserApproved ? "Training model · browser-approved" : "Training model · unreviewed (baseline offline)" : `Training model · attempt ${item.attempt || 1}/3` : item?.source === "browser" ? item.status === "ready" ? "Browser baseline · fallback" : `Browser baseline · attempt ${item.attempt || 1}/3` : "Selecting model";
+  const modelClass = item?.phase === "browser-review" ? "review" : item?.phase === "failed" ? "pending" : item?.source === "server" ? "training" : item?.source === "browser" ? "baseline" : "pending";
   const total = Math.max(stackRef.current.length, 1);
   const position = Math.min(indexRef.current + 1, total);
-  const previewBlocked = view === "render" && !!item?.dirty && diagnostics.valid !== true;
+  const previewBlocked = view === "render" && !!item && (item.status === "error" || !item.valid || (!!item.dirty && diagnostics.valid !== true));
   const saveDisabled = !editing || busyGradeRef.current || busy || !!item?.renderError || diagnostics.pending || diagnostics.valid !== true;
 
   return (
@@ -1229,7 +1229,7 @@ export function Playground() {
         <div className="pg-legend" aria-label="Model source legend">
           <span className="pg-source training">Training model · candidate under evaluation</span>
           <span className="pg-source baseline">Browser baseline · on-device reference</span>
-          <span className="pg-source fixture">Wiring fallback · explicitly excluded from training</span>
+          <span className="pg-source pending">Failed model output · retained with diagnostics</span>
         </div>
         <label className="pg-annotator" htmlFor="annotatorIdentity">
           <span>Annotator</span>
@@ -1266,7 +1266,7 @@ export function Playground() {
 
         <div className="view-panels">
           <div id="panelRender" className={`view-panel preview-panel ${view === "render" ? "is-active" : ""}`} role="tabpanel" aria-label="Rendered OpenUI" hidden={view !== "render"}>
-            {item?.status === "loading" ? <DiffusionCanvas /> : previewBlocked ? <p className="openui-preview-empty">{diagnostics.pending ? "Checking the corrected OpenUI before preview…" : "Preview blocked until the OpenUI errors are fixed."}</p> : <div id="preview" className="openui-preview" ref={previewRef} />}
+            {item?.status === "loading" ? <DiffusionCanvas /> : previewBlocked ? <p className="openui-preview-empty">{item?.status === "error" || !item?.valid ? "Model output failed validation. Open the DSL tab to inspect the raw output and diagnostics." : diagnostics.pending ? "Checking the corrected OpenUI before preview…" : "Preview blocked until the OpenUI errors are fixed."}</p> : <div id="preview" className="openui-preview" ref={previewRef} />}
             <div id="correctionActions" className="pg-correction" hidden={!editing || view !== "render"}>
               <span id="correctionStatus" className="hint">{diagnostics.pending ? "Checking corrected OpenUI…" : !diagnostics.valid || item?.renderError ? "Fix the DSL error or discard this correction" : "Unsaved human correction"}</span>
               <div className="pg-correction-buttons" role="group" aria-label="Correction actions">
@@ -1301,6 +1301,7 @@ export function Playground() {
             <div id="dslDiagnostics" className={`dsl-diagnostics ${diagnostics.errors.length ? "error" : diagnostics.warnings.length ? "warning" : "valid"}`} role="status" aria-live="polite">
               <div className="diagnostic-summary"><span id="dslDiagnosticState">{diagnostics.pending ? "Checking OpenUI syntax…" : diagnostics.errors.length ? `${diagnostics.errors.length} ${diagnostics.errors.length === 1 ? "error" : "errors"}` : diagnostics.warnings.length ? `Valid with ${diagnostics.warnings.length} ${diagnostics.warnings.length === 1 ? "warning" : "warnings"}` : "Valid OpenUI"}</span><span>Only valid OpenUI can be previewed or saved · Ctrl/⌘ Space for suggestions</span></div>
               <ul id="dslDiagnosticList">{diagnostics.errors.map((error) => <li className="diagnostic-error" key={error}>{error}</li>)}{diagnostics.warnings.map((warning) => <li className="diagnostic-warning" key={warning}>{warning}</li>)}</ul>
+              {Array.isArray(item?.attemptRecord?.meta?.marker_inventory) && <p className="hint">Model marker contract: {item.attemptRecord.meta.marker_inventory.length ? item.attemptRecord.meta.marker_inventory.join(", ") : "none"}</p>}
             </div>
           </div>
         </div>

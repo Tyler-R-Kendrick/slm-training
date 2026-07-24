@@ -4948,17 +4948,24 @@
       ]
     },
     "harness.train_data": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
         "src/slm_training/harnesses/train_data/",
+        "src/slm_training/data/language_contract/",
+        "src/slm_training/dsl/renderability.py",
         "src/slm_training/data/mixture.py",
         "src/slm_training/dsl/packs/openui.py",
         "src/slm_training/resources/train_seeds.jsonl",
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v19",
+          "date": "2026-07-23",
+          "note": "add runtime-renderability repairs and chosen-over-rejected preference pairs for structural-only OpenUI roots"
+        },
         {
           "version": "v18",
           "date": "2026-07-23",
@@ -5678,6 +5685,11 @@
           "version": "v231",
           "date": "2026-07-23",
           "note": "persist and validate SLM-243 recurrence update, empty-F, and norm modes while migrating old checkpoints to historical defaults"
+        },
+        {
+          "version": "v231",
+          "date": "2026-07-23",
+          "note": "serve compiler-tree slot contracts through runtime feature tables so prompt-derived OpenUI template markers stay the model output contract"
         },
         {
           "version": "v230",

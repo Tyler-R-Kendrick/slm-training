@@ -9,7 +9,10 @@ import pytest
 
 from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import contract_id
+from slm_training.dsl.parser import validate
+from slm_training.dsl.renderability import STRUCTURAL_ROOT_CONTAINERS, root_type
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+from slm_training.harnesses.preference import load_pairs
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
 
@@ -253,6 +256,18 @@ def test_documentizes_expressions_and_records_target_selection(tmp_path: Path) -
         item["evidence"].get("top_reason") != "target_kind_excluded"
         for item in feedback["recommendations"]
     )
+    pairs = [
+        pair
+        for pair in load_pairs(out_dir / "preference_pairs.jsonl")
+        if (pair.meta or {}).get("pair_corpus") == "root_renderability"
+    ]
+    assert len(pairs) == len(STRUCTURAL_ROOT_CONTAINERS)
+    assert result["stats"]["preference_pair_families"]["root_renderability"] == len(
+        pairs
+    )
+    assert all(pair.chosen_score > pair.rejected_score for pair in pairs)
+    assert all(root_type(validate(pair.chosen)) not in STRUCTURAL_ROOT_CONTAINERS for pair in pairs)
+    assert all(root_type(validate(pair.rejected)) in STRUCTURAL_ROOT_CONTAINERS for pair in pairs)
 
 
 @pytest.mark.skipif(

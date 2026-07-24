@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -175,6 +176,90 @@ def test_three_server_failures_are_returned_for_browser_fallback(tmp_path: Path)
     assert attempts[0].prior_failures == []
     assert attempts[1].prior_failures == ["real model failed"]
     assert attempts[2].prior_failures == ["real model failed", "real model failed"]
+
+
+def test_prompt_inventory_is_visible_to_decode_and_persisted(tmp_path: Path) -> None:
+    service = PlaygroundService(
+        checkpoint=Path("/nonexistent.pt"),
+        generation_attempts_path=tmp_path / "attempts.jsonl",
+    )
+    model = MagicMock()
+    model.config = MagicMock()
+    model.generate.return_value = (
+        'root = Card([title])\ntitle = TextContent(":promo.title")'
+    )
+
+    with patch.object(service, "load", return_value=model):
+        result = service.generate(
+            "Promotion card\nPlaceholders: :promo.title",
+            design_md="",
+            max_attempts=1,
+        )
+
+    assert result.valid is True
+    assert "Placeholders: :promo.title" in model.generate.call_args.args[0]
+    assert result.attempts[0]["meta"]["marker_inventory"] == [":promo.title"]
+    assert result.attempts[0]["meta"]["decode_contract"] == {
+        "mode": "compiler_tree",
+        "slot_contract": "prompt_or_design_inventory",
+        "template_fill_decode": False,
+    }
+
+
+def test_server_attempt_retains_raw_preflight_failure(tmp_path: Path) -> None:
+    service = PlaygroundService(
+        checkpoint=Path("/nonexistent.pt"),
+        generation_attempts_path=tmp_path / "attempts.jsonl",
+    )
+    model = MagicMock()
+    model.config = MagicMock()
+    raw = 'root = TextContent("plain"'
+    model.generate.return_value = raw
+
+    with (
+        patch.object(service, "load", return_value=model),
+        patch(
+            "slm_training.web.service.stream_check",
+            return_value={
+                "ok": False,
+                "incomplete": True,
+                "has_root": True,
+                "errors": ["placeholder_required"],
+                "unresolved": [],
+            },
+        ),
+    ):
+        result = service.server_attempt(
+            prompt="Promotion card\nPlaceholders: :promo.title",
+            design_md="",
+        )
+
+    assert result["valid"] is False
+    assert result["openui"] == raw
+    assert result["attempt"]["openui"] == raw
+    assert "incomplete, placeholder_required" in result["attempt"]["error"]
+    assert result["attempt"]["meta"]["marker_inventory"] == [":promo.title"]
+
+
+def test_validation_never_returns_langcore_serialized_json_ast() -> None:
+    source = 'root = Card([title])\ntitle = TextContent(":hero.title")'
+    with (
+        patch(
+            "slm_training.web.service.stream_check",
+            return_value={
+                "ok": True,
+                "incomplete": False,
+                "has_root": True,
+                "errors": [],
+                "unresolved": [],
+            },
+        ),
+        patch(
+            "slm_training.web.service.validate",
+            return_value=SimpleNamespace(serialized='{"type":"element"}', root={}),
+        ),
+    ):
+        assert PlaygroundService._validate_candidate(source) == source
 
 
 def test_browser_attempt_validation_and_failure_context_are_stored(tmp_path: Path) -> None:

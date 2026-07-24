@@ -52,9 +52,12 @@ def layout_metrics(openui: str) -> float:
 
 def grammar_score(openui: str) -> float:
     try:
+        from slm_training.dsl.renderability import root_type, structural_root_container
         from slm_training.dsl.parser import validate
 
         program = validate(openui)
+        if structural_root_container(root_type(program)):
+            return 0.0
         serialized = (program.serialized or openui).strip()
         compact = serialized.replace(" ", "")
         if "Stack([])" in compact or "Stack([]," in compact:

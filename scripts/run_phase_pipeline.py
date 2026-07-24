@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -20,7 +21,12 @@ from typing import Any
 from slm_training.harnesses.model_build import ModelBuildConfig, train
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
-from slm_training.harnesses.preference import collect_pairs_with_generator, write_pairs
+from slm_training.harnesses.preference import (
+    PreferencePair,
+    collect_pairs_with_generator,
+    load_pairs,
+    write_pairs,
+)
 from slm_training.harnesses.preference.train import train_preference_from_paths
 from slm_training.harnesses.quality import soft_corrupt_openui
 from slm_training.harnesses.rl import train_grpo_from_paths
@@ -59,6 +65,38 @@ def _copy_ckpt(src: Path, dest: Path) -> Path:
         if meta_src.resolve() != meta_dst.resolve():
             shutil.copy2(meta_src, meta_dst)
     return dest
+
+
+def _pair_key(pair: PreferencePair) -> tuple[str, str, str]:
+    return pair.prompt, pair.chosen, pair.rejected
+
+
+def _phase_b_pairs(train_dir: Path, records: list, limit: int) -> list[PreferencePair]:
+    """Keep curated renderability corrections ahead of generic corruptions."""
+    dataset_path = train_dir / "preference_pairs.jsonl"
+    curated = load_pairs(dataset_path) if dataset_path.is_file() else []
+    structural = [
+        pair
+        for pair in curated
+        if (pair.meta or {}).get("pair_corpus") == "root_renderability"
+    ]
+    other_curated = [pair for pair in curated if pair not in structural]
+    generated = collect_pairs_with_generator(
+        records,
+        lambda r: [r.openui, soft_corrupt_openui(r.openui)],
+        prefer_valid_rejects=True,
+        structure_only=True,
+    )
+    selected: list[PreferencePair] = []
+    seen: set[tuple[str, str, str]] = set()
+    for pair in [*structural, *other_curated, *generated]:
+        if _pair_key(pair) in seen:
+            continue
+        if len(selected) >= limit and pair not in structural:
+            continue
+        seen.add(_pair_key(pair))
+        selected.append(pair)
+    return selected
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -191,12 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         sft_ckpt = _copy_ckpt(ckpt_dir / "last.pt", sft_ckpt)
     records = load_jsonl(args.train_dir / "records.jsonl")[: args.pref_limit]
     pairs_path = run_dir / "pairs.jsonl"
-    pairs = collect_pairs_with_generator(
-        records,
-        lambda r: [r.openui, soft_corrupt_openui(r.openui)],
-        prefer_valid_rejects=True,
-        structure_only=True,
-    )
+    pairs = _phase_b_pairs(args.train_dir, records, args.pref_limit)
     write_pairs(pairs_path, pairs)
     pref_dir = run_dir / "pref"
     pref_summary = train_preference_from_paths(
@@ -209,6 +242,14 @@ def main(argv: list[str] | None = None) -> int:
     pref_ckpt = Path(pref_summary["checkpoint"])
     phases["B"] = {
         "pairs": len(pairs),
+        "pair_families": dict(
+            sorted(
+                Counter(
+                    str((pair.meta or {}).get("pair_corpus") or "generated")
+                    for pair in pairs
+                ).items()
+            )
+        ),
         "steps": pref_summary.get("steps"),
         "last_loss": pref_summary.get("last_loss"),
         "checkpoint": str(pref_ckpt),

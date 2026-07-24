@@ -12010,8 +12010,10 @@ class TwoTowerModel(nn.Module):
                     )
                 else:
                     placeholders = (
-                        slot_contracts[i]
-                        if slot_contracts
+                        self._slot_contracts[i]
+                        if self._slot_contracts and i < len(self._slot_contracts)
+                        else slot_contracts[i]
+                        if slot_contracts and i < len(slot_contracts)
                         else list(golds[i].placeholders or [])
                         if golds and golds[i] is not None
                         else None

@@ -5449,6 +5449,48 @@ def test_compiler_decode_is_opt_in() -> None:
     assert TwoTowerConfig().compiler_search_mode == "greedy"
 
 
+def test_runtime_feature_table_uses_resolved_honest_slot_contract(monkeypatch) -> None:
+    """Runtime slot features must match the visible prompt contract, not a stale arg."""
+    model = _model(
+        grammar_constrained=True,
+        grammar_ltr_primary=True,
+        compiler_decode_mode="tree",
+        slot_contract_constrained_decode=True,
+        honest_slot_contract=True,
+    )
+    captured: list[list[str] | None] = []
+    from slm_training.models.dsl_tokenizer import SymbolTable
+
+    from_placeholders = SymbolTable.from_placeholders
+
+    def capture(placeholders, **kwargs):
+        captured.append(list(placeholders) if placeholders else None)
+        return from_placeholders(placeholders, **kwargs)
+
+    monkeypatch.setattr(SymbolTable, "from_placeholders", capture)
+    monkeypatch.setattr(
+        model,
+        "_greedy_ltr_decode_batch",
+        lambda ctx, _pad, length: torch.full(
+            (ctx.size(0), length), model.tokenizer.eos_id, dtype=torch.long
+        ),
+    )
+    monkeypatch.setattr(
+        model,
+        "_decode_ids",
+        lambda _ids: 'root = TextContent(":visible.title")',
+    )
+    monkeypatch.setattr(model, "_ensure_valid_openui", lambda text, *_a, **_k: text)
+
+    model._generate_batch_once(
+        ["Card\nPlaceholders: :visible.title"],
+        grammar_constrained=True,
+        slot_contracts=[[":stale.title"]],
+    )
+
+    assert captured[-1] == [":visible.title"]
+
+
 def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> None:
     model = _model()
     model.config.compiler_decode_mode = "tree"

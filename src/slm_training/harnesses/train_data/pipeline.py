@@ -687,12 +687,32 @@ def _records_from_progspec(
 
 def _records_from_language_contract(
     config: TrainDataConfig,
-) -> tuple[list[ExampleRecord], list[dict]]:
+) -> tuple[list[ExampleRecord], list[dict], list]:
     if not config.include_language_contract:
-        return [], []
-    from slm_training.data.language_contract import iter_positives
+        return [], [], []
+    from slm_training.data.language_contract import (
+        iter_positives,
+        iter_root_renderability_pairs,
+    )
+    from slm_training.harnesses.preference import PreferencePair
 
-    return list(iter_positives(config.require_split)), []
+    pairs = [
+        PreferencePair(
+            prompt=pair.prompt,
+            chosen=pair.chosen,
+            rejected=pair.rejected,
+            chosen_score=1.0,
+            rejected_score=0.0,
+            meta={
+                "pair_corpus": "root_renderability",
+                "rank_source": "official_preview_runtime",
+                "root_type": pair.component,
+                "container": pair.container,
+            },
+        )
+        for pair in iter_root_renderability_pairs()
+    ]
+    return list(iter_positives(config.require_split)), [], pairs
 
 
 def _documentize_expression(record: ExampleRecord) -> ExampleRecord:
@@ -1264,6 +1284,7 @@ def build_train_data(
         seeds.extend(records)
         errors.extend(source_errors)
     scope_preference_pairs: list = []
+    root_renderability_pairs: list = []
     if source in {"programspec", "integrated", "all"}:
         # One committed-file parse / seeded generation feeds both consumers;
         # each still reports the load errors it reported before.
@@ -1279,7 +1300,9 @@ def build_train_data(
         seeds.extend(records)
         errors.extend(source_errors)
     if source in {"language_contract", "integrated", "all", "existing"}:
-        records, source_errors = _records_from_language_contract(config)
+        records, source_errors, root_renderability_pairs = _records_from_language_contract(
+            config
+        )
         seeds.extend(records)
         errors.extend(source_errors)
     if source in {"deconstruct", "integrated", "all"}:
@@ -1878,16 +1901,17 @@ def build_train_data(
         if record_ids and record_ids <= staged_admitted_ids:
             admitted_staged_pairs.append(pair)
     staged_preference_pairs = admitted_staged_pairs
-    if config.emit_preference_pairs and staged_preference_pairs:
+    preference_pairs: list = []
+    if config.emit_preference_pairs:
         from slm_training.harnesses.preference import write_pairs
 
-        preference_pairs = []
         if scope_preference_pairs:
             _write_scope_preference_pairs(out_dir, scope_preference_pairs)
             from slm_training.harnesses.preference import load_pairs
 
             preference_pairs.extend(load_pairs(out_dir / "preference_pairs.jsonl"))
         preference_pairs.extend(staged_preference_pairs)
+        preference_pairs.extend(root_renderability_pairs)
         preference_pairs.sort(
             key=lambda pair: (
                 pair.prompt,
@@ -1896,12 +1920,9 @@ def build_train_data(
                 json.dumps(pair.meta or {}, sort_keys=True),
             )
         )
-        preference_pairs_path = out_dir / "preference_pairs.jsonl"
-        write_pairs(preference_pairs_path, preference_pairs)
-    elif config.emit_preference_pairs and scope_preference_pairs:
-        preference_pairs_path = _write_scope_preference_pairs(
-            out_dir, scope_preference_pairs
-        )
+        if preference_pairs:
+            preference_pairs_path = out_dir / "preference_pairs.jsonl"
+            write_pairs(preference_pairs_path, preference_pairs)
 
     governance_paths: dict[str, Path] = {}
     if config.governance_artifacts:
@@ -2147,7 +2168,15 @@ def build_train_data(
             if operator_corpus_result is not None
             else None
         ),
-        "preference_pairs": len(scope_preference_pairs) + len(staged_preference_pairs),
+        "preference_pairs": len(preference_pairs),
+        "preference_pair_families": dict(
+            sorted(
+                Counter(
+                    str((pair.meta or {}).get("pair_corpus") or "unknown")
+                    for pair in preference_pairs
+                ).items()
+            )
+        ),
         "preference_pairs_path": (
             str(preference_pairs_path) if preference_pairs_path else None
         ),

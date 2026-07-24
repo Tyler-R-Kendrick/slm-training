@@ -29,6 +29,22 @@ try {
   page.on("pageerror", (error) => behaviorErrors.push(error.message));
 
   await page.setContent('<main id="target"></main>');
+  await page.evaluate(() => {
+    // Chromium's data: documents expose Web Crypto but omit randomUUID. The
+    // official chart components use it for element ids, so mirror browsers
+    // that implement the standard API before loading the preview bundle.
+    if (typeof globalThis.crypto?.randomUUID === "function") return;
+    Object.defineProperty(globalThis.crypto, "randomUUID", {
+      configurable: true,
+      value: () => {
+        const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
+        return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+      },
+    });
+  });
   await page.addScriptTag({
     content: await readFile(bundle, "utf8"),
     type: "module",
@@ -66,7 +82,13 @@ try {
 
   const rendered = await page.evaluate(() => {
     const preview = document.querySelector("#target .openui-preview-root");
-    return preview?.getAttribute("data-parse-ok") === "1";
+    if (preview?.getAttribute("data-parse-ok") !== "1") return false;
+    return [...preview.querySelectorAll("*")].some((element) => {
+      if (element.classList.contains("openui-preview-sr") || element.classList.contains("openui-preview-empty")) return false;
+      const bounds = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return bounds.width > 0 && bounds.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+    });
   });
   process.stdout.write(
     JSON.stringify({
