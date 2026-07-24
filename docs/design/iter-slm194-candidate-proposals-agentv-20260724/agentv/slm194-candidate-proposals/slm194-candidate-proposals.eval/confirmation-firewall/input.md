@@ -1,0 +1,2 @@
+@[user]:
+{"agentv_pass": true, "checks": {"checkpoint_absent": true, "confirmation_not_touched": true, "touch_ledger_empty": true}, "claim": "fixture_screen_not_confirmation", "failures": [], "result": {"claim_class": "wiring", "verdict": "retain_exact_cached_enumeration"}}

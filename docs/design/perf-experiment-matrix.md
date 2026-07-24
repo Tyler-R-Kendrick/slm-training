@@ -357,3 +357,25 @@ time out, fidelity falls 1.0→0.3333, structure 0.0963→0.0359, and recall
 extra token budget. Reject 128 and close this interpolation; keep 96 as a local
 smoke/performance observation only. See
 [E719 evidence](iter-e719-ltr-canvas128-20260721.md).
+
+## FFE3-03 exact-fallback candidate proposals (SLM-194, 2026-07-23)
+
+The CPU fixture compared complete cached enumeration, grammar partitioning,
+SLM-176-style description retrieval, tiny MLP, low-rank cross-attention,
+direct-policy logits, flow-rate logits, and an oracle over
+`k={1,2,4,8,16,all}`. All arms consumed the same exact SLM-196 dynamic
+candidate interface and the committed SLM-192/193 profile/cache manifests.
+
+No non-oracle arm cleared the joint gate of at least 95% target and acceptable
+recall plus 30% warm-p50 improvement. Arms reached complete recall only as `k`
+approached or equaled the complete 9–10 candidate development sets; mandatory
+fallback restored every omitted candidate, leaving zero final projections,
+verifier calls, or support calls avoided. Exact membership/output parity stayed
+true and UNKNOWN candidates were never negatives, but proposal overhead did not
+amortize.
+
+Decision: **retain exact cached enumeration**. This is a four-row,
+two-target-cluster wiring screen; confirmation was not touched, no checkpoint
+was written, and no production/default claim is supported. AgentV passed 5/5
+with no execution errors. Full k-grid, confidence intervals, work attribution,
+and recipe: [SLM-194 evidence](iter-slm194-candidate-proposals-20260724.md).

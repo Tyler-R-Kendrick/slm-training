@@ -1845,6 +1845,27 @@ transplanted onto new scratch states, no durable checkpoint exists, and
 RSC3/RSC4, promotion, production defaults, readiness, and ship claims remain
 blocked.
 
+## Dynamic legal-edit proposal amortization (FFE3-03 / SLM-194)
+
+| | |
+| --- | --- |
+| **Papers** | Vinyals, Fortunato, and Jaitly, *Pointer Networks*, [arXiv:1506.03134](https://arxiv.org/abs/1506.03134). Kalyan et al., *Neural-Guided Deductive Search for Real-Time Program Synthesis from Examples*, [arXiv:1804.01186](https://arxiv.org/abs/1804.01186). |
+| **Fidelity** | **Adapted / diagnostic** — dynamic per-state candidate scoring and neural-guided scheduling, with compiler-owned membership and mandatory exact fallback; not a reproduction of either paper's model or search system |
+| **Code** | [`proposals.py`](../../src/slm_training/flow/proposals.py), [`slm194_candidate_proposals.py`](../../src/slm_training/harnesses/experiments/slm194_candidate_proposals.py), and [`run_candidate_proposal_matrix.py`](../../scripts/run_candidate_proposal_matrix.py) |
+| **Evidence** | [`iter-slm194-candidate-proposals-20260724.md`](iter-slm194-candidate-proposals-20260724.md) |
+
+The common interface assigns scores to cheap feature objects from an exact
+dynamic candidate set; it never creates legality, permanently prunes, converts
+UNKNOWN to UNSUPPORTED, or consumes final/future witness text. The fixture
+compares deterministic, retrieval, learned, direct-logit, flow-logit, and
+oracle schedules over one manifest.
+
+The four-row/two-cluster screen rejects a positive amortization claim: complete
+recall requires near-complete `k`, exact fallback removes final work savings,
+and no eligible arm reaches the frozen 30% warm-p50 threshold. Exact cached
+enumeration remains the decision; confirmation, checkpoints, defaults,
+promotion, and shipping remain untouched.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

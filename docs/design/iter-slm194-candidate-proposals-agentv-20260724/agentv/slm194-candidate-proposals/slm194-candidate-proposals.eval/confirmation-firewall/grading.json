@@ -1,0 +1,76 @@
+{
+  "assertions": [
+    {
+      "text": "Output is valid JSON",
+      "passed": true,
+      "evidence": ""
+    },
+    {
+      "text": "openui-domain-gate",
+      "passed": true,
+      "evidence": ""
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "errors_encountered": 0
+  },
+  "graders": [
+    {
+      "name": "is-json",
+      "type": "is-json",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "Output is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "inline-assert-0",
+      "type": "inline-assert",
+      "score": 1,
+      "reasoning": "",
+      "weight": 1,
+      "verdict": "pass",
+      "assertions": [
+        {
+          "text": "openui-domain-gate",
+          "passed": true
+        }
+      ],
+      "details": {
+        "claim": "fixture_screen_not_confirmation",
+        "checks": {
+          "checkpoint_absent": true,
+          "confirmation_not_touched": true,
+          "touch_ledger_empty": true
+        },
+        "failedChecks": [],
+        "failures": []
+      }
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e7622064c8153c7bb8728aee4f7e2d428af9445a",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v75",
+      "harness.experiments.slm194_candidate_proposals": "v1",
+      "matrix.slm194_candidate_proposals": "ffe3-03-v1"
+    },
+    "stamped_at": "2026-07-24T06:07:10.306598+00:00"
+  }
+}
