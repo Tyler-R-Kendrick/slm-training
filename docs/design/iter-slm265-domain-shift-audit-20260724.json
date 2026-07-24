@@ -1,0 +1,13 @@
+{
+  "schema": "slm265_domain_shift_disposition/v1",
+  "status": "insufficient_power_or_provenance",
+  "source_manifest_schema": "coverage_gap_manifest/v1",
+  "source_manifest_hash": "2dd14ac66d0865dc02b2ec73ef3316d7cc33f5b53814dfbc892f68014cb59b90",
+  "recipe": {"train_records": "src/slm_training/resources/data/train/remediated/records.jsonl", "eval_dir": "src/slm_training/resources/data/eval/remediated", "honesty_mode": "outcome_blind_no_checkpoint_eval"},
+  "feature_views": {"prompt": "lexical-tfidf over semantic_dedup payload", "program": ["canonical_root", "binding", "topology"]},
+  "coverage_gaps": [{"suite":"adversarial","n":4,"far_n":4},{"suite":"held_out","n":5,"far_n":0},{"suite":"ood","n":4,"far_n":0},{"suite":"rico_held","n":3,"far_n":0},{"suite":"smoke","n":3,"far_n":1}],
+  "rico_rows": [{"id":"rico_eval_test_25","stratum":"near","distance":0.60849718},{"id":"rico_eval_test_42","stratum":"near","distance":0.5966729},{"id":"rico_eval_test_77","stratum":"near","distance":0.62722832}],
+  "outcome_firewall": "No generation, evaluator, rating, or success field entered feature fitting or stratum selection.",
+  "limitations": ["No durable checkpoint references support a frozen generation evaluation.", "SLM-263 has 33 smoke replay rows, fewer than its 100-row and 10-checkpoint coverage floors.", "n=3 rico_held strata are descriptive only and cannot change full-suite ship gates."],
+  "version_stamp": {"stamp_schema":"version_stamp/v1","code_commit":"91ef700fb3671b728114f2c47339ebab4161fd4f","code_dirty":true,"components":{"harness.experiments.slm265_domain_shift_audit":"v1"},"stamped_at":"2026-07-24T17:17:33.771766+00:00"}
+}
