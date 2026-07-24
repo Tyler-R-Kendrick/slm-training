@@ -302,10 +302,12 @@ def test_executor_archives_usage_and_resume_skips_completed_request(tmp_path):
     assert first.spent_dollars == pytest.approx(0.005)
     assert second.skipped_request_ids == ("request-1",)
     assert calls == 1
-    assert [event["event_type"] for event in executor.archive.verify_event_chain()] == [
+    events = executor.archive.verify_event_chain()
+    assert [event["event_type"] for event in events] == [
         "teacher_program_attempted",
         "teacher_program_completed",
     ]
+    assert {event["experiment_id"] for event in events} == {"manifest"}
 
 
 def test_generation_requires_the_matching_pre_execution_campaign_lock(tmp_path, monkeypatch):

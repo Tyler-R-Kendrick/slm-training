@@ -1471,12 +1471,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v85",
+      "version": "v86",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v86",
+          "date": "2026-07-24",
+          "note": "bind every SLM-266 raw-attempt event to its generation manifest experiment"
+        },
         {
           "version": "v85",
           "date": "2026-07-24",
@@ -5047,7 +5052,7 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
@@ -5059,6 +5064,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "bind every teacher raw-attempt event to its SLM-266 experiment ID"
+        },
         {
           "version": "v8",
           "date": "2026-07-24",

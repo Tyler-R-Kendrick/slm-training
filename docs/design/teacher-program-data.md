@@ -38,7 +38,8 @@ outcome event, and requires its digest to equal the generation manifest's
 Local transport supplies an explicit all-ones attention mask for the generated
 prompt. Any process interruption records an `interrupted` experiment-finished
 event; interrupted work is diagnostic only and cannot be counted as corpus
-evidence.
+evidence. Every raw attempt and completion event is also bound to the same
+generation manifest's experiment ID.
 
 ## Admission modes
 
@@ -79,3 +80,8 @@ archive was closed as interrupted and is diagnostic only: it is not a teacher
 generation result, accepted corpus, admission/judge run, training result, or
 ship claim. The required 10k corpus, three-seed factorial, and 100k rung remain
 **unrun**; the 100k rung is explicitly deferred.
+
+The follow-up [eight-token probe](iter-slm266-local-qwen-8token-probe-20260724.json)
+did complete locally: 56 input tokens plus 8 output tokens in 95.65 seconds at
+zero provider cost. Its response was a truncated fenced `<Panel>` fragment, so
+it is transport evidence only and was not parsed, admitted, or materialized.

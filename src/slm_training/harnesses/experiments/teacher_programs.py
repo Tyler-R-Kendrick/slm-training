@@ -364,6 +364,7 @@ class TeacherProgramExecutor:
                 artifacts.append(artifact.stem)
                 self.archive.append_event(
                     "teacher_program_attempted",
+                    experiment_id=self.manifest.manifest_id,
                     status="success",
                     artifact_sha256=artifact.stem,
                     detail={
@@ -375,6 +376,7 @@ class TeacherProgramExecutor:
                 )
                 self.archive.append_event(
                     "teacher_program_completed",
+                    experiment_id=self.manifest.manifest_id,
                     status="completed",
                     artifact_sha256=artifact.stem,
                     detail={
@@ -397,6 +399,7 @@ class TeacherProgramExecutor:
                 )
                 self.archive.append_event(
                     "teacher_program_attempted",
+                    experiment_id=self.manifest.manifest_id,
                     status="error",
                     artifact_sha256=artifact.stem,
                     detail={
