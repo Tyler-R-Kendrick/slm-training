@@ -27,7 +27,7 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     )
     for fragment in (
         "flow/{samplers,targets}",
-        "harnesses/experiments/slm{199,200}_*",
+            "harnesses/experiments/**",
         "models/legal_edit_flow",
     ):
         assert fragment in function["excludeFiles"]
