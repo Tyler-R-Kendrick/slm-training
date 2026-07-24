@@ -3349,6 +3349,11 @@
         {
           "version": "v1",
           "date": "2026-07-24",
+          "note": "no-bump: append corrected historical E615 fixture evidence to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
           "note": "no-bump: append the SLM-236 blocked RSC4 disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
