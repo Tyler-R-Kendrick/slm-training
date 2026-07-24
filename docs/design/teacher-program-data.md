@@ -16,11 +16,17 @@ evaluation outcome.
 
 `TeacherProgramGenerationManifestV1` pins provider/model/revision, request
 identifiers, protected-exclusion hash, and positive dollar/input/output hard
-caps. It is a no-spend schema: a future provider executor must consume this
-immutable manifest and preserve raw request/response, usage, retries, cost, and
-error records. No executor or provider credential is supplied by this slice.
+caps. Provider execution additionally requires the pinned input/output price
+schedule and a locked campaign-manifest SHA. It preflights every request's
+declared worst-case token/dollar use before the provider call.
 `python -m scripts.build_teacher_program_generation_manifest` is the no-spend
 writer for this locked manifest; it does not contact a provider.
+
+`python -m scripts.generate_teacher_programs` is describe-only by default. With
+`--execute`, it uses an explicitly configured OpenAI-compatible endpoint and
+stores content-addressed raw request/response/error artifacts plus hash-chained
+attempt events under `outputs/autoresearch/<campaign>/`. Missing usage, price,
+or campaign lock fails closed; no human rating is involved.
 
 ## Admission modes
 

@@ -24,6 +24,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-dollars", type=float, required=True)
     parser.add_argument("--max-input-tokens", type=int, required=True)
     parser.add_argument("--max-output-tokens", type=int, required=True)
+    parser.add_argument("--input-cost-per-1k-usd", type=float, default=None)
+    parser.add_argument("--output-cost-per-1k-usd", type=float, default=None)
+    parser.add_argument("--max-attempts", type=int, default=1)
+    parser.add_argument("--campaign-manifest-sha256", default=None)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     manifest = TeacherProgramGenerationManifestV1(
@@ -36,6 +40,10 @@ def main(argv: list[str] | None = None) -> int:
         max_dollars=args.max_dollars,
         max_input_tokens=args.max_input_tokens,
         max_output_tokens=args.max_output_tokens,
+        input_cost_per_1k_usd=args.input_cost_per_1k_usd,
+        output_cost_per_1k_usd=args.output_cost_per_1k_usd,
+        max_attempts=args.max_attempts,
+        campaign_manifest_sha256=args.campaign_manifest_sha256,
     )
     payload = manifest.to_dict()
     payload["manifest_hash"] = manifest.manifest_hash

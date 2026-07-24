@@ -13,12 +13,16 @@ import hashlib
 import json
 import os
 import tempfile
-from collections.abc import Iterable, Mapping
+import time
+import urllib.error
+import urllib.request
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from slm_training.autoresearch.storage import CampaignStore
 from slm_training.data.leakage import (
     find_leakage,
     fingerprint_openui,
@@ -91,6 +95,10 @@ class TeacherProgramGenerationManifestV1:
     max_input_tokens: int
     max_output_tokens: int
     protected_exclusion_manifest_hash: str
+    input_cost_per_1k_usd: float | None = None
+    output_cost_per_1k_usd: float | None = None
+    max_attempts: int = 1
+    campaign_manifest_sha256: str | None = None
     schema_version: str = GENERATION_SCHEMA
 
     def __post_init__(self) -> None:
@@ -100,6 +108,21 @@ class TeacherProgramGenerationManifestV1:
             raise ValueError("generation manifest requires at least one request")
         if min(self.max_dollars, self.max_input_tokens, self.max_output_tokens) <= 0:
             raise ValueError("generation manifest requires positive hard budget caps")
+        if (self.input_cost_per_1k_usd is None) != (
+            self.output_cost_per_1k_usd is None
+        ):
+            raise ValueError("price schedule must include both input and output rates")
+        if self.input_cost_per_1k_usd is not None and min(
+            self.input_cost_per_1k_usd, self.output_cost_per_1k_usd or 0.0
+        ) < 0:
+            raise ValueError("price schedule cannot be negative")
+        if self.max_attempts < 1:
+            raise ValueError("max_attempts must be positive")
+        if self.campaign_manifest_sha256 is not None and (
+            len(self.campaign_manifest_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in self.campaign_manifest_sha256)
+        ):
+            raise ValueError("campaign_manifest_sha256 must be a lowercase sha256")
 
     @property
     def manifest_hash(self) -> str:
@@ -107,6 +130,330 @@ class TeacherProgramGenerationManifestV1:
 
     def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "request_ids": list(self.request_ids)}
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> TeacherProgramGenerationManifestV1:
+        return cls(
+            manifest_id=str(data["manifest_id"]),
+            provider=str(data["provider"]),
+            model=str(data["model"]),
+            revision=str(data["revision"]),
+            request_ids=tuple(str(value) for value in data["request_ids"]),
+            max_dollars=float(data["max_dollars"]),
+            max_input_tokens=int(data["max_input_tokens"]),
+            max_output_tokens=int(data["max_output_tokens"]),
+            protected_exclusion_manifest_hash=str(
+                data["protected_exclusion_manifest_hash"]
+            ),
+            input_cost_per_1k_usd=_optional_float(data.get("input_cost_per_1k_usd")),
+            output_cost_per_1k_usd=_optional_float(data.get("output_cost_per_1k_usd")),
+            max_attempts=int(data.get("max_attempts", 1)),
+            campaign_manifest_sha256=_optional_str(data.get("campaign_manifest_sha256")),
+        )
+
+
+@dataclass(frozen=True)
+class TeacherProgramExecutionRequestV1:
+    """A public source-intent prompt and declared worst-case token bounds."""
+
+    request_id: str
+    intent: str
+    max_input_tokens: int
+    max_output_tokens: int
+
+    def __post_init__(self) -> None:
+        if not self.request_id or not self.intent.strip():
+            raise ValueError("execution request id and intent must be non-empty")
+        if min(self.max_input_tokens, self.max_output_tokens) < 1:
+            raise ValueError("execution request token bounds must be positive")
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> TeacherProgramExecutionRequestV1:
+        return cls(
+            request_id=str(data["request_id"]),
+            intent=str(data["intent"]),
+            max_input_tokens=int(data["max_input_tokens"]),
+            max_output_tokens=int(data["max_output_tokens"]),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+class TeacherBudgetExceeded(RuntimeError):
+    """Raised before a provider call that could exceed the frozen budget."""
+
+
+TeacherProgramTransport = Callable[[TeacherProgramExecutionRequestV1], Mapping[str, Any]]
+
+
+@dataclass(frozen=True)
+class TeacherProgramExecutionResult:
+    completed_request_ids: tuple[str, ...]
+    skipped_request_ids: tuple[str, ...]
+    attempt_artifact_sha256s: tuple[str, ...]
+    spent_input_tokens: int
+    spent_output_tokens: int
+    spent_dollars: float
+
+
+class TeacherProgramExecutor:
+    """Bounded provider execution with content-addressed raw evidence.
+
+    ``transport`` is injected so tests and non-OpenAI providers remain offline.
+    A provider response must report token usage; missing usage is never inferred.
+    Exceptions are archived and fail closed rather than being silently retried,
+    because an unknown bill cannot safely be charged against a hard cap.
+    """
+
+    def __init__(
+        self,
+        manifest: TeacherProgramGenerationManifestV1,
+        archive: CampaignStore,
+    ) -> None:
+        if manifest.input_cost_per_1k_usd is None or manifest.output_cost_per_1k_usd is None:
+            raise ValueError("provider execution requires a pinned price schedule")
+        if not manifest.campaign_manifest_sha256:
+            raise ValueError("provider execution requires a locked campaign manifest sha256")
+        self.manifest = manifest
+        self.archive = archive
+
+    def _prior_state(self) -> tuple[set[str], int, int, float]:
+        completed: set[str] = set()
+        input_tokens = output_tokens = 0
+        dollars = 0.0
+        for event in self.archive.verify_event_chain():
+            detail = event.get("detail") or {}
+            if str(detail.get("generation_manifest_hash", "")) != self.manifest.manifest_hash:
+                continue
+            request_id = str(detail.get("request_id", ""))
+            if event.get("event_type") == "teacher_program_completed":
+                completed.add(request_id)
+            if event.get("event_type") == "teacher_program_attempted":
+                usage = detail.get("usage") or {}
+                input_tokens += int(usage.get("input_tokens", 0))
+                output_tokens += int(usage.get("output_tokens", 0))
+                dollars += float(detail.get("cost_usd", 0.0))
+        return completed, input_tokens, output_tokens, dollars
+
+    def _assert_budget(
+        self,
+        request: TeacherProgramExecutionRequestV1,
+        *,
+        input_tokens: int,
+        output_tokens: int,
+        dollars: float,
+    ) -> None:
+        assert self.manifest.input_cost_per_1k_usd is not None
+        assert self.manifest.output_cost_per_1k_usd is not None
+        projected_input = input_tokens + request.max_input_tokens
+        projected_output = output_tokens + request.max_output_tokens
+        projected_dollars = dollars + (
+            request.max_input_tokens * self.manifest.input_cost_per_1k_usd
+            + request.max_output_tokens * self.manifest.output_cost_per_1k_usd
+        ) / 1000
+        if (
+            projected_input > self.manifest.max_input_tokens
+            or projected_output > self.manifest.max_output_tokens
+            or projected_dollars > self.manifest.max_dollars
+        ):
+            raise TeacherBudgetExceeded(
+                f"frozen teacher budget blocks request {request.request_id} before provider call"
+            )
+
+    def execute(
+        self,
+        requests: Iterable[TeacherProgramExecutionRequestV1],
+        transport: TeacherProgramTransport,
+    ) -> TeacherProgramExecutionResult:
+        requests = tuple(sorted(requests, key=lambda request: request.request_id))
+        if tuple(request.request_id for request in requests) != tuple(sorted(self.manifest.request_ids)):
+            raise ValueError("execution request ids must exactly match the frozen manifest")
+        completed, input_tokens, output_tokens, dollars = self._prior_state()
+        completed_now: list[str] = []
+        skipped: list[str] = []
+        artifacts: list[str] = []
+        for request in requests:
+            if request.request_id in completed:
+                skipped.append(request.request_id)
+                continue
+            self._assert_budget(
+                request,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                dollars=dollars,
+            )
+            request_artifact = self.archive.write_artifact(
+                "teacher_program_requests",
+                {
+                    "generation_manifest_hash": self.manifest.manifest_hash,
+                    "campaign_manifest_sha256": self.manifest.campaign_manifest_sha256,
+                    "request": request.to_dict(),
+                },
+            )
+            started = time.monotonic()
+            try:
+                response = dict(transport(request))
+                usage = _provider_usage(response)
+                if (
+                    usage["input_tokens"] > request.max_input_tokens
+                    or usage["output_tokens"] > request.max_output_tokens
+                ):
+                    raise ValueError("provider usage exceeded declared request token bound")
+                cost = _cost(usage, self.manifest)
+                input_tokens += usage["input_tokens"]
+                output_tokens += usage["output_tokens"]
+                dollars += cost
+                attempt = {
+                    "generation_manifest_hash": self.manifest.manifest_hash,
+                    "campaign_manifest_sha256": self.manifest.campaign_manifest_sha256,
+                    "request_id": request.request_id,
+                    "request_artifact_sha256": request_artifact.stem,
+                    "raw_response": response,
+                    "usage": usage,
+                    "cost_usd": cost,
+                    "latency_ms": round((time.monotonic() - started) * 1000),
+                }
+                artifact = self.archive.write_artifact("teacher_program_attempts", attempt)
+                artifacts.append(artifact.stem)
+                self.archive.append_event(
+                    "teacher_program_attempted",
+                    status="success",
+                    artifact_sha256=artifact.stem,
+                    detail={
+                        "generation_manifest_hash": self.manifest.manifest_hash,
+                        "request_id": request.request_id,
+                        "usage": usage,
+                        "cost_usd": cost,
+                    },
+                )
+                self.archive.append_event(
+                    "teacher_program_completed",
+                    status="completed",
+                    artifact_sha256=artifact.stem,
+                    detail={
+                        "generation_manifest_hash": self.manifest.manifest_hash,
+                        "request_id": request.request_id,
+                    },
+                )
+                completed_now.append(request.request_id)
+            except Exception as exc:
+                artifact = self.archive.write_artifact(
+                    "teacher_program_attempts",
+                    {
+                        "generation_manifest_hash": self.manifest.manifest_hash,
+                        "campaign_manifest_sha256": self.manifest.campaign_manifest_sha256,
+                        "request_id": request.request_id,
+                        "request_artifact_sha256": request_artifact.stem,
+                        "error": type(exc).__name__,
+                        "latency_ms": round((time.monotonic() - started) * 1000),
+                    },
+                )
+                self.archive.append_event(
+                    "teacher_program_attempted",
+                    status="error",
+                    artifact_sha256=artifact.stem,
+                    detail={
+                        "generation_manifest_hash": self.manifest.manifest_hash,
+                        "request_id": request.request_id,
+                        "usage": {},
+                        "cost_usd": 0.0,
+                    },
+                )
+                raise
+        return TeacherProgramExecutionResult(
+            completed_request_ids=tuple(completed_now),
+            skipped_request_ids=tuple(skipped),
+            attempt_artifact_sha256s=tuple(artifacts),
+            spent_input_tokens=input_tokens,
+            spent_output_tokens=output_tokens,
+            spent_dollars=dollars,
+        )
+
+
+class OpenAICompatibleTeacherTransport:
+    """Small stdlib adapter for an explicitly configured OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        api_key_env: str,
+        model: str,
+        system_prompt: str,
+        timeout_seconds: float = 60.0,
+    ) -> None:
+        self.endpoint = endpoint
+        self.api_key_env = api_key_env
+        self.model = model
+        self.system_prompt = system_prompt
+        self.timeout_seconds = timeout_seconds
+
+    def __call__(self, request: TeacherProgramExecutionRequestV1) -> Mapping[str, Any]:
+        api_key = os.getenv(self.api_key_env)
+        if not api_key:
+            raise RuntimeError(f"required provider credential {self.api_key_env} is unset")
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": request.intent},
+            ],
+            "max_tokens": request.max_output_tokens,
+            "response_format": {"type": "json_object"},
+        }
+        wire = json.dumps(payload).encode("utf-8")
+        http_request = urllib.request.Request(
+            self.endpoint,
+            data=wire,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(http_request, timeout=self.timeout_seconds) as response:
+                raw = json.loads(response.read().decode("utf-8"))
+        except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"provider request failed: {type(exc).__name__}") from exc
+        usage = dict(raw.get("usage") or {})
+        return {
+            "raw": raw,
+            "usage": {
+                "input_tokens": usage.get("prompt_tokens"),
+                "output_tokens": usage.get("completion_tokens"),
+            },
+        }
+
+
+def _optional_float(value: Any) -> float | None:
+    return None if value is None else float(value)
+
+
+def _optional_str(value: Any) -> str | None:
+    return None if value is None else str(value)
+
+
+def _provider_usage(response: Mapping[str, Any]) -> dict[str, int]:
+    usage = response.get("usage")
+    if not isinstance(usage, Mapping):
+        raise TypeError("provider response omitted usage")
+    result = {key: int(usage[key]) for key in ("input_tokens", "output_tokens")}
+    if min(result.values()) < 0:
+        raise ValueError("provider usage cannot be negative")
+    return result
+
+
+def _cost(
+    usage: Mapping[str, int], manifest: TeacherProgramGenerationManifestV1
+) -> float:
+    assert manifest.input_cost_per_1k_usd is not None
+    assert manifest.output_cost_per_1k_usd is not None
+    return (
+        usage["input_tokens"] * manifest.input_cost_per_1k_usd
+        + usage["output_tokens"] * manifest.output_cost_per_1k_usd
+    ) / 1000
 
 
 @dataclass(frozen=True)
@@ -423,7 +770,9 @@ def materialize_teacher_admission(
 
 __all__ = [
     "ADMISSION_SCHEMA", "GENERATION_SCHEMA", "REQUEST_SCHEMA", "AdmissionMode",
-    "AdmissionResultV1", "TeacherProgramCandidate", "TeacherProgramGenerationManifestV1",
+    "AdmissionResultV1", "OpenAICompatibleTeacherTransport",
+    "TeacherBudgetExceeded", "TeacherProgramCandidate", "TeacherProgramExecutionRequestV1",
+    "TeacherProgramExecutionResult", "TeacherProgramExecutor", "TeacherProgramGenerationManifestV1",
     "TeacherProgramRequestV1", "TeacherRawArchiveRefV1", "admit_teacher_programs",
     "materialize_teacher_admission",
 ]

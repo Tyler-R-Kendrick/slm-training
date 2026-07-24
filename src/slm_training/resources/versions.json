@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v79",
+      "version": "v80",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v80",
+          "date": "2026-07-24",
+          "note": "add preflighted provider executor and immutable campaign raw-attempt archive for SLM-266"
+        },
         {
           "version": "v79",
           "date": "2026-07-24",
@@ -4789,17 +4794,23 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
         "scripts/build_teacher_program_generation_manifest.py",
         "scripts/admit_teacher_programs.py",
+        "scripts/generate_teacher_programs.py",
         "scripts/materialize_teacher_programs.py",
         "tests/test_harnesses/experiments/test_teacher_programs.py",
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v4",
+          "date": "2026-07-24",
+          "note": "execute locked teacher requests through budgeted provider transport with content-addressed raw attempt archive"
+        },
         {
           "version": "v3",
           "date": "2026-07-24",
