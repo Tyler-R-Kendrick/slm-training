@@ -12,3 +12,6 @@ def test_verify_writes_replayable_closeout(tmp_path: Path) -> None:
     report = json.loads((tmp_path / "valid-edit-flow-closeout.json").read_text())
     assert report["issue"] == "SLM-207"
     assert report["selected_stack"]["runtime"] == "exact_cached_decoder_control"
+    assert (design_dir / "adr-valid-edit-flow-closeout.md").is_file()
+    assert (design_dir / "valid-edit-flow-architecture.md").is_file()
+    assert (design_dir / "valid-edit-flow-selected-stack.json").is_file()
