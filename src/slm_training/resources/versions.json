@@ -1392,12 +1392,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v76",
+      "version": "v77",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v77",
+          "date": "2026-07-24",
+          "note": "add fail-closed SLM-266 teacher-program request and admission harness"
+        },
         {
           "version": "v76",
           "date": "2026-07-24",
@@ -4765,6 +4770,24 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial registration; SLM-265 outcome-blind domain-shift strata and coverage-gap audit"
+        }
+      ]
+    },
+    "harness.experiments.slm266_teacher_programs": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/teacher_programs.py",
+        "scripts/build_teacher_program_generation_manifest.py",
+        "scripts/admit_teacher_programs.py",
+        "tests/test_harnesses/experiments/test_teacher_programs.py",
+        "docs/design/teacher-program-data.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-266 fail-closed teacher-program request and offline admission contracts"
         }
       ]
     },

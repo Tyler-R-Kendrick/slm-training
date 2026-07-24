@@ -1,0 +1,50 @@
+# Teacher program data
+
+SLM-266 owns the future frontier-teacher prompt-plus-program corpus. The
+canonical admission owner is
+`src/slm_training/harnesses/experiments/teacher_programs.py`; it has no
+provider client and therefore cannot accidentally spend budget during a data
+build or training run.
+
+## Frozen request and generation contracts
+
+`TeacherProgramRequestV1` contains only source intent: coverage-gap identifiers
+from the outcome-blind SLM-265 manifest, allowed public components, output
+kind, protected-exclusion manifest hash, template hash, and seed. It must not
+contain an OpenUI target, protected prompt, compiler token, binder index, or
+evaluation outcome.
+
+`TeacherProgramGenerationManifestV1` pins provider/model/revision, request
+identifiers, protected-exclusion hash, and positive dollar/input/output hard
+caps. It is a no-spend schema: a future provider executor must consume this
+immutable manifest and preserve raw request/response, usage, retries, cost, and
+error records. No executor or provider credential is supplied by this slice.
+`python -m scripts.build_teacher_program_generation_manifest` is the no-spend
+writer for this locked manifest; it does not contact a provider.
+
+## Admission modes
+
+`python -m scripts.admit_teacher_programs` consumes archived response records,
+never contacts a provider, parses exactly one declared program payload without
+repair, constructs `ProgramSpec`, and calls the shared verifier and protected
+split leakage checker.
+
+| Mode | Required policy | Deduplication | Eligible for canonical training |
+| --- | --- | --- | --- |
+| `deep_verified` | G0-G4, G7-G8, G10-G12, plus G5/G6 when requested; every required gate must be `pass`; Gold/Silver only | one deterministic canonical-root representative | Yes |
+| `parse_only` | G0-G1 only; later failures are retained | exact prompt/program pair only | No — controlled research only |
+| `no_canonical_dedup` | same deep policy | exact prompt/program pair only | Controlled comparison only |
+
+The generic verifier normally marks teacher rows Bronze until a human audit.
+SLM-266 does not reinterpret that fallback: missing G11/G12 evidence is an
+admission rejection for both principal deep modes. Generator and judge families
+must differ. Protected overlap is rejected before mode-specific materialization.
+
+## Current disposition — 2026-07-24
+
+This is implementation and fixture evidence only, not a teacher generation,
+accepted corpus, training result, or ship claim. There is no configured provider
+credential, nonzero approved generation budget, raw archive, independent judge,
+or human-audit ledger in this checkout. Therefore the required 10k/100k corpora
+and three-seed factorial remain **unrun**; the next execution must create a
+locked manifest and durable raw archive before any provider spend.
