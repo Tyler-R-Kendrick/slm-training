@@ -1,0 +1,16 @@
+{
+  "batch": "none",
+  "cache": "SLM-193 bit-exact control",
+  "checkpoint": "none",
+  "corpus": "none; no publishable bridge corpus",
+  "default_action": "retain_default_off_research_paths",
+  "guarantee": "No learned candidate is promoted; exact candidate membership remains compiler-owned.",
+  "learned_objective": "none",
+  "model": "none",
+  "proposal": "none; exact enumeration retained",
+  "runtime": "exact_cached_decoder_control",
+  "solver": "none selected",
+  "source_conditioning": "none",
+  "termination": "exact decoder control only",
+  "utility": "none; fixture-only authority"
+}
