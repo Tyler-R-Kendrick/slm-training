@@ -4051,7 +4051,7 @@
       ]
     },
     "harness.experiments.slm243_recursive_update_gate": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py",
@@ -4063,6 +4063,11 @@
         "docs/design/iter-slm243-recursive-update-gate-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-23",
+          "note": "split full 90-cell telemetry into a hash-bound raw matrix under the Vercel-excluded AgentV directory while retaining all gate inputs and semantic aggregates in dashboard JSON"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",

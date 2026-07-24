@@ -437,6 +437,9 @@ def _run(
     pinned_version_stamp: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
+    stamp = pinned_version_stamp or build_version_stamp(
+        COMPONENT, "model.recursive_denoiser", "model.twotower"
+    )
     mechanisms = _mechanism_fixtures()
     tokenizer, noisy, targets, context, records = _corpus_batch(test_dir)
     rows = []
@@ -488,9 +491,44 @@ def _run(
                     }
                 rows.append(row)
     gate = classify_recursive_update_gate(rows, depths=DEPTHS, seeds=SEEDS)
-    stamp = pinned_version_stamp or build_version_stamp(
-        COMPONENT, "model.recursive_denoiser", "model.twotower"
-    )
+    raw_payload = {
+        "schema": "RecursiveUpdateRawMatrixV1",
+        "issue": "SLM-243",
+        "rows": rows,
+        "version_stamp": stamp,
+    }
+    raw_hash = stable_hash(raw_payload)
+    agentv_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = agentv_dir / "raw_matrix.json"
+    raw_path.write_text(json.dumps(raw_payload, indent=2) + "\n", encoding="utf-8")
+    summary_rows = [
+        {
+            **{
+                key: row[key]
+                for key in (
+                    "variant",
+                    "depth",
+                    "seed",
+                    "all_finite",
+                    "cross_entropy",
+                    "maximum_update_ratio",
+                    "gradient_norm",
+                    "parameter_count",
+                    "block_evaluations",
+                )
+            },
+            "bounded_semantics": {
+                key: row["bounded_semantics"][key]
+                for key in (
+                    "mode",
+                    "meaningful_parse_rate",
+                    "structural_similarity",
+                    "reward",
+                )
+            },
+        }
+        for row in rows
+    ]
     cases = [
         {
             "id": "complete-paired-matrix",
@@ -578,7 +616,13 @@ def _run(
         },
         "variants": VARIANTS,
         "mechanism_fixtures": mechanisms,
-        "rows": rows,
+        "rows": summary_rows,
+        "raw_matrix": {
+            "path": _portable(str(raw_path), agentv_dir),
+            "sha256": raw_hash,
+            "schema": raw_payload["schema"],
+            "cells": len(rows),
+        },
         "gate": gate.to_dict(),
         "prior_evidence": list(gate.evidence_refs),
         "agentv": _portable(agentv, agentv_dir),
