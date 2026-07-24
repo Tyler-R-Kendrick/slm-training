@@ -5253,6 +5253,13 @@ Evidence: [narrative](iter-slm231-recurrence-dynamics-20260724.md),
 [raw JSON](iter-slm231-recurrence-dynamics-20260724.json), and
 [AgentV bundle](iter-slm231-recurrence-dynamics-agentv-20260724/).
 
+## RSC4 disposition (SLM-236) — blocked
+
+The generated [`RecurrentLatentDispositionV1`](recurrent-semantic-computation-looped-latent-disposition.md)
+binds the merged RSC gate evidence. It is a governance closeout, not a new
+run: all latent/typed-factor adoption remains blocked, with no checkpoint,
+default, ship, or performance claim.
+
 ## RSC1-03 latent-state causal-use audit (SLM-232) — unstable
 
 SLM-232 reuses the rejected SLM-230 R=4 checkpoint for a bounded four-record

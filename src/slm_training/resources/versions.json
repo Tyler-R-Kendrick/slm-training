@@ -3349,6 +3349,11 @@
         {
           "version": "v1",
           "date": "2026-07-24",
+          "note": "no-bump: append the SLM-236 blocked RSC4 disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
           "note": "no-bump: append the SLM-233 gate-bounded matched recursive campaign to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
         {
@@ -3743,6 +3748,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: cross-link the SLM-236 blocked RSC4 disposition in shared README, model-card, and lineage docs without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -4218,6 +4228,25 @@
           "version": "v1",
           "date": "2026-07-24",
           "note": "initial five-arm, three-paired-seed, gate-bounded matched recursive-depth campaign with fairness, exposure, test-depth, cost, resume, AgentV, and RecursiveCoreGateV2 evidence"
+        }
+      ]
+    },
+    "harness.experiments.slm236_recurrent_latent_disposition": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm236_recurrent_latent_disposition.py",
+        "scripts/publish_recurrent_latent_disposition.py",
+        "tests/test_harnesses/experiments/test_slm236_recurrent_latent_disposition.py",
+        "tests/test_scripts/test_publish_recurrent_latent_disposition.py",
+        "docs/design/iter-slm236-recurrent-latent-disposition-20260724.json",
+        "docs/design/recurrent-semantic-computation-looped-latent-disposition.md"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial fail-closed RSC4 disposition assembled from merged gate evidence"
         }
       ]
     },

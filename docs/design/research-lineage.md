@@ -1884,6 +1884,15 @@ may be reopened only if a differentiation memo authorizes a contract, the
 floor escapes, and a matched recursive campaign returns an authorizing verdict
 with stable dynamics.
 
+## RSC4 recurrent/looped-latent disposition (SLM-236)
+
+**Fidelity label: adapted diagnostic / governance closeout, not a new experiment.**
+[`RecurrentLatentDispositionV1`](recurrent-semantic-computation-looped-latent-disposition.md)
+is `blocked`: SLM-229 lacks an authorized contract, the semantic floor is
+inconclusive, SLM-230/231/232 are stagnant or unstable, SLM-233 cannot identify
+a semantic architecture effect, and SLM-234 did not authorize the minimal
+probe. No latent configuration, checkpoint, or default is promoted.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
