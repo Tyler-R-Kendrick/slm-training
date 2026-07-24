@@ -30,6 +30,7 @@ from slm_training.flow.reference.generator import Generator
 from slm_training.flow.samplers import ProductionLegalEditFlowSampler
 from slm_training.flow.targets import from_bridge_rows, from_exact_rows
 from slm_training.flow.termination import FixedKPolicy
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.models.legal_edit_batch import LegalEditBatch
 from slm_training.models.legal_edit_flow import (
     ExactRateTable,
@@ -43,6 +44,18 @@ DEFAULT_CORPUS = Path(
 )
 DEFAULT_RECORDS = Path("tests/fixtures/slm196_legal_edit_bridge/records.jsonl")
 MATRIX_SET = "slm199_legal_edit_flow"
+FIXED_EDIT_BUDGET = 4
+
+
+def _schedule_progress(rows: Sequence[Any]) -> torch.Tensor:
+    """Return inference-visible progress against the fixed decode budget."""
+    return torch.tensor(
+        [
+            min(1.0, float(row.step_index) / FIXED_EDIT_BUDGET)
+            for row in rows
+        ],
+        dtype=torch.float32,
+    )
 
 
 def _event_count_distribution(
@@ -304,9 +317,9 @@ def run_fixture(
     seeds: Sequence[int] = (0, 1, 2, 3, 4),
     train_steps: int = 8,
     exact_samples: int = 256,
-    max_wall_minutes: float = 2.8,
+    max_wall_minutes: float = float(MAX_RUN_MINUTES),
 ) -> dict[str, Any]:
-    if not 0 < max_wall_minutes <= 3:
+    if not 0 < max_wall_minutes <= MAX_RUN_MINUTES:
         raise ValueError("max_wall_minutes must be in (0, 3]")
     if not seeds:
         raise ValueError("at least one seed is required")
@@ -326,15 +339,14 @@ def run_fixture(
     model = LegalEditFlow(LegalEditFlowConfig(enabled=True))
     optimizer = torch.optim.Adam(model.parameters(), lr=0.03)
     history: list[dict[str, float]] = []
+    progress = _schedule_progress(train_rows)
     for _ in range(train_steps):
         if time.monotonic() > deadline:
             raise TimeoutError("SLM-199 fixture exceeded max_wall_minutes")
         optimizer.zero_grad(set_to_none=True)
         prediction = model(
             batch,
-            schedule_progress=torch.tensor(
-                [row.step_index / max(1, 4) for row in train_rows]
-            ),
+            schedule_progress=progress,
         )
         total, components = legal_edit_flow_losses(prediction, batch, targets)
         total.backward()
@@ -346,9 +358,7 @@ def run_fixture(
     with torch.no_grad():
         final_prediction = model(
             batch,
-            schedule_progress=torch.tensor(
-                [row.step_index / max(1, 4) for row in train_rows]
-            ),
+            schedule_progress=progress,
         )
     unknown_rate_mass = float(
         final_prediction.edge_rates[batch.unknown_mask].sum()

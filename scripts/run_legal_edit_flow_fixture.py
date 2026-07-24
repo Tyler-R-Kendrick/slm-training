@@ -11,6 +11,7 @@ from urllib.parse import quote
 
 from slm_training.evals.agentv import publish_agentv_evaluation
 from slm_training.harnesses.experiments.slm199_legal_edit_flow import run_fixture
+from slm_training.levers import MAX_RUN_MINUTES
 from slm_training.versioning import build_version_stamp
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +59,16 @@ def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
                 and exact["illegal_edge_rate_sum"] == 0.0
                 and exact["rate_fit"]["max_abs_error"] < 1e-3
             ),
+            "checks": {
+                "closed_graph": exact["closed"],
+                "five_rate_rows": exact["rate_fit"]["rows"] == 5,
+                "five_rate_edges": exact["rate_fit"]["edges"] == 5,
+                "valid_generator": not exact["generator_errors"],
+                "zero_illegal_rate": exact["illegal_edge_rate_sum"] == 0.0,
+                "max_rate_error_below_1e3": (
+                    exact["rate_fit"]["max_abs_error"] < 1e-3
+                ),
+            },
             "result": exact["rate_fit"],
         },
         {
@@ -69,6 +80,27 @@ def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
                 and exact["event_count_tv"] < 0.05
                 and exact["exact_terminal_mass"] > 0.999
             ),
+            "checks": {
+                "analytic_endpoint_tv_below_001": (
+                    exact["analytic_endpoint_tv"] < 0.01
+                ),
+                "empirical_endpoint_tv_below_005": (
+                    exact["empirical_endpoint_tv"] < 0.05
+                ),
+                "event_count_tv_below_005": exact["event_count_tv"] < 0.05,
+                "exact_terminal_mass": exact["exact_terminal_mass"] > 0.999,
+                "sample_count_matches_recipe": (
+                    exact["samples"] == report["recipe"]["exact_samples"]
+                    and exact["samples"] > 0
+                ),
+                "exact_event_distribution": (
+                    exact["exact_event_count_distribution"] == {"5": 1.0}
+                ),
+                "empirical_event_distribution": (
+                    exact["empirical_event_count_distribution"]
+                    == {"5": 1.0}
+                ),
+            },
             "result": {
                 "analytic_endpoint_tv": exact["analytic_endpoint_tv"],
                 "empirical_endpoint_tv": exact["empirical_endpoint_tv"],
@@ -86,8 +118,23 @@ def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
                 not production["unknown_supervised_as_negative"]
                 and all(item["unknown_candidate_events"] > 0 for item in samples)
             ),
+            "checks": {
+                "unknown_not_directly_supervised": (
+                    not production["unknown_supervised_as_negative"]
+                ),
+                "unknown_stays_live": all(
+                    item["unknown_candidate_events"] > 0 for item in samples
+                ),
+                "unknown_has_positive_rate_mass": (
+                    production["unknown_rate_mass_after_fit"] > 0.0
+                ),
+                "confirmation_blocked": (
+                    report["confirmation"]["status"] == "blocked"
+                ),
+            },
             "result": {
                 "fidelity": production["fidelity"],
+                "confirmation": report["confirmation"],
                 "unknown_rate_mass_after_fit": production[
                     "unknown_rate_mass_after_fit"
                 ],
@@ -106,6 +153,23 @@ def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
                 and item["edits"] <= 2
                 for item in samples
             ),
+            "checks": {
+                "two_fixture_records": len(samples) == 2,
+                "all_outputs_verified": all(
+                    item["verified_output"] for item in samples
+                ),
+                "all_actions_live": all(
+                    item["all_selected_live"] for item in samples
+                ),
+                "all_candidate_sets_refreshed": all(
+                    item["candidate_sets_refreshed"] for item in samples
+                ),
+                "fixed_k_two": all(
+                    item["stop_reason"] == "FIXED_K_END"
+                    and item["edits"] == 2
+                    for item in samples
+                ),
+            },
             "result": {"samples": samples},
         },
         {
@@ -116,6 +180,22 @@ def _cases(report: dict[str, Any]) -> list[dict[str, Any]]:
                 and not report["checkpoint"]["written"]
                 and report["confirmation"]["status"] == "blocked"
             ),
+            "checks": {
+                "flow_default_off": (
+                    not report["default_path"]["flow_enabled_by_default"]
+                ),
+                "existing_direct_policy_unchanged": (
+                    not report["default_path"]["existing_direct_policy_modified"]
+                ),
+                "no_checkpoint_written": not report["checkpoint"]["written"],
+                "confirmation_blocked": (
+                    report["confirmation"]["status"] == "blocked"
+                ),
+                "honest_fixture_verdict": (
+                    report["honest_verdict"]
+                    == "adapted_time_conditioned_edit_policy_fixture_only"
+                ),
+            },
             "result": {
                 "verdict": report["honest_verdict"],
                 "confirmation": report["confirmation"],
@@ -189,7 +269,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/runs/slm199"))
     parser.add_argument("--train-steps", type=int, default=8)
     parser.add_argument("--exact-samples", type=int, default=256)
-    parser.add_argument("--max-wall-minutes", type=float, default=2.8)
+    parser.add_argument(
+        "--max-wall-minutes", type=float, default=float(MAX_RUN_MINUTES)
+    )
     args = parser.parse_args(argv)
     report = run_fixture(
         train_steps=args.train_steps,
@@ -206,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
             name="slm199-legal-edit-flow-fixture",
             claim="exact_rate_and_adapted_production_contract",
             cases=_cases(report),
+            version_stamp=report["version_stamp"],
         )
     )
     _rewrite_agentv_paths()

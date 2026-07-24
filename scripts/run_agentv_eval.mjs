@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { evaluate } from "@agentv/core";
+import { pathToFileURL } from "node:url";
 
 function option(name) {
   const index = process.argv.indexOf(name);
@@ -13,6 +13,11 @@ function option(name) {
 const specFile = option("--spec");
 const outputDir = option("--output-dir");
 const experiment = option("--experiment");
+const sdkRoot = option("--sdk-root");
+const sdkUrl = pathToFileURL(
+  `${sdkRoot}/node_modules/@agentv/core/dist/index.js`,
+);
+const { evaluate } = await import(sdkUrl.href);
 
 const result = await evaluate({
   specFile,
@@ -20,11 +25,19 @@ const result = await evaluate({
   assert: [({ output }) => {
     try {
       const payload = JSON.parse(output);
+      const checks = payload.checks ?? {};
+      const entries = Object.entries(checks);
+      const failedChecks = entries
+        .filter(([, passed]) => passed !== true)
+        .map(([name]) => name);
+      const contractPassed = entries.length === 0 || failedChecks.length === 0;
       return {
         name: "openui-domain-gate",
-        score: payload.agentv_pass === true ? 1 : 0,
+        score: payload.agentv_pass === true && contractPassed ? 1 : 0,
         metadata: {
           claim: payload.claim ?? "unspecified",
+          checks,
+          failedChecks,
           failures: payload.failures ?? [],
         },
       };

@@ -644,6 +644,22 @@
         }
       ]
     },
+    "evals.agentv": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/evals/agentv.py",
+        "scripts/run_agentv_eval.mjs",
+        "tests/test_evals/test_agentv.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-23",
+          "note": "initial registration; independently enforce named case checks and attach canonical version stamps to AgentV result artifacts"
+        }
+      ]
+    },
     "evals.cap2_operator": {
       "version": "v1",
       "kind": "metric",
@@ -3308,7 +3324,7 @@
       ]
     },
     "harness.experiments.slm199_legal_edit_flow": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/slm199_legal_edit_flow.py",
@@ -3329,6 +3345,11 @@
         "docs/design/iter-slm199-legal-edit-flow-agentv-20260723/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-23",
+          "note": "enforce field-level AgentV checks, restricted checkpoint loading, contained certificate failures, and canonical shared run budgets"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",

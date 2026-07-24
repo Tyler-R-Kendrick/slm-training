@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from scripts.run_legal_edit_flow_fixture import main as run_documented_fixture
+from slm_training.levers import MAX_RUN_MINUTES
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -20,9 +21,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--steps", type=int, default=8)
     parser.add_argument("--exact-samples", type=int, default=256)
-    parser.add_argument("--max-wall-minutes", type=float, default=2.8)
+    parser.add_argument(
+        "--max-wall-minutes", type=float, default=float(MAX_RUN_MINUTES)
+    )
     args = parser.parse_args(argv)
-    if not 0 < args.max_wall_minutes <= 3:
+    if not 0 < args.max_wall_minutes <= MAX_RUN_MINUTES:
         parser.error("--max-wall-minutes must be in (0, 3]")
     if args.describe:
         print(

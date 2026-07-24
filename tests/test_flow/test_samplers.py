@@ -106,3 +106,23 @@ def test_production_sampler_abstains_when_final_verifier_rejects() -> None:
     )
     assert not trace.verified_output
     assert trace.stop_reason == "final_verification_unknown"
+
+
+def test_production_sampler_contains_certificate_failure(monkeypatch) -> None:
+    record = _record()
+    sampler = ProductionLegalEditFlowSampler(
+        LegalEditFlow(LegalEditFlowConfig(enabled=True))
+    )
+
+    def reject(_certificate) -> None:
+        raise ValueError("tampered")
+
+    monkeypatch.setattr("slm_training.flow.samplers.verify_certificate", reject)
+    trace = sampler.sample(
+        record["source_program"],
+        RequestEditContractV1.from_dict(record["request_contract"]),
+        termination=FixedKPolicy(k=1, max_steps=1),
+        max_steps=1,
+    )
+    assert trace.stop_reason == "invalid_replay"
+    assert not trace.decisions

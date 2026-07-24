@@ -83,7 +83,7 @@ class LegalEditFlow(nn.Module):
 
     @classmethod
     def from_checkpoint(cls, path: str | Path) -> "LegalEditFlow":
-        payload = torch.load(path, map_location="cpu", weights_only=False)
+        payload = torch.load(path, map_location="cpu", weights_only=True)
         if payload.get("schema") == DIRECT_POLICY_SCHEMA:
             # Migration is deliberately default-off. It copies the shared
             # scorer while leaving the new terminal head inert until opt-in.

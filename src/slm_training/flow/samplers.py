@@ -143,10 +143,14 @@ class ProductionLegalEditFlowSampler:
                 for item in candidate_set.candidates
                 if item.candidate_id == selected_id
             )
-            verify_certificate(candidate.transition_certificate)
-            successor = apply_canonical_edit(
-                current, CanonicalEdit.from_dict(candidate.edit)
-            )
+            try:
+                verify_certificate(candidate.transition_certificate)
+                successor = apply_canonical_edit(
+                    current, CanonicalEdit.from_dict(candidate.edit)
+                )
+            except Exception:  # noqa: BLE001
+                stop_reason = "invalid_replay"
+                break
             if (
                 successor is None
                 or canonical_fingerprint(successor) != candidate.successor_fingerprint
