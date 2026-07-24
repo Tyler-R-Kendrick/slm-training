@@ -26,9 +26,9 @@ from pydantic import BaseModel, Field
 from slm_training.web.otel_hub import MAX_INGEST_BYTES
 
 from slm_training.autoresearch.run_insights import RunInsightSubmission
-from slm_training.harnesses.experiments.promotion import (
+from slm_training.harness_core.promotion_engine import (
     PromotionCriteria,
-    evaluate_promotion,
+    evaluate_promotion as evaluate_promotion_engine,
 )
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
@@ -39,6 +39,7 @@ from slm_training.features.levers import feature_flag_registry_payload
 observability_router = APIRouter(prefix="/api")
 actions_router = APIRouter(prefix="/api")
 otel_ingest_router = APIRouter()
+_PROMOTION_HARD_CATEGORIES = ("binding", "structural", "repair")
 
 
 def _readers(request: Request):
@@ -384,17 +385,60 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
         campaign_store = CampaignStore(
             manifest.campaign_id, payload.campaign_store_root
         )
-    return evaluate_promotion(
+    result = evaluate_promotion_engine(
         integrity=payload.integrity,
         rankings=payload.rankings,
         eg_time_by_seed=payload.eg_time_by_seed,
         ship_suites=payload.ship_suites,
         criteria=criteria,
-        campaign_manifest=payload.campaign_manifest,
-        campaign_result=payload.campaign_result,
-        campaign_store=campaign_store,
-        artifact_root=payload.campaign_artifact_root,
+        hard_categories=_PROMOTION_HARD_CATEGORIES,
+        gate_evaluator=lambda suites, policy: evaluate_ship_gates(
+            suites, thresholds=policy or DEFAULT_SHIP_GATES
+        ),
     )
+    if payload.campaign_manifest is None or payload.campaign_result is None:
+        governance_failures = ("campaign_governance_missing",)
+        manifest_sha = None
+    else:
+        from slm_training.autoresearch.experiment_campaign import (
+            CampaignResultV1,
+            ExperimentCampaignV1,
+            campaign_manifest_sha256,
+            validate_result_claim,
+        )
+
+        manifest = ExperimentCampaignV1.model_validate(payload.campaign_manifest)
+        governed_result = CampaignResultV1.model_validate(payload.campaign_result)
+        governance_failures = validate_result_claim(
+            manifest, governed_result, artifact_root=payload.campaign_artifact_root
+        )
+        if campaign_store is None or payload.campaign_artifact_root is None:
+            governance_failures = (*governance_failures, "campaign_store_missing")
+        else:
+            governance_failures = (
+                *governance_failures,
+                *campaign_store.validate_campaign_result(
+                    governed_result, artifact_root=payload.campaign_artifact_root
+                ),
+            )
+        if governed_result.claim_class not in {"promotion_candidate", "ship_gate"}:
+            governance_failures = (*governance_failures, "claim_class_not_promotable")
+        governance_failures = tuple(dict.fromkeys(governance_failures))
+        manifest_sha = campaign_manifest_sha256(manifest)
+    result.setdefault("checks", {})["campaign_governance"] = {
+        "pass": not governance_failures,
+        "failures": list(governance_failures),
+        "manifest_sha256": manifest_sha,
+    }
+    if not governance_failures and result.get("failures") == ["sufficient_evidence"]:
+        result["checks"].pop("sufficient_evidence", None)
+        result["checks"]["governed_campaign_evidence"] = {"pass": True}
+        result["failures"] = []
+        result["promotable"] = True
+    if governance_failures:
+        result["promotable"] = False
+        result.setdefault("failures", []).extend(governance_failures)
+    return result
 
 
 # --------------------------------------------------------------------------- #

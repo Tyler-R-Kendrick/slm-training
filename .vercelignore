@@ -46,3 +46,7 @@ src/slm_training/harnesses/experiments/slm233_recursive_campaign.py
 scripts/run_slm138_recursive_denoiser_fixture.py
 scripts/run_slm230_recurrence_observability.py
 src/slm_training/harnesses/experiments/slm230_recurrence_observability.py
+
+# The Vercel app only uses the frozen promotion engine; experiment runners are
+# offline harnesses and otherwise pull their entire dependency tree into Lambda.
+src/slm_training/harnesses/experiments/**

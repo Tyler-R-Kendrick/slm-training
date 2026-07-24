@@ -1115,6 +1115,11 @@
         {
           "version": "v6",
           "date": "2026-07-23",
+          "note": "no-bump: route the promotion endpoint through the frozen core so the Vercel bundle excludes offline experiment runners without changing the API contract"
+        },
+        {
+          "version": "v6",
+          "date": "2026-07-23",
           "note": "Add OpenFeature flag detail evidence, source excerpts, and outcome comparisons to the experiment dashboard"
         },
         {
