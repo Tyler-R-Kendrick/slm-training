@@ -67,8 +67,8 @@ def test_class_identity_across_paths() -> None:
 
 
 def test_versioning_registry_resolves_from_new_location() -> None:
-    from slm_training.versioning import build_version_stamp
+    from slm_training.versioning import build_version_stamp, component_version
 
     stamp = build_version_stamp("harness.core")
     assert stamp["stamp_schema"] == "version_stamp/v1"
-    assert stamp["components"]["harness.core"] == "v1"
+    assert stamp["components"]["harness.core"] == component_version("harness.core")

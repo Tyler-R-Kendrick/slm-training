@@ -1317,12 +1317,17 @@
       ]
     },
     "harness.core": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harness_core/"
       ],
       "history": [
+        {
+          "version": "v9",
+          "date": "2026-07-24",
+          "note": "add SLM-291 EvidenceBundleV1, pluggable content-addressed evidence store, and PreregisteredClaimBarV1"
+        },
         {
           "version": "v8",
           "date": "2026-07-23",
@@ -1362,6 +1367,27 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; frozen DSL-agnostic core extracted structurally (versioning, lineage, checkpoint_reference, gate/promotion engines, scaling math, record_schema/eval_cache/score_policy) with behavior pinned by tests/test_harness_core"
+        }
+      ]
+    },
+    "harness_core.evidence_bundle": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harness_core/evidence_bundle.py",
+        "src/slm_training/harnesses/model_build/evidence_bundle_census.py",
+        "scripts/verify_evidence_bundles.py",
+        "tests/test_harness_core/test_evidence_bundle.py",
+        "tests/test_scripts/test_verify_evidence_bundles.py",
+        "docs/design/iter-slm291-evidence-bundles-20260724.json",
+        "docs/design/iter-slm291-evidence-bundles-20260724.md",
+        "docs/design/slm291-evidence-bar-adjudications-20260724.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "initial registration; SLM-291 content-addressed EvidenceBundleV1 + CAS store, fail-closed verifier and model-card census, PreregisteredClaimBarV1, append-only retroactive adjudications"
         }
       ]
     },
