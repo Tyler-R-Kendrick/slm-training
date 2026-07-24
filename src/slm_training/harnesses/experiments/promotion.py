@@ -276,6 +276,7 @@ def register_promoted_checkpoint(
         **(meta or {}),
         "kind": "promoted_anchor",
         "campaign_manifest_sha256": governance["manifest_sha256"],
+        "locked_eval_manifest_sha256": manifest.locked_eval_manifest_sha256,
     }
     meta_path.write_text(
         __import__("json").dumps(payload, indent=2) + "\n", encoding="utf-8"

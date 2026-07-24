@@ -258,6 +258,28 @@
         }
       ]
     },
+    "data.locked_eval_manifest": {
+      "version": "v2",
+      "kind": "data_builder",
+      "paths": [
+        "scripts/build_locked_promotion_manifest.py",
+        "scripts/measure_locked_manifest_arity.py",
+        "src/slm_training/data/locked_eval_manifest.py",
+        "tests/test_data/test_locked_eval_manifest.py"
+      ],
+      "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "SLM-285 measure exact compiler-owned legal-action entropy on one locked record per observed complexity stratum"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "SLM-285 immutable all-view decontaminated promotion manifest with optional non-gating human-audit partition"
+        }
+      ]
+    },
     "dsl.action_descriptions": {
       "version": "v2",
       "kind": "harness",
@@ -1332,7 +1354,7 @@
       ]
     },
     "harness.autoresearch.experiment_campaign": {
-      "version": "v4",
+      "version": "v5",
       "kind": "harness",
       "paths": [
         "src/slm_training/autoresearch/experiment_campaign.py",
@@ -1345,6 +1367,11 @@
         "tests/test_autoresearch/test_harness.py"
       ],
       "history": [
+        {
+          "version": "v5",
+          "date": "2026-07-24",
+          "note": "SLM-285 require immutable locked promotion-manifest digest agreement for promotion and ship claims"
+        },
         {
           "version": "v4",
           "date": "2026-07-24",
@@ -1486,12 +1513,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v86",
+      "version": "v87",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v87",
+          "date": "2026-07-24",
+          "note": "SLM-285 persist the governed locked promotion-manifest digest with promoted anchors"
+        },
         {
           "version": "v86",
           "date": "2026-07-24",

@@ -1,0 +1,44 @@
+# SLM-285 locked promotion manifest
+
+`abstract_planning_locked_v1.jsonl` is the immutable local promotion-holdout
+manifest. Its content digest is
+`b4ad49cf1b73ad50528709daaad53dbf4846036c9dea787f1c2017c16e0a2d48`.
+
+The local build used 1,000 sanitized RICO-cache candidates and every committed
+training snapshot (6,337 records, excluding duplicate governance copies). The
+all-view audit retained 286 records: 226 `locked_test`, and 20 each for
+`dev`, `agentv_calibration`, and `human_audit`. The human-audit partition is
+immutable but optional; no human score or rating is a promotion gate.
+
+Hard admission views are exact/normalized leakage, canonical AST, canonical
+semantic plan, and lexical prompt-similarity (`0.95`). The manifest source and
+candidate digests, verifier configuration, complexity strata, and partition
+assignment are content-addressed in the file. Promotion/ship campaign claims
+must carry this manifest digest, and promoted-anchor metadata persists it.
+
+This is corpus wiring and decontamination evidence, not a model-quality or
+ship claim. No model-selection or promotion result was run here.
+
+### Local decode-trace attempt (2026-07-24)
+
+Two one-record local CPU probes against the compatible
+`slm230_bounded_recursive_r4_r2` checkpoint were stopped by the canonical
+170-second interrupt cap before a trace was emitted: once through
+`strict_compiler_tree`, once through MaskGIT. Both were inside the completion
+forest, so neither is evidence and neither changes the manifest. The older
+CPU-smoke checkpoint was rejected before decode because its output contract is
+not symbol-only/v2. A bounded grammar-trace path is still required before
+model-posterior entropy can be claimed from a learned decode rollout.
+
+### Exact legal-action entropy (2026-07-24)
+
+Legal-action entropy does not require a learned posterior: the canonical
+compiler owns the legal set, so the correct structural metric is
+`log2(|legal actions|)`. `measure_locked_manifest_arity` deterministically
+replayed one canonical `locked_test` record from each observed complexity
+stratum with `gold_compiler_decisions` and `DSLNativeTokenizer`. All 24
+selected strata completed locally within the cap; mean entropy ranged from
+2.2742 to 3.3451 bits and the largest exact legal set had 76 actions. The
+result (`9801d964…e28f03e48`) is reproducible from the immutable manifest and
+the committed measurement script. It is compiler evidence only, not a model
+quality result.
