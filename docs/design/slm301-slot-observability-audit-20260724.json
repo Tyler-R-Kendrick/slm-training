@@ -1,0 +1,635 @@
+{
+  "cohen_kappa": 0.0,
+  "judge_counts": {
+    "not_observable": 97,
+    "observable": 3
+  },
+  "metric_counts": {
+    "not_observable": 100
+  },
+  "mismatches": [
+    {
+      "judge": "observable",
+      "metric": "not_observable",
+      "packet_id": "obs_044",
+      "source_id": "train:train_hero_01_fd_2"
+    },
+    {
+      "judge": "observable",
+      "metric": "not_observable",
+      "packet_id": "obs_069",
+      "source_id": "train:train_hero_01_fd_0"
+    },
+    {
+      "judge": "observable",
+      "metric": "not_observable",
+      "packet_id": "obs_074",
+      "source_id": "train:train_hero_01_fd_1"
+    }
+  ],
+  "n": 100,
+  "rater_provenance": "one blind agent rater pass (non-human, disclosed)",
+  "rows": [
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_001",
+      "source_id": "train:train_gallery_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_002",
+      "source_id": "train:train_hero_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_003",
+      "source_id": "train:train_tabs_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_004",
+      "source_id": "train:train_form_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_005",
+      "source_id": "train:train_callout_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_006",
+      "source_id": "train:train_card_header_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_007",
+      "source_id": "train:train_modal_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_008",
+      "source_id": "train:train_image_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_009",
+      "source_id": "train:train_cta_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_010",
+      "source_id": "seeds:held_out_settings_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_011",
+      "source_id": "train:train_settings_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_012",
+      "source_id": "train:train_metrics_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_013",
+      "source_id": "train:train_separator_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_014",
+      "source_id": "train:train_settings_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_015",
+      "source_id": "train:train_card_header_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_016",
+      "source_id": "train:train_gallery_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_017",
+      "source_id": "train:train_card_stack_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_018",
+      "source_id": "train:train_separator_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_019",
+      "source_id": "seeds:held_out_dual_card_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_020",
+      "source_id": "train:train_modal_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_021",
+      "source_id": "train:train_form_control_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_022",
+      "source_id": "train:train_tabs_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_023",
+      "source_id": "train:train_nested_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_024",
+      "source_id": "train:train_card_header_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_025",
+      "source_id": "train:train_settings_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_026",
+      "source_id": "train:train_modal_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_027",
+      "source_id": "train:train_header_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_028",
+      "source_id": "train:train_header_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_029",
+      "source_id": "seeds:ood_gallery_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_030",
+      "source_id": "train:train_cta_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_031",
+      "source_id": "train:train_button_row_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_032",
+      "source_id": "train:train_metrics_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_033",
+      "source_id": "train:train_form_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_034",
+      "source_id": "seeds:smoke_button_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_035",
+      "source_id": "train:train_settings_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_036",
+      "source_id": "train:train_nested_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_037",
+      "source_id": "train:train_button_row_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_038",
+      "source_id": "seeds:adv_dual_card_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_039",
+      "source_id": "seeds:ood_dashboard_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_040",
+      "source_id": "seeds:ood_auth_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_041",
+      "source_id": "train:train_callout_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_042",
+      "source_id": "train:train_card_stack_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_043",
+      "source_id": "train:train_gallery_01_aug_dir"
+    },
+    {
+      "judge_label": "observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_044",
+      "source_id": "train:train_hero_01_fd_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_045",
+      "source_id": "train:train_auth_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_046",
+      "source_id": "train:train_pricing_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_047",
+      "source_id": "train:train_pricing_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_048",
+      "source_id": "seeds:adv_deep_nest_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_049",
+      "source_id": "seeds:adv_many_buttons_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_050",
+      "source_id": "seeds:ood_modal_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_051",
+      "source_id": "train:train_metrics_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_052",
+      "source_id": "train:train_metrics_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_053",
+      "source_id": "train:train_tabs_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_054",
+      "source_id": "train:train_card_header_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_055",
+      "source_id": "train:train_auth_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_056",
+      "source_id": "train:train_callout_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_057",
+      "source_id": "train:train_form_control_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_058",
+      "source_id": "train:train_image_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_059",
+      "source_id": "train:train_nested_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_060",
+      "source_id": "train:train_header_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_061",
+      "source_id": "train:train_separator_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_062",
+      "source_id": "seeds:held_out_tabs_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_063",
+      "source_id": "seeds:smoke_hero_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_064",
+      "source_id": "train:train_pricing_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_065",
+      "source_id": "train:train_form_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_066",
+      "source_id": "train:train_pricing_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_067",
+      "source_id": "train:train_card_header_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_068",
+      "source_id": "train:train_callout_01_syn_2"
+    },
+    {
+      "judge_label": "observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_069",
+      "source_id": "train:train_hero_01_fd_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_070",
+      "source_id": "train:train_modal_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_071",
+      "source_id": "train:train_header_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_072",
+      "source_id": "train:train_callout_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_073",
+      "source_id": "train:train_button_row_01_syn_1"
+    },
+    {
+      "judge_label": "observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_074",
+      "source_id": "train:train_hero_01_fd_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_075",
+      "source_id": "train:train_image_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_076",
+      "source_id": "train:train_gallery_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_077",
+      "source_id": "train:train_form_control_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_078",
+      "source_id": "train:train_button_row_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_079",
+      "source_id": "train:train_modal_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_080",
+      "source_id": "train:train_callout_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_081",
+      "source_id": "train:train_settings_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_082",
+      "source_id": "train:train_separator_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_083",
+      "source_id": "seeds:smoke_callout_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_084",
+      "source_id": "train:train_card_header_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_085",
+      "source_id": "train:train_modal_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_086",
+      "source_id": "train:train_form_control_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_087",
+      "source_id": "train:train_image_01_aug_cta"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_088",
+      "source_id": "seeds:held_out_input_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_089",
+      "source_id": "train:train_card_stack_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_090",
+      "source_id": "train:train_separator_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_091",
+      "source_id": "train:train_hero_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_092",
+      "source_id": "train:train_settings_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_093",
+      "source_id": "train:train_cta_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_094",
+      "source_id": "train:train_header_01_aug_dir"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_095",
+      "source_id": "train:train_header_01_syn_0"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_096",
+      "source_id": "train:train_tabs_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_097",
+      "source_id": "train:train_pricing_01_syn_2"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_098",
+      "source_id": "train:train_cta_01_syn_1"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_099",
+      "source_id": "train:train_button_row_01"
+    },
+    {
+      "judge_label": "not_observable",
+      "metric_class": "UNKNOWN",
+      "packet_id": "obs_100",
+      "source_id": "train:train_gallery_01_syn_1"
+    }
+  ],
+  "schema": "slm301_slot_observability_audit/v1"
+}
