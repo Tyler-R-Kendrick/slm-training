@@ -47,6 +47,7 @@ __all__ = [
     "MATRIX_SET",
     "MATRIX_VERSION",
     "FACTORIZATION_CAMPAIGN_ID",
+    "FINAL_PROGRAM_OUTCOME_SCHEMA",
     "FactorizationFamily",
     "FactorizationArm",
     "CommonConfig",
@@ -55,9 +56,15 @@ __all__ = [
     "FactorizationRow",
     "FactorizationManifest",
     "FactorizationReport",
+    "FinalProgramOutcomeV1",
     "build_manifest",
     "validate_manifest",
     "run_fixture_campaign",
+    "run_fixture_campaign_with_records",
+    "score_final_program",
+    "old_outcome_label",
+    "build_transition_table",
+    "paired_validity_table",
     "render_markdown",
 ]
 
@@ -194,6 +201,10 @@ class FactorizationRecord:
     cost_edits: int
     cost_verifier_calls: int
     trace: FactorizationTrace
+    # SLM-297: retained final-program source for unified re-scoring. Empty
+    # only for legacy constructions; the campaign always fills it.
+    program_source: str = ""
+    program_note: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = dict(asdict(self))
@@ -292,6 +303,147 @@ class FactorizationReport:
             json.dumps(self.to_dict(), indent=2, sort_keys=True, default=str) + "\n",
             encoding="utf-8",
         )
+
+
+#: Schema marker for the SLM-297 unified final-program outcome envelope.
+FINAL_PROGRAM_OUTCOME_SCHEMA = "final_program_outcome/v1"
+
+#: Note attached to X22 arms whose repair phase is simulated: the retained
+#: final program is the (unmodified) seed source.
+X22_SIMULATED_REPAIR_NOTE = "x22 repair simulated; seed source retained as final program"
+
+
+@dataclass(frozen=True)
+class FinalProgramOutcomeV1:
+    """SLM-297 unified final-program semantic outcome for one record.
+
+    The semantic score is the final program's ``meaningful_program_v1``
+    verdict (plus parse/contract facts and typed reason codes). Process
+    metrics (accepted / recovered / costs) are retained for provenance only
+    and are never used as the semantic score.
+    """
+
+    record_id: str
+    arm_id: str
+    family: str
+    seed: int
+    program_source: str
+    program_note: str | None
+    parse_ok: bool
+    contract_ok: bool
+    v1_verdict: bool
+    v1_reason_codes: tuple[str, ...]
+    structural_similarity: float | None
+    abstain_reason: str | None
+    process_metrics: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        data = dict(asdict(self))
+        data["schema"] = FINAL_PROGRAM_OUTCOME_SCHEMA
+        data["v1_reason_codes"] = list(self.v1_reason_codes)
+        return data
+
+
+def score_final_program(record: FactorizationRecord) -> FinalProgramOutcomeV1:
+    """Score one record's retained final program under the unified metric."""
+    from slm_training.dsl.language_contract import output_contract_violations
+    from slm_training.harnesses.model_build.eval_runner import (
+        meaningful_program_v1_report,
+    )
+
+    source = record.program_source
+    abstain_reason: str | None = None
+    parse_ok = False
+    contract_ok = False
+    if not source:
+        abstain_reason = "no_final_program_retained"
+        report: dict[str, Any] = {"verdict": False, "reason_codes": ["no_final_program_retained"]}
+    else:
+        try:
+            validate(source)
+            parse_ok = True
+        except Exception:  # noqa: BLE001 - parse fact, never raised
+            parse_ok = False
+        contract_ok = parse_ok and not output_contract_violations(source)
+        report = meaningful_program_v1_report(source, gold=None)
+    return FinalProgramOutcomeV1(
+        record_id=record.record_id,
+        arm_id=record.arm_id,
+        family=record.family.value,
+        seed=record.seed,
+        program_source=source,
+        program_note=record.program_note,
+        parse_ok=parse_ok,
+        contract_ok=contract_ok,
+        v1_verdict=bool(report["verdict"]) and abstain_reason is None,
+        v1_reason_codes=tuple(report.get("reason_codes", ())),
+        structural_similarity=None,  # gold-free re-score; no reference available
+        abstain_reason=abstain_reason,
+        process_metrics={
+            "accepted": record.accepted,
+            "recovered": bool(record.trace.metrics.get("recovered", 0.0)),
+            "cost_edits": record.cost_edits,
+            "cost_forwards": record.cost_forwards,
+            "cost_verifier_calls": record.cost_verifier_calls,
+        },
+    )
+
+
+def old_outcome_label(outcome: FinalProgramOutcomeV1) -> str:
+    """Legacy per-family process label (incommensurate; provenance only)."""
+    if outcome.family == FactorizationFamily.AR.value:
+        return "accepted" if outcome.process_metrics["accepted"] else "rejected"
+    return "recovered" if outcome.process_metrics["recovered"] else "not_recovered"
+
+
+def build_transition_table(
+    outcomes: list[FinalProgramOutcomeV1],
+) -> dict[str, dict[str, int]]:
+    """Old process label × new final-program verdict counts for one arm."""
+    table: dict[str, dict[str, int]] = {}
+    for outcome in outcomes:
+        label = old_outcome_label(outcome)
+        verdict = "valid" if outcome.v1_verdict else "invalid"
+        row = table.setdefault(label, {"valid": 0, "invalid": 0})
+        row[verdict] += 1
+    return table
+
+
+def paired_validity_table(
+    outcomes_a: list[FinalProgramOutcomeV1],
+    outcomes_b: list[FinalProgramOutcomeV1],
+) -> dict[str, int]:
+    """Pair two arms by record_id+seed; count final-program validity combos.
+
+    Keys: ``both_valid``, ``a_valid_b_invalid`` (invalid-over-valid damage
+    when ``a`` is the baseline), ``a_invalid_b_valid``, ``both_invalid``,
+    ``unpaired``.
+    """
+    key = lambda o: (o.record_id, o.seed)  # noqa: E731
+    map_a = {key(o): o for o in outcomes_a}
+    map_b = {key(o): o for o in outcomes_b}
+    counts = {
+        "both_valid": 0,
+        "a_valid_b_invalid": 0,
+        "a_invalid_b_valid": 0,
+        "both_invalid": 0,
+        "unpaired": 0,
+    }
+    for k in set(map_a) | set(map_b):
+        a = map_a.get(k)
+        b = map_b.get(k)
+        if a is None or b is None:
+            counts["unpaired"] += 1
+            continue
+        if a.v1_verdict and b.v1_verdict:
+            counts["both_valid"] += 1
+        elif a.v1_verdict and not b.v1_verdict:
+            counts["a_valid_b_invalid"] += 1
+        elif not a.v1_verdict and b.v1_verdict:
+            counts["a_invalid_b_valid"] += 1
+        else:
+            counts["both_invalid"] += 1
+    return counts
 
 
 def _source_fingerprint(source: str) -> str:
@@ -428,6 +580,9 @@ def _run_ar_records(
         chosen = scorer.decode(scores, decision.legal_actions).action_identity
         accepted = chosen in decision.accepted_action_ids
         semantic_score = 1.0 if accepted else 0.0
+        # SLM-297: materialize the final program the AR stream implies so the
+        # unified re-score sees the same artifact class as X22/hybrid arms.
+        final_source = _program_from_actions([chosen] if chosen else [])
 
         forwards = max(1, arm.max_beam_width)
         scoring_ops = len(decision.legal_actions)
@@ -474,6 +629,8 @@ def _run_ar_records(
                 cost_edits=0,
                 cost_verifier_calls=0,
                 trace=trace,
+                program_source=final_source,
+                program_note="AR program materialized from selected actions",
             )
         )
     return records
@@ -564,6 +721,8 @@ def _run_x22_records(
                 cost_edits=edits,
                 cost_verifier_calls=verifier_calls,
                 trace=trace,
+                program_source=source,
+                program_note=X22_SIMULATED_REPAIR_NOTE,
             )
         )
     return records
@@ -668,6 +827,8 @@ def _run_hybrid_records(
                 cost_edits=total_edits,
                 cost_verifier_calls=total_verifier,
                 trace=trace,
+                program_source=source,
+                program_note="hybrid AR program retained; repair simulated on same tree",
             )
         )
     return records
@@ -681,6 +842,7 @@ def _run_oracle_records(
     records: list[FactorizationRecord] = []
     for index, decision in enumerate(decisions):
         chosen = decision.accepted_action_ids[0] if decision.accepted_action_ids else decision.legal_actions[0]
+        final_source = _program_from_actions([chosen])
         trace = FactorizationTrace(
             trace_id=f"{arm.arm_id}-s{seed}-{index}",
             arm_id=arm.arm_id,
@@ -709,6 +871,8 @@ def _run_oracle_records(
                 cost_edits=0,
                 cost_verifier_calls=0,
                 trace=trace,
+                program_source=final_source,
+                program_note="oracle selector; non-promotable",
             )
         )
     return records
@@ -883,6 +1047,7 @@ def run_fixture_campaign(
     output_dir: Path | None = None,
     n_records: int = 16,
     scorer_steps: int = 20,
+    retain_records: bool = False,
 ) -> FactorizationReport:
     """Run the SLM-155 factorization comparison fixture campaign."""
     manifest = manifest or build_manifest()
@@ -911,6 +1076,7 @@ def run_fixture_campaign(
     scorer = scorer_result["scorer"]
 
     rows: list[FactorizationRow] = []
+    all_records: list[FactorizationRecord] = []
     for arm in manifest.arms:
         for seed in common.seeds:
             if arm.family is FactorizationFamily.AR:
@@ -933,6 +1099,7 @@ def run_fixture_campaign(
                     arm, scorer, pack, eval_decisions, seed, use_critic=use_critic
                 )
             rows.append(_aggregate_records(arm, seed, records))
+            all_records.extend(records)
 
     report = FactorizationReport(
         matrix_set=MATRIX_SET,
@@ -951,7 +1118,33 @@ def run_fixture_campaign(
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
         report.to_json(output_dir / "slm155_factorization_comparison_report.json")
+    if retain_records:
+        return report, all_records
     return report
+
+
+def run_fixture_campaign_with_records(
+    manifest: FactorizationManifest | None = None,
+    *,
+    run_id: str = "slm155_fixture",
+    output_dir: Path | None = None,
+    n_records: int = 16,
+    scorer_steps: int = 20,
+) -> tuple[FactorizationReport, list[FactorizationRecord]]:
+    """SLM-297: run the fixture campaign retaining every per-example record.
+
+    Identical campaign to :func:`run_fixture_campaign`; only the return value
+    differs (records are kept instead of discarded after aggregation).
+    """
+    report, records = run_fixture_campaign(
+        manifest,
+        run_id=run_id,
+        output_dir=output_dir,
+        n_records=n_records,
+        scorer_steps=scorer_steps,
+        retain_records=True,
+    )
+    return report, records
 
 
 def render_markdown(report: FactorizationReport) -> str:
