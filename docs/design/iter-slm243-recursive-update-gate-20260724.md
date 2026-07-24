@@ -2,7 +2,7 @@
 
 Verdict: **layerscale_preferred**
 
-Report hash: `c455b1847765c1f7957676bac2640bcc2e1548bb29c0f20c5579392d305d020d`
+Report hash: `4b5f1605db3064e98b4fcdd24c1ad24e7853745b5a86c8d175b1f0645d6b6a26`
 
 This is a bounded scratch architecture-repair matrix, not evidence of semantic workspace, checkpoint promotion, ship readiness, or a production default change.
 

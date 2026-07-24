@@ -1,7 +1,7 @@
 {
   "metadata": {
     "eval_file": "agentv-dir:///agentv/slm243-recursive-update-gate.eval.jsonl",
-    "timestamp": "2026-07-24T04:47:54.806Z",
+    "timestamp": "2026-07-24T04:57:56.513Z",
     "targets": [
       "custom-task"
     ],
@@ -43,13 +43,13 @@
   "notes": [],
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "c926cb057e1d652f8d0992a2c119f3e7d864eb77",
-    "code_dirty": false,
+    "code_commit": "62726d6671dc9115d08c5581044bab7818e87e05",
+    "code_dirty": true,
     "components": {
-      "harness.experiments.slm243_recursive_update_gate": "v1",
+      "harness.experiments.slm243_recursive_update_gate": "v3",
       "model.recursive_denoiser": "v18",
       "model.twotower": "v231"
     },
-    "stamped_at": "2026-07-24T04:47:54.519327+00:00"
+    "stamped_at": "2026-07-24T04:57:44.584306+00:00"
   }
 }

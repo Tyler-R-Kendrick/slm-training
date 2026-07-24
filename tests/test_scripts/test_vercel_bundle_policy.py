@@ -14,6 +14,11 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
     assert len(function["excludeFiles"]) <= 256
     ignored = (ROOT / ".vercelignore").read_text(encoding="utf-8")
     assert "src/slm_training/resources/data/train/slm230_symbol_only_v1/**" in ignored
+    assert "scripts/run_slm243_recursive_update_gate.py" in ignored
+    assert (
+        "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py"
+        in ignored
+    )
     for fragment in (
         "flow/{samplers,targets}",
         "harnesses/experiments/slm{199,200}_*",

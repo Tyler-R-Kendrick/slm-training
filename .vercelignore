@@ -23,6 +23,12 @@ docs/design/**/*.md
 scripts/run_slm231_recurrence_dynamics.py
 src/slm_training/harnesses/experiments/slm231_recurrence_dynamics.py
 
+# SLM-243's architecture matrix runner and verdict contract are offline
+# experiment machinery. The deployed dashboard consumes only its compact
+# committed result JSON; full telemetry stays under the excluded AgentV path.
+scripts/run_slm243_recursive_update_gate.py
+src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py
+
 # Predecessor recurrence fixture/audit runners are likewise offline. Their
 # result JSON remains available to the deployed experiment reader.
 scripts/run_slm138_recursive_denoiser_fixture.py
