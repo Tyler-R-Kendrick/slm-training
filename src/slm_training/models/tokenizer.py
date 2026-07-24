@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Mapping
 
 # Bump when tokenization rules change (invalidates old checkpoints).
 TOKENIZER_VERSION = 2
@@ -32,6 +33,47 @@ EOS = "<eos>"
 MASK = "<mask>"
 UNK = "<unk>"
 SPECIAL = [PAD, BOS, EOS, MASK, UNK]
+
+
+def validate_token_layout(
+    token_to_id: Mapping[str, int],
+    *,
+    id_to_token: Mapping[int, str] | None = None,
+    id_to_kind: Mapping[int, str] | None = None,
+    special_tokens: Iterable[str] = SPECIAL,
+) -> None:
+    """Reject ambiguous persisted token layouts before they reach a model.
+
+    Token ids are codec-local embedding rows, but must still be a contiguous
+    bijection.  NFC collisions are rejected too: two spellings that normalize
+    to the same surface token would make a serialized vocabulary ambiguous.
+    """
+    ids = [int(token_id) for token_id in token_to_id.values()]
+    expected = set(range(len(token_to_id)))
+    if set(ids) != expected or len(set(ids)) != len(ids):
+        raise ValueError("token ids must be unique and contiguous from zero")
+
+    normalized: dict[str, str] = {}
+    for token in token_to_id:
+        canonical = unicodedata.normalize("NFC", str(token))
+        prior = normalized.setdefault(canonical, str(token))
+        if prior != token:
+            raise ValueError(
+                "token texts collide after NFC normalization: "
+                f"{prior!r} and {token!r}"
+            )
+
+    for expected_id, token in enumerate(special_tokens):
+        if token_to_id.get(token) != expected_id:
+            raise ValueError(f"special token {token!r} must keep id {expected_id}")
+
+    inverse = {int(token_id): str(token) for token, token_id in token_to_id.items()}
+    if id_to_token is not None and {
+        int(token_id): str(token) for token_id, token in id_to_token.items()
+    } != inverse:
+        raise ValueError("token id inverse does not match token_to_id")
+    if id_to_kind is not None and set(map(int, id_to_kind)) != expected:
+        raise ValueError("token kind map must cover every token id exactly once")
 
 
 def load_tokenizer_sidecar(path: Path | str, *, allow_legacy: bool = False):
@@ -138,6 +180,7 @@ class OpenUITokenizer:
                     vocab.append(tok)
         token_to_id = {t: i for i, t in enumerate(vocab)}
         id_to_token = {i: t for t, i in token_to_id.items()}
+        validate_token_layout(token_to_id, id_to_token=id_to_token)
         return cls(
             token_to_id=token_to_id,
             id_to_token=id_to_token,
@@ -180,6 +223,7 @@ class OpenUITokenizer:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         token_to_id = {str(k): int(v) for k, v in data["token_to_id"].items()}
         id_to_token = {i: t for t, i in token_to_id.items()}
+        validate_token_layout(token_to_id, id_to_token=id_to_token)
         version = int(data.get("version") or 1)
         if version != TOKENIZER_VERSION and not allow_legacy:
             raise ValueError(
