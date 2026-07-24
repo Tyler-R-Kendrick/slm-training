@@ -87,7 +87,7 @@ def load_corpora() -> dict[str, list[dict[str, Any]]]:
 
 
 def analyze_record(
-    record: dict[str, Any], *, max_edits: int, node_budget: int
+    record: dict[str, Any], *, max_edits: int, node_budget: int, mode: str = "extended"
 ) -> ReachabilityCase:
     target = str(record.get("openui") or "")
     placeholders = record.get("placeholders") or extract_placeholders(target)
@@ -97,6 +97,7 @@ def analyze_record(
         slot_inventory=[str(p) for p in placeholders],
         max_edits=max_edits,
         node_budget=node_budget,
+        mode=mode,
     )
 
 
@@ -185,6 +186,54 @@ def build_x22_evidence_annotations(
     return annotations
 
 
+def _summarize_records(
+    records: list[dict[str, Any]], *, max_edits: int, node_budget: int, mode: str
+) -> dict[str, Any]:
+    cases = [
+        (
+            str(record.get("id", f"case_{index}")),
+            analyze_record(record, max_edits=max_edits, node_budget=node_budget, mode=mode),
+        )
+        for index, record in enumerate(records)
+    ]
+    return {"status": "ok", **summarize_suite(cases)}
+
+
+def _compare_summaries(v1: dict[str, Any], extended: dict[str, Any]) -> dict[str, Any]:
+    """Old-vs-extended comparison: verdict flips and action-cost deltas over
+    matched cases (never a quality claim — reachability only)."""
+    v1_cases = {c["id"]: c for c in v1.get("cases", [])}
+    ext_cases = {c["id"]: c for c in extended.get("cases", [])}
+    deltas: list[int] = []
+    flips: list[dict[str, Any]] = []
+    for case_id, ext in sorted(ext_cases.items()):
+        old = v1_cases.get(case_id)
+        if old is None:
+            continue
+        if old["verdict"] != ext["verdict"]:
+            flips.append(
+                {"id": case_id, "v1": old["verdict"], "extended": ext["verdict"]}
+            )
+        if old["edit_lower_bound"] is not None and ext["edit_lower_bound"] is not None:
+            deltas.append(ext["edit_lower_bound"] - old["edit_lower_bound"])
+    return {
+        "n_verdict_flips": len(flips),
+        "verdict_flips": flips,
+        "reachable_fraction_v1": v1.get("reachable_fraction"),
+        "reachable_fraction_extended": extended.get("reachable_fraction"),
+        "action_cost_delta": (
+            {
+                "min": min(deltas),
+                "median": statistics.median(deltas),
+                "max": max(deltas),
+                "mean": round(statistics.mean(deltas), 4),
+            }
+            if deltas
+            else None
+        ),
+    }
+
+
 def build_report(
     corpora: dict[str, list[dict[str, Any]]],
     *,
@@ -192,8 +241,12 @@ def build_report(
     node_budget: int,
     generated_at: str,
     limit: int | None = None,
+    mode: str = "extended",
+    compare: bool = False,
 ) -> dict[str, Any]:
     suites: dict[str, Any] = {}
+    suites_v1: dict[str, Any] = {}
+    comparisons: dict[str, Any] = {}
     for suite, records in corpora.items():
         if not records:
             suites[suite] = {
@@ -201,22 +254,25 @@ def build_report(
                 "n_cases": 0,
                 "reachable_fraction": None,
             }
+            if compare:
+                suites_v1[suite] = dict(suites[suite])
             continue
         if limit is not None:
             records = records[:limit]
-        cases = [
-            (
-                str(record.get("id", f"{suite}_{index}")),
-                analyze_record(record, max_edits=max_edits, node_budget=node_budget),
+        suites[suite] = _summarize_records(
+            records, max_edits=max_edits, node_budget=node_budget, mode=mode
+        )
+        if compare:
+            suites_v1[suite] = _summarize_records(
+                records, max_edits=max_edits, node_budget=node_budget, mode="v1"
             )
-            for index, record in enumerate(records)
-        ]
-        suites[suite] = {"status": "ok", **summarize_suite(cases)}
+            comparisons[suite] = _compare_summaries(suites_v1[suite], suites[suite])
 
     payload: dict[str, Any] = {
-        "schema": "slm299_edit_reachability_audit/v1",
+        "schema": "slm299_edit_reachability_audit/v2",
         "experiment_id": EXPERIMENT_ID,
         "seed_source": DEFAULT_SEED_SOURCE,
+        "mode": mode,
         "max_edits": max_edits,
         "node_budget": node_budget,
         "generated_at": generated_at,
@@ -224,11 +280,15 @@ def build_report(
             "reachable_fraction is computed over decided cases only; "
             "UNKNOWN_BUDGET cases are reported separately and are never counted "
             "as unreachable; suites without a corpus are corpus_unavailable, "
-            "never zero-reachable."
+            "never zero-reachable. Reachability is a space-coverage proof, "
+            "never a model-quality claim."
         ),
         "suites": suites,
         "version_stamp": build_version_stamp(COMPONENT),
     }
+    if compare:
+        payload["suites_v1"] = suites_v1
+        payload["old_vs_extended"] = comparisons
     payload["x22_evidence_annotations"] = build_x22_evidence_annotations(
         suites, generated_at=generated_at
     )
@@ -241,8 +301,12 @@ def render_markdown(payload: dict[str, Any]) -> str:
         "",
         f"- generated_at: `{payload['generated_at']}`",
         f"- seed: `{payload['seed_source']}`",
+        f"- mode: `{payload.get('mode', 'extended')}`",
         f"- max_edits: {payload['max_edits']}, node_budget: {payload['node_budget']}",
         f"- verdict policy: {payload['verdict_policy']}",
+        "",
+        "> Reachability is space coverage, not model quality: no quality claim",
+        "> follows from these proofs alone.",
         "",
         "## Suite summary",
         "",
@@ -291,6 +355,30 @@ def render_markdown(payload: dict[str, Any]) -> str:
     lines += ["", "## X22 evidence annotations (append-only)", ""]
     for note in payload["x22_evidence_annotations"]:
         lines.append(f"- `{note['target_doc']}` [{note['suite']}]: {note['annotation']}")
+    if "old_vs_extended" in payload:
+        lines += ["", "## Old (v1) vs extended (SLM-305) reachability", ""]
+        lines.append(
+            "| suite | reachable v1 | reachable extended | verdict flips | "
+            "action-cost delta min/med/max |"
+        )
+        lines.append("| --- | --- | --- | --- | --- |")
+        for suite, comp in payload["old_vs_extended"].items():
+            delta = comp["action_cost_delta"] or {}
+            delta_txt = (
+                f"{delta.get('min')}/{delta.get('median')}/{delta.get('max')}"
+                if delta
+                else "—"
+            )
+            lines.append(
+                f"| {suite} | {comp['reachable_fraction_v1']} | "
+                f"{comp['reachable_fraction_extended']} | "
+                f"{comp['n_verdict_flips']} | {delta_txt} |"
+            )
+        for suite, comp in payload["old_vs_extended"].items():
+            for flip in comp["verdict_flips"]:
+                lines.append(
+                    f"- flip `{suite}/{flip['id']}`: {flip['v1']} → {flip['extended']}"
+                )
     lines.append("")
     return "\n".join(lines)
 
@@ -300,6 +388,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-edits", type=int, default=8)
     parser.add_argument("--node-budget", type=int, default=800)
     parser.add_argument("--limit", type=int, default=None, help="per-suite case cap (debug)")
+    parser.add_argument(
+        "--mode",
+        choices=["v1", "extended"],
+        default="extended",
+        help="action space to audit (extended is the deployed SLM-305 space)",
+    )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        help="also run the v1 space and publish old-vs-extended deltas",
+    )
     parser.add_argument("--json-out", type=Path, default=DEFAULT_JSON_OUT)
     parser.add_argument("--md-out", type=Path, default=DEFAULT_MD_OUT)
     args = parser.parse_args(argv)
@@ -311,6 +410,8 @@ def main(argv: list[str] | None = None) -> int:
         node_budget=args.node_budget,
         generated_at=generated_at,
         limit=args.limit,
+        mode=args.mode,
+        compare=args.compare,
     )
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
     args.json_out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

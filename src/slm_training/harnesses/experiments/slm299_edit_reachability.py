@@ -33,16 +33,26 @@ from typing import Any, Callable, Sequence
 from slm_training.dsl.parser import validate
 from slm_training.models.tree_edit_diffusion import (
     ACTION_ADD,
+    ACTION_ADD_CONTAINER,
+    ACTION_BIND_PLACEHOLDER,
+    ACTION_INSERT_STATEMENT,
+    ACTION_INSERT_SUBTREE,
     ACTION_REMOVE,
+    ACTION_REMOVE_CONTAINER,
     ACTION_REPLACE,
+    ACTION_REPLACE_STATEMENT,
+    ACTION_REPLACE_SUBTREE,
     CONTAINER_COMPONENTS,
+    CONTAINER_RESTS,
     LEAF_COMPONENTS,
     MAX_SLOTS,
+    V05_TEMPLATES,
     Edit,
     Statement,
     TreeEditSpace,
     parse_statements,
     render_statements,
+    v05_template_index,
 )
 
 __all__ = [
@@ -111,9 +121,9 @@ def add_container_action(
     components: Sequence[str] = CONTAINER_COMPONENTS,
 ) -> ExtraAction:
     """Synthetic ``ADD_CONTAINER``: append a fresh empty container statement
-    and reference it from an existing container. Does **not** exist in the
-    real X22 space (ADD creates leaves only); used to prove that a target is
-    unreachable *because* the space cannot create containers.
+    and reference it from an existing container. Retired what-if lane: the
+    extended (SLM-305) space has the real ``ACTION_ADD_CONTAINER``, so this
+    synthetic action is only meaningful in ``mode="v1"`` analyses.
     """
 
     def _generate(
@@ -201,13 +211,22 @@ def _normalize_inventory(slot_inventory: Sequence[str]) -> list[str]:
     return inventory[:MAX_SLOTS]
 
 
-def _is_unsupported_pack_feature(target_source: str) -> bool:
+def _is_unsupported_pack_feature(
+    target_source: str, *, extended: bool = False
+) -> bool:
     if any(marker in target_source for marker in _V05_TEXT_MARKERS):
         return True
     for line in target_source.splitlines():
         line = line.strip()
         if line and _V05_LINE_RE.match(line):
-            return True
+            if not extended:
+                return True
+            # SLM-305: the extended space models V0.5 statements through the
+            # canonical-template statement actions; a V0.5 line that does not
+            # instantiate a canonical template is still unsupported.
+            stmt = parse_statements(line)
+            if stmt is None or len(stmt) != 1 or v05_template_index(stmt[0]) is None:
+                return True
     return False
 
 
@@ -260,24 +279,41 @@ def _check_invariants(
     inventory: list[str],
     space: TreeEditSpace,
     capabilities: frozenset[str] = frozenset(),
+    *,
+    extended: bool = False,
 ) -> str | None:
-    """Structural impossibility proofs over the EXACT X22 action set.
+    """Structural impossibility proofs over the EXACT action set.
 
-    REPLACE preserves container-ness, arity, and the container's enum/direction
-    arg; ADD creates leaves only and binds only inventory slots; REMOVE deletes
-    leaves only. Anything the target needs beyond that is proven unreachable.
+    v1 space: REPLACE preserves container-ness, arity, and the container's
+    enum/direction arg; ADD creates leaves only and binds only inventory
+    slots; REMOVE deletes leaves only. Extended (SLM-305) space: ADD_CONTAINER
+    / INSERT_SUBTREE mint containers carrying one of ``CONTAINER_RESTS`` and
+    bind only inventory slots, REPLACE_SUBTREE / BIND_PLACEHOLDER rebind
+    leaves only to
+    inventory slots, and the V0.5 statement actions mint only canonical
+    templates — the invariant reasons fire only when the corresponding REAL
+    action of the analyzed mode is absent.
     """
     seed_containers = [s for s in seed if s.has_list]
     target_containers = [s for s in target if s.has_list]
-    target_leaves = [s for s in target if not s.has_list]
+    # V0.5 canonical-template statements are produced by the statement actions
+    # in the extended space; they are not UI leaves/containers.
+    target_leaves = [
+        s
+        for s in target
+        if not s.has_list and not (extended and v05_template_index(s) is not None)
+    ]
 
-    # No action creates a container (ADD is leaf-only).
+    # No action creates a container in the v1 space (ADD is leaf-only); the
+    # extended space has the real ADD_CONTAINER / INSERT_SUBTREE.
     if (
         len(target_containers) > len(seed_containers)
         and "container_add" not in capabilities
     ):
         return REASON_NEEDS_CONTAINER_ADD
-    # No action removes a container (REMOVE is leaf-only).
+    # No action removes a container (REMOVE is leaf-only); REMOVE_CONTAINER
+    # can only remove non-root containers, and both seed and target keep root,
+    # so this invariant holds in every mode.
     if len(target_containers) < len(seed_containers):
         return REASON_NEEDS_CONTAINER_REMOVE
 
@@ -289,9 +325,9 @@ def _check_invariants(
         if stmt.comp not in LEAF_COMPONENTS or stmt.comp not in known:
             return REASON_UNSUPPORTED_COMPONENT
 
-    # ADD binds only inventory slots; REPLACE cannot change a leaf's bound
-    # slot, and the seed carries no leaves. So every target leaf slot must
-    # come from the prompt inventory.
+    # ADD / INSERT_SUBTREE / REPLACE_SUBTREE / BIND_PLACEHOLDER bind only
+    # inventory slots, and the seed carries no leaves. So every target leaf
+    # slot must come from the prompt inventory in every mode.
     for stmt in target_leaves:
         slot = _leaf_slot(stmt.rest)
         if slot is None:
@@ -301,14 +337,24 @@ def _check_invariants(
             return REASON_NEEDS_SLOT_REBIND
 
     # REPLACE preserves the container's raw enum/direction arg text (rest);
-    # no real action edits it. Every target container must therefore carry
-    # the seed container's rest. With a synthetic container-creating action
-    # (which mints containers carrying the seed's rest), the same per-container
-    # rule applies; without it the multisets must match exactly.
+    # no real action edits it. Containers minted by the container-creating
+    # actions carry exactly one of CONTAINER_RESTS. Every target container
+    # rest must therefore be a seed rest or (with container_add) a candidate
+    # mint rest; without any container-creating action the multisets must
+    # match exactly.
     seed_rests = sorted(s.rest for s in seed_containers)
     target_rests = sorted(s.rest for s in target_containers)
+    # Root can never be removed or re-minted, and REPLACE preserves rest:
+    # the target root's rest must equal the seed root's rest in every mode.
+    seed_root_rest = next(
+        (s.rest for s in seed_containers if s.name == "root"), None
+    )
+    for stmt in target_containers:
+        if stmt.name == "root" and stmt.rest != seed_root_rest:
+            return REASON_NEEDS_DIRECTION_CHANGE
     if "container_add" in capabilities:
-        if any(rest not in seed_rests for rest in target_rests):
+        allowed = set(seed_rests) | set(CONTAINER_RESTS)
+        if any(rest not in allowed for rest in target_rests):
             return REASON_NEEDS_DIRECTION_CHANGE
     elif seed_rests != target_rests:
         return REASON_NEEDS_DIRECTION_CHANGE
@@ -320,17 +366,45 @@ def _enumerate_children(
     space: TreeEditSpace,
     statements: list[Statement],
     inventory: list[str],
+    *,
+    mode: str = "extended",
+    visited: set[str] | None = None,
 ) -> list[tuple[list[Statement], dict[str, Any]]]:
-    """All one-edit successors under the REAL X22 action set, applied through
-    ``TreeEditSpace.apply`` so preconditions and parser re-validation are the
-    deployed ones by construction."""
+    """All one-edit successors under the REAL action set of ``mode``, applied
+    through ``TreeEditSpace.apply`` so preconditions and parser re-validation
+    are the deployed ones by construction. ``v1`` enumerates the original
+    REPLACE/ADD/REMOVE set; ``extended`` (SLM-305) adds the container,
+    subtree, V0.5-statement, and placeholder-binding actions. Deterministic:
+    same state and mode always yield the same enumeration order.
+
+    ``visited`` (canonical-key set) is a pure search-efficiency hook: states
+    already keyed are rejected pre-validation inside ``apply``; it never
+    changes WHICH distinct states are reachable."""
     children: list[tuple[list[Statement], dict[str, Any]]] = []
     n_comp = len(space.components)
     n_slots = min(len(inventory), MAX_SLOTS)
+    leaf_comp_idxs = [
+        i for i, c in enumerate(space.components) if c in LEAF_COMPONENTS
+    ]
+    container_comp_idxs = [
+        i for i, c in enumerate(space.components) if c in CONTAINER_COMPONENTS
+    ]
+    pre = None
+    if visited is not None:
+        pre = lambda working: _canonical_key(working) not in visited  # noqa: E731
+    by_name = {s.name: s for s in statements}
+
+    def _replace_subtree_ok(stmt: Statement) -> bool:
+        if not stmt.has_list or len(stmt.children) != 1:
+            return False
+        leaf = by_name.get(stmt.children[0])
+        return leaf is not None and not leaf.has_list
+
     for stmt_idx in range(len(statements)):
+        stmt = statements[stmt_idx]
         for comp_idx in range(n_comp):
             edit = Edit(ACTION_REPLACE, stmt_idx, comp_idx)
-            nxt = space.apply(statements, edit, inventory)
+            nxt = space.apply(statements, edit, inventory, pre)
             if nxt is not None:
                 children.append(
                     (
@@ -344,7 +418,7 @@ def _enumerate_children(
                 )
             for slot_idx in range(n_slots):
                 edit = Edit(ACTION_ADD, stmt_idx, comp_idx, slot_idx)
-                nxt = space.apply(statements, edit, inventory)
+                nxt = space.apply(statements, edit, inventory, pre)
                 if nxt is not None:
                     children.append(
                         (
@@ -357,10 +431,124 @@ def _enumerate_children(
                             },
                         )
                     )
+        if mode == "v1":
+            edit = Edit(ACTION_REMOVE, stmt_idx)
+            nxt = space.apply(statements, edit, inventory, pre)
+            if nxt is not None:
+                children.append((nxt, {"action": "REMOVE", "stmt": stmt_idx}))
+            continue
+        # SLM-305 extended real actions.
+        if stmt.has_list:
+            for comp_idx in container_comp_idxs:
+                for rest_idx in range(len(CONTAINER_RESTS)):
+                    edit = Edit(ACTION_ADD_CONTAINER, stmt_idx, comp_idx,
+                                target=rest_idx)
+                    nxt = space.apply(statements, edit, inventory, pre)
+                    if nxt is not None:
+                        children.append(
+                            (
+                                nxt,
+                                {
+                                    "action": "ADD_CONTAINER",
+                                    "stmt": stmt_idx,
+                                    "comp": space.components[comp_idx],
+                                    "rest": CONTAINER_RESTS[rest_idx],
+                                },
+                            )
+                        )
+            for comp_idx in container_comp_idxs:
+                for slot_idx in range(n_slots):
+                    for payload in leaf_comp_idxs:
+                        for rest_idx in range(len(CONTAINER_RESTS)):
+                            edit = Edit(
+                                ACTION_INSERT_SUBTREE, stmt_idx, comp_idx, slot_idx,
+                                target=rest_idx, payload=payload,
+                            )
+                            nxt = space.apply(statements, edit, inventory, pre)
+                            if nxt is not None:
+                                children.append(
+                                    (
+                                        nxt,
+                                        {
+                                            "action": "INSERT_SUBTREE",
+                                            "stmt": stmt_idx,
+                                            "comp": space.components[comp_idx],
+                                            "slot": inventory[slot_idx],
+                                            "leaf_comp": space.components[payload],
+                                            "rest": CONTAINER_RESTS[rest_idx],
+                                        },
+                                    )
+                                )
+            if _replace_subtree_ok(stmt):
+                for slot_idx in range(n_slots):
+                    for payload in leaf_comp_idxs:
+                        edit = Edit(
+                            ACTION_REPLACE_SUBTREE, stmt_idx, slot=slot_idx,
+                            payload=payload,
+                        )
+                        nxt = space.apply(statements, edit, inventory, pre)
+                        if nxt is not None:
+                            children.append(
+                                (
+                                    nxt,
+                                    {
+                                        "action": "REPLACE_SUBTREE",
+                                        "stmt": stmt_idx,
+                                        "slot": inventory[slot_idx],
+                                        "leaf_comp": space.components[payload],
+                                    },
+                                )
+                            )
+        else:
+            for slot_idx in range(n_slots):
+                edit = Edit(ACTION_BIND_PLACEHOLDER, stmt_idx, slot=slot_idx)
+                nxt = space.apply(statements, edit, inventory, pre)
+                if nxt is not None:
+                    children.append(
+                        (
+                            nxt,
+                            {
+                                "action": "BIND_PLACEHOLDER",
+                                "stmt": stmt_idx,
+                                "slot": inventory[slot_idx],
+                            },
+                        )
+                    )
+        edit = Edit(ACTION_REMOVE_CONTAINER, stmt_idx)
+        nxt = space.apply(statements, edit, inventory, pre)
+        if nxt is not None:
+            children.append(
+                (nxt, {"action": "REMOVE_CONTAINER", "stmt": stmt_idx})
+            )
         edit = Edit(ACTION_REMOVE, stmt_idx)
-        nxt = space.apply(statements, edit, inventory)
+        nxt = space.apply(statements, edit, inventory, pre)
         if nxt is not None:
             children.append((nxt, {"action": "REMOVE", "stmt": stmt_idx}))
+        for payload in range(len(V05_TEMPLATES)):
+            edit = Edit(ACTION_REPLACE_STATEMENT, stmt_idx, payload=payload)
+            nxt = space.apply(statements, edit, inventory, pre)
+            if nxt is not None:
+                children.append(
+                    (
+                        nxt,
+                        {
+                            "action": "REPLACE_STATEMENT",
+                            "stmt": stmt_idx,
+                            "template": payload,
+                        },
+                    )
+                )
+    if mode != "v1":
+        for payload in range(len(V05_TEMPLATES)):
+            edit = Edit(ACTION_INSERT_STATEMENT, payload=payload)
+            nxt = space.apply(statements, edit, inventory, pre)
+            if nxt is not None:
+                children.append(
+                    (
+                        nxt,
+                        {"action": "INSERT_STATEMENT", "template": payload},
+                    )
+                )
     return children
 
 
@@ -372,14 +560,19 @@ def analyze_reachability(
     max_edits: int = 8,
     extra_actions: Sequence[ExtraAction] = (),
     node_budget: int = 800,
+    mode: str = "extended",
 ) -> ReachabilityCase:
     """Prove (or honestly fail to prove) reachability of ``target_source``
-    from ``seed_source`` under the real X22 tree-edit space.
+    from ``seed_source`` under the real tree-edit space of ``mode``.
 
-    ``extra_actions`` are hypothetical transitions (what-if analysis only);
-    when any appear on a found path the case is marked in ``details`` so the
-    proof is never confused with the real space.
+    ``mode="v1"`` analyzes the original SLM-299 action set (REPLACE / ADD /
+    REMOVE); ``mode="extended"`` (default, SLM-305) analyzes the deployed
+    extended edit language. ``extra_actions`` are hypothetical transitions
+    (what-if analysis only); when any appear on a found path the case is
+    marked in ``details`` so the proof is never confused with the real space.
     """
+    if mode not in {"v1", "extended"}:
+        raise ValueError(f"unknown reachability mode {mode!r}")
     space = _shared_space()
     inventory = _normalize_inventory(slot_inventory)
 
@@ -396,9 +589,10 @@ def analyze_reachability(
         "node_budget": node_budget,
         "inventory_size": len(inventory),
         "extra_actions": [a.name for a in extra_actions],
+        "mode": mode,
     }
 
-    if _is_unsupported_pack_feature(target_source):
+    if _is_unsupported_pack_feature(target_source, extended=(mode == "extended")):
         return ReachabilityCase(
             verdict=Verdict.PROVEN_UNREACHABLE,
             reason_code=REASON_UNSUPPORTED_PACK_FEATURE,
@@ -423,7 +617,14 @@ def analyze_reachability(
     capabilities = frozenset().union(
         *(a.capabilities for a in extra_actions)
     ) if extra_actions else frozenset()
-    fired = _check_invariants(target, seed, inventory, space, capabilities)
+    if mode == "extended":
+        # ADD_CONTAINER / INSERT_SUBTREE are REAL actions in the extended
+        # space, so the container_add invariant must not fire; the synthetic
+        # add_container_action what-if lane is retired for this space.
+        capabilities = capabilities | frozenset({"container_add"})
+    fired = _check_invariants(
+        target, seed, inventory, space, capabilities, extended=(mode == "extended")
+    )
     if fired is not None:
         return ReachabilityCase(
             verdict=Verdict.PROVEN_UNREACHABLE,
@@ -456,7 +657,9 @@ def analyze_reachability(
         if depth >= max_edits:
             live_at_budget = True
             continue
-        children = _enumerate_children(space, statements, inventory)
+        children = _enumerate_children(
+            space, statements, inventory, mode=mode, visited=visited
+        )
         for extra in extra_actions:
             for nxt, action in extra.generate(statements, inventory):
                 children.append((nxt, {**action, "synthetic": True}))

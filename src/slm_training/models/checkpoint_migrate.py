@@ -293,3 +293,97 @@ def migrate_to_shared_recursive_denoiser(
     report_path = new_path.with_suffix(".migrate.json")
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return report
+
+
+def migrate_tree_edit_checkpoint(
+    *,
+    source_checkpoint: Path | str,
+    output_checkpoint: Path | str,
+    device: str = "cpu",
+) -> dict:
+    """Warm-start a tree-edit-diffusion format-1 checkpoint to format 2.
+
+    SLM-305 grew ``action_head`` from 4 to ``N_ACTIONS`` rows (extended edit
+    language). All same-shape tensors are copied verbatim; the old action-head
+    rows are preserved in the first rows of the new head and the new action
+    rows stay randomly initialized. A ``.migrate.json`` report is written next
+    to the output checkpoint.
+    """
+    from slm_training.models.tree_edit_diffusion import (
+        TreeEditDiffusionConfig,
+        TreeEditDiffusionModel,
+    )
+
+    source_checkpoint = Path(source_checkpoint)
+    output_checkpoint = Path(output_checkpoint)
+    payload = torch.load(source_checkpoint, map_location=device, weights_only=False)
+    if payload.get("kind") != "tree_edit_diffusion":
+        raise ValueError(
+            f"checkpoint kind {payload.get('kind')!r} is not tree_edit_diffusion"
+        )
+    source_format = int(payload.get("format_version") or 1)
+    if source_format >= TreeEditDiffusionModel.CHECKPOINT_FORMAT:
+        raise ValueError(
+            f"tree-edit checkpoint is already format {source_format}; "
+            "migration only upgrades older formats"
+        )
+    tokenizer_path = source_checkpoint.with_suffix(".tokenizer.json")
+    if not tokenizer_path.exists():
+        raise FileNotFoundError(
+            f"missing tokenizer next to checkpoint: {tokenizer_path}"
+        )
+    tokenizer = OpenUITokenizer.load(tokenizer_path, allow_legacy=True)
+    raw_config = dict(payload.get("config") or {})
+    valid = set(TreeEditDiffusionConfig.__dataclass_fields__)
+    config = TreeEditDiffusionConfig(
+        **{key: value for key, value in raw_config.items() if key in valid}
+    )
+    model = TreeEditDiffusionModel(tokenizer, config=config, device=device)
+    old_state = payload.get("state_dict") or {}
+    new_state = model.state_dict()
+    copied_keys: list[str] = []
+    skipped_old_keys: list[str] = []
+    initialized_keys: list[str] = []
+    preserved_action_rows = 0
+    for key, tensor in old_state.items():
+        if key in new_state and new_state[key].shape == tensor.shape:
+            new_state[key] = tensor
+            copied_keys.append(key)
+        elif (
+            key == "policy.action_head.weight"
+            and key in new_state
+            and tensor.shape[1] == new_state[key].shape[1]
+            and tensor.shape[0] <= new_state[key].shape[0]
+        ):
+            new_state[key][: tensor.shape[0]] = tensor
+            copied_keys.append(key)
+            preserved_action_rows = int(tensor.shape[0])
+        elif (
+            key == "policy.action_head.bias"
+            and key in new_state
+            and tensor.shape[0] <= new_state[key].shape[0]
+        ):
+            new_state[key][: tensor.shape[0]] = tensor
+            copied_keys.append(key)
+        else:
+            skipped_old_keys.append(key)
+    for key in new_state:
+        if key not in copied_keys:
+            initialized_keys.append(key)
+    model.load_state_dict(new_state, strict=True)
+    model.save(output_checkpoint)
+    report = {
+        "source_checkpoint": str(source_checkpoint),
+        "output_checkpoint": str(output_checkpoint),
+        "source_format_version": source_format,
+        "output_format_version": TreeEditDiffusionModel.CHECKPOINT_FORMAT,
+        "warm_start_only": True,
+        "preserved_action_head_rows": preserved_action_rows,
+        "copied_keys": copied_keys,
+        "skipped_old_keys": skipped_old_keys,
+        "initialized_keys": initialized_keys,
+    }
+    output_checkpoint.with_suffix(".migrate.json").write_text(
+        json.dumps(report, indent=2) + "\n", encoding="utf-8"
+    )
+    return report
