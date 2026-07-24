@@ -1128,7 +1128,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "| gate | verdict | scientific hash |",
         "| --- | --- | --- |",
     ]
-    for name, ref in report["activation_gates"].items():
+    for name, ref in sorted(report["activation_gates"].items()):
         lines.append(
             f"| {name} | `{ref['verdict']}` | `{ref['scientific_hash']}` |"
         )
@@ -1188,9 +1188,9 @@ def render_markdown(report: dict[str, Any]) -> str:
             "## RecursiveCoreGateV2",
             "",
             f"- Verdict: **{gate['verdict']}**",
-            f"- Allowed work: `{gate['allowed_downstream_work']}`",
-            f"- Blocked claims: `{gate['blocked_claims']}`",
-            f"- Checkpoint refs: `{gate['checkpoint_refs']}`",
+            f"- Allowed work: `{json.dumps(gate['allowed_downstream_work'])}`",
+            f"- Blocked claims: `{json.dumps(gate['blocked_claims'])}`",
+            f"- Checkpoint refs: `{json.dumps(gate['checkpoint_refs'])}`",
             f"- Rationale: {gate['rationale']}",
             "",
             "This verdict is not `no_recursive_gain`: the architecture effect is "
@@ -1199,7 +1199,8 @@ def render_markdown(report: dict[str, Any]) -> str:
             "## AgentEvals / AgentV",
             "",
             f"- SDK: `{report['agentv'].get('sdk')}`",
-            f"- Summary: `{report['agentv'].get('summary')}`",
+            f"- Summary: "
+            f"`{json.dumps(report['agentv'].get('summary'), sort_keys=True)}`",
             "",
             f"Report hash: `{report['report_hash']}`",
         ]

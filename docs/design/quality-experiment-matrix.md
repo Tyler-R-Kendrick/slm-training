@@ -6381,3 +6381,36 @@ Prior SLM-282/230/231/232 negative recurrence evidence remains authoritative:
 semantic workspace, checkpoint promotion, ship readiness, and a production
 default change remain blocked. No checkpoint was written. Full evidence:
 [`iter-slm243-recursive-update-gate-20260724.md`](iter-slm243-recursive-update-gate-20260724.md).
+
+# RSC2-01 — matched recursive-depth campaign (2026-07-24)
+
+Return `architecture_not_identifiable`, not `no_recursive_gain`. The repaired
+activation join is floor `inconclusive`, observability `stagnant`, dynamics
+`expansive_unstable`, z-use `unstable`, and update
+`layerscale_preferred`. That combination permits only the bounded LayerScale
+diagnostic through R=8 and blocks semantic architecture, explicit-z, RSC3/RSC4,
+promotion, default-change, readiness, and ship claims.
+
+The clean CPU run at implementation commit `6852e2cb` completed in 14.48 s:
+five equal-block arms × three paired seeds (15 primary cells), two secondary
+active-parameter cells × three seeds, and 60 labelled train-R/test-R diagnostic
+cells. All cells were finite, all A–E calls used exactly four transformer
+blocks, initialization and corruption/exposure matched within each seed, and
+temporary full-state resume passed without creating a durable checkpoint.
+AgentV passed 6/6. The secondary P-A/P-D pair matched active trainable
+parameters exactly (25,586 each) while truthfully retaining a +32 serialized
+LayerScale total-parameter residual.
+
+The descriptive held-out NLL means were A 12.1692, B 12.9718, C 12.9705,
+D 12.9650, and E 12.9653; bounded free-running structure/reward stayed zero.
+These proxy numbers cannot classify recurrence, deep supervision, weight
+sharing, or explicit z because the semantic floor did not escape. Protected
+semantic and provenance-compatible recovery outcomes are censored rather than
+zero-filled. No checkpoint, model-card change, or production default resulted.
+
+Two pre-evidence attempts are retained as harness failures: one invocation
+omitted the worktree `PYTHONPATH`, and one rejected a valid multi-seed manifest
+because it incorrectly compared initialization hashes across different seeds.
+The latter was repaired and versioned as campaign component v2; neither failed
+attempt is accepted as evidence. Full clean evidence:
+[`iter-slm233-recursive-campaign-20260724.md`](iter-slm233-recursive-campaign-20260724.md).

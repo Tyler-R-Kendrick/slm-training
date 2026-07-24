@@ -3308,6 +3308,11 @@
       "history": [
         {
           "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: append the SLM-233 gate-bounded matched recursive campaign to the shared quality matrix without changing the SLM-197 scorer or experiment"
+        },
+        {
+          "version": "v1",
           "date": "2026-07-23",
           "note": "no-bump: append the SLM-243 measured recursive-update architecture disposition to the shared quality matrix without changing the SLM-197 scorer or experiment"
         },
@@ -3698,6 +3703,11 @@
         "README.md"
       ],
       "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: add the SLM-233 repository-diagnostic evidence to shared research lineage without changing the SLM-228 disposition"
+        },
         {
           "version": "v1",
           "date": "2026-07-23",
@@ -4128,9 +4138,22 @@
         "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py",
         "scripts/run_slm233_recursive_campaign.py",
         "tests/test_harnesses/experiments/test_slm233_recursive_campaign.py",
-        "tests/test_scripts/test_run_slm233_recursive_campaign.py"
+        "tests/test_scripts/test_run_slm233_recursive_campaign.py",
+        "docs/design/iter-slm233-recursive-campaign-20260724.json",
+        "docs/design/iter-slm233-recursive-campaign-20260724.md",
+        "docs/design/iter-slm233-recursive-campaign-agentv-20260724/"
       ],
       "history": [
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: make Markdown rendering stable across in-memory tuples and JSON-reloaded lists without changing scientific payloads"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-24",
+          "note": "no-bump: publish the clean compact report, raw matrix, AgentV bundle, and measured-results narrative generated against implementation commit 6852e2cb"
+        },
         {
           "version": "v2",
           "date": "2026-07-24",
