@@ -1401,6 +1401,16 @@
         {
           "version": "v81",
           "date": "2026-07-24",
+          "note": "no-bump: correct SLM-262 completed-job test isolation and export history metadata without changing harness behavior"
+        },
+        {
+          "version": "v81",
+          "date": "2026-07-24",
+          "note": "no-bump: add SLM-262 lazy experiment exports without changing existing experiment behavior"
+        },
+        {
+          "version": "v81",
+          "date": "2026-07-24",
           "note": "require durable cross-family automatic judge evidence for SLM-266 deep admission"
         },
         {
@@ -3352,6 +3362,30 @@
           "version": "v1",
           "date": "2026-07-21",
           "note": "initial registration; SLM-191 FFE2-03 termination-policy fixture matrix, TerminationManifestV1, and calibration instrumentation"
+        }
+      ]
+    },
+    "harness.experiments.slm262_gpu_reference_run": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/slm262_gpu_reference.py",
+        "scripts/run_gpu_reference.py",
+        "tests/test_harnesses/experiments/test_slm262_gpu_reference.py",
+        "tests/test_scripts/test_run_gpu_reference.py",
+        "docs/design/gpu-reference-run.md",
+        "docs/design/iter-slm262-gpu-reference-run-20260721.json"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-24",
+          "note": "no-bump: isolate completed-job reconciliation unit test from external bucket tooling"
+        },
+        {
+          "version": "v1",
+          "date": "2026-07-21",
+          "note": "initial registration; SLM-262 durable GPU train checkpoint eval reference-run manifest and adapter"
         }
       ]
     },

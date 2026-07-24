@@ -1,0 +1,104 @@
+{
+  "billable_seconds": null,
+  "checkpoint_cadence_decisions": 5000,
+  "checkpoint_inventory": {
+    "last.meta.json": {
+      "role": "last.meta",
+      "sha256": "7531365b72b352676a331e2e904b96ca8dd6e436850cb1bcace359e5f0c2956c",
+      "size_bytes": 9256
+    },
+    "last.pt": {
+      "role": "last",
+      "sha256": "ec1fff0540e4cc07227013b7111d6f602b610ffc977ffaa8a4656f45606948e5",
+      "size_bytes": 6592924
+    },
+    "last.tokenizer.json": {
+      "role": "last.tokenizer",
+      "sha256": "c17ab2a5ab44dfd54d60a04fb995bda6720df65ff42f362d483bd2308181c927",
+      "size_bytes": 13794
+    }
+  },
+  "codec_hash": "UNKNOWN",
+  "container_image": "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime",
+  "cost_confidence": null,
+  "cost_estimate_usd": null,
+  "cuda_version": "",
+  "data_snapshot_id": "e530_visible_semantic_roles_r1_20260719",
+  "data_snapshot_sha": "3ce2fcd915456e6ec0f456dafd858eeb8e133427704eff0f3615535e84dec852",
+  "dirty_tree_ok": true,
+  "disposition": "environment_incompatible",
+  "distribution": null,
+  "driver_version": null,
+  "energy_wh": null,
+  "environment_lock_hash": "UNKNOWN",
+  "eval_snapshot_id": "remediated",
+  "eval_snapshot_sha": "da16626fcbd271f1622f21271235c9315ff8f82ce85e1502380dd6810025c41b",
+  "evaluation_report_refs": [],
+  "expected_artifacts": [
+    "last.pt",
+    "last.tokenizer.json",
+    "last.meta.json",
+    "last_full_state.pt",
+    "train_summary.json"
+  ],
+  "framework": "pytorch",
+  "full_state_inventory": {
+    "last_full_state.pt": {
+      "role": "last_full_state",
+      "sha256": "9cccf95a220eabf78aa1042d24adfbe78dd029e5a5490555a439ca880cbbb72f",
+      "size_bytes": 19815800
+    }
+  },
+  "gpu_count": 1,
+  "gpu_memory_gb": null,
+  "gpu_model": "",
+  "instance_type": "",
+  "max_wall_minutes": 3,
+  "model_config_hash": "UNKNOWN",
+  "notes": [
+    "local CPU smoke completed: slm262_cpu_smoke_cpu_smoke",
+    "submitted via hf_jobs (dry_run=True)",
+    "environment_incompatible: agent session has no local GPU and no paid/quotated HF Jobs budget; dry-run plan validated, CPU smoke produced full-state checkpoint + resume"
+  ],
+  "optimizer_settings": {},
+  "parent_lineage": [],
+  "precision": "fp32",
+  "provider": "hf_jobs",
+  "provider_cost_usd": null,
+  "provider_job_id": null,
+  "provider_options": {
+    "train_version": "e530_visible_semantic_roles_r1_20260719"
+  },
+  "provider_request_id": "dry-run",
+  "region": null,
+  "remote_uri_prefix": "hf://buckets/TKendrick/OpenUI/checkpoints/slm262_cpu_smoke",
+  "repo_url": "https://github.com/Tyler-R-Kendrick/slm-training.git",
+  "rng_sampler_contract": "pytorch_default",
+  "run_id": "slm262_cpu_smoke",
+  "scheduler_settings": {},
+  "schema_version": "accelerator_run_manifest/v1",
+  "secrets_refs": [
+    "HF_TOKEN"
+  ],
+  "seed": 0,
+  "source_commit": "861b7c93c3ef56c44bbe04705a95247341b26fc2",
+  "target_decisions": 50000,
+  "timestamps": {
+    "local_smoke_at": "slm262_cpu_smoke_cpu_smoke",
+    "submitted_at": "2026-07-21T10:32:47.629382+00:00"
+  },
+  "tokenizer_hash": "UNKNOWN",
+  "torch_version": "",
+  "track": "twotower",
+  "utilization": {},
+  "version_stamp": {
+    "code_commit": "861b7c93c3ef56c44bbe04705a95247341b26fc2",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v60",
+      "harness.experiments.slm262_gpu_reference_run": "v1"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-21T10:32:24.694752+00:00"
+  }
+}
