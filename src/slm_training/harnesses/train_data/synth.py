@@ -6,12 +6,15 @@ import re
 from pathlib import Path
 from typing import Protocol
 
+from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 _ROOT_STACK_RE = re.compile(
     r'^root\s*=\s*Stack\(\[(?P<children>[^\]]*)\](?P<rest>(?:,\s*"[^"]*")*)\)\s*$',
-    re.M,
+    re.MULTILINE,
 )
+_BINDER_ASSIGNMENT_RE = re.compile(r"^\s*(?P<name>[a-z_][A-Za-z0-9_]*)\s*=")
+_BINDER_REFERENCE_RE = re.compile(r"\b[a-z_][A-Za-z0-9_]*\b")
 
 
 class PromptSynthesizer(Protocol):
@@ -60,9 +63,12 @@ class LayoutAugmentSynthesizer:
     """
     Deterministic structural augmentations.
 
-    Produces at most two variants:
+    Produces at most three variants:
     1. Flip Stack direction column<->row when a single root Stack exists
     2. Append a secondary CTA button sibling when the root has fewer than 4 children
+    3. Keep the final two root siblings and their declaration closure. This
+       supplies compact, multi-sibling structural examples without naming or
+       scoring runtime symbols.
     """
 
     def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
@@ -73,6 +79,9 @@ class LayoutAugmentSynthesizer:
         with_cta = self._append_cta(record)
         if with_cta:
             out.append(with_cta)
+        root_tail = self._root_tail_pair(record)
+        if root_tail:
+            out.append(root_tail)
         return out
 
     def _flip_direction(self, record: ExampleRecord) -> ExampleRecord | None:
@@ -142,6 +151,62 @@ class LayoutAugmentSynthesizer:
                 **record.meta,
                 "synth": "layout_augment",
                 "aug": "append_cta",
+                "parent_id": record.id,
+            },
+            design_md=record.design_md,
+        )
+
+    def _root_tail_pair(self, record: ExampleRecord) -> ExampleRecord | None:
+        """Project a root Stack to its final sibling pair and dependency closure.
+
+        The transform is entirely target-structural: it reads binder identifiers
+        and declaration edges, never prompt-derived marker meanings.  It is
+        useful for compact control pairs such as a switch plus slider while
+        retaining arbitrary component identities and their source order.
+        """
+        match = _ROOT_STACK_RE.search(record.openui)
+        if not match:
+            return None
+        children = [child.strip() for child in match.group("children").split(",") if child.strip()]
+        if len(children) < 3:
+            return None
+        declarations: dict[str, str] = {}
+        declaration_order: list[str] = []
+        for line in record.openui.splitlines():
+            declaration = _BINDER_ASSIGNMENT_RE.match(line)
+            if declaration is None:
+                continue
+            name = declaration.group("name")
+            declarations[name] = line
+            declaration_order.append(name)
+        required = set(children[-2:])
+        pending = list(required)
+        while pending:
+            name = pending.pop()
+            line = declarations.get(name)
+            if line is None:
+                return None
+            for reference in _BINDER_REFERENCE_RE.findall(line.split("=", 1)[1]):
+                if reference in declarations and reference not in required:
+                    required.add(reference)
+                    pending.append(reference)
+        new_root = f"root = Stack([{', '.join(children[-2:])}]{match.group('rest') or ''})"
+        openui = "\n".join(
+            [new_root, *(declarations[name] for name in declaration_order if name in required)]
+        )
+        if openui == record.openui:
+            return None
+        return ExampleRecord(
+            id=f"{record.id}_aug_tail2",
+            prompt=record.prompt,
+            openui=openui,
+            placeholders=list(extract_placeholders(openui)),
+            split=record.split,
+            source=f"{record.source}+aug",
+            meta={
+                **record.meta,
+                "synth": "layout_augment",
+                "aug": "root_tail_pair",
                 "parent_id": record.id,
             },
             design_md=record.design_md,

@@ -1,0 +1,21 @@
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 5, "root_parent_count": 1, "source_family": "abstraction_ladder", "task_counts": {"generation": 5}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.953846, "min_quality_score": 0.95, "record_count": 13, "root_parent_count": 13, "source_family": "corruption_repair", "task_counts": {"repair": 13}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.953846, "min_quality_score": 0.95, "record_count": 26, "root_parent_count": 13, "source_family": "edit_trajectory", "task_counts": {"edit": 13, "patch": 13}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 3, "root_parent_count": 1, "source_family": "frontier_described", "task_counts": {"generation": 3}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.992683, "min_quality_score": 0.85, "record_count": 41, "root_parent_count": 21, "source_family": "human_curated", "task_counts": {"generation": 41}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 55, "root_parent_count": 54, "source_family": "language_contract", "task_counts": {"generation": 55}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.970476, "min_quality_score": 0.9, "record_count": 105, "root_parent_count": 57, "source_family": "layout_augment", "task_counts": {"generation": 105}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.954167, "min_quality_score": 0.95, "record_count": 24, "root_parent_count": 13, "source_family": "programspec_generated", "task_counts": {"generation": 24}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.981776, "min_quality_score": 0.85, "record_count": 107, "root_parent_count": 41, "source_family": "prompt_paraphrase", "task_counts": {"generation": 107}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "renderer_visual", "task_counts": {"edit": 1}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 11, "root_parent_count": 7, "source_family": "rico_real", "task_counts": {"generation": 11}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.955263, "min_quality_score": 0.95, "record_count": 19, "root_parent_count": 13, "source_family": "scope_canonical_document", "task_counts": {"edit": 19}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 18, "root_parent_count": 13, "source_family": "scope_canonical_expression", "task_counts": {"edit": 18}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 4, "root_parent_count": 4, "source_family": "scope_canonical_lexical", "task_counts": {"edit": 4}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 14, "root_parent_count": 12, "source_family": "scope_canonical_statement", "task_counts": {"edit": 14}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 14, "root_parent_count": 10, "source_family": "scope_identity_lexical", "task_counts": {"identity": 14}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 17, "root_parent_count": 13, "source_family": "scope_identity_statement", "task_counts": {"identity": 17}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 16, "root_parent_count": 16, "source_family": "scope_repair_expression", "task_counts": {"repair": 16}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 6, "root_parent_count": 6, "source_family": "scope_repair_lexical", "task_counts": {"repair": 6}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 31, "root_parent_count": 16, "source_family": "scope_repair_statement", "task_counts": {"repair": 31}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 2, "root_parent_count": 2, "source_family": "web_distilled", "task_counts": {"generation": 2}}

@@ -11,6 +11,7 @@ from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+from slm_training.harnesses.train_data.synth import LayoutAugmentSynthesizer
 
 
 def _seed_file(tmp_path: Path) -> Path:
@@ -40,6 +41,32 @@ def _seed_file(tmp_path: Path) -> Path:
         ],
     )
     return path
+
+
+def test_layout_augment_root_tail_pair_keeps_dependency_closed_siblings() -> None:
+    record = ExampleRecord(
+        id="settings",
+        prompt="Settings stack with switch and slider controls.",
+        openui=(
+            'root = Stack([text, switch, slider])\n'
+            'text = TextContent(":slot_0")\n'
+            'switch = SwitchItem(":slot_1", ":slot_2", "$0")\n'
+            'slider = Slider("$1", "continuous", 0, 100, 1, [40], ":slot_3")'
+        ),
+        placeholders=[":slot_0", ":slot_1", ":slot_2", ":slot_3"],
+        split="train",
+    )
+
+    variants = LayoutAugmentSynthesizer().expand(record)
+    tail = next(variant for variant in variants if variant.id.endswith("_aug_tail2"))
+
+    assert tail.openui == (
+        'root = Stack([switch, slider])\n'
+        'switch = SwitchItem(":slot_1", ":slot_2", "$0")\n'
+        'slider = Slider("$1", "continuous", 0, 100, 1, [40], ":slot_3")'
+    )
+    assert tail.placeholders == [":slot_1", ":slot_2", ":slot_3"]
+    assert tail.meta["aug"] == "root_tail_pair"
 
 
 @pytest.mark.skipif(

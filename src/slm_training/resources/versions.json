@@ -3615,7 +3615,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v26",
+      "version": "v27",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -3634,6 +3634,11 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {
+          "version": "v27",
+          "date": "2026-07-24",
+          "note": "Add dependency-closed root-tail sibling-pair synthesis for compact structural generalization"
+        },
         {
           "version": "v26",
           "date": "2026-07-22",

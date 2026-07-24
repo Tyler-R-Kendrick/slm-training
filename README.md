@@ -42,6 +42,7 @@ strict-harness eval still fails quality gates and it is not promoted. Every olde
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
+| E1090 v273 root-tail-pair diagnostic | `e1090_v273_root_tail_pair_valid/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 487.69 cumulative seconds on E1088's 532 strict rows; E1091 Settings regresses to 12.01s timeout/empty prediction (parse/fidelity/reward 0) — rejected, unsynced/not promoted/served/parentable |
 | E1085 v273 root-order diagnostic | `e1085_v273_root_order_repro/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 217.93 cumulative seconds; Settings order-on changes 7 choices but is metric-identical to off and still fails strict gates — rejected, unsynced/not promoted/served/parentable |
 | E1080 v272 root-identity reproduction | `e1080_v272_root_identity_repro/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 179.94 cumulative train seconds; fresh E1075-recipe reproduction, pending decode-off Settings diagnostic; unsynced/not promoted/served/parentable |
 | E1075 v272 root-identity diagnostic | `e1075_v272_root_identity_395/last.pt` | `outputs/runs/...` (local) | Exact 395 steps / 100.16 cumulative train seconds; E1076 smoke strict-v2/fidelity 1.0 with two identity-driven choice changes, but E1077 Dual Card still times out. AgentV 0/2; pending Settings only, not synced/promoted/served/parentable |

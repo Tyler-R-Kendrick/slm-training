@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1088",
+  "date_utc": "2026-07-24",
+  "status": "completed_strict_data_build",
+  "run_class": "scratch_matrix",
+  "local_compute": true,
+  "recipe": {
+    "source": "all",
+    "profile": "strict",
+    "synthesizer": "quality",
+    "transform": "dependency_closed_root_tail_pair",
+    "output": "src/slm_training/resources/data/train/e1088_root_tail_pair_v1",
+    "max_wall_minutes": 2,
+    "checkpoint_created": false
+  },
+  "comparison": {
+    "baseline": "e937_role_safe_all_targets_v2",
+    "baseline_admitted": 524,
+    "treatment_admitted": 532,
+    "delta_admitted": 8,
+    "baseline_layout_augment_admitted": 95,
+    "treatment_layout_augment_admitted": 105,
+    "treatment_content_fingerprint": "902cac972dbf642633148c7e4338e54966685a7d1065cc7042c2db9507948ae3",
+    "lineage_snapshot": "8fa5b476c2de57fa96da837126087937cc90118e552f2afc8378b3663e7b3c6d"
+  },
+  "quality": {
+    "judge_pass_rate": 1.0,
+    "runtime_verified_fraction": 1.0,
+    "layout_augment_candidates": 256,
+    "layout_augment_admitted": 105,
+    "layout_augment_yield": 0.4102,
+    "layout_augment_decontamination_rejected": 28,
+    "warnings": [
+      "high_rejection_rate",
+      "eval_overlap_flagged",
+      "placeholder_contract_violations"
+    ]
+  },
+  "leakage_guard": {
+    "candidate": "train_settings_01_aug_tail2",
+    "status": "rejected",
+    "stage": "decontamination",
+    "reason": "test_fixture_structure",
+    "interpretation": "The derived Settings-like two-sibling pair is not in the train snapshot and cannot inform the held Settings result."
+  },
+  "invalid_followup": {
+    "experiment_id": "E1089",
+    "status": "invalidated_before_evaluation",
+    "attempts": [
+      {
+        "steps": 207,
+        "stopped_on": "wall_time_budget"
+      },
+      {
+        "steps": 83,
+        "stopped_on": "wall_time_budget"
+      }
+    ],
+    "reason": "The second invocation omitted --resume-from, restarted instead of loading the first last_full_state.pt, and overwrote the partial state. Neither partial is evidence or a checkpoint candidate."
+  },
+  "decision": {
+    "retain": "the leakage guard and invalid-E1089 record",
+    "reject": "the E1088 snapshot as a positive intervention: E1090/E1091 regresses the matched Settings row to a timeout-empty prediction",
+    "next": "Do not promote, serve, sync, or parent from E1090; choose a distinct upstream hypothesis rather than a root-tail-pair weight or decode sweep."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5fb82a7247e35b29f0ba6df9e1aad25b648760b2",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v27"
+    },
+    "stamped_at": "2026-07-24T07:45:00.213872+00:00"
+  }
+}

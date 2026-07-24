@@ -38,6 +38,7 @@ supersedes E829's permissive-harness metrics for this checkpoint.
 
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
+| E1090 v273 root-tail-pair diagnostic | `e1090_v273_root_tail_pair_valid` | CPU scratch role-safe lexer ordered-root reproduction on E1088 (532 rows) | `outputs/runs/e1090_v273_root_tail_pair_valid/checkpoints/last.pt` (local) | Exact 395 steps / 487.69 cumulative seconds, SHA `70adedee...83576`; E1091 Settings regresses to a 12.01s timeout-empty prediction (parse/fidelity/reward 0) — **rejected; never sync/promote/serve/use as parent** ([results](design/iter-e1090-root-tail-pair-train-20260724.md)) |
 | E1085 v273 root-order diagnostic | `e1085_v273_root_order_repro` | CPU scratch role-safe lexer ordered-root reproduction | `outputs/runs/e1085_v273_root_order_repro/checkpoints/last.pt` (local) | Exact 395 steps / 217.93 cumulative seconds, SHA `ccbeccc9...052ad7`; E1086/E1087 Settings pair has 17 applications / 7 changed choices but identical failing strict metrics — **rejected; never sync/promote/serve/use as parent** ([results](design/iter-e1045-e1051-typed-binder-candidates-20260722.md)) |
 | E1080 v272 root-identity reproduction | `e1080_v272_root_identity_repro` | CPU scratch role-safe lexer root-identity reproduction | `outputs/runs/e1080_v272_root_identity_repro/checkpoints/last.pt` (local) | Exact 395 steps / 179.94 cumulative train seconds, SHA `eae1afd2...54623d`; fresh E1075-recipe reproduction, pending decode-off Settings diagnostic — **never sync/promote/serve/use as parent** ([results](design/iter-e1045-e1051-typed-binder-candidates-20260722.md)) |
 | E1075 v272 root-identity diagnostic | `e1075_v272_root_identity_395` | CPU scratch role-safe lexer root-identity diagnostic | `outputs/runs/e1075_v272_root_identity_395/checkpoints/last.pt` (local) | Exact 395 steps / 100.16 cumulative train seconds, SHA `9e035753...2122c7`; E1076 smoke strict-v2/fidelity 1.0 with two identity-driven choice changes, but E1077 Dual Card still times out, AgentV 0/2 — **pending Settings only; never sync/promote/serve/use as parent** ([results](design/iter-e1045-e1051-typed-binder-candidates-20260722.md)) |
@@ -315,6 +316,7 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| held_out Settings (`e1091_v273_root_tail_pair_settings_decode1`) | 1 | 0.0 | 0.0 | 0.0 | 0.0 | No — 12.01s timeout and empty prediction under strict compiler-tree policy; E1087 baseline parse 1.0 / fidelity 0.3333 / reward 0.707, AgentV 0/1 |
 | held_out diagnostic subsets (`e1047`-`e1051`, v270) | 5 | 0.8 | 0.6667 | 0.3762 | 0.7132 | No — strict-v2 0.6 / recall 0.5333 / one timeout / three fallbacks, AgentV 0/5 |
 | smoke (`e1046_v270_typed_binder_candidates_smoke`) | 3 | 1.0 | 1.0 | 0.5658 | 0.9610 | No — strict-v2 1.0 / recall 0.75, but held remains below E996; AgentV 0/1 |
 | held_out diagnostic subsets (`e1053`-`e1057`, v270 no arity) | 5 | 0.6 | 0.6000 | 0.3562 | 0.5646 | No — strict-v2 0.6 / recall 0.5333 / two timeouts / two fallbacks, AgentV 0/5 |
@@ -1030,6 +1032,7 @@ checkpoint is rejected.
 
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-24 | `e1090_v273_root_tail_pair_valid` (E1090/E1091) | `outputs/runs/e1090_v273_root_tail_pair_valid/` (local) | Exact 395 steps / 487.69 cumulative seconds; matched Settings parse/fidelity/structure/reward 0 after 12.01s timeout, AgentV 0/1 | SHA `70adedee...83576`; E1088 root-tail snapshot regresses E1087's non-timeout parse; rejected, never sync/promote/serve/use as parent |
 | 2026-07-24 | `e1080_v272_root_identity_repro` | `outputs/runs/e1080_v272_root_identity_repro/` (local) | 395-step fresh E1075-recipe reproduction; decode-off Settings pending | 179.94 cumulative train seconds, SHA `eae1afd2...54623d`; scratch only, never sync/promote/serve/use as parent |
 | 2026-07-23 | `e1075_v272_root_identity_395` | `outputs/runs/e1075_v272_root_identity_395/` (local) | E1076 smoke strict-v2/fidelity 1.0; E1077 Dual Card timeout, AgentV 0/2 | 100.16 cumulative train seconds, SHA `9e035753...2122c7`; pending Settings only |
 | 2026-07-23 | `e1071_v271_bound_only_arity_395` | `outputs/runs/e1071_v271_bound_only_arity_395/` (local) | E1072 smoke strict-v2 1.0; E1073 Dual Card timeout; E1074 Settings strict-v2/fidelity/recall 1.0, AgentV 0/3 | 107.13 cumulative train seconds, SHA `0d2c4c48...6f9a12`; exposure sweep closed, rejected |

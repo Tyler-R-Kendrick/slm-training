@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E1090-E1091",
+  "date_utc": "2026-07-24",
+  "status": "completed_train_and_matched_eval_rejected",
+  "run_class": "scratch_matrix",
+  "recipe": {
+    "baseline": "E1085/E1087",
+    "train_version": "e1088_root_tail_pair_v1",
+    "record_count": 532,
+    "model": "twotower",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "compiler_decode_mode": "tree",
+    "device": "cpu",
+    "seed": 0,
+    "steps_requested": 395,
+    "steps_completed": 395,
+    "objective_weights": {
+      "binder_component_plan": 1.0,
+      "binder_arity": 1.0,
+      "root_reference_identity": 1.0,
+      "root_reference_order": 1.0
+    },
+    "honest_slot_contract": true,
+    "checkpoint_sync": "disabled"
+  },
+  "train_result": {
+    "stopped_on": "steps",
+    "last_loss": 8.77548885345459,
+    "cumulative_elapsed_seconds": 487.691413,
+    "checkpoint": "outputs/runs/e1090_v273_root_tail_pair_valid/checkpoints/last.pt",
+    "checkpoint_sha256": "70adedee1980f8f0b2a2c5f848a20845ead808831f88e0c90f904a7728838576",
+    "data_manifest_sha": "902cac972dbf642633148c7e4338e54966685a7d1065cc7042c2db9507948ae3",
+    "seen_prompt_tokens": 235829,
+    "seen_target_tokens": 47915
+  },
+  "resume_chain": {
+    "segments": [44, 101, 183, 259, 380, 395],
+    "rule": "Every continuation explicitly supplied the preceding last_full_state.pt via --resume-from.",
+    "invalid_predecessor": "E1089 is invalid before evaluation because it restarted without --resume-from."
+  },
+  "matched_evaluation": {
+    "experiment_id": "E1091",
+    "run_id": "e1091_v273_root_tail_pair_settings_decode1",
+    "suite": "held_out",
+    "record_id": "held_out_settings_01",
+    "evaluation_policy": "strict_compiler_tree",
+    "root_reference_order_decode_weight": 1.0,
+    "result": {
+      "n": 1,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 1,
+      "empty_prediction_count": 1,
+      "latency_ms_p50": 12010.49,
+      "prediction": ""
+    },
+    "comparison_to_e1087": {
+      "parse_rate": "1.0 -> 0.0",
+      "placeholder_fidelity": "0.3333 -> 0.0",
+      "structural_similarity": "0.06 -> 0.0",
+      "component_type_recall": "0.0 -> 0.0",
+      "reward_score": "0.707 -> 0.0",
+      "decode_timeout_count": "0 -> 1"
+    },
+    "artifacts": {
+      "agent_evals_jsonl": "outputs/runs/e1091_v273_root_tail_pair_settings_decode1/agentv/openui-model-ship-gates-2026-07-24t08-04-55-227517-00-00.eval.jsonl",
+      "agentv_sdk": "@agentv/core",
+      "result": "outputs/runs/e1091_v273_root_tail_pair_settings_decode1/eval_held_out.json"
+    }
+  },
+  "decision": {
+    "status": "rejected",
+    "reason": "The sole matched held row regressed from a non-timeout parse to a timeout-empty prediction under the same strict compiler-tree policy.",
+    "forbidden": "Promotion, bucket sync, serving, parent use, ship claims, or reuse of this checkpoint as evidence of a positive data effect."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5fb82a7247e35b29f0ba6df9e1aad25b648760b2",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v24",
+      "harness.model_build.eval": "v58",
+      "model.twotower": "v273"
+    },
+    "stamped_at": "2026-07-24T08:04:55.261348+00:00"
+  }
+}

@@ -6813,3 +6813,32 @@ unused binders. Reward rises 0.957→0.965 while structure falls
 0.5717→0.5396. E1077 then shows the targeted Dual Card row still times out to
 an empty prediction at 12 seconds, exactly matching E1073. Run only the matched
 Settings row before disposition.
+
+### E1088: dependency-closed root-tail data augmentation (train-only diagnostic)
+
+E1088 adds one generic projection for generated root `Stack` programs: retain
+their final two siblings and the transitive binder-declaration closure, then
+re-derive opaque target slots. The strict all-source build admits 532 rows
+versus E937's 524 (+8); its layout-augmentation family admits 105/256
+candidates (0.4102), with independent-judge and runtime verification both 1.0.
+The Settings-like projected pair is correctly rejected as `test_fixture_structure`
+and is absent from the snapshot, so it cannot explain the held Settings row.
+Run a fresh scratch diagnostic only; this is neither a promotion nor a ship
+claim. See `iter-e1088-root-tail-pair-20260724.md`.
+
+E1089 is invalidated before evaluation: the first 207-step partial was not
+explicitly passed to `--resume-from`, so the second invocation restarted and
+overwrote it with an unrelated 83-step partial. Neither checkpoint is used.
+E1090 must reach the fixed 395-step endpoint through explicit full-state
+resumes before comparison.
+
+### E1090-E1091: root-tail-pair fresh train and matched Settings rejection
+
+E1090 reaches exactly 395 CPU scratch steps on E1088's 532-row strict snapshot
+through explicit full-state resumes (487.69 cumulative seconds). E1091 uses the
+same held Settings row, strict compiler-tree policy, and root-order decode
+weight 1 as E1087, but regresses from E1087's parse 1.0, fidelity 0.3333,
+structure 0.06, reward 0.707, and no timeout to a 12.01-second timeout-empty
+prediction with every headline metric 0. AgentEvals JSONL and the pinned
+AgentV bundle are emitted. Reject the snapshot/checkpoint; no sync, serving,
+promotion, or parent use. See `iter-e1090-root-tail-pair-train-20260724.md`.
