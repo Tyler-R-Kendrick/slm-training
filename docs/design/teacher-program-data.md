@@ -35,6 +35,11 @@ declared `ExperimentCampaignV1`, locks it in that archive before the first
 outcome event, and requires its digest to equal the generation manifest's
 `campaign_manifest_sha256`.
 
+Local transport supplies an explicit all-ones attention mask for the generated
+prompt. Any process interruption records an `interrupted` experiment-finished
+event; interrupted work is diagnostic only and cannot be counted as corpus
+evidence.
+
 ## Admission modes
 
 `python -m scripts.admit_teacher_programs` consumes archived response records,
@@ -66,9 +71,11 @@ copied into Git. The ordinary strict train-data builder and explicit
 
 ## Current disposition — 2026-07-24
 
-This is implementation and fixture evidence only, not a teacher generation,
-accepted corpus, training result, or ship claim. The local transport adds no
-corpus, raw archive, independent judge evidence, or approved execution budget.
-Therefore the required 10k/100k corpora and three-seed factorial remain
-**unrun**; any bounded local calibration must first create a locked manifest and
-durable raw archive. The 100k rung is explicitly deferred.
+The one-request local CPU screening is recorded in
+[`iter-slm266-local-qwen-screening-20260724.json`](iter-slm266-local-qwen-screening-20260724.json).
+Qwen loaded from four cached local shards, but the 96-token generation did not
+finish before the three-minute cap; it produced zero completed requests. The
+archive was closed as interrupted and is diagnostic only: it is not a teacher
+generation result, accepted corpus, admission/judge run, training result, or
+ship claim. The required 10k corpus, three-seed factorial, and 100k rung remain
+**unrun**; the 100k rung is explicitly deferred.

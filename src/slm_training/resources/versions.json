@@ -1471,12 +1471,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v84",
+      "version": "v85",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v85",
+          "date": "2026-07-24",
+          "note": "record interrupted SLM-266 execution and pass an explicit local generation attention mask"
+        },
         {
           "version": "v84",
           "date": "2026-07-24",
@@ -5042,7 +5047,7 @@
       ]
     },
     "harness.experiments.slm266_teacher_programs": {
-      "version": "v7",
+      "version": "v8",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/teacher_programs.py",
@@ -5054,6 +5059,11 @@
         "docs/design/teacher-program-data.md"
       ],
       "history": [
+        {
+          "version": "v8",
+          "date": "2026-07-24",
+          "note": "record interrupted execution and explicit local attention masks for SLM-266 teacher generation"
+        },
         {
           "version": "v7",
           "date": "2026-07-24",

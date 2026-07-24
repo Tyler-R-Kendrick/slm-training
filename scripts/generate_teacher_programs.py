@@ -102,11 +102,11 @@ def main(argv: list[str] | None = None) -> int:
         )
     try:
         result = executor.execute(requests, transport)
-    except Exception:
+    except BaseException:
         archive.append_event(
             "experiment_finished",
             experiment_id=manifest.manifest_id,
-            status="failed",
+            status="interrupted",
             detail={"campaign_manifest_sha256": campaign_manifest_sha256},
         )
         raise

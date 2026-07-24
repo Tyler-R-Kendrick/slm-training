@@ -582,10 +582,12 @@ class LocalTransformersTeacherTransport:
                 return_tensors="pt",
             )["input_ids"]
         input_ids = input_ids.to(self.device)
+        attention_mask = torch.ones_like(input_ids)
         input_tokens = int(input_ids.shape[1])
         with torch.inference_mode():
             generated_ids = model.generate(
                 input_ids,
+                attention_mask=attention_mask,
                 max_new_tokens=request.max_output_tokens,
                 do_sample=False,
                 pad_token_id=(

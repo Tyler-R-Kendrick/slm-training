@@ -3,6 +3,7 @@ import sys
 from types import SimpleNamespace
 
 import pytest
+import torch
 
 from slm_training.autoresearch.storage import CampaignStore
 from slm_training.data.leakage import fingerprint_prompt
@@ -396,3 +397,34 @@ def test_local_transformers_transport_loads_only_from_the_pinned_local_cache(mon
             },
         ),
     ]
+
+
+def test_local_transformers_transport_supplies_an_attention_mask():
+    class Tokenizer:
+        pad_token_id = 0
+        eos_token_id = 0
+
+        def apply_chat_template(self, _messages, **_kwargs):
+            return torch.tensor([[1, 2]])
+
+        def decode(self, _token_ids, **_kwargs):
+            return "root = Card(\":x\")"
+
+    class Model:
+        def generate(self, input_ids, **kwargs):
+            self.attention_mask = kwargs["attention_mask"]
+            return torch.cat((input_ids, torch.tensor([[3]])), dim=1)
+
+    transport = LocalTransformersTeacherTransport(
+        model="Qwen/Qwen2.5-7B-Instruct",
+        revision="a" * 40,
+        system_prompt="Return one OpenUI program.",
+    )
+    model = Model()
+    transport._model = model
+    transport._tokenizer = Tokenizer()
+
+    response = transport(TeacherProgramExecutionRequestV1("request-1", "intent", 4, 1))
+
+    assert torch.equal(model.attention_mask, torch.ones((1, 2), dtype=torch.long))
+    assert response["usage"] == {"input_tokens": 2, "output_tokens": 1}
