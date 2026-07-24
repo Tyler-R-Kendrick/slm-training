@@ -3353,6 +3353,11 @@
         {
           "version": "v2",
           "date": "2026-07-23",
+          "note": "no-bump: generalize the offline Vercel harness exclusion to SLM-199/200 and exclude the SLM-200 top-level experiment report while preserving measured experiment behavior"
+        },
+        {
+          "version": "v2",
+          "date": "2026-07-23",
           "note": "no-bump: regenerate SLM-199 evidence from clean v2 code with field-level AgentV checks and stamped result artifacts"
         },
         {
