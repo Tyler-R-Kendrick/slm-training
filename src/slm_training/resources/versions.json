@@ -4305,7 +4305,7 @@
       ]
     },
     "harness.experiment_feature_flags": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/feature_flags.py",
@@ -4313,6 +4313,11 @@
         "src/slm_training/resources/experiment_feature_flag_history.json"
       ],
       "history": [
+        {
+          "version": "v3",
+          "date": "2026-07-24",
+          "note": "Preserve explicit optional checkpoint feature values while resolving OpenFeature overrides"
+        },
         {
           "version": "v2",
           "date": "2026-07-23",
@@ -4593,7 +4598,7 @@
       ]
     },
     "harness.model_build.eval": {
-      "version": "v54",
+      "version": "v55",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/debt_router.py",
@@ -4606,6 +4611,11 @@
         "tests/test_runtime_trace.py"
       ],
       "history": [
+        {
+          "version": "v55",
+          "date": "2026-07-24",
+          "note": "SLM-284: add raw constrained repaired and uniform grammar leakage audit scorecards with meaningful-v2 and binder/reference evidence"
+        },
         {
           "version": "v54",
           "date": "2026-07-24",
@@ -6247,10 +6257,11 @@
       ]
     },
     "model.twotower": {
-      "version": "v235",
+      "version": "v236",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
+        "src/slm_training/models/causal_trace.py",
         "src/slm_training/models/semantic_connector.py",
         "src/slm_training/models/dynamic_pointer_scorer.py",
         "src/slm_training/models/choice_tokenizer.py",
@@ -6275,6 +6286,11 @@
         "docs/design/iter-slm242-twotower-numeric-gates-20260721.md"
       ],
       "history": [
+        {
+          "version": "v236",
+          "date": "2026-07-24",
+          "note": "SLM-284: record legal-mass raw-top1 override traces and add seeded uniform-at-unforced compiler controls"
+        },
         {
           "version": "v235",
           "date": "2026-07-24",

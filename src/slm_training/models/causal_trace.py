@@ -29,12 +29,13 @@ from __future__ import annotations
 import json
 import math
 import os
+import random
 import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from slm_training.harnesses.distill.trace_store import TraceStore
 from slm_training.harnesses.preference.decision_events_v2 import (
@@ -70,6 +71,7 @@ __all__ = [
     "RawStepObservation",
     "RoleOf",
     "TracePolicy",
+    "TraceDecodeMode",
     "TraceSelection",
     "build_decision_state",
     "capture_raw_steps",
@@ -78,6 +80,7 @@ __all__ = [
     "fold_policy_identity",
     "legal_set_reference",
     "load_causal_decision_states",
+    "summarize_decode_audit",
 ]
 
 
@@ -98,6 +101,14 @@ class TraceSelection(str, Enum):
     MARGIN_THRESHOLD = "margin_threshold"
     SAMPLED_POSITIONS = "sampled_positions"
     NAMED_ROLES = "named_roles"
+
+
+class TraceDecodeMode(str, Enum):
+    """Evaluation-only choices made from one unchanged logit row."""
+
+    RAW = "raw"
+    CONSTRAINED = "constrained"
+    UNIFORM_AT_UNFORCED = "uniform_at_unforced"
 
 
 @dataclass(frozen=True)
@@ -156,8 +167,10 @@ class RawStepObservation:
     legal_token_ids: tuple[int, ...]
     raw_topk: tuple[tuple[int, float, float], ...]
     legal_topk: tuple[tuple[int, float], ...]
+    legal_probability_mass: float
     constraint_shadow: bool
     forced: bool
+    decode_mode: str = TraceDecodeMode.CONSTRAINED.value
     grammar_role: str | None = None
 
     @property
@@ -186,8 +199,10 @@ class RawStepObservation:
             "legal_set_reference": self.legal_set_reference,
             "raw_topk": [list(row) for row in self.raw_topk],
             "legal_topk": [list(row) for row in self.legal_topk],
+            "legal_probability_mass": self.legal_probability_mass,
             "constraint_shadow": self.constraint_shadow,
             "forced": self.forced,
+            "decode_mode": self.decode_mode,
             "grammar_role": self.grammar_role,
         }
 
@@ -249,6 +264,11 @@ def _legal_topk(
     return tuple((token, weights[token] / total) for token in order[:top_k])
 
 
+def _legal_probability_mass(log_probs: Sequence[float], legal: Sequence[int]) -> float:
+    """Probability mass assigned to the exact legal set before masking."""
+    return sum(math.exp(log_probs[token]) for token in set(legal))
+
+
 def capture_raw_steps(
     *,
     forward_logits: ForwardLogits,
@@ -257,6 +277,8 @@ def capture_raw_steps(
     max_new_tokens: int,
     initial_prefix: Sequence[int] = (),
     policy: TracePolicy | None = None,
+    decode_mode: TraceDecodeMode | str = TraceDecodeMode.CONSTRAINED,
+    uniform_seed: int = 0,
     role_of: RoleOf | None = None,
 ) -> CaptureResult:
     """Greedy constrained decode that records exact per-step decision evidence.
@@ -271,6 +293,8 @@ def capture_raw_steps(
     continuation is returned in ``generated_token_ids``.
     """
     policy = policy or TracePolicy()
+    mode = TraceDecodeMode(decode_mode)
+    rng = random.Random(int(uniform_seed))
     if int(max_new_tokens) < 0:
         raise CausalTraceError("max_new_tokens must be non-negative")
     prefix = tuple(int(token) for token in initial_prefix)
@@ -294,8 +318,14 @@ def capture_raw_steps(
             raise CausalTraceError("legal token id out of logit range")
         log_probs = _log_softmax(logits)
         raw_argmax = max(range(len(logits)), key=lambda i: (logits[i], -i))
-        selected = max(legal, key=lambda token: (logits[token], -token))
+        constrained = max(legal, key=lambda token: (logits[token], -token))
         forced = len(legal_set) == 1
+        if mode is TraceDecodeMode.RAW:
+            selected = raw_argmax
+        elif mode is TraceDecodeMode.UNIFORM_AT_UNFORCED and not forced:
+            selected = rng.choice(sorted(legal_set))
+        else:
+            selected = constrained
         obs = RawStepObservation(
             decision_index=decisions_seen,
             generated_ordinal=ordinal,
@@ -305,8 +335,10 @@ def capture_raw_steps(
             legal_token_ids=legal,
             raw_topk=_raw_topk(logits, log_probs, policy.top_k),
             legal_topk=_legal_topk(logits, legal, policy.top_k),
+            legal_probability_mass=_legal_probability_mass(log_probs, legal),
             constraint_shadow=(raw_argmax not in legal_set) and (selected in legal_set),
             forced=forced,
+            decode_mode=mode.value,
             grammar_role=role_of(prefix) if role_of is not None else None,
         )
         if policy.records(obs):
@@ -323,6 +355,40 @@ def capture_raw_steps(
         generated_token_ids=tuple(generated),
         stop_reason=stop_reason,
     )
+
+
+def summarize_decode_audit(
+    variants: Mapping[str, CaptureResult],
+    *,
+    repair_edit_counts: Mapping[str, int] | None = None,
+) -> dict[str, dict[str, float | int | str]]:
+    """Aggregate exact trace evidence without assigning semantic quality.
+
+    ``repair_edit_counts`` is supplied by the existing repair implementation;
+    this core deliberately never invents repairs or compares surface strings.
+    """
+    repairs = repair_edit_counts or {}
+    summary: dict[str, dict[str, float | int | str]] = {}
+    for name, result in variants.items():
+        observations = result.observations
+        total = len(observations)
+        forced = sum(obs.forced for obs in observations)
+        overrides = sum(obs.constraint_shadow for obs in observations)
+        summary[str(name)] = {
+            "positions": total,
+            "forced_positions": forced,
+            "forced_rate": forced / total if total else 0.0,
+            "override_positions": overrides,
+            "override_rate": overrides / total if total else 0.0,
+            "mean_legal_probability_mass": (
+                sum(obs.legal_probability_mass for obs in observations) / total
+                if total
+                else 0.0
+            ),
+            "repair_edit_count": int(repairs.get(name, 0)),
+            "stop_reason": result.stop_reason,
+        }
+    return summary
 
 
 def fold_policy_identity(base_checkpoint_sha: str, adapter_identity: str) -> str:

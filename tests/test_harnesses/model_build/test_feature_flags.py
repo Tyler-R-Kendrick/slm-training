@@ -37,3 +37,14 @@ def test_openfeature_snapshot_round_trips_typed_levers(tmp_path: Path) -> None:
     saved = save_snapshot(config.run_dir, snapshot)
     assert saved["snapshots"]["training"]["registry_revision"] == catalog()["revision"]
     assert load_snapshot(config.run_dir) == saved
+
+
+def test_openfeature_preserves_optional_checkpoint_override_none(tmp_path: Path) -> None:
+    config = ModelBuildConfig(
+        train_dir=tmp_path / "train",
+        run_root=tmp_path / "runs",
+        run_id="optional-none",
+        grammar_ltr_max_tokens=None,
+    )
+    resolved, _snapshot = resolve(config, phase="evaluation")
+    assert resolved.grammar_ltr_max_tokens is None

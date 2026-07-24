@@ -228,6 +228,9 @@ class ModelBuildConfig:
     grammar_trust_model: bool = False
     grammar_sample_decode: bool = False
     grammar_sample_temperature: float = 0.8
+    # Evaluation-only control: preserve forced singleton actions, otherwise
+    # sample uniformly from exact grammar-legal candidates.
+    grammar_uniform_at_unforced: bool = False
     grammar_block_decode: bool = False
     grammar_block_size: int = 32
     # Grammar-topology diffusion (format v2 production tree)

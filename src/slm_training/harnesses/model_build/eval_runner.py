@@ -341,6 +341,17 @@ def _contract_recall(pred: str, record: ExampleRecord) -> float | None:
     return len(pred_set & gold_set) / len(gold_set)
 
 
+def _binder_reference_f1(
+    precision: float | None, recall: float | None
+) -> float | None:
+    """Harmonic mean for the existing binder/reference contract evidence."""
+    if precision is None or recall is None:
+        return None
+    if precision + recall == 0.0:
+        return 0.0
+    return 2.0 * precision * recall / (precision + recall)
+
+
 def tree_edit_similarity(pred: str, gold_openui: str) -> float:
     """Structural similarity proxy until a dedicated tree-edit metric lands."""
     return structural_similarity(pred, gold_openui)
@@ -743,10 +754,12 @@ def evaluate(
     *,
     publish_agentv: bool = True,
     cache: EvalCache | None = None,
+    generation_overrides: dict[str, Any] | None = None,
 ) -> dict:
     from slm_training.harnesses.model_build.feature_flags import resolve, save_snapshot
 
     config, flag_snapshot = resolve(config, phase="evaluation")
+    generation_overrides = dict(generation_overrides or {})
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
@@ -813,6 +826,7 @@ def evaluate(
     recall_vals: list[float] = []
     contract_precision_vals: list[float] = []
     contract_recall_vals: list[float] = []
+    binder_reference_f1_vals: list[float] = []
     match_error_count = 0
     reward_error_count = 0
     empty_prediction_count = 0
@@ -881,6 +895,7 @@ def evaluate(
             "suite_limit": suite_limit,
             "suite_offset": suite_offset,
             "evaluation_policy": evaluation_policy,
+            "generation_overrides": generation_overrides,
             "component_versions": component_versions,
         }
         cache_key = suite_result_key(
@@ -891,7 +906,10 @@ def evaluate(
             eval_limit=suite_limit,
             evaluation_policy=evaluation_policy,
             component_versions=component_versions,
-            extra={"eval_offset": suite_offset},
+            extra={
+                "eval_offset": suite_offset,
+                "generation_overrides": generation_overrides,
+            },
         )
         if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
             cached_metrics = cache.get(cache_key)
@@ -976,10 +994,12 @@ def evaluate(
                 requests = _requests_for(chunk)
                 try:
                     predictions = generate_batch_requests(
-                        requests, max_len=canvas_cap
+                        requests, max_len=canvas_cap, **generation_overrides
                     )
                 except TypeError:
-                    predictions = generate_batch_requests(requests)
+                    predictions = generate_batch_requests(
+                        requests, **generation_overrides
+                    )
             _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             consume = getattr(plugin, "consume_generation_evidence", None)
@@ -988,28 +1008,40 @@ def evaluate(
         if callable(generate_with_stats) and len(chunk) == 1:
             try:
                 text, stats = generate_with_stats(
-                    chunk[0].prompt, max_len=canvas_cap
+                    chunk[0].prompt, max_len=canvas_cap, **generation_overrides
                 )
             except TypeError:
-                text, stats = generate_with_stats(chunk[0].prompt)
+                text, stats = generate_with_stats(
+                    chunk[0].prompt, **generation_overrides
+                )
             _annotate_decode_trace_records(stats, chunk)
             decode_stats_rows.append(stats)
             return [text], []
         prompts = [r.prompt for r in chunk]
         if callable(generate_batch):
             try:
-                return generate_batch(prompts, max_len=canvas_cap), []
+                return generate_batch(
+                    prompts, max_len=canvas_cap, **generation_overrides
+                ), []
             except TypeError:
                 try:
-                    return generate_batch(prompts, golds=None), []
+                    return generate_batch(
+                        prompts, golds=None, **generation_overrides
+                    ), []
                 except TypeError:
                     pass
         out: list[str] = []
         for prompt in prompts:
             try:
-                out.append(plugin.generate(prompt, max_len=canvas_cap))
+                out.append(
+                    plugin.generate(
+                        prompt, max_len=canvas_cap, **generation_overrides
+                    )
+                )
             except TypeError:
-                out.append(plugin.generate(prompt, gold=None))
+                out.append(
+                    plugin.generate(prompt, gold=None, **generation_overrides)
+                )
         consume = getattr(plugin, "consume_generation_evidence", None)
         evidence = consume() if callable(consume) else []
         return out, list(evidence)
@@ -1215,6 +1247,7 @@ def evaluate(
         recall = component_type_recall(scored_pred, record.openui)
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
+        binder_reference_f1 = _binder_reference_f1(contract_prec, contract_rec)
         reward: float | None
         try:
             reward = _reward_for_prediction(scored_pred, record)
@@ -1246,6 +1279,7 @@ def evaluate(
             (recall_vals, recall),
             (contract_precision_vals, contract_prec),
             (contract_recall_vals, contract_rec),
+            (binder_reference_f1_vals, binder_reference_f1),
             (reward_vals, reward),
         ):
             if value is not None:
@@ -1268,6 +1302,7 @@ def evaluate(
                 "placeholder_validity": ph_valid,
                 "contract_precision": contract_prec,
                 "contract_recall": contract_rec,
+                "binder_reference_f1": binder_reference_f1,
                 "exact_match": exact,
                 "structural_similarity": struct,
                 "tree_edit_similarity": tree_edit,
@@ -1287,6 +1322,20 @@ def evaluate(
                         record.to_dict(), sort_keys=True, separators=(",", ":")
                     ).encode("utf-8")
                 ).hexdigest(),
+                "semantic_factor": str(
+                    (record.meta or {}).get("semantic_factor")
+                    or record.target_category
+                    or record.target_kind
+                ),
+                "complexity": {
+                    "program_chars": len(record.openui),
+                    "statement_count": record.openui.count("\n") + 1,
+                    "bucket": (
+                        "small"
+                        if len(record.openui) < 160
+                        else "medium" if len(record.openui) < 400 else "large"
+                    ),
+                },
                 "serialized": serialized,
                 "topology_evidence": evidence or None,
                 **_decode_outcome_fields(
@@ -1466,6 +1515,7 @@ def evaluate(
         },
         "contract_precision": _mean_or_none(contract_precision_vals),
         "contract_recall": _mean_or_none(contract_recall_vals),
+        "binder_reference_f1": _mean_or_none(binder_reference_f1_vals),
         # Not computed by any current decode path; None (not a fake 0.0) until
         # a plugin actually measures them.
         "residual_mask_rate": None,
@@ -1484,6 +1534,7 @@ def evaluate(
         "metric_defined_n": {
             "contract_precision": len(contract_precision_vals),
             "contract_recall": len(contract_recall_vals),
+            "binder_reference_f1": len(binder_reference_f1_vals),
             "placeholder_fidelity": len(fidelity_vals),
             "placeholder_fidelity_normalized": len(fidelity_norm_vals),
             "placeholder_validity": len(validity_vals),
@@ -1764,6 +1815,152 @@ def evaluate(
             },
         )
     return metrics
+
+
+def evaluate_grammar_leakage_audit(
+    config: ModelBuildConfig,
+    model=None,
+    checkpoint: Path | None = None,
+    *,
+    publish_agentv: bool = True,
+) -> dict[str, Any]:
+    """Evaluate identical checkpoints under explicit raw/grammar controls.
+
+    This is evaluation-only. It leaves the production decode default untouched
+    and persists one normal scorecard per variant through :func:`evaluate`.
+    """
+    from contextlib import contextmanager
+    from dataclasses import replace
+
+    variants = {
+        "raw": {
+            "grammar_constrained": False,
+            "grammar_ltr_repair": False,
+            "grammar_uniform_at_unforced": False,
+        },
+        "constrained": {
+            "grammar_constrained": True,
+            "grammar_ltr_repair": False,
+            "grammar_uniform_at_unforced": False,
+        },
+        "repaired": {
+            "grammar_constrained": True,
+            "grammar_ltr_repair": True,
+            "grammar_uniform_at_unforced": False,
+        },
+        "uniform_at_unforced": {
+            "grammar_constrained": True,
+            "grammar_ltr_repair": False,
+            "grammar_uniform_at_unforced": True,
+        },
+    }
+
+    @contextmanager
+    def _temporary_plugin_config(overrides: dict[str, bool]):
+        plugin_config = getattr(model, "config", None)
+        saved = {
+            key: getattr(plugin_config, key)
+            for key in overrides
+            if plugin_config is not None and hasattr(plugin_config, key)
+        }
+        try:
+            for key, value in overrides.items():
+                if plugin_config is not None and hasattr(plugin_config, key):
+                    setattr(plugin_config, key, value)
+            yield
+        finally:
+            for key, value in saved.items():
+                setattr(plugin_config, key, value)
+
+    results: dict[str, dict[str, Any]] = {}
+    for name, overrides in variants.items():
+        variant_config = replace(
+            config,
+            run_id=f"{config.run_id}/grammar-leakage-{name}",
+            **overrides,
+        )
+        with _temporary_plugin_config(overrides):
+            results[name] = evaluate(
+                variant_config,
+                model=model,
+                checkpoint=checkpoint,
+                publish_agentv=publish_agentv,
+                cache=None,
+                generation_overrides={
+                    "grammar_constrained": overrides["grammar_constrained"]
+                },
+            )
+
+    metric_names = (
+        "meaningful_program_rate",
+        "parse_rate",
+        "placeholder_fidelity",
+        "contract_precision",
+        "contract_recall",
+        "binder_reference_f1",
+        "structural_similarity",
+    )
+    raw = results["raw"]
+    deltas = {
+        name: {
+            metric: (
+                None
+                if metrics.get(metric) is None or raw.get(metric) is None
+                else float(metrics[metric]) - float(raw[metric])
+            )
+            for metric in metric_names
+        }
+        for name, metrics in results.items()
+        if name != "raw"
+    }
+
+    def _strata(metrics: dict[str, Any]) -> dict[str, dict[str, dict[str, float]]]:
+        grouped: dict[str, dict[str, list[dict[str, Any]]]] = {
+            "semantic_factor": {},
+            "complexity": {},
+        }
+        for detail in metrics.get("details") or ():
+            grouped["semantic_factor"].setdefault(
+                str(detail.get("semantic_factor") or "unknown"), []
+            ).append(detail)
+            grouped["complexity"].setdefault(
+                str((detail.get("complexity") or {}).get("bucket") or "unknown"), []
+            ).append(detail)
+        return {
+            axis: {
+                label: {
+                    "n": len(rows),
+                    "meaningful_program_rate": sum(
+                        bool(row.get("binding_aware_meaningful_v2")) for row in rows
+                    )
+                    / len(rows),
+                    "parse_rate": sum(bool(row.get("parse_ok")) for row in rows)
+                    / len(rows),
+                }
+                for label, rows in labels.items()
+            }
+            for axis, labels in grouped.items()
+        }
+
+    payload: dict[str, Any] = {
+        "schema_version": "grammar-leakage-audit/v1",
+        "run_id": config.run_id,
+        "suite": config.suite,
+        "variants": results,
+        "raw_deltas": deltas,
+        "strata": {name: _strata(metrics) for name, metrics in results.items()},
+        "claim_scope": "evaluation-only; no production default changed",
+    }
+    from slm_training.versioning import build_version_stamp
+
+    payload["version_stamp"] = build_version_stamp(
+        *_evaluation_version_components(config)
+    )
+    output = config.run_dir / "grammar_leakage_audit.json"
+    payload["output"] = str(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return payload
 
 
 def evaluate_suites(
