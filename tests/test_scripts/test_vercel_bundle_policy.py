@@ -20,6 +20,11 @@ def test_vercel_function_excludes_nested_agentv_evidence() -> None:
         "src/slm_training/harnesses/experiments/slm243_recursive_update_gate.py"
         in ignored
     )
+    assert "scripts/run_slm233_recursive_campaign.py" in ignored
+    assert (
+        "src/slm_training/harnesses/experiments/slm233_recursive_campaign.py"
+        in ignored
+    )
     for fragment in (
         "flow/{samplers,targets}",
         "harnesses/experiments/slm{199,200}_*",
